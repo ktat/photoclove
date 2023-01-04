@@ -26,12 +26,12 @@ impl Dir {
         }
     }
     // TODO: error handling
-    pub fn to_date(&mut self) -> crate::value::date::Date {
+    pub fn to_date(&mut self) -> date::Date {
         let mut ymd = self.path.split("/").last().unwrap().split("-");
         let year = ymd.next().unwrap().parse::<i32>().unwrap();
         let month = ymd.next().unwrap().parse::<u32>().unwrap();
         let day = ymd.next().unwrap().parse::<u32>().unwrap();
-        crate::value::date::Date::new(year, month, day).unwrap()
+        date::Date::new(year, month, day).unwrap()
     }
     pub fn child (&self, path: String) -> Dir {
         Dir::new(self.path.to_string() + "/" + &path)
@@ -59,7 +59,7 @@ impl Dir {
         let mut f = Dirs {
             dirs: Vec::new(),
         };
-        let mut res = fs::read_dir(&self.path);
+        let res = fs::read_dir(&self.path);
         if res.is_ok() {
            for entry in res.unwrap() {
                 let entry = entry.unwrap();
@@ -87,7 +87,7 @@ impl Dir {
     }
 
     pub fn find_date_like_directories(&self) -> Dirs {
-        let mut re = &Option::Some(Regex::new(r"([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)/?$").unwrap());
+        let re = &Option::Some(Regex::new(r"([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)/?$").unwrap());
         self.find_directories(re)
     }
 

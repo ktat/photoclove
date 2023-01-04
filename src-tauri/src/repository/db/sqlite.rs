@@ -19,13 +19,11 @@ pub struct SQLite {
     fn get_dates(&self) -> date::Dates {
         date::Dates{ dates: Vec::new()}
     }        
-    fn embed_photo_exif_data(&self, mut photo: photo::Photo) {
-        photo.exif_entries = photo.exif();
-    }
     fn get_photos_in_date(&self, date: date::Date, sort: Sort, num: u32, page: u32) -> photo::Photos {
         photo::Photos{ files: Vec::new() }
     }
-
+    fn get_next_photo_in_date(&self, path: &str, date: date::Date, sort: Sort) -> Option<photo::Photo> { Option::None}
+    fn get_prev_photo_in_date(&self, path: &str, date: date::Date, sort: Sort) -> Option<photo::Photo> { Option::None}
  }
 
  impl SQLite {

@@ -37,8 +37,51 @@ impl RepositoryDB for Directory {
         }
         photos
     }
-    fn embed_photo_exif_data(&self, mut photo: photo::Photo) {
-        photo.exif_entries = photo.exif();
+    fn get_next_photo_in_date(&self, path: &str, date: date::Date, sort: Sort) -> Option<photo::Photo> {
+        let mut page: u32 = 1;
+        let mut next_is_target = false;
+        
+        'outer: loop {
+            let photos = self.get_photos_in_date(date.clone(), sort, 100, page);
+            if photos.files.len() == 0 {
+                break 'outer;
+            }
+            for photo in photos.files {
+                if next_is_target {
+                    return Option::Some(photo);
+                }
+                if photo.file.path == path.to_string() {
+                    next_is_target = true;
+                }
+            }
+            page += 1
+        }
+        return Option::None;
+    }
+
+    fn get_prev_photo_in_date(&self, path: &str, date: date::Date, sort: Sort) -> Option<photo::Photo> {
+        let mut page: u32 = 1;
+        let mut prev_is_target = false;
+        let mut prev_photo = photo::Photo::new(file::File::new("".to_string()));
+        
+        'outer: loop {
+            let photos = self.get_photos_in_date(date.clone(), sort, 100, page);
+            if photos.files.len() == 0 {
+                break 'outer;
+            }
+            for photo in photos.files {
+                if prev_is_target  {
+                    return Option::Some(prev_photo);
+                }
+                if photo.file.path == path.to_string() {
+                    prev_is_target = true;
+                    continue;
+                }
+                prev_photo = photo
+            }
+            page += 1
+        }
+        return Option::None;
     }
 }
 

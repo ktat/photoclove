@@ -5,15 +5,25 @@ use crate::value::date;
 
 pub type RepoDB = crate::repository::db::directory::Directory;
 
+#[derive(Copy, Clone, Debug)]
 pub enum Sort {
     Time,
     Name,
 }
 
+pub fn sort_from_int(i: i32) -> Sort {
+    match i {
+        0 => Sort::Time,
+        1 => Sort::Name,
+        _default => Sort::Time,
+    }
+}
+
 pub(crate) trait RepositoryDB {  
     fn connect(&self);
     fn get_dates(&self) -> date::Dates;
-    fn embed_photo_exif_data(&self, photo: photo::Photo);
+    fn get_next_photo_in_date(&self, path: &str, date: date::Date, sort: Sort) -> Option<photo::Photo>;
+    fn get_prev_photo_in_date(&self, path: &str, date: date::Date, sort: Sort) -> Option<photo::Photo>;
     fn get_photos_in_date(&self, date: date::Date, sort: Sort, num: u32, page: u32) -> photo::Photos;
 }
 
