@@ -1,9 +1,10 @@
 use tauri::Manager;
 
+use crate::repository::*;
 use crate::repository::RepositoryDB;
-use crate::value::date::*;
-use crate::value::file::*;
-use crate::domain::photo::*;
+use crate::value::date;
+use crate::value::file;
+use crate::domain::*;
 
 mod value;
 mod domain;
@@ -24,7 +25,7 @@ fn greet(name: &str) -> String {
 #[tauri::command]
 fn get_dates(
     window: tauri::Window,
-    database: tauri::State<repository::db::directory::directory::Directory>,
+    database: tauri::State<repository::RepoDB>,
 ) -> String {
     println!("get_dats is called from {}", window.label());
     let db = &*database;
@@ -35,13 +36,14 @@ fn get_dates(
 #[tauri::command]
 fn get_photos(
     date_str: &str,
+    page: u32,
     window: tauri::Window,
     database: tauri::State<repository::RepoDB>,
 ) -> String {
     let date = date::Date::from_string(&date_str.to_string());
     println!("get_photos is called from {}", window.label());
     let db = &*database;
-    let photos = db.get_photos_in_date(date);
+    let photos = db.get_photos_in_date(date, Sort::Time, 40, page);
     photos.to_json()
 }
 
@@ -59,11 +61,8 @@ fn get_photo_info(
 }
 
 fn main() {
-    use domain::config::*;
+    use domain::config;
     use crate::repository::*;
-    use crate::repository::db::memory::*;
-    use crate::repository::db::sqlite::*;
-    use crate::repository::db::directory::*;
     let c = config::Config::new();
     // if c.repository.store == "memory".to_string() {
     //     db = repository::RepoDB::new();

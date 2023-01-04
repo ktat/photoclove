@@ -92,12 +92,16 @@ button {
   width: 20%;
 }
 .centerDisplay {
-  width: 59%;
+  width: 55%;
   min-height: 95vh;
+  padding: 0px 20px 10px 20px;
   
   border-width: 0px 1px 0px 1px;
   border-style: solid;
   border-color: white;
+}
+.photoOperation {
+  float:right;
 }
 .centerDisplay li {
   display: inline;
