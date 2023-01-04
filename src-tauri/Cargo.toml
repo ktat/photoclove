@@ -21,6 +21,7 @@ chrono = { version = "0.4", features = ["unstable-locales"] }
 rusqlite = "0.27"
 rexif = "0.7.3"
 linked-hash-map = "0.5.6"
+regex = "1.7.0"
 
 [features]
 # by default Tauri runs in production mode
