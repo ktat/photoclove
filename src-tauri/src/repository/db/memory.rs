@@ -25,9 +25,8 @@ use crate::domain::photo;
         photos.files.push(photo::Photo::new(file::File::new("./tests/assets/files/c.jpg".to_string())));
         photos
     }
-    fn embed_photo_exif_data(&self, mut photo: photo::Photo) {
-        photo.exif_entries = photo.exif();
-    }
+    fn get_next_photo_in_date(&self, path: &str, date: date::Date, sort: Sort) -> Option<photo::Photo> { Option::None}
+    fn get_prev_photo_in_date(&self, path: &str, date: date::Date, sort: Sort) -> Option<photo::Photo> { Option::None}
 }
 
  impl Memory {
