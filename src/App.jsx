@@ -7,7 +7,7 @@ import { tauri } from "@tauri-apps/api";
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [dateList, setDateList] = useState([]);
-  const [photos, setPhotoList] = useState("");
+  const [photos, setPhotoList] = useState({"files":[]});
   const [photoInfo, setPhotoInfo] = useState("");
   const [name, setName] = useState("");
   const [scrollLock, setScrollLock] = useState(false);
@@ -80,6 +80,22 @@ function App() {
     datePage[date] = page;
     setDatePage(datePage);
     getPhotos(e)
+  }
+
+  function importPhotosScroll(e) {
+    if (scrollLock) {
+      return;
+    }
+    setScrollLock(true);
+    
+    if (currentDate == "") {
+      return
+    }
+    let isForward = true;
+    if (e.deltaY < 0) {
+      isForward = false;
+    }
+    nextImportPhotosList(e, isForward)
   }
 
   function nextImportPhotosList(e, isForward) {
@@ -197,6 +213,7 @@ function photoScroll(e) {
       setCurrentImportPath(path);
       setPathPage(pathPage);
       setImporter(data);
+      setTimeout(() => {setScrollLock(false)}, 200);
     });
   }
 
@@ -261,28 +278,13 @@ function photoScroll(e) {
       let l = data.files;
       let tags = [];
       if (l.length > 0) {
-        if (data.has_prev) {
-          tags.push(<><a href="#" onClick={(e) => nextPhotosList(e, false)}>Prev</a>&nbsp;&nbsp;</>)
-        }
-        if (data.has_next) {
-          tags.push(<>&nbsp;&nbsp;<a href="#" onClick={(e) => nextPhotosList(e, true)}>Next</a></>)
-        }
-        tags.push(<><br /><br /></>)
-        for (let i in l) {
-          if (l[i].file.path.match(/\.(mp4|webm)/i)) {
-            // tags.push(<><ReactPlayer controls={true} width={icon_size} url={l[i].file.path} /></>)
-          } else if (l[i].file.path.match(/\.(png|jpe?g|gif)/i)) {
-            tags.push(<li><a href="#"  onClick={() => {displayPhoto(l[i].file.path)}}><img width={icon_size} src={convertFileSrc(l[i].file.path)} /></a>
-            <a href="#" onClick={() => getPhotoInfo(l[i].file.path)} >(&#8505;)</a></li>);
-          }
-        }
-        setPhotoList(tags);
+        setPhotoList(data);
       } else {
         page -= 1;
       }
       datePage[date] = page;
       setDatePage(datePage);
-      setTimeout(() => {setScrollLock(false)}, 500);
+      setTimeout(() => {setScrollLock(false)}, 200);
     });
   };
 
@@ -385,7 +387,17 @@ function photoScroll(e) {
             </select>
           </div>
         </div>
-        <div className="photos">{photos}</div>
+        <div class="navigation">
+          {photos.has_prev && (<span><a href="#" onClick={(e) => nextPhotosList(e, false)}>&lt;&lt; Prev&nbsp;</a></span>)}
+          {photos.has_next && (<span><a href="#" onClick={(e) => nextPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
+        </div>
+        <div className="photos">
+            {photos.files.map((l,i) => {
+              return <li><a href="#"  onClick={() => {displayPhoto(l.file.path)}}><img width={icon_size} src={convertFileSrc(l.file.path)} /></a>
+              <a href="#" onClick={() => getPhotoInfo(l.file.path)} >(&#8505;)</a></li>         
+            })
+            }
+        </div>
       </div>
       {/* PHOTO DISPLAY */}
       <div id="photoDisplay" autoFocus={true} className={photoDisplayClass}>
@@ -398,7 +410,7 @@ function photoScroll(e) {
         </div>
         </div>
       {/* IMPORT DISPLAY */}
-      <div className={importDisplayClass} id="importPhotosList" data-path={currentImportPath} data-page={pathPage[currentImportPath]}>
+      <div className={importDisplayClass} id="importPhotosList" onWheel={(e) => importPhotosScroll(e)}  data-path={currentImportPath} data-page={pathPage[currentImportPath]}>
         <p>Import Photos</p>
         <p>Directories:</p>
         <ul>
@@ -414,7 +426,7 @@ function photoScroll(e) {
           })
         }
         </ul>
-        <p>Files:</p>
+        <p>Files(page. {pathPage[currentImportPath]}):</p>
         <div>
         {importer.dirs_files.has_prev_file && (<span><a href="#" onClick={(e) => nextImportPhotosList(e, false)}>&lt;&lt; Prev&nbsp;</a></span>)}
         {importer.dirs_files.has_next_file && (<span><a href="#" onClick={(e) => nextImportPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
