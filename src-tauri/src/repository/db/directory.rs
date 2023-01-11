@@ -14,23 +14,26 @@ impl RepositoryDB for Directory {
     }
     fn get_dates(&self) -> date::Dates {
         let mut dates = date::Dates{ dates: Vec::new()};
-        let dirs = self.path.find_date_like_directories();
+        let mut dirs = self.path.find_date_like_directories();
         for mut dir in dirs.dirs {
-            dates.dates.push(dir.to_date())
+            let d = dir.to_date();
+            if d.is_some() {
+                dates.dates.push(d.unwrap())
+            }
         }
         dates
     }
     fn get_photos_in_date(&self, date: date::Date, sort: Sort, num: u32, page: u32) -> photo::Photos {
         let dir = self.path.child(date.to_string());
         let files = dir.find_files();
-        let mut photos = photo::Photos{ files: Vec::new() };
+        let mut photos = photo::Photos::new();
         let mut i = 0;
         let start_index = num * (page - 1);
         let end_index = start_index + num - 1;
         for f in files.files {
             i += 1;
-            if (i - 1) < start_index { continue }
-            if (i - 1) > end_index {  break }
+            if (i - 1) < start_index { photos.has_prev = true; continue }
+            if (i - 1) > end_index {  photos.has_next = true; break }
 
             let p = photo::Photo::new(f);
             photos.files.push(p)
@@ -57,12 +60,14 @@ impl RepositoryDB for Directory {
             page += 1
         }
         return Option::None;
+
+
     }
 
     fn get_prev_photo_in_date(&self, path: &str, date: date::Date, sort: Sort) -> Option<photo::Photo> {
         let mut page: u32 = 1;
         let mut prev_is_target = false;
-        let mut prev_photo = photo::Photo::new(file::File::new("".to_string()));
+        let mut ret: Option<photo::Photo> = None;
         
         'outer: loop {
             let photos = self.get_photos_in_date(date.clone(), sort, 100, page);
@@ -70,14 +75,13 @@ impl RepositoryDB for Directory {
                 break 'outer;
             }
             for photo in photos.files {
-                if prev_is_target  {
-                    return Option::Some(prev_photo);
-                }
                 if photo.file.path == path.to_string() {
                     prev_is_target = true;
-                    continue;
                 }
-                prev_photo = photo
+                if prev_is_target {
+                    return ret;
+                }
+                ret = Option::Some(photo)
             }
             page += 1
         }

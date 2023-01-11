@@ -1,4 +1,5 @@
 pub mod db;
+pub mod dir;
 use crate::domain::photo;
 use crate::domain::config;
 use crate::value::date;

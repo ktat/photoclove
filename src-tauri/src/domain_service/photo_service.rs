@@ -2,7 +2,7 @@ use crate::domain::photo;
 use crate::value::file;
 
 pub fn photos_from_dir (files: file::Files) -> photo::Photos {
-    let mut photos = photo::Photos{ files: Vec::new() };
+    let mut photos = photo::Photos::new();
     for file in files.files {
         let p = photo::Photo::new(file);
         photos.files.push(p)

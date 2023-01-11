@@ -14,21 +14,15 @@
   -webkit-text-size-adjust: 100%;
 }
 
+.container, body {
+  overflow-y: hidden;
+}
+
 .container {
   margin: 0;
   text-align: center;
   width: 100%;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: 0.75s;
-}
-
-.logo.tauri:hover {
-  filter: drop-shadow(0 0 2em #24c8db);
+  height: 100vh;
 }
 
 .row {
@@ -84,41 +78,87 @@ button {
   float: left; 
 }
 .leftMenu {
-  min-width: 150px;
-  width: 20%;
+  width: 220px;
+  min-width: 220px;
+  height: 90vh;
 }
-.rightMenu {
-  min-width: 0%;
-  width: 25%;
-  padding-left: 10px;
+
+.leftMenu .dateList {
+  overflow-y: scroll;
 }
-.centerDisplay, .photoDisplay {
+
+.leftMenu ul {
+  margin-left: 20px;
+  text-align: left;
+  list-style: none;
+}
+
+.selectedPhotos, .rightMenu {
+  min-width: 280px;
+  width: 280px;
+  padding-left: 20px;
+}
+
+.centerDisplay, .photoDisplay, .importDisplay {
+  min-width: 200px;
   float:left;
-  width: 50%;
+  width: calc(100vw - 600px);
   min-height: 95vh;
-  padding: 0px 20px 10px 20px;
+  padding: 20px 20px 10px 20px;
+  margin: 0 0 0 0px;
   
   border-width: 0px 1px 0px 1px;
   border-style: solid;
   border-color: white;
 }
 
-.photoDisplay img {
-  width: 100%;
+.selectedPhotos, .photoPageInfo {
+   float:left;
 }
 
-.centerDisplayHidden {
+.imageInSelectedPhotos {
+  max-width: 100%;
+}
+
+.sleectedPhotos ul {
+  text-align:left;
+}
+.photoDisplay .photo {
+   overflow-x: scroll;
+   overflow-y: scroll;
+   max-height: 90vh;
+}
+.photos {
+  margin-top: 30px;
+}
+
+.selectedPhotos li {
+  list-style: none;
+}
+
+.selectedPhotosHidden, .centerDisplayHidden, .photoDisplayHidden, .rightMenuHidden, .importDisplayHidden {
   display: none;
 }
-.photoDisplayHidden {
-  display: none;
+
+.importDisplay div.photos, .centerDisplay div.photos {
+  text-align: left;
 }
 
 .photoOperation {
   float:right;
 }
-.centerDisplay li {
+.importDisplay li, .centerDisplay li {
   display: inline;
+  padding-right: 20px;
+  margin-right:10px;
+}
+
+li.selected:after {
+  margin-left: -27px;
+  font-size: 18px;
+  padding: 0 10 10 0px;
+  content: " \2705";
+  color:red;
 }
 
 .container:after {
