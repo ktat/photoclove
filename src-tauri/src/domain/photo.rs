@@ -10,7 +10,9 @@ pub struct Photo {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Photos {
-    pub files: Vec<Photo>
+    pub files: Vec<Photo>,
+    pub has_next: bool,
+    pub has_prev: bool,
 }
 
 impl Photo {
@@ -23,8 +25,11 @@ impl Photo {
 }
 
 impl Photos {
+    pub fn new () -> Photos {
+        Photos{ files: Vec::new(), has_next: false, has_prev: false }
+    }
     pub fn to_json (&self) -> String {
-        serde_json::to_string(&self.files).unwrap()
+        serde_json::to_string(&self).unwrap()
     }        
 }
 
@@ -46,7 +51,7 @@ mod tests {
         let f2 = file::File::new("/tmp/photoclove.test.dummy.jpg".to_string());
         let p = photo::Photo::new(f);
         let p2 = photo::Photo::new(f2);
-        let mut photos = photo::Photos{files: Vec::new()};
+        let mut photos = photo::Photos::new();
         photos.files.push(p);
         photos.files.push(p2);
 

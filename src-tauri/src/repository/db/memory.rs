@@ -19,7 +19,7 @@ use crate::domain::photo;
         dates
     }
     fn get_photos_in_date(&self, date: date::Date, sort: Sort, num: u32, page: u32) -> photo::Photos {
-        let mut photos = photo::Photos{ files: Vec::new() };
+        let mut photos = photo::Photos::new();
         photos.files.push(photo::Photo::new(file::File::new("./tests/assets/files/a.jpg".to_string())));
         photos.files.push(photo::Photo::new(file::File::new("./tests/assets/files/b.jpg".to_string())));
         photos.files.push(photo::Photo::new(file::File::new("./tests/assets/files/c.jpg".to_string())));
