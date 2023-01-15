@@ -7,7 +7,7 @@ import { tauri } from "@tauri-apps/api";
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [dateList, setDateList] = useState([]);
-  const [photos, setPhotoList] = useState({"files":[]});
+  const [photos, setPhotosList] = useState({"files":[]});
   const [photoInfo, setPhotoInfo] = useState("");
   const [name, setName] = useState("");
   const [scrollLock, setScrollLock] = useState(false);
@@ -29,6 +29,8 @@ function App() {
   const [importPhotosPage, setImportPhotosPage] = useState(1);
   const [pathPage, setPathPage] = useState({});
   const [currentImportPath, setCurrentImportPath] = useState("");
+  const [importProgress, setImportProgress] = useState({});
+  const [photoLoading, setPhotoLoading] = useState(false);
 
   const getDates = () => {
     invoke("get_dates").then((r) => {
@@ -39,20 +41,21 @@ function App() {
 
   useEffect( (e) => {
     if (currentDate != "") {
+      delete datePage[currentDate];
+      photos.files = [];
+      setPhotosList({"files": []});      
       setDatePage({});
-      getPhotos(undefined, sort_of_photos, num_of_photo, 1);
+      getPhotos(undefined, true);
     }
   }, [num_of_photo, sort_of_photos, icon_size]);
 
   function photosScroll(e) {
-    if (scrollLock) {
+    if (scrollLock || currentDate === "") {
       return;
     }
+
     setScrollLock(true);
     
-    if (currentDate == "") {
-      return
-    }
     let isForward = true;
     if (e.deltaY < 0) {
       isForward = false;
@@ -61,7 +64,6 @@ function App() {
   }
 
   function nextPhotosList(e, isForward) {
-
     let target = document.getElementById("photoList");
     let page = target.getAttribute("data-page");
     let date = target.getAttribute("data-date");
@@ -79,18 +81,14 @@ function App() {
     }
     datePage[date] = page;
     setDatePage(datePage);
-    getPhotos(e)
+    getPhotos(e, isForward)
   }
 
   function importPhotosScroll(e) {
-    if (scrollLock) {
+    if (scrollLock || currentImportPath === "") {
       return;
     }
     setScrollLock(true);
-    
-    if (currentDate == "") {
-      return
-    }
     let isForward = true;
     if (e.deltaY < 0) {
       isForward = false;
@@ -99,7 +97,7 @@ function App() {
   }
 
   function nextImportPhotosList(e, isForward) {
-    let target = document.getElementById("importPhotosList");
+    let target = document.getElementById("importPhotosDisplay");
     let page = target.getAttribute("data-page");
     let path = target.getAttribute("data-path");
     if (!page || page == "NaN") {
@@ -114,8 +112,6 @@ function App() {
     } else {
       page += 1;
     }
-    pathPage[path] = page;
-    setPathPage(pathPage);
     showImporter(currentImportPath, page, 20);
   }
 
@@ -127,10 +123,20 @@ function photoNavigation(e) {
   }
 }
 
-function importPhotos() {
-  invoke("import_photos", {files: Object.keys(selectedForImport)}).then((r) => {
+async function importPhotos() {
+  await invoke("import_photos", {files: Object.keys(selectedForImport)}).then((r) => {
     setSelectedForImport({})
   });
+  const fn = (f) => {
+    invoke("get_import_progress").then((r) => {
+      let data = JSON.parse(r);
+      setImportProgress(data);
+      if (data.now_importing && data.num >= data.progress) {
+        setTimeout(() => { f(f) }, 1000);
+      }
+    })
+  };
+  setTimeout(() => {fn(fn)}, 1000);
 }
 
 // TODO: not correct scroll adjustment.
@@ -203,16 +209,31 @@ function photoScroll(e) {
 
   async function showImporter(path, page, num) {
     toggleShowImporter(true);
-    if (!path) {
+    if ((!path || path === "") && currentImportPath !== "") {
       path = currentImportPath;
     }
-    page = pathPage[path] ||= 1;
-    let args = {pathStr: path, page: page, num: num || 20};
+    if (!page && path && path !== "") {
+      page = pathPage[path];
+    }
+    page ||= 1;
+    let args = {page: page, num: num || 20};
+    if (path !== "") {
+      args["pathStr"]= path;
+    }
     await invoke("show_importer", args).then((r) => {
       let data = JSON.parse(r);
+      let path = data.dirs_files.dir.path;
       setCurrentImportPath(path);
-      setPathPage(pathPage);
-      setImporter(data);
+      if (data.dirs_files.files.files.length > 0 || page == 1) {
+        pathPage[path] = page;
+        setPathPage(pathPage);
+        setImporter(data);
+      } else {
+        importer.dirs_files.dirs = data.dirs_files.dirs;
+        importer.dirs_files.dirs.path = path;
+        setImporter({});
+        setImporter(importer);
+      }
       setTimeout(() => {setScrollLock(false)}, 200);
     });
   }
@@ -251,13 +272,12 @@ function photoScroll(e) {
     });
   }
 
-  async function getPhotos(e, givenSort, givenNum, givenPage) {
+  async function getPhotos(e, isForward) {
+    setPhotoLoading(true);
+    setPhotosList({files: []});
     toggleCenterDisplay();
     let sort = sort_of_photos;
-    let target = document.getElementById("photoList");
-    if (givenNum !== undefined) {sort = givenSort}
     let num = num_of_photo;
-    if (givenNum !== undefined) {num = givenNum}
     let date;
     if (e && e.currentTarget && e.currentTarget.getAttribute("data-date")) {
       date = e.currentTarget.getAttribute("data-date");
@@ -269,21 +289,19 @@ function photoScroll(e) {
     if (!page || page == "NaN") {
       page = 1;
     }
-    if (givenPage !== undefined) {
-      page = givenPage;
-    }
     page = parseInt(page);
     await invoke("get_photos", {dateStr: date, sortValue: parseInt(sort), page: page, num: parseInt(num)}).then((r) => {
       let data = JSON.parse(r);
       let l = data.files;
       let tags = [];
       if (l.length > 0) {
-        setPhotoList(data);
+        setPhotosList(data);
       } else {
         page -= 1;
       }
       datePage[date] = page;
       setDatePage(datePage);
+      setPhotoLoading(false);
       setTimeout(() => {setScrollLock(false)}, 200);
     });
   };
@@ -292,37 +310,74 @@ function photoScroll(e) {
     await invoke("get_photo_info", {pathStr: path}).then((r) => {
       let data = JSON.parse(r);
       let tag = (<table>
-        <tr><th>ISO</th><td>{data.ISO}</td></tr>
-        <tr><th>FNumber</th><td>{data.FNumber}</td></tr>
-        <tr><th>LensModel</th><td>{data.LensModel}</td></tr>
-        <tr><th>LensMake</th><td>{data.LensMake}</td></tr>
-        <tr><th>Make</th><td>{data.Make}</td></tr>
-        <tr><th>Model</th><td>{data.Model}</td></tr>
-        <tr><th>Date & Time</th><td>{data.DateTime}</td></tr>
+        <tbody>
+          <tr><th>ISO</th><td>{data.ISO}</td></tr>
+          <tr><th>FNumber</th><td>{data.FNumber}</td></tr>
+          <tr><th>LensModel</th><td>{data.LensModel}</td></tr>
+          <tr><th>LensMake</th><td>{data.LensMake}</td></tr>
+          <tr><th>Make</th><td>{data.Make}</td></tr>
+          <tr><th>Model</th><td>{data.Model}</td></tr>
+          <tr><th>Date & Time</th><td>{data.DateTime}</td></tr>
+        </tbody>
       </table>)
       setPhotoInfo(tag);
     });
   };
 
   function selectPhoto (path) {
-    selectedForImport[path] = !selectedForImport[path];
-    if (!selectedForImport[path]) {
-      setImageInSelectedPhotos("");
-      delete selectedForImport[path];
-    } else {
-      setImageInSelectedPhotos(path);
+    if (path !== undefined) {
+      selectedForImport[path] = !selectedForImport[path];
+      if (!selectedForImport[path]) {
+        setImageInSelectedPhotos("");
+        delete selectedForImport[path];
+      } else {
+        setImageInSelectedPhotos(path);
+      }
     }
     let files = [];
-    let removes = [];
     Object.keys(selectedForImport).forEach(path => {
       if (selectedForImport[path]) {
         files.push(path);
       }
     });
-    invoke("select_file", {selected: files}).then((r) => {
-      setSelectedForImport(selectedForImport);
-      showImporter(path.replace(/[^\/]+$/, ""));
-    })
+    setSelectedForImport(selectedForImport);
+    if (files.length > 0) {
+      showImporter(files[0].replace(/[^\/]+$/, ""));
+    }
+  }
+
+  function selectAllInThisPage() {
+    let photos = document.getElementsByClassName("importPhoto");
+    _selectAll(photos);
+  }
+
+  function selectAll() {
+    console.log(currentImportPath)
+    if (currentImportPath != ""){
+      invoke("get_photos_path_to_import_under_directory", {pathStr: currentImportPath}).then((r) => {
+        let files = JSON.parse(r);
+        let photos = [];
+        for (let i = 0; i < files.length; i++) {
+          photos.push({id: files[i]});
+        }
+        _selectAll(photos);
+      });
+    }
+  }
+
+  function _selectAll(photos) {
+    let lastFile = '';
+    for (let i = 0; i < photos.length; i++) {
+      selectedForImport[photos[i].id] = true;
+      lastFile = photos[i].id;
+    }
+    selectPhoto(undefined);
+    setImageInSelectedPhotos(lastFile);
+  }
+
+  function unselectAll() {
+    setSelectedForImport({});
+    setImageInSelectedPhotos("");
   }
 
   async function greet() {
@@ -355,7 +410,7 @@ function photoScroll(e) {
           <ul>
             {dateList.map((l,i) => {
               let date = l.year + '/' + l.month + '/' + l.day;
-              return (<li><a key={i} href="#" onClick={(e) => getPhotos(e)} data-date={date} data-page={datePage[date]}>{date}</a></li> )
+              return (<li key={i} ><a href="#" onClick={(e) => getPhotos(e, undefined)} data-date={date} data-page={datePage[date]}>{date}</a></li> )
               })
             }
           </ul>
@@ -363,6 +418,10 @@ function photoScroll(e) {
       </div>
       
       {/* CENTER DISPLAY */}
+      <div id="photoLoading" className={photoLoading ? "photoLoadingOn" : "photoLoadingOff"}>
+        <h1>Now Loading Photos ...</h1>
+        <div class="lds-dual-ring"></div>
+      </div>
       <div className={centerDisplayClass} id="photoList" onWheel={(e) => photosScroll(e)} data-date={currentDate} data-page={datePage[currentDate]}>
         <div>
           List of Photos
@@ -383,20 +442,18 @@ function photoScroll(e) {
               <option value={20}>20</option>
               <option value={30}>30</option>
               <option value={40}>40</option>
-              <option value={50}>50</option>
             </select>
           </div>
         </div>
-        <div class="navigation">
+        <div className="navigation">
           {photos.has_prev && (<span><a href="#" onClick={(e) => nextPhotosList(e, false)}>&lt;&lt; Prev&nbsp;</a></span>)}
           {photos.has_next && (<span><a href="#" onClick={(e) => nextPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
         </div>
         <div className="photos">
             {photos.files.map((l,i) => {
-              return <li><a href="#"  onClick={() => {displayPhoto(l.file.path)}}><img width={icon_size} src={convertFileSrc(l.file.path)} /></a>
+              return <li key={i}><a href="#"  onClick={() => {displayPhoto(l.file.path)}}><img width={icon_size} src={convertFileSrc(l.file.path)} /></a>
               <a href="#" onClick={() => getPhotoInfo(l.file.path)} >(&#8505;)</a></li>         
-            })
-            }
+            })}
         </div>
       </div>
       {/* PHOTO DISPLAY */}
@@ -410,43 +467,60 @@ function photoScroll(e) {
         </div>
         </div>
       {/* IMPORT DISPLAY */}
-      <div className={importDisplayClass} id="importPhotosList" onWheel={(e) => importPhotosScroll(e)}  data-path={currentImportPath} data-page={pathPage[currentImportPath]}>
+      <div className={importDisplayClass} id="importPhotosDisplay" onWheel={(e) => importPhotosScroll(e)}  data-path={currentImportPath} data-page={pathPage[currentImportPath]}>
         <p>Import Photos</p>
-        <p>Directories:</p>
+        {importProgress.now_importing && <span>Now Importing...</span>}
+        {importProgress.now_importing && <span>{importProgress.progress} / {importProgress.num}</span>}
+        <p>Directories (path: {currentImportPath}):</p>
         <ul>
-        {(importer.dirs_files.dirs.dirs.length == 0 || importer.dirs_files.dirs.dirs[0].path.match("^/[^\/]+/.+$")) &&
-          <li><a href="#" onClick={() => showImporter(importer.dirs_files.dir.path + "/..")}>..</a></li>
-        }
-        {importer.dirs_files.dirs.dirs.map((l,i) => {
-            return (
-                <li key={i}>&#128193;
-                <a href="#" onClick={() => showImporter(l.path)}>{l.path.replace(/^.+\//, '')}</a>
-                </li>
-              );
-          })
-        }
+          {(importer.dirs_files.dirs.dirs.length == 0 || importer.dirs_files.dirs.dirs[0].path.match("^/[^\/]+/.+$")) &&
+            <li><a href="#" onClick={() => showImporter(importer.dirs_files.dir.path + "/..")}>..</a></li>
+          }
+          {importer.dirs_files.dirs.dirs.map((l,i) => {
+              return (
+                  <li key={i}>&#128193;
+                  <a href="#" onClick={() => showImporter(l.path)}>{l.path.replace(/^.+\//, '')}</a>
+                  </li>
+                );
+            })
+          }
         </ul>
-        <p>Files(page. {pathPage[currentImportPath]}):</p>
-        <div>
+        {importer.dirs_files.files.files.length > 0 && (
+          <>
+          <p>Files(page. {pathPage[currentImportPath]}):</p>
+          <div>
+            Filter: <br />
+            Created Date: after <input id="filterDate" name="date" type="date"/><br />
+            <button onClick={() => filterImporter()}>Filter</button><br />
+            <button onClick={() => selectAllInThisPage()}>Select All photos in this page</button>
+            <button onClick={() => selectAll()}>Select All photos in all pages</button>
+            <button onClick={() => unselectAll()}>Unselect All</button>
+            <br /><br />
+          </div>
+          </>
+        )}
         {importer.dirs_files.has_prev_file && (<span><a href="#" onClick={(e) => nextImportPhotosList(e, false)}>&lt;&lt; Prev&nbsp;</a></span>)}
         {importer.dirs_files.has_next_file && (<span><a href="#" onClick={(e) => nextImportPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
-        </div>
+
         <div className="photos">
-        <ul>
-        {importer.dirs_files.files.files.map((l,i) => {
-            return (
-              <li key={i} className={selectedForImport[l.path] ? "selected" : "notSelected"}><a href="#" id={l.path} onClick={() => selectPhoto(l.path)}><img src={convertFileSrc(l.path)} width="100" /></a></li>
-            );
-          })
-        }
-        </ul>
+          <ul id="importPhotosList">
+          {importer.dirs_files.files.files.map((l,i) => {
+              return (
+                <li key={i} className={selectedForImport[l.path] ? "selected" : "notSelected"}><a href="#" id={l.path} className="importPhoto" onClick={() => selectPhoto(l.path)}><img src={convertFileSrc(l.path)} width="100" /></a></li>
+              );
+            })
+          }
+          </ul>
         </div>
       </div>
       {/* SELECTED PHOTO INFO */}
       <div className={selectedPhotosClass}>
         <p>Selected Photos for import</p>
         {Object.keys(selectedForImport).length > 0 && <div><button type="button" onClick={() => importPhotos()}>Import Selected Photos</button></div>}
-        <ul>
+        <div>
+        {Object.keys(selectedForImport).length} photos are selected
+        </div>
+        <ul id="listOfselectedForImport">
         {Object.keys(selectedForImport).map((l, i) => {
           let rest = l.replace(/([^\/]+)$/, "");
           let filename = RegExp.$1;

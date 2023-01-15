@@ -1,7 +1,10 @@
-pub struct Config {
+pub struct Config<'a> {
     pub repository: RepositoryConfig,
-    pub import_to: String,
-    pub export_from: String,
+    pub import_to: &'a str,
+    pub export_from: &'a str,
+    pub thumbnail_store: &'a str,
+    pub copy_parallel: usize,
+    pub thumbnail_parallel: usize,
 }
 pub struct RepositoryConfig {
     pub store: String,
@@ -9,8 +12,8 @@ pub struct RepositoryConfig {
 }
 pub struct RepositoryOption {
 }
-impl Config {
-    pub fn new() -> Config {
+impl Config<'static> {
+    pub fn new() -> Config<'static> {
         // TODO: config from JSON
         Config{
             repository: RepositoryConfig {  
@@ -18,8 +21,11 @@ impl Config {
                 option: RepositoryOption {
                 }
             },
-            import_to: "example/import_to".to_string(),
-            export_from: "example/export_from".to_string(),
+            import_to: "/mnt/picture/",
+            export_from: "/media/ktat/LUMIX/",
+            thumbnail_store: "",
+            copy_parallel: 1,
+            thumbnail_parallel: 1,
         }
     }
 } 

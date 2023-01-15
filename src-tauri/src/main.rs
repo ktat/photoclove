@@ -1,5 +1,4 @@
-use std::ops::{Deref,DerefMut};
-
+use std::{thread, fs, path, sync::{Arc,Mutex}, future::Future};
 use domain::config::Config;
 use tauri::Manager;
 
@@ -21,7 +20,8 @@ mod repository;
 
 struct AppState {
     database: repository::RepoDB,
-    importer: importer::Importer,
+    import_progress: Mutex<importer::ImportProgress>,
+    config: Config<'static>,
 }
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -119,47 +119,79 @@ fn show_importer(
     state: tauri::State<AppState>,
 ) -> String {
     let mut path = "";
-    let c = Config::new();
+    let cp: String;
     if path_str.is_none() || path_str.unwrap() == "" {
-        path = c.export_from.as_str();
+        path = state.config.export_from;
     } else {
-        path = path_str.unwrap();
+        let p = path_str.unwrap();
+        let cpp = fs::canonicalize(path::Path::new(p));
+        if cpp.is_err() {
+            path = "/";
+        } else {
+            cp = cpp.unwrap().display().to_string();
+            path = cp.as_str();
+        }
+
     }
     let importer = importer::Importer::new(path.to_string(), page, num);
     let json = serde_json::to_string(&importer).unwrap();
+    println!("{:?}", &json);
     return json;
 }
 
 #[tauri::command]
 fn import_photos(
     files: Vec<&str>,
-    state: tauri::State<AppState>,
+    state: tauri::State<'_, AppState>,
 ) {
-    let importer = &state.importer;
+    // When now importing, do nothing.
+    if state.import_progress.lock().unwrap().now_importing {
+        return;
+    }
     let c = Config::new();
     let import_dir = file::Dir::new(c.import_to.to_string());
-    let path = &importer.dirs_files.dir.path;
-    let mut importer = importer::Importer::new(path.to_string(), importer.page, importer.num);
+    let arc_path = Arc::new(path::PathBuf::from(import_dir.path));
+    let np = state.config.copy_parallel.clone(); 
+    let mut importer_selected = importer::ImporterSelected::new();
     for file in files {
-        importer.add_photo_file(file::File::new(file.to_string()));
+        importer_selected.add_photo_file(file::File::new(file.to_string()));
     }
-    importer.import_photos(import_dir);
+    importer_selected.import_photos(arc_path, np, Arc::new(&state.import_progress));
 }
 
 #[tauri::command]
-fn select_file(
-    selected: Vec<&str>,
+fn get_import_progress (
+    state: tauri::State<AppState>,
+) -> String {
+    let ip = &state.import_progress;
+    let num = ip.lock().unwrap().num;
+    let finished = ip.lock().unwrap().get_import_progress();
+
+    if num <= finished {
+        ip.lock().unwrap().now_importing = false;
+        ip.lock().unwrap().num = 0;
+        ip.lock().unwrap().progress = 0;
+        ip.lock().unwrap().reset_import_progress();
+    } else {
+        ip.lock().unwrap().progress = finished;
+    }
+    drop(ip);
+    return serde_json::to_string(ip).unwrap();
+}
+
+#[tauri::command]
+fn get_photos_path_to_import_under_directory(
+    pathStr: &str,
     window: tauri::Window,
     state: tauri::State<AppState>,
 ) -> String {
-    let importer = &state.importer;
-    let path = &importer.dirs_files.dir.path;
-    let mut importer = importer::Importer::new(path.to_string(), importer.page, importer.num);
-    for path in selected {
-        importer.add_photo_file(file::File::new(path.to_string()));
+    let d = dir::Dir::new(pathStr.to_string());
+    let files = d.find_all_files();
+    let mut ret_files: Vec<String> = Vec::new();
+    for f in files.files {
+        ret_files.push(f.path);
     }
-    let json = serde_json::to_string(&state.importer).unwrap();
-    return json;
+    return serde_json::to_string(&ret_files).unwrap();
 }
 
 fn main() {
@@ -171,9 +203,11 @@ fn main() {
     // } else {
     //     db = repository::RepoDB::new("".to_string());
     // }
-    let mut state = AppState {
-         database: repository::RepoDB::new(c.import_to),
-         importer: importer::Importer::new(c.export_from, 1, 20),
+    let mut ip:importer::ImportProgress = importer::ImportProgress::new();
+    let state = AppState {
+         database: repository::RepoDB::new(c.import_to.to_string()),
+         import_progress: Mutex::new(ip),
+         config: c,
     };
     state.database.connect();
     tauri::Builder::default()
@@ -185,8 +219,9 @@ fn main() {
             get_next_photo,
             get_prev_photo,
             show_importer,
-            select_file,
             import_photos,
+            get_import_progress,
+            get_photos_path_to_import_under_directory,
             ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
