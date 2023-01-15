@@ -31,6 +31,7 @@ function App() {
   const [currentImportPath, setCurrentImportPath] = useState("");
   const [importProgress, setImportProgress] = useState({});
   const [photoLoading, setPhotoLoading] = useState(false);
+  const [moveHistory, setMoveHistrogy] = useState([]);
 
   const getDates = () => {
     invoke("get_dates").then((r) => {
@@ -96,6 +97,21 @@ function App() {
     nextImportPhotosList(e, isForward)
   }
 
+  function moveToTrashCan(f) {
+    invoke("move_to_trash", {dateStr: currentDate, pathStr: f,sortValue: parseInt(sort_of_photos)}).then((r) => {
+      console.log("target:", r);
+      if (!r) {
+        setCurrentDate("");
+        getPhotos(undefined, undefined);
+        setCurrentPhotoPath("");
+      } else {
+        setCurrentPhotoPath(r);
+        console.log("select photo:", r);        
+        displayPhoto(r)
+      }
+    });
+  }
+
   function nextImportPhotosList(e, isForward) {
     let target = document.getElementById("importPhotosDisplay");
     let page = target.getAttribute("data-page");
@@ -120,6 +136,8 @@ function photoNavigation(e) {
     nextPhoto(currentPhotoPath)
   } else if (e.keyCode === 37) {
     prevPhoto(currentPhotoPath)
+  } else if (e.keyCode === 46) {
+    moveToTrashCan(currentPhotoPath)
   }
 }
 
@@ -283,6 +301,9 @@ function photoScroll(e) {
       date = e.currentTarget.getAttribute("data-date");
      } else {
       date = currentDate;
+     }
+     if (!date || date == "") {
+        return;
      }
     let page = datePage[date];
     setCurrentDate(date)
@@ -463,6 +484,7 @@ function photoScroll(e) {
         || <a href="#" onClick={() => toggleCenterDisplay()}>close</a> ||&nbsp;&nbsp;
         <a href="#" onClick={() => nextPhoto(currentPhotoPath)}>next &gt;&gt;</a><br /><br />
         <div className="photo">
+        <a href="#" onClick={() => moveToTrashCan(currentPhotoPath)}>&#128465;</a>
         <img src={convertFileSrc(currentPhotoPath)} width={photoZoom} onWheel={(e) => photoScroll(e)} />
         </div>
         </div>

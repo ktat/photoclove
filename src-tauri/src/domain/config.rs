@@ -2,6 +2,7 @@ pub struct Config<'a> {
     pub repository: RepositoryConfig,
     pub import_to: &'a str,
     pub export_from: &'a str,
+    pub trash_path: &'a str,
     pub thumbnail_store: &'a str,
     pub copy_parallel: usize,
     pub thumbnail_parallel: usize,
@@ -21,6 +22,7 @@ impl Config<'static> {
                 option: RepositoryOption {
                 }
             },
+            trash_path: "/mnt/picture/.photoclove_trash/",
             import_to: "/mnt/picture/",
             export_from: "/media/ktat/LUMIX/",
             thumbnail_store: "",
