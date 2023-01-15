@@ -6,7 +6,7 @@ use crate::value::date;
 
 pub type RepoDB = crate::repository::db::directory::Directory;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Sort {
     Time,
     Name,
