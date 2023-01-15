@@ -449,8 +449,9 @@ function photoScroll(e) {
               <option value={300}>huge</option>
             </select>
             Sort:<select name="sort" onChange={(e) => changeSort(e, e.target.value)}>
-              <option value={0}>time</option>
-              <option value={1}>name</option>
+              <option value={0}>photo time</option>
+              <option value={1}>time</option>
+              <option value={2}>name</option>
             </select>
             Num:<select name="num" defaultValue="20" onChange={(e) => changeNumOfPhoto(e, e.target.value)}>
               <option value={10}>10</option>

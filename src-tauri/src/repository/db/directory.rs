@@ -41,10 +41,12 @@ impl RepositoryDB for Directory {
             let p = photo::Photo::new(f);
             photos.files.push(p)
         }
-        if sort == Sort::Time {
-            photos.files.sort_by(|a,b| a.file.created_date().cmp(&b.file.created_date()));
-        } else {
+        if sort == Sort::Name {
             photos.files.sort_by(|a,b| a.file.path.cmp(&b.file.path));
+        } else if sort == Sort::Time {
+            photos.files.sort_by(|a,b| a.file.created_date().cmp(&b.file.created_date()));
+        } else { // photo time
+            photos.files.sort_by(|a,b| a.time.cmp(&b.time));
         }
         photos
     }
