@@ -21,6 +21,9 @@ impl RepositoryDB for Directory {
                 dates.dates.push(d.unwrap())
             }
         }
+        dates.dates.sort_by(|a,b| 
+            b.to_string().cmp(&a.to_string())
+        );
         dates
     }
     fn get_photos_in_date(&self, date: date::Date, sort: Sort, num: u32, page: u32) -> photo::Photos {
@@ -37,6 +40,11 @@ impl RepositoryDB for Directory {
 
             let p = photo::Photo::new(f);
             photos.files.push(p)
+        }
+        if sort == Sort::Time {
+            photos.files.sort_by(|a,b| a.file.created_date().cmp(&b.file.created_date()));
+        } else {
+            photos.files.sort_by(|a,b| a.file.path.cmp(&b.file.path));
         }
         photos
     }

@@ -8,7 +8,7 @@ function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [dateList, setDateList] = useState([]);
   const [photos, setPhotosList] = useState({"files":[]});
-  const [photoInfo, setPhotoInfo] = useState("");
+  const [photoInfo, setPhotoInfo] = useState({});
   const [name, setName] = useState("");
   const [scrollLock, setScrollLock] = useState(false);
   const [icon_size, setIconSize] = useState(100);
@@ -203,10 +203,10 @@ function photoScroll(e) {
 
   function displayPhoto(f) {
     setPhotoZoom("100%");
+    getPhotoInfo(f);
     setCurrentPhotoPath(f);
     toggleCenterDisplay(true);
     document.getElementById("photoDisplay").focus();
-    getPhotoInfo(f);
   }
 
   function toggleCenterDisplay(t) {
@@ -277,6 +277,7 @@ function photoScroll(e) {
       if (r !== "")  {
         setPhotoZoom("100%");
         setCurrentPhotoPath(r);
+        getPhotoInfo(r);
       }
     });
   }
@@ -286,6 +287,7 @@ function photoScroll(e) {
       if (r !== "")  {
         setPhotoZoom("100%");
         setCurrentPhotoPath(r);
+        getPhotoInfo(r);
       }
     });
   }
@@ -330,18 +332,7 @@ function photoScroll(e) {
   async function getPhotoInfo(path) {
     await invoke("get_photo_info", {pathStr: path}).then((r) => {
       let data = JSON.parse(r);
-      let tag = (<table>
-        <tbody>
-          <tr><th>ISO</th><td>{data.ISO}</td></tr>
-          <tr><th>FNumber</th><td>{data.FNumber}</td></tr>
-          <tr><th>LensModel</th><td>{data.LensModel}</td></tr>
-          <tr><th>LensMake</th><td>{data.LensMake}</td></tr>
-          <tr><th>Make</th><td>{data.Make}</td></tr>
-          <tr><th>Model</th><td>{data.Model}</td></tr>
-          <tr><th>Date & Time</th><td>{data.DateTime}</td></tr>
-        </tbody>
-      </table>)
-      setPhotoInfo(tag);
+      setPhotoInfo(data);
     });
   };
 
@@ -430,8 +421,11 @@ function photoScroll(e) {
         <div className="dateList">
           <ul>
             {dateList.map((l,i) => {
-              let date = l.year + '/' + l.month + '/' + l.day;
-              return (<li key={i} ><a href="#" onClick={(e) => getPhotos(e, undefined)} data-date={date} data-page={datePage[date]}>{date}</a></li> )
+              let date = new Date(l.year + '/' + l.month + '/' + l.day).toLocaleString('default', {year: 'numeric', month: '2-digit', day: '2-digit'});
+              return (<li key={i} >
+                <a href="#" onClick={(e) => getPhotos(e, undefined)} data-date={date} data-page={datePage[date]}>
+                {date}
+                </a></li> )
               })
             }
           </ul>
@@ -557,7 +551,20 @@ function photoScroll(e) {
       {/* PHOTO INFO */}
       <div className={rightMenuClass}>
         <p>Photo Info</p>
-        <div>{photoInfo}</div>
+        <div>
+          <table>
+            <tbody>
+              <tr><th>File Name</th>{currentPhotoPath.replace(/^.+\//, '')}</tr>
+              <tr><th>ISO</th><td>{photoInfo.ISO}</td></tr>
+              <tr><th>FNumber</th><td>{photoInfo.FNumber}</td></tr>
+              <tr><th>LensModel</th><td>{photoInfo.LensModel}</td></tr>
+              <tr><th>LensMake</th><td>{photoInfo.LensMake}</td></tr>
+              <tr><th>Make</th><td>{photoInfo.Make}</td></tr>
+              <tr><th>Model</th><td>{photoInfo.Model}</td></tr>
+              <tr><th>Date & Time</th><td>{photoInfo.DateTime}</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
