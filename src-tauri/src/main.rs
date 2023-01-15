@@ -1,5 +1,6 @@
 use std::{thread, fs, path, sync::{Arc,Mutex}, future::Future};
 use domain::config::Config;
+use crate::domain_service::file_service;
 use tauri::Manager;
 
 use crate::repository::*;
@@ -194,8 +195,31 @@ fn get_photos_path_to_import_under_directory(
     return serde_json::to_string(&ret_files).unwrap();
 }
 
+#[tauri::command]
+fn move_to_trash (
+    path_str: &str,
+    date_str: &str,
+    sort_value: i32,
+    state: tauri::State<AppState>,
+) -> Option<String> {
+    let date = date::Date::from_string(&date_str.to_string());
+    let db = &state.database;
+    let mut photo = db.get_next_photo_in_date(path_str, date, repository::sort_from_int(sort_value));
+    if photo.is_none() {
+        let date = date::Date::from_string(&date_str.to_string());
+        photo = db.get_prev_photo_in_date(path_str, date, repository::sort_from_int(sort_value));
+    }
+    let trash = trash::Trash::new(state.config.trash_path.to_string());
+    let file = file::File::new(path_str.to_string());
+    file_service::move_to_trash(file, trash);
+
+    if photo.is_none() {
+        return Option::None;
+    } else {
+        return Option::Some(photo.unwrap().file.path);
+    }
+}
 fn main() {
-    use domain::config;
     use crate::repository::*;
     let c = config::Config::new();
     // if c.repository.store == "memory".to_string() {
@@ -222,6 +246,7 @@ fn main() {
             import_photos,
             get_import_progress,
             get_photos_path_to_import_under_directory,
+            move_to_trash,
             ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
