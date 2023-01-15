@@ -2,3 +2,4 @@
 /target/
 /Cargo.lock
 /src-tauri/example/
+/node_modules/

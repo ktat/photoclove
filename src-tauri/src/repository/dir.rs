@@ -18,6 +18,18 @@ pub struct DirsFiles {
     pub has_prev_file: bool,
 }
 
+impl DirsFiles {
+    pub fn new (path: String) -> DirsFiles {
+        DirsFiles {
+            dir: Dir{path: path},
+            dirs: file::Dirs::new(),
+            files:file::Files::new(),
+            has_next_file: false,
+            has_prev_file: false,
+        }
+    }
+}
+
 impl Dir {
     pub fn new (path: String) -> Dir{
         if path == "" {
@@ -25,14 +37,30 @@ impl Dir {
         }
         Dir{path: path}
     }
+
+    pub fn find_all_files(&self) -> file::Files {
+        let re = Regex::new(r"(?i)\.(?:jpe?g|gif|png)$").unwrap();
+        let readdir = fs::read_dir(&self.path);
+        let mut files = file::Files::new();
+        if readdir.is_ok() {
+            for entry in readdir.unwrap() {
+                let entry = entry.unwrap();
+                let entry_path = entry.path();
+                if entry_path.display().to_string() != ".".to_string() {
+                    if entry_path.is_file() && re.is_match(entry_path.display().to_string().as_str()) {
+                        files.files.push(file::File::new(entry_path.display().to_string()));
+                    }
+                }
+            }
+        } else {
+            panic!("Cannot readdir: {}\n", self.path.to_string())
+        }
+        return files;
+    }
+
     pub fn find_files_and_dirs(&self, sort: repository::Sort, page: u32, num: u32) -> DirsFiles {
-        let mut df = DirsFiles{
-            dir: self.clone(),
-            dirs: file::Dirs::new(),
-            files:file::Files::new(),
-            has_next_file: false,
-            has_prev_file: false,
-        };
+        print!("find_all_files\n");
+        let mut df = DirsFiles::new(self.path.clone());
         let re = Regex::new(r"(?i)\.(?:jpe?g|gif|png)$").unwrap();
         let readdir = fs::read_dir(&self.path);
         if readdir.is_ok() {
@@ -58,14 +86,16 @@ impl Dir {
                         }
                         df.files.files.push(file::File::new(entry_path.display().to_string()));
                         i += 1
-                    } else if (!entry_path.is_file()) {
+                    } else if (entry_path.is_dir()) {
                         df.dirs.dirs.push(file::Dir::new(entry_path.display().to_string()));
+                    } else {
+                        print!("not target: {:?}", entry_path);
                     }
                 }
             }
             return df
         } else {
-            panic!("Cannot readdir: {}", self.path.to_string())
+            return DirsFiles::new(self.path.clone());
         }
     }
 }
