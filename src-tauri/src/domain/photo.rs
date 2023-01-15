@@ -5,6 +5,7 @@ use serde::{Serialize, Deserialize};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Photo {
     pub file: file::File,
+    pub time: String,
     pub meta_data: meta::MetaData,
 }
 
@@ -17,8 +18,10 @@ pub struct Photos {
 
 impl Photo {
     pub fn new(file: file::File) -> Photo {
+        let meta = meta::MetaData::new(file.clone());
         Photo {
             file: file,
+            time: meta.DateTime,
             meta_data: meta::MetaData::empty(),
         }
     }

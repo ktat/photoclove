@@ -8,15 +8,17 @@ pub type RepoDB = crate::repository::db::directory::Directory;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Sort {
+    PhotoTime,
     Time,
     Name,
 }
 
 pub fn sort_from_int(i: i32) -> Sort {
     match i {
-        0 => Sort::Time,
+        0 => Sort::PhotoTime,
         1 => Sort::Name,
-        _default => Sort::Time,
+        2 => Sort::Name,
+        _ => Sort::PhotoTime,
     }
 }
 
