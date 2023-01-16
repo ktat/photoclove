@@ -3,6 +3,7 @@ pub struct Config<'a> {
     pub import_to: &'a str,
     pub export_from: &'a str,
     pub trash_path: &'a str,
+    pub data_path: &'a str,
     pub thumbnail_store: &'a str,
     pub copy_parallel: usize,
     pub thumbnail_parallel: usize,
@@ -22,9 +23,10 @@ impl Config<'static> {
                 option: RepositoryOption {
                 }
             },
+            data_path: "/home/ktat/.config/photoclove/",
             trash_path: "/mnt/picture/.photoclove_trash/",
-            import_to: "/mnt/picture/",
-            export_from: "/media/ktat/LUMIX/",
+            import_to: "/mnt/picture/00 pictures/",
+            export_from: "/media/ktat/",
             thumbnail_store: "",
             copy_parallel: 1,
             thumbnail_parallel: 1,
