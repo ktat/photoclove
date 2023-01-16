@@ -20,7 +20,7 @@ mod repository;
 )]
 
 struct AppState {
-    database: repository::RepoDB,
+    repo_db: repository::RepoDB,
     import_progress: Mutex<importer::ImportProgress>,
     config: Config<'static>,
 }
@@ -37,7 +37,7 @@ fn get_dates(
     state: tauri::State<AppState>,
 ) -> String {
     println!("get_dats is called from {}", window.label());
-    let db = &state.database;
+    let db = &state.repo_db;
     let dates = db.get_dates();
     dates.to_json()
 }
@@ -53,7 +53,7 @@ fn get_photos(
 ) -> String {
     let date = date::Date::from_string(&date_str.to_string());
     println!("get_photos is called from {}", window.label());
-    let db = &state.database;
+    let db = &state.repo_db;
     let photos = db.get_photos_in_date(date, repository::sort_from_int(sort_value), num, page);
     photos.to_json()
 }
@@ -68,7 +68,7 @@ fn get_next_photo(
 ) -> String {
     let date = date::Date::from_string(&date_str.to_string());
     println!("get_photos is called from {}", window.label());
-    let db = &state.database;
+    let db = &state.repo_db;
     let photo = db.get_next_photo_in_date(path, date, repository::sort_from_int(sort_value));
     if photo.is_some() {
         return photo.unwrap().file.path;
@@ -87,7 +87,7 @@ fn get_prev_photo(
 ) -> String {
     let date = date::Date::from_string(&date_str.to_string());
     println!("get_photos is called from {}", window.label());
-    let db = &state.database;
+    let db = &state.repo_db;
     let photo = db.get_prev_photo_in_date(path, date, repository::sort_from_int(sort_value));
     if photo.is_some() {
         let f = photo.unwrap().file.path;
@@ -104,7 +104,7 @@ fn get_photo_info(
     window: tauri::Window,
     state: tauri::State<AppState>,
 ) -> String {
-    let db = &state.database;
+    let db = &state.repo_db;
     let photo = photo::Photo::new(file::File::new(path_str.to_string()));
     let meta = meta::MetaData::new(photo.file);
     let json = serde_json::to_string(&meta).unwrap();
@@ -203,7 +203,7 @@ fn move_to_trash (
     state: tauri::State<AppState>,
 ) -> Option<String> {
     let date = date::Date::from_string(&date_str.to_string());
-    let db = &state.database;
+    let db = &state.repo_db;
     let mut photo = db.get_next_photo_in_date(path_str, date, repository::sort_from_int(sort_value));
     if photo.is_none() {
         let date = date::Date::from_string(&date_str.to_string());
@@ -229,11 +229,11 @@ fn main() {
     // }
     let mut ip:importer::ImportProgress = importer::ImportProgress::new();
     let state = AppState {
-         database: repository::RepoDB::new(c.import_to.to_string()),
+         repo_db: repository::RepoDB::new(c.import_to.to_string()),
          import_progress: Mutex::new(ip),
          config: c,
     };
-    state.database.connect();
+    state.repo_db.connect();
     tauri::Builder::default()
         .setup(|app| {app.manage(state); Ok(())})
         .invoke_handler(tauri::generate_handler![
