@@ -153,7 +153,7 @@ fn import_photos(
     let import_dir = file::Dir::new(c.import_to.to_string());
     let arc_path = Arc::new(path::PathBuf::from(import_dir.path));
     let np = state.config.copy_parallel.clone(); 
-    let mut importer_selected = importer::ImporterSelected::new();
+    let mut importer_selected = importer::ImporterSelectedFiles::new();
     for file in files {
         importer_selected.add_photo_file(file::File::new(file.to_string()));
     }
