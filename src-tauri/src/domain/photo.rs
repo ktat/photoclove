@@ -25,13 +25,6 @@ impl Photo {
             meta_data: meta::MetaData::empty(),
         }
     }
-    pub fn fast_new(file: file::File) -> Photo {
-        Photo {
-            file: file,
-            time: "".to_string(),
-            meta_data: meta::MetaData::empty(),
-        }
-    }
 }
 
 impl Photos {

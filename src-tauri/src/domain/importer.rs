@@ -16,6 +16,10 @@ pub struct Importer {
     pub num: u32,
 }
 
+pub struct ImporterSelectedFiles {
+    selected_photo_files: Vec<file::File>
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ImportProgress {
     pub now_importing: bool,
@@ -41,10 +45,6 @@ impl ImportProgress {
     }
 }
 
-pub struct ImporterSelected {
-    selected_photos: Vec<photo::Photo>
-}
-
 fn copy_file(src: &str, dst: &path::PathBuf) -> io::Result<usize> {
     let src_path = path::Path::new(src);
     let src_file = fs::File::open(src_path).unwrap();
@@ -67,10 +67,10 @@ fn copy_file(src: &str, dst: &path::PathBuf) -> io::Result<usize> {
     Ok(total_bytes)
 }
 
-impl ImporterSelected {
-    pub fn new() -> ImporterSelected {
-        ImporterSelected{
-            selected_photos: Vec::new(),
+impl ImporterSelectedFiles {
+    pub fn new() -> ImporterSelectedFiles {
+        ImporterSelectedFiles{
+            selected_photo_files: Vec::new(),
         }
     }
 
@@ -81,40 +81,40 @@ impl ImporterSelected {
         progress: Arc<&Mutex<ImportProgress>>
     ) -> bool {
         progress.lock().unwrap().now_importing = true;
-        progress.lock().unwrap().num = self.selected_photos.len();
+        progress.lock().unwrap().num = self.selected_photo_files.len();
         let mut handles = vec![];
-        let mut photos_chunks :Vec<Vec<photo::Photo>> = Vec::new();
-        let len = self.selected_photos.len();
+        let mut photos_file_chunks :Vec<Vec<file::File>> = Vec::new();
+        let len = self.selected_photo_files.len();
         let n = len / copy_parallel;
         let mut i = 0;
-        let mut photos: Vec<photo::Photo> = Vec::new();
-        for photo in &self.selected_photos {
-            photos.push(photo::Photo::fast_new(file::File::new(photo.file.path.clone())));
+        let mut files: Vec<file::File> = Vec::new();
+        for file in &self.selected_photo_files {
+            files.push(file::File::new(file.path.clone()));
             i += 1;
             if i > n {
-                photos_chunks.push(photos);
+                photos_file_chunks.push(files);
                 i = 0;
-                photos = Vec::new();
+                files = Vec::new();
             }
         }
-        if photos.len() > 0 {
-            photos_chunks.push(photos);
+        if files.len() > 0 {
+            photos_file_chunks.push(files);
         }
-        let ln = photos_chunks.len();
+        let ln = photos_file_chunks.len();
         
         let ten_millis = time::Duration::from_millis(100);
         let t1 = time::SystemTime::now();
-        for photos in photos_chunks {
+        for files in photos_file_chunks {
             let arc_path = Arc::clone(&destination_dir);
             let handle = thread::spawn(move || {
             let mut n: usize= 0;
-            for photo in photos {
-                let filename = photo.file.filename();
-                let destination_date_dir = arc_path.join(photo.file.created_date());
+            for file in files {
+                let filename = file.filename();
+                let destination_date_dir = arc_path.join(file.created_date());
                 let destination_path = destination_date_dir.join(filename);
                 // TODO: check directory exists.
                 fs::create_dir(destination_date_dir.clone());
-                let p = photo.file.path.clone();
+                let p = file.path.clone();
                 if p == destination_path.display().to_string() {
                      println!("ignore same file: {:?} to {:?}\n", p, destination_path);
                 } else {
@@ -146,20 +146,9 @@ impl ImporterSelected {
     }
 
     pub fn add_photo_file(&mut self, file: file::File) {
-        self.selected_photos.push(photo::Photo::fast_new(file));
+        self.selected_photo_files.push(file);
     }
 
-    pub fn remove_photo_file (&mut self, file: file::File) {
-        let mut new_photos: Vec<photo::Photo> = Vec::new();
-        for photo in &self.selected_photos {
-            if photo.file.path != file.path {
-                new_photos.push(photo::Photo::new(photo.file.clone()))
-            }
-        }
-        self.selected_photos = new_photos
-    }
-
-    
 }
 
 impl Importer {
