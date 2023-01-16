@@ -91,7 +91,7 @@ fn get_prev_photo(
     let photo = db.get_prev_photo_in_date(path, date, repository::sort_from_int(sort_value));
     if photo.is_some() {
         let f = photo.unwrap().file.path;
-        println!("path: {}", f);
+        // println!("path: {}", f);
         return f;
     } else {
         return "".to_string();
@@ -136,7 +136,7 @@ fn show_importer(
     }
     let importer = importer::Importer::new(path.to_string(), page, num);
     let json = serde_json::to_string(&importer).unwrap();
-    println!("{:?}", &json);
+    // println!("{:?}", &json);
     return json;
 }
 

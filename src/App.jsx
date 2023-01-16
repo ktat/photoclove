@@ -32,6 +32,8 @@ function App() {
   const [importProgress, setImportProgress] = useState({});
   const [photoLoading, setPhotoLoading] = useState(false);
   const [moveHistory, setMoveHistrogy] = useState([]);
+  const [dragPhotoInfo, setDragPhotoInfo] = useState([]);
+  const [photoDisplayImgClass, setPhotoDisplayImgClass] = useState("");
 
   const getDates = () => {
     invoke("get_dates").then((r) => {
@@ -44,7 +46,7 @@ function App() {
     if (currentDate != "") {
       delete datePage[currentDate];
       photos.files = [];
-      setPhotosList({"files": []});      
+      setPhotosList({"files": []});
       setDatePage({});
       getPhotos(undefined, true);
     }
@@ -56,7 +58,7 @@ function App() {
     }
 
     setScrollLock(true);
-    
+
     let isForward = true;
     if (e.deltaY < 0) {
       isForward = false;
@@ -106,7 +108,7 @@ function App() {
         setCurrentPhotoPath("");
       } else {
         setCurrentPhotoPath(r);
-        console.log("select photo:", r);        
+        console.log("select photo:", r);
         displayPhoto(r)
       }
     });
@@ -142,9 +144,6 @@ function photoNavigation(e) {
 }
 
 async function importPhotos() {
-  await invoke("import_photos", {files: Object.keys(selectedForImport)}).then((r) => {
-    setSelectedForImport({})
-  });
   const fn = (f) => {
     invoke("get_import_progress").then((r) => {
       let data = JSON.parse(r);
@@ -154,7 +153,31 @@ async function importPhotos() {
       }
     })
   };
-  setTimeout(() => {fn(fn)}, 1000);
+  console.log("invoke import_photos");
+  await invoke("import_photos", {files: Object.keys(selectedForImport)}).then((r) => {
+    setSelectedForImport({});
+    setTimeout(() => {fn(fn)}, 1000);
+  });
+}
+
+function dragPhotoStart(e) {
+  setPhotoDisplayImgClass("photo_dragging");
+  setDragPhotoInfo({is_dragging: true, x: e.clientX, y: e.clientY});
+}
+
+function dragPhoto(e) {
+  if (dragPhotoInfo.is_dragging) {
+    let x = e.clientX - dragPhotoInfo.x;
+    let y = e.clientY - dragPhotoInfo.y;
+    let display = e.currentTarget.parentElement;
+    display.scrollTop -= y / 20;
+    display.scrollLeft -= x / 20;
+  }
+}
+
+function dragPhotoEnd(e) {
+  setPhotoDisplayImgClass("");
+  setDragPhotoInfo({});
 }
 
 // TODO: not correct scroll adjustment.
@@ -414,7 +437,7 @@ function photoScroll(e) {
             </button>
           </div>
         </div>
-  
+
         <p>{greetMsg}</p>
 
         <p>List of Date <a href="#" onClick={() => getDates()}>load dates</a></p>
@@ -431,11 +454,11 @@ function photoScroll(e) {
           </ul>
         </div>
       </div>
-      
+
       {/* CENTER DISPLAY */}
       <div id="photoLoading" className={photoLoading ? "photoLoadingOn" : "photoLoadingOff"}>
         <h1>Now Loading Photos ...</h1>
-        <div class="lds-dual-ring"></div>
+        <div className="lds-dual-ring"></div>
       </div>
       <div className={centerDisplayClass} id="photoList" onWheel={(e) => photosScroll(e)} data-date={currentDate} data-page={datePage[currentDate]}>
         <div>
@@ -468,7 +491,7 @@ function photoScroll(e) {
         <div className="photos">
             {photos.files.map((l,i) => {
               return <li key={i}><a href="#"  onClick={() => {displayPhoto(l.file.path)}}><img width={icon_size} src={convertFileSrc(l.file.path)} /></a>
-              <a href="#" onClick={() => getPhotoInfo(l.file.path)} >(&#8505;)</a></li>         
+              <a href="#" onClick={() => getPhotoInfo(l.file.path)} >(&#8505;)</a></li>
             })}
         </div>
       </div>
@@ -478,9 +501,9 @@ function photoScroll(e) {
         <a href="#" onClick={() => prevPhoto(currentPhotoPath)}>&lt;&lt; prev</a>&nbsp;&nbsp;
         || <a href="#" onClick={() => toggleCenterDisplay()}>close</a> ||&nbsp;&nbsp;
         <a href="#" onClick={() => nextPhoto(currentPhotoPath)}>next &gt;&gt;</a><br /><br />
-        <div className="photo">
         <a href="#" onClick={() => moveToTrashCan(currentPhotoPath)}>&#128465;</a>
-        <img src={convertFileSrc(currentPhotoPath)} width={photoZoom} onWheel={(e) => photoScroll(e)} />
+        <div className="photo">
+        <img className={photoDisplayImgClass} src={convertFileSrc(currentPhotoPath)} width={photoZoom} onMouseDown={(e) => dragPhotoStart(e)} onMouseMove={(e) => dragPhoto(e)} onMouseUp={(e)=> dragPhotoEnd(e)} onWheel={(e) => photoScroll(e)} />
         </div>
         </div>
       {/* IMPORT DISPLAY */}

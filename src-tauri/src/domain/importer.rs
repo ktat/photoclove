@@ -89,7 +89,7 @@ impl ImporterSelected {
         let mut i = 0;
         let mut photos: Vec<photo::Photo> = Vec::new();
         for photo in &self.selected_photos {
-            photos.push(photo::Photo::new(file::File::new(photo.file.path.clone())));
+            photos.push(photo::Photo::fast_new(file::File::new(photo.file.path.clone())));
             i += 1;
             if i > n {
                 photos_chunks.push(photos);
@@ -146,7 +146,7 @@ impl ImporterSelected {
     }
 
     pub fn add_photo_file(&mut self, file: file::File) {
-        self.selected_photos.push(photo::Photo::new(file));
+        self.selected_photos.push(photo::Photo::fast_new(file));
     }
 
     pub fn remove_photo_file (&mut self, file: file::File) {
