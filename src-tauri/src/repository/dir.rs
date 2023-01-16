@@ -59,7 +59,6 @@ impl Dir {
     }
 
     pub fn find_files_and_dirs(&self, sort: repository::Sort, page: u32, num: u32) -> DirsFiles {
-        print!("find_all_files\n");
         let mut df = DirsFiles::new(self.path.clone());
         let re = Regex::new(r"(?i)\.(?:jpe?g|gif|png)$").unwrap();
         let readdir = fs::read_dir(&self.path);
@@ -89,7 +88,7 @@ impl Dir {
                     } else if (entry_path.is_dir()) {
                         df.dirs.dirs.push(file::Dir::new(entry_path.display().to_string()));
                     } else {
-                        print!("not target: {:?}", entry_path);
+                        // print!("not target: {:?}", entry_path);
                     }
                 }
             }
