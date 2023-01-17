@@ -147,6 +147,7 @@ fn import_photos(
 ) {
     // When now importing, do nothing.
     if state.import_progress.lock().unwrap().now_importing {
+        eprintln!("now importing ...");
         return;
     }
     let c = Config::new();
@@ -168,15 +169,14 @@ fn get_import_progress (
     let num = ip.lock().unwrap().num;
     let finished = ip.lock().unwrap().get_import_progress();
 
+    let mut locked = ip.lock().unwrap();
     if num <= finished {
-        ip.lock().unwrap().now_importing = false;
-        ip.lock().unwrap().num = 0;
-        ip.lock().unwrap().progress = 0;
-        ip.lock().unwrap().reset_import_progress();
+        locked.reset_import_progress();
     } else {
-        ip.lock().unwrap().progress = finished;
+        locked.progress = finished;
+        locked.num_per_sec = (locked.num - locked.progress) as f32 / locked.current_time as f32;
     }
-    drop(ip);
+    drop(locked);
     return serde_json::to_string(ip).unwrap();
 }
 

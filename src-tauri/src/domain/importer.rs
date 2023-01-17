@@ -1,12 +1,11 @@
 use crate::value::file;
-use super::photo;
 use crate::repository;
 use crate::repository::dir;
 use serde::{Serialize, Deserialize};
 use std::{thread,time,fs,path,sync::{Arc,Mutex},io::{self, Write, Read}};
 use std::sync::atomic::{AtomicUsize, Ordering};
+use filetime;
 
-const BLOCK_SIZE: usize = 16 * 1024 * 1024; // 16MB
 static IN_PROGRESS_NUM: AtomicUsize = AtomicUsize::new(1);
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -22,49 +21,49 @@ pub struct ImporterSelectedFiles {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ImportProgress {
+    pub start_time: time::SystemTime,
+    pub current_time: u64,
     pub now_importing: bool,
     pub progress: usize,
     pub num: usize,
+    pub num_per_sec: f32,
 }
 
 impl ImportProgress {
     pub fn new() -> ImportProgress {
         return ImportProgress{
+            start_time: time::SystemTime::now(),
+            current_time: 0,
             now_importing: false,
             num: 0,
             progress: 0,
+            num_per_sec: 0.0,
         };
     }
 
-    pub fn get_import_progress(&self) -> usize {
+    pub fn get_import_progress(&mut self) -> usize {
+        self.current_time = time::SystemTime::now().duration_since(self.start_time).unwrap().as_secs();
         return IN_PROGRESS_NUM.load(Ordering::SeqCst)
     }
 
-    pub fn reset_import_progress(&self)  {
+    pub fn reset_import_progress(&mut self)  {
+        self.now_importing = false;
+        self.num = 0;
+        self.progress = 0;
+        self.num_per_sec = 0.0;
+        self.start_time = time::SystemTime::now();
         IN_PROGRESS_NUM.store(0, Ordering::SeqCst)
     }
 }
 
-fn copy_file(src: &str, dst: &path::PathBuf) -> io::Result<usize> {
-    let src_path = path::Path::new(src);
-    let src_file = fs::File::open(src_path).unwrap();
-    let dst_file = fs::File::create(dst.as_path()).unwrap();
+fn copy_file (from: &str, to: &str) -> io::Result<u64> {
+    let result = fs::copy(from.clone(), to.clone());
 
-    let mut reader = io::BufReader::new(src_file);
-    let mut writer = dst_file;
-    let mut buffer = [0u8; BLOCK_SIZE];
-    let mut total_bytes = 0;
+    let meta = std::fs::metadata(from).unwrap();
+    let ft = filetime::FileTime::from_system_time(meta.modified().unwrap());
+    filetime::set_file_mtime(to, ft)?;
 
-    loop {
-        let bytes_read = reader.read(&mut buffer).unwrap();
-        if bytes_read == 0 {
-            break;
-        }
-        total_bytes += bytes_read;
-        writer.write_all(&buffer[..bytes_read])?;
-    }
-
-    Ok(total_bytes)
+    result
 }
 
 impl ImporterSelectedFiles {
@@ -102,39 +101,41 @@ impl ImporterSelectedFiles {
         }
         let ln = photos_file_chunks.len();
         
-        let ten_millis = time::Duration::from_millis(100);
+        let sleep_millis = time::Duration::from_millis(100);
         let t1 = time::SystemTime::now();
         for files in photos_file_chunks {
             let arc_path = Arc::clone(&destination_dir);
             let handle = thread::spawn(move || {
-            let mut n: usize= 0;
-            for file in files {
-                let filename = file.filename();
-                let destination_date_dir = arc_path.join(file.created_date());
-                let destination_path = destination_date_dir.join(filename);
-                // TODO: check directory exists.
-                fs::create_dir(destination_date_dir.clone());
-                let p = file.path.clone();
-                if p == destination_path.display().to_string() {
-                     println!("ignore same file: {:?} to {:?}\n", p, destination_path);
-                } else {
-                    let result = fs::copy(p, destination_path.clone());
-                    // let result = copy_file(&p, &destination_path.clone());
-                    thread::sleep(ten_millis);
-                    // print!("copy {:?} to {:?}\n", p, destination_path);
-                    if result.is_err() {
-                        println!("copy error: {:?}: {}", result.err(), destination_path.display());
+                let mut n: usize= 0;
+                for file in files {
+                    let filename = file.filename();
+                    let destination_date_dir = arc_path.join(file.created_date());
+                    let destination_path = destination_date_dir.join(filename);
+                    // TODO: check directory exists.
+                    fs::create_dir(destination_date_dir.clone());
+                    let p = file.path.clone();
+                    if p == destination_path.display().to_string() {
+                         eprintln!("ignore same file: {:?} to {:?}\n", p, destination_path);
+                    } else {
+                        let result = copy_file(&p, &destination_path.display().to_string());
+                        thread::sleep(sleep_millis);
+                        // print!("copy {:?} to {:?}\n", p, destination_path);
+                        if result.is_err() {
+                            eprintln!("copy error: {:?}: {}", result.err(), destination_path.display());
+                        }
+                    }
+                    let t2 = time::SystemTime::now();
+                    let diff = t2.duration_since(t1).unwrap();
+                    n += 1;
+                    if diff.as_secs() > 2 {
+                        let current_num = IN_PROGRESS_NUM.load(Ordering::SeqCst);
+                        IN_PROGRESS_NUM.store(current_num + n, Ordering::SeqCst);
                     }
                 }
-                let t2 = time::SystemTime::now();
-                let diff = t2.duration_since(t1).unwrap();
-                n += 1;
-                if diff.as_secs() > 2 {
-                    let current_num = IN_PROGRESS_NUM.load(Ordering::SeqCst);
-                    IN_PROGRESS_NUM.store(current_num + n, Ordering::SeqCst);
-                    n = 0;
-                }
-            }});
+                let current_num = IN_PROGRESS_NUM.load(Ordering::SeqCst);
+                IN_PROGRESS_NUM.store(current_num + n, Ordering::SeqCst);
+                n = 0;
+            });
             handles.push(handle);
         }
         drop(progress);

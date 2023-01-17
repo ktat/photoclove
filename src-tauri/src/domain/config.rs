@@ -26,9 +26,10 @@ impl Config<'static> {
             data_path: "/home/ktat/.config/photoclove/",
             trash_path: "/mnt/picture/.photoclove_trash/",
             import_to: "/mnt/picture/00 pictures/",
+            // import_to: "example/import_to/",
             export_from: "/media/ktat/",
             thumbnail_store: "",
-            copy_parallel: 1,
+            copy_parallel: 2,
             thumbnail_parallel: 1,
         }
     }

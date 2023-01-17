@@ -148,7 +148,7 @@ async function importPhotos() {
     invoke("get_import_progress").then((r) => {
       let data = JSON.parse(r);
       setImportProgress(data);
-      if (data.now_importing && data.num >= data.progress) {
+      if (data.now_importing) {
         setTimeout(() => { f(f) }, 1000);
       }
     })
@@ -156,7 +156,7 @@ async function importPhotos() {
   console.log("invoke import_photos");
   await invoke("import_photos", {files: Object.keys(selectedForImport)}).then((r) => {
     setSelectedForImport({});
-    setTimeout(() => {fn(fn)}, 1000);
+    setTimeout(() => {fn(fn)}, 1);
   });
 }
 
@@ -509,8 +509,14 @@ function photoScroll(e) {
       {/* IMPORT DISPLAY */}
       <div className={importDisplayClass} id="importPhotosDisplay" onWheel={(e) => importPhotosScroll(e)}  data-path={currentImportPath} data-page={pathPage[currentImportPath]}>
         <p>Import Photos</p>
-        {importProgress.now_importing && <span>Now Importing...</span>}
-        {importProgress.now_importing && <span>{importProgress.progress} / {importProgress.num}</span>}
+        {importProgress.now_importing && (<>
+          <span>Now Importing...</span>
+          <span>{importProgress.progress} / {importProgress.num}</span><br />
+          <span>({parseInt(importProgress.num_per_sec * 1000) / 1000} /sec : {parseInt((importProgress.num - importProgress.progress) / (importProgress.num_per_sec))} secs left)</span>
+          </>)}
+          {!importProgress.now_importing && importProgress.start_time && importProgress.start_time.secs_since_epoch && (<>
+            <span>Last Import: {new Date(importProgress.start_time.secs_since_epoch * 1000).toLocaleString("default", {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit'})}</span>
+          </>)}
         <p>Directories (path: {currentImportPath}):</p>
         <ul>
           {(importer.dirs_files.dirs.dirs.length == 0 || importer.dirs_files.dirs.dirs[0].path.match("^/[^\/]+/.+$")) &&
