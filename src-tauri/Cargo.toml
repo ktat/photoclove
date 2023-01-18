@@ -26,6 +26,8 @@ filetime = "*"
 file-lock = "*"
 csv = "*"
 tempfile = "*"
+dirs = "*"
+serde_yaml = "*"
 
 [features]
 # by default Tauri runs in production mode
