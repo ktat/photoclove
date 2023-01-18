@@ -42,3 +42,30 @@ Just a plan, currentrly a few features are only implementead.
   - directory(import to)
   - directory date format(currentry, yyyy-mm-dd only)
 - i18n(low priority)
+
+## Configuration file
+
+Create config file "~/.photoclove.yml".
+
+For example:
+
+```yaml
+# The path in which deleted files are put
+trash_path: "/mnt/picture/.photoclove_trash/"
+# The path to which photo files are imported
+import_to: "/mnt/picture/00 pictures/"
+# The path from which photo files are exported
+export_from: "/media/ktat/"
+# Copy files
+copy_parallel: 2
+# Currenty not used
+thumbnail_parallel: 1
+# Currenty not used
+repository:
+  option: {}
+  store: "directory"
+# Currentry not used
+data_path: "/home/ktat/.config/photoclove/"
+# Currenty not used
+thumbnail_store: ""
+```

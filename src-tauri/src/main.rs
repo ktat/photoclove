@@ -1,18 +1,24 @@
-use std::{thread, fs, path, sync::{Arc,Mutex}, future::Future};
-use domain::config::Config;
 use crate::domain_service::file_service;
+use domain::config::Config;
+use std::{
+    fs,
+    future::Future,
+    path,
+    sync::{Arc, Mutex},
+    thread,
+};
 use tauri::Manager;
 
-use crate::repository::*;
 use crate::domain::importer;
-use crate::repository::RepositoryDB;
-use crate::value::*;
 use crate::domain::*;
+use crate::repository::RepositoryDB;
+use crate::repository::*;
+use crate::value::*;
 
-mod value;
 mod domain;
 mod domain_service;
 mod repository;
+mod value;
 
 #[cfg_attr(
     all(not(debug_assertions), target_os = "windows"),
@@ -22,7 +28,7 @@ mod repository;
 struct AppState {
     repo_db: repository::RepoDB,
     import_progress: Mutex<importer::ImportProgress>,
-    config: Config<'static>,
+    config: Config,
 }
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -32,10 +38,7 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
-fn get_dates(
-    window: tauri::Window,
-    state: tauri::State<AppState>,
-) -> String {
+fn get_dates(window: tauri::Window, state: tauri::State<AppState>) -> String {
     println!("get_dats is called from {}", window.label());
     let db = &state.repo_db;
     let dates = db.get_dates();
@@ -99,11 +102,7 @@ fn get_prev_photo(
 }
 
 #[tauri::command]
-fn get_photo_info(
-    path_str: &str,
-    window: tauri::Window,
-    state: tauri::State<AppState>,
-) -> String {
+fn get_photo_info(path_str: &str, window: tauri::Window, state: tauri::State<AppState>) -> String {
     let db = &state.repo_db;
     let photo = photo::Photo::new(file::File::new(path_str.to_string()));
     let meta = meta::MetaData::new(photo.file);
@@ -122,7 +121,7 @@ fn show_importer(
     let mut path = "";
     let cp: String;
     if path_str.is_none() || path_str.unwrap() == "" {
-        path = state.config.export_from;
+        path = &state.config.export_from;
     } else {
         let p = path_str.unwrap();
         let cpp = fs::canonicalize(path::Path::new(p));
@@ -132,7 +131,6 @@ fn show_importer(
             cp = cpp.unwrap().display().to_string();
             path = cp.as_str();
         }
-
     }
     let importer = importer::Importer::new(path.to_string(), page, num);
     let json = serde_json::to_string(&importer).unwrap();
@@ -141,10 +139,7 @@ fn show_importer(
 }
 
 #[tauri::command]
-fn import_photos(
-    files: Vec<&str>,
-    state: tauri::State<'_, AppState>,
-) {
+fn import_photos(files: Vec<&str>, state: tauri::State<'_, AppState>) {
     // When now importing, do nothing.
     if state.import_progress.lock().unwrap().now_importing {
         eprintln!("now importing ...");
@@ -153,18 +148,21 @@ fn import_photos(
     let c = Config::new();
     let import_dir = file::Dir::new(c.import_to.to_string());
     let arc_path = Arc::new(path::PathBuf::from(import_dir.path));
-    let np = state.config.copy_parallel.clone(); 
+    let np = state.config.copy_parallel.clone();
     let mut importer_selected = importer::ImporterSelectedFiles::new();
     for file in files {
         importer_selected.add_photo_file(file::File::new(file.to_string()));
     }
-    importer_selected.import_photos(&state.repo_db, arc_path, np, Arc::new(&state.import_progress));
+    importer_selected.import_photos(
+        &state.repo_db,
+        arc_path,
+        np,
+        Arc::new(&state.import_progress),
+    );
 }
 
 #[tauri::command]
-fn get_import_progress (
-    state: tauri::State<AppState>,
-) -> String {
+fn get_import_progress(state: tauri::State<AppState>) -> String {
     let ip = &state.import_progress;
     let num = ip.lock().unwrap().num;
     let finished = ip.lock().unwrap().get_import_progress();
@@ -196,7 +194,7 @@ fn get_photos_path_to_import_under_directory(
 }
 
 #[tauri::command]
-fn move_to_trash (
+fn move_to_trash(
     path_str: &str,
     date_str: &str,
     sort_value: i32,
@@ -204,7 +202,8 @@ fn move_to_trash (
 ) -> Option<String> {
     let date = date::Date::from_string(&date_str.to_string(), Option::None);
     let db = &state.repo_db;
-    let mut photo = db.get_next_photo_in_date(path_str, date, repository::sort_from_int(sort_value));
+    let mut photo =
+        db.get_next_photo_in_date(path_str, date, repository::sort_from_int(sort_value));
     if photo.is_none() {
         let date = date::Date::from_string(&date_str.to_string(), Option::None);
         photo = db.get_prev_photo_in_date(path_str, date, repository::sort_from_int(sort_value));
@@ -227,17 +226,21 @@ fn main() {
     // } else {
     //     db = repository::RepoDB::new("".to_string());
     // }
-    let mut ip:importer::ImportProgress = importer::ImportProgress::new();
+    let mut ip: importer::ImportProgress = importer::ImportProgress::new();
     let state = AppState {
-         repo_db: repository::RepoDB::new(c.import_to.to_string()),
-         import_progress: Mutex::new(ip),
-         config: c,
+        repo_db: repository::RepoDB::new(c.import_to.to_string()),
+        import_progress: Mutex::new(ip),
+        config: c,
     };
     state.repo_db.connect();
     tauri::Builder::default()
-        .setup(|app| {app.manage(state); Ok(())})
+        .setup(|app| {
+            app.manage(state);
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
-            greet,get_dates,
+            greet,
+            get_dates,
             get_photos,
             get_photo_info,
             get_next_photo,
@@ -247,7 +250,7 @@ fn main() {
             get_import_progress,
             get_photos_path_to_import_under_directory,
             move_to_trash,
-            ])
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
