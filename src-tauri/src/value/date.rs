@@ -1,7 +1,7 @@
 use chrono::{TimeZone, Utc, NaiveDate, LocalResult};
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Date {
     pub year: i32,
     pub month: u32,
@@ -11,6 +11,14 @@ pub struct Date {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Dates {
     pub dates: Vec<Date>,
+}
+
+impl Copy for Date { }
+impl Clone for Date {
+    fn clone(&self) -> Date {
+        Date::new(self.year, self.month, self.day).unwrap()
+    }
+
 }
 
 impl Date {
@@ -34,8 +42,13 @@ impl Date {
         format!("{}-{:02}-{:02}", self.year, self.month, self.day)
     }
 
-    pub fn from_string (date_str: &String) -> Date {
-        let mut splitted = date_str.split("/");
+    pub fn from_string (date_str: &String, delimitor: Option<&str>) -> Date {
+        let mut del = "/";
+        if delimitor.is_some() {
+            del = delimitor.unwrap();
+        }
+        let mut splitted = date_str.split(del);
+        eprintln!("{:?} {:?}", date_str, del);
         let year = splitted.next().unwrap().parse::<i32>().unwrap();
         let month = splitted.next().unwrap().parse::<u32>().unwrap();
         let day =  splitted.next().unwrap().parse::<u32>().unwrap();

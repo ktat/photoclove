@@ -1,10 +1,11 @@
-use crate::value::file;
-use crate::value::meta;
+use crate::value::{file,meta};
+use regex;
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Photo {
     pub file: file::File,
+    pub dir: file::Dir,
     pub time: String,
     pub meta_data: meta::MetaData,
 }
@@ -18,12 +19,26 @@ pub struct Photos {
 
 impl Photo {
     pub fn new(file: file::File) -> Photo {
-        let meta = meta::MetaData::new(file.clone());
+        let created_time = file.created_datetime();
+        let d = file.path.clone();
+        let p = std::path::Path::new(&d);
+
         Photo {
             file: file,
-            time: meta.DateTime,
+            time: created_time,
+            dir: file::Dir::new(p.parent().unwrap().display().to_string()),
             meta_data: meta::MetaData::empty(),
         }
+    }
+
+    pub fn embed_meta(&mut self, meta: meta::MetaData) {
+        self.time = meta.DateTime.clone();
+        self.meta_data = meta;
+    }
+
+    pub fn created_date(&self) -> String {
+        let re = regex::Regex::new(r"^([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})").unwrap();
+        re.replace(&self.time, "$1-$2-$3").to_string()
     }
 }
 

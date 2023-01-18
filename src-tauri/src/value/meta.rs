@@ -1,6 +1,7 @@
 use crate::value::file;
 use rexif;
 use serde::{Deserialize,Serialize};
+use regex;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MetaData {
@@ -30,6 +31,7 @@ impl MetaData {
     pub fn new(file: file::File) -> MetaData {
         let exif_data = rexif::parse_file(file.path.to_string());
         let mut data  = MetaData::empty();
+
         if exif_data.is_ok() {
             for e in exif_data.unwrap().entries {
                 match e.tag {
@@ -138,6 +140,9 @@ impl MetaData {
                     _ => {}
                 }
             }
+            let t = data.DateTime.clone();
+            let re = regex::Regex::new(r"^([0-9]{4}):([0-9]{1,2}):([0-9]{1,2})").unwrap();
+            data.DateTime = re.replace(&t, "$1/$2/$3").to_string();
         }
         data
     }

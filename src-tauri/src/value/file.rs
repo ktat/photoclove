@@ -151,8 +151,23 @@ impl File {
             let t =  Local.timestamp_opt(sec.try_into().unwrap(), 0).unwrap();
             return t.format("%Y-%m-%d").to_string();
         } else {
-            print!("{:?}", created.err());
+            eprintln!("{} => {:?}", self.path, created.err());
             return Local::now().format("%Y-%m-%d").to_string();
+        }
+    }
+
+    pub fn created_datetime(&self) -> String {
+        let metadata = std::fs::metadata(&self.path).unwrap();
+        let created = metadata.created();
+        if !created.is_err() {
+            let epoch = created.unwrap();
+            let d = epoch.duration_since(UNIX_EPOCH).unwrap();
+            let sec = d.as_secs();
+            let t =  Local.timestamp_opt(sec.try_into().unwrap(), 0).unwrap();
+            return t.format("%Y-%m-%d %T").to_string();
+        } else {
+            eprintln!("{} => {:?}", self.path, created.err());
+            return Local::now().format("%Y-%m-%d %T").to_string();
         }
     }
 

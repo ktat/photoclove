@@ -51,7 +51,7 @@ fn get_photos(
     window: tauri::Window,
     state: tauri::State<AppState>,
 ) -> String {
-    let date = date::Date::from_string(&date_str.to_string());
+    let date = date::Date::from_string(&date_str.to_string(), Option::None);
     println!("get_photos is called from {}", window.label());
     let db = &state.repo_db;
     let photos = db.get_photos_in_date(date, repository::sort_from_int(sort_value), num, page);
@@ -66,7 +66,7 @@ fn get_next_photo(
     window: tauri::Window,
     state: tauri::State<AppState>,
 ) -> String {
-    let date = date::Date::from_string(&date_str.to_string());
+    let date = date::Date::from_string(&date_str.to_string(), Option::None);
     println!("get_photos is called from {}", window.label());
     let db = &state.repo_db;
     let photo = db.get_next_photo_in_date(path, date, repository::sort_from_int(sort_value));
@@ -85,7 +85,7 @@ fn get_prev_photo(
     window: tauri::Window,
     state: tauri::State<AppState>,
 ) -> String {
-    let date = date::Date::from_string(&date_str.to_string());
+    let date = date::Date::from_string(&date_str.to_string(), Option::None);
     println!("get_photos is called from {}", window.label());
     let db = &state.repo_db;
     let photo = db.get_prev_photo_in_date(path, date, repository::sort_from_int(sort_value));
@@ -158,7 +158,7 @@ fn import_photos(
     for file in files {
         importer_selected.add_photo_file(file::File::new(file.to_string()));
     }
-    importer_selected.import_photos(arc_path, np, Arc::new(&state.import_progress));
+    importer_selected.import_photos(&state.repo_db, arc_path, np, Arc::new(&state.import_progress));
 }
 
 #[tauri::command]
@@ -202,11 +202,11 @@ fn move_to_trash (
     sort_value: i32,
     state: tauri::State<AppState>,
 ) -> Option<String> {
-    let date = date::Date::from_string(&date_str.to_string());
+    let date = date::Date::from_string(&date_str.to_string(), Option::None);
     let db = &state.repo_db;
     let mut photo = db.get_next_photo_in_date(path_str, date, repository::sort_from_int(sort_value));
     if photo.is_none() {
-        let date = date::Date::from_string(&date_str.to_string());
+        let date = date::Date::from_string(&date_str.to_string(), Option::None);
         photo = db.get_prev_photo_in_date(path_str, date, repository::sort_from_int(sort_value));
     }
     let trash = trash::Trash::new(state.config.trash_path.to_string());
