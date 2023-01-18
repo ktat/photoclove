@@ -45,7 +45,8 @@ Just a plan, currentrly a few features are only implementead.
 
 ## Configuration file
 
-Create config file "~/.photoclove.yml".
+Photoclove config file is "~/.photoclove.yml".
+If file doesn't exist, the file is automatically created.
 
 For example:
 
@@ -56,7 +57,7 @@ trash_path: "/mnt/picture/.photoclove_trash/"
 import_to: "/mnt/picture/00 pictures/"
 # The path from which photo files are exported
 export_from: "/media/ktat/"
-# Copy files
+# Copy files parallelly when this value grater than 1
 copy_parallel: 2
 # Currenty not used
 thumbnail_parallel: 1
