@@ -249,6 +249,7 @@ function App() {
   }
 
   async function showImporter(path, page, num) {
+    setPhotoLoading(true);
     toggleShowImporter(true);
     if ((!path || path === "") && currentImportPath !== "") {
       path = currentImportPath;
@@ -275,6 +276,7 @@ function App() {
         setImporter({});
         setImporter(importer);
       }
+      setPhotoLoading(false);
       setTimeout(() => { setScrollLock(false) }, 200);
     });
   }
@@ -379,8 +381,7 @@ function App() {
     if (files.length > 0) {
       let target = document.getElementById("importPhotosDisplay");
       let page = target.getAttribute("data-page");
-      let sort = target.getAttribute("data-sort");
-      showImporter(files[0].replace(/[^\/]+$/, ""), page, sort);
+      showImporter(files[0].replace(/[^\/]+$/, ""), page, 20);
     }
   }
 
