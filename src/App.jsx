@@ -117,7 +117,6 @@ function App() {
   function nextImportPhotosList(e, isForward) {
     let target = document.getElementById("importPhotosDisplay");
     let page = target.getAttribute("data-page");
-    let path = target.getAttribute("data-path");
     if (!page || page == "NaN") {
       page = 0;
     }
@@ -249,7 +248,6 @@ function App() {
   }
 
   async function showImporter(path, page, num) {
-    setPhotoLoading(true);
     toggleShowImporter(true);
     if ((!path || path === "") && currentImportPath !== "") {
       path = currentImportPath;
@@ -258,7 +256,7 @@ function App() {
       page = pathPage[path];
     }
     page ||= 1;
-    let args = { page: page, num: num || 20 };
+    let args = { page: parseInt(page), num: num || 20 };
     if (path !== "") {
       args["pathStr"] = path;
     }
@@ -276,7 +274,6 @@ function App() {
         setImporter({});
         setImporter(importer);
       }
-      setPhotoLoading(false);
       setTimeout(() => { setScrollLock(false) }, 200);
     });
   }
