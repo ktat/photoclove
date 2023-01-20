@@ -1,6 +1,6 @@
-# Photoclove
+# PhotoClove
 
-Photo manager written in Rust with tauri.
+PhotoClove is a photo manager application written in Rust with tauri.
 
 ## Motivation
 
@@ -55,8 +55,10 @@ For example:
 trash_path: "/mnt/picture/.photoclove_trash/"
 # The path to which photo files are imported
 import_to: "/mnt/picture/00 pictures/"
-# The path from which photo files are exported
-export_from: "/media/ktat/"
+# The paths from which photo files are exported
+export_from:
+  - "/media/ktat/"
+  - "/path/to/import/"
 # Copy files parallelly when this value grater than 1
 copy_parallel: 2
 # Currenty not used

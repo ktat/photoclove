@@ -7,7 +7,7 @@ use std::{
     sync::{Arc, Mutex},
     thread,
 };
-use tauri::Manager;
+use tauri::{CustomMenuItem, Manager, Menu, MenuItem, Submenu};
 
 use crate::domain::importer;
 use crate::domain::*;
@@ -121,7 +121,7 @@ fn show_importer(
     let mut path = "";
     let cp: String;
     if path_str.is_none() || path_str.unwrap() == "" {
-        path = &state.config.export_from;
+        path = &state.config.export_from[0];
     } else {
         let p = path_str.unwrap();
         let cpp = fs::canonicalize(path::Path::new(p));
@@ -132,7 +132,8 @@ fn show_importer(
             path = cp.as_str();
         }
     }
-    let importer = importer::Importer::new(path.to_string(), page, num);
+    let mut importer = importer::Importer::new(path.to_string(), page, num);
+    importer.paths = state.config.export_from.clone();
     let json = serde_json::to_string(&importer).unwrap();
     // println!("{:?}", &json);
     return json;
@@ -226,14 +227,73 @@ fn main() {
     // } else {
     //     db = repository::RepoDB::new("".to_string());
     // }
-    let mut ip: importer::ImportProgress = importer::ImportProgress::new();
+    let ip: importer::ImportProgress = importer::ImportProgress::new();
     let state = AppState {
         repo_db: repository::RepoDB::new(c.import_to.to_string()),
         import_progress: Mutex::new(ip),
         config: c,
     };
+
+    let menu: Menu;
+    {
+        let load_dates = CustomMenuItem::new("load_dates".to_string(), "Load Date List");
+        let import = CustomMenuItem::new("import".to_string(), "Import");
+        let quit = CustomMenuItem::new("quit".to_string(), "Quit");
+        let about = CustomMenuItem::new("about".to_string(), "About");
+        let github = CustomMenuItem::new("github".to_string(), "Github");
+        let submenu = Submenu::new(
+            "File",
+            Menu::new()
+                .add_item(load_dates)
+                .add_item(import)
+                .add_item(quit),
+        );
+        let help_submenu = Submenu::new("?", Menu::new().add_item(github).add_item(about));
+
+        menu = Menu::new()
+            .add_native_item(MenuItem::Copy)
+            .add_submenu(submenu)
+            .add_submenu(help_submenu);
+    };
+
     state.repo_db.connect();
     tauri::Builder::default()
+        .menu(menu)
+        .on_menu_event(|event| match event.menu_item_id() {
+            "quit" => {
+                eprintln!("{:?}", event);
+                std::process::exit(0);
+            }
+            "close" => {
+                eprintln!("{:?}", event);
+                event.window().close().unwrap();
+            }
+            "about" => {
+                eprintln!("{:?}", event);
+                event
+                    .window()
+                    .emit_all("click_menu_static", "about")
+                    .unwrap();
+            }
+            "github" => {
+                eprintln!("{:?}", event);
+                event
+                    .window()
+                    .emit_all("click_menu_static", "github")
+                    .unwrap();
+            }
+            "load_dates" => {
+                eprintln!("{:?}", event);
+                event.window().emit_all("click_menu", "load_dates").unwrap();
+            }
+            "import" => {
+                eprintln!("{:?}", event);
+                event.window().emit_all("click_menu", "import").unwrap();
+            }
+            e => {
+                eprintln!("{:?}", e);
+            }
+        })
         .setup(|app| {
             app.manage(state);
             Ok(())

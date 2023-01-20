@@ -4,10 +4,10 @@
     "beforeBuildCommand": "pnpm build",
     "devPath": "http://localhost:1420",
     "distDir": "../dist",
-    "withGlobalTauri": false
+    "withGlobalTauri": true
   },
   "package": {
-    "productName": "photoclove",
+    "productName": "PhotoClove",
     "version": "0.0.0"
   },
   "tauri": {
@@ -16,6 +16,11 @@
       "shell": {
         "all": false,
         "open": true
+      },
+      "dialog": {
+        "all": true,
+        "open": true,
+        "save": true
       },
       "protocol": {
         "asset": true,
