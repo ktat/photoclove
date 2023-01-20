@@ -7,7 +7,7 @@ use std::{fs, io::BufReader, io::BufWriter};
 pub struct Config {
     pub repository: RepositoryConfig,
     pub import_to: String,
-    pub export_from: String,
+    pub export_from: Vec<String>,
     pub trash_path: String,
     pub data_path: String,
     pub thumbnail_store: String,
@@ -66,7 +66,7 @@ impl Config {
                 option: RepositoryOption {},
             },
             import_to: home.join(".photoclove/import/").display().to_string(),
-            export_from: "/".to_string(),
+            export_from: vec!["/".to_string()],
             trash_path: home.join(".photoclove/trash/").display().to_string(),
             data_path: home.join(".photoclove/data/").display().to_string(),
             thumbnail_store: home.join(".photoclove/thumbnail/").display().to_string(),

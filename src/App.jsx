@@ -1,39 +1,65 @@
 import { useState, useEffect } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
+import { open } from "@tauri-apps/api/shell";
+import { listen } from "@tauri-apps/api/event";
+import { ask, message, confirm } from '@tauri-apps/api/dialog';
 import "./App.css";
 import ReactPlayer from 'react-player';
 import { tauri } from "@tauri-apps/api";
+let listenerSet = false;
+
+const unlisten = listen("click_menu_static", (e) => {
+  if (e.payload === "about") {
+    message("PhotoClove is an application to manage photos.\n (c)ktat");
+  } else if (e.payload === "github") {
+    open("https://github.com/ktat/photoclove/");
+  }
+});
 
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
-  const [dateList, setDateList] = useState([]);
-  const [photos, setPhotosList] = useState({ "files": [] });
-  const [photoInfo, setPhotoInfo] = useState({});
   const [name, setName] = useState("");
-  const [scrollLock, setScrollLock] = useState(false);
+
+  // left menu
+  const [dateList, setDateList] = useState([]);
+
+  // photos list
+  const [photos, setPhotosList] = useState({ "files": [] });
   const [icon_size, setIconSize] = useState(100);
   const [sort_of_photos, setSort] = useState(0);
   const [num_of_photo, setNumOfPhoto] = useState(20);
   const [datePage, setDatePage] = useState({});
   const [photoZoom, setPhotoZoom] = useState("100%");
   const [currentDate, setCurrentDate] = useState("");
+  const [pathPage, setPathPage] = useState({});
+
+  // photo info
+  const [photoInfo, setPhotoInfo] = useState({});
+
+  // photo display
   const [currentPhotoPath, setCurrentPhotoPath] = useState("");
   const [photoDisplayClass, setPhotoDisplayClass] = useState("photoDisplayHidden");
+
+  // import display
   const [importDisplayClass, setImportDisplayClass] = useState("importDisplayHidden");
-  const [rightMenuClass, setRightMenuClass] = useState("rightMenu");
-  const [centerDisplayClass, setCenterDisplayClass] = useState("centerDisplay");
   const [importer, setImporter] = useState({ "has_next_files": false, "dirs_files": { dir: { "path": "" }, "dirs": { "dirs": [] }, "files": { "files": [] } } });
   const [selectedForImport, setSelectedForImport] = useState({});
   const [selectedPhotosClass, setSelectedPhotosClass] = useState("selectedPhotosHidden");
   const [imageInSelectedPhotos, setImageInSelectedPhotos] = useState("");
-  const [importPhotosPage, setImportPhotosPage] = useState(1);
-  const [pathPage, setPathPage] = useState({});
   const [currentImportPath, setCurrentImportPath] = useState("");
   const [importProgress, setImportProgress] = useState({});
-  const [photoLoading, setPhotoLoading] = useState(false);
-  const [moveHistory, setMoveHistrogy] = useState([]);
-  const [dragPhotoInfo, setDragPhotoInfo] = useState([]);
+  const [importPaths, setImportPaths] = useState([]);
+  const [importPhotosPage, setImportPhotosPage] = useState(1);
+
+
+  const [rightMenuClass, setRightMenuClass] = useState("rightMenu");
+  const [centerDisplayClass, setCenterDisplayClass] = useState("centerDisplay");
   const [photoDisplayImgClass, setPhotoDisplayImgClass] = useState("");
+
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const [dragPhotoInfo, setDragPhotoInfo] = useState([]);
+  const [scrollLock, setScrollLock] = useState(false);
+  const [moveHistory, setMoveHistrogy] = useState([]);
 
   const getDates = () => {
     invoke("get_dates").then((r) => {
@@ -41,6 +67,14 @@ function App() {
       setDateList(l);
     });
   };
+
+  const unlisten = listen("click_menu", (e) => {
+    if (e.payload === "load_dates") {
+      getDates();
+    } else if (e.payload === "import") {
+      showImporter();
+    }
+  });
 
   useEffect((e) => {
     if (currentDate != "") {
@@ -263,6 +297,7 @@ function App() {
     await invoke("show_importer", args).then((r) => {
       let data = JSON.parse(r);
       let path = data.dirs_files.dir.path;
+      setImportPaths(data.paths);
       setCurrentImportPath(path);
       if (data.dirs_files.files.files.length > 0 || page == 1) {
         pathPage[path] = page;
@@ -271,7 +306,6 @@ function App() {
       } else {
         importer.dirs_files.dirs = data.dirs_files.dirs;
         importer.dirs_files.dirs.path = path;
-        setImporter({});
         setImporter(importer);
       }
       setTimeout(() => { setScrollLock(false) }, 200);
@@ -424,7 +458,7 @@ function App() {
   return (
     <div className="container" onKeyDown={(e) => photoNavigation(e)}>
       <div id="leftMenu" className="leftMenu">
-        <h1>Photoclove&#x1f980;</h1>
+        <h1>PhotoClove&#x1f980;</h1>
         <a href="#" onClick={() => showImporter()}>&#10145;import</a>
         <div className="row">
           <div>
@@ -441,7 +475,7 @@ function App() {
 
         <p>{greetMsg}</p>
 
-        <p>List of Date <a href="#" onClick={() => getDates()}>load dates</a></p>
+        <p>List of Date <a href="#" onClick={() => getDates()}>⟳</a></p>
         <div className="dateList">
           <ul>
             {dateList.map((l, i) => {
@@ -491,7 +525,7 @@ function App() {
         </div>
         <div className="photos">
           {photos.files.map((l, i) => {
-            return <li key={i}><a href="#" onClick={() => { displayPhoto(l.file.path) }}><img width={icon_size} src={convertFileSrc(l.file.path)} /></a>
+            return <li key={i}><a href="#" onClick={() => { displayPhoto(l.file.path) }}><img style={{ maxWidth: icon_size + 'px', maxHeight: icon_size + 'px' }} src={convertFileSrc(l.file.path)} /></a>
               <a href="#" onClick={() => getPhotoInfo(l.file.path)} >(&#8505;)</a></li>
           })}
         </div>
@@ -510,6 +544,11 @@ function App() {
       {/* IMPORT DISPLAY */}
       <div className={importDisplayClass} id="importPhotosDisplay" onWheel={(e) => importPhotosScroll(e)} data-path={currentImportPath} data-page={pathPage[currentImportPath]}>
         <p>Import Photos</p>
+        <ul className="list-of-import-path">
+          {importPaths.map((p, i) => {
+            return <li key={i}><a href="#" onClick={() => showImporter(p)}>{p}</a></li>
+          })}
+        </ul>
         {importProgress.now_importing && (<>
           <span>Now Importing...</span>
           <span>{importProgress.progress} / {importProgress.num}</span><br />
@@ -583,18 +622,20 @@ function App() {
       <div className={rightMenuClass}>
         <p>Photo Info</p>
         <div>
-          <table>
-            <tbody>
-              <tr><th>File Name</th>{currentPhotoPath.replace(/^.+\//, '')}</tr>
-              <tr><th>ISO</th><td>{photoInfo.ISO}</td></tr>
-              <tr><th>FNumber</th><td>{photoInfo.FNumber}</td></tr>
-              <tr><th>LensModel</th><td>{photoInfo.LensModel}</td></tr>
-              <tr><th>LensMake</th><td>{photoInfo.LensMake}</td></tr>
-              <tr><th>Make</th><td>{photoInfo.Make}</td></tr>
-              <tr><th>Model</th><td>{photoInfo.Model}</td></tr>
-              <tr><th>Date & Time</th><td>{photoInfo.DateTime}</td></tr>
-            </tbody>
-          </table>
+          {currentPhotoPath && (
+            <table>
+              <tbody>
+                <tr><th>File Name</th>{currentPhotoPath.replace(/^.+\//, '')}</tr>
+                <tr><th>ISO</th><td>{photoInfo.ISO}</td></tr>
+                <tr><th>FNumber</th><td>{photoInfo.FNumber}</td></tr>
+                <tr><th>LensModel</th><td>{photoInfo.LensModel}</td></tr>
+                <tr><th>LensMake</th><td>{photoInfo.LensMake}</td></tr>
+                <tr><th>Make</th><td>{photoInfo.Make}</td></tr>
+                <tr><th>Model</th><td>{photoInfo.Model}</td></tr>
+                <tr><th>Date & Time</th><td>{photoInfo.DateTime}</td></tr>
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>

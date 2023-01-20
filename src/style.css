@@ -14,7 +14,8 @@
   -webkit-text-size-adjust: 100%;
 }
 
-.container, body {
+.container,
+body {
   overflow-y: hidden;
 }
 
@@ -74,8 +75,11 @@ button {
 #greet-input {
   margin-right: 5px;
 }
-.leftMenu, .rightMenu, .centerDisplay .photoDisplay {
-  float: left; 
+
+.leftMenu,
+.rightMenu,
+.centerDisplay .photoDisplay {
+  float: left;
 }
 
 .leftMenu {
@@ -99,37 +103,44 @@ button {
   text-align: center;
 }
 
-.selectedPhotos, .rightMenu {
+.selectedPhotos,
+.rightMenu {
   min-width: 280px;
   width: 280px;
   padding-left: 20px;
 }
 
-.centerDisplay, .photoDisplay, .importDisplay, .photoLoadingOn {
+.centerDisplay,
+.photoDisplay,
+.importDisplay,
+.photoLoadingOn {
   min-width: 200px;
-  float:left;
+  float: left;
   width: calc(100vw - 600px);
   min-height: 95vh;
   padding: 20px 20px 10px 20px;
   margin: 0 0 0 0px;
-  
+
   border-width: 0px 1px 0px 1px;
   border-style: solid;
   border-color: white;
 }
 
-.selectedPhotos, .photoPageInfo {
-   float:left;
+.selectedPhotos,
+.photoPageInfo {
+  float: left;
 }
 
 .sleectedPhotos ul {
-  text-align:left;
+  text-align: left;
 }
+
 .photoDisplay .photo {
-   overflow-x: scroll;
-   overflow-y: scroll;
-   max-height: 90vh;
+  overflow-x: scroll;
+  overflow-y: scroll;
+  max-height: 85vh;
 }
+
 .photos {
   margin-top: 30px;
 }
@@ -146,17 +157,20 @@ button {
   display: none;
 }
 
-.importDisplay div.photos, .centerDisplay div.photos {
+.importDisplay div.photos,
+.centerDisplay div.photos {
   text-align: left;
 }
 
 .photoOperation {
-  float:right;
+  float: right;
 }
-.importDisplay li, .centerDisplay li {
+
+.importDisplay li,
+.centerDisplay li {
   display: inline;
   padding-right: 20px;
-  margin-right:10px;
+  margin-right: 10px;
 }
 
 li.selected:after {
@@ -164,7 +178,7 @@ li.selected:after {
   font-size: 18px;
   padding: 0 10 10 0px;
   content: " \2705";
-  color:red;
+  color: red;
 }
 
 ul#listOfselectedForImport {
@@ -175,7 +189,7 @@ ul#listOfselectedForImport {
 .imageInSelectedPhotos {
   max-width: 100%;
   max-height: 200px;
-  overflow-y: scroll;  
+  overflow-y: scroll;
 }
 
 
@@ -184,6 +198,7 @@ ul#listOfselectedForImport {
   display: table;
   clear: both;
 }
+
 @media (prefers-color-scheme: dark) {
   :root {
     color: #f6f6f6;
@@ -236,6 +251,7 @@ img.photo_dragging {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }

@@ -20,6 +20,7 @@ pub struct Importer {
     pub dirs_files: dir::DirsFiles,
     pub page: u32,
     pub num: u32,
+    pub paths: Vec<String>,
 }
 
 pub struct ImporterSelectedFiles {
@@ -190,6 +191,7 @@ impl Importer {
             dirs_files: dir.find_files_and_dirs(sort, page, num),
             page: page,
             num: num,
+            paths: vec![],
         };
     }
 
