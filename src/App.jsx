@@ -167,12 +167,14 @@ function App() {
   }
 
   function photoNavigation(e) {
-    if (e.keyCode === 39) {
+    if (e.keyCode === 39) { // right arrow
       nextPhoto(currentPhotoPath)
-    } else if (e.keyCode === 37) {
+    } else if (e.keyCode === 37) { // left arrow
       prevPhoto(currentPhotoPath)
-    } else if (e.keyCode === 46) {
+    } else if (e.keyCode === 46) { // Del
       moveToTrashCan(currentPhotoPath)
+    } else if (e.ctrlKey && e.keyCode === 48) { // ctrl+0
+      setPhotoZoom("100%");
     }
   }
 
@@ -205,6 +207,10 @@ function App() {
       let display = e.currentTarget.parentElement;
       display.scrollTop -= y / 20;
       display.scrollLeft -= x / 20;
+    } else {
+      console.log(e.clientY - document.getElementsByClassName("photo")[0].children[0].offsetTop);
+      console.log(e.clientX - document.getElementsByClassName("photo")[0].children[0].offsetLeft);
+      console.log([e.clientX, e.clientY])
     }
   }
 
@@ -216,20 +222,17 @@ function App() {
   // TODO: not correct scroll adjustment.
   function photoScroll(e) {
     let zoom = parseInt(photoZoom.replace("%", ""));
-    let display = e.currentTarget.parentElement;
 
-    let x = e.clientX - document.getElementById("leftMenu").clientWidth;
-    let y = e.clientY - 100;
-    let img = new Image();
-    img.src = e.currentTarget.src;
-    let realX = img.width;
-    let realY = img.height;
-    if (x > display.clientWidth) {
-      x = display.clientWidth;
-    }
-    if (y > display.clientHeight) {
-      y = display.clientHeight;
-    }
+    const imgTag = document.querySelector(".photo img");
+    const display = e.currentTarget.parentElement;
+
+    let x = e.clientX - imgTag.offsetLeft + display.scrollLeft;
+    let y = e.clientY - imgTag.offsetTop + display.scrollTop;
+
+    let xPos = x / imgTag.width;
+    let yPos = y / imgTag.height;
+
+    console.log(['percent', yPos, xPos]);
 
     if (e.deltaY > 0) {
       zoom -= 10;
@@ -240,12 +243,12 @@ function App() {
       zoom += 10;
     }
 
-    let posX = (realX - display.scrollLeft * zoom / 100) * (zoom / 100) * (x / display.clientWidth);
-    let posY = (realY - display.scrollTop * zoom / 100) * (zoom / 100) * (y / display.clientHeight);
-    display.scrollTop = posY;
-    display.scrollLeft = posX;
-
     setPhotoZoom(zoom + "%");
+
+    const sTop = (imgTag.height * yPos - display.clientHeight * yPos);
+    const sLeft = (imgTag.width * xPos - display.clientWidth * xPos);
+    display.scrollTop = sTop - sTop % 10;
+    display.scrollLeft = sLeft - sLeft % 10;
   }
 
   function changeSort(e, value) {
@@ -538,7 +541,11 @@ function App() {
         <a href="#" onClick={() => nextPhoto(currentPhotoPath)}>next &gt;&gt;</a><br /><br />
         <a href="#" onClick={() => moveToTrashCan(currentPhotoPath)}>&#128465;</a>
         <div className="photo">
-          <img className={photoDisplayImgClass} src={convertFileSrc(currentPhotoPath)} width={photoZoom} onMouseDown={(e) => dragPhotoStart(e)} onMouseMove={(e) => dragPhoto(e)} onMouseUp={(e) => dragPhotoEnd(e)} onWheel={(e) => photoScroll(e)} />
+          <img className={photoDisplayImgClass} src={convertFileSrc(currentPhotoPath)} width={photoZoom}
+            onMouseDown={(e) => dragPhotoStart(e)}
+            onMouseMove={(e) => dragPhoto(e)}
+            onMouseUp={(e) => dragPhotoEnd(e)}
+            onWheel={(e) => photoScroll(e)} />
         </div>
       </div>
       {/* IMPORT DISPLAY */}

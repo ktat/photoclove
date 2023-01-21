@@ -1,12 +1,12 @@
-use regex::Regex;
 use crate::repository;
 use crate::value::date;
-use serde::{Serialize, Deserialize};
-use std::{fs, time::UNIX_EPOCH};
+use chrono::{Datelike, Local, TimeZone};
+use regex::Regex;
+use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::os::unix::prelude::MetadataExt;
 use std::path::Path;
-use std::fmt;
-use chrono::{TimeZone, Local, Datelike};
+use std::{fs, time::UNIX_EPOCH};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct File {
     pub path: String,
@@ -18,36 +18,37 @@ pub struct Files {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Dir {
-    pub path: String,        
+    pub path: String,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Dirs {
-    pub dirs: Vec<Dir>,        
+    pub dirs: Vec<Dir>,
 }
 
 impl Dirs {
-    pub fn new() -> Dirs{
-        Dirs{dirs: Vec::new() }
+    pub fn new() -> Dirs {
+        Dirs { dirs: Vec::new() }
     }
 }
 
 impl Files {
-    pub fn new() -> Files{
-        Files{files: Vec::new() }
+    pub fn new() -> Files {
+        Files { files: Vec::new() }
     }
 }
 
 impl Dir {
-    pub fn new(path: String) -> Dir{
+    pub fn new(path: String) -> Dir {
         let p = Path::new(&path);
         let cp = fs::canonicalize(p);
         if cp.is_err() {
-            panic!("Invalid path: {:?}", cp.err());
+            eprintln!("Invalid path: {:?}", cp.err());
+            return Dir {
+                path: "/".to_string(),
+            };
         } else {
             let ap = fs::canonicalize(p).unwrap().as_path().display().to_string();
-            return Dir {
-                path:  ap
-            }
+            return Dir { path: ap };
         }
     }
 
@@ -59,16 +60,21 @@ impl Dir {
             return Option::None;
         }
         let cap = cap_result.unwrap();
-        return Option::Some(date::Date::new(cap[1].parse::<i32>().unwrap(), cap[2].parse::<u32>().unwrap(), cap[3].parse::<u32>().unwrap()).unwrap());
+        return Option::Some(
+            date::Date::new(
+                cap[1].parse::<i32>().unwrap(),
+                cap[2].parse::<u32>().unwrap(),
+                cap[3].parse::<u32>().unwrap(),
+            )
+            .unwrap(),
+        );
     }
-    pub fn child (&self, path: String) -> Dir {
+    pub fn child(&self, path: String) -> Dir {
         Dir::new(self.path.to_string() + "/" + &path)
     }
 
     pub fn find_files(&self) -> Files {
-        let mut f = Files {
-            files: Vec::new(),
-        };
+        let mut f = Files { files: Vec::new() };
         let readdir = fs::read_dir(&self.path);
         if readdir.is_ok() {
             for entry in readdir.unwrap() {
@@ -78,18 +84,16 @@ impl Dir {
                     f.files.push(File::new(entry_path.display().to_string()));
                 }
             }
-            return f
+            return f;
         } else {
             panic!("Cannot readdir: {}", self.path.to_string())
         }
     }
     pub fn find_directories(&self, regex: &Option<Regex>) -> Dirs {
-        let mut f = Dirs {
-            dirs: Vec::new(),
-        };
+        let mut f = Dirs { dirs: Vec::new() };
         let res = fs::read_dir(&self.path);
         if res.is_ok() {
-           for entry in res.unwrap() {
+            for entry in res.unwrap() {
                 if entry.is_err() {
                     print!("{:?}", entry.err());
                     continue;
@@ -103,10 +107,16 @@ impl Dir {
                 }
                 let cap = cap_result.unwrap();
                 if regex.is_some() && cap.len() == 0 {
-                    continue
-                } else if date::Date::new(cap[1].parse::<i32>().unwrap(), cap[2].parse::<u32>().unwrap(), cap[3].parse::<u32>().unwrap()).is_none() {
+                    continue;
+                } else if date::Date::new(
+                    cap[1].parse::<i32>().unwrap(),
+                    cap[2].parse::<u32>().unwrap(),
+                    cap[3].parse::<u32>().unwrap(),
+                )
+                .is_none()
+                {
                     print!("{:?}\n", cap);
-                    continue
+                    continue;
                 }
 
                 if entry_path.display().to_string() != ".".to_string() && entry_path.is_dir() {
@@ -121,23 +131,22 @@ impl Dir {
     }
 
     pub fn find_date_like_directories(&self) -> Dirs {
-        let re = &Option::Some(Regex::new(r"([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)/?$").unwrap());
+        let re = &Option::Some(
+            Regex::new(r"([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)/?$").unwrap(),
+        );
         self.find_directories(re)
     }
-
 }
 
 impl File {
-    pub fn new(path: String) -> File{
+    pub fn new(path: String) -> File {
         let p = Path::new(&path);
         let cp = fs::canonicalize(p);
         if cp.is_err() {
             panic!("Invalid path: {:?}", cp.err());
         } else {
-           let ap = cp.unwrap().as_path().display().to_string();
-            return File {
-                path: ap
-            };
+            let ap = cp.unwrap().as_path().display().to_string();
+            return File { path: ap };
         }
     }
 
@@ -148,7 +157,7 @@ impl File {
             let epoch = created.unwrap();
             let d = epoch.duration_since(UNIX_EPOCH).unwrap();
             let sec = d.as_secs();
-            let t =  Local.timestamp_opt(sec.try_into().unwrap(), 0).unwrap();
+            let t = Local.timestamp_opt(sec.try_into().unwrap(), 0).unwrap();
             return t.format("%Y-%m-%d").to_string();
         } else {
             eprintln!("{} => {:?}", self.path, created.err());
@@ -163,7 +172,7 @@ impl File {
             let epoch = created.unwrap();
             let d = epoch.duration_since(UNIX_EPOCH).unwrap();
             let sec = d.as_secs();
-            let t =  Local.timestamp_opt(sec.try_into().unwrap(), 0).unwrap();
+            let t = Local.timestamp_opt(sec.try_into().unwrap(), 0).unwrap();
             return t.format("%Y-%m-%d %T").to_string();
         } else {
             eprintln!("{} => {:?}", self.path, created.err());
@@ -180,13 +189,12 @@ impl File {
     pub fn create_file_if_not_exists(&self) -> bool {
         let p = std::path::Path::new(&self.path);
         let mut created = false;
-        if ! p.exists() {
+        if !p.exists() {
             created = true;
             std::fs::File::create(&self.path).expect("create failed");
         }
-        return created
+        return created;
     }
-
 }
 
 #[cfg(test)]
