@@ -6,7 +6,6 @@ import { ask, message, confirm } from '@tauri-apps/api/dialog';
 import "./App.css";
 import ReactPlayer from 'react-player';
 import { tauri } from "@tauri-apps/api";
-let listenerSet = false;
 
 const unlisten = listen("click_menu_static", (e) => {
   if (e.payload === "about") {
@@ -68,14 +67,6 @@ function App() {
     });
   };
 
-  const unlisten = listen("click_menu", (e) => {
-    if (e.payload === "load_dates") {
-      getDates();
-    } else if (e.payload === "import") {
-      showImporter();
-    }
-  });
-
   useEffect((e) => {
     if (currentDate != "") {
       delete datePage[currentDate];
@@ -84,6 +75,13 @@ function App() {
       setDatePage({});
       getPhotos(undefined, true);
     }
+    const unlisten = listen("click_menu", (e) => {
+      if (e.payload === "load_dates") {
+        getDates();
+      } else if (e.payload === "import") {
+        showImporter();
+      }
+    });
   }, [num_of_photo, sort_of_photos, icon_size]);
 
   function photosScroll(e) {
