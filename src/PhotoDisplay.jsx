@@ -72,10 +72,10 @@ function PhotoDisplay(props) {
     return (
         <div id="photoDisplay" autoFocus={true} className={props.class}>
             <p>Photo Viewer</p>
-            <a href="#" onClick={() => prevPhoto(props.path)}>&lt;&lt; prev</a>&nbsp;&nbsp;
-            || <a href="#" onClick={() => toggleCenterDisplay()}>close</a> ||&nbsp;&nbsp;
-            <a href="#" onClick={() => nextPhoto(props.path)}>next &gt;&gt;</a><br /><br />
-            <a href="#" onClick={() => moveToTrashCan(props.path)}>&#128465;</a>
+            <a href="#" onClick={() => props.prevPhoto(props.path)}>&lt;&lt; prev</a>&nbsp;&nbsp;
+            || <a href="#" onClick={() => props.toggleCenterDisplay()}>close</a> ||&nbsp;&nbsp;
+            <a href="#" onClick={() => props.nextPhoto(props.path)}>next &gt;&gt;</a><br /><br />
+            <a href="#" onClick={() => props.moveToTrashCan(props.path)}>&#128465;</a>
             <div className="photo">
                 <img className={photoDisplayImgClass} src={convertFileSrc(props.path)} width={props.zoom}
                     onMouseDown={(e) => dragPhotoStart(e)}
