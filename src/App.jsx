@@ -1,9 +1,13 @@
 import { useState, useEffect } from "react";
+import { register } from "@tauri-apps/api/globalShortcut";
 import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 import { open } from "@tauri-apps/api/shell";
 import { listen } from "@tauri-apps/api/event";
 import { ask, message, confirm } from '@tauri-apps/api/dialog';
 import "./App.css";
+import PhotoInfo from "./PhotoInfo.jsx"
+import PhotoDisplay from "./PhotoDisplay.jsx"
+import SelectedPhotoInfo from "./SelectedPhotoInfo.jsx"
 import ReactPlayer from 'react-player';
 import { tauri } from "@tauri-apps/api";
 
@@ -29,6 +33,7 @@ function App() {
   const [num_of_photo, setNumOfPhoto] = useState(20);
   const [datePage, setDatePage] = useState({});
   const [photoZoom, setPhotoZoom] = useState("100%");
+  const [photoZoomReady, setPhotoZoomReady] = useState(false);
   const [currentDate, setCurrentDate] = useState("");
   const [pathPage, setPathPage] = useState({});
 
@@ -53,10 +58,8 @@ function App() {
 
   const [rightMenuClass, setRightMenuClass] = useState("rightMenu");
   const [centerDisplayClass, setCenterDisplayClass] = useState("centerDisplay");
-  const [photoDisplayImgClass, setPhotoDisplayImgClass] = useState("");
 
   const [photoLoading, setPhotoLoading] = useState(false);
-  const [dragPhotoInfo, setDragPhotoInfo] = useState([]);
   const [scrollLock, setScrollLock] = useState(false);
   const [moveHistory, setMoveHistrogy] = useState([]);
 
@@ -68,6 +71,9 @@ function App() {
   };
 
   useEffect((e) => {
+    window.onscroll = function () {
+      window.scrollTo(0, 0);
+    };
     if (currentDate != "") {
       delete datePage[currentDate];
       photos.files = [];
@@ -173,7 +179,15 @@ function App() {
       moveToTrashCan(currentPhotoPath)
     } else if (e.ctrlKey && e.keyCode === 48) { // ctrl+0
       setPhotoZoom("100%");
+    } else if (e.ctrlKey) {
+      console.log("ready");
+      setPhotoZoomReady(true);
     }
+  }
+
+  function photoNavigationUp(e) {
+    console.log("release");
+    setPhotoZoomReady(false);
   }
 
   async function importPhotos() {
@@ -193,61 +207,6 @@ function App() {
     });
   }
 
-  function dragPhotoStart(e) {
-    setPhotoDisplayImgClass("photo_dragging");
-    setDragPhotoInfo({ is_dragging: true, x: e.clientX, y: e.clientY });
-  }
-
-  function dragPhoto(e) {
-    if (dragPhotoInfo.is_dragging) {
-      let x = e.clientX - dragPhotoInfo.x;
-      let y = e.clientY - dragPhotoInfo.y;
-      let display = e.currentTarget.parentElement;
-      display.scrollTop -= y / 20;
-      display.scrollLeft -= x / 20;
-    } else {
-      console.log(e.clientY - document.getElementsByClassName("photo")[0].children[0].offsetTop);
-      console.log(e.clientX - document.getElementsByClassName("photo")[0].children[0].offsetLeft);
-      console.log([e.clientX, e.clientY])
-    }
-  }
-
-  function dragPhotoEnd(e) {
-    setPhotoDisplayImgClass("");
-    setDragPhotoInfo({});
-  }
-
-  // TODO: not correct scroll adjustment.
-  function photoScroll(e) {
-    let zoom = parseInt(photoZoom.replace("%", ""));
-
-    const imgTag = document.querySelector(".photo img");
-    const display = e.currentTarget.parentElement;
-
-    let x = e.clientX - imgTag.offsetLeft + display.scrollLeft;
-    let y = e.clientY - imgTag.offsetTop + display.scrollTop;
-
-    let xPos = x / imgTag.width;
-    let yPos = y / imgTag.height;
-
-    console.log(['percent', yPos, xPos]);
-
-    if (e.deltaY > 0) {
-      zoom -= 10;
-      if (zoom <= 100) {
-        zoom = 100;
-      }
-    } else {
-      zoom += 10;
-    }
-
-    setPhotoZoom(zoom + "%");
-
-    const sTop = (imgTag.height * yPos - display.clientHeight * yPos);
-    const sLeft = (imgTag.width * xPos - display.clientWidth * xPos);
-    display.scrollTop = sTop - sTop % 10;
-    display.scrollLeft = sLeft - sLeft % 10;
-  }
 
   function changeSort(e, value) {
     setSort(value);
@@ -457,7 +416,7 @@ function App() {
   }
 
   return (
-    <div className="container" onKeyDown={(e) => photoNavigation(e)}>
+    <div className="container" onKeyDown={(e) => photoNavigation(e)} onKeyUp={(e) => photoNavigationUp(e)}>
       <div id="leftMenu" className="leftMenu">
         <h1>PhotoClove&#x1f980;</h1>
         <a href="#" onClick={() => showImporter()}>&#10145;import</a>
@@ -532,20 +491,7 @@ function App() {
         </div>
       </div>
       {/* PHOTO DISPLAY */}
-      <div id="photoDisplay" autoFocus={true} className={photoDisplayClass}>
-        <p>Photo Viewer</p>
-        <a href="#" onClick={() => prevPhoto(currentPhotoPath)}>&lt;&lt; prev</a>&nbsp;&nbsp;
-        || <a href="#" onClick={() => toggleCenterDisplay()}>close</a> ||&nbsp;&nbsp;
-        <a href="#" onClick={() => nextPhoto(currentPhotoPath)}>next &gt;&gt;</a><br /><br />
-        <a href="#" onClick={() => moveToTrashCan(currentPhotoPath)}>&#128465;</a>
-        <div className="photo">
-          <img className={photoDisplayImgClass} src={convertFileSrc(currentPhotoPath)} width={photoZoom}
-            onMouseDown={(e) => dragPhotoStart(e)}
-            onMouseMove={(e) => dragPhoto(e)}
-            onMouseUp={(e) => dragPhotoEnd(e)}
-            onWheel={(e) => photoScroll(e)} />
-        </div>
-      </div>
+      <PhotoDisplay class={photoDisplayClass} path={currentPhotoPath} zoom={photoZoom} zoomReady={photoZoomReady} setZoom={setPhotoZoom} />
       {/* IMPORT DISPLAY */}
       <div className={importDisplayClass} id="importPhotosDisplay" onWheel={(e) => importPhotosScroll(e)} data-path={currentImportPath} data-page={pathPage[currentImportPath]}>
         <p>Import Photos</p>
@@ -604,45 +550,8 @@ function App() {
           </ul>
         </div>
       </div>
-      {/* SELECTED PHOTO INFO */}
-      <div className={selectedPhotosClass}>
-        <p>Selected Photos for import</p>
-        {Object.keys(selectedForImport).length > 0 && <div><button type="button" onClick={() => importPhotos()}>Import Selected Photos</button></div>}
-        <div>
-          {Object.keys(selectedForImport).length} photos are selected
-        </div>
-        <ul id="listOfselectedForImport">
-          {Object.keys(selectedForImport).map((l, i) => {
-            let rest = l.replace(/([^\/]+)$/, "");
-            let filename = RegExp.$1;
-            return (<li key={i}><a href="#" onClick={() => setImageInSelectedPhotos(l)}>{filename}</a></li>);
-          })
-          }
-        </ul>
-        <div>
-          {imageInSelectedPhotos != "" && <img className="imageInSelectedPhotos" src={convertFileSrc(imageInSelectedPhotos)} />}
-        </div>
-      </div>
-      {/* PHOTO INFO */}
-      <div className={rightMenuClass}>
-        <p>Photo Info</p>
-        <div>
-          {currentPhotoPath && (
-            <table>
-              <tbody>
-                <tr><th>File Name</th>{currentPhotoPath.replace(/^.+\//, '')}</tr>
-                <tr><th>ISO</th><td>{photoInfo.ISO}</td></tr>
-                <tr><th>FNumber</th><td>{photoInfo.FNumber}</td></tr>
-                <tr><th>LensModel</th><td>{photoInfo.LensModel}</td></tr>
-                <tr><th>LensMake</th><td>{photoInfo.LensMake}</td></tr>
-                <tr><th>Make</th><td>{photoInfo.Make}</td></tr>
-                <tr><th>Model</th><td>{photoInfo.Model}</td></tr>
-                <tr><th>Date & Time</th><td>{photoInfo.DateTime}</td></tr>
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
+      <SelectedPhotoInfo class={selectedPhotosClass} importPhotos={selectedForImport} lastSelected={imageInSelectedPhotos} />
+      <PhotoInfo class={rightMenuClass} photoInfo={photoInfo} path={currentPhotoPath} />
     </div>
   );
 }
