@@ -8,6 +8,7 @@ import "./App.css";
 import PhotoInfo from "./PhotoInfo.jsx"
 import PhotoDisplay from "./PhotoDisplay.jsx"
 import SelectedPhotoInfo from "./SelectedPhotoInfo.jsx"
+import DateList from "./DateList.jsx"
 import ReactPlayer from 'react-player';
 import { tauri } from "@tauri-apps/api";
 
@@ -23,7 +24,6 @@ function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
 
-  // left menu
   const [dateList, setDateList] = useState([]);
 
   // photos list
@@ -434,20 +434,7 @@ function App() {
         </div>
 
         <p>{greetMsg}</p>
-
-        <p>List of Date <a href="#" onClick={() => getDates()}>⟳</a></p>
-        <div className="dateList">
-          <ul>
-            {dateList.map((l, i) => {
-              let date = new Date(l.year + '/' + l.month + '/' + l.day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
-              return (<li key={i} >
-                <a href="#" onClick={(e) => getPhotos(e, undefined)} data-date={date} data-page={datePage[date]}>
-                  {date}
-                </a></li>)
-            })
-            }
-          </ul>
-        </div>
+        <DateList getDates={getDates} dateList={dateList} getPhotos={getPhotos} datePage={datePage} />
       </div>
 
       {/* CENTER DISPLAY */}
@@ -491,7 +478,10 @@ function App() {
         </div>
       </div>
       {/* PHOTO DISPLAY */}
-      <PhotoDisplay class={photoDisplayClass} path={currentPhotoPath} zoom={photoZoom} zoomReady={photoZoomReady} setZoom={setPhotoZoom} />
+      <PhotoDisplay class={photoDisplayClass} path={currentPhotoPath} zoom={photoZoom} zoomReady={photoZoomReady} setZoom={setPhotoZoom}
+        prevPhoto={prevPhoto} nextPhoto={nextPhoto}
+        toggleCenterDisplay={toggleCenterDisplay} moveToTrashCan={moveToTrashCan}
+      />
       {/* IMPORT DISPLAY */}
       <div className={importDisplayClass} id="importPhotosDisplay" onWheel={(e) => importPhotosScroll(e)} data-path={currentImportPath} data-page={pathPage[currentImportPath]}>
         <p>Import Photos</p>
