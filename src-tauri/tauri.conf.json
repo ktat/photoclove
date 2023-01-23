@@ -75,7 +75,7 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 1000,
+        "height": 1200,
         "resizable": true,
         "title": "photoclove",
         "width": 1500
