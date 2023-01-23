@@ -143,7 +143,7 @@ impl File {
         let p = Path::new(&path);
         let cp = fs::canonicalize(p);
         if cp.is_err() {
-            panic!("Invalid path: {:?}", cp.err());
+            panic!("Invalid path: {:?}, {:?}", path, cp.err());
         } else {
             let ap = cp.unwrap().as_path().display().to_string();
             return File { path: ap };

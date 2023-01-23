@@ -209,6 +209,7 @@ fn move_to_trash(
         let date = date::Date::from_string(&date_str.to_string(), Option::None);
         photo = db.get_prev_photo_in_date(path_str, date, repository::sort_from_int(sort_value));
     }
+    eprintln!("to Trash: {:?}", path_str);
     let trash = trash::Trash::new(state.config.trash_path.to_string());
     let file = file::File::new(path_str.to_string());
     file_service::move_to_trash(file, trash);
@@ -261,33 +262,27 @@ fn main() {
         .menu(menu)
         .on_menu_event(|event| match event.menu_item_id() {
             "quit" => {
-                eprintln!("{:?}", event);
                 std::process::exit(0);
             }
             "close" => {
-                eprintln!("{:?}", event);
                 event.window().close().unwrap();
             }
             "about" => {
-                eprintln!("{:?}", event);
                 event
                     .window()
                     .emit_all("click_menu_static", "about")
                     .unwrap();
             }
             "github" => {
-                eprintln!("{:?}", event);
                 event
                     .window()
                     .emit_all("click_menu_static", "github")
                     .unwrap();
             }
             "load_dates" => {
-                eprintln!("{:?}", event);
                 event.window().emit_all("click_menu", "load_dates").unwrap();
             }
             "import" => {
-                eprintln!("{:?}", event);
                 event.window().emit_all("click_menu", "import").unwrap();
             }
             e => {
