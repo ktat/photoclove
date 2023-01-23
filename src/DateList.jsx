@@ -13,6 +13,7 @@ function DateList(props) {
         invoke("get_dates").then((r) => {
             let l = JSON.parse(r);
             setDateList(l);
+            props.setShowFirstView(false);
         });
     };
     return (
