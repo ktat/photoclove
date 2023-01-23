@@ -30,8 +30,7 @@ function Importer(props) {
     }
 
     function nextImportPhotosList(e, isForward) {
-        let target = document.getElementById("importPhotosDisplay");
-        let page = target.getAttribute("data-page");
+        let page = pathPage[currentImportPath]
         if (!page || page == "NaN") {
             page = 0;
         }
@@ -65,8 +64,7 @@ function Importer(props) {
         });
         setSelectedForImport(selectedForImport);
         if (files.length > 0) {
-            let target = document.getElementById("importPhotosDisplay");
-            let page = target.getAttribute("data-page");
+            let page = pathPage[currentImportPath]
             showImporter(files[0].replace(/[^\/]+$/, ""), page, 20);
         }
     }
@@ -139,7 +137,6 @@ function Importer(props) {
         <>
             <div id="importPhotosDisplay" className="importDisplay"
                 onWheel={(e) => importPhotosScroll(e)}
-                data-path={props.path}
                 data-page={pathPage[props.path]}>
                 <p>Import Photos</p>
                 <ul className="list-of-import-path">
