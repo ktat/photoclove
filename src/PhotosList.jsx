@@ -99,13 +99,15 @@ function PhotosList(props) {
             return;
         }
 
-        setScrollLock(true);
 
         let isForward = true;
         if (e.deltaY < 0) {
             isForward = false;
         }
-        nextPhotosList(e, isForward)
+        if ((isForward && photos.has_next) || (!isForward && photos.has_prev)) {
+            setScrollLock(true);
+            nextPhotosList(e, isForward)
+        }
     }
 
     if (showPhotoDisplay) {
