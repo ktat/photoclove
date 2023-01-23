@@ -78,7 +78,8 @@ button {
 
 .leftMenu,
 .rightMenu,
-.centerDisplay .photoDisplay {
+.centerDisplay,
+.photoDisplay {
   float: left;
 }
 
