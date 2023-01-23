@@ -8,7 +8,7 @@ function PhotoInfo(props) {
         if (props.path && props.path != "") {
             getPhotoInfo(props.path);
         }
-    })
+    }, [props.path])
 
     async function getPhotoInfo(path) {
         await invoke("get_photo_info", { pathStr: path }).then((r) => {

@@ -99,7 +99,6 @@ function PhotosList(props) {
             return;
         }
 
-
         let isForward = true;
         if (e.deltaY < 0) {
             isForward = false;
@@ -120,6 +119,7 @@ function PhotosList(props) {
                     setShortCutNavigation={props.setShortCutNavigation}
                     setShowPhotoDisplay={setShowPhotoDisplay}
                     shortCutNavigation={props.shortCutNavigation}
+                    getPhotos={getPhotos}
                 />
                 <PhotoInfo path={currentPhotoPath} />
             </>
