@@ -115,7 +115,6 @@ function PhotosList(props) {
             <>
                 < PhotoDisplay
                     currentPhotoPath={currentPhotoPath}
-                    setCurrentPhotoPath={setCurrentPhotoPath}
                     currentDate={props.currentDate}
                     sortOfPhotos={sortOfPhotos}
                     setShortCutNavigation={props.setShortCutNavigation}

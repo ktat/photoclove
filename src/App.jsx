@@ -67,8 +67,8 @@ function App() {
 
   return (
     <div className="container"
-      onKeyDown={(e) => { shortCutNavigation.onKeyDown(e) }}
-      onKeyUp={(e) => { shortCutNavigation.onKeyUp(e) }}
+    // onKeyDown={(e) => { shortCutNavigation.onKeyDown(e) }}
+    // onKeyUp={(e) => { shortCutNavigation.onKeyUp(e) }}
     >
       <div id="leftMenu" className="leftMenu">
         <h1>PhotoClove&#x1f980;</h1>
@@ -97,7 +97,6 @@ function App() {
       </div>
       {photoLoading && <PhotoLoading />}
       {showPhotosList && <PhotosList
-        setShortCutNavigation={setShortCutNavigation}
         setPhotoLoading={setPhotoLoading}
         setCurrentDate={setCurrentDate}
         currentDate={currentDate}

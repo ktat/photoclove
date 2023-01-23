@@ -1,5 +1,6 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from "react";
+import { tauri } from "@tauri-apps/api";
 
 function PhotoDisplay(props) {
     const [dragPhotoInfo, setDragPhotoInfo] = useState([]);
@@ -7,17 +8,18 @@ function PhotoDisplay(props) {
     const [photoDisplayImgClass, setPhotoDisplayImgClass] = useState("");
     const [photoZoom, setPhotoZoom] = useState("100%");
     const [photoZoomReady, setPhotoZoomReady] = useState(false);
+    const [currentPhotoPath, setCurrentPhotoPath] = useState("");
 
     const loaded = false;
     useEffect((e) => {
-        console.log("loaded");
-        document.querySelector("#dummy-for-focus").focus({ focusVisible: true });
-        console.log(document.querySelector("#photoDisplay a"));
-        props.shortCutNavigation.onKeyDown = photoNavigation;
-        props.shortCutNavigation.onKeyUp = photoNavigationUp;
-        props.setShortCutNavigation(props.shortCutNavigation);
+        console.log("photoDisplay loaded");
+        document.querySelector("#dummy-for-focus").focus();
+        setCurrentPhotoPath(props.currentPhotoPath);
     }, [loaded]);
 
+    useEffect((e) => {
+        console.log(props.currentPhotoPath);
+    }, [props]);
 
     function dragPhotoStart(e) {
         setPhotoDisplayImgClass("photo_dragging");
@@ -25,23 +27,27 @@ function PhotoDisplay(props) {
     }
 
     function photoNavigation(e) {
-        console.log(e);
-        let f = props.currentPhotoPath;
+        console.log("keyDown");
+        console.log(e.keyCode);
+        let f = currentPhotoPath;
         if (e.keyCode === 39) { // right arrow
-            nextPhoto(f)
+            nextPhoto(f);
         } else if (e.keyCode === 37) { // left arrow
-            prevPhoto(f)
+            prevPhoto(f);
         } else if (e.keyCode === 46) { // Del
             moveToTrashCan(f)
         } else if (e.ctrlKey && e.keyCode === 48) { // ctrl+0
             setPhotoZoom("100%");
+            document.querySelector("#dummy-for-focus").focus();
         } else if (e.ctrlKey) {
             console.log("ready");
             setPhotoZoomReady(true);
         }
     }
+
     function photoNavigationUp(e) {
-        console.log("release");
+        console.log("keyUp");
+        console.log(e.keyCode);
         if (e.ctrlKey) {
             console.log("release");
             setPhotoZoomReady(false);
@@ -52,7 +58,7 @@ function PhotoDisplay(props) {
         await invoke("get_prev_photo", { path: f, dateStr: props.currentDate, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
             if (r !== "") {
                 setPhotoZoom("100%");
-                props.setCurrentPhotoPath(r);
+                setCurrentPhotoPath(r);
             }
         });
     }
@@ -61,23 +67,21 @@ function PhotoDisplay(props) {
         await invoke("get_next_photo", { path: f, dateStr: props.currentDate, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
             if (r !== "") {
                 setPhotoZoom("100%");
-                props.setCurrentPhotoPath(r);
+                setCurrentPhotoPath(r);
+                console.log([r, currentPhotoPath]);
             }
         });
     }
 
-    function moveToTrashCan(f) {
+    function moveToTrashCan(f, set) {
         console.log("delete file: " + f)
         invoke("move_to_trash", { dateStr: props.currentDate, pathStr: f, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
             console.log("target:", r);
             if (!r) {
-                props.setCurrentDate("");
                 getPhotos(undefined, undefined);
-                props.setCurrentPhotoPath("");
+                setCurrentPhotoPath("");
             } else {
-                props.setCurrentPhotoPath(r);
-                console.log("select photo:", r);
-                props.setCurrentPhotoPath(r);
+                setCurrentPhotoPath(r);
             }
         });
     }
@@ -146,16 +150,22 @@ function PhotoDisplay(props) {
     }
 
     return (
-        <div className="photoDisplay" id="photoDisplay" autoFocus={true}>
+        <div
+            className="photoDisplay"
+            id="photoDisplay"
+            autoFocus={true}
+            onKeyDown={(e) => photoNavigation(e)}
+            onKeyUp={(e) => photoNavigationUp(e)}
+        >
             <p>Photo Viewer</p>
             <a href="#" id="dummy-for-focus">{/* Dummy */}</a>
-            <a href="#" onClick={() => prevPhoto(props.currentPhotoPath)}>&lt;&lt; prev</a>&nbsp;&nbsp;
+            <a href="#" onClick={() => prevPhoto(currentPhotoPath)}>&lt;&lt; prev</a>&nbsp;&nbsp;
             || <a href="#" onClick={() => closePhotoDisplay()}>close</a> ||&nbsp;&nbsp;
-            <a href="#" onClick={() => nextPhoto(props.currentPhotoPath)}>next &gt;&gt;</a><br /><br />
-            <a href="#" onClick={() => moveToTrashCan(props.currentPhotoPath)}>&#128465;</a>
+            <a href="#" onClick={() => nextPhoto(currentPhotoPath)}>next &gt;&gt;</a><br /><br />
+            <a href="#" onClick={() => moveToTrashCan(currentPhotoPath)}>&#128465;</a>
             <div className="photo">
                 <img className={photoDisplayImgClass}
-                    src={convertFileSrc(props.currentPhotoPath)}
+                    src={convertFileSrc(currentPhotoPath)}
                     width={photoZoom}
                     onMouseDown={(e) => dragPhotoStart(e)}
                     onMouseMove={(e) => dragPhoto(e)}
