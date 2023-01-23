@@ -24,6 +24,7 @@ function App() {
   // example
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
+  const [showFirstView, setShowFirstView] = useState(true)
 
   const [datePage, setDatePage] = useState({});
   const [currentDate, setCurrentDate] = useState("");
@@ -88,6 +89,7 @@ function App() {
 
         <p>{greetMsg}</p>
         <DateList
+          setShowFirstView={setShowFirstView}
           toggleImporter={toggleImporter}
           setCurrentDate={setCurrentDate}
           setReloadDates={setReloadDates}

@@ -78,8 +78,7 @@ function PhotoDisplay(props) {
         invoke("move_to_trash", { dateStr: props.currentDate, pathStr: f, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
             console.log("target:", r);
             if (!r) {
-                getPhotos(undefined, undefined);
-                setCurrentPhotoPath("");
+                closePhotoDisplay();
             } else {
                 setCurrentPhotoPath(r);
             }
@@ -142,6 +141,8 @@ function PhotoDisplay(props) {
 
     function closePhotoDisplay() {
         props.setShowPhotoDisplay(false);
+        props.getPhotos();
+        props.setCurrentPhotoPath("");
     }
 
     function dragPhotoEnd(e) {
