@@ -1,8 +1,9 @@
 // just a dummy module for test
 
 use crate::domain::photo;
-use crate::repository::*;
+use crate::repository::{RepoDB, RepositoryDB, Sort};
 use crate::value::{date, file, meta};
+use async_trait::async_trait;
 use csv::{Reader, Writer};
 use file_lock;
 use serde::{Deserialize, Serialize};
@@ -21,6 +22,14 @@ pub struct Directory {
     path: file::Dir,
 }
 
+impl Directory {
+    pub fn new(path: String) -> Directory {
+        let dir = file::Dir::new(path);
+        Directory { path: dir }
+    }
+}
+
+#[async_trait]
 impl RepositoryDB for Directory {
     fn connect(&self) {
         // nothing to do
@@ -43,14 +52,15 @@ impl RepositoryDB for Directory {
             .sort_by(|a, b| b.to_string().cmp(&a.to_string()));
         dates
     }
-    fn get_photos_in_date(
+
+    async fn get_photos_in_date(
         &self,
+        meta_data: &HashMap<String, String>,
         date: date::Date,
         sort: Sort,
         num: u32,
         page: u32,
     ) -> photo::Photos {
-        let meta_data = self.get_photo_meta_data_in_date(date);
         let dir = self.path.child(date.to_string());
         let files = dir.find_files();
         let mut photos = photo::Photos::new();
@@ -74,49 +84,29 @@ impl RepositoryDB for Directory {
             if result.is_none() {
                 eprintln!("no meta info: {:?}", &f);
                 meta.DateTime = f.created_datetime();
+                eprintln!("use instead: {}", meta.DateTime);
             } else {
                 meta.DateTime = result.unwrap().to_string();
             }
             p.embed_meta(meta);
-            photos.files.push(p)
+            photos.photos.push(p)
         }
         if sort == Sort::Name {
-            photos.files.sort_by(|a, b| a.file.path.cmp(&b.file.path));
+            photos.photos.sort_by(|a, b| a.file.path.cmp(&b.file.path));
         } else if sort == Sort::Time {
             photos
-                .files
+                .photos
                 .sort_by(|a, b| a.file.created_date().cmp(&b.file.created_date()));
         } else {
             // photo time
-            photos.files.sort_by(|a, b| a.time.cmp(&b.time));
+            photos.photos.sort_by(|a, b| a.time.cmp(&b.time));
         }
         photos
     }
 
-    fn get_photo_meta_data_in_date(&self, date: date::Date) -> HashMap<String, String> {
-        let dir = self.path.child(date.to_string());
-        let info_path = path::Path::new(&dir.path).join(META_INFO_FILE_NAME);
-
-        if info_path.exists() {
-            let file = match fs::OpenOptions::new().read(true).open(&info_path) {
-                Ok(file) => file,
-                Err(e) => {
-                    panic!("{:?} => {:?}", info_path, e);
-                }
-            };
-            let mut photo_meta: HashMap<String, String> = HashMap::new();
-            let mut rdr = Reader::from_reader(file);
-            for result in rdr.deserialize() {
-                let record: PhotoInfo = result.unwrap();
-                photo_meta.insert(record.path, record.date);
-            }
-            return photo_meta;
-        }
-        return HashMap::new();
-    }
-
-    fn get_next_photo_in_date(
+    async fn get_next_photo_in_date(
         &self,
+        meta_data: &HashMap<String, String>,
         path: &str,
         date: date::Date,
         sort: Sort,
@@ -125,11 +115,13 @@ impl RepositoryDB for Directory {
         let mut next_is_target = false;
 
         'outer: loop {
-            let photos = self.get_photos_in_date(date.clone(), sort, 100, page);
-            if photos.files.len() == 0 {
+            let photos = self
+                .get_photos_in_date(meta_data, date.clone(), sort, 100, page)
+                .await;
+            if photos.photos.len() == 0 {
                 break 'outer;
             }
-            for photo in photos.files {
+            for photo in photos.photos {
                 if next_is_target {
                     return Option::Some(photo);
                 }
@@ -142,8 +134,9 @@ impl RepositoryDB for Directory {
         return Option::None;
     }
 
-    fn get_prev_photo_in_date(
+    async fn get_prev_photo_in_date(
         &self,
+        meta_data: &HashMap<String, String>,
         path: &str,
         date: date::Date,
         sort: Sort,
@@ -153,11 +146,13 @@ impl RepositoryDB for Directory {
         let mut ret: Option<photo::Photo> = None;
 
         'outer: loop {
-            let photos = self.get_photos_in_date(date.clone(), sort, 100, page);
-            if photos.files.len() == 0 {
+            let photos = self
+                .get_photos_in_date(meta_data, date.clone(), sort, 100, page)
+                .await;
+            if photos.photos.len() == 0 {
                 break 'outer;
             }
-            for photo in photos.files {
+            for photo in photos.photos {
                 if photo.file.path == path.to_string() {
                     prev_is_target = true;
                 }
@@ -169,94 +164,5 @@ impl RepositoryDB for Directory {
             page += 1
         }
         return Option::None;
-    }
-
-    fn record_photos(&self, photos: Vec<photo::Photo>) -> Result<bool, &str> {
-        let mut date_set = HashMap::new();
-        for photo in photos {
-            let date = &photo.created_date();
-            let v = date_set.get(date);
-            let mut photos_set: Vec<photo::Photo> = Vec::new();
-            if v.is_none() {
-                photos_set.push(photo);
-                date_set.insert(date.to_string(), photos_set);
-            } else {
-                photos_set = v.unwrap().to_vec();
-                photos_set.push(photo);
-                date_set.insert(date.to_string(), photos_set);
-            }
-        }
-
-        for (date, photo_set) in date_set.iter() {
-            eprintln!("{:?}: csv creation start", date);
-            let dir = photo_set[0].dir.clone();
-            let info_path = path::Path::new(&dir.path).join(META_INFO_FILE_NAME);
-
-            let temp = tempfile::NamedTempFile::new().unwrap();
-            let file_options = file_lock::FileOptions::new()
-                .write(true)
-                .read(true)
-                .create(true)
-                .append(true);
-            let file_lock = match file_lock::FileLock::lock(temp.path(), true, file_options) {
-                Ok(lock) => lock,
-                Err(err) => panic!("Error getting lock: {}", err),
-            };
-            let read_info_path = info_path.display().to_string();
-            let write_info_path = read_info_path.clone();
-            let file = match fs::OpenOptions::new()
-                .read(true)
-                .write(true)
-                .create(true)
-                .open(&read_info_path)
-            {
-                Ok(file) => file,
-                Err(e) => {
-                    panic!("{:?} => {:?}", read_info_path, e);
-                }
-            };
-            let mut photo_meta: HashMap<String, String> = HashMap::new();
-            let mut rdr = Reader::from_reader(file);
-            for result in rdr.deserialize() {
-                let record: PhotoInfo = result.unwrap();
-                photo_meta.insert(record.path, record.date);
-            }
-            for photo in photo_set {
-                photo_meta.insert(photo.file.path.clone(), photo.time.clone());
-            }
-
-            let write_file = match fs::OpenOptions::new()
-                .read(true)
-                .write(true)
-                .create(true)
-                .open(write_info_path)
-            {
-                Ok(file) => file,
-                Err(e) => {
-                    panic!("{}", e);
-                }
-            };
-
-            let mut wtr = Writer::from_writer(write_file);
-            for (path, date) in photo_meta.iter() {
-                let record = PhotoInfo {
-                    path: path.to_string(),
-                    date: date.to_string(),
-                };
-                wtr.serialize(record).unwrap();
-            }
-
-            file_lock.unlock().unwrap();
-            eprintln!("{:?}: csv creation end", date);
-        }
-
-        return Ok(true);
-    }
-}
-
-impl Directory {
-    pub fn new(path: String) -> Directory {
-        let dir = file::Dir::new(path);
-        Directory { path: dir }
     }
 }

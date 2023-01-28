@@ -1,6 +1,6 @@
 use crate::domain::photo;
-use crate::repository::dir;
 use crate::repository::{self, RepositoryDB};
+use crate::repository::{dir, MetaInfoDB};
 use crate::value::{file, meta};
 use filetime;
 use serde::{Deserialize, Serialize};
@@ -87,6 +87,7 @@ impl ImporterSelectedFiles {
     pub fn import_photos(
         &self,
         origin_repo_db: &repository::RepoDB,
+        origin_meta_db: &repository::MetaDB,
         destination_dir: Arc<path::PathBuf>,
         copy_parallel: usize,
         progress: Arc<&Mutex<ImportProgress>>,
@@ -116,7 +117,7 @@ impl ImporterSelectedFiles {
         let sleep_millis = time::Duration::from_millis(100);
         let t1 = time::SystemTime::now();
         for files in photos_file_chunks {
-            let repo_db = origin_repo_db.new_connect();
+            let meta_db = origin_meta_db.new_connect();
             let arc_path = Arc::clone(&destination_dir);
             let handle = thread::spawn(move || {
                 let mut n: usize = 0;
@@ -162,7 +163,7 @@ impl ImporterSelectedFiles {
                         IN_PROGRESS_NUM.store(current_num + n, Ordering::SeqCst);
                     }
                 }
-                repo_db.record_photos(photos).unwrap();
+                meta_db.record_photos_meta_data(photos).unwrap();
 
                 let current_num = IN_PROGRESS_NUM.load(Ordering::SeqCst);
                 IN_PROGRESS_NUM.store(current_num + n, Ordering::SeqCst);

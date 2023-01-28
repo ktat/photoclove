@@ -1,24 +1,24 @@
+use crate::domain::importer;
+use crate::domain::*;
 use crate::domain_service::file_service;
+use crate::repository::RepositoryDB;
+use crate::repository::*;
+use crate::value::*;
 use domain::config::Config;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::{
-    fs,
-    future::Future,
-    path,
+    fs, path,
     sync::{Arc, Mutex},
     thread,
 };
 use tauri::{CustomMenuItem, Manager, Menu, MenuItem, Submenu};
 
-use crate::domain::importer;
-use crate::domain::*;
-use crate::repository::RepositoryDB;
-use crate::repository::*;
-use crate::value::*;
-
 mod domain;
 mod domain_service;
 mod repository;
 mod value;
+
+static IN_LOCKING: AtomicBool = AtomicBool::new(false);
 
 #[cfg_attr(
     all(not(debug_assertions), target_os = "windows"),
@@ -27,6 +27,7 @@ mod value;
 
 struct AppState {
     repo_db: repository::RepoDB,
+    meta_db: repository::MetaDB,
     import_progress: Mutex<importer::ImportProgress>,
     config: Config,
 }
@@ -46,58 +47,84 @@ fn get_dates(window: tauri::Window, state: tauri::State<AppState>) -> String {
 }
 
 #[tauri::command]
-fn get_photos(
+async fn get_photos(
     date_str: &str,
     page: u32,
     sort_value: i32,
     num: u32,
-    window: tauri::Window,
-    state: tauri::State<AppState>,
-) -> String {
+    state: tauri::State<'_, AppState>,
+) -> Result<String, ()> {
     let date = date::Date::from_string(&date_str.to_string(), Option::None);
-    println!("get_photos is called from {}", window.label());
-    let db = &state.repo_db;
-    let photos = db.get_photos_in_date(date, repository::sort_from_int(sort_value), num, page);
-    photos.to_json()
+    let repo_db = &state.repo_db;
+    let meta_db = &state.meta_db;
+    let meta_data = meta_db.get_photo_meta_data_in_date(date);
+    let photos = repo_db
+        .get_photos_in_date(
+            &meta_data,
+            date,
+            repository::sort_from_int(sort_value),
+            num,
+            page,
+        )
+        .await;
+    Ok(photos.to_json())
 }
 
 #[tauri::command]
-fn get_next_photo(
+async fn get_next_photo(
     path: &str,
     date_str: &str,
     sort_value: i32,
     window: tauri::Window,
-    state: tauri::State<AppState>,
-) -> String {
+    state: tauri::State<'_, AppState>,
+) -> Result<String, ()> {
     let date = date::Date::from_string(&date_str.to_string(), Option::None);
     println!("get_photos is called from {}", window.label());
-    let db = &state.repo_db;
-    let photo = db.get_next_photo_in_date(path, date, repository::sort_from_int(sort_value));
+    let repo_db = &state.repo_db;
+    let meta_db = &state.meta_db;
+    let meta_data = meta_db.get_photo_meta_data_in_date(date);
+    let photo = repo_db
+        .get_next_photo_in_date(
+            &meta_data,
+            path,
+            date,
+            repository::sort_from_int(sort_value),
+        )
+        .await;
     if photo.is_some() {
-        return photo.unwrap().file.path;
+        return Ok(photo.unwrap().file.path);
     } else {
-        return "".to_string();
+        return Ok("".to_string());
     }
 }
 
 #[tauri::command]
-fn get_prev_photo(
+async fn get_prev_photo(
     path: &str,
     date_str: &str,
     sort_value: i32,
     window: tauri::Window,
-    state: tauri::State<AppState>,
-) -> String {
+    state: tauri::State<'_, AppState>,
+) -> Result<String, ()> {
     let date = date::Date::from_string(&date_str.to_string(), Option::None);
     println!("get_photos is called from {}", window.label());
-    let db = &state.repo_db;
-    let photo = db.get_prev_photo_in_date(path, date, repository::sort_from_int(sort_value));
+    let repo_db = &state.repo_db;
+    let meta_db = &state.meta_db;
+    let meta_data = meta_db.get_photo_meta_data_in_date(date);
+    let photo = repo_db
+        .get_prev_photo_in_date(
+            &meta_data,
+            path,
+            date,
+            repository::sort_from_int(sort_value),
+        )
+        .await;
     if photo.is_some() {
         let f = photo.unwrap().file.path;
         // println!("path: {}", f);
-        return f;
+        return Ok(f);
     } else {
-        return "".to_string();
+        return Ok("".to_string());
     }
 }
 
@@ -156,6 +183,7 @@ fn import_photos(files: Vec<&str>, state: tauri::State<'_, AppState>) {
     }
     importer_selected.import_photos(
         &state.repo_db,
+        &state.meta_db,
         arc_path,
         np,
         Arc::new(&state.import_progress),
@@ -195,19 +223,57 @@ fn get_photos_path_to_import_under_directory(
 }
 
 #[tauri::command]
-fn move_to_trash(
+async fn create_db(state: tauri::State<'_, AppState>) -> Result<bool, ()> {
+    let dates = state.repo_db.get_dates();
+    state.meta_db.record_photos_all_meta_data(dates);
+    return Ok(true);
+}
+
+// to avoid event happens twice in same time.
+#[tauri::command]
+fn lock(t: bool) -> bool {
+    if !t {
+        IN_LOCKING.store(false, Ordering::SeqCst);
+        return true;
+    } else {
+        if IN_LOCKING.load(Ordering::SeqCst) {
+            return false;
+        } else {
+            IN_LOCKING.store(true, Ordering::SeqCst);
+            return true;
+        }
+    }
+}
+
+#[tauri::command]
+async fn move_to_trash(
     path_str: &str,
     date_str: &str,
     sort_value: i32,
-    state: tauri::State<AppState>,
-) -> Option<String> {
+    state: tauri::State<'_, AppState>,
+) -> Result<Option<String>, ()> {
     let date = date::Date::from_string(&date_str.to_string(), Option::None);
-    let db = &state.repo_db;
-    let mut photo =
-        db.get_next_photo_in_date(path_str, date, repository::sort_from_int(sort_value));
+    let repo_db = &state.repo_db;
+    let meta_db = &state.meta_db;
+    let meta_data = meta_db.get_photo_meta_data_in_date(date);
+    let mut photo = repo_db
+        .get_next_photo_in_date(
+            &meta_data,
+            path_str,
+            date,
+            repository::sort_from_int(sort_value),
+        )
+        .await;
     if photo.is_none() {
         let date = date::Date::from_string(&date_str.to_string(), Option::None);
-        photo = db.get_prev_photo_in_date(path_str, date, repository::sort_from_int(sort_value));
+        photo = repo_db
+            .get_prev_photo_in_date(
+                &meta_data,
+                path_str,
+                date,
+                repository::sort_from_int(sort_value),
+            )
+            .await;
     }
     eprintln!("to Trash: {:?}", path_str);
     let trash = trash::Trash::new(state.config.trash_path.to_string());
@@ -215,9 +281,9 @@ fn move_to_trash(
     file_service::move_to_trash(file, trash);
 
     if photo.is_none() {
-        return Option::None;
+        return Ok(Option::None);
     } else {
-        return Option::Some(photo.unwrap().file.path);
+        return Ok(Option::Some(photo.unwrap().file.path));
     }
 }
 fn main() {
@@ -231,6 +297,7 @@ fn main() {
     let ip: importer::ImportProgress = importer::ImportProgress::new();
     let state = AppState {
         repo_db: repository::RepoDB::new(c.import_to.to_string()),
+        meta_db: repository::MetaDB::new(c.import_to.to_string()),
         import_progress: Mutex::new(ip),
         config: c,
     };
@@ -239,6 +306,7 @@ fn main() {
     {
         let load_dates = CustomMenuItem::new("load_dates".to_string(), "Load Date List");
         let import = CustomMenuItem::new("import".to_string(), "Import");
+        let create_db = CustomMenuItem::new("create_db".to_string(), "Create DB");
         let quit = CustomMenuItem::new("quit".to_string(), "Quit");
         let about = CustomMenuItem::new("about".to_string(), "About");
         let github = CustomMenuItem::new("github".to_string(), "Github");
@@ -247,6 +315,7 @@ fn main() {
             Menu::new()
                 .add_item(load_dates)
                 .add_item(import)
+                .add_item(create_db)
                 .add_item(quit),
         );
         let help_submenu = Submenu::new("?", Menu::new().add_item(github).add_item(about));
@@ -282,6 +351,9 @@ fn main() {
             "load_dates" => {
                 event.window().emit_all("click_menu", "load_dates").unwrap();
             }
+            "create_db" => {
+                event.window().emit_all("click_menu", "create_db").unwrap();
+            }
             "import" => {
                 event.window().emit_all("click_menu", "import").unwrap();
             }
@@ -305,6 +377,8 @@ fn main() {
             get_import_progress,
             get_photos_path_to_import_under_directory,
             move_to_trash,
+            lock,
+            create_db,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

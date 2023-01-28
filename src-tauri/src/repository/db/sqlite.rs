@@ -1,11 +1,11 @@
 extern crate rusqlite;
 
-use crate::repository::*;
-use crate::value::file;
-use crate::value::date;
 use crate::domain::photo;
+use crate::repository::*;
+use crate::value::date;
+use crate::value::file;
+use async_trait::async_trait;
 use rusqlite::{params, Connection, Result};
-
 #[derive(Debug)]
 struct Dates {
     id: u16,
@@ -32,32 +32,55 @@ pub struct SQLite {
     conn: rusqlite::Connection,
 }
 
- impl RepositoryDB for SQLite {
+#[async_trait]
+impl RepositoryDB for SQLite {
     fn connect(&self) {
         // nothing to do
     }
     fn new_connect(&self) -> RepoDB {
         // nothing to do
         RepoDB::new(self.path.path.clone())
-    }    
+    }
     fn get_dates(&self) -> date::Dates {
-        date::Dates{ dates: Vec::new()}
-    }        
-    fn get_photos_in_date(&self, date: date::Date, sort: Sort, num: u32, page: u32) -> photo::Photos {
+        date::Dates { dates: Vec::new() }
+    }
+    async fn get_photos_in_date(
+        &self,
+        date: date::Date,
+        sort: Sort,
+        num: u32,
+        page: u32,
+    ) -> photo::Photos {
         photo::Photos::new()
     }
-    fn get_next_photo_in_date(&self, path: &str, date: date::Date, sort: Sort) -> Option<photo::Photo> { Option::None}
-    fn get_prev_photo_in_date(&self, path: &str, date: date::Date, sort: Sort) -> Option<photo::Photo> { Option::None}
+    async fn get_next_photo_in_date(
+        &self,
+        path: &str,
+        date: date::Date,
+        sort: Sort,
+    ) -> Option<photo::Photo> {
+        self.get_photos_in_date(date, sort, 100, 1).await;
+        Option::None
+    }
+    async fn get_prev_photo_in_date(
+        &self,
+        path: &str,
+        date: date::Date,
+        sort: Sort,
+    ) -> Option<photo::Photo> {
+        self.get_photos_in_date(date, sort, 100, 1).await;
+        Option::None
+    }
     fn record_photos(&self, photos: Vec<photo::Photo>) -> Result<bool, &str> {
         return Ok(true);
     }
-    fn get_photo_meta_data_in_date(&self, date: date::Date) -> HashMap<String,String> {
+    fn get_photo_meta_data_in_date(&self, date: date::Date) -> HashMap<String, String> {
         HashMap::new()
     }
- }
+}
 
- impl SQLite {
-    pub fn new(path: String) -> SQLite{
+impl SQLite {
+    pub fn new(path: String) -> SQLite {
         let f = file::File::new(path);
         let conn = Connection::open("my_database.db");
         let mut s = SQLite {
@@ -68,14 +91,13 @@ pub struct SQLite {
         s
     }
 
-     fn init(&mut self) {
-        if ! self.path.create_file_if_not_exists()  {
+    fn init(&mut self) {
+        if !self.path.create_file_if_not_exists() {
             let create_sql = self.create_sql();
-
-         }
+        }
     }
 
-     fn create_sql(&mut self) -> String {
+    fn create_sql(&mut self) -> String {
         "
         CREATE TABLE photos (
             id varchar,
@@ -104,12 +126,12 @@ pub struct SQLite {
             id int,
             name varchar,
         );
-        ".to_string()
+        "
+        .to_string()
     }
 }
 
-static SETUP_SQL: [&str; 1] = [
-    "
+static SETUP_SQL: [&str; 1] = ["
     CREATE TABLE dates (
         id int auto_increment,
         date date,
@@ -135,8 +157,7 @@ static SETUP_SQL: [&str; 1] = [
     );
     CREATE INDEX photo_exif_kv on photo_exif(key_name,value);
 
-    ",
-];
+    "];
 
 pub fn setup(version: usize) {
     let mut i = 0;
@@ -147,4 +168,3 @@ pub fn setup(version: usize) {
         }
     }
 }
-

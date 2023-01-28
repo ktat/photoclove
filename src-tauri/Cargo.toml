@@ -28,6 +28,8 @@ csv = "*"
 tempfile = "*"
 dirs = "*"
 serde_yaml = "*"
+async-trait = "0.1.36"
+futures = "0.3.5"
 
 [features]
 # by default Tauri runs in production mode

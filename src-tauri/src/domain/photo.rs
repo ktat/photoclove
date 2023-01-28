@@ -1,6 +1,6 @@
-use crate::value::{file,meta};
+use crate::value::{file, meta};
 use regex;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Photo {
@@ -12,7 +12,7 @@ pub struct Photo {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Photos {
-    pub files: Vec<Photo>,
+    pub photos: Vec<Photo>,
     pub has_next: bool,
     pub has_prev: bool,
 }
@@ -43,19 +43,22 @@ impl Photo {
 }
 
 impl Photos {
-    pub fn new () -> Photos {
-        Photos{ files: Vec::new(), has_next: false, has_prev: false }
+    pub fn new() -> Photos {
+        Photos {
+            photos: Vec::new(),
+            has_next: false,
+            has_prev: false,
+        }
     }
-    pub fn to_json (&self) -> String {
+    pub fn to_json(&self) -> String {
         serde_json::to_string(&self).unwrap()
-    }        
+    }
 }
-
 
 #[cfg(test)]
 mod tests {
-    use crate::value::file;
     use crate::domain::photo;
+    use crate::value::file;
 
     #[test]
     fn test_constructor() {
@@ -70,9 +73,9 @@ mod tests {
         let p = photo::Photo::new(f);
         let p2 = photo::Photo::new(f2);
         let mut photos = photo::Photos::new();
-        photos.files.push(p);
-        photos.files.push(p2);
+        photos.photos.push(p);
+        photos.photos.push(p2);
 
-        assert_eq!(photos.files.len(), 2);
+        assert_eq!(photos.photos.len(), 2);
     }
 }
