@@ -1,12 +1,13 @@
 use crate::repository;
 use crate::value::date;
-use chrono::{Datelike, Local, TimeZone};
+use chrono::{DateTime, Datelike, Local, TimeZone};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::os::unix::prelude::MetadataExt;
 use std::path::Path;
 use std::{fs, time::UNIX_EPOCH};
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct File {
     pub path: String,
@@ -80,6 +81,11 @@ impl Dir {
             for entry in readdir.unwrap() {
                 let entry = entry.unwrap();
                 let entry_path = entry.path();
+                let file_name = entry_path.file_name().unwrap();
+
+                if file_name.to_string_lossy().chars().next().unwrap() == '.' {
+                    continue;
+                }
                 if entry_path.display().to_string() != ".".to_string() && entry_path.is_file() {
                     f.files.push(File::new(entry_path.display().to_string()));
                 }
@@ -89,6 +95,7 @@ impl Dir {
             panic!("Cannot readdir: {}", self.path.to_string())
         }
     }
+
     pub fn find_directories(&self, regex: &Option<Regex>) -> Dirs {
         let mut f = Dirs { dirs: Vec::new() };
         let res = fs::read_dir(&self.path);
@@ -151,33 +158,19 @@ impl File {
     }
 
     pub fn created_date(&self) -> String {
-        let metadata = std::fs::metadata(&self.path).unwrap();
-        let created = metadata.created();
-        if !created.is_err() {
-            let epoch = created.unwrap();
-            let d = epoch.duration_since(UNIX_EPOCH).unwrap();
-            let sec = d.as_secs();
-            let t = Local.timestamp_opt(sec.try_into().unwrap(), 0).unwrap();
-            return t.format("%Y-%m-%d").to_string();
-        } else {
-            eprintln!("{} => {:?}", self.path, created.err());
-            return Local::now().format("%Y-%m-%d").to_string();
-        }
+        let t = self.get_created_time();
+        return t.format("%Y-%m-%d").to_string();
     }
 
     pub fn created_datetime(&self) -> String {
+        let t = self.get_created_time();
+        return t.format("%Y-%m-%d %T").to_string();
+    }
+
+    fn get_created_time(&self) -> chrono::DateTime<Local> {
         let metadata = std::fs::metadata(&self.path).unwrap();
-        let created = metadata.created();
-        if !created.is_err() {
-            let epoch = created.unwrap();
-            let d = epoch.duration_since(UNIX_EPOCH).unwrap();
-            let sec = d.as_secs();
-            let t = Local.timestamp_opt(sec.try_into().unwrap(), 0).unwrap();
-            return t.format("%Y-%m-%d %T").to_string();
-        } else {
-            eprintln!("{} => {:?}", self.path, created.err());
-            return Local::now().format("%Y-%m-%d %T").to_string();
-        }
+        let epoch = metadata.ctime();
+        Local.timestamp_opt(epoch, 0).unwrap()
     }
 
     pub fn filename(&self) -> String {

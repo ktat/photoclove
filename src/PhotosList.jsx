@@ -7,7 +7,7 @@ function PhotosList(props) {
     const [icon_size, setIconSize] = useState(100);
     const [num_of_photo, setNumOfPhoto] = useState(20);
     const [currentPhotoPath, setCurrentPhotoPath] = useState("");
-    const [photos, setPhotosList] = useState({ "files": [] });
+    const [photos, setPhotosList] = useState({ "photos": [] });
     const [showPhotoDisplay, setShowPhotoDisplay] = useState(false);
     const [scrollLock, setScrollLock] = useState(false);
     const [sortOfPhotos, setSort] = useState(0);
@@ -16,10 +16,12 @@ function PhotosList(props) {
         setShowPhotoDisplay(false);
         if (props.currentDate != "") {
             delete props.datePage[props.currentDate];
-            photos.files = [];
-            setPhotosList({ "files": [] });
+            photos.photos = [];
+            setPhotosList({ "photos": [] });
             props.setDatePage({});
-            getPhotos(undefined, true);
+            const fetchPhotos = async () => getPhotos(undefined, true);;
+            fetchPhotos().catch(console.error);
+            console.log("loaded")
         }
     }, [num_of_photo, props.currentDate, sortOfPhotos, icon_size]);
 
@@ -30,7 +32,7 @@ function PhotosList(props) {
 
     async function getPhotos(e, isForward) {
         props.setPhotoLoading(true);
-        setPhotosList({ files: [] });
+        setPhotosList({ "photos": [] });
         let sort = sortOfPhotos;
         let num = num_of_photo;
         let date;
@@ -50,7 +52,7 @@ function PhotosList(props) {
         page = parseInt(page);
         await invoke("get_photos", { dateStr: date, sortValue: parseInt(sort), page: page, num: parseInt(num) }).then((r) => {
             let data = JSON.parse(r);
-            let l = data.files;
+            let l = data.photos;
             let tags = [];
             if (l.length > 0) {
                 setPhotosList(data);
@@ -82,7 +84,8 @@ function PhotosList(props) {
         }
         props.datePage[date] = page;
         props.setDatePage(props.datePage);
-        getPhotos(e, isForward)
+        const fetchPhotos = async () => getPhotos(e, isForward)
+        fetchPhotos().catch(console.error);
     }
 
     function changeSort(e, value) {
@@ -155,8 +158,11 @@ function PhotosList(props) {
                     {photos.has_next && (<span><a href="#" onClick={(e) => nextPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
                 </div>
                 <div className="photos">
-                    {photos.files.map((l, i) => {
-                        return <li key={i}><a href="#" onClick={() => { displayPhoto(l.file.path) }}><img style={{ maxWidth: icon_size + 'px', maxHeight: icon_size + 'px' }} src={convertFileSrc(l.file.path)} /></a>
+                    {photos.photos.map((l, i) => {
+                        return <li key={i}>
+                            <a href="#" onClick={() => { displayPhoto(l.file.path) }}>
+                                <img loading="lazy" alt={l.file.path} style={{ maxWidth: icon_size + 'px', maxHeight: icon_size + 'px' }} src={convertFileSrc(l.file.path)} />
+                            </a>
                             <a href="#" onClick={() => getPhotoInfo(l.file.path)} >(&#8505;)</a></li>
                     })}
                 </div>

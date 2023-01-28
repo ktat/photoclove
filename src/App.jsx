@@ -9,7 +9,6 @@ import PhotosList from "./PhotosList.jsx"
 import PhotoLoading from "./PhotoLoading.jsx"
 import DateList from "./DateList.jsx"
 import Importer from "./Importer.jsx"
-import ReactPlayer from 'react-player';
 import { tauri } from "@tauri-apps/api";
 
 const unlisten = listen("click_menu_static", (e) => {
@@ -38,8 +37,10 @@ function App() {
     onKeyUp: (e) => { console.log(e) }
   });
 
+  let in_db_creation = false;
   const listened = false;
   useEffect((e) => {
+    // const sab = new SharedArrayBuffer(1024);
     const unlisten = listen("click_menu", (e) => {
       console.log(e);
       if (e.payload === "load_dates") {
@@ -47,6 +48,29 @@ function App() {
         setReloadDates(true);
       } else if (e.payload === "import") {
         toggleImporter(true);
+      } else if (e.payload === "create_db") {
+        // BUG: event is called twice in same time. I don't know the reason why.
+        invoke("lock", { t: true }).then((e) => {
+          if (e) {
+            if (in_db_creation) {
+              message("DB creation in progress");
+              invoke("lock", { t: false });
+            } else {
+              ask("It may cost long time.\nAre you OK?", "Create DB?").then((e) => {
+                invoke("lock", { t: false });
+                if (e) {
+                  in_db_creation = true;
+                  invoke("create_db").then(() => {
+                    in_db_creation = false;
+                  });
+                }
+              }).catch((e) => {
+                invoke("lock", { t: false });
+                console.log("error: " + e);
+              })
+            }
+          }
+        });
       }
     });
   }, [listened]);
