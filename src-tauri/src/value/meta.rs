@@ -211,15 +211,16 @@ fn get_lens_from_maker_note(data: Vec<u8>) -> String {
 
     // Panasonic
     let panasonic: Vec<u8> = [80, 97, 110, 97, 115, 111, 110, 105, 99].to_vec();
-    let slice = &data[0..9];
+    let first9chars = &data[0..9];
 
     // return when first 9 char is not "Panasonic"
-    if slice != panasonic {
+    if first9chars != panasonic {
         return "".to_string();
     }
 
-    // Lens name prefix regex
-    let re = regex::Regex::new("(LUMIX|LEICA|OLYMPUS)$").unwrap();
+    // Lens name prefix regex(I only confirmed LUMIX, LEICA, OLYNMUS, SIGMA)
+    let re = regex::Regex::new("(?i)(LUMIX|LEICA|OLYMPUS|SIGMA|TAMRON|KOWA|COSINA|VOIGT|VENUS)$")
+        .unwrap();
 
     let mut i = 9;
     let mut str = String::new();
