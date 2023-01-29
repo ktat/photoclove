@@ -209,6 +209,19 @@ fn get_lens_from_maker_note(data: Vec<u8>) -> String {
     let mut i = 0;
 
     let re = regex::Regex::new("(LUMIX|LEICA|OLYMPUS)$").unwrap();
+    while i < data.len() && i < 9 {
+        let d = data[i];
+        let c = std::char::from_u32(d.into());
+        match c {
+            Some(c) => str.push(c),
+            _ => (),
+        }
+        i += 1;
+    }
+    if str != "Panasonic" {
+        return "".to_string();
+    }
+    str = String::new();
     while i < data.len() {
         let d = data[i];
         let c = std::char::from_u32(d.into());
@@ -216,29 +229,21 @@ fn get_lens_from_maker_note(data: Vec<u8>) -> String {
             Some(c) => str.push(c),
             _ => (),
         }
-        if str.len() == 9 && str != "Panasonic" {
-            // eprintln!("{:?}", str);
-            return "".to_string();
-        }
-
-        if re.is_match(&str) {
-            let cap = re.captures(&str).unwrap();
-            if cap.len() > 0 {
-                let name = &cap[0];
-                let mut i2 = i;
-                let mut lens = name.to_string();
-                while i2 < data.len() {
-                    i2 += 1;
-                    if data[i2] < 32 || 126 < data[i2] {
-                        eprintln!("{:?}", lens);
+        let captures = re.captures(&str);
+        if captures.is_some() {
+            let cap = captures.unwrap();
+            let mut lens = cap[0].to_string();
+            let mut i2 = i;
+            while i2 < data.len() {
+                i2 += 1;
+                if data[i2] < 32 || 126 < data[i2] {
+                    return lens.to_string();
+                }
+                let c = std::char::from_u32(data[i2].into());
+                match c {
+                    Some(c) => lens.push(c),
+                    _ => {
                         return lens.to_string();
-                    }
-                    let c = std::char::from_u32(data[i2].into());
-                    match c {
-                        Some(c) => lens.push(c),
-                        _ => {
-                            return lens.to_string();
-                        }
                     }
                 }
             }
