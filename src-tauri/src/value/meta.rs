@@ -205,23 +205,24 @@ impl MetaData {
 
 // currently only for Panasonic camera
 fn get_lens_from_maker_note(data: Vec<u8>) -> String {
-    let mut str = String::new();
-    let mut i = 0;
-
-    let re = regex::Regex::new("(LUMIX|LEICA|OLYMPUS)$").unwrap();
-    while i < data.len() && i < 9 {
-        let d = data[i];
-        let c = std::char::from_u32(d.into());
-        match c {
-            Some(c) => str.push(c),
-            _ => (),
-        }
-        i += 1;
-    }
-    if str != "Panasonic" {
+    if data.len() < 9 {
         return "".to_string();
     }
-    str = String::new();
+
+    // Panasonic
+    let panasonic: Vec<u8> = [80, 97, 110, 97, 115, 111, 110, 105, 99].to_vec();
+    let slice = &data[0..9];
+
+    // return when first 9 char is not "Panasonic"
+    if slice != panasonic {
+        return "".to_string();
+    }
+
+    // Lens name prefix regex
+    let re = regex::Regex::new("(LUMIX|LEICA|OLYMPUS)$").unwrap();
+
+    let mut i = 9;
+    let mut str = String::new();
     while i < data.len() {
         let d = data[i];
         let c = std::char::from_u32(d.into());
