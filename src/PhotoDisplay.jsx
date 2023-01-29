@@ -8,13 +8,12 @@ function PhotoDisplay(props) {
     const [photoDisplayImgClass, setPhotoDisplayImgClass] = useState("");
     const [photoZoom, setPhotoZoom] = useState("100%");
     const [photoZoomReady, setPhotoZoomReady] = useState(false);
-    const [currentPhotoPath, setCurrentPhotoPath] = useState("");
 
     const loaded = false;
     useEffect((e) => {
         console.log("photoDisplay loaded");
         document.querySelector("#dummy-for-focus").focus();
-        setCurrentPhotoPath(props.currentPhotoPath);
+        props.setCurrentPhotoPath(props.currentPhotoPath);
     }, [loaded]);
 
     useEffect((e) => {
@@ -29,7 +28,7 @@ function PhotoDisplay(props) {
     function photoNavigation(e) {
         console.log("keyDown");
         console.log(e.keyCode);
-        let f = currentPhotoPath;
+        let f = props.currentPhotoPath;
         if (e.keyCode === 39) { // right arrow
             nextPhoto(f);
         } else if (e.keyCode === 37) { // left arrow
@@ -58,7 +57,7 @@ function PhotoDisplay(props) {
         await invoke("get_prev_photo", { path: f, dateStr: props.currentDate, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
             if (r !== "") {
                 setPhotoZoom("100%");
-                setCurrentPhotoPath(r);
+                props.setCurrentPhotoPath(r);
             }
         });
     }
@@ -67,8 +66,8 @@ function PhotoDisplay(props) {
         await invoke("get_next_photo", { path: f, dateStr: props.currentDate, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
             if (r !== "") {
                 setPhotoZoom("100%");
-                setCurrentPhotoPath(r);
-                console.log([r, currentPhotoPath]);
+                props.setCurrentPhotoPath(r);
+                console.log([r, props.currentPhotoPath]);
             }
         });
     }
@@ -80,7 +79,7 @@ function PhotoDisplay(props) {
             if (!r) {
                 closePhotoDisplay();
             } else {
-                setCurrentPhotoPath(r);
+                props.setCurrentPhotoPath(r);
             }
         });
     }
@@ -143,7 +142,7 @@ function PhotoDisplay(props) {
         props.setShowPhotoDisplay(false);
         const fetchPhotos = async () => props.getPhotos();
         fetchPhotos().catch(console.error)
-        setCurrentPhotoPath("");
+        props.setCurrentPhotoPath("");
     }
 
     function dragPhotoEnd(e) {
@@ -161,13 +160,13 @@ function PhotoDisplay(props) {
         >
             <p>Photo Viewer</p>
             <a href="#" id="dummy-for-focus">{/* Dummy */}</a>
-            <a href="#" onClick={() => prevPhoto(currentPhotoPath)}>&lt;&lt; prev</a>&nbsp;&nbsp;
+            <a href="#" onClick={() => prevPhoto(props.currentPhotoPath)}>&lt;&lt; prev</a>&nbsp;&nbsp;
             || <a href="#" onClick={() => closePhotoDisplay()}>close</a> ||&nbsp;&nbsp;
-            <a href="#" onClick={() => nextPhoto(currentPhotoPath)}>next &gt;&gt;</a><br /><br />
-            <a href="#" onClick={() => moveToTrashCan(currentPhotoPath)}>&#128465;</a>
+            <a href="#" onClick={() => nextPhoto(props.currentPhotoPath)}>next &gt;&gt;</a><br /><br />
+            <a href="#" onClick={() => moveToTrashCan(props.currentPhotoPath)}>&#128465;</a>
             <div className="photo">
                 <img className={photoDisplayImgClass}
-                    src={convertFileSrc(currentPhotoPath)}
+                    src={convertFileSrc(props.currentPhotoPath)}
                     width={photoZoom}
                     onMouseDown={(e) => dragPhotoStart(e)}
                     onMouseMove={(e) => dragPhoto(e)}
