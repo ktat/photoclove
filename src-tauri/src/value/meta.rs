@@ -73,29 +73,57 @@ impl MetaData {
                     rexif::ExifTag::ISOSpeedRatings => data.ISO = e.value_more_readable.to_string(),
                     rexif::ExifTag::DateTime => data.DateTime = e.value_more_readable.to_string(),
                     rexif::ExifTag::LensModel => data.LensModel = e.value.to_string(),
-                    rexif::ExifTag::LensMake => data.LensMake = e.value.to_string(),
+                    rexif::ExifTag::LensMake => {
+                        if data.LensMake != String::new() {
+                            data.LensMake = e.value.to_string();
+                        }
+                    }
                     rexif::ExifTag::Make => data.Make = e.value_more_readable.to_string(),
                     rexif::ExifTag::Model => data.Model = e.value_more_readable.to_string(),
-                    // rexif::ExifTag::UnknownToMe => todo!(),
-                    // rexif::ExifTag::ImageDescription => todo!(),
                     rexif::ExifTag::Orientation => {
                         data.Orientation = e.value_more_readable.to_string()
                     }
                     rexif::ExifTag::XResolution => data.XResolution = e.value.to_string(),
                     rexif::ExifTag::YResolution => data.YResolution = e.value.to_string(),
                     rexif::ExifTag::ResolutionUnit => data.ResolutionUnit = e.value.to_string(),
+                    rexif::ExifTag::Copyright => data.Copyright = e.value.to_string(),
+                    rexif::ExifTag::ExposureTime => {
+                        data.ExposureTime = e.value_more_readable.to_string()
+                    }
+                    rexif::ExifTag::ShutterSpeedValue => {
+                        data.ShutterSpeedValue = e.value.to_string()
+                    }
+                    rexif::ExifTag::FocalLength => {
+                        data.FocalLength = e.value_more_readable.to_string()
+                    }
+                    rexif::ExifTag::FocalLengthIn35mmFilm => {
+                        data.FocalLengthIn35mmFilm = e.value_more_readable.to_string()
+                    }
+                    rexif::ExifTag::MakerNote => {
+                        let d = get_lens_from_maker_note(e.ifd.ext_data);
+                        if d != "" {
+                            data.LensModel = d;
+                        }
+                    }
+                    rexif::ExifTag::ExposureMode => {
+                        data.ExposureMode = e.value_more_readable.to_string()
+                    }
+                    rexif::ExifTag::WhiteBalanceMode => {
+                        data.WhiteBalanceMode = e.value_more_readable.to_string()
+                    }
+                    rexif::ExifTag::DigitalZoomRatio => {
+                        data.DigitalZoomRatio = e.value_more_readable.to_string()
+                    }
+                    // rexif::ExifTag::UnknownToMe => todo!(),
+                    // rexif::ExifTag::ImageDescription => todo!(),
                     // rexif::ExifTag::Software => todo!(),
                     // rexif::ExifTag::HostComputer => todo!(),
                     // rexif::ExifTag::WhitePoint => todo!(),
                     // rexif::ExifTag::PrimaryChromaticities => todo!(),
                     // rexif::ExifTag::YCbCrCoefficients => todo!(),
                     // rexif::ExifTag::ReferenceBlackWhite => todo!(),
-                    rexif::ExifTag::Copyright => data.Copyright = e.value.to_string(),
                     // rexif::ExifTag::ExifOffset => todo!(),
                     // rexif::ExifTag::GPSOffset => todo!(),
-                    rexif::ExifTag::ExposureTime => {
-                        data.ExposureTime = e.value_more_readable.to_string()
-                    }
                     // rexif::ExifTag::ExposureProgram => todo!(),
                     // rexif::ExifTag::SpectralSensitivity => todo!(),
                     // rexif::ExifTag::OECF => todo!(),
@@ -103,9 +131,7 @@ impl MetaData {
                     // rexif::ExifTag::ExifVersion => todo!(),
                     // rexif::ExifTag::DateTimeOriginal => todo!(),
                     // rexif::ExifTag::DateTimeDigitized => todo!(),
-                    rexif::ExifTag::ShutterSpeedValue => {
-                        data.ShutterSpeedValue = e.value.to_string()
-                    }
+                    // rexif::ExifTag::SubjectArea => todo!(),
                     // rexif::ExifTag::ApertureValue => todo!(),
                     // rexif::ExifTag::BrightnessValue => todo!(),
                     // rexif::ExifTag::ExposureBiasValue => todo!(),
@@ -114,19 +140,6 @@ impl MetaData {
                     // rexif::ExifTag::MeteringMode => todo!(),
                     // rexif::ExifTag::LightSource => todo!(),
                     // rexif::ExifTag::Flash => todo!(),
-                    rexif::ExifTag::FocalLength => {
-                        data.FocalLength = e.value_more_readable.to_string()
-                    }
-                    rexif::ExifTag::FocalLengthIn35mmFilm => {
-                        data.FocalLengthIn35mmFilm = e.value_more_readable.to_string()
-                    }
-                    // rexif::ExifTag::SubjectArea => todo!(),
-                    rexif::ExifTag::MakerNote => {
-                        let d = get_lens_from_maker_note(e.ifd.ext_data);
-                        if d != "" {
-                            data.LensModel = d;
-                        }
-                    }
                     // rexif::ExifTag::UserComment => todo!(),
                     // rexif::ExifTag::FlashPixVersion => todo!(),
                     // rexif::ExifTag::ColorSpace => todo!(),
@@ -142,15 +155,6 @@ impl MetaData {
                     // rexif::ExifTag::SceneType => todo!(),
                     // rexif::ExifTag::CFAPattern => todo!(),
                     // rexif::ExifTag::CustomRendered => todo!(),
-                    rexif::ExifTag::ExposureMode => {
-                        data.ExposureMode = e.value_more_readable.to_string()
-                    }
-                    rexif::ExifTag::WhiteBalanceMode => {
-                        data.WhiteBalanceMode = e.value_more_readable.to_string()
-                    }
-                    rexif::ExifTag::DigitalZoomRatio => {
-                        data.DigitalZoomRatio = e.value_more_readable.to_string()
-                    }
                     // rexif::ExifTag::SceneCaptureType => todo!(),
                     // rexif::ExifTag::GainControl => todo!(),
                     // rexif::ExifTag::Contrast => todo!(),
@@ -205,13 +209,13 @@ impl MetaData {
 
 // currently only for Panasonic camera
 fn get_lens_from_maker_note(data: Vec<u8>) -> String {
-    if data.len() < 9 {
+    if data.len() < 12 {
         return "".to_string();
     }
 
     // Panasonic
-    let panasonic: Vec<u8> = [80, 97, 110, 97, 115, 111, 110, 105, 99].to_vec();
-    let first9chars = &data[0..9];
+    let panasonic: Vec<u8> = [80, 97, 110, 97, 115, 111, 110, 105, 99, 0, 0, 0].to_vec();
+    let first9chars = &data[0..12];
 
     // return when first 9 char is not "Panasonic"
     if first9chars != panasonic {
@@ -225,13 +229,11 @@ fn get_lens_from_maker_note(data: Vec<u8>) -> String {
     let mut i = 9;
     let mut str = String::new();
     while i < data.len() {
-        let d = data[i];
-        if d < 32 || 126 < d {
+        if data[i] < 32 || 126 < data[i] {
             i += 1;
             continue;
         }
-        let c = std::char::from_u32(d.into()).unwrap();
-        str.push(c);
+        str.push(std::char::from_u32(data[i].into()).unwrap());
         let captures = re.captures(&str);
         if captures.is_some() {
             let cap = captures.unwrap();
@@ -242,8 +244,7 @@ fn get_lens_from_maker_note(data: Vec<u8>) -> String {
                 if data[i2] < 32 || 126 < data[i2] {
                     return lens.to_string();
                 }
-                let c = std::char::from_u32(data[i2].into()).unwrap();
-                lens.push(c);
+                lens.push(std::char::from_u32(data[i2].into()).unwrap());
             }
         }
         i += 1;
