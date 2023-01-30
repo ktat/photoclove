@@ -226,11 +226,12 @@ fn get_lens_from_maker_note(data: Vec<u8>) -> String {
     let mut str = String::new();
     while i < data.len() {
         let d = data[i];
-        let c = std::char::from_u32(d.into());
-        match c {
-            Some(c) => str.push(c),
-            _ => (),
+        if d < 32 || 126 < d {
+            i += 1;
+            continue;
         }
+        let c = std::char::from_u32(d.into()).unwrap();
+        str.push(c);
         let captures = re.captures(&str);
         if captures.is_some() {
             let cap = captures.unwrap();
@@ -241,13 +242,8 @@ fn get_lens_from_maker_note(data: Vec<u8>) -> String {
                 if data[i2] < 32 || 126 < data[i2] {
                     return lens.to_string();
                 }
-                let c = std::char::from_u32(data[i2].into());
-                match c {
-                    Some(c) => lens.push(c),
-                    _ => {
-                        return lens.to_string();
-                    }
-                }
+                let c = std::char::from_u32(data[i2].into()).unwrap();
+                lens.push(c);
             }
         }
         i += 1;
