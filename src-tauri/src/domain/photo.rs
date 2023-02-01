@@ -31,14 +31,22 @@ impl Photo {
         }
     }
 
+    pub fn new_with_meta(file: file::File) -> Photo {
+        let mut photo = Photo::new(file.clone());
+        let meta = meta::MetaData::new(file);
+        photo.embed_meta(meta);
+        photo
+    }
+
     pub fn embed_meta(&mut self, meta: meta::MetaData) {
         self.time = meta.DateTime.clone();
         self.meta_data = meta;
     }
 
     pub fn created_date(&self) -> String {
-        let re = regex::Regex::new(r"^([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})").unwrap();
-        re.replace(&self.time, "$1-$2-$3").to_string()
+        let re = regex::Regex::new(r"^([0-9]{4})/([0-9]{1,2})/([0-9]{1,2}).+$").unwrap();
+        let replaced = re.replace(&self.time, "$1-$2-$3").to_string();
+        replaced
     }
 }
 

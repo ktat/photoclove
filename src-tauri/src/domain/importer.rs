@@ -89,6 +89,7 @@ impl ImporterSelectedFiles {
         origin_repo_db: &repository::RepoDB,
         origin_meta_db: &repository::MetaDB,
         destination_dir: Arc<path::PathBuf>,
+        trash_dir: Arc<path::PathBuf>,
         copy_parallel: usize,
         progress: Arc<&Mutex<ImportProgress>>,
     ) -> bool {
@@ -112,19 +113,21 @@ impl ImporterSelectedFiles {
         if files.len() > 0 {
             photos_file_chunks.push(files);
         }
-        let ln = photos_file_chunks.len();
 
         let sleep_millis = time::Duration::from_millis(100);
         let t1 = time::SystemTime::now();
         for files in photos_file_chunks {
             let meta_db = origin_meta_db.new_connect();
-            let arc_path = Arc::clone(&destination_dir);
+            let arc_dest_path = Arc::clone(&destination_dir);
+            let arc_trash_path = Arc::clone(&trash_dir);
+            eprintln!("{:?}", &arc_trash_path);
             let handle = thread::spawn(move || {
                 let mut n: usize = 0;
                 let mut photos: Vec<photo::Photo> = Vec::new();
                 for file in files {
                     let filename = file.filename();
-                    let destination_date_dir = arc_path.join(file.created_date());
+                    let photo = photo::Photo::new_with_meta(file.clone());
+                    let destination_date_dir = arc_dest_path.join(photo.created_date());
                     let destination_path = destination_date_dir.join(filename);
                     if !destination_date_dir.exists() {
                         match fs::create_dir(destination_date_dir.clone()) {
@@ -137,10 +140,19 @@ impl ImporterSelectedFiles {
                     let p = file.path.clone();
                     if p == destination_path.display().to_string() {
                         eprintln!("ignore same file: {:?} to {:?}\n", p, destination_path);
+                        n += 1;
+                        continue;
                     } else {
+                        let trash_file_path = arc_trash_path
+                            .join(destination_path.clone().strip_prefix("/").unwrap());
+                        eprintln!("trash_file_path: {:?}", &trash_file_path);
+                        if trash_file_path.exists() {
+                            n += 1;
+                            continue;
+                        }
                         let result = copy_file(&p, &destination_path.display().to_string());
                         thread::sleep(sleep_millis);
-                        // print!("copy {:?} to {:?}\n", p, destination_path);
+                        eprintln!("copy {:?} to {:?}\n", p, destination_path);
                         if result.is_err() {
                             eprintln!(
                                 "copy error: {:?}: {}",
@@ -150,10 +162,9 @@ impl ImporterSelectedFiles {
                         }
                     }
                     let df = file::File::new(destination_path.display().to_string());
-                    let mut photo = photo::Photo::new(df.clone());
-                    let meta = meta::MetaData::new(df);
-                    photo.embed_meta(meta);
-                    photos.push(photo);
+                    let mut d_photo = photo::Photo::new(df.clone());
+                    d_photo.embed_meta(photo.meta_data);
+                    photos.push(d_photo);
 
                     let t2 = time::SystemTime::now();
                     let diff = t2.duration_since(t1).unwrap();
