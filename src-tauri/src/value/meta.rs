@@ -214,11 +214,11 @@ fn get_lens_from_maker_note(data: Vec<u8>) -> String {
     }
 
     // Panasonic
-    let panasonic: Vec<u8> = [80, 97, 110, 97, 115, 111, 110, 105, 99, 0, 0, 0].to_vec();
-    let first9chars = &data[0..12];
+    let panasonic: [u8; 12] = [80, 97, 110, 97, 115, 111, 110, 105, 99, 0, 0, 0];
+    let first12chars = &data[0..12];
 
     // return when first 9 char is not "Panasonic"
-    if first9chars != panasonic {
+    if first12chars != &panasonic {
         return "".to_string();
     }
 
@@ -226,14 +226,19 @@ fn get_lens_from_maker_note(data: Vec<u8>) -> String {
     let re = regex::Regex::new("(?i)(LUMIX|LEICA|OLYMPUS|SIGMA|TAMRON|KOWA|COSINA|VOIGT|VENUS)$")
         .unwrap();
 
-    let mut i = 9;
-    let mut str = String::new();
+    // safely skip 12byte x (data[12](num of entries) + 1("Panasonic\0\0\0"))
+    let mut i: usize = usize::from(data[12] + 1) * 12;
+
+    let mut str = "         ".to_string(); // dummy 9 chars
     while i < data.len() {
         if data[i] < 32 || 126 < data[i] {
             i += 1;
             continue;
         }
+        // enough length for regex
+        str = str[str.len() - 9..str.len()].to_string();
         str.push(std::char::from_u32(data[i].into()).unwrap());
+
         let captures = re.captures(&str);
         if captures.is_some() {
             let cap = captures.unwrap();
