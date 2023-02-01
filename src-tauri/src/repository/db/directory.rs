@@ -4,14 +4,9 @@ use crate::domain::photo;
 use crate::repository::{RepoDB, RepositoryDB, Sort};
 use crate::value::{date, file, meta};
 use async_trait::async_trait;
-use csv::{Reader, Writer};
-use file_lock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::{fs, path};
-use tempfile;
 
-static META_INFO_FILE_NAME: &str = ".photoclove-dir-info.tsv";
 #[derive(Debug, Deserialize, Serialize)]
 struct PhotoInfo {
     path: String,
@@ -94,7 +89,6 @@ impl RepositoryDB for Directory {
             }
         } else {
             for f in meta_data.keys() {
-                i += 1;
                 i += 1;
                 if (i - 1) < start_index {
                     photos.has_prev = true;
