@@ -174,8 +174,8 @@ fn import_photos(files: Vec<&str>, state: tauri::State<'_, AppState>) {
         return;
     }
     let c = Config::new();
-    let import_dir = file::Dir::new(c.import_to.to_string());
-    let arc_path = Arc::new(path::PathBuf::from(import_dir.path));
+    let arc_trash_path = Arc::new(path::PathBuf::from(c.trash_path.to_string()));
+    let arc_import_path = Arc::new(path::PathBuf::from(c.import_to.to_string()));
     let np = state.config.copy_parallel.clone();
     let mut importer_selected = importer::ImporterSelectedFiles::new();
     for file in files {
@@ -184,7 +184,8 @@ fn import_photos(files: Vec<&str>, state: tauri::State<'_, AppState>) {
     importer_selected.import_photos(
         &state.repo_db,
         &state.meta_db,
-        arc_path,
+        arc_import_path,
+        arc_trash_path,
         np,
         Arc::new(&state.import_progress),
     );
