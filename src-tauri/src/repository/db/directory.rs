@@ -89,6 +89,11 @@ impl RepositoryDB for Directory {
             }
         } else {
             for f in meta_data.keys() {
+                let file_result = file::File::new_if_exists(f.to_string());
+                if file_result.is_none() {
+                    continue;
+                }
+                let file = file_result.unwrap();
                 i += 1;
                 if (i - 1) < start_index {
                     photos.has_prev = true;
@@ -98,8 +103,6 @@ impl RepositoryDB for Directory {
                     photos.has_next = true;
                     break;
                 }
-
-                let file = file::File::new(f.to_string());
                 let mut p = photo::Photo::new(file);
                 let mut meta = meta::MetaData::empty();
                 meta.DateTime = meta_data.get(f).unwrap().to_string();

@@ -167,11 +167,15 @@ fn show_importer(
 }
 
 #[tauri::command]
-fn import_photos(files: Vec<&str>, state: tauri::State<'_, AppState>) {
+async fn import_photos(
+    window: tauri::Window,
+    files: Vec<&str>,
+    state: tauri::State<'_, AppState>,
+) -> Result<bool, ()> {
     // When now importing, do nothing.
     if state.import_progress.lock().unwrap().now_importing {
         eprintln!("now importing ...");
-        return;
+        return Ok(false);
     }
     let c = Config::new();
     let arc_trash_path = Arc::new(path::PathBuf::from(c.trash_path.to_string()));
@@ -181,7 +185,8 @@ fn import_photos(files: Vec<&str>, state: tauri::State<'_, AppState>) {
     for file in files {
         importer_selected.add_photo_file(file::File::new(file.to_string()));
     }
-    importer_selected.import_photos(
+    let result = importer_selected.import_photos(
+        &window,
         &state.repo_db,
         &state.meta_db,
         arc_import_path,
@@ -189,6 +194,10 @@ fn import_photos(files: Vec<&str>, state: tauri::State<'_, AppState>) {
         np,
         Arc::new(&state.import_progress),
     );
+    if result {
+        window.emit_all("import", "finish");
+    }
+    return Ok(result);
 }
 
 #[tauri::command]
@@ -199,7 +208,7 @@ fn get_import_progress(state: tauri::State<AppState>) -> String {
 
     let mut locked = ip.lock().unwrap();
     if num <= finished {
-        locked.reset_import_progress();
+        // locked.reset_import_progress();
     } else {
         locked.progress = finished;
         locked.num_per_sec = (locked.num - locked.progress) as f32 / locked.current_time as f32;
@@ -309,6 +318,7 @@ fn main() {
         let import = CustomMenuItem::new("import".to_string(), "Import");
         let create_db = CustomMenuItem::new("create_db".to_string(), "Create DB");
         let quit = CustomMenuItem::new("quit".to_string(), "Quit");
+        let pref = CustomMenuItem::new("pref".to_string(), "Preferences");
         let about = CustomMenuItem::new("about".to_string(), "About");
         let github = CustomMenuItem::new("github".to_string(), "Github");
         let submenu = Submenu::new(

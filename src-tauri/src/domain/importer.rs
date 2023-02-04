@@ -86,6 +86,7 @@ impl ImporterSelectedFiles {
 
     pub fn import_photos(
         &self,
+        window: &tauri::Window,
         origin_repo_db: &repository::RepoDB,
         origin_meta_db: &repository::MetaDB,
         destination_dir: Arc<path::PathBuf>,
@@ -117,6 +118,7 @@ impl ImporterSelectedFiles {
         let sleep_millis = time::Duration::from_millis(100);
         let t1 = time::SystemTime::now();
         for files in photos_file_chunks {
+            let window = window.clone();
             let meta_db = origin_meta_db.new_connect();
             let arc_dest_path = Arc::clone(&destination_dir);
             let arc_trash_path = Arc::clone(&trash_dir);
@@ -172,6 +174,13 @@ impl ImporterSelectedFiles {
                     if diff.as_secs() > 2 {
                         let current_num = IN_PROGRESS_NUM.load(Ordering::SeqCst);
                         IN_PROGRESS_NUM.store(current_num + n, Ordering::SeqCst);
+                        match window.emit("import", current_num + n) {
+                            Ok(()) => (),
+                            Err(e) => {
+                                eprintln!("Error on emit: {:?}", e);
+                            }
+                        }
+                        n = 0;
                     }
                 }
                 meta_db.record_photos_meta_data(photos).unwrap();
@@ -182,11 +191,14 @@ impl ImporterSelectedFiles {
             });
             handles.push(handle);
         }
+
+        for handle in handles {
+            handle.join().expect("Failed to join on thread");
+        }
+
+        progress.lock().unwrap().reset_import_progress();
         drop(progress);
 
-        // for handle in handles {
-        //     handle.join().expect("Failed to join on thread");
-        // }
         return true;
     }
 
