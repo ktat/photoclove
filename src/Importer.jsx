@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
+import { listen } from "@tauri-apps/api/event";
 import SelectedPhotoInfo from "./SelectedPhotoInfo.jsx"
+
 
 function Importer(props) {
     const [scrollLock, setScrollLock] = useState(false);
@@ -12,6 +14,17 @@ function Importer(props) {
     const [pathPage, setPathPage] = useState({});
     const [selectedForImport, setSelectedForImport] = useState({});
     const [imageInSelectedPhotos, setImageInSelectedPhotos] = useState("");
+
+    const listened = false;
+
+    useEffect(() => {
+        const unlisten = listen("import", (e) => {
+            if (e.payload == "finish") {
+                //
+            }
+            console.log(e.payload);
+        });
+    }, [listened]);
 
     useEffect(() => {
         showImporter(props.path, pathPage[props.path], 20);
