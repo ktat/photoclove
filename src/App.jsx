@@ -6,7 +6,6 @@ import { listen } from "@tauri-apps/api/event";
 import { ask, message, confirm } from '@tauri-apps/api/dialog';
 import "./App.css";
 import PhotosList from "./PhotosList.jsx"
-import PhotoLoading from "./PhotoLoading.jsx"
 import DateList from "./DateList.jsx"
 import Importer from "./Importer.jsx"
 import { tauri } from "@tauri-apps/api";
@@ -31,7 +30,6 @@ function App() {
   const [showImporter, setShowImporter] = useState(false);
   const [showPhotosList, setShowPhotosList] = useState(true);
 
-  const [photoLoading, setPhotoLoading] = useState(false);
   const [shortCutNavigation, setShortCutNavigation] = useState({
     onKeyDown: (e) => { console.log(e) },
     onKeyUp: (e) => { console.log(e) }
@@ -95,44 +93,50 @@ function App() {
     // onKeyDown={(e) => { shortCutNavigation.onKeyDown(e) }}
     // onKeyUp={(e) => { shortCutNavigation.onKeyUp(e) }}
     >
-      <div id="leftMenu" className="leftMenu">
-        <h1>PhotoClove&#x1f980;</h1>
-        <a href="#" onClick={() => toggleImporter(true)}>&#10145;import</a>
-        <div className="row">
-          <div>
-            <input
-              id="greet-input"
-              onChange={(e) => setName(e.currentTarget.value)}
-              placeholder="Enter wrods for search"
-            />
-            <button type="button" onClick={() => greet()}>
-              Search
-            </button>
+      <div className="inner-container">
+        <div id="leftMenu" className="leftMenu">
+          <h1>PhotoClove&#x1f980;</h1>
+          <a href="#" onClick={() => toggleImporter(true)}>&#10145;import</a>
+          <div className="row">
+            <div>
+              <input
+                id="greet-input"
+                onChange={(e) => setName(e.currentTarget.value)}
+                placeholder="Enter wrods for search"
+              />
+              <button type="button" onClick={() => greet()}>
+                Search
+              </button>
+            </div>
           </div>
-        </div>
 
-        <p>{greetMsg}</p>
-        <DateList
-          setShowFirstView={setShowFirstView}
-          toggleImporter={toggleImporter}
+          <p>{greetMsg}</p>
+          <DateList
+            setShowFirstView={setShowFirstView}
+            toggleImporter={toggleImporter}
+            setCurrentDate={setCurrentDate}
+            setReloadDates={setReloadDates}
+            reloadDates={reloadDates}
+            datePage={datePage}
+          />
+        </div>
+        {showPhotosList && <PhotosList
           setCurrentDate={setCurrentDate}
-          setReloadDates={setReloadDates}
-          reloadDates={reloadDates}
+          currentDate={currentDate}
           datePage={datePage}
-        />
+          setDatePage={setDatePage}
+          shortCutNavigation={shortCutNavigation}
+        />}
+        {showImporter && <Importer />}
       </div>
-      {photoLoading && <PhotoLoading />}
-      {showPhotosList && <PhotosList
-        setPhotoLoading={setPhotoLoading}
-        setCurrentDate={setCurrentDate}
-        currentDate={currentDate}
-        datePage={datePage}
-        setDatePage={setDatePage}
-        shortCutNavigation={shortCutNavigation}
-      />}
-      {showImporter && <Importer
-        setPhotoLoading={setPhotoLoading}
-      />}
+      <footer>
+        <div id="footer-message">
+
+        </div>
+        <div id="copyright">
+          &copy; ktat
+        </div>
+      </footer>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import PhotoDisplay from "./PhotoDisplay.jsx";
 import PhotoInfo from "./PhotoInfo.jsx";
 import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
+import PhotoLoading from "./PhotoLoading.jsx";
 
 function PhotosList(props) {
     const [icon_size, setIconSize] = useState(100);
@@ -11,6 +12,7 @@ function PhotosList(props) {
     const [showPhotoDisplay, setShowPhotoDisplay] = useState(false);
     const [scrollLock, setScrollLock] = useState(false);
     const [sortOfPhotos, setSort] = useState(0);
+    const [photoLoading, setPhotoLoading] = useState(false);
 
     useEffect((e) => {
         setShowPhotoDisplay(false);
@@ -31,7 +33,7 @@ function PhotosList(props) {
     }
 
     async function getPhotos(e, isForward) {
-        props.setPhotoLoading(true);
+        setPhotoLoading(true);
         setPhotosList({ "photos": [] });
         let sort = sortOfPhotos;
         let num = num_of_photo;
@@ -61,7 +63,7 @@ function PhotosList(props) {
             }
             props.datePage[date] = page;
             props.setDatePage(props.datePage);
-            props.setPhotoLoading(false);
+            setPhotoLoading(false);
             setTimeout(() => { setScrollLock(false) }, 200);
         });
     };
@@ -129,46 +131,52 @@ function PhotosList(props) {
             </>
         );
     } else {
-        return (<>
-            <div className="centerDisplay" id="photoList" onWheel={(e) => photosScroll(e)} data-date={props.currentDate} data-page={props.datePage[props.currentDate]}>
-                <div>
-                    <div className="photoPageInfo">{props.currentDate} page:{props.datePage[props.currentDate]}</div>
-                    <div className="photoOperation">
-                        Icon:<select name="icon_size" defaultValue="100" onChange={(e) => setIconSize(e.target.value)}>
-                            <option value={50}>small</option>
-                            <option value={100}>normal</option>
-                            <option value={200}>large</option>
-                            <option value={300}>huge</option>
-                        </select>
-                        Sort:<select name="sort" onChange={(e) => changeSort(e, e.target.value)}>
-                            <option value={0}>photo time</option>
-                            <option value={1}>time</option>
-                            <option value={2}>name</option>
-                        </select>
-                        Num:<select name="num" defaultValue="20" onChange={(e) => changeNumOfPhoto(e, e.target.value)}>
-                            <option value={10}>10</option>
-                            <option value={20}>20</option>
-                            <option value={30}>30</option>
-                            <option value={40}>40</option>
-                        </select>
+        if (!photoLoading) {
+            return (<>
+                <div className="centerDisplay" id="photoList" onWheel={(e) => photosScroll(e)} data-date={props.currentDate} data-page={props.datePage[props.currentDate]}>
+                    <div>
+                        <div className="photo-list-header">
+                            <div className="photo-page-info">{props.currentDate} page:{props.datePage[props.currentDate]}</div>
+                            <div className="navigation">
+                                {photos.has_prev && (<span><a href="#" onClick={(e) => nextPhotosList(e, false)}>&lt;&lt; Prev&nbsp;</a></span>)}
+                                {photos.has_next && (<span><a href="#" onClick={(e) => nextPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
+                            </div>
+                            <div className="photo-operation">
+                                Icon:<select name="icon_size" defaultValue="100" onChange={(e) => setIconSize(e.target.value)}>
+                                    <option value={50}>small</option>
+                                    <option value={100}>normal</option>
+                                    <option value={200}>large</option>
+                                    <option value={300}>huge</option>
+                                </select>
+                                Sort:<select name="sort" onChange={(e) => changeSort(e, e.target.value)}>
+                                    <option value={0}>photo time</option>
+                                    <option value={1}>time</option>
+                                    <option value={2}>name</option>
+                                </select>
+                                Num:<select name="num" defaultValue="20" onChange={(e) => changeNumOfPhoto(e, e.target.value)}>
+                                    <option value={10}>10</option>
+                                    <option value={20}>20</option>
+                                    <option value={30}>30</option>
+                                    <option value={40}>40</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="photos">
+                        {photos.photos.map((l, i) => {
+                            return <li key={i}>
+                                <a href="#" onClick={() => { displayPhoto(l.file.path) }}>
+                                    <img loading="lazy" alt={l.file.path} style={{ maxWidth: icon_size + 'px', maxHeight: icon_size + 'px' }} src={convertFileSrc(l.file.path)} />
+                                </a>
+                                <a href="#" onClick={() => getPhotoInfo(l.file.path)} >(&#8505;)</a></li>
+                        })}
                     </div>
                 </div>
-                <div className="navigation">
-                    {photos.has_prev && (<span><a href="#" onClick={(e) => nextPhotosList(e, false)}>&lt;&lt; Prev&nbsp;</a></span>)}
-                    {photos.has_next && (<span><a href="#" onClick={(e) => nextPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
-                </div>
-                <div className="photos">
-                    {photos.photos.map((l, i) => {
-                        return <li key={i}>
-                            <a href="#" onClick={() => { displayPhoto(l.file.path) }}>
-                                <img loading="lazy" alt={l.file.path} style={{ maxWidth: icon_size + 'px', maxHeight: icon_size + 'px' }} src={convertFileSrc(l.file.path)} />
-                            </a>
-                            <a href="#" onClick={() => getPhotoInfo(l.file.path)} >(&#8505;)</a></li>
-                    })}
-                </div>
-            </div>
-            <PhotoInfo />
-        </>)
+                <PhotoInfo />
+            </>)
+        } else {
+            return <PhotoLoading />
+        }
     }
 }
 

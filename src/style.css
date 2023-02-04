@@ -14,20 +14,43 @@
   -webkit-text-size-adjust: 100%;
 }
 
-.container,
+.inner-container,
 body {
   overflow-y: hidden;
 }
 
-.container {
+
+.inner-container {
+  display: flex;
+  flex-direction: row;
   margin: 0;
   text-align: center;
   width: 100%;
-  height: 100vh;
+}
+
+footer {
+  display: flex;
+  justify-content: space-between;
+  text-align: center;
+  margin: 5px 5px 0px 5px;
+  padding: 0px 10px 0px 10px;
+  border-width: 1px 0px 0px 0px;
+  border-style: solid;
+  border-color: white;
+}
+
+footer .message {
+  text-align: left;
+  flex: 3;
+}
+
+footer .copyright {
+  text-align: right;
+  flex: 1;
 }
 
 .row {
-  display: flex;
+  flex: 1;
   justify-content: center;
 }
 
@@ -77,15 +100,21 @@ button {
 }
 
 .leftMenu,
-.rightMenu,
-.centerDisplay,
-.photoDisplay {
-  float: left;
+.rightMenu {
+  flex: 1;
+}
+
+.centerDisplay .photoDisplay {
+  flex: 3;
 }
 
 .leftMenu {
-  width: 220px;
+  max-width: 220px;
   min-width: 220px;
+
+  border-width: 0px 1px 0px 0px;
+  border-style: solid;
+  border-color: white;
 }
 
 .leftMenu .dateList {
@@ -99,7 +128,7 @@ button {
   list-style: none;
 }
 
-.centerDisplay .navigation {
+.centerDisplay {
   width: 100%;
   text-align: center;
 }
@@ -107,8 +136,12 @@ button {
 .selectedPhotos,
 .rightMenu {
   min-width: 280px;
-  width: 280px;
+  max-width: 280px;
   padding-left: 20px;
+
+  border-width: 0px 0px 0px 1px;
+  border-style: solid;
+  border-color: white;
 }
 
 .centerDisplay,
@@ -116,21 +149,37 @@ button {
 .importDisplay,
 .photoLoadingOn {
   min-width: 200px;
-  float: left;
+  flex: 1;
   width: calc(100vw - 600px);
   min-height: 95vh;
   padding: 20px 20px 10px 20px;
   margin: 0 0 0 0px;
-
-  border-width: 0px 1px 0px 1px;
-  border-style: solid;
-  border-color: white;
 }
 
-.selectedPhotos,
-.photoPageInfo {
-  float: left;
+.photo-list-header {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
 }
+
+.photo-list-header .photo-operation,
+.photo-list-header .navigation,
+.photo-list-header .photo-page-info {
+  flex: 1;
+}
+
+.photo-list-header .photo-page-info {
+  text-align: left;
+}
+
+.photo-list-header .photo-operation {
+  text-align: right;
+}
+
+.selectedPhotos {
+  flex: 1;
+}
+
 
 .sleectedPhotos ul {
   text-align: left;
@@ -163,9 +212,6 @@ button {
   text-align: left;
 }
 
-.photoOperation {
-  float: right;
-}
 
 .importDisplay li,
 .centerDisplay li {
@@ -194,7 +240,7 @@ ul#listOfselectedForImport {
 }
 
 
-.container:after {
+.inner-container:after {
   content: "";
   display: table;
   clear: both;
@@ -219,7 +265,6 @@ ul#listOfselectedForImport {
 
 .photoLoadingOn {
   display: block;
-  min-height: 100vh;
 }
 
 .photoLoadingOff {
