@@ -136,7 +136,8 @@ impl MetaInfoDB for Tsv {
             let file = match fs::OpenOptions::new().read(true).open(&info_path) {
                 Ok(file) => file,
                 Err(e) => {
-                    panic!("{:?} => {:?}", info_path, e);
+                    eprintln!("{:?} => {:?}", info_path, e);
+                    return HashMap::new();
                 }
             };
             let mut photo_meta: HashMap<String, String> = HashMap::new();

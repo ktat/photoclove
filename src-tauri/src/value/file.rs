@@ -157,6 +157,18 @@ impl File {
         }
     }
 
+    pub fn new_if_exists(path: String) -> Option<File> {
+        let p = Path::new(&path);
+        let cp = fs::canonicalize(p);
+        if cp.is_err() {
+            eprintln!("Invalid path: {:?}, {:?}", path, cp.err());
+            return Option::None;
+        } else {
+            let ap = cp.unwrap().as_path().display().to_string();
+            return Option::Some(File { path: ap });
+        }
+    }
+
     pub fn created_date(&self) -> String {
         let t = self.get_created_time();
         return t.format("%Y-%m-%d").to_string();
