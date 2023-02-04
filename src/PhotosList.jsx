@@ -132,7 +132,6 @@ function PhotosList(props) {
         return (<>
             <div className="centerDisplay" id="photoList" onWheel={(e) => photosScroll(e)} data-date={props.currentDate} data-page={props.datePage[props.currentDate]}>
                 <div>
-                    List of Photos
                     <div className="photoPageInfo">{props.currentDate} page:{props.datePage[props.currentDate]}</div>
                     <div className="photoOperation">
                         Icon:<select name="icon_size" defaultValue="100" onChange={(e) => setIconSize(e.target.value)}>

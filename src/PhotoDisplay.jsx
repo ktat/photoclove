@@ -158,7 +158,6 @@ function PhotoDisplay(props) {
             onKeyDown={(e) => photoNavigation(e)}
             onKeyUp={(e) => photoNavigationUp(e)}
         >
-            <p>Photo Viewer</p>
             <a href="#" id="dummy-for-focus">{/* Dummy */}</a>
             <a href="#" onClick={() => prevPhoto(props.currentPhotoPath)}>&lt;&lt; prev</a>&nbsp;&nbsp;
             || <a href="#" onClick={() => closePhotoDisplay()}>close</a> ||&nbsp;&nbsp;

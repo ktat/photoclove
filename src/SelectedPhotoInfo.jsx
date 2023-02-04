@@ -10,9 +10,9 @@ async function importPhotos(props) {
             }
         })
     };
+    setTimeout(() => { fn(fn) }, 1000);
     await invoke("import_photos", { files: Object.keys(props.selectedForImport) }).then((r) => {
         props.setSelectedForImport({});
-        setTimeout(() => { fn(fn) }, 1);
     });
 }
 
