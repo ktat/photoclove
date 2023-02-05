@@ -166,6 +166,11 @@ button {
   margin: 0 0 0 0px;
 }
 
+.preferences {
+  overflow: scroll;
+}
+
+
 .importDisplay {
   overflow-y: scroll;
 }
@@ -299,10 +304,19 @@ ul#listOfselectedForImport {
 
 .photos {
   flex: 1;
-  min-width: calc(100vw - 800px);
-  max-width: calc(100vw - 800px);
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  min-width: calc(100vw - 600px);
+  max-width: calc(100vw - 600px);
   min-height: calc(100vh - 400px);
   max-height: calc(100vh - 400px);
+}
+
+.photos .row {
+  flex: 1;
+  margin: 10px;
 }
 
 .photos .navigation {
