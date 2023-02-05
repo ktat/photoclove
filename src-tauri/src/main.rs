@@ -239,6 +239,21 @@ async fn create_db(state: tauri::State<'_, AppState>) -> Result<bool, ()> {
     return Ok(true);
 }
 
+#[tauri::command]
+fn get_config(state: tauri::State<AppState>) -> String {
+    let new_config = Config::new();
+    serde_json::to_string(&state.config).unwrap()
+}
+
+#[tauri::command]
+fn save_config(state: tauri::State<AppState>, config: Config) -> String {
+    if config.save() {
+        return "{result: true}".to_string();
+    } else {
+        return "{result: false}".to_string();
+    }
+}
+
 // to avoid event happens twice in same time.
 #[tauri::command]
 fn lock(t: bool) -> bool {
@@ -327,6 +342,7 @@ fn main() {
                 .add_item(load_dates)
                 .add_item(import)
                 .add_item(create_db)
+                .add_item(pref)
                 .add_item(quit),
         );
         let help_submenu = Submenu::new("?", Menu::new().add_item(github).add_item(about));
@@ -368,6 +384,9 @@ fn main() {
             "import" => {
                 event.window().emit_all("click_menu", "import").unwrap();
             }
+            "pref" => {
+                event.window().emit_all("click_menu", "pref").unwrap();
+            }
             e => {
                 eprintln!("{:?}", e);
             }
@@ -390,6 +409,8 @@ fn main() {
             move_to_trash,
             lock,
             create_db,
+            get_config,
+            save_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

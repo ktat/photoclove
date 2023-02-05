@@ -22,6 +22,18 @@ pub struct RepositoryConfig {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RepositoryOption {}
 impl Config {
+    pub fn reload(&mut self) {
+        let config = Config::new();
+        self.repository = config.repository;
+        self.import_to = config.import_to;
+        self.export_from = config.export_from;
+        self.trash_path = config.trash_path;
+        self.data_path = config.data_path;
+        self.thumbnail_store = config.thumbnail_store;
+        self.copy_parallel = config.copy_parallel;
+        self.thumbnail_parallel = config.thumbnail_parallel;
+    }
+
     pub fn config_path() -> String {
         let home = match home_dir() {
             Some(path) => path,
@@ -54,6 +66,22 @@ impl Config {
             } else {
                 eprintln!("{:?}", result.err());
             }
+        }
+    }
+
+    pub fn save(&self) -> bool {
+        let path = Config::config_path();
+        let file = fs::OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .open(path)
+            .unwrap();
+        let writer = BufWriter::new(file);
+        let result = serde_yaml::to_writer(writer, self);
+        eprintln!("{:?}", result);
+        match result {
+            Ok(()) => return true,
+            _ => return false,
         }
     }
 

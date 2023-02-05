@@ -32,6 +32,7 @@ footer {
   display: flex;
   justify-content: space-between;
   text-align: center;
+  min-height: 15px;
   margin: 5px 5px 0px 5px;
   padding: 0px 10px 0px 10px;
   border-width: 1px 0px 0px 0px;
@@ -100,8 +101,10 @@ button {
 }
 
 .leftMenu,
+.selectedPhoto,
 .rightMenu {
   flex: 1;
+  height: calc(100vh - 25px);
 }
 
 .centerDisplay .photoDisplay {
@@ -133,7 +136,7 @@ button {
   text-align: center;
 }
 
-.selectedPhotos,
+.selectedPhoto,
 .rightMenu {
   min-width: 280px;
   max-width: 280px;
@@ -147,14 +150,20 @@ button {
 .centerDisplay,
 .photoDisplay,
 .importDisplay,
+.preferences,
 .photoLoadingOn {
   min-width: 200px;
   flex: 1;
   width: calc(100vw - 600px);
-  min-height: 95vh;
+  max-height: calc(100vh - 25px);
   padding: 20px 20px 10px 20px;
   margin: 0 0 0 0px;
 }
+
+.importDisplay {
+  overflow-y: scroll;
+}
+
 
 .photo-list-header {
   display: flex;
@@ -175,11 +184,6 @@ button {
 .photo-list-header .photo-operation {
   text-align: right;
 }
-
-.selectedPhotos {
-  flex: 1;
-}
-
 
 .sleectedPhotos ul {
   text-align: left;
@@ -229,6 +233,7 @@ li.selected:after {
 }
 
 ul#listOfselectedForImport {
+  text-align: left;
   overflow-y: scroll;
   height: calc(100vh - 200px - 200px);
 }
@@ -292,6 +297,35 @@ ul#listOfselectedForImport {
 img.photo_dragging {
   cursor: grabbing;
 }
+
+.preferences-input {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  text-align: left;
+}
+
+.preferences-input .row0 {
+  flex: 100%;
+  min-width: 100%;
+}
+
+.preferences-input .row1 {
+  flex: 100px;
+}
+
+.preferences-input .row2 {
+  flex: 200px;
+}
+
+.preferences-input .row3 {
+  flex: calc(100% - 200px);
+}
+
+.preferences-input input {
+  width: 400px;
+}
+
 
 @keyframes lds-dual-ring {
   0% {
