@@ -50,11 +50,17 @@ impl ImportProgress {
     }
 
     pub fn get_import_progress(&mut self) -> usize {
+        self.progress = IN_PROGRESS_NUM.load(Ordering::SeqCst);
         self.current_time = time::SystemTime::now()
             .duration_since(self.start_time)
             .unwrap()
             .as_secs();
-        return IN_PROGRESS_NUM.load(Ordering::SeqCst);
+        let t = self.current_time as f32;
+        let rest = (self.num - self.progress) as f32;
+        if t > 0.0 && rest > 0.0 {
+            self.num_per_sec = rest / t;
+        }
+        return self.progress;
     }
 
     pub fn reset_import_progress(&mut self) {

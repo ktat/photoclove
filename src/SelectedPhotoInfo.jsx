@@ -6,6 +6,11 @@ async function importPhotos(props) {
             let data = JSON.parse(r);
             props.setImportProgress(data);
             if (data.now_importing) {
+                let message = "Now importing: ";
+                message += data.progress + "/" + data.num + " ";
+                message += parseInt(data.num_per_sec * 1000) / 1000 + "/sec(";
+                message += parseInt((data.num - data.progress) / (data.num_per_sec)) + " secs left)";
+                props.addFooterMessage("importing", message);
                 setTimeout(() => { f(f) }, 1000);
             }
         })
