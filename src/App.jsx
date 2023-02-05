@@ -8,6 +8,7 @@ import "./App.css";
 import PhotosList from "./PhotosList.jsx"
 import DateList from "./DateList.jsx"
 import Importer from "./Importer.jsx"
+import Preferences from "./Preferences.jsx"
 import { tauri } from "@tauri-apps/api";
 
 const unlisten = listen("click_menu_static", (e) => {
@@ -19,7 +20,6 @@ const unlisten = listen("click_menu_static", (e) => {
 });
 
 function App() {
-  // example
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
   const [showFirstView, setShowFirstView] = useState(true)
@@ -29,6 +29,8 @@ function App() {
   const [reloadDates, setReloadDates] = useState(false);
   const [showImporter, setShowImporter] = useState(false);
   const [showPhotosList, setShowPhotosList] = useState(true);
+  const [showPreferences, setShowPreferences] = useState(false);
+  const [footerMessages, setFooterMessages] = useState({});
 
   const [shortCutNavigation, setShortCutNavigation] = useState({
     onKeyDown: (e) => { console.log(e) },
@@ -46,6 +48,8 @@ function App() {
         setReloadDates(true);
       } else if (e.payload === "import") {
         toggleImporter(true);
+      } else if (e.payload === "pref") {
+        togglePreferences(true);
       } else if (e.payload === "create_db") {
         // BUG: event is called twice in same time. I don't know the reason why.
         invoke("lock", { t: true }).then((e) => {
@@ -73,13 +77,37 @@ function App() {
     });
   }, [listened]);
 
+  function addFooterMessage(k, v) {
+    const newMessages = {};
+    Object.keys(footerMessages).map((k, i) => {
+      newMessages[k] = footerMessages[k];
+    })
+    newMessages[k] = v;
+    setFooterMessages(newMessages)
+
+  }
+
   function toggleImporter(t) {
     if (t) {
       setShowImporter(true);
       setShowPhotosList(false);
+      setShowPreferences(false);
     } else {
       setShowImporter(false);
+      setShowPreferences(false);
       setShowPhotosList(true);
+    }
+  }
+
+  function togglePreferences(t) {
+    if (t) {
+      setShowImporter(false);
+      setShowPhotosList(false);
+      setShowPreferences(true);
+    } else {
+      setShowImporter(false);
+      setShowPhotosList(false);
+      setShowPreferences(true);
     }
   }
 
@@ -128,10 +156,16 @@ function App() {
           shortCutNavigation={shortCutNavigation}
         />}
         {showImporter && <Importer />}
+        {showPreferences && <Preferences
+          addFooterMessage={addFooterMessage}
+          setShowPreferences={setShowPreferences}
+        ></Preferences>}
       </div>
       <footer>
         <div id="footer-message">
-
+          {Object.keys(footerMessages).map((k, i) => {
+            return <span key={i}> {footerMessages[k]} /</span>
+          })}
         </div>
         <div id="copyright">
           &copy; ktat

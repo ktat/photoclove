@@ -31,6 +31,9 @@
           "**",
           "**/.photoclove/**"
         ]
+      },
+      "process": {
+	"relaunch": true
       }
     },
     "bundle": {
