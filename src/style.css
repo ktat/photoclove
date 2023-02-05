@@ -305,13 +305,14 @@ ul#listOfselectedForImport {
 .photos {
   flex: 1;
   display: flex;
+  overflow-y: scroll;
   flex-direction: row;
   flex-wrap: wrap;
   margin-top: 10px;
   min-width: calc(100vw - 600px);
   max-width: calc(100vw - 600px);
-  min-height: calc(100vh - 400px);
-  max-height: calc(100vh - 400px);
+  min-height: calc(100vh - 150px);
+  max-height: calc(100vh - 150px);
 }
 
 .photos .row {
