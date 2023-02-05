@@ -33,7 +33,7 @@
         ]
       },
       "process": {
-	"relaunch": true
+        "relaunch": true
       }
     },
     "bundle": {
@@ -80,7 +80,7 @@
         "fullscreen": false,
         "height": 1200,
         "resizable": true,
-        "title": "photoclove",
+        "title": "🦀PhotoClove🦀",
         "width": 1500
       }
     ]

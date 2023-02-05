@@ -225,6 +225,15 @@ impl Importer {
         };
     }
 
+    pub fn set_importer_paths(&mut self, paths: Vec<String>) {
+        for path in paths {
+            let r = file::File::new_if_exists(path.clone());
+            if r.is_some() {
+                self.paths.push(path);
+            }
+        }
+    }
+
     pub fn update(&mut self, directory: String, page: u32, num: u32) {
         let dir = dir::Dir::new(directory);
         let sort = repository::Sort::Time;
