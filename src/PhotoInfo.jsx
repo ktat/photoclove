@@ -19,7 +19,7 @@ function PhotoInfo(props) {
 
     return (
         <div className="rightMenu">
-            <p>Photo Info</p>
+            <p><strong>Photo Info</strong></p>
             <div>
                 {props.path && (
                     <table>
@@ -41,6 +41,17 @@ function PhotoInfo(props) {
                     </table>
                 )}
             </div>
+            {false &&
+                <>
+                    <div>
+                        Stars: ☆ ☆ ☆ ☆ ☆
+                    </div>
+                    <div>
+                        Comment:<br />
+                        <textarea></textarea>
+                    </div>
+                </>
+            }
         </div >
     );
 }
