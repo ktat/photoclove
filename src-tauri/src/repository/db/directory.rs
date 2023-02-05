@@ -101,18 +101,21 @@ impl RepositoryDB for Directory {
 
         let mut start_index = (num * (page - 1)) as usize;
         let mut end_index = start_index + (num as usize);
-        photos.has_next = true;
 
-        if photos.photos.len() < end_index {
-            end_index = photos.photos.len();
-            photos.has_next = false;
-        }
-        if start_index >= photos.photos.len() {
-            start_index = photos.photos.len() - 1;
-        }
-        photos.photos = photos.photos[start_index..end_index].to_vec();
-        if start_index > 0 {
-            photos.has_prev = true;
+        if photos.photos.len() > 0 {
+            photos.has_next = true;
+
+            if photos.photos.len() < end_index {
+                end_index = photos.photos.len();
+                photos.has_next = false;
+            }
+            if start_index >= photos.photos.len() {
+                start_index = photos.photos.len() - 1;
+            }
+            photos.photos = photos.photos[start_index..end_index].to_vec();
+            if start_index > 0 {
+                photos.has_prev = true;
+            }
         }
         photos
     }
