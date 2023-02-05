@@ -14,34 +14,35 @@ So, I decided to create this by myself.
 
 ## Featurs to be ipmlemented
 
-Just a plan, currentrly a few features are only implementead.
+Just a plan, currentrly a few features are only implemented.
 
-- Fast photo viewer
-  - Allow photos over network drive(priority is very low because I uses NFS mount on Linux)
-- Fast importer
-  - only check duplication for the files which has same name prefix and different size.
-  - import files created after last import file timestamp in directories.
-  - importing in background
-- Thumbnail creation in background
-- Provide very simple editor
-  - rotation
-  - crop
-  - compression(low priority)
-- Additiona photo data
-  - Tag
-  - Star
-  - Comment/Note
-  - Album(low priority)
-- Search
-- Filter
-- Upload to cloud services
-  - Google Photos
-  - Amazon photos
-- Preferences editor(low priority)
-  - directories(import from)
-  - directory(import to)
-  - directory date format(currentry, yyyy-mm-dd only)
-- i18n(low priority)
+- [x] Fast photo viewer
+  - [ ] Allow photos over network drive(priority is very low because I uses NFS mount on Linux)
+- [x] Fast importer
+  - [ ] only check duplication for the files which has same name prefix and different size.
+  - [ ] import files created after last import file timestamp in directories.
+  - [x] importing in background
+  - [ ] Thumbnail creation in background
+- [ ] Provide very simple editor
+  - [ ] rotation
+  - [ ] crop
+- [ ] Additional photo data
+  - [ ] Tag
+  - [ ] Star
+  - [ ] Comment/Note
+  - [ ] Album(low priority)
+- [ ] Search
+- [ ] Filter
+- [ ] Upload to cloud services
+  - [ ] Google Photos
+  - [ ] Amazon Photos
+- [x] Preferences editor(low priority)
+  - [x] directories(import from)
+  - [x] directory(import to)
+  - [x] num of parralel when copying photos
+  - [ ] num of parralel when creating thumbnail
+  - [ ] directory date format(currentry, yyyy-mm-dd only)
+- [ ] i18n(low priority)
 
 ## Configuration file
 
