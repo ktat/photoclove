@@ -276,8 +276,8 @@ ul#listOfselectedForImport {
   flex-wrap: wrap;
 }
 
-#importer-files-list>.row0,
-.row0-center {
+#importer-files-list .row0,
+#importer-files-list .row0-center {
   flex: 1;
   height: 25px;
   margin: 0px;
@@ -285,8 +285,8 @@ ul#listOfselectedForImport {
   max-width: calc(100vw - 800px);
 }
 
-#importer-files-list>.row1,
-.row1-right {
+#importer-files-list .row1,
+#importer-files-list .row1-right {
   flex: 1;
   margin: 0px;
   height: 25px;
@@ -294,11 +294,11 @@ ul#listOfselectedForImport {
   max-width: calc((100vw - 800px) / 2);
 }
 
-#importer-files-list>.row1 {
+#importer-files-list .row1 {
   text-align: left;
 }
 
-#importer-files-list>.row0-center {
+#importer-files-list .row0-center {
   text-align: center;
 }
 
@@ -415,6 +415,21 @@ img.photo_dragging {
 
 .restartRequired {
   color: #ff5555;
+}
+
+table {
+  border-width: 1px;
+  border-style: solid;
+  border-color: white;
+}
+
+table td,
+table th {
+  text-align: left;
+  border-width: 0px 0px 1px 1px;
+  border-style: solid;
+  padding: 2px 5px 2px 5px;
+  border-color: white;
 }
 
 @keyframes lds-dual-ring {
