@@ -58,22 +58,9 @@ impl RepositoryDB for Directory {
     ) -> photo::Photos {
         let dir = self.path.child(date.to_string());
         let mut photos = photo::Photos::new();
-        let mut i = 0;
-        let start_index = num * (page - 1);
-        let end_index = start_index + num - 1;
         if meta_data.keys().len() == 0 {
             let files = dir.find_files();
             for f in files.files {
-                i += 1;
-                if (i - 1) < start_index {
-                    photos.has_prev = true;
-                    continue;
-                }
-                if (i - 1) > end_index {
-                    photos.has_next = true;
-                    break;
-                }
-
                 let mut p = photo::Photo::new(f.clone());
                 let mut meta = meta::MetaData::empty();
                 let result = meta_data.get(&f.path);
@@ -94,15 +81,6 @@ impl RepositoryDB for Directory {
                     continue;
                 }
                 let file = file_result.unwrap();
-                i += 1;
-                if (i - 1) < start_index {
-                    photos.has_prev = true;
-                    continue;
-                }
-                if (i - 1) > end_index {
-                    photos.has_next = true;
-                    break;
-                }
                 let mut p = photo::Photo::new(file);
                 let mut meta = meta::MetaData::empty();
                 meta.DateTime = meta_data.get(f).unwrap().to_string();
@@ -119,6 +97,22 @@ impl RepositoryDB for Directory {
         } else {
             // photo time
             photos.photos.sort_by(|a, b| a.time.cmp(&b.time));
+        }
+
+        let mut start_index = (num * (page - 1)) as usize;
+        let mut end_index = start_index + (num as usize);
+        photos.has_next = true;
+
+        if photos.photos.len() < end_index {
+            end_index = photos.photos.len();
+            photos.has_next = false;
+        }
+        if start_index >= photos.photos.len() {
+            start_index = photos.photos.len() - 1;
+        }
+        photos.photos = photos.photos[start_index..end_index].to_vec();
+        if start_index > 0 {
+            photos.has_prev = true;
         }
         photos
     }
