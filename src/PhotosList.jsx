@@ -164,11 +164,18 @@ function PhotosList(props) {
                     </div>
                     <div className="photos">
                         {photos.photos.map((l, i) => {
-                            return <li key={i}>
-                                <a href="#" onClick={() => { displayPhoto(l.file.path) }}>
-                                    <img loading="lazy" alt={l.file.path} style={{ maxWidth: icon_size + 'px', maxHeight: icon_size + 'px' }} src={convertFileSrc(l.file.path)} />
-                                </a>
-                                <a href="#" onClick={() => setCurrentPhotoPath(l.file.path)} >(&#8505;)</a></li>
+                            return (
+                                <div key={i} className="row" style={
+                                    {
+                                        minWidth: (parseInt(icon_size || 100) + 20) + "px",
+                                        maxWidth: (parseInt(icon_size || 100) + 20) + "px"
+                                    }
+                                }>
+                                    <a href="#" onClick={() => { displayPhoto(l.file.path) }}>
+                                        <img loading="lazy" alt={l.file.path} style={{ maxWidth: icon_size + 'px', maxHeight: icon_size + 'px' }} src={convertFileSrc(l.file.path)} />
+                                    </a>
+                                    <a href="#" onClick={() => setCurrentPhotoPath(l.file.path)} >(&#8505;)</a>
+                                </div>)
                         })}
                     </div>
                 </div>
