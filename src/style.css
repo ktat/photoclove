@@ -399,6 +399,9 @@ img.photo_dragging {
   width: 400px;
 }
 
+.restartRequired {
+  color: #ff5555;
+}
 
 @keyframes lds-dual-ring {
   0% {

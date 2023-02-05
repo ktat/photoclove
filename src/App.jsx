@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { register } from "@tauri-apps/api/globalShortcut";
 import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 import { open } from "@tauri-apps/api/shell";
@@ -183,7 +183,11 @@ function App() {
       <footer>
         <div id="footer-message">
           {Object.keys(footerMessages).map((k, i) => {
-            return <span key={i}> {footerMessages[k]} /</span>
+            return (<React.Fragment key={i}>
+              {i > 0 && " | "}
+              <span className={k}>
+                {footerMessages[k]}</span>
+            </React.Fragment>)
           })}
         </div>
         <div id="copyright">
