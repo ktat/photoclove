@@ -77,14 +77,30 @@ function App() {
     });
   }, [listened]);
 
-  function addFooterMessage(k, v) {
+  function addFooterMessage(k, v, deleteAfter) {
     const newMessages = {};
     Object.keys(footerMessages).map((k, i) => {
       newMessages[k] = footerMessages[k];
     })
     newMessages[k] = v;
     setFooterMessages(newMessages)
+    if (deleteAfter) {
+      setTimeout(() => { removeFooterMessage(k) }, deleteAfter);
+    }
+  }
 
+  function removeFooterMessage(targetKey, timeAfter) {
+    const newMessages = {};
+    if (!timeAfter) {
+      timeAfter = 0;
+    }
+    setTimeout(() => {
+      delete footerMessages[targetKey];
+      Object.keys(footerMessages).map((k, i) => {
+        newMessages[k] = footerMessages[k];
+      })
+      setFooterMessages(newMessages);
+    }, timeAfter);
   }
 
   function toggleImporter(t) {
@@ -155,7 +171,10 @@ function App() {
           setDatePage={setDatePage}
           shortCutNavigation={shortCutNavigation}
         />}
-        {showImporter && <Importer />}
+        {showImporter && <Importer
+          addFooterMessage={addFooterMessage}
+          removeFooterMessage={removeFooterMessage}
+        />}
         {showPreferences && <Preferences
           addFooterMessage={addFooterMessage}
           setShowPreferences={setShowPreferences}

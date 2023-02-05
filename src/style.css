@@ -19,6 +19,11 @@ body {
   overflow-y: hidden;
 }
 
+body {
+  max-width: 100vw;
+  min-width: 100vw;
+}
+
 
 .inner-container {
   display: flex;
@@ -154,7 +159,8 @@ button {
 .photoLoadingOn {
   min-width: 200px;
   flex: 1;
-  width: calc(100vw - 600px);
+  max-width: calc(100vw - 600px);
+  min-width: calc(100vw - 600px);
   max-height: calc(100vh - 25px);
   padding: 20px 20px 10px 20px;
   margin: 0 0 0 0px;
@@ -195,10 +201,6 @@ button {
   max-height: 85vh;
 }
 
-.photos {
-  margin-top: 30px;
-}
-
 .selectedPhotos li {
   list-style: none;
 }
@@ -217,11 +219,17 @@ button {
 }
 
 
-.importDisplay li,
-.centerDisplay li {
+.centerDisplay li,
+.importDisplay li {
   display: inline;
   padding-right: 20px;
   margin-right: 10px;
+}
+
+#importer-directories-list li {
+  margin-left: -40px;
+  display: list-item;
+  list-style: none;
 }
 
 li.selected:after {
@@ -237,6 +245,71 @@ ul#listOfselectedForImport {
   overflow-y: scroll;
   height: calc(100vh - 200px - 200px);
 }
+
+#import-container {
+  display: flex;
+  flex-direction: row;
+  max-width: calc(100vw - 600px);
+}
+
+#importer-directories-list {
+  min-width: 200px;
+  max-width: 200px;
+  flex: 1;
+  min-height: calc(100vh - 250px);
+  max-height: calc(100vh - 250px);
+  overflow: scroll;
+  text-align: left;
+}
+
+#importer-files-list {
+  min-width: calc(100vw - 800px);
+  max-width: calc(100vw - 800px);
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+#importer-files-list>.row0,
+.row0-center {
+  flex: 1;
+  height: 25px;
+  margin: 0px;
+  min-width: calc(100vw - 800px);
+  max-width: calc(100vw - 800px);
+}
+
+#importer-files-list>.row1,
+.row1-right {
+  flex: 1;
+  margin: 0px;
+  height: 25px;
+  min-width: calc((100vw - 800px) / 2);
+  max-width: calc((100vw - 800px) / 2);
+}
+
+#importer-files-list>.row1 {
+  text-align: left;
+}
+
+#importer-files-list>.row0-center {
+  text-align: center;
+}
+
+.photos {
+  flex: 1;
+  min-width: calc(100vw - 800px);
+  max-width: calc(100vw - 800px);
+  min-height: calc(100vh - 400px);
+  max-height: calc(100vh - 400px);
+}
+
+.photos .navigation {
+  text-align: center;
+  width: 100%;
+}
+
 
 .imageInSelectedPhotos {
   max-width: 100%;

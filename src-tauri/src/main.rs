@@ -205,15 +205,6 @@ fn get_import_progress(state: tauri::State<AppState>) -> String {
     let ip = &state.import_progress;
     let num = ip.lock().unwrap().num;
     let finished = ip.lock().unwrap().get_import_progress();
-
-    let mut locked = ip.lock().unwrap();
-    if num <= finished {
-        // locked.reset_import_progress();
-    } else {
-        locked.progress = finished;
-        locked.num_per_sec = (locked.num - locked.progress) as f32 / locked.current_time as f32;
-    }
-    drop(locked);
     return serde_json::to_string(ip).unwrap();
 }
 

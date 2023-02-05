@@ -20,7 +20,7 @@ function Importer(props) {
     useEffect(() => {
         const unlisten = listen("import", (e) => {
             if (e.payload == "finish") {
-                //
+                props.addFooterMessage("importing", "Importing is finished", 5000);
             }
             console.log(e.payload);
         });
@@ -165,46 +165,53 @@ function Importer(props) {
                 {!importProgress.now_importing && importProgress.start_time && importProgress.start_time.secs_since_epoch && (<>
                     <span>Last Import: {new Date(importProgress.start_time.secs_since_epoch * 1000).toLocaleString("default", { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
                 </>)}
-                <p>Directories (path: {currentImportPath}):</p>
-                <ul>
-                    {(importer.dirs_files.dirs.dirs.length == 0 || importer.dirs_files.dirs.dirs[0].path.match("^/[^\/]+/.+$")) &&
-                        <li><a href="#" onClick={() => showImporter(importer.dirs_files.dir.path + "/..")}>..</a></li>
-                    }
-                    {importer.dirs_files.dirs.dirs.map((l, i) => {
-                        return (
-                            <li key={i}>&#128193;
-                                <a href="#" onClick={() => showImporter(l.path)}>{l.path.replace(/^.+\//, '')}</a>
-                            </li>
-                        );
-                    })
-                    }
-                </ul>
-                {importer.dirs_files.files.files.length > 0 && (
-                    <>
-                        <p>Files(page. {pathPage[currentImportPath]}):</p>
-                        <div>
-                            Filter: <br />
-                            Created Date: after <input id="filterDate" name="date" type="date" /><br />
-                            <button onClick={() => filterImporter()}>Filter</button><br />
-                            <button onClick={() => selectAllInThisPage()}>Select All photos in this page</button>
-                            <button onClick={() => selectAll()}>Select All photos in all pages</button>
-                            <button onClick={() => unselectAll()}>Unselect All</button>
-                            <br /><br />
+                <div id="import-container">
+                    <div id="importer-directories-list">
+                        <p>{currentImportPath}:</p>
+                        <ul>
+                            {(importer.dirs_files.dirs.dirs.length == 0 || importer.dirs_files.dirs.dirs[0].path.match("^/[^\/]+/.+$")) &&
+                                <li><a href="#" onClick={() => showImporter(importer.dirs_files.dir.path + "/..")}>..</a></li>
+                            }
+                            {importer.dirs_files.dirs.dirs.map((l, i) => {
+                                return (
+                                    <li key={i}>&#128193;
+                                        <a href="#" onClick={() => showImporter(l.path)}>{l.path.replace(/^.+\//, '')}</a>
+                                    </li>
+                                );
+                            })
+                            }
+                        </ul>
+                    </div>
+                    <div id="importer-files-list">
+                        {importer.dirs_files.files.files.length > 0 && (
+                            <>
+                                <div className="row1">page. {pathPage[currentImportPath]}</div>
+                                <div className="row1-right">
+                                    Created Date: after <input id="filterDate" name="date" type="date" />
+                                    <button onClick={() => filterImporter()}>Filter</button><br />
+                                </div>
+                                <div className="row0-center">
+                                    <button onClick={() => selectAllInThisPage()}>Select All photos in this page</button>
+                                    <button onClick={() => selectAll()}>Select All photos in all pages</button>
+                                    <button onClick={() => unselectAll()}>Unselect All</button>
+                                </div>
+                            </>
+                        )}
+                        <div className="photos">
+                            <div className="navigation">
+                                {importer.dirs_files.has_prev_file && (<span><a href="#" onClick={(e) => nextImportPhotosList(e, false)}>&lt;&lt; Prev&nbsp;</a></span>)}
+                                {importer.dirs_files.has_next_file && (<span><a href="#" onClick={(e) => nextImportPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
+                            </div>
+                            <ul id="importPhotosList">
+                                {importer.dirs_files.files.files.map((l, i) => {
+                                    return (
+                                        <li key={i} className={selectedForImport[l.path] ? "selected" : "notSelected"}><a href="#" id={l.path} className="importPhoto" onClick={() => selectPhoto(l.path)}><img src={convertFileSrc(l.path)} width="100" /></a></li>
+                                    );
+                                })
+                                }
+                            </ul>
                         </div>
-                    </>
-                )}
-                {importer.dirs_files.has_prev_file && (<span><a href="#" onClick={(e) => nextImportPhotosList(e, false)}>&lt;&lt; Prev&nbsp;</a></span>)}
-                {importer.dirs_files.has_next_file && (<span><a href="#" onClick={(e) => nextImportPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
-
-                <div className="photos">
-                    <ul id="importPhotosList">
-                        {importer.dirs_files.files.files.map((l, i) => {
-                            return (
-                                <li key={i} className={selectedForImport[l.path] ? "selected" : "notSelected"}><a href="#" id={l.path} className="importPhoto" onClick={() => selectPhoto(l.path)}><img src={convertFileSrc(l.path)} width="100" /></a></li>
-                            );
-                        })
-                        }
-                    </ul>
+                    </div>
                 </div>
             </div>
             <SelectedPhotoInfo
@@ -212,6 +219,8 @@ function Importer(props) {
                 setSelectedForImport={setSelectedForImport}
                 lastSelected={imageInSelectedPhotos}
                 setImportProgress={setImportProgress}
+                addFooterMessage={props.addFooterMessage}
+                removeFooterMessage={props.removeFooterMessage}
             />
         </>
     )
