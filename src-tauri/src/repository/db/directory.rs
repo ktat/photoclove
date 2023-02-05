@@ -5,6 +5,7 @@ use crate::repository::{RepoDB, RepositoryDB, Sort};
 use crate::value::{date, file, meta};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use std::collections::HashMap;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -91,12 +92,18 @@ impl RepositoryDB for Directory {
         if sort == Sort::Name {
             photos.photos.sort_by(|a, b| a.file.path.cmp(&b.file.path));
         } else if sort == Sort::Time {
-            photos
-                .photos
-                .sort_by(|a, b| a.file.created_date().cmp(&b.file.created_date()));
+            photos.photos.sort_by(
+                |a, b| match a.file.created_date().cmp(&b.file.created_date()) {
+                    Ordering::Equal => a.file.path.cmp(&b.file.path),
+                    other => other,
+                },
+            );
         } else {
             // photo time
-            photos.photos.sort_by(|a, b| a.time.cmp(&b.time));
+            photos.photos.sort_by(|a, b| match a.time.cmp(&b.time) {
+                Ordering::Equal => a.file.path.cmp(&b.file.path),
+                other => other,
+            });
         }
 
         let mut start_index = (num * (page - 1)) as usize;
