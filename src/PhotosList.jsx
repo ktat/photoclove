@@ -168,11 +168,11 @@ function PhotosList(props) {
                                 <a href="#" onClick={() => { displayPhoto(l.file.path) }}>
                                     <img loading="lazy" alt={l.file.path} style={{ maxWidth: icon_size + 'px', maxHeight: icon_size + 'px' }} src={convertFileSrc(l.file.path)} />
                                 </a>
-                                <a href="#" onClick={() => getPhotoInfo(l.file.path)} >(&#8505;)</a></li>
+                                <a href="#" onClick={() => setCurrentPhotoPath(l.file.path)} >(&#8505;)</a></li>
                         })}
                     </div>
                 </div>
-                <PhotoInfo />
+                <PhotoInfo path={currentPhotoPath} />
             </>)
         } else {
             return <PhotoLoading />
