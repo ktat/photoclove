@@ -160,7 +160,8 @@ fn show_importer(
         }
     }
     let mut importer = importer::Importer::new(path.to_string(), page, num);
-    importer.paths = state.config.export_from.clone();
+    importer.set_importer_paths(state.config.export_from.clone());
+
     let json = serde_json::to_string(&importer).unwrap();
     // println!("{:?}", &json);
     return json;
@@ -233,7 +234,7 @@ async fn create_db(state: tauri::State<'_, AppState>) -> Result<bool, ()> {
 #[tauri::command]
 fn get_config(state: tauri::State<AppState>) -> String {
     let new_config = Config::new();
-    serde_json::to_string(&state.config).unwrap()
+    serde_json::to_string(&new_config).unwrap()
 }
 
 #[tauri::command]

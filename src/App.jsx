@@ -9,6 +9,7 @@ import PhotosList from "./PhotosList.jsx"
 import DateList from "./DateList.jsx"
 import Importer from "./Importer.jsx"
 import Preferences from "./Preferences.jsx"
+import RandomMessages from "./RandomMessages.jsx"
 import { tauri } from "@tauri-apps/api";
 
 const unlisten = listen("click_menu_static", (e) => {
@@ -139,7 +140,6 @@ function App() {
     >
       <div className="inner-container">
         <div id="leftMenu" className="leftMenu">
-          <h1>PhotoClove&#x1f980;</h1>
           <a href="#" onClick={() => toggleImporter(true)}>&#10145;import</a>
           <div className="row">
             <div>
@@ -182,16 +182,20 @@ function App() {
       </div>
       <footer>
         <div id="footer-message">
-          {Object.keys(footerMessages).map((k, i) => {
-            return (<React.Fragment key={i}>
-              {i > 0 && " | "}
-              <span className={k}>
-                {footerMessages[k]}</span>
-            </React.Fragment>)
-          })}
+          <span>&#x1f980;.｡o( </span>
+          {Object.keys(footerMessages).length == 0
+            ? <RandomMessages />
+            : Object.keys(footerMessages).map((k, i) => {
+              return (<React.Fragment key={i}>
+                {i > 0 && " | "}
+                <span className={k}>
+                  {footerMessages[k]}</span>
+              </React.Fragment>)
+            })}
+          <span> )</span>
         </div>
         <div id="copyright">
-          &copy; ktat
+          PhotoClove &copy; ktat
         </div>
       </footer>
     </div>

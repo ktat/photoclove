@@ -1,8 +1,8 @@
-use crate::value::file;
 use crate::repository;
-use std::fs;
-use serde::{Serialize, Deserialize};
+use crate::value::file;
 use regex::Regex;
+use serde::{Deserialize, Serialize};
+use std::fs;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Dir {
@@ -19,11 +19,11 @@ pub struct DirsFiles {
 }
 
 impl DirsFiles {
-    pub fn new (path: String) -> DirsFiles {
+    pub fn new(path: String) -> DirsFiles {
         DirsFiles {
-            dir: Dir{path: path},
+            dir: Dir { path: path },
             dirs: file::Dirs::new(),
-            files:file::Files::new(),
+            files: file::Files::new(),
             has_next_file: false,
             has_prev_file: false,
         }
@@ -31,11 +31,11 @@ impl DirsFiles {
 }
 
 impl Dir {
-    pub fn new (path: String) -> Dir{
+    pub fn new(path: String) -> Dir {
         if path == "" {
             panic!("empty path is given!");
         }
-        Dir{path: path}
+        Dir { path: path }
     }
 
     pub fn find_all_files(&self) -> file::Files {
@@ -47,8 +47,12 @@ impl Dir {
                 let entry = entry.unwrap();
                 let entry_path = entry.path();
                 if entry_path.display().to_string() != ".".to_string() {
-                    if entry_path.is_file() && re.is_match(entry_path.display().to_string().as_str()) {
-                        files.files.push(file::File::new(entry_path.display().to_string()));
+                    if entry_path.is_file()
+                        && re.is_match(entry_path.display().to_string().as_str())
+                    {
+                        files
+                            .files
+                            .push(file::File::new(entry_path.display().to_string()));
                     }
                 }
             }
@@ -63,7 +67,7 @@ impl Dir {
         let re = Regex::new(r"(?i)\.(?:jpe?g|gif|png)$").unwrap();
         let readdir = fs::read_dir(&self.path);
         if readdir.is_ok() {
-            let start_index = (page-1) * num;
+            let start_index = (page - 1) * num;
             let last_index = page * num;
             let mut i = 0;
             if start_index > 0 {
@@ -73,7 +77,9 @@ impl Dir {
                 let entry = entry.unwrap();
                 let entry_path = entry.path();
                 if entry_path.display().to_string() != ".".to_string() {
-                    if entry_path.is_file() && re.is_match(entry_path.display().to_string().as_str()) {
+                    if entry_path.is_file()
+                        && re.is_match(entry_path.display().to_string().as_str())
+                    {
                         if i < start_index {
                             i += 1;
                             continue;
@@ -83,16 +89,20 @@ impl Dir {
                             df.has_next_file = true;
                             continue;
                         }
-                        df.files.files.push(file::File::new(entry_path.display().to_string()));
+                        df.files
+                            .files
+                            .push(file::File::new(entry_path.display().to_string()));
                         i += 1
-                    } else if (entry_path.is_dir()) {
-                        df.dirs.dirs.push(file::Dir::new(entry_path.display().to_string()));
+                    } else if entry_path.is_dir() {
+                        df.dirs
+                            .dirs
+                            .push(file::Dir::new(entry_path.display().to_string()));
                     } else {
                         // print!("not target: {:?}", entry_path);
                     }
                 }
             }
-            return df
+            return df;
         } else {
             return DirsFiles::new(self.path.clone());
         }
