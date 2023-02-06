@@ -4,7 +4,6 @@ pub mod meta_db;
 use crate::domain::config;
 use crate::domain::photo;
 use crate::value::date;
-use crate::value::file;
 use async_trait::async_trait;
 use std::collections::HashMap;
 
@@ -34,21 +33,21 @@ pub(crate) trait RepositoryDB {
     fn get_dates(&self) -> date::Dates;
     async fn get_next_photo_in_date(
         &self,
-        meta_data: &HashMap<String, String>,
+        meta_data: &meta_db::PhotoMetas,
         path: &str,
         date: date::Date,
         sort: Sort,
     ) -> Option<photo::Photo>;
     async fn get_prev_photo_in_date(
         &self,
-        meta_data: &HashMap<String, String>,
+        meta_data: &meta_db::PhotoMetas,
         path: &str,
         date: date::Date,
         sort: Sort,
     ) -> Option<photo::Photo>;
     async fn get_photos_in_date(
         &self,
-        meta_data: &HashMap<String, String>,
+        meta_data: &meta_db::PhotoMetas,
         date: date::Date,
         sort: Sort,
         num: u32,
@@ -64,5 +63,5 @@ pub(crate) trait MetaInfoDB {
     fn new_connect(&self) -> MetaDB;
     fn record_photos_meta_data(&self, photos: Vec<photo::Photo>) -> Result<bool, &str>;
     fn record_photos_all_meta_data(&self, dates: date::Dates) -> Result<bool, &str>;
-    fn get_photo_meta_data_in_date(&self, date: date::Date) -> HashMap<String, String>;
+    fn get_photo_meta_data_in_date(&self, date: date::Date) -> meta_db::PhotoMetas;
 }
