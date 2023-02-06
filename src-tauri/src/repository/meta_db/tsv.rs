@@ -1,4 +1,5 @@
 use crate::domain_service;
+use crate::repository::meta_db;
 use crate::{domain::photo, repository::MetaInfoDB, value::date, value::file};
 use csv::{Reader, Writer};
 use serde::{Deserialize, Serialize};
@@ -10,12 +11,6 @@ static META_INFO_FILE_NAME: &str = ".photoclove-dir-info.tsv";
 
 pub struct Tsv {
     path: file::Dir,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct PhotoInfo {
-    path: String,
-    date: String,
 }
 
 impl Tsv {
@@ -77,14 +72,20 @@ impl MetaInfoDB for Tsv {
                     panic!("{:?} => {:?}", read_info_path, e);
                 }
             };
-            let mut photo_meta: HashMap<String, String> = HashMap::new();
+            let mut photo_metas = meta_db::PhotoMetas::new();
             let mut rdr = Reader::from_reader(file);
             for result in rdr.deserialize() {
-                let record: PhotoInfo = result.unwrap();
-                photo_meta.insert(record.path, record.date);
+                let record: meta_db::PhotoInfo = result.unwrap();
+                photo_metas.data.insert(
+                    record.path.clone(),
+                    meta_db::MetaInfo::new_from_photo_info(&record),
+                );
             }
             for photo in photo_set {
-                photo_meta.insert(photo.file.path.clone(), photo.time.clone());
+                photo_metas.data.insert(
+                    photo.file.path.clone(),
+                    meta_db::MetaInfo::new_from_photo(photo),
+                );
             }
 
             let write_file = match fs::OpenOptions::new()
@@ -100,10 +101,10 @@ impl MetaInfoDB for Tsv {
             };
 
             let mut wtr = Writer::from_writer(write_file);
-            for (path, date) in photo_meta.iter() {
-                let record = PhotoInfo {
+            for (path, meta_info) in photo_metas.iter() {
+                let record = meta_db::PhotoInfo {
                     path: path.to_string(),
-                    date: date.to_string(),
+                    date: meta_info.date.clone(),
                 };
                 wtr.serialize(record).unwrap();
             }
@@ -128,7 +129,7 @@ impl MetaInfoDB for Tsv {
         Ok(true)
     }
 
-    fn get_photo_meta_data_in_date(&self, date: date::Date) -> HashMap<String, String> {
+    fn get_photo_meta_data_in_date(&self, date: date::Date) -> meta_db::PhotoMetas {
         let dir = self.path.child(date.to_string());
         let info_path = path::Path::new(&dir.path).join(META_INFO_FILE_NAME);
 
@@ -137,17 +138,20 @@ impl MetaInfoDB for Tsv {
                 Ok(file) => file,
                 Err(e) => {
                     eprintln!("{:?} => {:?}", info_path, e);
-                    return HashMap::new();
+                    return meta_db::PhotoMetas::new();
                 }
             };
-            let mut photo_meta: HashMap<String, String> = HashMap::new();
+            let mut photo_metas = meta_db::PhotoMetas::new();
             let mut rdr = Reader::from_reader(file);
             for result in rdr.deserialize() {
-                let record: PhotoInfo = result.unwrap();
-                photo_meta.insert(record.path, record.date);
+                let record: meta_db::PhotoInfo = result.unwrap();
+                photo_metas.data.insert(
+                    record.path.clone(),
+                    meta_db::MetaInfo::new_from_photo_info(&record),
+                );
             }
-            return photo_meta;
+            return photo_metas;
         }
-        return HashMap::new();
+        return meta_db::PhotoMetas::new();
     }
 }
