@@ -34,7 +34,7 @@ function SelectedPhotoInfo(props) {
                 {Object.keys(props.selectedForImport).map((l, i) => {
                     let rest = l.replace(/([^\/]+)$/, "");
                     let filename = RegExp.$1;
-                    return (<li key={i}><a href="#" onClick={() => setImageInSelectedPhotos(l)}>{filename}</a></li>);
+                    return (<li key={i}><a href="#" onClick={() => props.setImageInSelectedPhotos(l)}>{filename}</a></li>);
                 })
                 }
             </ul>

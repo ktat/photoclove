@@ -144,7 +144,7 @@ function App() {
           <div className="row">
             <div>
               <input
-                id="greet-input"
+                id="search-input"
                 onChange={(e) => setName(e.currentTarget.value)}
                 placeholder="Enter wrods for search"
               />

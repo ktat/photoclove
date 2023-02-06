@@ -5,8 +5,8 @@ import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 import PhotoLoading from "./PhotoLoading.jsx";
 
 function PhotosList(props) {
-    const [icon_size, setIconSize] = useState(100);
-    const [num_of_photo, setNumOfPhoto] = useState(20);
+    const [iconSize, setIconSize] = useState(100);
+    const [numOfPhoto, setNumOfPhoto] = useState(20);
     const [currentPhotoPath, setCurrentPhotoPath] = useState("");
     const [photos, setPhotosList] = useState({ "photos": [] });
     const [showPhotoDisplay, setShowPhotoDisplay] = useState(false);
@@ -25,7 +25,7 @@ function PhotosList(props) {
             fetchPhotos().catch(console.error);
             console.log("loaded")
         }
-    }, [num_of_photo, props.currentDate, sortOfPhotos, icon_size]);
+    }, [numOfPhoto, props.currentDate, sortOfPhotos, iconSize]);
 
     function displayPhoto(f) {
         setCurrentPhotoPath(f);
@@ -36,7 +36,7 @@ function PhotosList(props) {
         setPhotoLoading(true);
         setPhotosList({ "photos": [] });
         let sort = sortOfPhotos;
-        let num = num_of_photo;
+        let num = numOfPhoto;
         let date;
         if (e && e.currentTarget && e.currentTarget.getAttribute("data-date")) {
             date = e.currentTarget.getAttribute("data-date");
@@ -90,15 +90,6 @@ function PhotosList(props) {
         fetchPhotos().catch(console.error);
     }
 
-    function changeSort(e, value) {
-        setSort(value);
-    }
-
-    function changeNumOfPhoto(e, value) {
-        console.log("set: " + value);
-        setNumOfPhoto(value)
-    }
-
     function photosScroll(e) {
         if (scrollLock || props.currentDate === "") {
             return;
@@ -142,18 +133,18 @@ function PhotosList(props) {
                                 {photos.has_next && (<span><a href="#" onClick={(e) => nextPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
                             </div>
                             <div className="photo-operation">
-                                Icon:<select name="icon_size" defaultValue="100" onChange={(e) => setIconSize(e.target.value)}>
+                                Icon:<select name="icon_size" defaultValue={iconSize} onChange={(e) => setIconSize(e.target.value)}>
                                     <option value={50}>small</option>
                                     <option value={100}>normal</option>
                                     <option value={200}>large</option>
                                     <option value={300}>huge</option>
                                 </select>
-                                Sort:<select name="sort" onChange={(e) => changeSort(e, e.target.value)}>
+                                Sort:<select name="sort" defaultValue={sortOfPhotos} onChange={(e) => setSort(e.target.value)}>
                                     <option value={0}>photo time</option>
                                     <option value={1}>time</option>
                                     <option value={2}>name</option>
                                 </select>
-                                Num:<select name="num" defaultValue="20" onChange={(e) => changeNumOfPhoto(e, e.target.value)}>
+                                Num:<select name="num" defaultValue={numOfPhoto} onChange={(e) => setNumOfPhoto(e.target.value)}>
                                     <option value={10}>10</option>
                                     <option value={20}>20</option>
                                     <option value={30}>30</option>
@@ -167,12 +158,12 @@ function PhotosList(props) {
                             return (
                                 <div key={i} className="row" style={
                                     {
-                                        minWidth: (parseInt(icon_size || 100) + 20) + "px",
-                                        maxWidth: (parseInt(icon_size || 100) + 20) + "px"
+                                        minWidth: (parseInt(iconSize || 100) + 20) + "px",
+                                        maxWidth: (parseInt(iconSize || 100) + 20) + "px"
                                     }
                                 }>
                                     <a href="#" onClick={() => { displayPhoto(l.file.path) }}>
-                                        <img loading="lazy" alt={l.file.path} style={{ maxWidth: icon_size + 'px', maxHeight: icon_size + 'px' }} src={convertFileSrc(l.file.path)} />
+                                        <img loading="lazy" alt={l.file.path} style={{ maxWidth: iconSize + 'px', maxHeight: iconSize + 'px' }} src={convertFileSrc(l.file.path)} />
                                     </a>
                                     <a href="#" onClick={() => setCurrentPhotoPath(l.file.path)} >(&#8505;)</a>
                                 </div>)

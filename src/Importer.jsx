@@ -218,6 +218,7 @@ function Importer(props) {
                 selectedForImport={selectedForImport}
                 setSelectedForImport={setSelectedForImport}
                 lastSelected={imageInSelectedPhotos}
+                setImageInSelectedPhotos={setImageInSelectedPhotos}
                 setImportProgress={setImportProgress}
                 addFooterMessage={props.addFooterMessage}
                 removeFooterMessage={props.removeFooterMessage}
