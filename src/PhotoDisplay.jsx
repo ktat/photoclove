@@ -8,6 +8,7 @@ function PhotoDisplay(props) {
     const [photoDisplayImgClass, setPhotoDisplayImgClass] = useState("");
     const [photoZoom, setPhotoZoom] = useState("100%");
     const [photoZoomReady, setPhotoZoomReady] = useState(false);
+    const [opacity, setOpacity] = useState(0.5);
 
     const loaded = false;
     useEffect((e) => {
@@ -15,10 +16,6 @@ function PhotoDisplay(props) {
         document.querySelector("#dummy-for-focus").focus();
         props.setCurrentPhotoPath(props.currentPhotoPath);
     }, [loaded]);
-
-    useEffect((e) => {
-        console.log(props.currentPhotoPath);
-    }, [props]);
 
     function dragPhotoStart(e) {
         setPhotoDisplayImgClass("photo_dragging");
@@ -54,6 +51,7 @@ function PhotoDisplay(props) {
     }
 
     async function prevPhoto(f) {
+        setOpacity(0.5);
         await invoke("get_prev_photo", { path: f, dateStr: props.currentDate, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
             if (r !== "") {
                 setPhotoZoom("100%");
@@ -63,6 +61,7 @@ function PhotoDisplay(props) {
     }
 
     async function nextPhoto(f) {
+        setOpacity(0.5);
         await invoke("get_next_photo", { path: f, dateStr: props.currentDate, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
             if (r !== "") {
                 setPhotoZoom("100%");
@@ -165,6 +164,16 @@ function PhotoDisplay(props) {
             <a href="#" onClick={() => moveToTrashCan(props.currentPhotoPath)}>&#128465;</a>
             <div className="photo">
                 <img className={photoDisplayImgClass}
+                    onLoad={() => {
+                        setTimeout(() => {
+                            setOpacity(1);
+                        }, 150)
+                    }
+                    }
+                    style={{
+                        transition: 'opacity 0.5s',
+                        opacity: opacity,
+                    }}
                     src={convertFileSrc(props.currentPhotoPath)}
                     width={photoZoom}
                     onMouseDown={(e) => dragPhotoStart(e)}

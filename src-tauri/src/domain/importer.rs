@@ -56,7 +56,12 @@ impl ImportProgress {
             .unwrap()
             .as_secs();
         let t = self.current_time as f32;
-        let rest = (self.num - self.progress) as f32;
+        let num = self.num;
+        let progress = self.progress;
+        let mut rest: f32 = 0.0;
+        if num >= progress {
+            rest = (num - progress) as f32;
+        }
         if t > 0.0 && rest > 0.0 {
             self.num_per_sec = rest / t;
         }
