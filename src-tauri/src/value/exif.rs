@@ -5,50 +5,50 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ExifData {
-    pub ISO: String,
-    pub FNumber: String,
-    pub DateTime: String,
-    pub LensModel: String,
-    pub Make: String,
-    pub LensMake: String,
-    pub Model: String,
-    pub XResolution: String,
-    pub YResolution: String,
-    pub ResolutionUnit: String,
-    pub Copyright: String,
-    pub ExposureTime: String,
-    pub ShutterSpeedValue: String,
-    pub FocalLength: String,
-    pub FocalLengthIn35mmFilm: String,
-    pub DigitalZoomRatio: String,
-    pub ExposureMode: String,
-    pub WhiteBalanceMode: String,
-    pub Orientation: String,
+    pub iso: String,
+    pub fnumber: String,
+    pub date_time: String,
+    pub lens_model: String,
+    pub make: String,
+    pub lens_make: String,
+    pub model: String,
+    pub xresolution: String,
+    pub yresolution: String,
+    pub resolution_unit: String,
+    pub copyright: String,
+    pub exposure_time: String,
+    pub shutter_speed_value: String,
+    pub focal_length: String,
+    pub focal_length_in35mm_film: String,
+    pub digital_zoom_ratio: String,
+    pub exposure_mode: String,
+    pub white_balance_mode: String,
+    pub orientation: String,
     // TODO
 }
 
 impl ExifData {
     pub fn empty() -> ExifData {
         ExifData {
-            ISO: String::from(""),
-            FNumber: String::from(""),
-            DateTime: String::from(""),
-            LensModel: String::from(""),
-            Make: String::from(""),
-            Model: String::from(""),
-            LensMake: String::from(""),
-            XResolution: String::from(""),
-            YResolution: String::from(""),
-            ResolutionUnit: String::from(""),
-            Copyright: String::from(""),
-            ExposureTime: String::from(""),
-            ShutterSpeedValue: String::from(""),
-            FocalLength: String::from(""),
-            FocalLengthIn35mmFilm: String::from(""),
-            DigitalZoomRatio: String::from(""),
-            ExposureMode: String::from(""),
-            WhiteBalanceMode: String::from(""),
-            Orientation: String::from(""),
+            iso: String::from(""),
+            fnumber: String::from(""),
+            date_time: String::from(""),
+            lens_model: String::from(""),
+            make: String::from(""),
+            model: String::from(""),
+            lens_make: String::from(""),
+            xresolution: String::from(""),
+            yresolution: String::from(""),
+            resolution_unit: String::from(""),
+            copyright: String::from(""),
+            exposure_time: String::from(""),
+            shutter_speed_value: String::from(""),
+            focal_length: String::from(""),
+            focal_length_in35mm_film: String::from(""),
+            digital_zoom_ratio: String::from(""),
+            exposure_mode: String::from(""),
+            white_balance_mode: String::from(""),
+            orientation: String::from(""),
         }
     }
 
@@ -69,50 +69,50 @@ impl ExifData {
             let exif_data = rexif::parse_file(file.path.to_string());
             for e in exif_data.unwrap().entries {
                 match e.tag {
-                    rexif::ExifTag::FNumber => data.FNumber = e.value_more_readable.to_string(),
-                    rexif::ExifTag::ISOSpeedRatings => data.ISO = e.value_more_readable.to_string(),
-                    rexif::ExifTag::DateTime => data.DateTime = e.value_more_readable.to_string(),
-                    rexif::ExifTag::LensModel => data.LensModel = e.value.to_string(),
+                    rexif::ExifTag::FNumber => data.fnumber = e.value_more_readable.to_string(),
+                    rexif::ExifTag::ISOSpeedRatings => data.iso = e.value_more_readable.to_string(),
+                    rexif::ExifTag::DateTime => data.date_time = e.value_more_readable.to_string(),
+                    rexif::ExifTag::LensModel => data.lens_model = e.value.to_string(),
                     rexif::ExifTag::LensMake => {
-                        if data.LensMake != String::new() {
-                            data.LensMake = e.value.to_string();
+                        if data.lens_make != String::new() {
+                            data.lens_make = e.value.to_string();
                         }
                     }
-                    rexif::ExifTag::Make => data.Make = e.value_more_readable.to_string(),
-                    rexif::ExifTag::Model => data.Model = e.value_more_readable.to_string(),
+                    rexif::ExifTag::Make => data.make = e.value_more_readable.to_string(),
+                    rexif::ExifTag::Model => data.model = e.value_more_readable.to_string(),
                     rexif::ExifTag::Orientation => {
-                        data.Orientation = e.value_more_readable.to_string()
+                        data.orientation = e.value_more_readable.to_string()
                     }
-                    rexif::ExifTag::XResolution => data.XResolution = e.value.to_string(),
-                    rexif::ExifTag::YResolution => data.YResolution = e.value.to_string(),
-                    rexif::ExifTag::ResolutionUnit => data.ResolutionUnit = e.value.to_string(),
-                    rexif::ExifTag::Copyright => data.Copyright = e.value.to_string(),
+                    rexif::ExifTag::XResolution => data.xresolution = e.value.to_string(),
+                    rexif::ExifTag::YResolution => data.yresolution = e.value.to_string(),
+                    rexif::ExifTag::ResolutionUnit => data.resolution_unit = e.value.to_string(),
+                    rexif::ExifTag::Copyright => data.copyright = e.value.to_string(),
                     rexif::ExifTag::ExposureTime => {
-                        data.ExposureTime = e.value_more_readable.to_string()
+                        data.exposure_time = e.value_more_readable.to_string()
                     }
                     rexif::ExifTag::ShutterSpeedValue => {
-                        data.ShutterSpeedValue = e.value.to_string()
+                        data.shutter_speed_value = e.value.to_string()
                     }
                     rexif::ExifTag::FocalLength => {
-                        data.FocalLength = e.value_more_readable.to_string()
+                        data.focal_length = e.value_more_readable.to_string()
                     }
                     rexif::ExifTag::FocalLengthIn35mmFilm => {
-                        data.FocalLengthIn35mmFilm = e.value_more_readable.to_string()
+                        data.focal_length_in35mm_film = e.value_more_readable.to_string()
                     }
                     rexif::ExifTag::MakerNote => {
                         let d = get_lens_from_maker_note(e.ifd.ext_data);
                         if d != "" {
-                            data.LensModel = d;
+                            data.lens_model = d;
                         }
                     }
                     rexif::ExifTag::ExposureMode => {
-                        data.ExposureMode = e.value_more_readable.to_string()
+                        data.exposure_mode = e.value_more_readable.to_string()
                     }
                     rexif::ExifTag::WhiteBalanceMode => {
-                        data.WhiteBalanceMode = e.value_more_readable.to_string()
+                        data.white_balance_mode = e.value_more_readable.to_string()
                     }
                     rexif::ExifTag::DigitalZoomRatio => {
-                        data.DigitalZoomRatio = e.value_more_readable.to_string()
+                        data.digital_zoom_ratio = e.value_more_readable.to_string()
                     }
                     // rexif::ExifTag::UnknownToMe => todo!(),
                     // rexif::ExifTag::ImageDescription => todo!(),
@@ -199,9 +199,9 @@ impl ExifData {
                     _ => {}
                 }
             }
-            let t = data.DateTime.clone();
+            let t = data.date_time.clone();
             let re = regex::Regex::new(r"^([0-9]{4}):([0-9]{1,2}):([0-9]{1,2})").unwrap();
-            data.DateTime = re.replace(&t, "$1/$2/$3").to_string();
+            data.date_time = re.replace(&t, "$1/$2/$3").to_string();
         }
         data
     }

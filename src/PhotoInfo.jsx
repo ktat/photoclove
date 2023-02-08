@@ -81,18 +81,18 @@ function PhotoInfo(props) {
                                 onMouseEnter={() => { props.addFooterMessage("current_phtoo_path", "File Path: " + props.path, 10000) }}>
                                 {props.path.replace(/^.+\//, '')}
                             </a></td></tr>
-                            <tr><th>ISO</th><td>{photoInfo.ISO}</td></tr>
-                            <tr><th>FNumber</th><td>{photoInfo.FNumber}</td></tr>
-                            <tr><th>Shutter Speed</th><td>{photoInfo.ExposureTime}</td></tr>
-                            <tr><th>LensModel</th><td>{photoInfo.LensModel}</td></tr>
-                            <tr><th>LensMake</th><td>{photoInfo.LensMake}</td></tr>
-                            <tr><th>Make</th><td>{photoInfo.Make}</td></tr>
-                            <tr><th>Model</th><td>{photoInfo.Model}</td></tr>
-                            <tr><th>Date & Time</th><td>{photoInfo.DateTime}</td></tr>
-                            <tr><th>Focal Length</th><td>{photoInfo.FocalLength == photoInfo.FocalLengthIn35mmFilm ? photoInfo.FocalLength : photoInfo.FocalLength + "(" + photoInfo.FocalLengthIn35mmFilm + ")"}</td></tr>
-                            <tr><th>Digital Zoom Ratio</th><td>{photoInfo.DigitalZoomRatio}</td></tr>
-                            <tr><th>Exposure Mode</th><td>{photoInfo.ExposureMode}</td></tr>
-                            <tr><th>WhiteBalance Mode</th><td>{photoInfo.WhiteBalanceMode}</td></tr>
+                            <tr><th>ISO</th><td>{photoInfo.iso}</td></tr>
+                            <tr><th>FNumber</th><td>{photoInfo.fnumber}</td></tr>
+                            <tr><th>Shutter Speed</th><td>{photoInfo.exposure_time}</td></tr>
+                            <tr><th>LensModel</th><td>{photoInfo.lens_model}</td></tr>
+                            <tr><th>LensMake</th><td>{photoInfo.lens_make}</td></tr>
+                            <tr><th>Make</th><td>{photoInfo.make}</td></tr>
+                            <tr><th>Model</th><td>{photoInfo.model}</td></tr>
+                            <tr><th>Date & Time</th><td>{photoInfo.date_time}</td></tr>
+                            <tr><th>Focal Length</th><td>{photoInfo.focal_length == photoInfo.FocalLengthIn35mmFilm ? photoInfo.FocalLength : photoInfo.FocalLength + "(" + photoInfo.FocalLengthIn35mmFilm + ")"}</td></tr>
+                            <tr><th>Digital Zoom Ratio</th><td>{photoInfo.digital_zoom_ratio}</td></tr>
+                            <tr><th>Exposure Mode</th><td>{photoInfo.exposure_mode}</td></tr>
+                            <tr><th>WhiteBalance Mode</th><td>{photoInfo.white_balance_mode}</td></tr>
                         </tbody>
                     </table>
                     <div>
