@@ -35,7 +35,7 @@ impl RepositoryDB for Directory {
     }
     fn get_dates(&self) -> date::Dates {
         let mut dates = date::Dates { dates: Vec::new() };
-        let mut dirs = self.path.find_date_like_directories();
+        let dirs = self.path.find_date_like_directories();
         for mut dir in dirs.dirs {
             let d = dir.to_date();
             if d.is_some() {
@@ -66,10 +66,10 @@ impl RepositoryDB for Directory {
                 let result = meta_data.get(&f.path);
                 if result.is_none() {
                     eprintln!("no meta info: {:?}", &f);
-                    meta.DateTime = f.created_datetime();
-                    eprintln!("use instead: {}", meta.DateTime);
+                    meta.date_time = f.created_datetime();
+                    eprintln!("use instead: {}", meta.date_time);
                 } else {
-                    meta.DateTime = result.unwrap().photo_time();
+                    meta.date_time = result.unwrap().photo_time();
                 }
                 p.embed_exif(meta);
                 photos.photos.push(p)
@@ -83,7 +83,7 @@ impl RepositoryDB for Directory {
                 let file = file_result.unwrap();
                 let mut p = photo::Photo::new(file);
                 let mut meta = exif::ExifData::empty();
-                meta.DateTime = meta_data.get(f).unwrap().photo_time();
+                meta.date_time = meta_data.get(f).unwrap().photo_time();
                 p.embed_exif(meta);
                 photos.photos.push(p)
             }

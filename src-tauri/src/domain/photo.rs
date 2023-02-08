@@ -42,7 +42,7 @@ impl Photo {
     }
 
     pub fn embed_exif(&mut self, meta: exif::ExifData) {
-        self.time = meta.DateTime.clone();
+        self.time = meta.date_time.clone();
         self.meta_data = meta;
         self.is_meta_not_loaded = false;
     }

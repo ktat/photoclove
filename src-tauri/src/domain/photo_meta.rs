@@ -3,6 +3,7 @@ use crate::repository::meta_db;
 use crate::value::{comment, file, star};
 use std::collections::{hash_map::Iter, hash_map::Keys, HashMap};
 
+#[derive(Debug)]
 pub struct PhotoMeta {
     photo: photo::Photo,
     pub star: star::Star,
@@ -26,6 +27,7 @@ impl PhotoMeta {
     }
 }
 
+#[derive(Debug)]
 pub struct PhotoMetas {
     data: HashMap<String, PhotoMeta>,
 }

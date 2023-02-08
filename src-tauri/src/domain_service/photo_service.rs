@@ -5,7 +5,7 @@ use crate::value::{comment, file, star};
 pub fn photos_from_dir(files: file::Files) -> photo::Photos {
     let mut photos = photo::Photos::new();
     for file in files.files {
-        let mut p = photo::Photo::new(file);
+        let p = photo::Photo::new(file);
         photos.photos.push(p)
     }
     photos
