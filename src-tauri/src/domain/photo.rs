@@ -1,4 +1,4 @@
-use crate::value::{file, meta};
+use crate::value::{date, exif, file};
 use regex;
 use serde::{Deserialize, Serialize};
 
@@ -7,7 +7,8 @@ pub struct Photo {
     pub file: file::File,
     pub dir: file::Dir,
     pub time: String,
-    pub meta_data: meta::MetaData,
+    pub meta_data: exif::ExifData,
+    is_meta_not_loaded: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -27,26 +28,47 @@ impl Photo {
             file: file,
             time: created_time,
             dir: file::Dir::new(p.parent().unwrap().display().to_string()),
-            meta_data: meta::MetaData::empty(),
+            meta_data: exif::ExifData::empty(),
+            is_meta_not_loaded: true,
         }
     }
 
-    pub fn new_with_meta(file: file::File) -> Photo {
+    pub fn new_with_exif(file: file::File) -> Photo {
         let mut photo = Photo::new(file.clone());
-        let meta = meta::MetaData::new(file);
-        photo.embed_meta(meta);
+        let meta = exif::ExifData::new(file);
+        photo.embed_exif(meta);
+        photo.is_meta_not_loaded = false;
         photo
     }
 
-    pub fn embed_meta(&mut self, meta: meta::MetaData) {
+    pub fn embed_exif(&mut self, meta: exif::ExifData) {
         self.time = meta.DateTime.clone();
         self.meta_data = meta;
+        self.is_meta_not_loaded = false;
     }
 
-    pub fn created_date(&self) -> String {
+    pub fn load_exif(&mut self) {
+        if self.is_meta_empty() {
+            let meta = exif::ExifData::new(self.file.clone());
+            self.embed_exif(meta);
+            self.is_meta_not_loaded = false;
+        }
+    }
+
+    pub fn is_meta_empty(&self) -> bool {
+        self.is_meta_not_loaded
+    }
+
+    pub fn created_date_string(&self) -> String {
         let re = regex::Regex::new(r"^([0-9]{4})/([0-9]{1,2})/([0-9]{1,2}).+$").unwrap();
         let replaced = re.replace(&self.time, "$1-$2-$3").to_string();
         replaced
+    }
+
+    pub fn created_date(&self) -> date::Date {
+        let re = regex::Regex::new(r"^([0-9]{4})/([0-9]{1,2})/([0-9]{1,2}).+$").unwrap();
+        let replaced = re.replace(&self.time, "$1-$2-$3").to_string();
+        date::Date::from_string(&replaced, Option::Some("-"))
     }
 }
 

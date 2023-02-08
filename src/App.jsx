@@ -39,10 +39,16 @@ function App() {
   });
 
   let in_db_creation = false;
-  const listened = false;
+
   useEffect((e) => {
     // const sab = new SharedArrayBuffer(1024);
-    const unlisten = listen("click_menu", (e) => {
+    const unlisted1 = listen("create_db", (e) => {
+      console.log(e);
+      if (e.payload === "finish") {
+        addFooterMessage("create_db", "Database is created :)", 10000);
+      }
+    });
+    const unlisten2 = listen("click_menu", (e) => {
       console.log(e);
       if (e.payload === "load_dates") {
         console.log(reloadDates);
@@ -76,7 +82,7 @@ function App() {
         });
       }
     });
-  }, [listened]);
+  }, []);
 
   function addFooterMessage(k, v, deleteAfter) {
     const newMessages = {};
@@ -170,6 +176,7 @@ function App() {
           datePage={datePage}
           setDatePage={setDatePage}
           shortCutNavigation={shortCutNavigation}
+          addFooterMessage={addFooterMessage}
         />}
         {showImporter && <Importer
           addFooterMessage={addFooterMessage}

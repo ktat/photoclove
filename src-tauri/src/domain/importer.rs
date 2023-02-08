@@ -1,7 +1,7 @@
 use crate::domain::photo;
 use crate::repository::{self, RepositoryDB};
 use crate::repository::{dir, MetaInfoDB};
-use crate::value::{file, meta};
+use crate::value::{exif, file};
 use filetime;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -139,8 +139,8 @@ impl ImporterSelectedFiles {
                 let mut photos: Vec<photo::Photo> = Vec::new();
                 for file in files {
                     let filename = file.filename();
-                    let photo = photo::Photo::new_with_meta(file.clone());
-                    let destination_date_dir = arc_dest_path.join(photo.created_date());
+                    let photo = photo::Photo::new_with_exif(file.clone());
+                    let destination_date_dir = arc_dest_path.join(photo.created_date_string());
                     let destination_path = destination_date_dir.join(filename);
                     if !destination_date_dir.exists() {
                         match fs::create_dir(destination_date_dir.clone()) {
@@ -176,7 +176,7 @@ impl ImporterSelectedFiles {
                     }
                     let df = file::File::new(destination_path.display().to_string());
                     let mut d_photo = photo::Photo::new(df.clone());
-                    d_photo.embed_meta(photo.meta_data);
+                    d_photo.embed_exif(photo.meta_data);
                     photos.push(d_photo);
 
                     let t2 = time::SystemTime::now();

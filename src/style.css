@@ -197,6 +197,7 @@ button {
   text-align: right;
 }
 
+#directory-maintenance ul,
 .sleectedPhotos ul {
   text-align: left;
 }
@@ -421,6 +422,10 @@ img.photo_dragging {
   color: #ff5555;
 }
 
+.create_db {
+  color: #55ff55;
+}
+
 table {
   width: 100%;
   border-width: 1px;
@@ -435,6 +440,15 @@ table th {
   border-style: solid;
   padding: 2px 5px 2px 5px;
   border-color: white;
+}
+
+.star a {
+  color: #aa9900
+}
+
+.comment textarea {
+  width: 100%;
+  height: 3em;
 }
 
 @keyframes lds-dual-ring {
