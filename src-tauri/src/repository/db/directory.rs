@@ -1,12 +1,11 @@
 // just a dummy module for test
 
-use crate::domain::photo;
+use crate::domain::{photo, photo_meta};
 use crate::repository::{meta_db, RepoDB, RepositoryDB, Sort};
-use crate::value::{date, file, meta};
+use crate::value::{date, exif, file};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-use std::collections::HashMap;
 
 #[derive(Debug, Deserialize, Serialize)]
 struct PhotoInfo {
@@ -51,7 +50,7 @@ impl RepositoryDB for Directory {
 
     async fn get_photos_in_date(
         &self,
-        meta_data: &meta_db::PhotoMetas,
+        meta_data: &photo_meta::PhotoMetas,
         date: date::Date,
         sort: Sort,
         num: u32,
@@ -63,16 +62,16 @@ impl RepositoryDB for Directory {
             let files = dir.find_files();
             for f in files.files {
                 let mut p = photo::Photo::new(f.clone());
-                let mut meta = meta::MetaData::empty();
+                let mut meta = exif::ExifData::empty();
                 let result = meta_data.get(&f.path);
                 if result.is_none() {
                     eprintln!("no meta info: {:?}", &f);
                     meta.DateTime = f.created_datetime();
                     eprintln!("use instead: {}", meta.DateTime);
                 } else {
-                    meta.DateTime = result.unwrap().date.to_string();
+                    meta.DateTime = result.unwrap().photo_time();
                 }
-                p.embed_meta(meta);
+                p.embed_exif(meta);
                 photos.photos.push(p)
             }
         } else {
@@ -83,9 +82,9 @@ impl RepositoryDB for Directory {
                 }
                 let file = file_result.unwrap();
                 let mut p = photo::Photo::new(file);
-                let mut meta = meta::MetaData::empty();
-                meta.DateTime = meta_data.get(f).unwrap().date.clone();
-                p.embed_meta(meta);
+                let mut meta = exif::ExifData::empty();
+                meta.DateTime = meta_data.get(f).unwrap().photo_time();
+                p.embed_exif(meta);
                 photos.photos.push(p)
             }
         }
@@ -129,7 +128,7 @@ impl RepositoryDB for Directory {
 
     async fn get_next_photo_in_date(
         &self,
-        meta_data: &meta_db::PhotoMetas,
+        meta_data: &photo_meta::PhotoMetas,
         path: &str,
         date: date::Date,
         sort: Sort,
@@ -159,7 +158,7 @@ impl RepositoryDB for Directory {
 
     async fn get_prev_photo_in_date(
         &self,
-        meta_data: &meta_db::PhotoMetas,
+        meta_data: &photo_meta::PhotoMetas,
         path: &str,
         date: date::Date,
         sort: Sort,

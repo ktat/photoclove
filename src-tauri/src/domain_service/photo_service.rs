@@ -1,13 +1,22 @@
 use crate::domain::photo;
-use crate::value::file;
+use crate::repository::{MetaDB, MetaInfoDB};
+use crate::value::{comment, file, star};
 
 pub fn photos_from_dir(files: file::Files) -> photo::Photos {
     let mut photos = photo::Photos::new();
     for file in files.files {
-        let p = photo::Photo::new(file);
+        let mut p = photo::Photo::new(file);
         photos.photos.push(p)
     }
     photos
+}
+
+pub fn save_photo_star(db: &MetaDB, photo: &photo::Photo, star: star::Star) {
+    db.save_star(photo, star)
+}
+
+pub fn save_photo_comment(db: &MetaDB, photo: &photo::Photo, comment: comment::Comment) {
+    db.save_comment(photo, comment)
 }
 
 #[cfg(test)]

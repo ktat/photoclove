@@ -3,6 +3,7 @@ import PhotoDisplay from "./PhotoDisplay.jsx";
 import PhotoInfo from "./PhotoInfo.jsx";
 import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 import PhotoLoading from "./PhotoLoading.jsx";
+import DirectoryMenu from "./DirectoryMenu.jsx";
 
 function PhotosList(props) {
     const [iconSize, setIconSize] = useState(100);
@@ -23,7 +24,7 @@ function PhotosList(props) {
             props.setDatePage({});
             const fetchPhotos = async () => getPhotos(undefined, true);;
             fetchPhotos().catch(console.error);
-            console.log("loaded")
+            setCurrentPhotoPath(undefined);
         }
     }, [numOfPhoto, props.currentDate, sortOfPhotos, iconSize]);
 
@@ -118,7 +119,7 @@ function PhotosList(props) {
                     shortCutNavigation={props.shortCutNavigation}
                     getPhotos={getPhotos}
                 />
-                <PhotoInfo path={currentPhotoPath} />
+                <PhotoInfo path={currentPhotoPath} addFooterMessage={props.addFooterMessage} />
             </>
         );
     } else {
@@ -170,10 +171,12 @@ function PhotosList(props) {
                         })}
                     </div>
                 </div>
-                <PhotoInfo path={currentPhotoPath} />
+                <DirectoryMenu
+                    currentDate={props.currentDate}
+                />
             </>)
         } else {
-            return <PhotoLoading />
+            return <><PhotoLoading /><DirectoryMenu /></>
         }
     }
 }

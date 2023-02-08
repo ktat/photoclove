@@ -4,7 +4,7 @@ use rexif;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct MetaData {
+pub struct ExifData {
     pub ISO: String,
     pub FNumber: String,
     pub DateTime: String,
@@ -27,9 +27,9 @@ pub struct MetaData {
     // TODO
 }
 
-impl MetaData {
-    pub fn empty() -> MetaData {
-        MetaData {
+impl ExifData {
+    pub fn empty() -> ExifData {
+        ExifData {
             ISO: String::from(""),
             FNumber: String::from(""),
             DateTime: String::from(""),
@@ -52,9 +52,9 @@ impl MetaData {
         }
     }
 
-    pub fn new(file: file::File) -> MetaData {
+    pub fn new(file: file::File) -> ExifData {
         let exif_data = rexif::parse_file(file.path.to_string());
-        let mut data = MetaData::empty();
+        let mut data = ExifData::empty();
         if exif_data.is_ok() {
             for e in exif_data.unwrap().entries {
                 match e.tag {

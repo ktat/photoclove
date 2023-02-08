@@ -1,6 +1,6 @@
 use crate::domain::importer;
 use crate::domain::*;
-use crate::domain_service::file_service;
+use crate::domain_service::{file_service, photo_service};
 use crate::repository::RepositoryDB;
 use crate::repository::*;
 use crate::value::*;
@@ -132,9 +132,30 @@ async fn get_prev_photo(
 fn get_photo_info(path_str: &str, window: tauri::Window, state: tauri::State<AppState>) -> String {
     let db = &state.repo_db;
     let photo = photo::Photo::new(file::File::new(path_str.to_string()));
-    let meta = meta::MetaData::new(photo.file);
+    let meta = exif::ExifData::new(photo.file);
     let json = serde_json::to_string(&meta).unwrap();
     return json;
+}
+
+#[tauri::command]
+fn save_star(window: tauri::Window, state: tauri::State<AppState>, path_str: &str, star_num: i32) {
+    let db = &state.meta_db;
+    let photo = photo::Photo::new_with_exif(file::File::new(path_str.to_string()));
+    let star = star::Star::new(star_num);
+    photo_service::save_photo_star(db, &photo, star);
+}
+
+#[tauri::command]
+fn save_comment(
+    window: tauri::Window,
+    state: tauri::State<AppState>,
+    path_str: &str,
+    comment_str: &str,
+) {
+    let db = &state.meta_db;
+    let comment = comment::Comment::new(comment_str);
+    let photo = photo::Photo::new_with_exif(file::File::new(path_str.to_string()));
+    photo_service::save_photo_comment(db, &photo, comment);
 }
 
 #[tauri::command]
@@ -225,9 +246,23 @@ fn get_photos_path_to_import_under_directory(
 }
 
 #[tauri::command]
-async fn create_db(state: tauri::State<'_, AppState>) -> Result<bool, ()> {
+async fn create_db(window: tauri::Window, state: tauri::State<'_, AppState>) -> Result<bool, ()> {
     let dates = state.repo_db.get_dates();
     state.meta_db.record_photos_all_meta_data(dates);
+    window.emit("create_db", "finish");
+    return Ok(true);
+}
+
+#[tauri::command]
+async fn create_db_in_date(
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+    date_str: &str,
+) -> Result<bool, ()> {
+    let date = date::Date::from_string(&date_str.to_string(), Option::Some("/"));
+    let dates = date::Dates::new(&[date]);
+    state.meta_db.record_photos_all_meta_data(dates);
+    window.emit("create_db", "finish");
     return Ok(true);
 }
 
@@ -401,8 +436,11 @@ fn main() {
             move_to_trash,
             lock,
             create_db,
+            create_db_in_date,
             get_config,
             save_config,
+            save_star,
+            save_comment,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
