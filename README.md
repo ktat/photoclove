@@ -28,8 +28,8 @@ Just a plan, currentrly a few features are only implemented.
   - [ ] crop
 - [ ] Additional photo data
   - [ ] Tag
-  - [ ] Star
-  - [ ] Comment/Note
+  - [x] Star
+  - [x] Comment/Note
   - [ ] Album(low priority)
 - [ ] Search
 - [ ] Filter
@@ -43,6 +43,7 @@ Just a plan, currentrly a few features are only implemented.
   - [ ] num of parralel when creating thumbnail
   - [ ] directory date format(currentry, yyyy-mm-dd only)
 - [ ] i18n(low priority)
+- [x] Welcome tutorial
 
 ## Configuration file
 
