@@ -35,7 +35,7 @@ function PhotoInfo(props) {
                 setStar([false, false, false, false, false]);
                 setComment("");
             }
-            setdata(data);
+            setPhotoInfo(data);
         });
     };
 
@@ -104,7 +104,11 @@ function PhotoInfo(props) {
                             <tr><th>Make</th><td>{photoInfo.exif ? photoInfo.exif.make : ""}</td></tr>
                             <tr><th>Model</th><td>{photoInfo.exif ? photoInfo.exif.model : ""}</td></tr>
                             <tr><th>Date & Time</th><td>{photoInfo.exif ? photoInfo.exif.date_time : ""}</td></tr>
-                            <tr><th>Focal Length</th><td>{photoInfo.exif ? photoInfo.exif.focal_length == photoInfo.FocalLengthIn35mmFilm ? photoInfo.FocalLength : photoInfo.FocalLength + "(" + photoInfo.FocalLengthIn35mmFilm + ")" : ""}</td></tr>
+                            <tr><th>Focal Length</th><td>{photoInfo.exif ?
+                                photoInfo.exif.focal_length == photoInfo.exif.focal_length_in35mm_film
+                                    ? photoInfo.exif.focal_length
+                                    : photoInfo.exif.focal_length + "(" + photoInfo.exif.focal_length_in35mm_film + ")" : ""}
+                            </td></tr>
                             <tr><th>Digital Zoom Ratio</th><td>{photoInfo.exif ? photoInfo.exif.digital_zoom_ratio : ""}</td></tr>
                             <tr><th>Exposure Mode</th><td>{photoInfo.exif ? photoInfo.exif.exposure_mode : ""}</td></tr>
                             <tr><th>WhiteBalance Mode</th><td>{photoInfo.exif ? photoInfo.exif.white_balance_mode : ""}</td></tr>
