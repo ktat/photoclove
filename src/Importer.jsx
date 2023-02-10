@@ -30,16 +30,31 @@ function Importer(props) {
         showImporter(props.path, pathPage[props.path], 20);
     }, [props.path]);
 
+    let beforeScrollTop = -1;
+    let isScrollBottom = 0;
     function importPhotosScroll(e) {
         if (scrollLock || currentImportPath === "") {
             return;
         }
-        setScrollLock(true);
+
         let isForward = true;
+        const list = document.querySelector('.importer-photos');
         if (e.deltaY < 0) {
             isForward = false;
+        } else if (beforeScrollTop == list.scrollTop && list.scrollTop !== 0) {
+            isScrollBottom += 1;
         }
-        nextImportPhotosList(e, isForward)
+        if (
+            list.offsetHeight === list.scrollHeight
+            || (!isForward && list.scrollTop === 0)
+            || (isForward && isScrollBottom > 5)
+        ) {
+            setScrollLock(true);
+            beforeScrollTop = -1;
+            isScrollBottom = 0;
+            nextImportPhotosList(e, isForward);
+        }
+        beforeScrollTop = list.scrollTop;
     }
 
     function nextImportPhotosList(e, isForward) {
@@ -151,8 +166,8 @@ function Importer(props) {
             <div id="importPhotosDisplay" className="importDisplay"
                 onWheel={(e) => importPhotosScroll(e)}
                 data-page={pathPage[props.path]}>
-                <p>Import Photos</p>
                 <ul className="list-of-import-path">
+                    <li><strong>Import Photos From</strong>:</li>
                     {importPaths.map((p, i) => {
                         return <li key={i}><a href="#" onClick={() => showImporter(p)}>{p}</a></li>
                     })}
@@ -197,11 +212,11 @@ function Importer(props) {
                                 </div>
                             </>
                         )}
-                        <div className="photos">
-                            <div className="navigation">
-                                {importer.dirs_files.has_prev_file && (<span><a href="#" onClick={(e) => nextImportPhotosList(e, false)}>&lt;&lt; Prev&nbsp;</a></span>)}
-                                {importer.dirs_files.has_next_file && (<span><a href="#" onClick={(e) => nextImportPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
-                            </div>
+                        <div className="navigation">
+                            {importer.dirs_files.has_prev_file && (<span><a href="#" onClick={(e) => nextImportPhotosList(e, false)}>&lt;&lt; Prev&nbsp;</a></span>)}
+                            {importer.dirs_files.has_next_file && (<span><a href="#" onClick={(e) => nextImportPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
+                        </div>
+                        <div className="importer-photos">
                             <ul id="importPhotosList">
                                 {importer.dirs_files.files.files.map((l, i) => {
                                     return (

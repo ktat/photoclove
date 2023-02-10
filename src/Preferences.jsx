@@ -7,7 +7,7 @@ function Preferences(props) {
     const [config, setConfig] = useState({});
     const [additionalExportFrom, setAdditionalExportFrom] = useState(0);
     const [configLoaded, setConfigLoaded] = useState(false);
-    const { useCount, setUseCount } = useState(-1);
+    const [useCount, setUseCount] = useState(-1);
 
 
     useEffect((e) => {
@@ -47,7 +47,6 @@ function Preferences(props) {
                 props.togglePreferences(false);
             } else {
                 setConfigLoaded(!configLoaded);
-
             }
 
         })

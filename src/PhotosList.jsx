@@ -91,18 +91,33 @@ function PhotosList(props) {
         fetchPhotos().catch(console.error);
     }
 
+    let beforeScrollTop = -1;
+    let isScrollBottom = 0;
     function photosScroll(e) {
         if (scrollLock || props.currentDate === "") {
             return;
         }
 
         let isForward = true;
+        const list = document.querySelector(".photos");
         if (e.deltaY < 0) {
             isForward = false;
+        } else if (beforeScrollTop == list.scrollTop && list.scrollTop !== 0) {
+            isScrollBottom += 1;
         }
+
         if ((isForward && photos.has_next) || (!isForward && photos.has_prev)) {
-            setScrollLock(true);
-            nextPhotosList(e, isForward)
+            beforeScrollTop = list.scrollTop;
+            if (
+                list.offsetHeight === list.scrollHeight
+                || (!isForward && list.scrollTop === 0)
+                || (isForward && isScrollBottom > 5)
+            ) {
+                setScrollLock(true);
+                beforeScrollTop = -1;
+                isScrollBottom = 0;
+                nextPhotosList(e, isForward)
+            }
         }
     }
 
@@ -157,7 +172,7 @@ function PhotosList(props) {
                     <div className="photos">
                         {photos.photos.map((l, i) => {
                             return (
-                                <div key={i} className="row" style={
+                                <div key={i} className={"row pict-" + iconSize} style={
                                     {
                                         minWidth: (parseInt(iconSize || 100) + 20) + "px",
                                         maxWidth: (parseInt(iconSize || 100) + 20) + "px"
