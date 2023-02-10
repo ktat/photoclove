@@ -99,7 +99,7 @@ impl RepositoryDB for Directory {
             );
         } else {
             // photo time
-            photos.photos.sort_by(|a, b| match a.time.cmp(&b.time) {
+            photos.photos.sort_by(|a, b| match a.time().cmp(&b.time()) {
                 Ordering::Equal => a.file.path.cmp(&b.file.path),
                 other => other,
             });

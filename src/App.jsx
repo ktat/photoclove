@@ -9,7 +9,8 @@ import PhotosList from "./PhotosList.jsx"
 import DateList from "./DateList.jsx"
 import Importer from "./Importer.jsx"
 import Preferences from "./Preferences.jsx"
-import RandomMessages from "./RandomMessages.jsx"
+import Welcome from "./Welcome.jsx"
+import Footer from "./Footer.jsx"
 import { tauri } from "@tauri-apps/api";
 
 const unlisten = listen("click_menu_static", (e) => {
@@ -23,7 +24,7 @@ const unlisten = listen("click_menu_static", (e) => {
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
-  const [showFirstView, setShowFirstView] = useState(true)
+  const [useCount, setUseCount] = useState(0)
 
   const [datePage, setDatePage] = useState({});
   const [currentDate, setCurrentDate] = useState("");
@@ -41,6 +42,11 @@ function App() {
   let in_db_creation = false;
 
   useEffect((e) => {
+    invoke("get_config", {},).then((e) => {
+      const json = JSON.parse(e);
+      setUseCount(json.use_count);
+    });
+
     // const sab = new SharedArrayBuffer(1024);
     const unlisted1 = listen("create_db", (e) => {
       console.log(e);
@@ -129,8 +135,8 @@ function App() {
       setShowPreferences(true);
     } else {
       setShowImporter(false);
-      setShowPhotosList(false);
-      setShowPreferences(true);
+      setShowPreferences(false);
+      setShowPhotosList(true);
     }
   }
 
@@ -139,6 +145,19 @@ function App() {
     setGreetMsg(await invoke("greet", { name }));
   }
 
+  if (!showPreferences && !showImporter && useCount <= 2) {
+    return (
+      <>
+        <Welcome
+          setUseCount={setUseCount}
+          useCount={useCount}
+          togglePreferences={togglePreferences}
+          toggleImporter={toggleImporter}
+        />
+        <Footer addFooterMessage={addFooterMessage} footerMessages={footerMessages} />
+      </>
+    );
+  }
   return (
     <div className="container"
     // onKeyDown={(e) => { shortCutNavigation.onKeyDown(e) }}
@@ -162,7 +181,6 @@ function App() {
 
           <p>{greetMsg}</p>
           <DateList
-            setShowFirstView={setShowFirstView}
             toggleImporter={toggleImporter}
             setCurrentDate={setCurrentDate}
             setReloadDates={setReloadDates}
@@ -183,28 +201,12 @@ function App() {
           removeFooterMessage={removeFooterMessage}
         />}
         {showPreferences && <Preferences
+          togglePreferences={togglePreferences}
           addFooterMessage={addFooterMessage}
           setShowPreferences={setShowPreferences}
         ></Preferences>}
       </div>
-      <footer>
-        <div id="footer-message">
-          <span>&#x1f980;.｡o( </span>
-          {Object.keys(footerMessages).length == 0
-            ? <RandomMessages />
-            : Object.keys(footerMessages).map((k, i) => {
-              return (<React.Fragment key={i}>
-                {i > 0 && " | "}
-                <span className={k}>
-                  {footerMessages[k]}</span>
-              </React.Fragment>)
-            })}
-          <span> )</span>
-        </div>
-        <div id="copyright">
-          PhotoClove &copy; ktat
-        </div>
-      </footer>
+      <Footer addFooterMessage={addFooterMessage} footerMessages={footerMessages} />
     </div>
   );
 }

@@ -66,7 +66,6 @@ function PhotoDisplay(props) {
             if (r !== "") {
                 setPhotoZoom("100%");
                 props.setCurrentPhotoPath(r);
-                console.log([r, props.currentPhotoPath]);
             }
         });
     }

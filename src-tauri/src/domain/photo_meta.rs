@@ -1,13 +1,34 @@
 use crate::domain::photo;
 use crate::repository::meta_db;
-use crate::value::{comment, file, star};
+use crate::repository::{self, MetaInfoDB};
+use crate::value::{comment, exif, file, star};
+use serde::{Deserialize, Serialize};
 use std::collections::{hash_map::Iter, hash_map::Keys, HashMap};
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PhotoMeta {
     photo: photo::Photo,
     pub star: star::Star,
     pub comment: comment::Comment,
+}
+#[derive(Debug)]
+pub struct PhotoMetas {
+    data: HashMap<String, PhotoMeta>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PhotoMetaWithExif {
+    meta: PhotoMeta,
+    exif: exif::ExifData,
+}
+
+impl PhotoMetaWithExif {
+    pub fn new(photo_meta: PhotoMeta, exif: exif::ExifData) -> PhotoMetaWithExif {
+        PhotoMetaWithExif {
+            meta: photo_meta,
+            exif: exif,
+        }
+    }
 }
 
 impl PhotoMeta {
@@ -19,17 +40,16 @@ impl PhotoMeta {
         }
     }
 
+    pub fn new_with_data(photo: photo::Photo, meta_db: &repository::MetaDB) -> PhotoMeta {
+        meta_db.get_photo_meta(photo)
+    }
+
     pub fn set_star(&mut self, star: star::Star) {
         self.star = star
     }
     pub fn set_comment(&mut self, comment: comment::Comment) {
         self.comment = comment
     }
-}
-
-#[derive(Debug)]
-pub struct PhotoMetas {
-    data: HashMap<String, PhotoMeta>,
 }
 
 impl PhotoMetas {
@@ -70,8 +90,10 @@ impl PhotoMeta {
     }
 
     pub fn new_from_photo_info(record: &meta_db::PhotoInfo) -> PhotoMeta {
+        let mut photo = photo::Photo::new(file::File::new(record.path.clone()));
+        photo.set_time(record.date.clone());
         PhotoMeta {
-            photo: photo::Photo::new(file::File::new(record.path.clone())),
+            photo: photo,
             star: star::Star::new(record.star),
             comment: comment::Comment::new(&record.comment),
         }
@@ -86,6 +108,12 @@ impl PhotoMeta {
     }
 
     pub fn photo_time(&self) -> String {
-        return self.photo.time.clone();
+        if self.photo.is_exif_empty() && self.photo.is_meta_empty() {
+            let mut photo = self.photo.clone();
+            photo.load_exif();
+            return photo.time();
+        } else {
+            return self.photo.time();
+        }
     }
 }

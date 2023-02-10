@@ -130,17 +130,18 @@ async fn get_prev_photo(
 
 #[tauri::command]
 fn get_photo_info(path_str: &str, window: tauri::Window, state: tauri::State<AppState>) -> String {
-    let db = &state.repo_db;
     let photo = photo::Photo::new(file::File::new(path_str.to_string()));
-    let meta = exif::ExifData::new(photo.file);
-    let json = serde_json::to_string(&meta).unwrap();
+    let exif_data = exif::ExifData::new(photo.file.clone());
+    let photo_meta = photo_meta::PhotoMeta::new_with_data(photo, &state.meta_db);
+    let photo_meta_with_exif = photo_meta::PhotoMetaWithExif::new(photo_meta, exif_data);
+    let json = serde_json::to_string(&photo_meta_with_exif).unwrap();
     return json;
 }
 
 #[tauri::command]
 fn save_star(window: tauri::Window, state: tauri::State<AppState>, path_str: &str, star_num: i32) {
     let db = &state.meta_db;
-    let photo = photo::Photo::new_with_exif(file::File::new(path_str.to_string()));
+    let photo = photo::Photo::new(file::File::new(path_str.to_string()));
     let star = star::Star::new(star_num);
     photo_service::save_photo_star(db, &photo, star);
 }
@@ -154,7 +155,7 @@ fn save_comment(
 ) {
     let db = &state.meta_db;
     let comment = comment::Comment::new(comment_str);
-    let photo = photo::Photo::new_with_exif(file::File::new(path_str.to_string()));
+    let photo = photo::Photo::new(file::File::new(path_str.to_string()));
     photo_service::save_photo_comment(db, &photo, comment);
 }
 

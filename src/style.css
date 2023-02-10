@@ -395,26 +395,31 @@ img.photo_dragging {
   flex-direction: row;
   flex-wrap: wrap;
   text-align: left;
+  text-align: left;
 }
 
 .preferences-input .row0 {
   flex: 100%;
   min-width: 100%;
+  padding-bottom: 10px;
 }
 
 .preferences-input .row1 {
   flex: 100px;
+  padding-bottom: 10px;
 }
 
 .preferences-input .row2 {
   flex: 200px;
+  padding-bottom: 10px;
 }
 
 .preferences-input .row3 {
   flex: calc(100% - 200px);
+  padding-bottom: 10px;
 }
 
-.preferences-input input {
+.preferences-input input[type=text] {
   width: 400px;
 }
 
@@ -449,6 +454,37 @@ table th {
 .comment textarea {
   width: 100%;
   height: 3em;
+}
+
+div.photo-clove {
+  font-size: 50px;
+  text-align: center;
+  padding: 50px;
+}
+
+#welcome-container {
+  min-height: calc(100vh - 55px);
+  height: calc(100% - 15px)
+}
+
+#welcome,
+#welcome div.introduction,
+#welcome ol.tutorial {
+  margin-left: 30px;
+  font-size: 30px;
+}
+
+#welcome ol li {
+  padding-top: 1em;
+  line-height: 1.5em;
+}
+
+#welcome ol span.useCount-1 {
+  text-decoration: line-through;
+}
+
+#welcome ol span.useCount-2 {
+  text-decoration: line-through;
 }
 
 @keyframes lds-dual-ring {

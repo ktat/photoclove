@@ -4,7 +4,6 @@ pub mod meta_db;
 use crate::domain::{config, photo, photo_meta};
 use crate::value::{comment, date, star};
 use async_trait::async_trait;
-use std::collections::HashMap;
 use std::path;
 
 pub type RepoDB = crate::repository::db::directory::Directory;

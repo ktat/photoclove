@@ -176,7 +176,7 @@ function PhotosList(props) {
                 />
             </>)
         } else {
-            return <><PhotoLoading /><DirectoryMenu /></>
+            return <PhotoLoading />
         }
     }
 }
