@@ -6,8 +6,9 @@ use serde::{Deserialize, Serialize};
 pub struct Photo {
     pub file: file::File,
     pub dir: file::Dir,
-    pub time: String,
     pub meta_data: exif::ExifData,
+    time: String,
+    is_exif_not_loaded: bool,
     is_meta_not_loaded: bool,
 }
 
@@ -29,34 +30,48 @@ impl Photo {
             time: created_time,
             dir: file::Dir::new(p.parent().unwrap().display().to_string()),
             meta_data: exif::ExifData::empty(),
+            is_exif_not_loaded: true,
             is_meta_not_loaded: true,
         }
+    }
+
+    pub fn time(&self) -> String {
+        self.time.clone()
     }
 
     pub fn new_with_exif(file: file::File) -> Photo {
         let mut photo = Photo::new(file.clone());
         let meta = exif::ExifData::new(file);
         photo.embed_exif(meta);
-        photo.is_meta_not_loaded = false;
+        photo.is_exif_not_loaded = false;
         photo
     }
 
-    pub fn embed_exif(&mut self, meta: exif::ExifData) {
-        self.time = meta.date_time.clone();
-        self.meta_data = meta;
-        self.is_meta_not_loaded = false;
+    pub fn embed_exif(&mut self, exif: exif::ExifData) {
+        self.time = exif.date_time.clone();
+        self.meta_data = exif;
+        self.is_exif_not_loaded = false;
     }
 
     pub fn load_exif(&mut self) {
-        if self.is_meta_empty() {
+        if self.is_exif_empty() {
             let meta = exif::ExifData::new(self.file.clone());
             self.embed_exif(meta);
-            self.is_meta_not_loaded = false;
+            self.is_exif_not_loaded = false;
         }
+    }
+
+    pub fn set_time(&mut self, time: String) {
+        self.time = time;
+        self.is_meta_not_loaded = false;
     }
 
     pub fn is_meta_empty(&self) -> bool {
         self.is_meta_not_loaded
+    }
+
+    pub fn is_exif_empty(&self) -> bool {
+        self.is_exif_not_loaded
     }
 
     pub fn created_date_string(&self) -> String {

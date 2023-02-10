@@ -13,6 +13,7 @@ pub struct Config {
     pub thumbnail_store: String,
     pub copy_parallel: usize,
     pub thumbnail_parallel: usize,
+    pub use_count: i32,
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RepositoryConfig {
@@ -32,6 +33,7 @@ impl Config {
         self.thumbnail_store = config.thumbnail_store;
         self.copy_parallel = config.copy_parallel;
         self.thumbnail_parallel = config.thumbnail_parallel;
+        self.use_count = config.use_count;
     }
 
     pub fn config_path() -> String {
@@ -104,6 +106,7 @@ impl Config {
             thumbnail_store: home.join(".photoclove/thumbnail/").display().to_string(),
             copy_parallel: 2,
             thumbnail_parallel: 1,
+            use_count: 0,
         }
     }
 

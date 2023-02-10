@@ -4,20 +4,26 @@ import { ask, message, confirm } from '@tauri-apps/api/dialog';
 import { relaunch } from "@tauri-apps/api/process";
 
 function Preferences(props) {
-    const [config, setConfig] = useState({ export_from: [] });
+    const [config, setConfig] = useState({});
     const [additionalExportFrom, setAdditionalExportFrom] = useState(0);
     const [configLoaded, setConfigLoaded] = useState(false);
+    const { useCount, setUseCount } = useState(-1);
+
 
     useEffect((e) => {
         invoke("get_config", {},).then((e) => {
             const json = JSON.parse(e);
+            if (useCount === -1) {
+                setUseCount(json.use_count);
+            }
             setNewConfig(json);
         });
     }, [configLoaded]);
 
     useEffect((e) => {
-        config.export_from.push("");
-        setNewConfig(config);
+        if (config.export_from) {
+            config.export_from.push("");
+        }
     }, [additionalExportFrom]);
 
     function setNewConfig(config) {
@@ -30,7 +36,21 @@ function Preferences(props) {
     function saveConfig() {
         config.copy_parallel = parseInt(config.copy_parallel);
         config.thumbnail_parallel = parseInt(config.thumbnail_parallel);
-        invoke("save_config", { config: config }).then((e) => { setConfigLoaded(!configLoaded); })
+        let isFirstView = false;
+        if (config.use_count == 0) {
+            isFirstView = true;
+            config.use_count = 1;
+        }
+        config.use_count = parseInt(config.use_count);
+        invoke("save_config", { config: config }).then((e) => {
+            if (isFirstView) {
+                props.togglePreferences(false);
+            } else {
+                setConfigLoaded(!configLoaded);
+
+            }
+
+        })
         message("Changes are not reflected until restart application.").then((t) => {
             props.addFooterMessage("restartRequired", "Preference changes are not reflected until restart app.");
         });
@@ -54,6 +74,12 @@ function Preferences(props) {
                 <div className="row0">Num of Parallel:</div>
                 <div className="row1"></div><div className="row1">Import: </div><div className="row3"><input value={config.copy_parallel} type="text" onChange={(e) => { config.copy_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
                 <div className="row1"></div><div className="row1">Thumbnail: </div><div className="row3"><input value={config.thumbnail_parallel} type="text" onChange={(e) => { config.thumbnail_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
+                <div className="row2"></div>
+                <div className="row3">
+                    <label>
+                        <input type="checkbox" value="1" onChange={(e) => { config.use_count = e.target.checked ? 0 : useCount; setNewConfig(config) }} /> Show Welcome tutorial again?
+                    </label>
+                </div>
                 <div className="row0">
                     <button name="save" value="save" onClick={(e) => saveConfig()}>SAVE</button>
                 </div>
