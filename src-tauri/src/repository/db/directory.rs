@@ -144,7 +144,7 @@ impl RepositoryDB for Directory {
         if photos.photos.len() > 0 {
             photos.has_next = true;
 
-            if photos.photos.len() < end_index {
+            if photos.photos.len() <= end_index {
                 end_index = photos.photos.len();
                 photos.has_next = false;
             }
