@@ -172,12 +172,7 @@ function PhotosList(props) {
                     <div className="photos">
                         {photos.photos.map((l, i) => {
                             return (
-                                <div key={i} className={"row pict-" + iconSize} style={
-                                    {
-                                        minWidth: (parseInt(iconSize || 100) + 20) + "px",
-                                        maxWidth: (parseInt(iconSize || 100) + 20) + "px"
-                                    }
-                                }>
+                                <div key={i} className={"row pict-" + iconSize}>
                                     <a href="#" onClick={() => { displayPhoto(l.file.path) }}>
                                         <img loading="lazy" alt={l.file.path} style={{ maxWidth: iconSize + 'px', maxHeight: iconSize + 'px' }} src={convertFileSrc(l.file.path)} />
                                     </a>
