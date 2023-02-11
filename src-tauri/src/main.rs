@@ -47,6 +47,26 @@ fn get_dates(window: tauri::Window, state: tauri::State<AppState>) -> String {
 }
 
 #[tauri::command]
+fn get_dates_num(window: tauri::Window, state: tauri::State<AppState>, dates_str: &str) -> String {
+    let mut dates = date::Dates::empty();
+    eprintln!("{:?}", dates_str);
+    let splitted = dates_str.split(",");
+    for date_tupple in splitted.enumerate() {
+        let date_str = date_tupple.1;
+        eprintln!("{:?}", date_str);
+        dates.dates.push(date::Date::from_string(
+            &date_str.to_string(),
+            Option::Some("-"),
+        ));
+    }
+    let meta_db = &state.meta_db;
+    let db = &state.repo_db;
+    let meta_data = meta_db.get_photo_count_per_dates(dates.clone());
+    let dates_num = db.get_photo_count_per_dates(dates, meta_data);
+    dates_num.to_json()
+}
+
+#[tauri::command]
 async fn get_photos(
     date_str: &str,
     page: u32,
@@ -57,7 +77,10 @@ async fn get_photos(
     let date = date::Date::from_string(&date_str.to_string(), Option::None);
     let repo_db = &state.repo_db;
     let meta_db = &state.meta_db;
-    let meta_data = meta_db.get_photo_meta_data_in_date(date);
+    let meta_data = match meta_db.get_photo_meta_data_in_date(date) {
+        Ok(data) => data,
+        Err(e) => photo_meta::PhotoMetas::new(),
+    };
     let photos = repo_db
         .get_photos_in_date(
             &meta_data,
@@ -82,7 +105,10 @@ async fn get_next_photo(
     println!("get_photos is called from {}", window.label());
     let repo_db = &state.repo_db;
     let meta_db = &state.meta_db;
-    let meta_data = meta_db.get_photo_meta_data_in_date(date);
+    let meta_data = match meta_db.get_photo_meta_data_in_date(date) {
+        Ok(data) => data,
+        Err(e) => photo_meta::PhotoMetas::new(),
+    };
     let photo = repo_db
         .get_next_photo_in_date(
             &meta_data,
@@ -110,7 +136,10 @@ async fn get_prev_photo(
     println!("get_photos is called from {}", window.label());
     let repo_db = &state.repo_db;
     let meta_db = &state.meta_db;
-    let meta_data = meta_db.get_photo_meta_data_in_date(date);
+    let meta_data = match meta_db.get_photo_meta_data_in_date(date) {
+        Ok(data) => data,
+        Err(e) => photo_meta::PhotoMetas::new(),
+    };
     let photo = repo_db
         .get_prev_photo_in_date(
             &meta_data,
@@ -308,7 +337,10 @@ async fn move_to_trash(
     let date = date::Date::from_string(&date_str.to_string(), Option::None);
     let repo_db = &state.repo_db;
     let meta_db = &state.meta_db;
-    let meta_data = meta_db.get_photo_meta_data_in_date(date);
+    let meta_data = match meta_db.get_photo_meta_data_in_date(date) {
+        Ok(data) => data,
+        Err(e) => photo_meta::PhotoMetas::new(),
+    };
     let mut photo = repo_db
         .get_next_photo_in_date(
             &meta_data,
@@ -434,6 +466,7 @@ fn main() {
             import_photos,
             get_import_progress,
             get_photos_path_to_import_under_directory,
+            get_dates_num,
             move_to_trash,
             lock,
             create_db,

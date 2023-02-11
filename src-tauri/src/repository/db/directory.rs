@@ -1,16 +1,21 @@
 // just a dummy module for test
 
 use crate::domain::{photo, photo_meta};
-use crate::repository::{meta_db, RepoDB, RepositoryDB, Sort};
+use crate::repository::{self, meta_db, RepoDB, RepositoryDB, Sort};
 use crate::value::{date, exif, file};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
+use std::collections::HashMap;
 
 #[derive(Debug, Deserialize, Serialize)]
 struct PhotoInfo {
     path: String,
     date: String,
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct DatesNum {
+    data: HashMap<String, i32>,
 }
 
 pub struct Directory {
@@ -34,7 +39,7 @@ impl RepositoryDB for Directory {
         RepoDB::new(self.path.path.clone())
     }
     fn get_dates(&self) -> date::Dates {
-        let mut dates = date::Dates { dates: Vec::new() };
+        let mut dates = date::Dates::empty();
         let dirs = self.path.find_date_like_directories();
         for mut dir in dirs.dirs {
             let d = dir.to_date();
@@ -46,6 +51,34 @@ impl RepositoryDB for Directory {
             .dates
             .sort_by(|a, b| b.to_string().cmp(&a.to_string()));
         dates
+    }
+
+    fn get_photo_count_per_dates(
+        &self,
+        dates: date::Dates,
+        meta_data: repository::DatesNum,
+    ) -> crate::repository::DatesNum {
+        let mut dates_num = repository::DatesNum::new();
+        for date in dates.dates {
+            let o = meta_data.data.get(&date.to_string());
+            match o {
+                Some(data) => {
+                    dates_num.data.insert(date.to_string(), *data);
+                }
+                None => {
+                    let count = self.get_photo_count_in_date(date);
+                    dates_num.data.insert(date.to_string(), count);
+                }
+            }
+        }
+        return dates_num;
+    }
+
+    fn get_photo_count_in_date(&self, date: date::Date) -> i32 {
+        let dir = self.path.child(date.to_string());
+        eprintln!("{:?}", dir);
+        let files = dir.find_files();
+        return files.files.iter().count() as i32;
     }
 
     async fn get_photos_in_date(

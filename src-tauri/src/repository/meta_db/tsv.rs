@@ -1,8 +1,8 @@
 use crate::domain::photo_meta;
 use crate::domain_service;
-use crate::repository::meta_db;
 use crate::{
-    domain::photo, repository::MetaInfoDB, value::comment, value::date, value::file, value::star,
+    domain::photo, repository, repository::meta_db, repository::MetaInfoDB, value::comment,
+    value::date, value::file, value::star,
 };
 use csv::{ReaderBuilder, WriterBuilder};
 use serde::{Deserialize, Serialize};
@@ -182,7 +182,10 @@ impl MetaInfoDB for Tsv {
 
     fn get_photo_meta(&self, photo: photo::Photo) -> photo_meta::PhotoMeta {
         let date = photo.dir.clone().to_date().unwrap();
-        let photo_metas = self.get_photo_meta_data_in_date(date);
+        let photo_metas = match self.get_photo_meta_data_in_date(date) {
+            Ok(data) => data,
+            Err(e) => photo_meta::PhotoMetas::new(),
+        };
         match photo_metas.get(&photo.file.path) {
             Some(meta) => {
                 return meta.clone();
@@ -193,7 +196,27 @@ impl MetaInfoDB for Tsv {
         }
     }
 
-    fn get_photo_meta_data_in_date(&self, date: date::Date) -> photo_meta::PhotoMetas {
+    fn get_photo_count_per_dates(&self, dates: date::Dates) -> repository::DatesNum {
+        let mut dates_num = repository::DatesNum {
+            data: HashMap::new(),
+        };
+        for date in dates.dates {
+            match self.get_photo_meta_data_in_date(date) {
+                Ok(data) => {
+                    dates_num
+                        .data
+                        .insert(date.to_string(), data.iter().count() as i32);
+                }
+                Err(e) => (),
+            };
+        }
+        dates_num
+    }
+
+    fn get_photo_meta_data_in_date(
+        &self,
+        date: date::Date,
+    ) -> Result<photo_meta::PhotoMetas, String> {
         let info_path = self.meta_file_path_for_date(date.to_string());
         eprintln!("{:?}", info_path);
         if info_path.exists() {
@@ -201,7 +224,7 @@ impl MetaInfoDB for Tsv {
                 Ok(file) => file,
                 Err(e) => {
                     eprintln!("{:?} => {:?}", info_path, e);
-                    return photo_meta::PhotoMetas::new();
+                    return Err("cannot open file".to_string());
                 }
             };
             let mut photo_metas = photo_meta::PhotoMetas::new();
@@ -210,22 +233,29 @@ impl MetaInfoDB for Tsv {
                 .flexible(true)
                 .from_reader(file);
             for result in rdr.deserialize() {
-                let record: meta_db::PhotoInfo = result.unwrap();
-                photo_metas.insert(
-                    &record.path.clone(),
-                    photo_meta::PhotoMeta::new_from_photo_info(&record),
-                );
+                if result.is_ok() {
+                    let record: meta_db::PhotoInfo = result.unwrap();
+                    photo_metas.insert(
+                        &record.path.clone(),
+                        photo_meta::PhotoMeta::new_from_photo_info(&record),
+                    );
+                } else {
+                    eprintln!("parse error: {:?}", result.err());
+                }
             }
-            return photo_metas;
+            return Ok(photo_metas);
         } else {
             eprintln!("file doesn't exist: {:?} ({:?})", info_path, date);
+            return Err("file doesn't exist".to_string());
         }
-        return photo_meta::PhotoMetas::new();
     }
 
     fn save_star(&self, photo: &photo::Photo, star: star::Star) {
         let mut dir = photo.dir.clone();
-        let mut photo_metas = self.get_photo_meta_data_in_date(dir.to_date().unwrap());
+        let mut photo_metas = match self.get_photo_meta_data_in_date(dir.to_date().unwrap()) {
+            Ok(data) => data,
+            Err(e) => photo_meta::PhotoMetas::new(),
+        };
         let file_path = photo.file.path.clone();
         match photo_metas.get(&file_path) {
             Some(data) => {
@@ -245,7 +275,10 @@ impl MetaInfoDB for Tsv {
 
     fn save_comment(&self, photo: &photo::Photo, comment: comment::Comment) {
         let mut dir = photo.dir.clone();
-        let mut photo_metas = self.get_photo_meta_data_in_date(dir.to_date().unwrap());
+        let mut photo_metas = match self.get_photo_meta_data_in_date(dir.to_date().unwrap()) {
+            Ok(data) => data,
+            Err(e) => photo_meta::PhotoMetas::new(),
+        };
         let file_path = photo.file.path.clone();
         match photo_metas.get(&file_path) {
             Some(data) => {
