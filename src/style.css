@@ -198,19 +198,19 @@ button {
 }
 
 .pict-50 {
-  width: 60px;
+  min-width: 70px;
 }
 
 .pict-100 {
-  width: 110px;
+  min-width: 120px;
 }
 
 .pict-200 {
-  width: 210px;
+  min-width: 220px;
 }
 
 .pict-300 {
-  width: 310px;
+  min-width: 320px;
 }
 
 #directory-maintenance ul,
@@ -345,13 +345,13 @@ ul#listOfselectedForImport {
   margin-top: 10px;
   min-width: calc(100vw - 600px);
   max-width: calc(100vw - 600px);
-  min-height: calc(100vh - 150px);
   max-height: calc(100vh - 150px);
 }
 
 .photos .row {
   flex: 1;
   margin: 10px;
+  flex-grow: unset;
 }
 
 .photos .navigation {
