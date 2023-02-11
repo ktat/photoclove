@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/tauri";
 
 function DateList(props) {
     const [dateList, setDateList] = useState([]);
+    const [dateNum, setDateNum] = useState({});
 
     useEffect((e) => {
         getDates();
@@ -13,6 +14,17 @@ function DateList(props) {
         invoke("get_dates").then((r) => {
             let l = JSON.parse(r);
             setDateList(l);
+            let datesStr = "";
+            l.map((v, i) => {
+                datesStr += v.year + "-" + v.month + "-" + v.day;
+                if (i !== l.length - 1) {
+                    datesStr += ",";
+                }
+            });
+            invoke("get_dates_num", { datesStr: datesStr }).then((r) => {
+                let l = JSON.parse(r);
+                setDateNum(l);
+            });
         });
     };
     return (
@@ -29,6 +41,7 @@ function DateList(props) {
                             }
                             } data-date={date} data-page={props.datePage[date]}>
                                 {date}
+                                {dateNum[date.replace(/\//g, "-")] !== undefined ? " (" + dateNum[date.replace(/\//g, "-")] + ")" : ""}
                             </a></li>)
                     })
                     }

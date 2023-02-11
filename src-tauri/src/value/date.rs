@@ -8,7 +8,7 @@ pub struct Date {
     pub day: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Dates {
     pub dates: Vec<Date>,
 }
@@ -52,7 +52,6 @@ impl Date {
         let re = regex::Regex::new(r" .+$").unwrap();
         let replaced = re.replace(&date_str, "").to_string();
         let mut splitted = replaced.split(del);
-        eprintln!("{:?} {:?}", date_str, del);
         let year = match splitted.next().unwrap().parse::<i32>() {
             Ok(year) => year,
             _ => panic!("invalid date_str as year: {}", date_str),
@@ -78,6 +77,11 @@ impl Dates {
         }
         d
     }
+
+    pub fn empty() -> Dates {
+        Dates { dates: Vec::new() }
+    }
+
     pub fn to_json(&self) -> String {
         serde_json::to_string(&self.dates).unwrap()
     }
