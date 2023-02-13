@@ -1,5 +1,6 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from "react";
+import { open } from '@tauri-apps/api/shell';
 import { tauri } from "@tauri-apps/api";
 
 function PhotoDisplay(props) {
@@ -162,23 +163,39 @@ function PhotoDisplay(props) {
             <a href="#" onClick={() => nextPhoto(props.currentPhotoPath)}>next &gt;&gt;</a><br /><br />
             <a href="#" onClick={() => moveToTrashCan(props.currentPhotoPath)}>&#128465;</a>
             <div className="photo">
-                <img className={photoDisplayImgClass}
-                    onLoad={() => {
-                        setTimeout(() => {
-                            setOpacity(1);
-                        }, 150)
-                    }
-                    }
-                    style={{
-                        transition: 'opacity 0.5s',
-                        opacity: opacity,
-                    }}
-                    src={convertFileSrc(props.currentPhotoPath)}
-                    width={photoZoom}
-                    onMouseDown={(e) => dragPhotoStart(e)}
-                    onMouseMove={(e) => dragPhoto(e)}
-                    onMouseUp={(e) => dragPhotoEnd(e)}
-                    onWheel={(e) => photoScroll(e)} />
+                { /*video doesn't work: https://github.com/tauri-apps/tauri/issues/3725#issuecomment-1160842638 */}
+                {
+                    props.currentPhotoPath.match(/\.(mp4|webm)$/) &&
+                    <>
+                        Open with other software:<br />
+                        <a href="#" onClick={(e) => open("file://" + props.currentPhotoPath)}>{props.currentPhotoPath}</a>
+                    </>
+                    /*
+                    <video style={{ width: "100%", height: "100%" }} controls="" autoPlay="" name="media">
+                        <source src={convertFileSrc(props.currentPhotoPath)} type={"video/" + (props.currentPhotoPath.match(/\.mp4$/) ? "mp4" : "webm")} />
+                    </video>
+                    */
+                }
+                {!props.currentPhotoPath.match(/\.(mp4|webm)$/) &&
+                    <img className={photoDisplayImgClass}
+                        onLoad={() => {
+                            setTimeout(() => {
+                                setOpacity(1);
+                            }, 150)
+                        }
+                        }
+                        style={{
+                            transition: 'opacity 0.5s',
+                            opacity: opacity,
+                        }}
+                        src={convertFileSrc(props.currentPhotoPath)}
+                        width={photoZoom}
+                        onMouseDown={(e) => dragPhotoStart(e)}
+                        onMouseMove={(e) => dragPhoto(e)}
+                        onMouseUp={(e) => dragPhotoEnd(e)}
+                        onWheel={(e) => photoScroll(e)}
+                    />
+                }
             </div>
         </div>
     );

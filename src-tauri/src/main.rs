@@ -47,7 +47,11 @@ fn get_dates(window: tauri::Window, state: tauri::State<AppState>) -> String {
 }
 
 #[tauri::command]
-fn get_dates_num(window: tauri::Window, state: tauri::State<AppState>, dates_str: &str) -> String {
+async fn get_dates_num(
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+    dates_str: &str,
+) -> Result<String, ()> {
     let mut dates = date::Dates::empty();
     eprintln!("{:?}", dates_str);
     let splitted = dates_str.split(",");
@@ -63,7 +67,7 @@ fn get_dates_num(window: tauri::Window, state: tauri::State<AppState>, dates_str
     let db = &state.repo_db;
     let meta_data = meta_db.get_photo_count_per_dates(dates.clone());
     let dates_num = db.get_photo_count_per_dates(dates, meta_data);
-    dates_num.to_json()
+    Ok(dates_num.to_json())
 }
 
 #[tauri::command]
