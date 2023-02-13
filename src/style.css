@@ -359,6 +359,14 @@ ul#listOfselectedForImport {
   width: 100%;
 }
 
+.photo-list-menu {
+  float: right;
+}
+
+.photo-list-menu input {
+  float: right;
+  background-color: white;
+}
 
 .imageInSelectedPhotos {
   max-width: 100%;

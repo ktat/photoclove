@@ -15,7 +15,7 @@
       "all": false,
       "shell": {
         "all": false,
-        "open": true
+        "open": "^(https?:|file:)"
       },
       "globalShortcut": {
         "all": true
@@ -70,7 +70,7 @@
       }
     },
     "security": {
-      "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost"
+      "csp": "default-src 'self'; img-src 'self' asset:; media-src 'self' asset: https://asset.localhost"
     },
     "updater": {
       "active": false

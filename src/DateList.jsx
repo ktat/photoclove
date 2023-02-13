@@ -15,16 +15,36 @@ function DateList(props) {
             let l = JSON.parse(r);
             setDateList(l);
             let datesStr = "";
+            const newDateNum = {};
+            let n = 0;
+            const promises = [];
             l.map((v, i) => {
+                n += 1;
                 datesStr += v.year + "-" + v.month + "-" + v.day;
-                if (i !== l.length - 1) {
+                if (i !== l.length - 1 && n < 20) {
                     datesStr += ",";
                 }
+                if (n == 20 || i == l.length - 1) {
+                    const reqDatesStr = datesStr;
+                    n = 0;
+                    datesStr = "";
+                    const promise = new Promise((resolve, reject) => {
+                        invoke("get_dates_num", { datesStr: reqDatesStr }).then((r) => {
+                            let l = JSON.parse(r);
+                            return resolve(l);
+                        }).catch((e) => { console.log(e) });
+                    });
+                    promises.push(promise);
+                }
             });
-            invoke("get_dates_num", { datesStr: datesStr }).then((r) => {
-                let l = JSON.parse(r);
-                setDateNum(l);
-            });
+            Promise.all(promises).then((results) => {
+                results.map((result) => {
+                    Object.keys(result).map((k) => {
+                        newDateNum[k] = result[k];
+                    })
+                    setDateNum(newDateNum);
+                });
+            })
         });
     };
     return (
