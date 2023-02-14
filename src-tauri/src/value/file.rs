@@ -1,12 +1,10 @@
-use crate::repository;
 use crate::value::date;
-use chrono::{DateTime, Datelike, Local, TimeZone};
+use chrono::{DateTime, Local, TimeZone};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::fmt;
+use std::fs;
 use std::os::unix::prelude::MetadataExt;
 use std::path::Path;
-use std::{fs, time::UNIX_EPOCH};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct File {
@@ -72,76 +70,6 @@ impl Dir {
     }
     pub fn child(&self, path: String) -> Dir {
         Dir::new(self.path.to_string() + "/" + &path)
-    }
-
-    pub fn find_files(&self) -> Files {
-        let mut f = Files { files: Vec::new() };
-        let readdir = fs::read_dir(&self.path);
-        if readdir.is_ok() {
-            for entry in readdir.unwrap() {
-                let entry = entry.unwrap();
-                let entry_path = entry.path();
-                let file_name = entry_path.file_name().unwrap();
-
-                if file_name.to_string_lossy().chars().next().unwrap() == '.' {
-                    continue;
-                }
-                if entry_path.display().to_string() != ".".to_string() && entry_path.is_file() {
-                    f.files.push(File::new(entry_path.display().to_string()));
-                }
-            }
-            return f;
-        } else {
-            panic!("Cannot readdir: {}", self.path.to_string())
-        }
-    }
-
-    pub fn find_directories(&self, regex: &Option<Regex>) -> Dirs {
-        let mut f = Dirs { dirs: Vec::new() };
-        let res = fs::read_dir(&self.path);
-        if res.is_ok() {
-            for entry in res.unwrap() {
-                if entry.is_err() {
-                    print!("{:?}", entry.err());
-                    continue;
-                }
-                let entry = entry.unwrap();
-                let entry_path = entry.path();
-                let t = &entry_path.display().to_string();
-                let cap_result = regex.as_ref().unwrap().captures(t);
-                if cap_result.is_none() {
-                    continue;
-                }
-                let cap = cap_result.unwrap();
-                if regex.is_some() && cap.len() == 0 {
-                    continue;
-                } else if date::Date::new(
-                    cap[1].parse::<i32>().unwrap(),
-                    cap[2].parse::<u32>().unwrap(),
-                    cap[3].parse::<u32>().unwrap(),
-                )
-                .is_none()
-                {
-                    print!("{:?}\n", cap);
-                    continue;
-                }
-
-                if entry_path.display().to_string() != ".".to_string() && entry_path.is_dir() {
-                    f.dirs.push(Dir::new(entry_path.display().to_string()));
-                }
-            }
-        } else {
-            let p = self.path.as_str();
-            panic!("Cannot open directory: {}", p)
-        }
-        f
-    }
-
-    pub fn find_date_like_directories(&self) -> Dirs {
-        let re = &Option::Some(
-            Regex::new(r"/([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)/?$").unwrap(),
-        );
-        self.find_directories(re)
     }
 }
 
@@ -219,13 +147,5 @@ mod tests {
         assert_eq!(r, expected_created);
         let r2 = fo.create_file_if_not_exists();
         assert_eq!(r2, false);
-    }
-
-    #[test]
-    fn test_find_files() {
-        let path = "tests/assets/files";
-        let dir = file::Dir::new(path.to_string());
-        let files = dir.find_files();
-        assert_eq!(files.files.len(), 3);
     }
 }

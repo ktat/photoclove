@@ -21,12 +21,13 @@ pub fn save_photo_comment(db: &MetaDB, photo: &photo::Photo, comment: comment::C
 
 #[cfg(test)]
 mod tests {
-    use crate::domain_service::photo_service;
+    use crate::domain_service::{dir_service, photo_service};
     use crate::value::file;
+
     #[test]
     fn test_make_photos() {
         let dir = file::Dir::new("tests/assets/files".to_string());
-        let files = dir.find_files();
+        let files = dir_service::find_files(&dir);
         let photos = photo_service::photos_from_dir(files);
         assert_eq!(photos.photos.len(), 3)
     }
