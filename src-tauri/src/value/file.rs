@@ -139,7 +139,7 @@ impl Dir {
 
     pub fn find_date_like_directories(&self) -> Dirs {
         let re = &Option::Some(
-            Regex::new(r"([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)/?$").unwrap(),
+            Regex::new(r"/([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)/?$").unwrap(),
         );
         self.find_directories(re)
     }
