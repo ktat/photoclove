@@ -1,5 +1,5 @@
 use crate::domain::photo_meta;
-use crate::domain_service;
+use crate::domain_service::{self, dir_service};
 use crate::{
     domain::photo, repository, repository::meta_db, repository::MetaInfoDB, value::comment,
     value::date, value::file, value::star,
@@ -170,7 +170,7 @@ impl MetaInfoDB for Tsv {
     fn record_photos_all_meta_data(&self, dates: date::Dates) -> Result<bool, &str> {
         for date in dates.dates {
             let date_dir = self.path.child(date.to_string());
-            let files = date_dir.find_files();
+            let files = dir_service::find_files(&date_dir);
             let photos = domain_service::photo_service::photos_from_dir(files);
             let result = self.record_photos_meta_data(photos.photos);
             if result.is_err() {

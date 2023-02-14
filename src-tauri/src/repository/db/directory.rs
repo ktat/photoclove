@@ -1,6 +1,7 @@
 // just a dummy module for test
 
 use crate::domain::{photo, photo_meta};
+use crate::domain_service::dir_service;
 use crate::repository::{self, meta_db, RepoDB, RepositoryDB, Sort};
 use crate::value::{date, exif, file};
 use async_trait::async_trait;
@@ -40,7 +41,7 @@ impl RepositoryDB for Directory {
     }
     fn get_dates(&self) -> date::Dates {
         let mut dates = date::Dates::empty();
-        let dirs = self.path.find_date_like_directories();
+        let dirs = dir_service::find_date_like_directories(&self.path);
         for mut dir in dirs.dirs {
             let d = dir.to_date();
             if d.is_some() {
@@ -77,7 +78,7 @@ impl RepositoryDB for Directory {
     fn get_photo_count_in_date(&self, date: date::Date) -> i32 {
         let dir = self.path.child(date.to_string());
         eprintln!("{:?}", dir);
-        let files = dir.find_files();
+        let files = dir_service::find_files(&dir);
         return files.files.iter().count() as i32;
     }
 
@@ -92,7 +93,7 @@ impl RepositoryDB for Directory {
         let dir = self.path.child(date.to_string());
         let mut photos = photo::Photos::new();
         if meta_data.keys().len() == 0 {
-            let files = dir.find_files();
+            let files = dir_service::find_files(&dir);
             for f in files.files {
                 let mut p = photo::Photo::new(f.clone());
                 let mut meta = exif::ExifData::empty();
