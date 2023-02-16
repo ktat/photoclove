@@ -167,6 +167,7 @@ function PhotoDisplay(props) {
 
     function closePhotoDisplay() {
         props.setShowPhotoDisplay(false);
+        props.setCurrentPhotoPath("");
         const fetchPhotos = async () => props.getPhotos();
         fetchPhotos().catch(console.error)
     }
