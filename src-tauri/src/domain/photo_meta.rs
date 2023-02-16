@@ -89,14 +89,18 @@ impl PhotoMeta {
         }
     }
 
-    pub fn new_from_photo_info(record: &meta_db::PhotoInfo) -> PhotoMeta {
-        let mut photo = photo::Photo::new(file::File::new(record.path.clone()));
+    pub fn new_from_photo_info(record: &meta_db::PhotoInfo) -> Option<PhotoMeta> {
+        let f = file::File::new_if_exists(record.path.clone());
+        if f.is_none() {
+            return None;
+        }
+        let mut photo = photo::Photo::new(f.unwrap());
         photo.set_time(record.date.clone());
-        PhotoMeta {
+        return Some(PhotoMeta {
             photo: photo,
             star: star::Star::new(record.star),
             comment: comment::Comment::new(&record.comment),
-        }
+        });
     }
 
     pub fn clone(&self) -> PhotoMeta {

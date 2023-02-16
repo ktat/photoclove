@@ -10,6 +10,7 @@ import DateList from "./DateList.jsx"
 import Importer from "./Importer.jsx"
 import Preferences from "./Preferences.jsx"
 import Welcome from "./Welcome.jsx"
+import Home from "./Home.jsx"
 import Footer from "./Footer.jsx"
 import { tauri } from "@tauri-apps/api";
 
@@ -188,7 +189,8 @@ function App() {
             datePage={datePage}
           />
         </div>
-        {showPhotosList && <PhotosList
+        {!currentDate && <Home />}
+        {currentDate && showPhotosList && <PhotosList
           setCurrentDate={setCurrentDate}
           currentDate={currentDate}
           datePage={datePage}

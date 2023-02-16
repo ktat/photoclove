@@ -14,6 +14,8 @@ function PhotosList(props) {
     const [scrollLock, setScrollLock] = useState(false);
     const [sortOfPhotos, setSort] = useState(0);
     const [photoLoading, setPhotoLoading] = useState(false);
+    const [photoSelection, setPhotoSelection] = useState([]);
+    const [photoSelectionDict, setPhotoSelectionDict] = useState({});
 
     useEffect((e) => {
         setShowPhotoDisplay(false);
@@ -24,13 +26,30 @@ function PhotosList(props) {
             props.setDatePage({});
             const fetchPhotos = async () => getPhotos(undefined, true);;
             fetchPhotos().catch(console.error);
-            setCurrentPhotoPath(undefined);
         }
     }, [numOfPhoto, props.currentDate, sortOfPhotos, iconSize]);
 
     function displayPhoto(f) {
         setCurrentPhotoPath(f);
         setShowPhotoDisplay(true);
+    }
+
+    function addSelection(e, f) {
+        const selection = photoSelection.concat();
+        if (e.target.checked) {
+            if (!photoSelectionDict[f]) {
+                selection.push(f);
+                photoSelectionDict[f] = true;
+            }
+        } else {
+            delete photoSelectionDict[f];
+            const i = selection.indexOf(f)
+            if (i >= 0) {
+                selection.splice(i, 1);
+            }
+        }
+        setPhotoSelectionDict(photoSelectionDict);
+        setPhotoSelection(selection);
     }
 
     async function getPhotos(e, isForward) {
@@ -176,13 +195,22 @@ function PhotosList(props) {
                     <div className="photos">
                         {photos.photos.map((l, i) => {
                             return (
-                                <div key={i} className={"row pict-" + iconSize}>
+                                <div key={i} className={"row pict-" + iconSize} style={{ textAlign: "center" }} >
                                     <a href="#" onClick={() => { displayPhoto(l.file.path) }}>
-                                        {l.file.path.match(/\.(mp4|webm)$/) && <strong>movie file</strong>}
-                                        {!l.file.path.match(/\.(mp4|webm)$/) && <img loading="lazy" alt={l.file.path} style={{ maxWidth: iconSize + 'px', maxHeight: iconSize + 'px' }} src={convertFileSrc(l.file.path)} />}
+                                        {l.file.path.match(/\.(mp4|webm)$/i)
+                                            ? <img style={{ width: "50%" }} src="/video.png" />
+                                            : <img loading="lazy"
+                                                alt={l.file.path}
+                                                style={{ maxWidth: iconSize + 'px', maxHeight: iconSize + 'px' }}
+                                                src={convertFileSrc(l.file.path)}
+                                            />
+                                        }
                                     </a>
                                     <div className="photo-list-menu">
-                                        <input type="checkbox" /><br />
+                                        <input type="checkbox"
+                                            checked={photoSelectionDict[l.file.path] ? "checked" : ""}
+                                            onChange={(e) => addSelection(e, l.file.path)}
+                                        /><br />
                                         <a href="#" onClick={() => setCurrentPhotoPath(l.file.path)} >(&#8505;)</a>
                                     </div>
                                 </div>
@@ -191,16 +219,15 @@ function PhotosList(props) {
                     </div>
                 </div>
                 {
-                    currentPhotoPath &&
-                    <PhotoInfo
-                        path={currentPhotoPath}
-                        addFooterMessage={props.addFooterMessage}
-                        setCurrentPhotoPath={setCurrentPhotoPath}
-                    />
-                }
-                {
-                    !currentPhotoPath &&
-                    <DirectoryMenu currentDate={props.currentDate} />
+                    currentPhotoPath
+                        ?
+                        <PhotoInfo
+                            path={currentPhotoPath}
+                            addFooterMessage={props.addFooterMessage}
+                            setCurrentPhotoPath={setCurrentPhotoPath}
+                        />
+                        :
+                        <DirectoryMenu currentDate={props.currentDate} photoSelection={photoSelection} />
                 }
             </>)
         } else {
