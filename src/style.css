@@ -24,6 +24,10 @@ body {
   min-width: 100vw;
 }
 
+#home-container {
+  padding: 100px 100px 100px 100px;
+}
+
 
 .inner-container {
   display: flex;
@@ -183,10 +187,14 @@ button {
   width: 100%;
 }
 
-.photo-list-header .photo-operation,
+.photo-list-header,
 .photo-list-header .navigation,
 .photo-list-header .photo-page-info {
   flex: 1;
+}
+
+.photo-operation {
+  flex: 2;
 }
 
 .photo-list-header .photo-page-info {
@@ -535,4 +543,18 @@ div.photo-clove {
   100% {
     transform: rotate(360deg);
   }
+}
+
+.video-on {
+  width: 100%;
+  height: 100%;
+  text-align: center;
+}
+
+.video-on video {
+  width: 100%;
+}
+
+.video-off {
+  display: none;
 }

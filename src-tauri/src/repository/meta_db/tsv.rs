@@ -64,10 +64,10 @@ impl Tsv {
                 .from_reader(file);
             for result in rdr.deserialize() {
                 let record: meta_db::PhotoInfo = result.unwrap();
-                photo_metas.insert(
-                    &record.path.clone(),
-                    photo_meta::PhotoMeta::new_from_photo_info(&record),
-                );
+                match photo_meta::PhotoMeta::new_from_photo_info(&record) {
+                    Some(photo_meta) => photo_metas.insert(&record.path.clone(), photo_meta),
+                    _ => (),
+                }
             }
         }
         return photo_metas;
@@ -235,10 +235,10 @@ impl MetaInfoDB for Tsv {
             for result in rdr.deserialize() {
                 if result.is_ok() {
                     let record: meta_db::PhotoInfo = result.unwrap();
-                    photo_metas.insert(
-                        &record.path.clone(),
-                        photo_meta::PhotoMeta::new_from_photo_info(&record),
-                    );
+                    match photo_meta::PhotoMeta::new_from_photo_info(&record) {
+                        Some(photo_meta) => photo_metas.insert(&record.path.clone(), photo_meta),
+                        _ => (),
+                    }
                 } else {
                     eprintln!("parse error: {:?}", result.err());
                 }

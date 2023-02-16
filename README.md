@@ -17,19 +17,21 @@ So, I decided to create this by myself.
 Just a plan, currentrly a few features are only implemented.
 
 - [x] Fast photo viewer
+  - [x] Fast when using NFS
   - [ ] Allow photos over network drive(priority is very low because I uses NFS mount on Linux)
 - [x] Fast importer
   - [ ] only check duplication for the files which has same name prefix and different size.
   - [ ] import files created after last import file timestamp in directories.
   - [x] importing in background
-  - [ ] Thumbnail creation in background
+  - [ ] Thumbnail creation
+     - [ ] Thumbnail creation in background
 - [ ] Provide very simple editor
   - [ ] rotation
   - [ ] crop
 - [ ] Additional photo data
-  - [ ] Tag
   - [x] Star
   - [x] Comment/Note
+  - [ ] Tag
   - [ ] Album(low priority)
 - [ ] Search
 - [ ] Filter
@@ -40,10 +42,14 @@ Just a plan, currentrly a few features are only implemented.
   - [x] directories(import from)
   - [x] directory(import to)
   - [x] num of parralel when copying photos
-  - [ ] num of parralel when creating thumbnail
+  - [x] num of parralel when creating thumbnail
   - [ ] directory date format(currentry, yyyy-mm-dd only)
-- [ ] i18n(low priority)
 - [x] Welcome tutorial
+- [x] Playing movies(mp4, webm) ... not good, but works
+- [ ] Slide Show(low priority)
+- [ ] i18n(low priority)
+- [ ] trashbox management
+- [ ] redo/undo
 
 ## Configuration file
 

@@ -1,7 +1,10 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from "react";
+import ReactPlayer from 'react-player';
 import { open } from '@tauri-apps/api/shell';
 import { tauri } from "@tauri-apps/api";
+
+let currentFile = "";
 
 function PhotoDisplay(props) {
     const [dragPhotoInfo, setDragPhotoInfo] = useState([]);
@@ -10,13 +13,22 @@ function PhotoDisplay(props) {
     const [photoZoom, setPhotoZoom] = useState("100%");
     const [photoZoomReady, setPhotoZoomReady] = useState(false);
     const [opacity, setOpacity] = useState(0.5);
+    const [videoSource, setVideoSource] = useState("");
+    const [videoClass, setVideoClass] = useState("video-off");
 
-    const loaded = false;
     useEffect((e) => {
-        console.log("photoDisplay loaded");
+        currentFile = "";
         document.querySelector("#dummy-for-focus").focus();
-        props.setCurrentPhotoPath(props.currentPhotoPath);
-    }, [loaded]);
+    }, []);
+
+    useEffect((e) => {
+        if (props.currentPhotoPath.match(/(mp4|webm)$/i)) {
+            movie(props.currentPhotoPath);
+            setVideoClass("video-on")
+        } else {
+            setVideoClass("video-off")
+        }
+    }, [props.currentPhotoPath]);
 
     function dragPhotoStart(e) {
         setPhotoDisplayImgClass("photo_dragging");
@@ -37,16 +49,33 @@ function PhotoDisplay(props) {
             setPhotoZoom("100%");
             document.querySelector("#dummy-for-focus").focus();
         } else if (e.ctrlKey) {
-            console.log("ready");
             setPhotoZoomReady(true);
         }
+    }
+
+    async function movie(path) {
+        if (currentFile != path) {
+            invoke("lock", { t: false }).then(async (r) => {
+                // tauri cannot play movie file which is not in public folder. So copy movie file to public/movie
+                const result = await invoke("copy_file_to_public", { fromFilePath: path, toFileName: "movie.tmp" }).then((r) => {
+                    let videoPath = "/movie.tmp?" + path;
+                    currentFile = path;
+                    // I don't know why it works only when set twice sometime.
+                    setVideoSource("#");
+                    // I don't know why react player require waiting for a while to play video correctly.
+                    setTimeout(() => {
+                        setVideoSource(videoPath);
+                    }, 100);
+                });
+            })
+        }
+        return true;
     }
 
     function photoNavigationUp(e) {
         console.log("keyUp");
         console.log(e.keyCode);
         if (e.ctrlKey) {
-            console.log("release");
             setPhotoZoomReady(false);
         }
     }
@@ -110,7 +139,6 @@ function PhotoDisplay(props) {
         }
 
         setPhotoZoom(zoom + "%");
-        console.log(zoom);
 
         const sTop = (imgTag.height * yPos - display.clientHeight * yPos);
         const sLeft = (imgTag.width * xPos - display.clientWidth * xPos);
@@ -141,7 +169,6 @@ function PhotoDisplay(props) {
         props.setShowPhotoDisplay(false);
         const fetchPhotos = async () => props.getPhotos();
         fetchPhotos().catch(console.error)
-        props.setCurrentPhotoPath("");
     }
 
     function dragPhotoEnd(e) {
@@ -163,38 +190,40 @@ function PhotoDisplay(props) {
             <a href="#" onClick={() => nextPhoto(props.currentPhotoPath)}>next &gt;&gt;</a><br /><br />
             <a href="#" onClick={() => moveToTrashCan(props.currentPhotoPath)}>&#128465;</a>
             <div className="photo">
-                { /*video doesn't work: https://github.com/tauri-apps/tauri/issues/3725#issuecomment-1160842638 */}
-                {
-                    props.currentPhotoPath.match(/\.(mp4|webm)$/) &&
-                    <>
-                        Open with other software:<br />
-                        <a href="#" onClick={(e) => open("file://" + props.currentPhotoPath)}>{props.currentPhotoPath}</a>
-                    </>
-                    /*
+                {/* video doesn't work for local failes: https://github.com/tauri-apps/tauri/issues/3725#issuecomment-1160842638
+
                     <video style={{ width: "100%", height: "100%" }} controls="" autoPlay="" name="media">
                         <source src={convertFileSrc(props.currentPhotoPath)} type={"video/" + (props.currentPhotoPath.match(/\.mp4$/) ? "mp4" : "webm")} />
                     </video>
-                    */
-                }
-                {!props.currentPhotoPath.match(/\.(mp4|webm)$/) &&
-                    <img className={photoDisplayImgClass}
-                        onLoad={() => {
-                            setTimeout(() => {
-                                setOpacity(1);
-                            }, 150)
-                        }
-                        }
-                        style={{
-                            transition: 'opacity 0.5s',
-                            opacity: opacity,
-                        }}
-                        src={convertFileSrc(props.currentPhotoPath)}
-                        width={photoZoom}
-                        onMouseDown={(e) => dragPhotoStart(e)}
-                        onMouseMove={(e) => dragPhoto(e)}
-                        onMouseUp={(e) => dragPhotoEnd(e)}
-                        onWheel={(e) => photoScroll(e)}
+
+                */}
+                <div className={videoClass}>
+                    <ReactPlayer
+                        width="100%"
+                        height="100%"
+                        controls
+                        url={videoSource}
                     />
+                    Open with other software: <a href="#" onClick={(e) => open("file://" + props.currentPhotoPath)}>{props.currentPhotoPath}</a>
+                </div>
+                {!props.currentPhotoPath.match(/\.(mp4|webm)$/i) && <img className={photoDisplayImgClass}
+                    onLoad={() => {
+                        setTimeout(() => {
+                            setOpacity(1);
+                        }, 150)
+                    }
+                    }
+                    style={{
+                        transition: 'opacity 0.5s',
+                        opacity: opacity,
+                    }}
+                    src={convertFileSrc(props.currentPhotoPath)}
+                    width={photoZoom}
+                    onMouseDown={(e) => dragPhotoStart(e)}
+                    onMouseMove={(e) => dragPhoto(e)}
+                    onMouseUp={(e) => dragPhotoEnd(e)}
+                    onWheel={(e) => photoScroll(e)}
+                />
                 }
             </div>
         </div>

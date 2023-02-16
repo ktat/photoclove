@@ -71,6 +71,25 @@ async fn get_dates_num(
 }
 
 #[tauri::command]
+async fn copy_file_to_public(
+    from_file_path: &str,
+    to_file_name: &str,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, ()> {
+    let from = path::Path::new(from_file_path);
+    let to = path::Path::new("../public/").join(to_file_name.to_string());
+    eprintln!("{:?} => {:?}", from, to);
+
+    return match std::fs::copy(from, to) {
+        Ok(_) => Ok("true".to_string()),
+        Err(e) => {
+            eprintln!("{:?}", e);
+            Ok("false".to_string())
+        }
+    };
+}
+
+#[tauri::command]
 async fn get_photos(
     date_str: &str,
     page: u32,
@@ -479,6 +498,7 @@ fn main() {
             save_config,
             save_star,
             save_comment,
+            copy_file_to_public,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
