@@ -7,11 +7,11 @@ function PhotoInfo(props) {
     const [comment, setComment] = useState("");
 
     useEffect((e) => {
-        if (props.path && props.path !== "") {
-            getPhotoInfo(props.path).then((photoInfo) => {
+        if (props.currentPhotoPath && props.currentPhotoPath !== "") {
+            getPhotoInfo(props.currentPhotoPath).then((photoInfo) => {
             });
         }
-    }, [props.path])
+    }, [props.currentPhotoPath])
 
     async function getPhotoInfo(path) {
         await invoke("get_photo_info", { pathStr: path }).then((r) => {
@@ -76,13 +76,13 @@ function PhotoInfo(props) {
         }
         const newStarRate = getStarRate(newStar);
         if (currentStarRate !== newStarRate) {
-            invoke("save_star", { pathStr: props.path, starNum: newStarRate });
+            invoke("save_star", { pathStr: props.currentPhotoPath, starNum: newStarRate });
             setStar(newStar);
         }
     }
 
     function saveComment() {
-        invoke("save_comment", { pathStr: props.path, commentStr: comment });
+        invoke("save_comment", { pathStr: props.currentPhotoPath, commentStr: comment });
     }
 
     return (
@@ -91,13 +91,13 @@ function PhotoInfo(props) {
                 <a href="#" onClick={(e) => props.setCurrentPhotoPath("")}>&#x2715;</a>
             </div>
             <p><strong>Photo Info</strong></p>
-            {props.path && (
+            {props.currentPhotoPath && (
                 <div>
                     <table>
                         <tbody>
                             <tr><th>File Name</th><td><a
-                                onMouseEnter={() => { props.addFooterMessage("current_phtoo_path", "File Path: " + props.path, 10000) }}>
-                                {props.path.replace(/^.+\//, '')}
+                                onMouseEnter={() => { props.addFooterMessage("current_phtoo_path", "File Path: " + props.currentPhotoPath, 10000) }}>
+                                {props.currentPhotoPath.replace(/^.+\//, '')}
                             </a></td></tr>
                             <tr><th>ISO</th><td>{photoInfo.exif ? photoInfo.exif.iso : ""}</td></tr>
                             <tr><th>FNumber</th><td>{photoInfo.exif ? photoInfo.exif.fnumber : ""}</td></tr>
@@ -117,6 +117,9 @@ function PhotoInfo(props) {
                             <tr><th>WhiteBalance Mode</th><td>{photoInfo.exif ? photoInfo.exif.white_balance_mode : ""}</td></tr>
                         </tbody>
                     </table>
+                    <div>
+                        <a href="#" onClick={() => props.moveToTrashCan(props.currentPhotoPath)}>&#128465;</a>
+                    </div>
                     <div>
                         Stars:
                         <span className="star">
