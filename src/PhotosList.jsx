@@ -34,13 +34,14 @@ function PhotosList(props) {
         setShowPhotoDisplay(true);
     }
 
-    function addSelection(e, f) {
+    function addSelection(t, f) {
         const selection = photoSelection.concat();
-        if (e.target.checked) {
+        if (t) {
             if (!photoSelectionDict[f]) {
                 selection.push(f);
                 photoSelectionDict[f] = true;
             }
+            changeTab(undefined, "#tab-selection");
         } else {
             delete photoSelectionDict[f];
             const i = selection.indexOf(f)
@@ -50,6 +51,41 @@ function PhotosList(props) {
         }
         setPhotoSelectionDict(photoSelectionDict);
         setPhotoSelection(selection);
+    }
+
+    function clearPhotoSelection() {
+        setPhotoSelectionDict({});
+        setPhotoSelection([]);
+    }
+
+    function selectAllPhotoToSelection() {
+        const selection = photoSelection.concat();
+        photos.photos.map((v) => {
+            const f = v.file.path;
+            if (!photoSelectionDict[f]) {
+                selection.push(f);
+                photoSelectionDict[f] = true;
+            }
+        })
+        setPhotoSelectionDict(photoSelectionDict);
+        setPhotoSelection(selection);
+    }
+
+    const [tabClass, setTabClass] = useState({
+        'tab-filter': true,
+        'tab-maintenance': false,
+        'tab-selection': false,
+    });
+
+    function changeTab(e, t) {
+        if (e) e.preventDefault();
+        const c = {
+            'filter': false,
+            'maintenance': false,
+            'selection': false,
+        };
+        c[t.replace(/^.*#tab-/, '')] = true;
+        setTabClass(c);
     }
 
     async function getPhotos(e, isForward) {
@@ -140,9 +176,13 @@ function PhotosList(props) {
         }
     }
 
-    if (showPhotoDisplay && currentPhotoPath) {
-        return (
-            <>
+    return <>
+        {photoLoading
+            ?
+            <PhotoLoading />
+            :
+            (showPhotoDisplay && currentPhotoPath !== "")
+                ?
                 <PhotoDisplay
                     currentPhotoPath={currentPhotoPath}
                     setCurrentPhotoPath={setCurrentPhotoPath}
@@ -153,16 +193,7 @@ function PhotosList(props) {
                     shortCutNavigation={props.shortCutNavigation}
                     getPhotos={getPhotos}
                 />
-                <PhotoInfo
-                    path={currentPhotoPath}
-                    addFooterMessage={props.addFooterMessage}
-                    setCurrentPhotoPath={setCurrentPhotoPath}
-                />
-            </>
-        );
-    } else {
-        if (!photoLoading) {
-            return (<>
+                :
                 <div className="centerDisplay" id="photoList" onWheel={(e) => photosScroll(e)} data-date={props.currentDate} data-page={props.datePage[props.currentDate]}>
                     <div>
                         <div className="photo-list-header">
@@ -199,7 +230,7 @@ function PhotosList(props) {
                                     <a href="#" onClick={() => { displayPhoto(l.file.path) }}>
                                         {l.file.path.match(/\.(mp4|webm)$/i)
                                             ? <img style={{ width: "50%" }} src="/video.png" />
-                                            : <img loading="lazy"
+                                            : <img loading="eager"
                                                 alt={l.file.path}
                                                 style={{ maxWidth: iconSize + 'px', maxHeight: iconSize + 'px' }}
                                                 src={convertFileSrc(l.file.path)}
@@ -209,7 +240,7 @@ function PhotosList(props) {
                                     <div className="photo-list-menu">
                                         <input type="checkbox"
                                             checked={photoSelectionDict[l.file.path] ? "checked" : ""}
-                                            onChange={(e) => addSelection(e, l.file.path)}
+                                            onChange={(e) => addSelection(e.target.checked, l.file.path)}
                                         /><br />
                                         <a href="#" onClick={() => setCurrentPhotoPath(l.file.path)} >(&#8505;)</a>
                                     </div>
@@ -218,22 +249,27 @@ function PhotosList(props) {
                         })}
                     </div>
                 </div>
-                {
-                    currentPhotoPath
-                        ?
-                        <PhotoInfo
-                            path={currentPhotoPath}
-                            addFooterMessage={props.addFooterMessage}
-                            setCurrentPhotoPath={setCurrentPhotoPath}
-                        />
-                        :
-                        <DirectoryMenu currentDate={props.currentDate} photoSelection={photoSelection} />
-                }
-            </>)
-        } else {
-            return <PhotoLoading />
         }
-    }
+        {
+            currentPhotoPath
+                ?
+                <PhotoInfo
+                    path={currentPhotoPath}
+                    addFooterMessage={props.addFooterMessage}
+                    setCurrentPhotoPath={setCurrentPhotoPath}
+                />
+                :
+                <DirectoryMenu
+                    tabClass={tabClass}
+                    setTabClass={setTabClass}
+                    changeTab={changeTab}
+                    currentDate={props.currentDate}
+                    photoSelection={photoSelection}
+                    clearPhotoSelection={clearPhotoSelection}
+                    selectAllPhotoToSelection={selectAllPhotoToSelection}
+                />
+        }
+    </>
 }
 
 export default PhotosList;

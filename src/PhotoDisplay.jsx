@@ -85,7 +85,7 @@ function PhotoDisplay(props) {
         await invoke("get_prev_photo", { path: f, dateStr: props.currentDate, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
             if (r !== "") {
                 setPhotoZoom("100%");
-                props.setCurrentPhotoPath(r);
+                if (props.currentPhotoPath !== r) props.setCurrentPhotoPath(r);
             }
         });
     }
@@ -95,7 +95,7 @@ function PhotoDisplay(props) {
         await invoke("get_next_photo", { path: f, dateStr: props.currentDate, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
             if (r !== "") {
                 setPhotoZoom("100%");
-                props.setCurrentPhotoPath(r);
+                if (props.currentPhotoPath !== r) props.setCurrentPhotoPath(r);
             }
         });
     }
@@ -107,7 +107,7 @@ function PhotoDisplay(props) {
             if (!r) {
                 closePhotoDisplay();
             } else {
-                props.setCurrentPhotoPath(r);
+                if (props.currentPhotoPath !== r) props.setCurrentPhotoPath(r);
             }
         });
     }
@@ -167,7 +167,7 @@ function PhotoDisplay(props) {
 
     function closePhotoDisplay() {
         props.setShowPhotoDisplay(false);
-        props.setCurrentPhotoPath("");
+        if (props.currentPhotoPath !== "") props.setCurrentPhotoPath("");
         const fetchPhotos = async () => props.getPhotos();
         fetchPhotos().catch(console.error)
     }
@@ -207,24 +207,25 @@ function PhotoDisplay(props) {
                     />
                     Open with other software: <a href="#" onClick={(e) => open("file://" + props.currentPhotoPath)}>{props.currentPhotoPath}</a>
                 </div>
-                {!props.currentPhotoPath.match(/\.(mp4|webm)$/i) && <img className={photoDisplayImgClass}
-                    onLoad={() => {
-                        setTimeout(() => {
-                            setOpacity(1);
-                        }, 150)
-                    }
-                    }
-                    style={{
-                        transition: 'opacity 0.5s',
-                        opacity: opacity,
-                    }}
-                    src={convertFileSrc(props.currentPhotoPath)}
-                    width={photoZoom}
-                    onMouseDown={(e) => dragPhotoStart(e)}
-                    onMouseMove={(e) => dragPhoto(e)}
-                    onMouseUp={(e) => dragPhotoEnd(e)}
-                    onWheel={(e) => photoScroll(e)}
-                />
+                {!props.currentPhotoPath.match(/\.(mp4|webm)$/i) &&
+                    <img className={photoDisplayImgClass}
+                        onLoad={() => {
+                            setTimeout(() => {
+                                setOpacity(1);
+                            }, 150)
+                        }
+                        }
+                        style={{
+                            transition: 'opacity 0.5s',
+                            opacity: opacity,
+                        }}
+                        src={convertFileSrc(props.currentPhotoPath)}
+                        width={photoZoom}
+                        onMouseDown={(e) => dragPhotoStart(e)}
+                        onMouseMove={(e) => dragPhoto(e)}
+                        onMouseUp={(e) => dragPhotoEnd(e)}
+                        onWheel={(e) => photoScroll(e)}
+                    />
                 }
             </div>
         </div>
@@ -232,4 +233,3 @@ function PhotoDisplay(props) {
 }
 
 export default PhotoDisplay;
-

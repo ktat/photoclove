@@ -189,24 +189,35 @@ function App() {
             datePage={datePage}
           />
         </div>
-        {!currentDate && <Home />}
-        {currentDate && showPhotosList && <PhotosList
-          setCurrentDate={setCurrentDate}
-          currentDate={currentDate}
-          datePage={datePage}
-          setDatePage={setDatePage}
-          shortCutNavigation={shortCutNavigation}
-          addFooterMessage={addFooterMessage}
-        />}
-        {showImporter && <Importer
-          addFooterMessage={addFooterMessage}
-          removeFooterMessage={removeFooterMessage}
-        />}
-        {showPreferences && <Preferences
-          togglePreferences={togglePreferences}
-          addFooterMessage={addFooterMessage}
-          setShowPreferences={setShowPreferences}
-        ></Preferences>}
+        {
+          (currentDate && showPhotosList)
+            ?
+            <PhotosList
+              setCurrentDate={setCurrentDate}
+              currentDate={currentDate}
+              datePage={datePage}
+              setDatePage={setDatePage}
+              shortCutNavigation={shortCutNavigation}
+              addFooterMessage={addFooterMessage}
+            />
+            :
+            showImporter
+              ?
+              <Importer
+                addFooterMessage={addFooterMessage}
+                removeFooterMessage={removeFooterMessage}
+              />
+              :
+              showPreferences
+                ?
+                <Preferences
+                  togglePreferences={togglePreferences}
+                  addFooterMessage={addFooterMessage}
+                  setShowPreferences={setShowPreferences}
+                ></Preferences>
+                :
+                <Home />
+        }
       </div>
       <Footer addFooterMessage={addFooterMessage} footerMessages={footerMessages} />
     </div>
