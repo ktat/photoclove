@@ -44,7 +44,7 @@ function PhotoDisplay(props) {
         } else if (e.keyCode === 37) { // left arrow
             prevPhoto(f);
         } else if (e.keyCode === 46) { // Del
-            moveToTrashCan(f)
+            props.moveToTrashCan(f)
         } else if (e.ctrlKey && e.keyCode === 48) { // ctrl+0
             setPhotoZoom("100%");
             document.querySelector("#dummy-for-focus").focus();
@@ -95,18 +95,6 @@ function PhotoDisplay(props) {
         await invoke("get_next_photo", { path: f, dateStr: props.currentDate, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
             if (r !== "") {
                 setPhotoZoom("100%");
-                if (props.currentPhotoPath !== r) props.setCurrentPhotoPath(r);
-            }
-        });
-    }
-
-    function moveToTrashCan(f, set) {
-        console.log("delete file: " + f)
-        invoke("move_to_trash", { dateStr: props.currentDate, pathStr: f, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
-            console.log("target:", r);
-            if (!r) {
-                closePhotoDisplay();
-            } else {
                 if (props.currentPhotoPath !== r) props.setCurrentPhotoPath(r);
             }
         });
@@ -165,13 +153,6 @@ function PhotoDisplay(props) {
         }
     }
 
-    function closePhotoDisplay() {
-        props.setShowPhotoDisplay(false);
-        if (props.currentPhotoPath !== "") props.setCurrentPhotoPath("");
-        const fetchPhotos = async () => props.getPhotos();
-        fetchPhotos().catch(console.error)
-    }
-
     function dragPhotoEnd(e) {
         setPhotoDisplayImgClass("");
         setDragPhotoInfo({});
@@ -187,9 +168,8 @@ function PhotoDisplay(props) {
         >
             <a href="#" id="dummy-for-focus">{/* Dummy */}</a>
             <a href="#" onClick={() => prevPhoto(props.currentPhotoPath)}>&lt;&lt; prev</a>&nbsp;&nbsp;
-            || <a href="#" onClick={() => closePhotoDisplay()}>close</a> ||&nbsp;&nbsp;
+            || <a href="#" onClick={() => props.closePhotoDisplay()}>close</a> ||&nbsp;&nbsp;
             <a href="#" onClick={() => nextPhoto(props.currentPhotoPath)}>next &gt;&gt;</a><br /><br />
-            <a href="#" onClick={() => moveToTrashCan(props.currentPhotoPath)}>&#128465;</a>
             <div className="photo">
                 {/* video doesn't work for local failes: https://github.com/tauri-apps/tauri/issues/3725#issuecomment-1160842638
 

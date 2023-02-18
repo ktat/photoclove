@@ -88,6 +88,25 @@ function PhotosList(props) {
         setTabClass(c);
     }
 
+    function moveToTrashCan(f) {
+        console.log("delete file: " + f)
+        invoke("move_to_trash", { dateStr: props.currentDate, pathStr: f, sortValue: parseInt(sortOfPhotos) }).then((r) => {
+            console.log("target:", r);
+            if (!r) {
+                closePhotoDisplay();
+            } else {
+                if (props.currentPhotoPath !== r) setCurrentPhotoPath(r);
+            }
+        });
+    }
+
+    function closePhotoDisplay() {
+        props.setShowPhotoDisplay(false);
+        if (props.currentPhotoPath !== "") setCurrentPhotoPath("");
+        const fetchPhotos = async () => props.getPhotos();
+        fetchPhotos().catch(console.error)
+    }
+
     async function getPhotos(e, isForward) {
         setPhotoLoading(true);
         setPhotosList({ "photos": [] });
@@ -184,6 +203,8 @@ function PhotosList(props) {
             (showPhotoDisplay && currentPhotoPath !== "")
                 ?
                 <PhotoDisplay
+                    moveToTrashCan={moveToTrashCan}
+                    closePhotoDisplay={closePhotoDisplay}
                     currentPhotoPath={currentPhotoPath}
                     setCurrentPhotoPath={setCurrentPhotoPath}
                     currentDate={props.currentDate}
@@ -254,6 +275,9 @@ function PhotosList(props) {
             currentPhotoPath
                 ?
                 <PhotoInfo
+                    moveToTrashCan={moveToTrashCan}
+                    currentPhotoPath={currentPhotoPath}
+                    closePhotoDisplay={closePhotoDisplay}
                     path={currentPhotoPath}
                     addFooterMessage={props.addFooterMessage}
                     setCurrentPhotoPath={setCurrentPhotoPath}
