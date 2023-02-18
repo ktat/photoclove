@@ -88,7 +88,7 @@ function PhotoInfo(props) {
     return (
         <div className="rightMenu">
             <div style={{ float: "right" }}>
-                <a href="#" onClick={(e) => props.setCurrentPhotoPath(undefined)}>&#x2715;</a>
+                <a href="#" onClick={(e) => props.setCurrentPhotoPath("")}>&#x2715;</a>
             </div>
             <p><strong>Photo Info</strong></p>
             {props.path && (

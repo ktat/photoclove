@@ -30,7 +30,7 @@ function SelectedPhotoInfo(props) {
             <div>
                 {Object.keys(props.selectedForImport).length} photos are selected
             </div>
-            <ul id="listOfselectedForImport">
+            <ul className="list-of-selected">
                 {Object.keys(props.selectedForImport).map((l, i) => {
                     let rest = l.replace(/([^\/]+)$/, "");
                     let filename = RegExp.$1;

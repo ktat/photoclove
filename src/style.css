@@ -25,6 +25,7 @@ body {
 }
 
 #home-container {
+  width: 100%;
   padding: 100px 100px 100px 100px;
 }
 
@@ -190,7 +191,7 @@ button {
 .photo-list-header,
 .photo-list-header .navigation,
 .photo-list-header .photo-page-info {
-  flex: 1;
+  flex: 2;
 }
 
 .photo-operation {
@@ -257,7 +258,7 @@ button {
   margin-right: 10px;
 }
 
-#importer-directories-list li {
+ul.list-of-selected li {
   margin-left: -40px;
   display: list-item;
   list-style: none;
@@ -271,10 +272,10 @@ li.selected:after {
   color: red;
 }
 
-ul#listOfselectedForImport {
+ul.list-of-selected {
   text-align: left;
   overflow-y: scroll;
-  height: calc(100vh - 200px - 200px);
+  height: calc(100vh - 300px - 200px);
 }
 
 #import-container {
@@ -291,6 +292,11 @@ ul#listOfselectedForImport {
   max-height: calc(100vh - 250px);
   overflow: scroll;
   text-align: left;
+}
+
+#importer-directories-list li {
+  display: block;
+  white-space: nowrap;
 }
 
 #importer-files-list {
@@ -434,6 +440,13 @@ ul#listOfselectedForImport {
   animation: lds-dual-ring 1.2s linear infinite;
 }
 
+img {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+}
+
 img.photo_dragging {
   cursor: grabbing;
 }
@@ -557,4 +570,59 @@ div.photo-clove {
 
 .video-off {
   display: none;
+}
+
+ul.tabs-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+}
+
+li.tab {
+  margin-right: 15px;
+  border-top-left-radius: 10%;
+  border-top-right-radius: 10%;
+  border-bottom-left-radius: 10%;
+  border-bottom-right-radius: 10%;
+  background-color: #999;
+  border: 1px solid #777;
+  border-bottom: none;
+  margin-bottom: 10px;
+}
+
+li.tab-active {
+  background-color: #eee;
+  border: 1px solid #ccc;
+  border-bottom: none;
+  border-bottom-color: transparent;
+}
+
+li.tab a,
+li.tab-active a {
+  display: block;
+  padding: 5px;
+  text-decoration: none;
+  color: #333;
+}
+
+li.tab a:hover {
+  display: block;
+  padding: 5px;
+  text-decoration: none;
+  background-color: #ccc;
+}
+
+div.tab {
+  display: none;
+  padding: 20px;
+  border: 1px solid #ccc;
+}
+
+div.tab.active {
+  display: block;
+}
+
+div#tab-selection img {
+  padding: 10px;
 }
