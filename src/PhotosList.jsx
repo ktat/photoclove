@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import PhotoDisplay from "./PhotoDisplay.jsx";
+import PhotosListMini from "./PhotosListMini.jsx";
 import PhotoInfo from "./PhotoInfo.jsx";
 import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 import PhotoLoading from "./PhotoLoading.jsx";
@@ -202,18 +203,21 @@ function PhotosList(props) {
             :
             (showPhotoDisplay && currentPhotoPath !== "")
                 ?
-                <PhotoDisplay
-                    moveToTrashCan={moveToTrashCan}
-                    closePhotoDisplay={closePhotoDisplay}
-                    currentPhotoPath={currentPhotoPath}
-                    setCurrentPhotoPath={setCurrentPhotoPath}
-                    currentDate={props.currentDate}
-                    sortOfPhotos={sortOfPhotos}
-                    setShortCutNavigation={props.setShortCutNavigation}
-                    setShowPhotoDisplay={setShowPhotoDisplay}
-                    shortCutNavigation={props.shortCutNavigation}
-                    getPhotos={getPhotos}
-                />
+                <div className="photo-display">
+                    <PhotoDisplay
+                        moveToTrashCan={moveToTrashCan}
+                        closePhotoDisplay={closePhotoDisplay}
+                        currentPhotoPath={currentPhotoPath}
+                        setCurrentPhotoPath={setCurrentPhotoPath}
+                        currentDate={props.currentDate}
+                        sortOfPhotos={sortOfPhotos}
+                        setShortCutNavigation={props.setShortCutNavigation}
+                        setShowPhotoDisplay={setShowPhotoDisplay}
+                        shortCutNavigation={props.shortCutNavigation}
+                        getPhotos={getPhotos}
+                    />
+                    <PhotosListMini />
+                </div>
                 :
                 <div className="centerDisplay" id="photoList" onWheel={(e) => photosScroll(e)} data-date={props.currentDate} data-page={props.datePage[props.currentDate]}>
                     <div>
