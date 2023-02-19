@@ -535,6 +535,18 @@ div.photo-clove {
   font-size: 30px;
 }
 
+#welcome-container .welcome-splash {
+  text-align: center;
+  overflow-y: hidden;
+  max-height: calc(100vh - 150px);
+  width: calc(100wh - 100px);
+  padding: 0px 50px 50px 50px;
+}
+
+#welcome-container .welcome-splash img {
+  width: 100%;
+}
+
 #welcome ol li {
   padding-top: 1em;
   line-height: 1.5em;

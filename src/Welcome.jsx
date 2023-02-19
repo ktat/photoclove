@@ -25,8 +25,8 @@ function Welcome(props) {
         <div id="welcome-container">
             <h1>Wellcome to PhotoClove!</h1>
             {showSplash &&
-                <div>
-                    <img src="/bird.jpg" width="100%" />
+                <div className="welcome-splash">
+                    <img src="/bird.jpg" />
                 </div>
             }
             {showWelcome &&
