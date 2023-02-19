@@ -10,7 +10,7 @@ function PhotoDisplay(props) {
     const [dragPhotoInfo, setDragPhotoInfo] = useState([]);
     const [scrollLock, setScrollLock] = useState(false);
     const [photoDisplayImgClass, setPhotoDisplayImgClass] = useState("");
-    const [photoZoom, setPhotoZoom] = useState("100%");
+    const [photoZoom, setPhotoZoom] = useState("auto");
     const [photoZoomReady, setPhotoZoomReady] = useState(false);
     const [opacity, setOpacity] = useState(0.5);
     const [videoSource, setVideoSource] = useState("");
@@ -46,7 +46,7 @@ function PhotoDisplay(props) {
         } else if (e.keyCode === 46) { // Del
             props.moveToTrashCan(f)
         } else if (e.ctrlKey && e.keyCode === 48) { // ctrl+0
-            setPhotoZoom("100%");
+            setPhotoZoom("auto");
             document.querySelector("#dummy-for-focus").focus();
         } else if (e.ctrlKey) {
             setPhotoZoomReady(true);
@@ -84,7 +84,7 @@ function PhotoDisplay(props) {
         setOpacity(0.5);
         await invoke("get_prev_photo", { path: f, dateStr: props.currentDate, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
             if (r !== "") {
-                setPhotoZoom("100%");
+                setPhotoZoom("auto");
                 if (props.currentPhotoPath !== r) props.setCurrentPhotoPath(r);
             }
         });
@@ -94,7 +94,7 @@ function PhotoDisplay(props) {
         setOpacity(0.5);
         await invoke("get_next_photo", { path: f, dateStr: props.currentDate, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
             if (r !== "") {
-                setPhotoZoom("100%");
+                setPhotoZoom("auto");
                 if (props.currentPhotoPath !== r) props.setCurrentPhotoPath(r);
             }
         });
@@ -105,8 +105,9 @@ function PhotoDisplay(props) {
         if (scrollLock || !photoZoomReady) {
             return;
         }
+
         setScrollLock(true);
-        let zoom = parseInt(photoZoom.replace("%", ""));
+        let zoom = photoZoom === "auto" ? 100 : parseInt(photoZoom.replace("%", ""));
 
         const imgTag = document.querySelector(".photo img");
         const display = e.currentTarget.parentElement;
@@ -128,7 +129,7 @@ function PhotoDisplay(props) {
 
         setPhotoZoom(zoom + "%");
 
-        const sTop = (imgTag.height * yPos - display.clientHeight * yPos);
+        const sTop = (imgTag.height * yPos - display.clientHeight * yPos) + e.deltaY * zoom / 100 * -1;
         const sLeft = (imgTag.width * xPos - display.clientWidth * xPos);
         display.scrollTop = sTop - sTop % (50 * zoom / 200);
         display.scrollLeft = sLeft - sLeft % (50 * zoom / 200);
@@ -196,11 +197,12 @@ function PhotoDisplay(props) {
                         }
                         }
                         style={{
+                            objectFit: "contain",
                             transition: 'opacity 0.5s',
                             opacity: opacity,
+                            minWidth: photoZoom,
                         }}
                         src={convertFileSrc(props.currentPhotoPath)}
-                        width={photoZoom}
                         onMouseDown={(e) => dragPhotoStart(e)}
                         onMouseMove={(e) => dragPhoto(e)}
                         onMouseUp={(e) => dragPhotoEnd(e)}
