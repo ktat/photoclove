@@ -7,7 +7,8 @@ use crate::value::{date, exif, file};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-use std::collections::HashMap;
+use std::collections::{self, HashMap};
+use std::fs;
 
 #[derive(Debug, Deserialize, Serialize)]
 struct PhotoInfo {
@@ -220,5 +221,39 @@ impl RepositoryDB for Directory {
             page += 1
         }
         return Option::None;
+    }
+
+    async fn move_photos_to_exif_date(&self, date: date::Date) -> date::Dates {
+        let dir = self.path.child(date.to_string());
+        let files = dir_service::find_files(&dir);
+        let mut datesToBeChanged: HashMap<String, bool> = HashMap::new();
+        for file in files.files {
+            let photo = photo::Photo::new_with_exif(file);
+            let new_dir = self.path.child(photo.created_date_string());
+            if dir.path != new_dir.path {
+                datesToBeChanged
+                    .entry(photo.created_date_string())
+                    .or_insert(true);
+                let filename = photo.file.filename();
+                let new_pathbuf = new_dir.as_pathbuf();
+                let new_path = new_pathbuf.as_path().join(filename);
+                fs::rename(&photo.file.path, &new_path.display().to_string());
+                eprintln!(
+                    "move file: {} to {}",
+                    photo.file.path,
+                    new_path.display().to_string()
+                );
+            }
+        }
+        let mut dates = date::Dates::new(&[]);
+        if datesToBeChanged.keys().len() > 0 {
+            datesToBeChanged.insert(date.to_string(), true);
+            for date_string in datesToBeChanged.keys() {
+                dates
+                    .dates
+                    .push(date::Date::from_string(date_string, Option::Some("-")));
+            }
+        }
+        return dates;
     }
 }

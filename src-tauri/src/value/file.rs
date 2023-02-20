@@ -4,7 +4,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::os::unix::prelude::MetadataExt;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct File {
@@ -49,6 +49,10 @@ impl Dir {
             let ap = fs::canonicalize(p).unwrap().as_path().display().to_string();
             return Dir { path: ap };
         }
+    }
+
+    pub fn as_pathbuf(&self) -> PathBuf {
+        PathBuf::from(self.path.clone())
     }
 
     pub fn to_date(&mut self) -> Option<date::Date> {
