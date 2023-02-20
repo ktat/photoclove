@@ -21,7 +21,7 @@ function DirectoryMenu(props) {
             <div id="tab-maintenance" className={props.tabClass['maintenance'] ? "tab-active" : "tab"}>
                 <ul>
                     <li><a href="#" onClick={() => { invoke("create_db_in_date", { dateStr: props.currentDate }) }}>(re)Create database of the date</a></li>
-                    <li><a href="#" onClick={() => { }}>Move files according to Exif date</a></li>
+                    <li><a href="#" onClick={() => { invoke("move_photos_to_exif_date", { dateStr: props.currentDate }) }}>Move files according to Exif date</a></li>
                 </ul>
             </div>
             <div id="tab-filter" className={props.tabClass['filter'] ? "tab-active" : "tab"}>

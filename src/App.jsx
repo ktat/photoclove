@@ -51,10 +51,22 @@ function App() {
     // const sab = new SharedArrayBuffer(1024);
     const unlisted1 = listen("create_db", (e) => {
       console.log(e);
-      if (e.payload === "finish") {
+      if (e.payload === "start") {
+        addFooterMessage("create_db", "Database (re)creation is started", 10000);
+      } else if (e.payload === "finish") {
         addFooterMessage("create_db", "Database is created :)", 10000);
       }
     });
+    const unlisted3 = listen("move_files", (e) => {
+      if (e.payload === "start") {
+        addFooterMessage("move_files", "Start moving files");
+      } else if (e.payload === "ned_move") {
+        addFooterMessage("move_files", "Finish moving files");
+      } else {
+        addFooterMessage("move_files", "Finish (re)creating DB", 10000);
+      }
+    });
+
     const unlisten2 = listen("click_menu", (e) => {
       console.log(e);
       if (e.payload === "load_dates") {

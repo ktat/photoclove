@@ -68,6 +68,7 @@ pub(crate) trait RepositoryDB {
         num: u32,
         page: u32,
     ) -> photo::Photos;
+    async fn move_photos_to_exif_date(&self, date: date::Date) -> date::Dates;
     fn get_photo_count_per_dates(&self, dates: date::Dates, meta_data: DatesNum) -> DatesNum;
     fn get_photo_count_in_date(&self, date: date::Date) -> i32;
 }

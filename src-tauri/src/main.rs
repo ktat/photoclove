@@ -299,6 +299,23 @@ fn get_photos_path_to_import_under_directory(
 }
 
 #[tauri::command]
+async fn move_photos_to_exif_date(
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+    date_str: &str,
+) -> Result<bool, ()> {
+    let date = date::Date::from_string(&date_str.to_string(), Option::Some("/"));
+    window.emit("move_files", "start");
+    eprintln!("target date: {:?}", date);
+    let dates = state.repo_db.move_photos_to_exif_date(date).await;
+    eprintln!("date: {:?}", dates);
+    window.emit("move_files", "end_move");
+    state.meta_db.record_photos_all_meta_data(dates);
+    window.emit("move_files", "finish");
+    return Ok(true);
+}
+
+#[tauri::command]
 async fn create_db(window: tauri::Window, state: tauri::State<'_, AppState>) -> Result<bool, ()> {
     let dates = state.repo_db.get_dates();
     state.meta_db.record_photos_all_meta_data(dates);
@@ -499,6 +516,7 @@ fn main() {
             save_star,
             save_comment,
             copy_file_to_public,
+            move_photos_to_exif_date,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
