@@ -182,12 +182,19 @@ async fn get_prev_photo(
 
 #[tauri::command]
 fn get_photo_info(path_str: &str, window: tauri::Window, state: tauri::State<AppState>) -> String {
-    let photo = photo::Photo::new(file::File::new(path_str.to_string()));
-    let exif_data = exif::ExifData::new(photo.file.clone());
-    let photo_meta = photo_meta::PhotoMeta::new_with_data(photo, &state.meta_db);
-    let photo_meta_with_exif = photo_meta::PhotoMetaWithExif::new(photo_meta, exif_data);
-    let json = serde_json::to_string(&photo_meta_with_exif).unwrap();
-    return json;
+    match file::File::new_if_exists(path_str.to_string()) {
+        Some(f) => {
+            let photo = photo::Photo::new(f);
+            let exif_data = exif::ExifData::new(photo.file.clone());
+            let photo_meta = photo_meta::PhotoMeta::new_with_data(photo, &state.meta_db);
+            let photo_meta_with_exif = photo_meta::PhotoMetaWithExif::new(photo_meta, exif_data);
+            let json = serde_json::to_string(&photo_meta_with_exif).unwrap();
+            return json;
+        }
+        None => {
+            return "{}".to_string();
+        }
+    }
 }
 
 #[tauri::command]
