@@ -75,9 +75,9 @@ function Preferences(props) {
                 <div className="row1"></div><div className="row1">Thumbnail: </div><div className="row3"><input value={config.thumbnail_parallel} type="text" onChange={(e) => { config.thumbnail_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
                 <div className="row2"></div>
                 <div className="row3">
-                    <label>
-                        <input type="checkbox" value="1" onChange={(e) => { config.use_count = e.target.checked ? 0 : useCount; setNewConfig(config) }} /> Show Welcome tutorial again?
-                    </label>
+
+                    <input type="checkbox" id="preference-check" value="1" onChange={(e) => { config.use_count = e.target.checked ? 0 : useCount; setNewConfig(config) }} />
+                    <label className="checkbox checkbox-normal" for="preference-check">Show Welcome tutorial again?</label>
                 </div>
                 <div className="row0">
                     <button name="save" value="save" onClick={(e) => saveConfig()}>SAVE</button>
