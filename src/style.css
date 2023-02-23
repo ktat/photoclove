@@ -658,3 +658,66 @@ div#tab-selection img {
 #photos-list-mini div.row img {
   object-fit: contain;
 }
+
+/* checkbox */
+input[type=checkbox] {
+  display: none;
+}
+
+label.checkbox {
+  position: relative;
+}
+
+label.checkbox-normal {
+  padding: 20px 0 0 25px;
+}
+
+label.checkbox-photo {
+  padding: 0 0 0 0;
+}
+
+label.checkbox:hover:after {
+  border-color: #0171bd;
+}
+
+label.checkbox:after,
+label.checkbox:before {
+  position: absolute;
+  content: "";
+  display: block;
+  top: 50%;
+}
+
+label.checkbox:after {
+  left: 1px;
+  margin-top: 0px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #535bf2;
+  border-radius: 6px;
+}
+
+label.checkbox:before {
+  left: 6.5px;
+  margin-top: 2px;
+  width: 3px;
+  height: 7px;
+  border-right: 2px solid #ccc;
+  border-bottom: 2px solid #ccc;
+  transform: rotate(45deg);
+  opacity: 0;
+}
+
+input[type=checkbox]:checked+label.checkbox:before {
+  opacity: 1;
+}
+
+label.hover {
+  padding: 0px;
+  margin: 0px;
+  width: 12px;
+}
+
+label.hover:hover {
+  cursor: pointer;
+}

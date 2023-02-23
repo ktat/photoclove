@@ -264,9 +264,11 @@ function PhotosList(props) {
                                     </a>
                                     <div className="photo-list-menu">
                                         <input type="checkbox"
+                                            id={"photo-checkbox-" + i}
                                             checked={photoSelectionDict[l.file.path] ? "checked" : ""}
                                             onChange={(e) => addSelection(e.target.checked, l.file.path)}
-                                        /><br />
+                                        />
+                                        <label className={"cneckbox-photo checkbox hover"} for={"photo-checkbox-" + i}></label><br />
                                         <a href="#" onClick={() => setCurrentPhotoPath(l.file.path)} >(&#8505;)</a>
                                     </div>
                                 </div>
