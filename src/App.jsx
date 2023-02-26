@@ -34,12 +34,21 @@ function App() {
   const [showPhotosList, setShowPhotosList] = useState(true);
   const [showPreferences, setShowPreferences] = useState(false);
   const [footerMessages, setFooterMessages] = useState({});
+  const [dateNum, setDateNum] = useState({});
 
   const [shortCutNavigation, setShortCutNavigation] = useState({
     onKeyDown: (e) => { console.log(e) },
     onKeyUp: (e) => { console.log(e) }
   });
 
+  function setCurrentDateNum(num) {
+    const newDateNum = {};
+    Object.keys(dateNum).map((k) => {
+      newDateNum[k] = dateNum[k];
+    });
+    newDateNum[currentDate.replace(/\//g, "-")] = num;
+    setDateNum(newDateNum)
+  }
   let in_db_creation = false;
 
   useEffect((e) => {
@@ -199,6 +208,8 @@ function App() {
             setReloadDates={setReloadDates}
             reloadDates={reloadDates}
             datePage={datePage}
+            dateNum={dateNum}
+            setDateNum={setDateNum}
           />
         </div>
         {
@@ -211,6 +222,8 @@ function App() {
               setDatePage={setDatePage}
               shortCutNavigation={shortCutNavigation}
               addFooterMessage={addFooterMessage}
+              dateNum={dateNum}
+              setCurrentDateNum={setCurrentDateNum}
             />
             :
             showImporter

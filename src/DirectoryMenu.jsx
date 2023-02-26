@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 import { message, confirm } from "@tauri-apps/api/dialog";
+import { tauri } from "@tauri-apps/api";
+import { emit } from "@tauri-apps/api/event";
 
 
 function DirectoryMenu(props) {
@@ -20,8 +22,10 @@ function DirectoryMenu(props) {
             confirm("This takes long time if you have many photos.", "Warning").then((answer) => {
                 if (answer) {
                     lock = true;
-                    invoke("create_db_in_date", { dateStr: props.currentDate }).then(() => {
+                    invoke("create_db_in_date", { dateStr: props.currentDate }).then((r) => {
                         lock = false;
+                        let data = JSON.parse(r);
+                        props.setCurrentDateNum(data[props.currentDate.replace(/\//g, "-")]);
                     })
                 }
             });

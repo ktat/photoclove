@@ -310,24 +310,38 @@ async fn move_photos_to_exif_date(
     window: tauri::Window,
     state: tauri::State<'_, AppState>,
     date_str: &str,
-) -> Result<bool, ()> {
+) -> Result<String, ()> {
     let date = date::Date::from_string(&date_str.to_string(), Option::Some("/"));
     window.emit("move_files", "start");
     eprintln!("target date: {:?}", date);
     let dates = state.repo_db.move_photos_to_exif_date(date).await;
     eprintln!("date: {:?}", dates);
     window.emit("move_files", "end_move");
-    state.meta_db.record_photos_all_meta_data(dates);
-    window.emit("move_files", "finish");
-    return Ok(true);
+    match state.meta_db.record_photos_all_meta_data(dates) {
+        Ok(ret) => {
+            window.emit("move_files", "finish");
+            return Ok(serde_json::to_string(&ret).unwrap());
+        }
+        Err(_) => {
+            window.emit("move_files", "faile");
+            return Ok("false".to_string());
+        }
+    }
 }
 
 #[tauri::command]
-async fn create_db(window: tauri::Window, state: tauri::State<'_, AppState>) -> Result<bool, ()> {
+async fn create_db(window: tauri::Window, state: tauri::State<'_, AppState>) -> Result<String, ()> {
     let dates = state.repo_db.get_dates();
-    state.meta_db.record_photos_all_meta_data(dates);
-    window.emit("create_db", "finish");
-    return Ok(true);
+    match state.meta_db.record_photos_all_meta_data(dates) {
+        Ok(ret) => {
+            window.emit("create_db", "finish");
+            return Ok(serde_json::to_string(&ret).unwrap());
+        }
+        Err(_) => {
+            window.emit("create_db", "failed");
+            return Ok("false".to_string());
+        }
+    }
 }
 
 #[tauri::command]
@@ -335,12 +349,19 @@ async fn create_db_in_date(
     window: tauri::Window,
     state: tauri::State<'_, AppState>,
     date_str: &str,
-) -> Result<bool, ()> {
+) -> Result<String, ()> {
     let date = date::Date::from_string(&date_str.to_string(), Option::Some("/"));
     let dates = date::Dates::new(&[date]);
-    state.meta_db.record_photos_all_meta_data(dates);
-    window.emit("create_db", "finish");
-    return Ok(true);
+    match state.meta_db.record_photos_all_meta_data(dates) {
+        Ok(ret) => {
+            window.emit("create_db", "finish");
+            return Ok(serde_json::to_string(&ret).unwrap());
+        }
+        Err(_) => {
+            window.emit("create_db", "failed");
+            return Ok("false".to_string());
+        }
+    }
 }
 
 #[tauri::command]

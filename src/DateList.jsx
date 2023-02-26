@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
+import { message } from "@tauri-apps/api/dialog";
+import { listen } from "@tauri-apps/api/event";
+
+const unlisten = {};
 
 function DateList(props) {
     const [dateList, setDateList] = useState([]);
-    const [dateNum, setDateNum] = useState({});
 
     useEffect((e) => {
         getDates();
@@ -42,7 +45,7 @@ function DateList(props) {
                     Object.keys(result).map((k) => {
                         newDateNum[k] = result[k];
                     })
-                    setDateNum(newDateNum);
+                    props.setDateNum(newDateNum);
                 });
             })
         });
@@ -61,7 +64,7 @@ function DateList(props) {
                             }
                             } data-date={date} data-page={props.datePage[date]}>
                                 {date}
-                                {dateNum[date.replace(/\//g, "-")] !== undefined ? " (" + dateNum[date.replace(/\//g, "-")] + ")" : ""}
+                                {props.dateNum[date.replace(/\//g, "-")] !== undefined ? " (" + props.dateNum[date.replace(/\//g, "-")] + ")" : ""}
                             </a></li>)
                     })
                     }
