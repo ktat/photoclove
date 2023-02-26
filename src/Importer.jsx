@@ -14,6 +14,7 @@ function Importer(props) {
     const [pathPage, setPathPage] = useState({});
     const [selectedForImport, setSelectedForImport] = useState({});
     const [imageInSelectedPhotos, setImageInSelectedPhotos] = useState("");
+    const [importerFilter, setImporterFilter] = useState("")
 
     const listened = false;
 
@@ -28,7 +29,7 @@ function Importer(props) {
 
     useEffect(() => {
         showImporter(props.path, pathPage[props.path], 20);
-    }, [props.path]);
+    }, [props.path, importerFilter]);
 
     let beforeScrollTop = -1;
     let isScrollBottom = 0;
@@ -105,7 +106,7 @@ function Importer(props) {
     function selectAll() {
         console.log(currentImportPath)
         if (currentImportPath != "") {
-            invoke("get_photos_path_to_import_under_directory", { pathStr: currentImportPath }).then((r) => {
+            invoke("get_photos_path_to_import_under_directory", { pathStr: currentImportPath, dateAfterStr: importerFilter }).then((r) => {
                 let files = JSON.parse(r);
                 let photos = [];
                 for (let i = 0; i < files.length; i++) {
@@ -143,6 +144,10 @@ function Importer(props) {
         if (path !== "") {
             args["pathStr"] = path;
         }
+        if (importerFilter) {
+            args["dateStr"] = importerFilter;
+        }
+
         await invoke("show_importer", args).then((r) => {
             let data = JSON.parse(r);
             let path = data.dirs_files.dir.path;
@@ -159,6 +164,10 @@ function Importer(props) {
             }
             setTimeout(() => { setScrollLock(false) }, 200);
         });
+    }
+
+    function filterImporter(date) {
+        setImporterFilter(date);
     }
 
     return (
@@ -202,18 +211,19 @@ function Importer(props) {
                         </ul>
                     </div>
                     <div id="importer-files-list">
-                        {importer.dirs_files.files.files.length > 0 && (
+                        {(importer.dirs_files.files.files.length || (importerFilter !== undefined && importerFilter !== "")) > 0 && (
                             <>
                                 <div className="row1">page. {pathPage[currentImportPath]}</div>
                                 <div className="row1-right">
-                                    Created Date: after <input id="filterDate" name="date" type="date" />
-                                    <button onClick={() => filterImporter()}>Filter</button><br />
+                                    Created Date: after <input id="filterDate" name="date" type="date" value={importerFilter} onChange={(e) => filterImporter(e.target.value)} />
                                 </div>
-                                <div className="row0-center">
-                                    <button onClick={() => selectAllInThisPage()}>Select All photos in this page</button>
-                                    <button onClick={() => selectAll()}>Select All photos in all pages</button>
-                                    <button onClick={() => unselectAll()}>Unselect All</button>
-                                </div>
+                                {
+                                    importer.dirs_files.files.files.length > 0 && <div className="row0-center">
+                                        <button onClick={() => selectAllInThisPage()}>Select All photos in this page</button>
+                                        <button onClick={() => selectAll()}>Select All photos in all pages</button>
+                                        <button onClick={() => unselectAll()}>Unselect All</button>
+                                    </div>
+                                }
                             </>
                         )}
                         <div className="navigation">

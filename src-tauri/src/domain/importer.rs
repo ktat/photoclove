@@ -1,7 +1,7 @@
 use crate::domain::photo;
 use crate::repository::{self, RepositoryDB};
 use crate::repository::{dir, MetaInfoDB};
-use crate::value::{exif, file};
+use crate::value::{date, exif, file};
 use filetime;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -219,11 +219,11 @@ impl ImporterSelectedFiles {
 }
 
 impl Importer {
-    pub fn new(directory: String, page: u32, num: u32) -> Importer {
+    pub fn new(directory: String, page: u32, num: u32, date_after: Option<date::Date>) -> Importer {
         let sort = repository::Sort::Time;
         let dir = dir::Dir::new(directory);
         return Importer {
-            dirs_files: dir.find_files_and_dirs(sort, page, num),
+            dirs_files: dir.find_files_and_dirs(sort, page, num, date_after),
             page: page,
             num: num,
             paths: vec![],
@@ -239,9 +239,15 @@ impl Importer {
         }
     }
 
-    pub fn update(&mut self, directory: String, page: u32, num: u32) {
+    pub fn update(
+        &mut self,
+        directory: String,
+        page: u32,
+        num: u32,
+        date_after: Option<date::Date>,
+    ) {
         let dir = dir::Dir::new(directory);
         let sort = repository::Sort::Time;
-        self.dirs_files = dir.find_files_and_dirs(sort, page, num)
+        self.dirs_files = dir.find_files_and_dirs(sort, page, num, date_after)
     }
 }

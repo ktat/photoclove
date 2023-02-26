@@ -116,6 +116,10 @@ impl File {
         }
     }
 
+    pub fn is_created_before(&self, filter_date: date::Date) -> bool {
+        return self.created_date() < filter_date.to_string();
+    }
+
     pub fn created_date(&self) -> String {
         let t = self.get_created_time();
         return t.format("%Y-%m-%d").to_string();

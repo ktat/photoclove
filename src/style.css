@@ -26,9 +26,10 @@ body {
 
 #home-container {
   width: 100%;
+  overflow: hidden;
   padding: 100px 100px 100px 100px;
+  max-height: calc(100vh - 300px);
 }
-
 
 .inner-container {
   display: flex;

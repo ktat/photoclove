@@ -1,5 +1,5 @@
-use crate::repository;
 use crate::value::file;
+use crate::{repository, value::date};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -38,7 +38,7 @@ impl Dir {
         Dir { path: path }
     }
 
-    pub fn find_all_files(&self) -> file::Files {
+    pub fn find_all_files(&self, date_after: Option<date::Date>) -> file::Files {
         let re = Regex::new(r"(?i)\.(?:jpe?g|gif|png)$").unwrap();
         let readdir = fs::read_dir(&self.path);
         let mut files = file::Files::new();
@@ -47,12 +47,16 @@ impl Dir {
                 let entry = entry.unwrap();
                 let entry_path = entry.path();
                 if entry_path.display().to_string() != ".".to_string() {
+                    let has_filter = date_after.is_some();
                     if entry_path.is_file()
                         && re.is_match(entry_path.display().to_string().as_str())
                     {
-                        files
-                            .files
-                            .push(file::File::new(entry_path.display().to_string()));
+                        let f = file::File::new(entry_path.display().to_string());
+
+                        if has_filter && f.created_date() < date_after.unwrap().to_string() {
+                            continue;
+                        }
+                        files.files.push(f);
                     }
                 }
             }
@@ -62,7 +66,13 @@ impl Dir {
         return files;
     }
 
-    pub fn find_files_and_dirs(&self, sort: repository::Sort, page: u32, num: u32) -> DirsFiles {
+    pub fn find_files_and_dirs(
+        &self,
+        sort: repository::Sort,
+        page: u32,
+        num: u32,
+        date_after: Option<date::Date>,
+    ) -> DirsFiles {
         let mut df = DirsFiles::new(self.path.clone());
         let re = Regex::new(r"(?i)\.(?:jpe?g|gif|png)$").unwrap();
         let readdir = fs::read_dir(&self.path);
@@ -80,6 +90,13 @@ impl Dir {
                     if entry_path.is_file()
                         && re.is_match(entry_path.display().to_string().as_str())
                     {
+                        let f = file::File::new(entry_path.display().to_string());
+                        if date_after.is_some() {
+                            let date_after = date_after.unwrap();
+                            if f.is_created_before(date_after) {
+                                continue;
+                            }
+                        }
                         if i < start_index {
                             i += 1;
                             continue;
@@ -89,9 +106,7 @@ impl Dir {
                             df.has_next_file = true;
                             continue;
                         }
-                        df.files
-                            .files
-                            .push(file::File::new(entry_path.display().to_string()));
+                        df.files.files.push(f);
                         i += 1
                     } else if entry_path.is_dir() {
                         df.dirs
