@@ -258,13 +258,7 @@ button {
   margin-right: 10px;
 }
 
-ul.list-of-selected li {
-  margin-left: -40px;
-  display: list-item;
-  list-style: none;
-}
-
-li.selected:after {
+div.selected:after {
   margin-left: -27px;
   font-size: 18px;
   padding: 0 10 10 0px;
@@ -276,6 +270,12 @@ ul.list-of-selected {
   text-align: left;
   overflow-y: scroll;
   height: calc(100vh - 300px - 200px);
+}
+
+ul.list-of-selected li {
+  margin-left: -40px;
+  display: list-item;
+  list-style: none;
 }
 
 #import-container {
@@ -362,7 +362,8 @@ ul.list-of-selected {
   max-height: calc(100vh - 150px);
 }
 
-.photos .row {
+.photos .row,
+.importer-photos .row {
   flex: 1;
   margin: 10px;
   flex-grow: unset;

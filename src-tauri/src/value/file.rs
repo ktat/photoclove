@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct File {
     pub path: String,
+    pub created_at: String,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Files {
@@ -18,10 +19,17 @@ pub struct Files {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Dir {
     pub path: String,
+    pub created_at: String,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Dirs {
     pub dirs: Vec<Dir>,
+}
+
+fn get_created_time(path: String) -> String {
+    let metadata = std::fs::metadata(path).unwrap();
+    let epoch = metadata.ctime();
+    Local.timestamp_opt(epoch, 0).unwrap().to_string()
 }
 
 impl Dirs {
@@ -44,10 +52,14 @@ impl Dir {
             eprintln!("Invalid path: {:?}", cp.err());
             return Dir {
                 path: "/".to_string(),
+                created_at: get_created_time("/".to_string()),
             };
         } else {
             let ap = fs::canonicalize(p).unwrap().as_path().display().to_string();
-            return Dir { path: ap };
+            return Dir {
+                path: ap.clone(),
+                created_at: get_created_time(ap),
+            };
         }
     }
 
@@ -85,7 +97,10 @@ impl File {
             panic!("Invalid path: {:?}, {:?}", path, cp.err());
         } else {
             let ap = cp.unwrap().as_path().display().to_string();
-            return File { path: ap };
+            return File {
+                path: ap.clone(),
+                created_at: get_created_time(ap),
+            };
         }
     }
 
@@ -97,7 +112,7 @@ impl File {
             return Option::None;
         } else {
             let ap = cp.unwrap().as_path().display().to_string();
-            return Option::Some(File { path: ap });
+            return Option::Some(File::new(ap));
         }
     }
 

@@ -185,12 +185,16 @@ function Importer(props) {
                         <p>{currentImportPath}:</p>
                         <ul>
                             {(importer.dirs_files.dirs.dirs.length == 0 || importer.dirs_files.dirs.dirs[0].path.match("^/[^\/]+/.+$")) &&
-                                <li><a href="#" onClick={() => showImporter(importer.dirs_files.dir.path + "/..")}>..</a></li>
+                                <li>
+                                    <a href="#" onClick={() => showImporter(importer.dirs_files.dir.path + "/..")}>
+                                        ..
+                                    </a>
+                                </li>
                             }
                             {importer.dirs_files.dirs.dirs.map((l, i) => {
                                 return (
                                     <li key={i}>&#128193;
-                                        <a href="#" onClick={() => showImporter(l.path)}>{l.path.replace(/^.+\//, '')}</a>
+                                        <a title={l.created_at} href="#" onClick={() => showImporter(l.path)}>{l.path.replace(/^.+\//, '')}</a>
                                     </li>
                                 );
                             })
@@ -217,14 +221,16 @@ function Importer(props) {
                             {importer.dirs_files.has_next_file && (<span><a href="#" onClick={(e) => nextImportPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
                         </div>
                         <div className="importer-photos">
-                            <ul id="importPhotosList">
-                                {importer.dirs_files.files.files.map((l, i) => {
-                                    return (
-                                        <li key={i} className={selectedForImport[l.path] ? "selected" : "notSelected"}><a href="#" id={l.path} className="importPhoto" onClick={() => selectPhoto(l.path)}><img src={convertFileSrc(l.path)} width="100" /></a></li>
-                                    );
-                                })
-                                }
-                            </ul>
+                            {importer.dirs_files.files.files.map((l, i) => {
+                                return (
+                                    <div key={i} className={selectedForImport[l.path] ? "row selected" : "row notSelected"} style={{ minWidth: "120px" }}>
+                                        <a href="#" id={l.path} className="import-photo" onClick={() => selectPhoto(l.path)}>
+                                            <img src={convertFileSrc(l.path)} style={{ width: "100px" }} />
+                                        </a>
+                                    </div>
+                                );
+                            })
+                            }
                         </div>
                     </div>
                 </div>
