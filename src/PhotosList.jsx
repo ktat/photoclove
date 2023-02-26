@@ -208,7 +208,7 @@ function PhotosList(props) {
                         moveToTrashCan={moveToTrashCan}
                         closePhotoDisplay={closePhotoDisplay}
                         currentPhotoPath={currentPhotoPath}
-                        setCurrentPhotoPath={setCurrentPhotoPath}
+                        oad setCurrentPhotoPath={setCurrentPhotoPath}
                         currentDate={props.currentDate}
                         sortOfPhotos={sortOfPhotos}
                         setShortCutNavigation={props.setShortCutNavigation}
@@ -268,7 +268,7 @@ function PhotosList(props) {
                                             checked={photoSelectionDict[l.file.path] ? "checked" : ""}
                                             onChange={(e) => addSelection(e.target.checked, l.file.path)}
                                         />
-                                        <label className={"cneckbox-photo checkbox hover"} for={"photo-checkbox-" + i}></label><br />
+                                        <label className={"cneckbox-photo checkbox hover"} htmlFor={"photo-checkbox-" + i}></label><br />
                                         <a href="#" onClick={() => setCurrentPhotoPath(l.file.path)} >(&#8505;)</a>
                                     </div>
                                 </div>
@@ -297,6 +297,8 @@ function PhotosList(props) {
                     photoSelection={photoSelection}
                     clearPhotoSelection={clearPhotoSelection}
                     selectAllPhotoToSelection={selectAllPhotoToSelection}
+                    dateNum={props.dateNum}
+                    setCurrentDateNum={props.setCurrentDateNum}
                 />
         }
     </>

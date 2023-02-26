@@ -167,17 +167,22 @@ impl MetaInfoDB for Tsv {
         Ok(true)
     }
 
-    fn record_photos_all_meta_data(&self, dates: date::Dates) -> Result<bool, &str> {
+    fn record_photos_all_meta_data(
+        &self,
+        dates: date::Dates,
+    ) -> Result<HashMap<String, usize>, &str> {
+        let mut date_num: HashMap<String, usize> = HashMap::new();
         for date in dates.dates {
             let date_dir = self.path.child(date.to_string());
             let files = dir_service::find_files(&date_dir);
             let photos = domain_service::photo_service::photos_from_dir(files);
+            date_num.insert(date.to_string(), photos.photos.len());
             let result = self.record_photos_meta_data(photos.photos);
             if result.is_err() {
                 eprintln!("{:?}", result.err());
             }
         }
-        Ok(true)
+        Ok(date_num)
     }
 
     fn get_photo_meta(&self, photo: photo::Photo) -> photo_meta::PhotoMeta {

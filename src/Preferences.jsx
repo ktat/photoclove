@@ -77,7 +77,7 @@ function Preferences(props) {
                 <div className="row3">
 
                     <input type="checkbox" id="preference-check" value="1" onChange={(e) => { config.use_count = e.target.checked ? 0 : useCount; setNewConfig(config) }} />
-                    <label className="checkbox checkbox-normal" for="preference-check">Show Welcome tutorial again?</label>
+                    <label className="checkbox checkbox-normal" htmlFor="preference-check">Show Welcome tutorial again?</label>
                 </div>
                 <div className="row0">
                     <button name="save" value="save" onClick={(e) => saveConfig()}>SAVE</button>

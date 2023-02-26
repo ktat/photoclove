@@ -85,7 +85,10 @@ pub(crate) trait MetaInfoDB {
         photo_metas: photo_meta::PhotoMetas,
     ) -> Result<bool, &str>;
     fn record_photos_meta_data(&self, photos: Vec<photo::Photo>) -> Result<bool, &str>;
-    fn record_photos_all_meta_data(&self, dates: date::Dates) -> Result<bool, &str>;
+    fn record_photos_all_meta_data(
+        &self,
+        dates: date::Dates,
+    ) -> Result<HashMap<String, usize>, &str>;
     fn get_photo_meta_data_in_date(
         &self,
         date: date::Date,
