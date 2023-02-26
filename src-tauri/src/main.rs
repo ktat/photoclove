@@ -221,6 +221,7 @@ fn save_comment(
 #[tauri::command]
 fn show_importer(
     path_str: Option<&str>,
+    date_str: Option<&str>,
     window: tauri::Window,
     page: u32,
     num: u32,
@@ -240,7 +241,15 @@ fn show_importer(
             path = cp.as_str();
         }
     }
-    let mut importer = importer::Importer::new(path.to_string(), page, num);
+    let filter: Option<date::Date>;
+    if date_str.is_none() || date_str.unwrap() == "" {
+        filter = Option::None;
+    } else {
+        let date = date::Date::from_string(&date_str.unwrap().to_string(), Option::Some("-"));
+        filter = Option::Some(date);
+    }
+
+    let mut importer = importer::Importer::new(path.to_string(), page, num, filter);
     importer.set_importer_paths(state.config.export_from.clone());
 
     let json = serde_json::to_string(&importer).unwrap();
@@ -293,11 +302,20 @@ fn get_import_progress(state: tauri::State<AppState>) -> String {
 #[tauri::command]
 fn get_photos_path_to_import_under_directory(
     pathStr: &str,
+    date_after_str: Option<&str>,
     window: tauri::Window,
     state: tauri::State<AppState>,
 ) -> String {
     let d = dir::Dir::new(pathStr.to_string());
-    let files = d.find_all_files();
+    let filter: Option<date::Date>;
+    if date_after_str.is_none() || date_after_str.unwrap() == "" {
+        filter = Option::None;
+    } else {
+        let date = date::Date::from_string(&date_after_str.unwrap().to_string(), Option::Some("-"));
+        filter = Option::Some(date);
+    }
+
+    let files = d.find_all_files(filter);
     let mut ret_files: Vec<String> = Vec::new();
     for f in files.files {
         ret_files.push(f.path);
