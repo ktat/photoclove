@@ -21,7 +21,7 @@ function Home(props) {
                 fontFamily: ["Lucida Console", "Monaco", "monospace"]
             }} >{message}</pre>
 
-                <img src="/bird.jpg" width="100%" />
+                <img className="splash" src="/bird.jpg" width="100%" />
             </div>
         </div >
     )
