@@ -12,9 +12,15 @@ function PhotoDisplay(props) {
     const [photoDisplayImgClass, setPhotoDisplayImgClass] = useState("");
     const [photoZoom, setPhotoZoom] = useState("auto");
     const [photoZoomReady, setPhotoZoomReady] = useState(false);
-    const [opacity, setOpacity] = useState(0.5);
     const [videoSource, setVideoSource] = useState("");
     const [videoClass, setVideoClass] = useState("video-off");
+    const [currentPhotoSize, setCurrentPhotoSize] = useState([]);
+    const [imgStyle, setImgStyle] = useState({
+        transition: 'opacity 0.5s',
+        opacity: 0.5,
+        maxWith: "100%",
+        maxHeight: "100%"
+    });
 
     useEffect((e) => {
         currentFile = "";
@@ -22,6 +28,8 @@ function PhotoDisplay(props) {
     }, []);
 
     useEffect((e) => {
+        SetImgStyle({ opacity: 0.5 });
+        document.querySelector("#dummy-for-focus").focus();
         if (props.currentPhotoPath.match(/(mp4|webm)$/i)) {
             movie(props.currentPhotoPath);
             setVideoClass("video-on")
@@ -30,14 +38,32 @@ function PhotoDisplay(props) {
         }
     }, [props.currentPhotoPath]);
 
+    function SetImgStyle(style, w, h) {
+        const st = {
+            transition: 'opacity 0.5s',
+        }
+        Object.keys(style).map((k) => {
+            st[k] = style[k];
+        })
+        if (currentPhotoSize[0] || w) {
+            if ((currentPhotoSize[0] || w) > (currentPhotoSize[1] || h)) {
+                st["maxWidth"] = "100wh";
+            } else {
+                st["maxHeight"] = "80vh";
+            }
+        } else {
+            st["maxWidth"] = "100%";
+            st["maxHeight"] = "100%";
+        }
+        setImgStyle(st);
+    }
+
     function dragPhotoStart(e) {
         setPhotoDisplayImgClass("photo_dragging");
         setDragPhotoInfo({ is_dragging: true, x: e.clientX, y: e.clientY });
     }
 
     function photoNavigation(e) {
-        console.log("keyDown");
-        console.log(e.keyCode);
         let f = props.currentPhotoPath;
         if (e.keyCode === 39) { // right arrow
             nextPhoto(f);
@@ -73,15 +99,13 @@ function PhotoDisplay(props) {
     }
 
     function photoNavigationUp(e) {
-        console.log("keyUp");
-        console.log(e.keyCode);
         if (e.ctrlKey) {
             setPhotoZoomReady(false);
         }
     }
 
     async function prevPhoto(f) {
-        setOpacity(0.5);
+        SetImgStyle({ opacity: 0.5 });
         await invoke("get_prev_photo", { path: f, dateStr: props.currentDate, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
             if (r !== "") {
                 setPhotoZoom("auto");
@@ -91,7 +115,7 @@ function PhotoDisplay(props) {
     }
 
     async function nextPhoto(f) {
-        setOpacity(0.5);
+        SetImgStyle({ opacity: 0.5 });
         await invoke("get_next_photo", { path: f, dateStr: props.currentDate, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
             if (r !== "") {
                 setPhotoZoom("auto");
@@ -129,10 +153,17 @@ function PhotoDisplay(props) {
 
         setPhotoZoom(zoom + "%");
 
+
         const sTop = (imgTag.height * yPos - display.clientHeight * yPos) + e.deltaY * zoom / 100 * -1;
         const sLeft = (imgTag.width * xPos - display.clientWidth * xPos);
         display.scrollTop = sTop - sTop % (50 * zoom / 200);
         display.scrollLeft = sLeft - sLeft % (50 * zoom / 200);
+
+        if (currentPhotoSize[1] && currentPhotoSize[1] > currentPhotoSize[0]) {
+            SetImgStyle({ minHeight: zoom + "%" });
+        } else {
+            SetImgStyle({ minWidth: zoom + "%" });
+        }
 
         setTimeout(() => { setScrollLock(false) }, 100);
         window.onscroll = function () { };
@@ -190,18 +221,13 @@ function PhotoDisplay(props) {
                 </div>
                 {!props.currentPhotoPath.match(/\.(mp4|webm)$/i) &&
                     <img className={photoDisplayImgClass}
-                        onLoad={() => {
+                        lading="eager"
+                        onLoad={(e) => {
                             setTimeout(() => {
-                                setOpacity(1);
+                                SetImgStyle({ opacity: 1 }, e.target.width, e.target.height);
                             }, 150)
-                        }
-                        }
-                        style={{
-                            objectFit: "contain",
-                            transition: 'opacity 0.5s',
-                            opacity: opacity,
-                            minWidth: photoZoom,
                         }}
+                        style={imgStyle}
                         src={convertFileSrc(props.currentPhotoPath)}
                         onMouseDown={(e) => dragPhotoStart(e)}
                         onMouseMove={(e) => dragPhoto(e)}
