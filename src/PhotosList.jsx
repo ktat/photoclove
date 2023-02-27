@@ -104,7 +104,7 @@ function PhotosList(props) {
     function closePhotoDisplay() {
         setShowPhotoDisplay(false);
         if (props.currentPhotoPath !== "") setCurrentPhotoPath("");
-        const fetchPhotos = async () => props.getPhotos();
+        const fetchPhotos = async () => getPhotos();
         fetchPhotos().catch(console.error)
     }
 
