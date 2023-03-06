@@ -27,9 +27,11 @@ file-lock = "*"
 csv = "*"
 tempfile = "*"
 dirs = "*"
+url = "*"
 serde_yaml = "*"
 async-trait = "0.1.36"
 futures = "0.3.5"
+tauri-plugin-oauth = { git = "https://github.com/FabianLars/tauri-plugin-oauth/", branch = "main"}
 
 [features]
 # by default Tauri runs in production mode
@@ -39,3 +41,4 @@ default = ["custom-protocol"]
 # DO NOT remove this
 custom-protocol = ["tauri/custom-protocol"]
 
+[target.'cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd", target_os = "openbsd", target_os = "netbsd"))'.dependencies]
