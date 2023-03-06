@@ -40,7 +40,7 @@ function PhotoDisplay(props) {
 
     function SetImgStyle(style, w, h) {
         const st = {
-            transition: 'opacity 0.5s',
+            transition: 'opacity 0.2s',
         }
         Object.keys(style).map((k) => {
             st[k] = style[k];
@@ -48,12 +48,16 @@ function PhotoDisplay(props) {
         if (currentPhotoSize[0] || w) {
             if ((currentPhotoSize[0] || w) > (currentPhotoSize[1] || h)) {
                 st["maxWidth"] = "100wh";
+                st["transition"] += ", maxWidth 0.5s";
             } else {
                 st["maxHeight"] = "80vh";
+                st["transition"] += ", maxHeight 0.5s";
             }
         } else {
             st["maxWidth"] = "100%";
             st["maxHeight"] = "100%";
+            st["transition"] += ", maxWidth 0.5s";
+            st["transition"] += ", maxHeight 0.5s";
         }
         setImgStyle(st);
     }
@@ -105,7 +109,7 @@ function PhotoDisplay(props) {
     }
 
     async function prevPhoto(f) {
-        SetImgStyle({ opacity: 0.5 });
+        SetImgStyle({ opacity: 0 });
         await invoke("get_prev_photo", { path: f, dateStr: props.currentDate, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
             if (r !== "") {
                 setPhotoZoom("auto");
@@ -115,7 +119,7 @@ function PhotoDisplay(props) {
     }
 
     async function nextPhoto(f) {
-        SetImgStyle({ opacity: 0.5 });
+        SetImgStyle({ opacity: 0 });
         await invoke("get_next_photo", { path: f, dateStr: props.currentDate, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
             if (r !== "") {
                 setPhotoZoom("auto");
@@ -224,7 +228,7 @@ function PhotoDisplay(props) {
                         lading="eager"
                         onLoad={(e) => {
                             setTimeout(() => {
-                                SetImgStyle({ opacity: 1 }, e.target.width, e.target.height);
+                                SetImgStyle({ opacity: 1, transition: "opacity 0.5s" }, e.target.width, e.target.height);
                             }, 150)
                         }}
                         style={imgStyle}
