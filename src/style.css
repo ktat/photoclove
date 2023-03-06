@@ -442,6 +442,10 @@ ul.list-of-selected li {
   animation: lds-dual-ring 1.2s linear infinite;
 }
 
+.photo img {
+  opacity: 0;
+}
+
 img.photo_dragging {
   cursor: grabbing;
 }
@@ -523,6 +527,7 @@ div.photo-clove {
   height: calc(100% - 15px)
 }
 
+#login-container,
 #welcome,
 #welcome div.introduction,
 #welcome ol.tutorial {
@@ -536,6 +541,20 @@ div.photo-clove {
   max-height: calc(100vh - 150px);
   width: calc(100wh - 100px);
   padding: 0px 50px 50px 50px;
+}
+
+#login-container {
+  width: 100%;
+  text-align: left;
+}
+
+#login-container h1 {
+  font-size: 1em;
+}
+
+#login-container ul li {
+  list-style: none;
+  font-size: 0.8em;
 }
 
 #welcome ol li {
@@ -727,4 +746,9 @@ img.splash {
   height: auto;
   max-width: 100%;
   max-height: 100%;
+}
+
+a.run-app {
+  color: gray;
+  font-size: 0.7em;
 }

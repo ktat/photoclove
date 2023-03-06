@@ -5,6 +5,7 @@ import PhotoInfo from "./PhotoInfo.jsx";
 import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 import PhotoLoading from "./PhotoLoading.jsx";
 import DirectoryMenu from "./DirectoryMenu.jsx";
+import { open } from '@tauri-apps/api/shell';
 
 function PhotosList(props) {
     const [iconSize, setIconSize] = useState(100);
@@ -269,7 +270,8 @@ function PhotosList(props) {
                                             onChange={(e) => addSelection(e.target.checked, l.file.path)}
                                         />
                                         <label className={"cneckbox-photo checkbox hover"} htmlFor={"photo-checkbox-" + i}></label><br />
-                                        <a href="#" onClick={() => setCurrentPhotoPath(l.file.path)} >(&#8505;)</a>
+                                        <a href="#" onClick={() => setCurrentPhotoPath(l.file.path)} >(&#8505;)</a><br />
+                                        <a href="#" className="run-app" onClick={(e) => open("file://" + l.file.path)}>&#128640;</a>
                                     </div>
                                 </div>
                             )
