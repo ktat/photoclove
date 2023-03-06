@@ -1250,6 +1250,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "21dec9db110f5f872ed9699c3ecf50cf16f423502706ba5c72462e28d3157573"
 
 [[package]]
+name = "httparse"
+version = "1.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d897f394bad6a705d5f4104762e116a75639e470d80901eed05a860a95cb1904"
+
+[[package]]
 name = "iana-time-zone"
 version = "0.1.53"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2025,7 +2031,9 @@ dependencies = [
  "serde_yaml",
  "tauri",
  "tauri-build",
+ "tauri-plugin-oauth",
  "tempfile",
+ "url",
 ]
 
 [[package]]
@@ -2882,6 +2890,18 @@ dependencies = [
  "syn",
  "tauri-codegen",
  "tauri-utils",
+]
+
+[[package]]
+name = "tauri-plugin-oauth"
+version = "0.0.0"
+source = "git+https://github.com/FabianLars/tauri-plugin-oauth/?branch=main#26e381159922338f992b3870fc82273fa9320b5b"
+dependencies = [
+ "httparse",
+ "log",
+ "serde",
+ "tauri",
+ "url",
 ]
 
 [[package]]

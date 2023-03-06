@@ -9,7 +9,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::{
     fs, path,
     sync::{Arc, Mutex},
-    thread,
 };
 use tauri::{CustomMenuItem, Manager, Menu, MenuItem, Submenu};
 
@@ -397,6 +396,14 @@ fn save_config(state: tauri::State<AppState>, config: Config) -> String {
     }
 }
 
+#[tauri::command]
+fn record_access_token(provider: &str, token: &str) {
+    eprintln!("{:?}", token);
+    let mut auth_config = domain::oauth_config::OAuthConfig::new();
+    auth_config.set(provider.to_string(), token.to_string());
+    auth_config.save();
+}
+
 // to avoid event happens twice in same time.
 #[tauri::command]
 fn lock(t: bool) -> bool {
@@ -457,6 +464,7 @@ async fn move_to_trash(
         return Ok(Option::Some(photo.unwrap().file.path));
     }
 }
+
 fn main() {
     use crate::repository::*;
     let c = config::Config::new();
@@ -482,12 +490,14 @@ fn main() {
         let pref = CustomMenuItem::new("pref".to_string(), "Preferences");
         let about = CustomMenuItem::new("about".to_string(), "About");
         let github = CustomMenuItem::new("github".to_string(), "Github");
+        let oauth_server = CustomMenuItem::new("login".to_string(), "Login");
         let submenu = Submenu::new(
             "File",
             Menu::new()
                 .add_item(load_dates)
                 .add_item(import)
                 .add_item(create_db)
+                .add_item(oauth_server)
                 .add_item(pref)
                 .add_item(quit),
         );
@@ -501,6 +511,7 @@ fn main() {
 
     state.repo_db.connect();
     tauri::Builder::default()
+        .plugin(tauri_plugin_oauth::init())
         .menu(menu)
         .on_menu_event(|event| match event.menu_item_id() {
             "quit" => {
@@ -529,6 +540,9 @@ fn main() {
             }
             "import" => {
                 event.window().emit_all("click_menu", "import").unwrap();
+            }
+            "login" => {
+                event.window().emit_all("click_menu", "login").unwrap();
             }
             "pref" => {
                 event.window().emit_all("click_menu", "pref").unwrap();
@@ -563,6 +577,7 @@ fn main() {
             save_comment,
             copy_file_to_public,
             move_photos_to_exif_date,
+            record_access_token,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

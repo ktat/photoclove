@@ -11,6 +11,7 @@ import Importer from "./Importer.jsx"
 import Preferences from "./Preferences.jsx"
 import Welcome from "./Welcome.jsx"
 import Home from "./Home.jsx"
+import Login from "./Login.jsx"
 import Footer from "./Footer.jsx"
 import { tauri } from "@tauri-apps/api";
 
@@ -33,6 +34,7 @@ function App() {
   const [showImporter, setShowImporter] = useState(false);
   const [showPhotosList, setShowPhotosList] = useState(true);
   const [showPreferences, setShowPreferences] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
   const [footerMessages, setFooterMessages] = useState({});
   const [dateNum, setDateNum] = useState({});
 
@@ -66,6 +68,7 @@ function App() {
         addFooterMessage("create_db", "Database is created :)", 10000);
       }
     });
+
     const unlisted3 = listen("move_files", (e) => {
       if (e.payload === "start") {
         addFooterMessage("move_files", "Start moving files");
@@ -85,6 +88,8 @@ function App() {
         toggleImporter(true);
       } else if (e.payload === "pref") {
         togglePreferences(true);
+      } else if (e.payload == "login") {
+        toggleLogin(true);
       } else if (e.payload === "create_db") {
         // BUG: event is called twice in same time. I don't know the reason why.
         invoke("lock", { t: true }).then((e) => {
@@ -143,10 +148,26 @@ function App() {
       setShowImporter(true);
       setShowPhotosList(false);
       setShowPreferences(false);
+      setShowLogin(false);
     } else {
       setShowImporter(false);
       setShowPreferences(false);
+      setShowLogin(false);
       setShowPhotosList(true);
+    }
+  }
+
+  function toggleLogin(t) {
+    if (t) {
+      setShowLogin(true);
+      setShowImporter(false);
+      setShowPhotosList(false);
+      setShowPreferences(false);
+    } else {
+      setShowImporter(false);
+      setShowPreferences(false);
+      setShowLogin(false);
+      setShowPhotosList(false);
     }
   }
 
@@ -154,10 +175,12 @@ function App() {
     if (t) {
       setShowImporter(false);
       setShowPhotosList(false);
+      setShowLogin(false);
       setShowPreferences(true);
     } else {
       setShowImporter(false);
       setShowPreferences(false);
+      setShowLogin(false);
       setShowPhotosList(true);
     }
   }
@@ -233,15 +256,18 @@ function App() {
                 removeFooterMessage={removeFooterMessage}
               />
               :
-              showPreferences
-                ?
-                <Preferences
-                  togglePreferences={togglePreferences}
-                  addFooterMessage={addFooterMessage}
-                  setShowPreferences={setShowPreferences}
-                ></Preferences>
+              showLogin
+                ? <Login />
                 :
-                <Home />
+                showPreferences
+                  ?
+                  <Preferences
+                    togglePreferences={togglePreferences}
+                    addFooterMessage={addFooterMessage}
+                    setShowPreferences={setShowPreferences}
+                  ></Preferences>
+                  :
+                  <Home />
         }
       </div>
       <Footer addFooterMessage={addFooterMessage} footerMessages={footerMessages} />
