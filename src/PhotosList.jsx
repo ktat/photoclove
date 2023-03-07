@@ -255,7 +255,9 @@ function PhotosList(props) {
                                 <div key={i} className={"row pict-" + iconSize} style={{ textAlign: "center" }} >
                                     <a href="#" onClick={() => { displayPhoto(l.file.path) }}>
                                         {l.file.path.match(/\.(mp4|webm)$/i)
-                                            ? <img style={{ width: "50%" }} src="/video.png" />
+                                            ? <div className="photo-list-movie" style={{ minWidth: (iconSize - 20) + 'px', marginTop: (iconSize / 7) + "px" }}>
+                                                <span style={{ fontSize: (iconSize / 3) + 'px' }}>&#127909;</span>
+                                            </div>
                                             : <img loading="eager"
                                                 alt={l.file.path}
                                                 style={{ maxWidth: iconSize + 'px', maxHeight: iconSize + 'px' }}

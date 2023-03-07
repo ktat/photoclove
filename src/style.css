@@ -375,12 +375,17 @@ ul.list-of-selected li {
   width: 100%;
 }
 
+.photo-list-movie {
+  text-align: center;
+  padding: 10px;
+  float: left;
+}
+
 .photo-list-menu {
   float: right;
 }
 
 .photo-list-menu input {
-  float: right;
   background-color: white;
 }
 
