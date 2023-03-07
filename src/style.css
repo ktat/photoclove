@@ -124,8 +124,8 @@ button {
 }
 
 .leftMenu {
-  max-width: 220px;
-  min-width: 220px;
+  max-width: 301px;
+  min-width: 301px;
 
   border-width: 0px 1px 0px 0px;
   border-style: solid;
@@ -166,8 +166,8 @@ button {
 .photoLoadingOn {
   min-width: 200px;
   flex: 1;
-  max-width: calc(100vw - 600px);
-  min-width: calc(100vw - 600px);
+  max-width: calc(100vw - 662px);
+  min-width: calc(100vw - 662px);
   max-height: calc(100vh - 25px);
   padding: 20px 20px 10px 20px;
   margin: 0 0 0 0px;
@@ -282,7 +282,7 @@ ul.list-of-selected li {
 #import-container {
   display: flex;
   flex-direction: row;
-  max-width: calc(100vw - 600px);
+  max-width: calc(100vw - 662px);
 }
 
 #importer-directories-list {
@@ -345,8 +345,8 @@ ul.list-of-selected li {
   flex-direction: row;
   flex-wrap: wrap;
   margin-top: 10px;
-  min-width: calc(100vw - 800px);
-  max-width: calc(100vw - 800px);
+  min-width: calc(100vw - 880px);
+  max-width: calc(100vw - 880px);
   min-height: calc(100vh - 300px);
   max-height: calc(100vh - 300px);
 }
@@ -358,8 +358,8 @@ ul.list-of-selected li {
   flex-direction: row;
   flex-wrap: wrap;
   margin-top: 10px;
-  min-width: calc(100vw - 600px);
-  max-width: calc(100vw - 600px);
+  min-width: calc(100vw - 662px);
+  max-width: calc(100vw - 662px);
   max-height: calc(100vh - 150px);
 }
 
