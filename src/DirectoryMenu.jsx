@@ -27,7 +27,6 @@ function DirectoryMenu(props) {
             deleteFiles();
         }
         e.target.value = "";
-        props.clearPhotoSelection()
     }
 
     async function createDbInDate() {
@@ -93,6 +92,7 @@ function DirectoryMenu(props) {
                 localForage.getItem("GoogleOAuthTokens").then((tokens) => {
                     lockUpload = true;
                     invoke("upload_to_google_photos", { dateStr: props.currentDate, selectedFiles: files, accessToken: tokens.accessToken }).then((r) => {
+                        props.clearPhotoSelection()
                         lockUpload = false;
                         let data = JSON.parse(r);
                         console.log(data);
@@ -113,6 +113,7 @@ function DirectoryMenu(props) {
                 props.moveToTrashCan(v);
             });
             lockDelete = false;
+            props.clearPhotoSelection()
         }
     }
 
