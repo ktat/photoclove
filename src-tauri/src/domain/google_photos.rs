@@ -100,6 +100,7 @@ impl GooglePhotos {
     pub async fn upload_photo(&self, files: Vec<&str>) {
         let uri = API_END_POINT_URL.to_string() + "uploads";
 
+        let mut items_list: Vec<Vec<GoogleNewMediaItem>> = vec![];
         let mut items = vec![];
         for f in files {
             let mut file = File::open(f).unwrap();
@@ -131,18 +132,29 @@ impl GooglePhotos {
                 description: "".to_string(),
                 simple_media_item: item,
             };
-            items.push(media_item)
+            items.push(media_item);
+            if items.len() == 50 {
+                items_list.push(items.clone());
+                items = Vec::new();
+            }
         }
-        let data = GoogleAlbumData {
-            new_media_items: items,
-        };
+        if items_list.len() == 0 {
+            items_list.push(items.clone());
+        }
+        for target_items in items_list {
+            eprintln!("{:?}", &target_items);
+            let data = GoogleAlbumData {
+                new_media_items: target_items,
+            };
 
-        let res_post_request = self
-            .post_request(
-                "mediaItems:batchCreate",
-                serde_json::to_string(&data).unwrap(),
-            )
-            .await;
+            let res_post_request = self
+                .post_request(
+                    "mediaItems:batchCreate",
+                    serde_json::to_string(&data).unwrap(),
+                )
+                .await;
+            eprintln!("{:?}", res_post_request);
+        }
     }
 
     async fn get_request(&self, path: &str) -> Result<String, reqwest::Error> {
