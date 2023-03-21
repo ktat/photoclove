@@ -303,6 +303,7 @@ function PhotosList(props) {
                     selectAllPhotoToSelection={selectAllPhotoToSelection}
                     dateNum={props.dateNum}
                     setCurrentDateNum={props.setCurrentDateNum}
+                    moveToTrashCan={moveToTrashCan}
                 />
         }
     </>

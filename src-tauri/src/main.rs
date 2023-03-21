@@ -396,14 +396,6 @@ fn save_config(state: tauri::State<AppState>, config: Config) -> String {
     }
 }
 
-#[tauri::command]
-fn record_access_token(provider: &str, token: &str) {
-    eprintln!("{:?}", token);
-    let mut auth_config = domain::oauth_config::OAuthConfig::new();
-    auth_config.set(provider.to_string(), token.to_string());
-    auth_config.save();
-}
-
 // to avoid event happens twice in same time.
 #[tauri::command]
 fn lock(t: bool) -> bool {
@@ -418,6 +410,22 @@ fn lock(t: bool) -> bool {
             return true;
         }
     }
+}
+
+#[tauri::command]
+async fn upload_to_google_photos(
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+    date_str: &str,
+    access_token: &str,
+    selected_files: Vec<&str>,
+) -> Result<bool, ()> {
+    eprintln!("{:?}", date_str);
+    eprintln!("{:?}", selected_files);
+    let photos = google_photos::GooglePhotos::new(access_token.to_string());
+    photos.upload_photo(selected_files).await;
+
+    return Ok(true);
 }
 
 #[tauri::command]
@@ -577,7 +585,7 @@ fn main() {
             save_comment,
             copy_file_to_public,
             move_photos_to_exif_date,
-            record_access_token,
+            upload_to_google_photos,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -3,6 +3,7 @@ import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { auth } from './services/firebase';
 const { openGoogleSignIn, googleSignIn, signOut } = auth;
+import { localForage } from "./storage/forage";
 
 function Login(props) {
 
@@ -45,6 +46,21 @@ function Login(props) {
             console.log("error: " + e);
         })
     }
+
+    localForage.getItem("GoogleOAuthTokens").then(r => {
+        localForage.setItem("GoogleOAuthTokens", "aaaa").then(r => {
+            localForage.getItem("GoogleOAuthTokens").then(r => {
+                console.log("get");
+                console.log(r);
+            }).catch((e) => {
+                console.log(e);
+            })
+        }).catch((e) => {
+            console.log(e);
+        })
+    }).catch((e) => {
+        console.log(e);
+    });
 
     return (
         <div id="login-container">
