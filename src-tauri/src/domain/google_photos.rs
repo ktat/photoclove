@@ -138,7 +138,7 @@ impl GooglePhotos {
                 items = Vec::new();
             }
         }
-        if items_list.len() == 0 {
+        if items.len() != 0 {
             items_list.push(items.clone());
         }
         for target_items in items_list {
