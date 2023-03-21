@@ -87,7 +87,10 @@ function PhotoDisplay(props) {
         if (currentFile != path) {
             invoke("lock", { t: false }).then(async (r) => {
                 // tauri cannot play movie file which is not in public folder. So copy movie file to public/movie
-                const result = await invoke("copy_file_to_public", { fromFilePath: path, toFileName: "movie.tmp" }).then((r) => {
+                const result = await invoke("copy_file_to_public", {
+                    fromFilePath: path,
+                    toFileName: "movie.tmp"
+                }).then((r) => {
                     let videoPath = "/movie.tmp?" + path;
                     currentFile = path;
                     // I don't know why it works only when set twice sometime.
@@ -109,21 +112,33 @@ function PhotoDisplay(props) {
     }
 
     async function prevPhoto(f) {
-        SetImgStyle({ opacity: 0 });
-        await invoke("get_prev_photo", { path: f, dateStr: props.currentDate, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
+        await invoke("get_prev_photo", {
+            path: f,
+            dateStr: props.currentDate,
+            sortValue: parseInt(props.sortOfPhotos)
+        }).then((r) => {
             if (r !== "") {
-                setPhotoZoom("auto");
-                if (props.currentPhotoPath !== r) props.setCurrentPhotoPath(r);
+                if (props.currentPhotoPath !== r) {
+                    SetImgStyle({ opacity: 0 });
+                    setPhotoZoom("auto");
+                    props.setCurrentPhotoPath(r);
+                }
             }
         });
     }
 
     async function nextPhoto(f) {
-        SetImgStyle({ opacity: 0 });
-        await invoke("get_next_photo", { path: f, dateStr: props.currentDate, sortValue: parseInt(props.sortOfPhotos) }).then((r) => {
+        await invoke("get_next_photo", {
+            path: f,
+            dateStr: props.currentDate,
+            sortValue: parseInt(props.sortOfPhotos)
+        }).then((r) => {
             if (r !== "") {
-                setPhotoZoom("auto");
-                if (props.currentPhotoPath !== r) props.setCurrentPhotoPath(r);
+                if (props.currentPhotoPath !== r) {
+                    SetImgStyle({ opacity: 0 });
+                    setPhotoZoom("auto");
+                    props.setCurrentPhotoPath(r);
+                }
             }
         });
     }
