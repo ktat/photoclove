@@ -47,21 +47,6 @@ function Login(props) {
         })
     }
 
-    localForage.getItem("GoogleOAuthTokens").then(r => {
-        localForage.setItem("GoogleOAuthTokens", "aaaa").then(r => {
-            localForage.getItem("GoogleOAuthTokens").then(r => {
-                console.log("get");
-                console.log(r);
-            }).catch((e) => {
-                console.log(e);
-            })
-        }).catch((e) => {
-            console.log(e);
-        })
-    }).catch((e) => {
-        console.log(e);
-    });
-
     return (
         <div id="login-container">
             <h1>Login to Other Service</h1>
