@@ -8,6 +8,7 @@ pub struct ExifData {
     pub iso: String,
     pub fnumber: String,
     pub date_time: String,
+    pub date_time_original: String,
     pub lens_model: String,
     pub make: String,
     pub lens_make: String,
@@ -33,6 +34,7 @@ impl ExifData {
             iso: String::from(""),
             fnumber: String::from(""),
             date_time: String::from(""),
+            date_time_original: String::from(""),
             lens_model: String::from(""),
             make: String::from(""),
             model: String::from(""),
@@ -55,7 +57,9 @@ impl ExifData {
     pub fn new(file: file::File) -> ExifData {
         let exif_data = rexif::parse_file(file.path.to_string());
         let mut data = ExifData::empty();
-        if exif_data.is_ok() {
+        if !exif_data.is_ok() {
+            data.date_time = "1970/01/01 00:00:00".to_string();
+        } else {
             for e in exif_data.unwrap().entries {
                 match e.tag {
                     _ => {
@@ -72,6 +76,9 @@ impl ExifData {
                     rexif::ExifTag::FNumber => data.fnumber = e.value_more_readable.to_string(),
                     rexif::ExifTag::ISOSpeedRatings => data.iso = e.value_more_readable.to_string(),
                     rexif::ExifTag::DateTime => data.date_time = e.value_more_readable.to_string(),
+                    rexif::ExifTag::DateTimeOriginal => {
+                        data.date_time_original = e.value_more_readable.to_string()
+                    }
                     rexif::ExifTag::LensModel => data.lens_model = e.value.to_string(),
                     rexif::ExifTag::LensMake => {
                         if data.lens_make != String::new() {
@@ -129,7 +136,6 @@ impl ExifData {
                     // rexif::ExifTag::OECF => todo!(),
                     // rexif::ExifTag::SensitivityType => todo!(),
                     // rexif::ExifTag::ExifVersion => todo!(),
-                    // rexif::ExifTag::DateTimeOriginal => todo!(),
                     // rexif::ExifTag::DateTimeDigitized => todo!(),
                     // rexif::ExifTag::SubjectArea => todo!(),
                     // rexif::ExifTag::ApertureValue => todo!(),
@@ -199,9 +205,16 @@ impl ExifData {
                     _ => {}
                 }
             }
-            let t = data.date_time.clone();
-            let re = regex::Regex::new(r"^([0-9]{4}):([0-9]{1,2}):([0-9]{1,2})").unwrap();
-            data.date_time = re.replace(&t, "$1/$2/$3").to_string();
+            let mut t = data.date_time.clone();
+            if t == "" {
+                t = data.date_time_original.clone();
+            }
+            if t != "" {
+                let re = regex::Regex::new(r"^([0-9]{4}):([0-9]{1,2}):([0-9]{1,2})").unwrap();
+                data.date_time = re.replace(&t, "$1/$2/$3").to_string();
+            } else {
+                data.date_time = "0000/00/00 00:00:00".to_string();
+            }
         }
         data
     }
