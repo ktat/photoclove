@@ -133,7 +133,7 @@ impl ImporterSelectedFiles {
             let meta_db = origin_meta_db.new_connect();
             let arc_dest_path = Arc::clone(&destination_dir);
             let arc_trash_path = Arc::clone(&trash_dir);
-            eprintln!("{:?}", &arc_trash_path);
+            // eprintln!("{:?}", &arc_trash_path);
             let handle = thread::spawn(move || {
                 let mut n: usize = 0;
                 let mut photos: Vec<photo::Photo> = Vec::new();
