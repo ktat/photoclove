@@ -6,6 +6,10 @@ import { tauri } from "@tauri-apps/api";
 
 let currentFile = "";
 
+function preventScroll(e) {
+    e.preventDefault();
+}
+
 function PhotoDisplay(props) {
     const [dragPhotoInfo, setDragPhotoInfo] = useState([]);
     const [scrollLock, setScrollLock] = useState(false);
@@ -75,11 +79,13 @@ function PhotoDisplay(props) {
             prevPhoto(f);
         } else if (e.keyCode === 46) { // Del
             props.moveToTrashCan(f)
-        } else if (e.ctrlKey && e.keyCode === 48) { // ctrl+0
+        } else if (photoZoomReady && e.keyCode === 48) { // ctrl+0
             setPhotoZoom("auto");
+            SetImgStyle({ opacity: '100%' });
             document.querySelector("#dummy-for-focus").focus();
-        } else if (e.ctrlKey) {
+        } else if (!photoZoomReady && e.ctrlKey) {
             setPhotoZoomReady(true);
+            window.addEventListener('wheel', preventScroll, { passive: false });
         }
     }
 
@@ -108,6 +114,7 @@ function PhotoDisplay(props) {
     function photoNavigationUp(e) {
         if (e.ctrlKey) {
             setPhotoZoomReady(false);
+            window.removeEventListener('wheel', preventScroll, { passive: false });
         }
     }
 
@@ -162,26 +169,25 @@ function PhotoDisplay(props) {
         const yPos = y / imgTag.height;
 
         if (e.deltaY > 0) {
-            zoom -= 10;
+            zoom -= 5;
             if (zoom <= 100) {
                 zoom = 100;
             }
-        } else {
-            zoom += 10;
+        } else if (e.deltaY < 0) {
+            zoom += 5;
         }
 
         setPhotoZoom(zoom + "%");
 
-
-        const sTop = (imgTag.height * yPos - display.clientHeight * yPos) + e.deltaY * zoom / 100 * -1;
+        const sTop = (imgTag.height * yPos - display.clientHeight * yPos);
         const sLeft = (imgTag.width * xPos - display.clientWidth * xPos);
         display.scrollTop = sTop - sTop % (50 * zoom / 200);
         display.scrollLeft = sLeft - sLeft % (50 * zoom / 200);
 
         if (currentPhotoSize[1] && currentPhotoSize[1] > currentPhotoSize[0]) {
-            SetImgStyle({ minHeight: zoom + "%" });
+            SetImgStyle({ minHeight: zoom + "%", opacity: '100%' });
         } else {
-            SetImgStyle({ minWidth: zoom + "%" });
+            SetImgStyle({ minWidth: zoom + "%", opacity: '100%' });
         }
 
         setTimeout(() => { setScrollLock(false) }, 100);
