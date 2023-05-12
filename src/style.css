@@ -61,6 +61,10 @@ footer .copyright {
   flex: 1;
 }
 
+#footer-message .clipboard {
+  color: greenyellow;
+}
+
 .row {
   flex: 1;
   justify-content: center;

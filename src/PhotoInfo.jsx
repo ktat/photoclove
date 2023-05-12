@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
+import { writeText, readText } from '@tauri-apps/api/clipboard';
 
 function PhotoInfo(props) {
     const [photoInfo, setPhotoInfo] = useState({});
@@ -95,10 +96,17 @@ function PhotoInfo(props) {
                 <div>
                     <table>
                         <tbody>
-                            <tr><th>File Name</th><td><a
-                                onMouseEnter={() => { props.addFooterMessage("current_phtoo_path", "File Path: " + props.currentPhotoPath, 10000) }}>
-                                {props.currentPhotoPath.replace(/^.+\//, '')}
-                            </a></td></tr>
+                            <tr><th>File Name</th>
+                                <td>
+                                    <a
+                                        onMouseEnter={() => { props.addFooterMessage("current_phtoo_path", "File Path: " + props.currentPhotoPath, 10000) }}>
+                                        {props.currentPhotoPath.replace(/^.+\//, '')}
+                                    </a>&nbsp;
+                                    <a href="#" onClick={() => {
+                                        writeText(props.currentPhotoPath);
+                                        props.addFooterMessage("clipboard", "Copy file path to clipboard", 50000);
+                                    }}>📋</a>
+                                </td></tr>
                             <tr><th>ISO</th><td>{photoInfo.exif ? photoInfo.exif.iso : ""}</td></tr>
                             <tr><th>FNumber</th><td>{photoInfo.exif ? photoInfo.exif.fnumber : ""}</td></tr>
                             <tr><th>Shutter Speed</th><td>{photoInfo.exif ? photoInfo.exif.exposure_time : ""}</td></tr>
