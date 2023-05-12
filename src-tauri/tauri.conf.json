@@ -32,6 +32,11 @@
           "**/.photoclove/**"
         ]
       },
+      "clipboard": {
+        "all": true,
+        "writeText": true,
+        "readText": true
+      },
       "process": {
         "relaunch": true
       }
