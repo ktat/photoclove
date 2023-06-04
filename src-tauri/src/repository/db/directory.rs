@@ -90,6 +90,7 @@ impl RepositoryDB for Directory {
         sort: Sort,
         num: u32,
         page: u32,
+        offset: usize,
     ) -> photo::Photos {
         let dir = self.path.child(date.to_string());
         let mut photos = photo::Photos::new();
@@ -141,6 +142,7 @@ impl RepositoryDB for Directory {
         }
 
         let mut start_index = (num * (page - 1)) as usize;
+        start_index = start_index + offset;
         let mut end_index = start_index + (num as usize);
 
         if photos.photos.len() > 0 {
@@ -173,7 +175,7 @@ impl RepositoryDB for Directory {
 
         'outer: loop {
             let photos = self
-                .get_photos_in_date(meta_data, date.clone(), sort, 100, page)
+                .get_photos_in_date(meta_data, date.clone(), sort, 100, page, 0)
                 .await;
             if photos.photos.len() == 0 {
                 break 'outer;
@@ -204,7 +206,7 @@ impl RepositoryDB for Directory {
 
         'outer: loop {
             let photos = self
-                .get_photos_in_date(meta_data, date.clone(), sort, 100, page)
+                .get_photos_in_date(meta_data, date.clone(), sort, 100, page, 0)
                 .await;
             if photos.photos.len() == 0 {
                 break 'outer;
