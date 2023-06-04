@@ -17,6 +17,9 @@ function PhotosListMini(props) {
         if (allPhotos.length - index < NUM_OF_PHOTO_LIST) {
             index = allPhotos.length - NUM_OF_PHOTO_LIST;
         }
+        if (index < 0) {
+            index = 0;
+        }
         setSetOfShowPhotos(index);
     }, [props.currentPhotoIndex]);
 
