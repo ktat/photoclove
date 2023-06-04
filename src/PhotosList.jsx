@@ -11,6 +11,7 @@ function PhotosList(props) {
     const [iconSize, setIconSize] = useState(100);
     const [numOfPhoto, setNumOfPhoto] = useState(20);
     const [currentPhotoPath, setCurrentPhotoPath] = useState("");
+    const [currentPhotoIndex, setCurrentPhotoIndex] = useState(undefined);
     const [photos, setPhotosList] = useState({ "photos": [] });
     const [showPhotoDisplay, setShowPhotoDisplay] = useState(false);
     const [scrollLock, setScrollLock] = useState(false);
@@ -31,8 +32,9 @@ function PhotosList(props) {
         }
     }, [numOfPhoto, props.currentDate, sortOfPhotos, iconSize]);
 
-    function displayPhoto(f) {
+    function displayPhoto(f, i) {
         setCurrentPhotoPath(f);
+        setCurrentPhotoIndex(i)
         setShowPhotoDisplay(true);
     }
 
@@ -129,7 +131,7 @@ function PhotosList(props) {
             page = 1;
         }
         page = parseInt(page);
-        await invoke("get_photos", { dateStr: date, sortValue: parseInt(sort), page: page, num: parseInt(num) }).then((r) => {
+        await invoke("get_photos", { dateStr: date, sortValue: parseInt(sort), page: page, num: parseInt(num), offset: 0 }).then((r) => {
             let data = JSON.parse(r);
             let l = data.photos;
             let tags = [];
@@ -209,15 +211,27 @@ function PhotosList(props) {
                         moveToTrashCan={moveToTrashCan}
                         closePhotoDisplay={closePhotoDisplay}
                         currentPhotoPath={currentPhotoPath}
-                        oad setCurrentPhotoPath={setCurrentPhotoPath}
+                        setCurrentPhotoPath={setCurrentPhotoPath}
+                        currentPhotoIndex={currentPhotoIndex}
+                        setCurrentPhotoIndex={setCurrentPhotoIndex}
                         currentDate={props.currentDate}
                         sortOfPhotos={sortOfPhotos}
                         setShortCutNavigation={props.setShortCutNavigation}
                         setShowPhotoDisplay={setShowPhotoDisplay}
                         shortCutNavigation={props.shortCutNavigation}
                         getPhotos={getPhotos}
+                        datePage={props.datePage}
+                        num={numOfPhoto}
                     />
-                    <PhotosListMini />
+                    <PhotosListMini
+                        currentPhotoPath={currentPhotoPath}
+                        setCurrentPhotoPath={setCurrentPhotoPath}
+                        sortOfPhotos={sortOfPhotos}
+                        currentDate={props.currentDate}
+                        datePage={props.datePage}
+                        num={numOfPhoto}
+                        currentPhotoIndex={currentPhotoIndex}
+                    />
                 </div>
                 :
                 <div className="centerDisplay" id="photoList" onWheel={(e) => photosScroll(e)} data-date={props.currentDate} data-page={props.datePage[props.currentDate]}>
@@ -253,7 +267,7 @@ function PhotosList(props) {
                         {photos.photos.map((l, i) => {
                             return (
                                 <div key={i} className={"row pict-" + iconSize} style={{ textAlign: "center" }} >
-                                    <a href="#" onClick={() => { displayPhoto(l.file.path) }}>
+                                    <a href="#" onClick={() => { displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto) }}>
                                         {l.file.path.match(/\.(mp4|webm)$/i)
                                             ? <div className="photo-list-movie" style={{ minWidth: (iconSize - 20) + 'px', marginTop: (iconSize / 7) + "px" }}>
                                                 <span style={{ fontSize: (iconSize / 3) + 'px' }}>&#127909;</span>

@@ -95,6 +95,7 @@ async fn get_photos(
     sort_value: i32,
     num: u32,
     state: tauri::State<'_, AppState>,
+    offset: u32,
 ) -> Result<String, ()> {
     let date = date::Date::from_string(&date_str.to_string(), Option::None);
     let repo_db = &state.repo_db;
@@ -110,6 +111,7 @@ async fn get_photos(
             repository::sort_from_int(sort_value),
             num,
             page,
+            offset as usize,
         )
         .await;
     Ok(photos.to_json())
