@@ -1,7 +1,7 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from "react";
 
-const NUM_OF_PHOTO_LIST = 5;
+const NUM_OF_PHOTO_LIST = 8;
 
 function PhotosListMini(props) {
     const [allPhotos, setAllPhotos] = useState([]);
