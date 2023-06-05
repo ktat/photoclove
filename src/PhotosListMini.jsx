@@ -101,12 +101,13 @@ function PhotosListMini(props) {
             <div className="row1"><a style={{ display: currentIndex == 0 ? "none" : "" }} onClick={() => { backwardPhotos() }}>◁</a></div>
             {
                 showPhotos.map((v, i) => {
+                    const clientHeight = document.querySelector('#photos-list-mini').clientHeight;
                     return <div className="row2" key={i}>
                         <a onClick={() => {
                             props.setCurrentPhotoPath(v.file.path);
                             props.datePage[props.currentDate] = Math.trunc((currentIndex + i) / props.num) + 1;
                         }}>
-                            <img src={convertFileSrc(v.file.path)} alt={"photo-" + i} />
+                            <img src={convertFileSrc(v.file.path)} style={{ maxHeight: clientHeight }} alt={"photo-" + i} />
                         </a>
                     </div>
                 })
