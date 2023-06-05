@@ -43,6 +43,8 @@ function PhotoDisplay(props) {
     }, [props.currentPhotoPath]);
 
     function SetImgStyle(style, w, h) {
+        const photoSpaceHeight = document.querySelector('.photo').clientHeight;
+        const photoSpaceWidth = document.querySelector('.photo').clientWidth;
         const st = {
             transition: 'opacity 0.2s',
         }
@@ -51,10 +53,15 @@ function PhotoDisplay(props) {
         })
         if (currentPhotoSize[0] || w) {
             if ((currentPhotoSize[0] || w) > (currentPhotoSize[1] || h)) {
-                st["maxWidth"] = "100wh";
+                let adjustH = photoSpaceWidth * (currentPhotoSize[1] || h) / (currentPhotoSize[0] || w);
+                if (adjustH > photoSpaceHeight) {
+                    st["maxWidth"] = "calc(" + photoSpaceWidth * (photoSpaceHeight / adjustH) + "px - 20px)";
+                } else {
+                    st["maxWidth"] = "calc(" + photoSpaceWidth + "px - 10px)";
+                }
                 st["transition"] += ", maxWidth 0.5s";
             } else {
-                st["maxHeight"] = "80vh";
+                st["maxHeight"] = "calc(" + photoSpaceHeight + "px - 10px)";
                 st["transition"] += ", maxHeight 0.5s";
             }
         } else {
