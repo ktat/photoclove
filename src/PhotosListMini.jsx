@@ -102,7 +102,10 @@ function PhotosListMini(props) {
             {
                 showPhotos.map((v, i) => {
                     return <div className="row2" key={i}>
-                        <a onClick={() => { props.setCurrentPhotoPath(v.file.path) }}>
+                        <a onClick={() => {
+                            props.setCurrentPhotoPath(v.file.path);
+                            props.datePage[props.currentDate] = Math.trunc((currentIndex + i) / props.num) + 1;
+                        }}>
                             <img src={convertFileSrc(v.file.path)} alt={"photo-" + i} />
                         </a>
                     </div>

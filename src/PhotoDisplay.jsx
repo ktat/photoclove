@@ -131,7 +131,7 @@ function PhotoDisplay(props) {
                     props.setCurrentPhotoPath(r);
                     props.datePage[props.currentDate] = Math.trunc((props.currentPhotoIndex - 1) / props.num) + 1;
                     props.setCurrentPhotoIndex(props.currentPhotoIndex - 1);
-
+                    props.datePage[props.currentDate] = Math.trunc((props.currentPhotoIndex - 1) / props.num) + 1;
                 }
             }
         });
@@ -150,6 +150,7 @@ function PhotoDisplay(props) {
                     props.setCurrentPhotoPath(r);
                     props.datePage[props.currentDate] = Math.trunc((props.currentPhotoIndex + 1) / props.num) + 1;
                     props.setCurrentPhotoIndex(props.currentPhotoIndex + 1);
+                    props.datePage[props.currentDate] = Math.trunc((props.currentPhotoIndex + 1) / props.num) + 1;
                 }
             }
         });
