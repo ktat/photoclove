@@ -229,50 +229,52 @@ function PhotoDisplay(props) {
     }
 
     return (
-        <div
-            className="photoDisplay"
-            id="photoDisplay"
-            autoFocus={true}
-            onKeyDown={(e) => photoNavigation(e)}
-            onKeyUp={(e) => photoNavigationUp(e)}
-        >
-            <a href="#" id="dummy-for-focus">{/* Dummy */}</a>
-            <a href="#" onClick={() => prevPhoto(props.currentPhotoPath)}>&lt;&lt; prev</a>&nbsp;&nbsp;
-            || <a href="#" onClick={() => props.closePhotoDisplay()}>close</a> ||&nbsp;&nbsp;
-            <a href="#" onClick={() => nextPhoto(props.currentPhotoPath)}>next &gt;&gt;</a><br /><br />
-            <div className="photo">
-                {/* video doesn't work for local failes: https://github.com/tauri-apps/tauri/issues/3725#issuecomment-1160842638
+        <div className="centerDisplay">
+            <div
+                className="photoDisplay"
+                id="photoDisplay"
+                autoFocus={true}
+                onKeyDown={(e) => photoNavigation(e)}
+                onKeyUp={(e) => photoNavigationUp(e)}
+            >
+                <a href="#" id="dummy-for-focus">{/* Dummy */}</a>
+                <a href="#" onClick={() => prevPhoto(props.currentPhotoPath)}>&lt;&lt; prev</a>&nbsp;&nbsp;
+                || <a href="#" onClick={() => props.closePhotoDisplay()}>close</a> ||&nbsp;&nbsp;
+                <a href="#" onClick={() => nextPhoto(props.currentPhotoPath)}>next &gt;&gt;</a><br /><br />
+                <div className="photo">
+                    {/* video doesn't work for local failes: https://github.com/tauri-apps/tauri/issues/3725#issuecomment-1160842638
 
                     <video style={{ width: "100%", height: "100%" }} controls="" autoPlay="" name="media">
                         <source src={convertFileSrc(props.currentPhotoPath)} type={"video/" + (props.currentPhotoPath.match(/\.mp4$/) ? "mp4" : "webm")} />
                     </video>
 
                 */}
-                <div className={videoClass}>
-                    <ReactPlayer
-                        width="100%"
-                        height="100%"
-                        controls
-                        url={videoSource}
-                    />
-                    Open with other software: <a href="#" onClick={(e) => open("file://" + props.currentPhotoPath)}>{props.currentPhotoPath}</a>
+                    <div className={videoClass}>
+                        <ReactPlayer
+                            width="100%"
+                            height="100%"
+                            controls
+                            url={videoSource}
+                        />
+                        Open with other software: <a href="#" onClick={(e) => open("file://" + props.currentPhotoPath)}>{props.currentPhotoPath}</a>
+                    </div>
+                    {!props.currentPhotoPath.match(/\.(mp4|webm)$/i) &&
+                        <img className={photoDisplayImgClass}
+                            lading="eager"
+                            onLoad={(e) => {
+                                setTimeout(() => {
+                                    SetImgStyle({ opacity: 1, transition: "opacity 0.5s" }, e.target.width, e.target.height);
+                                }, 150)
+                            }}
+                            style={imgStyle}
+                            src={convertFileSrc(props.currentPhotoPath)}
+                            onMouseDown={(e) => dragPhotoStart(e)}
+                            onMouseMove={(e) => dragPhoto(e)}
+                            onMouseUp={(e) => dragPhotoEnd(e)}
+                            onWheel={(e) => photoScroll(e)}
+                        />
+                    }
                 </div>
-                {!props.currentPhotoPath.match(/\.(mp4|webm)$/i) &&
-                    <img className={photoDisplayImgClass}
-                        lading="eager"
-                        onLoad={(e) => {
-                            setTimeout(() => {
-                                SetImgStyle({ opacity: 1, transition: "opacity 0.5s" }, e.target.width, e.target.height);
-                            }, 150)
-                        }}
-                        style={imgStyle}
-                        src={convertFileSrc(props.currentPhotoPath)}
-                        onMouseDown={(e) => dragPhotoStart(e)}
-                        onMouseMove={(e) => dragPhoto(e)}
-                        onMouseUp={(e) => dragPhotoEnd(e)}
-                        onWheel={(e) => photoScroll(e)}
-                    />
-                }
             </div>
         </div>
     );

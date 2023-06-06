@@ -1,13 +1,14 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from "react";
 
-const NUM_OF_PHOTO_LIST = 8;
+const NUM_OF_PHOTO_LIST = 9;
 
 function PhotosListMini(props) {
     const [allPhotos, setAllPhotos] = useState([]);
     const [showPhotos, setShowPhotos] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [hasNext, setHasNext] = useState(false);
+    const [borderStyle, setBorderStyle] = useState([]);
     useEffect((e) => {
         const page = props.datePage[props.currentDate];
         if (hasNext || allPhotos.length === 0) {
@@ -68,6 +69,7 @@ function PhotosListMini(props) {
                 index = mergedAllPhotos.length - NUM_OF_PHOTO_LIST;
             }
             setSetOfShowPhotos(index, mergedAllPhotos);
+            setBorderStyle(borderStyle);
         });
     }
 
@@ -77,12 +79,17 @@ function PhotosListMini(props) {
             mergedAllPhotos = allPhotos;
         }
         const photos = [];
+        let selected = 0;
         for (let i = index; i < (NUM_OF_PHOTO_LIST + index); i++) {
             if (mergedAllPhotos[i]) {
+                if (i === props.currentPhotoIndex) {
+                    selected = photos.length;
+                }
                 photos.push(mergedAllPhotos[i]);
             }
         }
         setShowPhotos(photos);
+        resetSelectedBorder(selected);
     }
 
     function _movePhotos(index) {
@@ -96,6 +103,14 @@ function PhotosListMini(props) {
         setShowPhotos(photos);
     }
 
+    function resetSelectedBorder(i) {
+        borderStyle.map((v, n) => {
+            borderStyle[n] = "unset";
+        });
+        borderStyle[i] = "solid";
+        setBorderStyle(borderStyle);
+    }
+
     return (
         <div id="photos-list-mini">
             <div className="row1"><a style={{ display: currentIndex == 0 ? "none" : "" }} onClick={() => { backwardPhotos() }}>◁</a></div>
@@ -103,11 +118,12 @@ function PhotosListMini(props) {
                 showPhotos.map((v, i) => {
                     const clientHeight = document.querySelector('#photos-list-mini').clientHeight;
                     return <div className="row2" key={i}>
-                        <a onClick={() => {
+                        <a onClick={(e) => {
+                            resetSelectedBorder(i);
                             props.setCurrentPhotoPath(v.file.path);
                             props.datePage[props.currentDate] = Math.trunc((currentIndex + i) / props.num) + 1;
                         }}>
-                            <img src={convertFileSrc(v.file.path)} style={{ maxHeight: clientHeight }} alt={"photo-" + i} />
+                            <img src={convertFileSrc(v.file.path)} style={{ border: borderStyle[i], maxHeight: clientHeight }} alt={"photo-" + i} />
                         </a>
                     </div>
                 })
