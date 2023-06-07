@@ -231,6 +231,7 @@ function PhotosList(props) {
                         datePage={props.datePage}
                         num={numOfPhoto}
                         currentPhotoIndex={currentPhotoIndex}
+                        setCurrentPhotoIndex={setCurrentPhotoIndex}
                     />
                 </div>
                 :
