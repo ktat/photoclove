@@ -7,6 +7,7 @@ const unlisten = {};
 
 function DateList(props) {
     const [dateList, setDateList] = useState([]);
+    const [selectedStyle, setSelectedStyle] = useState({});
 
     useEffect((e) => {
         getDates();
@@ -58,7 +59,9 @@ function DateList(props) {
                     {dateList.map((l, i) => {
                         let date = new Date(l.year + '/' + l.month + '/' + l.day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
                         return (<li key={i} >
-                            <a href="#" onClick={(e) => {
+                            <a href="#" style={{ color: selectedStyle[date] || "#646cff" }} onClick={(e) => {
+                                setSelectedStyle({ [date]: "#ccc" });
+                                console.log(selectedStyle);
                                 props.setCurrentDate(date);
                                 props.toggleImporter(false);
                             }
