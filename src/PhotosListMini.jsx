@@ -79,7 +79,7 @@ function PhotosListMini(props) {
             mergedAllPhotos = allPhotos;
         }
         const photos = [];
-        let selected = 0;
+        let selected = -1;
         for (let i = index; i < (NUM_OF_PHOTO_LIST + index); i++) {
             if (mergedAllPhotos[i]) {
                 if (i === props.currentPhotoIndex) {
@@ -95,19 +95,26 @@ function PhotosListMini(props) {
     function _movePhotos(index) {
         setCurrentIndex(index);
         const photos = [];
+        let selected = -1;
         for (let i = index; i < (NUM_OF_PHOTO_LIST + index); i++) {
             if (allPhotos[i]) {
+                if (i === props.currentPhotoIndex) {
+                    selected = photos.length;
+                }
                 photos.push(allPhotos[i]);
             }
         }
         setShowPhotos(photos);
+        resetSelectedBorder(selected);
     }
 
     function resetSelectedBorder(i) {
         borderStyle.map((v, n) => {
             borderStyle[n] = "unset";
         });
-        borderStyle[i] = "solid";
+        if (0 <= i && i < NUM_OF_PHOTO_LIST) {
+            borderStyle[i] = "solid";
+        }
         setBorderStyle(borderStyle);
     }
 
@@ -119,11 +126,16 @@ function PhotosListMini(props) {
                     const clientHeight = document.querySelector('#photos-list-mini').clientHeight - 20;
                     return <div className="row2" key={i}>
                         <a onClick={(e) => {
-                            resetSelectedBorder(i);
                             props.setCurrentPhotoPath(v.file.path);
+                            props.setCurrentPhotoIndex(currentIndex + i);
                             props.datePage[props.currentDate] = Math.trunc((currentIndex + i) / props.num) + 1;
                         }}>
-                            <img src={convertFileSrc(v.file.path)} style={{ border: borderStyle[i], maxHeight: clientHeight + "px" }} alt={"photo-" + i} />
+                            {v.file.path.match(/\.(mp4|webm)$/i)
+                                ? <div className="photo-list-movie" style={{ border: borderStyle[i], maxHeight: clientHeight + "px" }}>
+                                    <span>&#127909;</span>
+                                </div>
+                                : <img src={convertFileSrc(v.file.path)} style={{ border: borderStyle[i], maxHeight: clientHeight + "px" }} alt={"photo-" + i} />
+                            }
                         </a>
                     </div>
                 })
