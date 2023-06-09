@@ -18,8 +18,8 @@ static IN_PROGRESS_NUM: AtomicUsize = AtomicUsize::new(1);
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Importer {
     pub dirs_files: dir::DirsFiles,
-    pub page: u32,
-    pub num: u32,
+    pub page: usize,
+    pub num: usize,
     pub paths: Vec<String>,
 }
 
@@ -219,7 +219,12 @@ impl ImporterSelectedFiles {
 }
 
 impl Importer {
-    pub fn new(directory: String, page: u32, num: u32, date_after: Option<date::Date>) -> Importer {
+    pub fn new(
+        directory: String,
+        page: usize,
+        num: usize,
+        date_after: Option<date::Date>,
+    ) -> Importer {
         let sort = repository::Sort::Time;
         let dir = dir::Dir::new(directory);
         return Importer {
@@ -242,8 +247,8 @@ impl Importer {
     pub fn update(
         &mut self,
         directory: String,
-        page: u32,
-        num: u32,
+        page: usize,
+        num: usize,
         date_after: Option<date::Date>,
     ) {
         let dir = dir::Dir::new(directory);

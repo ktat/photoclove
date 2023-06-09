@@ -224,8 +224,8 @@ fn show_importer(
     path_str: Option<&str>,
     date_str: Option<&str>,
     window: tauri::Window,
-    page: u32,
-    num: u32,
+    page: usize,
+    num: usize,
     state: tauri::State<AppState>,
 ) -> String {
     let mut path = "";
@@ -301,7 +301,7 @@ fn get_import_progress(state: tauri::State<AppState>) -> String {
 }
 
 #[tauri::command]
-fn get_photos_path_to_import_under_directory(
+fn get_photos_to_import_under_directory(
     pathStr: &str,
     date_after_str: Option<&str>,
     window: tauri::Window,
@@ -317,11 +317,7 @@ fn get_photos_path_to_import_under_directory(
     }
 
     let files = d.find_all_files(filter);
-    let mut ret_files: Vec<String> = Vec::new();
-    for f in files.files {
-        ret_files.push(f.path);
-    }
-    return serde_json::to_string(&ret_files).unwrap();
+    return serde_json::to_string(&files.files).unwrap();
 }
 
 #[tauri::command]
@@ -575,7 +571,7 @@ fn main() {
             show_importer,
             import_photos,
             get_import_progress,
-            get_photos_path_to_import_under_directory,
+            get_photos_to_import_under_directory,
             get_dates_num,
             move_to_trash,
             lock,

@@ -63,26 +63,23 @@ impl Dir {
         } else {
             panic!("Cannot readdir: {}\n", self.path.to_string())
         }
+        files.files.sort_by(|a, b| a.created_at.cmp(&b.created_at));
         return files;
     }
 
     pub fn find_files_and_dirs(
         &self,
         sort: repository::Sort,
-        page: u32,
-        num: u32,
+        page: usize,
+        num: usize,
         date_after: Option<date::Date>,
     ) -> DirsFiles {
         let mut df = DirsFiles::new(self.path.clone());
         let re = Regex::new(r"(?i)\.(?:jpe?g|gif|png)$").unwrap();
         let readdir = fs::read_dir(&self.path);
         if readdir.is_ok() {
-            let start_index = (page - 1) * num;
-            let last_index = page * num;
-            let mut i = 0;
-            if start_index > 0 {
-                df.has_prev_file = true;
-            }
+            let start_index: usize = ((page - 1) * num);
+            let mut last_index: usize = (page * num);
             for entry in readdir.unwrap() {
                 let entry = entry.unwrap();
                 let entry_path = entry.path();
@@ -97,17 +94,7 @@ impl Dir {
                                 continue;
                             }
                         }
-                        if i < start_index {
-                            i += 1;
-                            continue;
-                        }
-                        if i >= last_index {
-                            i += 1;
-                            df.has_next_file = true;
-                            continue;
-                        }
                         df.files.files.push(f);
-                        i += 1
                     } else if entry_path.is_dir() {
                         df.dirs
                             .dirs
@@ -116,6 +103,21 @@ impl Dir {
                         // print!("not target: {:?}", entry_path);
                     }
                 }
+            }
+            df.files
+                .files
+                .sort_by(|a, b| a.created_at.cmp(&b.created_at));
+            let len = df.files.files.len();
+            if len > 0 {
+                df.has_prev_file = start_index != 0 && len > start_index;
+
+                if (len - 1) > last_index {
+                    df.has_next_file = true;
+                } else {
+                    df.has_next_file = false;
+                    last_index = len;
+                }
+                df.files.files = df.files.files[start_index..last_index].to_vec()
             }
             return df;
         } else {
