@@ -13,7 +13,7 @@ function Importer(props) {
     const [importer, setImporter] = useState({ "has_next_files": false, "dirs_files": { dir: { "path": "" }, "dirs": { "dirs": [] }, "files": { "files": [] } } });
     const [pathPage, setPathPage] = useState({});
     const [selectedForImport, setSelectedForImport] = useState({});
-    const [imageInSelectedPhotos, setImageInSelectedPhotos] = useState("");
+    const [imageInSelectedPhotos, setImageInSelectedPhotos] = useState(undefined);
     const [importerFilter, setImporterFilter] = useState("")
 
     const listened = false;
@@ -75,14 +75,19 @@ function Importer(props) {
         showImporter(currentImportPath, page, 20);
     }
 
-    function selectPhoto(path) {
-        if (path !== undefined) {
-            selectedForImport[path] = !selectedForImport[path];
+    function selectPhoto(file) {
+        if (file !== undefined && file.path !== undefined) {
+            const path = file.path;
             if (!selectedForImport[path]) {
-                setImageInSelectedPhotos("");
+                selectedForImport[path] = file;
+            } else {
+                selectedForImport[path] = false;
+            }
+            if (!selectedForImport[path]) {
+                setImageInSelectedPhotos(undefined);
                 delete selectedForImport[path];
             } else {
-                setImageInSelectedPhotos(path);
+                setImageInSelectedPhotos(file);
             }
         }
         let files = [];
@@ -99,18 +104,18 @@ function Importer(props) {
     }
 
     function selectAllInThisPage() {
-        let photos = document.getElementsByClassName("importPhoto");
+        let photos = document.getElementsByClassName("import-photo");
         _selectAll(photos);
     }
 
     function selectAll() {
-        console.log(currentImportPath)
         if (currentImportPath != "") {
-            invoke("get_photos_path_to_import_under_directory", { pathStr: currentImportPath, dateAfterStr: importerFilter }).then((r) => {
+            invoke("get_photos_to_import_under_directory", { pathStr: currentImportPath, dateAfterStr: importerFilter }).then((r) => {
                 let files = JSON.parse(r);
                 let photos = [];
                 for (let i = 0; i < files.length; i++) {
-                    photos.push({ id: files[i] });
+                    console.log(files[i]);
+                    photos.push({ id: files[i].path, created_at: files[i].created_at });
                 }
                 _selectAll(photos);
             });
@@ -118,18 +123,21 @@ function Importer(props) {
     }
 
     function _selectAll(photos) {
-        let lastFile = '';
+        let lastFile = undefined;
         for (let i = 0; i < photos.length; i++) {
-            selectedForImport[photos[i].id] = true;
-            lastFile = photos[i].id;
+            console.log(photos[i])
+            selectedForImport[photos[i].id] = photos[i];
+            lastFile = photos[i];
         }
         selectPhoto(undefined);
-        setImageInSelectedPhotos(lastFile);
+        if (lastFile) {
+            setImageInSelectedPhotos({ path: lastFile.id, created_at: lastFile.created_at || lastFile.dataset.createdAt });
+        }
     }
 
     function unselectAll() {
         setSelectedForImport({});
-        setImageInSelectedPhotos("");
+        setImageInSelectedPhotos(undefined);
     }
 
     async function showImporter(path, page, num) {
@@ -233,11 +241,13 @@ function Importer(props) {
                         <div className="importer-photos">
                             {importer.dirs_files.files.files.map((l, i) => {
                                 return (
-                                    <div key={i} className={selectedForImport[l.path] ? "row selected" : "row notSelected"} style={{ minWidth: "120px" }}>
-                                        <a href="#" id={l.path} className="import-photo" onClick={() => selectPhoto(l.path)}>
-                                            <img src={convertFileSrc(l.path)} style={{ width: "100px" }} />
-                                        </a>
-                                    </div>
+                                    <>
+                                        <div key={i} className={selectedForImport[l.path] ? "row selected" : "row notSelected"} style={{ minWidth: "120px" }}>
+                                            <a href="#" id={l.path} className="import-photo" onClick={() => selectPhoto(l)} data-created-at={l.created_at}>
+                                                <img src={convertFileSrc(l.path)} style={{ width: "100px" }} />
+                                            </a>
+                                        </div>
+                                    </>
                                 );
                             })
                             }
