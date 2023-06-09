@@ -51,3 +51,4 @@ Just a plan, currentrly a few features are only implemented.
 - [ ] i18n(low priority)
 - [ ] trashbox management
 - [ ] redo/undo
+- [ ] Show photos imported reacently
