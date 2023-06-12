@@ -33,6 +33,8 @@ async-trait = "0.1.36"
 futures = "0.3.5"
 reqwest = "*"
 tauri-plugin-oauth = { git = "https://github.com/FabianLars/tauri-plugin-oauth/", branch = "main"}
+# turbojpeg-sys = {version = "0.2.3", features = ["bindgen"] }
+# turbojpeg = {version = "0.5", features = ["image"] }
 
 [features]
 # by default Tauri runs in production mode
