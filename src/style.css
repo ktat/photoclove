@@ -246,8 +246,8 @@ button {
 }
 
 .photoDisplay .photo {
-  overflow-x: scroll;
-  overflow-y: scroll;
+  overflow-x: hidden;
+  overflow-y: hidden;
   max-height: calc(100vh - 320px);
 }
 

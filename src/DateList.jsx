@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
+import { convertFileSrc, invoke } from "@tauri-apps/api/tauri";
 import { message } from "@tauri-apps/api/dialog";
 import { listen } from "@tauri-apps/api/event";
 
@@ -58,9 +58,9 @@ function DateList(props) {
                 <ul>
                     {dateList.map((l, i) => {
                         let date = new Date(l.year + '/' + l.month + '/' + l.day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
-                        return (<li key={i} >
-                            <a href="#" style={{ color: selectedStyle[date] || "#646cff" }} onClick={(e) => {
-                                setSelectedStyle({ [date]: "#ccc" });
+                        return (<li key={i} style={{ listStyle: selectedStyle["li-" + date] || "none" }}>
+                            <a href="#" style={{ color: selectedStyle["a-" + date] || "#646cff" }} onClick={(e) => {
+                                setSelectedStyle({ ["a-" + date]: "#ccc", ["li-" + date]: "square" }); //  outside url('...')
                                 console.log(selectedStyle);
                                 props.setCurrentDate(date);
                                 props.toggleImporter(false);
