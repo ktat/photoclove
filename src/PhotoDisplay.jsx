@@ -20,10 +20,11 @@ function PhotoDisplay(props) {
     const [videoClass, setVideoClass] = useState("video-off");
     const [currentPhotoSize, setCurrentPhotoSize] = useState([]);
     const [imgStyle, setImgStyle] = useState({
-        transition: 'opacity 0.5s',
+        transition: 'opacity 0.7s',
         opacity: 0.5,
         maxWith: "100%",
-        maxHeight: "100%"
+        maxHeight: "100%",
+        overflow: "hidden"
     });
 
     useEffect((e) => {
@@ -46,7 +47,7 @@ function PhotoDisplay(props) {
         const photoSpaceHeight = document.querySelector('.photo').clientHeight;
         const photoSpaceWidth = document.querySelector('.photo').clientWidth;
         const st = {
-            transition: 'opacity 0.2s',
+            transition: 'opacity 0.4s',
         }
         Object.keys(style).map((k) => {
             st[k] = style[k];
@@ -59,16 +60,16 @@ function PhotoDisplay(props) {
                 } else {
                     st["maxWidth"] = "calc(" + photoSpaceWidth + "px - 10px)";
                 }
-                st["transition"] += ", maxWidth 0.5s";
+                st["transition"] += ", maxWidth 0.7s";
             } else {
                 st["maxHeight"] = "calc(" + photoSpaceHeight + "px - 10px)";
-                st["transition"] += ", maxHeight 0.5s";
+                st["transition"] += ", maxHeight 0.7s";
             }
         } else {
             st["maxWidth"] = "100%";
             st["maxHeight"] = "100%";
-            st["transition"] += ", maxWidth 0.5s";
-            st["transition"] += ", maxHeight 0.5s";
+            st["transition"] += ", maxWidth 0.7s";
+            st["transition"] += ", maxHeight 0.7s";
         }
         setImgStyle(st);
     }
