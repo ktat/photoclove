@@ -12,6 +12,8 @@ async function importPhotos(props) {
                 message += parseInt((data.num - data.progress) / (data.num_per_sec)) + " secs left)";
                 props.addFooterMessage("importing", message);
                 setTimeout(() => { f(f) }, 1000);
+            } else {
+                props.setLastSelected(undefined);
             }
         })
     };
