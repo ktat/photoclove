@@ -2,12 +2,12 @@
 
 use crate::domain::{photo, photo_meta};
 use crate::domain_service::dir_service;
-use crate::repository::{self, meta_db, RepoDB, RepositoryDB, Sort};
+use crate::repository::{self, RepoDB, RepositoryDB, Sort};
 use crate::value::{date, exif, file};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-use std::collections::{self, HashMap};
+use std::collections::HashMap;
 use std::fs;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -228,12 +228,12 @@ impl RepositoryDB for Directory {
     async fn move_photos_to_exif_date(&self, date: date::Date) -> date::Dates {
         let dir = self.path.child(date.to_string());
         let files = dir_service::find_files(&dir);
-        let mut datesToBeChanged: HashMap<String, bool> = HashMap::new();
+        let mut dates_to_be_changed: HashMap<String, bool> = HashMap::new();
         for file in files.files {
             let photo = photo::Photo::new_with_exif(file);
             let new_dir = self.path.child(photo.created_date_string());
             if dir.path != new_dir.path {
-                datesToBeChanged
+                dates_to_be_changed
                     .entry(photo.created_date_string())
                     .or_insert(true);
                 let filename = photo.file.filename();
@@ -248,9 +248,9 @@ impl RepositoryDB for Directory {
             }
         }
         let mut dates = date::Dates::new(&[]);
-        if datesToBeChanged.keys().len() > 0 {
-            datesToBeChanged.insert(date.to_string(), true);
-            for date_string in datesToBeChanged.keys() {
+        if dates_to_be_changed.keys().len() > 0 {
+            dates_to_be_changed.insert(date.to_string(), true);
+            for date_string in dates_to_be_changed.keys() {
                 dates
                     .dates
                     .push(date::Date::from_string(date_string, Option::Some("-")));

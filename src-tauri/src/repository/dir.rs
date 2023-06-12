@@ -78,8 +78,8 @@ impl Dir {
         let re = Regex::new(r"(?i)\.(?:jpe?g|gif|png)$").unwrap();
         let readdir = fs::read_dir(&self.path);
         if readdir.is_ok() {
-            let start_index: usize = ((page - 1) * num);
-            let mut last_index: usize = (page * num);
+            let start_index: usize = (page - 1) * num;
+            let mut last_index: usize = page * num;
             for entry in readdir.unwrap() {
                 let entry = entry.unwrap();
                 let entry_path = entry.path();
