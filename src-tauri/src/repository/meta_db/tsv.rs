@@ -5,7 +5,6 @@ use crate::{
     value::date, value::file, value::star,
 };
 use csv::{ReaderBuilder, WriterBuilder};
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path;
@@ -189,7 +188,7 @@ impl MetaInfoDB for Tsv {
         let date = photo.dir.clone().to_date().unwrap();
         let photo_metas = match self.get_photo_meta_data_in_date(date) {
             Ok(data) => data,
-            Err(e) => photo_meta::PhotoMetas::new(),
+            Err(_e) => photo_meta::PhotoMetas::new(),
         };
         match photo_metas.get(&photo.file.path) {
             Some(meta) => {
@@ -212,7 +211,7 @@ impl MetaInfoDB for Tsv {
                         .data
                         .insert(date.to_string(), data.iter().count() as i32);
                 }
-                Err(e) => (),
+                Err(_e) => (),
             };
         }
         dates_num
@@ -259,7 +258,7 @@ impl MetaInfoDB for Tsv {
         let mut dir = photo.dir.clone();
         let mut photo_metas = match self.get_photo_meta_data_in_date(dir.to_date().unwrap()) {
             Ok(data) => data,
-            Err(e) => photo_meta::PhotoMetas::new(),
+            Err(_e) => photo_meta::PhotoMetas::new(),
         };
         let file_path = photo.file.path.clone();
         match photo_metas.get(&file_path) {
@@ -282,7 +281,7 @@ impl MetaInfoDB for Tsv {
         let mut dir = photo.dir.clone();
         let mut photo_metas = match self.get_photo_meta_data_in_date(dir.to_date().unwrap()) {
             Ok(data) => data,
-            Err(e) => photo_meta::PhotoMetas::new(),
+            Err(_e) => photo_meta::PhotoMetas::new(),
         };
         let file_path = photo.file.path.clone();
         match photo_metas.get(&file_path) {

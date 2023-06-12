@@ -60,9 +60,7 @@ impl Config {
 
     fn prepare_directory_if_required(&self) {
         for f in [&self.import_to, &self.trash_path] {
-            let result = fs::DirBuilder::new()
-                .recursive(true)
-                .create(&self.import_to);
+            let result = fs::DirBuilder::new().recursive(true).create(f);
             if !result.is_err() {
                 result.unwrap();
             } else {

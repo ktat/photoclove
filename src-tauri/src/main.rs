@@ -47,7 +47,7 @@ fn get_dates(window: tauri::Window, state: tauri::State<AppState>) -> String {
 
 #[tauri::command]
 async fn get_dates_num(
-    window: tauri::Window,
+    _window: tauri::Window,
     state: tauri::State<'_, AppState>,
     dates_str: &str,
 ) -> Result<String, ()> {
@@ -73,7 +73,7 @@ async fn get_dates_num(
 async fn copy_file_to_public(
     from_file_path: &str,
     to_file_name: &str,
-    state: tauri::State<'_, AppState>,
+    _state: tauri::State<'_, AppState>,
 ) -> Result<String, ()> {
     let from = path::Path::new(from_file_path);
     let to = path::Path::new("../public/").join(to_file_name.to_string());
@@ -102,7 +102,7 @@ async fn get_photos(
     let meta_db = &state.meta_db;
     let meta_data = match meta_db.get_photo_meta_data_in_date(date) {
         Ok(data) => data,
-        Err(e) => photo_meta::PhotoMetas::new(),
+        Err(_e) => photo_meta::PhotoMetas::new(),
     };
     let photos = repo_db
         .get_photos_in_date(
@@ -131,7 +131,7 @@ async fn get_next_photo(
     let meta_db = &state.meta_db;
     let meta_data = match meta_db.get_photo_meta_data_in_date(date) {
         Ok(data) => data,
-        Err(e) => photo_meta::PhotoMetas::new(),
+        Err(_e) => photo_meta::PhotoMetas::new(),
     };
     let photo = repo_db
         .get_next_photo_in_date(
@@ -162,7 +162,7 @@ async fn get_prev_photo(
     let meta_db = &state.meta_db;
     let meta_data = match meta_db.get_photo_meta_data_in_date(date) {
         Ok(data) => data,
-        Err(e) => photo_meta::PhotoMetas::new(),
+        Err(_e) => photo_meta::PhotoMetas::new(),
     };
     let photo = repo_db
         .get_prev_photo_in_date(
@@ -208,7 +208,7 @@ fn save_star(window: tauri::Window, state: tauri::State<AppState>, path_str: &st
 
 #[tauri::command]
 fn save_comment(
-    window: tauri::Window,
+    _window: tauri::Window,
     state: tauri::State<AppState>,
     path_str: &str,
     comment_str: &str,
@@ -223,12 +223,12 @@ fn save_comment(
 fn show_importer(
     path_str: Option<&str>,
     date_str: Option<&str>,
-    window: tauri::Window,
+    _window: tauri::Window,
     page: usize,
     num: usize,
     state: tauri::State<AppState>,
 ) -> String {
-    let mut path = "";
+    let path: &str;
     let cp: String;
     if path_str.is_none() || path_str.unwrap() == "" {
         path = &state.config.export_from[0];
@@ -295,19 +295,17 @@ async fn import_photos(
 #[tauri::command]
 fn get_import_progress(state: tauri::State<AppState>) -> String {
     let ip = &state.import_progress;
-    let num = ip.lock().unwrap().num;
-    let finished = ip.lock().unwrap().get_import_progress();
     return serde_json::to_string(ip).unwrap();
 }
 
 #[tauri::command]
 fn get_photos_to_import_under_directory(
-    pathStr: &str,
+    path_str: &str,
     date_after_str: Option<&str>,
-    window: tauri::Window,
-    state: tauri::State<AppState>,
+    _window: tauri::Window,
+    _state: tauri::State<AppState>,
 ) -> String {
-    let d = dir::Dir::new(pathStr.to_string());
+    let d = dir::Dir::new(path_str.to_string());
     let filter: Option<date::Date>;
     if date_after_str.is_none() || date_after_str.unwrap() == "" {
         filter = Option::None;
@@ -412,8 +410,8 @@ fn lock(t: bool) -> bool {
 
 #[tauri::command]
 async fn upload_to_google_photos(
-    window: tauri::Window,
-    state: tauri::State<'_, AppState>,
+    _window: tauri::Window,
+    _state: tauri::State<'_, AppState>,
     date_str: &str,
     access_token: &str,
     selected_files: Vec<&str>,
@@ -438,7 +436,7 @@ async fn move_to_trash(
     let meta_db = &state.meta_db;
     let meta_data = match meta_db.get_photo_meta_data_in_date(date) {
         Ok(data) => data,
-        Err(e) => photo_meta::PhotoMetas::new(),
+        Err(_e) => photo_meta::PhotoMetas::new(),
     };
     let mut photo = repo_db
         .get_next_photo_in_date(

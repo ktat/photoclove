@@ -1,13 +1,13 @@
 use crate::domain::photo;
-use crate::repository::{self, RepositoryDB};
+use crate::repository::{self};
 use crate::repository::{dir, MetaInfoDB};
-use crate::value::{date, exif, file};
+use crate::value::{date, file};
 use filetime;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{
     fs,
-    io::{self, Read, Write},
+    io::{self},
     path,
     sync::{Arc, Mutex},
     thread, time,
@@ -198,7 +198,6 @@ impl ImporterSelectedFiles {
 
                 let current_num = IN_PROGRESS_NUM.load(Ordering::SeqCst);
                 IN_PROGRESS_NUM.store(current_num + n, Ordering::SeqCst);
-                n = 0;
             });
             handles.push(handle);
         }
