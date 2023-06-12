@@ -295,6 +295,7 @@ async fn import_photos(
 #[tauri::command]
 fn get_import_progress(state: tauri::State<AppState>) -> String {
     let ip = &state.import_progress;
+    _ = ip.lock().unwrap().get_import_progress();
     return serde_json::to_string(ip).unwrap();
 }
 
