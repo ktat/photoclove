@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import RandomMessages from "./RandomMessages.jsx"
+import RandomMessages from "./Footer/RandomMessages.jsx"
 
 function Footer(props) {
     return <footer>
