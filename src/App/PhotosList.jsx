@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
-import PhotoDisplay from "./PhotoDisplay.jsx";
-import PhotosListMini from "./PhotosListMini.jsx";
-import PhotoInfo from "./PhotoInfo.jsx";
+import PhotosListMini from "./PhotosList/PhotosListMini.jsx";
+import PhotoInfo from "./PhotosList/PhotoInfo.jsx";
 import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
-import PhotoLoading from "./PhotoLoading.jsx";
-import DirectoryMenu from "./DirectoryMenu.jsx";
+import PhotoLoading from "./PhotosList/PhotoLoading.jsx";
+import DirectoryMenu from "./PhotosList/DirectoryMenu.jsx";
 import { open } from '@tauri-apps/api/shell';
 
 function PhotosList(props) {
@@ -13,16 +12,25 @@ function PhotosList(props) {
     const [currentPhotoPath, setCurrentPhotoPath] = useState("");
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(undefined);
     const [photos, setPhotosList] = useState({ "photos": [] });
-    const [showPhotoDisplay, setShowPhotoDisplay] = useState(false);
     const [scrollLock, setScrollLock] = useState(false);
     const [sortOfPhotos, setSort] = useState(0);
     const [photoLoading, setPhotoLoading] = useState(false);
     const [photoSelection, setPhotoSelection] = useState([]);
     const [photoSelectionDict, setPhotoSelectionDict] = useState({});
+    const [thumbnailStore, setThumbnailStore] = useState("");
+    const [photosListMiniAllPhotos, setPhotosListMiniAllPhotos] = useState([]);
+    const [photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex] = useState(0);
+    const [photosListMiniReread, setPhotosListMiniReread] = useState(false);
 
     useEffect((e) => {
-        setShowPhotoDisplay(false);
-        if (props.currentDate != "") {
+        invoke("get_config", {},).then((e) => {
+            const json = JSON.parse(e);
+            setThumbnailStore(json.thumbnail_store);
+        });
+    }, [])
+
+    useEffect((e) => {
+        if (props.currentDate != "" && !props.showPhotoDisplay) {
             delete props.datePage[props.currentDate];
             photos.photos = [];
             setPhotosList({ "photos": [] });
@@ -30,12 +38,14 @@ function PhotosList(props) {
             const fetchPhotos = async () => getPhotos(undefined, true);;
             fetchPhotos().catch(console.error);
         }
+        setPhotosListMiniAllPhotos([]);
+        setPhotosListMiniCurrentIndex(0);
     }, [numOfPhoto, props.currentDate, sortOfPhotos, iconSize]);
 
     function displayPhoto(f, i) {
         setCurrentPhotoPath(f);
         setCurrentPhotoIndex(i)
-        setShowPhotoDisplay(true);
+        props.setShowPhotoDisplay(true);
     }
 
     function addSelection(t, f) {
@@ -95,18 +105,47 @@ function PhotosList(props) {
     function moveToTrashCan(f) {
         console.log("delete file: " + f)
         invoke("move_to_trash", { dateStr: props.currentDate, pathStr: f, sortValue: parseInt(sortOfPhotos) }).then((r) => {
-            console.log("target:", r);
+            const date = props.currentDate.replace(/\//g, "-");
+            if (props.dateNum[date] > 0) {
+                props.dateNum[date] -= 1;
+                props.setDateNum(props.dateNum);
+            }
+            // no photo before the deleted photo
             if (!r) {
                 closePhotoDisplay();
+                if (currentPhotoIndex > 0) {
+                    setCurrentPhotoIndex(currentPhotoIndex - 1)
+                }
             } else {
-                if (props.currentPhotoPath !== r) setCurrentPhotoPath(r);
+                // exists photo before the deleted photo
+                if (photosListMiniAllPhotos.length > 0) {
+                    const allPhotos = photosListMiniAllPhotos
+                    allPhotos.splice(currentPhotoIndex, 1);
+                    setPhotosListMiniAllPhotos(allPhotos);
+                    // last photo
+                    if (currentPhotoIndex >= allPhotos.length) {
+                        const ci = currentPhotoIndex - 1;
+                        console.log("last photo!")
+                        setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
+                        setCurrentPhotoPath(photosListMiniAllPhotos[ci].file.path);
+                        setCurrentPhotoIndex(ci);
+                    }
+                    // not last photo
+                    else {
+                        const ci = currentPhotoIndex;
+                        console.log("Not last photo!")
+                        setPhotosListMiniReread(!photosListMiniReread);
+                        setCurrentPhotoPath(photosListMiniAllPhotos[ci].file.path);
+                    }
+                }
             }
         });
     }
 
     function closePhotoDisplay() {
-        setShowPhotoDisplay(false);
+        props.setShowPhotoDisplay(false);
         if (props.currentPhotoPath !== "") setCurrentPhotoPath("");
+        console.log("photos-list-close-photod-display -- getPhotos")
         const fetchPhotos = async () => getPhotos();
         fetchPhotos().catch(console.error)
     }
@@ -144,6 +183,8 @@ function PhotosList(props) {
             props.setDatePage(props.datePage);
             setPhotoLoading(false);
             setTimeout(() => { setScrollLock(false) }, 200);
+        }).catch(e => {
+            console.log(e)
         });
     };
 
@@ -204,26 +245,17 @@ function PhotosList(props) {
             ?
             <PhotoLoading />
             :
-            (showPhotoDisplay && currentPhotoPath !== "")
+            (props.showPhotoDisplay && currentPhotoPath !== "")
                 ?
                 <div className="photo-display">
-                    <PhotoDisplay
+                    <PhotosListMini
                         moveToTrashCan={moveToTrashCan}
                         closePhotoDisplay={closePhotoDisplay}
-                        currentPhotoPath={currentPhotoPath}
-                        setCurrentPhotoPath={setCurrentPhotoPath}
-                        currentPhotoIndex={currentPhotoIndex}
-                        setCurrentPhotoIndex={setCurrentPhotoIndex}
-                        currentDate={props.currentDate}
-                        sortOfPhotos={sortOfPhotos}
+
                         setShortCutNavigation={props.setShortCutNavigation}
-                        setShowPhotoDisplay={setShowPhotoDisplay}
+                        setShowPhotoDisplay={props.setShowPhotoDisplay}
                         shortCutNavigation={props.shortCutNavigation}
                         getPhotos={getPhotos}
-                        datePage={props.datePage}
-                        num={numOfPhoto}
-                    />
-                    <PhotosListMini
                         currentPhotoPath={currentPhotoPath}
                         setCurrentPhotoPath={setCurrentPhotoPath}
                         sortOfPhotos={sortOfPhotos}
@@ -232,6 +264,12 @@ function PhotosList(props) {
                         num={numOfPhoto}
                         currentPhotoIndex={currentPhotoIndex}
                         setCurrentPhotoIndex={setCurrentPhotoIndex}
+
+                        reread={photosListMiniReread}
+                        allPhotos={photosListMiniAllPhotos}
+                        setAllPhotos={setPhotosListMiniAllPhotos}
+                        currentIndex={photosListMiniCurrentIndex}
+                        setCurrentIndex={setPhotosListMiniCurrentIndex}
                     />
                 </div>
                 :
@@ -266,6 +304,7 @@ function PhotosList(props) {
                     </div>
                     <div className="photos">
                         {photos.photos.map((l, i) => {
+                            const thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
                             return (
                                 <div key={i} className={"row pict-" + iconSize} style={{ textAlign: "center" }} >
                                     <a href="#" onClick={() => { displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto) }}>
@@ -276,7 +315,15 @@ function PhotosList(props) {
                                             : <img loading="eager"
                                                 alt={l.file.path}
                                                 style={{ maxWidth: iconSize + 'px', maxHeight: iconSize + 'px' }}
-                                                src={convertFileSrc(l.file.path)}
+                                                src={convertFileSrc(thumbnailSrc)}
+                                                onError={(e) => {
+                                                    if (!e.currentTarget.errorCount) {
+                                                        console.log(e);
+                                                        console.log(thumbnailSrc);
+                                                        e.currentTarget.errorCount = true;
+                                                        e.currentTarget.src = convertFileSrc(l.file.path)
+                                                    }
+                                                }}
                                             />
                                         }
                                     </a>
@@ -300,7 +347,6 @@ function PhotosList(props) {
             currentPhotoPath
                 ?
                 <PhotoInfo
-                    moveToTrashCan={moveToTrashCan}
                     currentPhotoPath={currentPhotoPath}
                     closePhotoDisplay={closePhotoDisplay}
                     path={currentPhotoPath}
@@ -309,6 +355,7 @@ function PhotosList(props) {
                 />
                 :
                 <DirectoryMenu
+                    addFooterMessage={props.addFooterMessage}
                     tabClass={tabClass}
                     setTabClass={setTabClass}
                     changeTab={changeTab}

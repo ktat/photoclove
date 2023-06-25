@@ -5,10 +5,12 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::os::unix::prelude::MetadataExt;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct File {
     pub path: String,
+    pub name: String,
     pub created_at: String,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -49,7 +51,7 @@ impl Dir {
         let p = Path::new(&path);
         let cp = fs::canonicalize(p);
         if cp.is_err() {
-            eprintln!("Invalid path: {:?}", cp.err());
+            eprintln!("Invalid path for Dir: {:?}", cp.err());
             return Dir {
                 path: "/".to_string(),
                 created_at: get_created_time("/".to_string()),
@@ -94,11 +96,13 @@ impl File {
         let p = Path::new(&path);
         let cp = fs::canonicalize(p);
         if cp.is_err() {
-            panic!("Invalid path: {:?}, {:?}", path, cp.err());
+            panic!("Invalid path for file(new): {:?}, {:?}", path, cp.err());
         } else {
             let ap = cp.unwrap().as_path().display().to_string();
+            let file_name = p.file_name().unwrap().to_str().unwrap().to_string();
             return File {
                 path: ap.clone(),
+                name: file_name,
                 created_at: get_created_time(ap),
             };
         }
@@ -108,7 +112,11 @@ impl File {
         let p = Path::new(&path);
         let cp = fs::canonicalize(p);
         if cp.is_err() {
-            eprintln!("Invalid path: {:?}, {:?}", path, cp.err());
+            eprintln!(
+                "Invalid path for file(new_if_exists): {:?}, {:?}",
+                path,
+                cp.err()
+            );
             return Option::None;
         } else {
             let ap = cp.unwrap().as_path().display().to_string();

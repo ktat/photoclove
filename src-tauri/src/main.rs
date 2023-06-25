@@ -5,6 +5,7 @@ use crate::repository::RepositoryDB;
 use crate::repository::*;
 use crate::value::*;
 use domain::config::Config;
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::{
     fs, path,
@@ -379,6 +380,69 @@ async fn create_db_in_date(
 }
 
 #[tauri::command]
+async fn create_thumbnails(
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+    date_str: &str,
+) -> Result<String, ()> {
+    let dates = state.repo_db.get_dates();
+    let c = &state.config;
+    let origin = PathBuf::from(c.import_to.clone());
+    let dest = PathBuf::from(c.thumbnail_store.clone());
+    match photo_service::create_thumbnails(
+        dates,
+        &origin,
+        &dest,
+        c.thumbnail_parallel as u32,
+        c.thumbnail_compression_rate,
+        c.thumbnail_ratio,
+    )
+    .await
+    {
+        Ok(ret) => {
+            window.emit("create_thumbnails", "finish");
+            return Ok(serde_json::to_string(&ret).unwrap());
+        }
+        Err(_) => {
+            window.emit("create_thumbnails", "failed");
+            return Ok("false".to_string());
+        }
+    }
+}
+
+#[tauri::command]
+async fn create_thumbnails_in_date(
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+    date_str: &str,
+) -> Result<String, ()> {
+    let date = date::Date::from_string(&date_str.to_string(), Option::Some("/"));
+    let dates = date::Dates::new(&[date]);
+    let c = &state.config;
+    let origin = PathBuf::from(c.import_to.clone());
+    let dest = PathBuf::from(c.thumbnail_store.clone());
+    match photo_service::create_thumbnails(
+        dates,
+        &origin,
+        &dest,
+        c.thumbnail_parallel as u32,
+        c.thumbnail_compression_rate,
+        c.thumbnail_ratio,
+    )
+    .await
+    {
+        Ok(ret) => {
+            window.emit("create_thumbnails", "finish");
+            return Ok(serde_json::to_string(&ret).unwrap());
+        }
+        Err(_) => {
+            window.emit("create_thumbnails", "failed");
+            return Ok("false".to_string());
+        }
+    }
+}
+
+#[tauri::command]
 fn get_config(state: tauri::State<AppState>) -> String {
     let new_config = Config::new();
     serde_json::to_string(&new_config).unwrap()
@@ -576,6 +640,8 @@ fn main() {
             lock,
             create_db,
             create_db_in_date,
+            create_thumbnails,
+            create_thumbnails_in_date,
             get_config,
             save_config,
             save_star,
