@@ -68,8 +68,7 @@ function DirectoryMenu(props) {
             confirm("This takes long time if you have many photos.", "Warning").then((answer) => {
                 if (answer) {
                     lockThumbnail = true;
-                    // TODO: not implented
-                    invoke("create_thumbnails", { dateStr: props.currentDate }).then((r) => {
+                    invoke("create_thumbnails_in_date", { dateStr: props.currentDate }).then((r) => {
                         lockThumbnail = false;
                         console.log(r);
                     })
