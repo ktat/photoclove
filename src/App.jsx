@@ -60,22 +60,31 @@ function App() {
     });
 
     // const sab = new SharedArrayBuffer(1024);
-    const unlisted1 = listen("create_db", (e) => {
+    const unlisten1 = listen("create_db", (e) => {
       console.log(e);
       if (e.payload === "start") {
-        addFooterMessage("create_db", "Database (re)creation is started", 10000);
+        addFooterMessage("create_db", "Database (re)creation is started", false, 10000);
       } else if (e.payload === "finish") {
-        addFooterMessage("create_db", "Database is created :)", 10000);
+        addFooterMessage("create_db", "Database is created :)", true, 10000);
       }
     });
 
-    const unlisted3 = listen("move_files", (e) => {
+    const unlisten4 = listen("create_thumbnails", (e) => {
+      console.log(e);
+      if (e.payload === "start") {
+        addFooterMessage("create_thumbnail", "Thumbnail creation is started", false, 10000);
+      } else if (e.payload === "finish") {
+        addFooterMessage("create_thumbnail", "Thumbnail is created :)", true, 10000);
+      }
+    });
+
+    const unlisten3 = listen("move_files", (e) => {
       if (e.payload === "start") {
         addFooterMessage("move_files", "Start moving files");
       } else if (e.payload === "ned_move") {
         addFooterMessage("move_files", "Finish moving files");
       } else {
-        addFooterMessage("move_files", "Finish (re)creating DB", 10000);
+        addFooterMessage("move_files", "Finish (re)creating DB", true, 10000);
       }
     });
 
@@ -117,12 +126,21 @@ function App() {
     });
   }, []);
 
-  function addFooterMessage(k, v, deleteAfter) {
+  function addFooterMessage(k, v, withDialog, deleteAfter) {
     const newMessages = {};
     Object.keys(footerMessages).map((k, i) => {
       newMessages[k] = footerMessages[k];
     })
     newMessages[k] = v;
+    if (withDialog) {
+      invoke("lock", { t: true }).then((e) => {
+        if (e) {
+          message(v).then((e) => {
+            invoke("lock", { t: false });
+          });
+        }
+      });
+    }
     setFooterMessages(newMessages)
     if (deleteAfter) {
       setTimeout(() => { removeFooterMessage(k) }, deleteAfter);
@@ -246,7 +264,9 @@ function App() {
               shortCutNavigation={shortCutNavigation}
               addFooterMessage={addFooterMessage}
               dateNum={dateNum}
+              setDateNum={setDateNum}
               setCurrentDateNum={setCurrentDateNum}
+              setReloadDates={setReloadDates}
             />
             :
             showImporter
@@ -254,6 +274,7 @@ function App() {
               <Importer
                 addFooterMessage={addFooterMessage}
                 removeFooterMessage={removeFooterMessage}
+                setReloadDates={setReloadDates}
               />
               :
               showLogin

@@ -36,6 +36,8 @@ function Preferences(props) {
     function saveConfig() {
         config.copy_parallel = parseInt(config.copy_parallel);
         config.thumbnail_parallel = parseInt(config.thumbnail_parallel);
+        config.thumbnail_compression_rate = parseFloat(config.thumbnail_compression_rate);
+        config.thumbnail_minimize_rate = parseFloat(config.thumbnail_minimize_rate);
         let isFirstView = false;
         if (config.use_count == 0) {
             isFirstView = true;
@@ -69,13 +71,16 @@ function Preferences(props) {
                     </React.Fragment>)
                 })}
                 <div className="row2"></div><div className="row3"><a href="#" onClick={() => setAdditionalExportFrom(additionalExportFrom + 1)}>+</a></div>
-                <div className="row2">ThumbnailStorePath: </div><div className="row3"><input value={config.thumbnail_store} type="text" onChange={(e) => { config.thumbnail_store = e.currentTarget.value; setNewConfig(config); }} /></div>
-                <div className="row0">Num of Parallel:</div>
-                <div className="row1"></div><div className="row1">Import: </div><div className="row3"><input value={config.copy_parallel} type="text" onChange={(e) => { config.copy_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
-                <div className="row1"></div><div className="row1">Thumbnail: </div><div className="row3"><input value={config.thumbnail_parallel} type="text" onChange={(e) => { config.thumbnail_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
-                <div className="row2"></div>
-                <div className="row3">
+                <div className="row0">Thumbnail:</div>
 
+                <div className="row1"></div><div className="row1">StorePath: </div><div className="row4"><input value={config.thumbnail_store} type="text" onChange={(e) => { config.thumbnail_store = e.currentTarget.value; setNewConfig(config); }} /></div>
+                <div className="row1"></div><div className="row1">CompressRate: </div><div className="row4"><input value={config.thumbnail_compression_rate} type="text" onChange={(e) => { config.thumbnail_compression_rate = e.currentTarget.value; setNewConfig(config); }} /></div>
+                <div className="row1"></div><div className="row1">MinimizeRatio: </div><div className="row4"><input value={config.thumbnail_ratio} type="text" onChange={(e) => { config.thumbnail_ratio = e.currentTarget.value; setNewConfig(config); }} /></div>
+                <div className="row0">Num of Parallel:</div>
+                <div className="row1"></div><div className="row1">Import: </div><div className="row4"><input value={config.copy_parallel} type="text" onChange={(e) => { config.copy_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
+                <div className="row1"></div><div className="row1">Thumbnail: </div><div className="row4"><input value={config.thumbnail_parallel} type="text" onChange={(e) => { config.thumbnail_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
+                <div className="row2"></div>
+                <div className="row0">
                     <input type="checkbox" id="preference-check" value="1" onChange={(e) => { config.use_count = e.target.checked ? 0 : useCount; setNewConfig(config) }} />
                     <label className="checkbox checkbox-normal" htmlFor="preference-check">Show Welcome tutorial again?</label>
                 </div>

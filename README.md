@@ -24,8 +24,8 @@ Just a plan, currentrly a few features are only implemented.
   - [ ] import files created after last import file timestamp in directories.
   - [x] filter import targets by date
   - [x] importing in background
-  - [ ] Thumbnail creation
-     - [ ] Thumbnail creation in background
+  - [x] Thumbnail creation
+     - [x] Thumbnail creation in background
 - [ ] Provide very simple editor
   - [ ] rotation
   - [ ] crop
@@ -43,7 +43,7 @@ Just a plan, currentrly a few features are only implemented.
   - [x] directories(import from)
   - [x] directory(import to)
   - [x] num of parralel when copying photos
-  - [x] num of parralel when creating thumbnail
+  - [x] thumbnail settings
   - [ ] directory date format(currentry, yyyy-mm-dd only)
 - [x] Welcome tutorial
 - [x] Playing movies(mp4, webm) ... not good, but works

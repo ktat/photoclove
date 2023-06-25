@@ -245,6 +245,7 @@ impl MetaInfoDB for Tsv {
                     }
                 } else {
                     eprintln!("parse error: {:?}", result.err());
+                    break;
                 }
             }
             return Ok(photo_metas);
