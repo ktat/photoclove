@@ -17,13 +17,19 @@
         "all": false,
         "open": "^(https?:|file:)"
       },
-      "globalShortcut": {
+      "notification": {
         "all": true
       },
       "dialog": {
         "all": true,
+        "ask": true,
+        "confirm": true,
+        "message": true,
         "open": true,
         "save": true
+      },
+      "globalShortcut": {
+        "all": true
       },
       "protocol": {
         "asset": true,

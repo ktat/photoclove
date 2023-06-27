@@ -10,6 +10,7 @@ function DateList(props) {
     const [selectedStyle, setSelectedStyle] = useState({});
 
     useEffect((e) => {
+        console.log("called?!")
         getDates();
         props.setReloadDates(false);
     }, [props.reloadDates])
@@ -63,6 +64,7 @@ function DateList(props) {
                                 setSelectedStyle({ ["a-" + date]: "#ccc", ["li-" + date]: "square" }); //  outside url('...')
                                 console.log(selectedStyle);
                                 props.setCurrentDate(date);
+                                props.setShowPhotoDisplay(false);
                                 props.toggleImporter(false);
                             }
                             } data-date={date} data-page={props.datePage[date]}>

@@ -487,17 +487,22 @@ img.photo_dragging {
 }
 
 .preferences-input .row1 {
-  flex: 100px;
+  flex: 110px;
   padding-bottom: 10px;
 }
 
 .preferences-input .row2 {
-  flex: 200px;
+  flex: 100px;
   padding-bottom: 10px;
 }
 
 .preferences-input .row3 {
-  flex: calc(100% - 200px);
+  flex: calc(100% - 100px);
+  padding-bottom: 10px;
+}
+
+.preferences-input .row4 {
+  flex: calc(100% - 250px);
   padding-bottom: 10px;
 }
 

@@ -99,7 +99,7 @@ function PhotoInfo(props) {
                             <tr><th>File Name</th>
                                 <td>
                                     <a
-                                        onMouseEnter={() => { props.addFooterMessage("current_phtoo_path", "File Path: " + props.currentPhotoPath, 10000) }}>
+                                        onMouseEnter={() => { props.addFooterMessage("current_phtoo_path", "File Path: " + props.currentPhotoPath, false, 10000) }}>
                                         {props.currentPhotoPath.replace(/^.+\//, '')}
                                     </a>&nbsp;
                                     <a href="#" onClick={() => {
@@ -125,9 +125,6 @@ function PhotoInfo(props) {
                             <tr><th>WhiteBalance Mode</th><td>{photoInfo.exif ? photoInfo.exif.white_balance_mode : ""}</td></tr>
                         </tbody>
                     </table>
-                    <div>
-                        <a href="#" onClick={() => props.moveToTrashCan(props.currentPhotoPath)}>&#128465;</a>
-                    </div>
                     <div>
                         Stars:
                         <span className="star">
