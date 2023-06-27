@@ -28,6 +28,7 @@ function App() {
   const [name, setName] = useState("");
   const [useCount, setUseCount] = useState(0)
 
+  const [dateList, setDateList] = useState([]);
   const [datePage, setDatePage] = useState({});
   const [currentDate, setCurrentDate] = useState("");
   const [reloadDates, setReloadDates] = useState(false);
@@ -245,6 +246,8 @@ function App() {
 
           <p>{greetMsg}</p>
           <DateList
+            dateList={dateList}
+            setDateList={setDateList}
             toggleImporter={toggleImporter}
             setCurrentDate={setCurrentDate}
             setReloadDates={setReloadDates}
@@ -259,6 +262,8 @@ function App() {
           (currentDate && showPhotosList)
             ?
             <PhotosList
+              dateList={dateList}
+              setDateList={setDateList}
               setShowPhotoDisplay={setShowPhotoDisplay}
               showPhotoDisplay={showPhotoDisplay}
               setCurrentDate={setCurrentDate}
