@@ -74,8 +74,24 @@ function Preferences(props) {
                 <div className="row0">Thumbnail:</div>
 
                 <div className="row1"></div><div className="row1">StorePath: </div><div className="row4"><input value={config.thumbnail_store} type="text" onChange={(e) => { config.thumbnail_store = e.currentTarget.value; setNewConfig(config); }} /></div>
-                <div className="row1"></div><div className="row1">CompressRate: </div><div className="row4"><input value={config.thumbnail_compression_rate} type="text" onChange={(e) => { config.thumbnail_compression_rate = e.currentTarget.value; setNewConfig(config); }} /></div>
-                <div className="row1"></div><div className="row1">MinimizeRatio: </div><div className="row4"><input value={config.thumbnail_ratio} type="text" onChange={(e) => { config.thumbnail_ratio = e.currentTarget.value; setNewConfig(config); }} /></div>
+                <div className="row1"></div><div className="row1">CompressRate: </div><div className="row4">
+                    <select value={config.thumbnail_compression_rate} onChange={(e) => { config.thumbnail_compression_rate = parseFloat(e.currentTarget.value); setNewConfig(config) }}>
+                        {[1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50].map((v, i) => {
+                            return (
+                                <option key={i} value={v / 100}>{v}%</option>
+                            )
+                        })}
+                    </select>
+                </div>
+                <div className="row1"></div><div className="row1">MinimizeRatio: </div><div className="row4">
+                    <select value={config.thumbnail_ratio} onChange={(e) => { config.thumbnail_ratio = parseFloat(e.currentTarget.value); setNewConfig(config) }}>
+                        {[1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50].map((v, i) => {
+                            return (
+                                <option key={i} value={v / 100}>{v}%</option>
+                            )
+                        })}
+                    </select>
+                </div>
                 <div className="row0">Num of Parallel:</div>
                 <div className="row1"></div><div className="row1">Import: </div><div className="row4"><input value={config.copy_parallel} type="text" onChange={(e) => { config.copy_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
                 <div className="row1"></div><div className="row1">Thumbnail: </div><div className="row4"><input value={config.thumbnail_parallel} type="text" onChange={(e) => { config.thumbnail_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
