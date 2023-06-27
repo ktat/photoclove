@@ -5,14 +5,14 @@ import { open } from "@tauri-apps/api/shell";
 import { listen } from "@tauri-apps/api/event";
 import { ask, message, confirm } from '@tauri-apps/api/dialog';
 import "./App.css";
-import PhotosList from "./PhotosList.jsx"
-import DateList from "./DateList.jsx"
-import Importer from "./Importer.jsx"
-import Preferences from "./Preferences.jsx"
+import PhotosList from "./App/PhotosList.jsx"
+import DateList from "./App/DateList.jsx"
+import Importer from "./App/Importer.jsx"
+import Preferences from "./App/Preferences.jsx"
 import Welcome from "./Welcome.jsx"
 import Home from "./Home.jsx"
-import Login from "./Login.jsx"
-import Footer from "./Footer.jsx"
+import Login from "./App/Login.jsx"
+import Footer from "./App/Footer.jsx"
 import { tauri } from "@tauri-apps/api";
 
 const unlisten = listen("click_menu_static", (e) => {
@@ -37,6 +37,7 @@ function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [footerMessages, setFooterMessages] = useState({});
   const [dateNum, setDateNum] = useState({});
+  const [showPhotoDisplay, setShowPhotoDisplay] = useState({});
 
   const [shortCutNavigation, setShortCutNavigation] = useState({
     onKeyDown: (e) => { console.log(e) },
@@ -251,12 +252,15 @@ function App() {
             datePage={datePage}
             dateNum={dateNum}
             setDateNum={setDateNum}
+            setShowPhotoDisplay={setShowPhotoDisplay}
           />
         </div>
         {
           (currentDate && showPhotosList)
             ?
             <PhotosList
+              setShowPhotoDisplay={setShowPhotoDisplay}
+              showPhotoDisplay={showPhotoDisplay}
               setCurrentDate={setCurrentDate}
               currentDate={currentDate}
               datePage={datePage}

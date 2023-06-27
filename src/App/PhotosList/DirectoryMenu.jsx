@@ -3,7 +3,7 @@ import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 import { message, confirm } from "@tauri-apps/api/dialog";
 import { tauri } from "@tauri-apps/api";
 import { emit } from "@tauri-apps/api/event";
-import { localForage } from "./storage/forage"
+import { localForage } from "../../storage/forage"
 
 function DirectoryMenu(props) {
 
