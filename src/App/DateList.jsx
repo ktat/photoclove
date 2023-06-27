@@ -6,11 +6,9 @@ import { listen } from "@tauri-apps/api/event";
 const unlisten = {};
 
 function DateList(props) {
-    const [dateList, setDateList] = useState([]);
     const [selectedStyle, setSelectedStyle] = useState({});
 
     useEffect((e) => {
-        console.log("called?!")
         getDates();
         props.setReloadDates(false);
     }, [props.reloadDates])
@@ -18,7 +16,7 @@ function DateList(props) {
     const getDates = () => {
         invoke("get_dates").then((r) => {
             let l = JSON.parse(r);
-            setDateList(l);
+            props.setDateList(l);
             let datesStr = "";
             const newDateNum = {};
             let n = 0;
@@ -57,7 +55,7 @@ function DateList(props) {
             <p>List of Date <a href="#" onClick={() => getDates()}>⟳</a></p>
             <div className="dateList">
                 <ul>
-                    {dateList.map((l, i) => {
+                    {props.dateList.map((l, i) => {
                         let date = new Date(l.year + '/' + l.month + '/' + l.day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
                         return (<li key={i} style={{ listStyle: selectedStyle["li-" + date] || "none" }}>
                             <a href="#" style={{ color: selectedStyle["a-" + date] || "#646cff" }} onClick={(e) => {

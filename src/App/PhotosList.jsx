@@ -38,9 +38,13 @@ function PhotosList(props) {
             const fetchPhotos = async () => getPhotos(undefined, true);;
             fetchPhotos().catch(console.error);
         }
+    }, [numOfPhoto, props.currentDate, sortOfPhotos]);
+
+    useEffect(e => {
         setPhotosListMiniAllPhotos([]);
         setPhotosListMiniCurrentIndex(0);
-    }, [numOfPhoto, props.currentDate, sortOfPhotos, iconSize]);
+        setCurrentPhotoPath(undefined);
+    }, [props.currentDate])
 
     function displayPhoto(f, i) {
         setCurrentPhotoPath(f);
@@ -109,6 +113,7 @@ function PhotosList(props) {
             if (props.dateNum[date] > 0) {
                 props.dateNum[date] -= 1;
                 props.setDateNum(props.dateNum);
+                props.setDateList(props.dateList.concat());
             }
             // no photo before the deleted photo
             if (!r) {
