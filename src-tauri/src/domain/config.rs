@@ -11,6 +11,8 @@ pub struct Config {
     pub trash_path: String,
     pub data_path: String,
     pub thumbnail_store: String,
+    pub thumbnail_ratio: f32,
+    pub thumbnail_compression_rate: f32,
     pub copy_parallel: usize,
     pub thumbnail_parallel: usize,
     pub use_count: i32,
@@ -33,6 +35,8 @@ impl Config {
         self.thumbnail_store = config.thumbnail_store;
         self.copy_parallel = config.copy_parallel;
         self.thumbnail_parallel = config.thumbnail_parallel;
+        self.thumbnail_ratio = config.thumbnail_ratio;
+        self.thumbnail_compression_rate = config.thumbnail_compression_rate;
         self.use_count = config.use_count;
     }
 
@@ -102,6 +106,8 @@ impl Config {
             trash_path: home.join(".photoclove/trash/").display().to_string(),
             data_path: home.join(".photoclove/data/").display().to_string(),
             thumbnail_store: home.join(".photoclove/thumbnail/").display().to_string(),
+            thumbnail_ratio: 0.05,
+            thumbnail_compression_rate: 0.05,
             copy_parallel: 2,
             thumbnail_parallel: 1,
             use_count: 0,
