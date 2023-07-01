@@ -4,12 +4,13 @@ use crate::repository::{dir, MetaInfoDB};
 use crate::value::{date, file};
 use filetime;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{
     fs,
     io::{self},
     path,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, RwLock},
     thread, time,
 };
 
@@ -104,7 +105,7 @@ impl ImporterSelectedFiles {
         trash_dir: Arc<path::PathBuf>,
         copy_parallel: usize,
         progress: Arc<&Mutex<ImportProgress>>,
-    ) -> bool {
+    ) -> Result<date::Dates, ()> {
         progress.lock().unwrap().now_importing = true;
         progress.lock().unwrap().num = self.selected_photo_files.len();
         let mut handles = vec![];
@@ -128,11 +129,13 @@ impl ImporterSelectedFiles {
 
         let sleep_millis = time::Duration::from_millis(100);
         let t1 = time::SystemTime::now();
+        let mut arc_date_list = Arc::new(RwLock::new(HashMap::new()));
         for files in photos_file_chunks {
             let window = window.clone();
             let meta_db = origin_meta_db.new_connect();
             let arc_dest_path = Arc::clone(&destination_dir);
             let arc_trash_path = Arc::clone(&trash_dir);
+            let arc_date_list_clone = Arc::clone(&arc_date_list);
             // eprintln!("{:?}", &arc_trash_path);
             let handle = thread::spawn(move || {
                 let mut n: usize = 0;
@@ -141,6 +144,11 @@ impl ImporterSelectedFiles {
                     let filename = file.filename();
                     let photo = photo::Photo::new_with_exif(file.clone());
                     let destination_date_dir = arc_dest_path.join(photo.created_date_string());
+                    arc_date_list_clone
+                        .write()
+                        .unwrap()
+                        .entry(photo.created_date_string())
+                        .or_insert(true);
                     let destination_path = destination_date_dir.join(filename);
                     if !destination_date_dir.exists() {
                         match fs::create_dir(destination_date_dir.clone()) {
@@ -209,7 +217,14 @@ impl ImporterSelectedFiles {
         progress.lock().unwrap().reset_import_progress();
         drop(progress);
 
-        return true;
+        let mut dates: date::Dates = date::Dates::empty();
+        for key in arc_date_list.read().unwrap().keys() {
+            dates
+                .dates
+                .push(date::Date::from_string(key, Option::Some("-")));
+        }
+
+        return Result::Ok(dates);
     }
 
     pub fn add_photo_file(&mut self, file: file::File) {

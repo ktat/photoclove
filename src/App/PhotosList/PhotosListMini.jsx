@@ -242,32 +242,32 @@ function PhotosListMini(props) {
                         currentPhotoSize={currentPhotoSize}
                     />
                 </div>
+                <div id="photos-list-mini">
+                    <div className="row1"><a style={{ display: props.currentIndex == 0 ? "none" : "" }} onClick={() => { backwardPhotos() }}>◁</a></div>
+                    {
+                        showPhotos.map((v, i) => {
+                            const clientHeight = document.querySelector('#photos-list-mini').clientHeight - 20;
+                            return <div className="row2" key={i}>
+                                <a onClick={(e) => {
+                                    props.setCurrentPhotoPath(v.file.path);
+                                    resetSelectedBorder(i);
+                                    props.datePage[props.currentDate] = Math.trunc((props.currentIndex + i) / props.num) + 1;
+                                }}>
+                                    {v.file.path.match(/\.(mp4|webm)$/i)
+                                        ? <div className="photo-list-movie" style={{ border: borderStyle[i], maxHeight: clientHeight + "px" }}>
+                                            <span>&#127909;</span>
+                                        </div>
+                                        : <>
+                                            <img src={convertFileSrc(v.file.path)} style={{ border: borderStyle[i], maxHeight: clientHeight + "px" }} alt={"photo-" + i} />
+                                        </>
+                                    }
+                                </a>
+                            </div>
+                        })
+                    }
+                    <div className="row1"><a style={{ display: (!hasNext && (props.allPhotos.length - props.currentIndex) <= NUM_OF_PHOTO_LIST) ? "none" : "" }} onClick={() => { forwardPhotos() }}>▷</a></div>
+                </div >
             </div>
-            <div id="photos-list-mini">
-                <div className="row1"><a style={{ display: props.currentIndex == 0 ? "none" : "" }} onClick={() => { backwardPhotos() }}>◁</a></div>
-                {
-                    showPhotos.map((v, i) => {
-                        const clientHeight = document.querySelector('#photos-list-mini').clientHeight - 20;
-                        return <div className="row2" key={i}>
-                            <a onClick={(e) => {
-                                props.setCurrentPhotoPath(v.file.path);
-                                resetSelectedBorder(i);
-                                props.datePage[props.currentDate] = Math.trunc((props.currentIndex + i) / props.num) + 1;
-                            }}>
-                                {v.file.path.match(/\.(mp4|webm)$/i)
-                                    ? <div className="photo-list-movie" style={{ border: borderStyle[i], maxHeight: clientHeight + "px" }}>
-                                        <span>&#127909;</span>
-                                    </div>
-                                    : <>
-                                        <img src={convertFileSrc(v.file.path)} style={{ border: borderStyle[i], maxHeight: clientHeight + "px" }} alt={"photo-" + i} />
-                                    </>
-                                }
-                            </a>
-                        </div>
-                    })
-                }
-                <div className="row1"><a style={{ display: (!hasNext && (props.allPhotos.length - props.currentIndex) <= NUM_OF_PHOTO_LIST) ? "none" : "" }} onClick={() => { forwardPhotos() }}>▷</a></div>
-            </div >
         </>
     )
 }
