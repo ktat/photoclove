@@ -36,7 +36,7 @@ function Preferences(props) {
     function saveConfig() {
         config.copy_parallel = parseInt(config.copy_parallel);
         config.thumbnail_parallel = parseInt(config.thumbnail_parallel);
-        config.thumbnail_compression_rate = parseFloat(config.thumbnail_compression_rate);
+        config.thumbnail_compression_quality = parseFloat(config.thumbnail_compression_quality);
         config.thumbnail_minimize_rate = parseFloat(config.thumbnail_minimize_rate);
         let isFirstView = false;
         if (config.use_count == 0) {
@@ -74,8 +74,8 @@ function Preferences(props) {
                 <div className="row0">Thumbnail:</div>
 
                 <div className="row1"></div><div className="row1">StorePath: </div><div className="row4"><input value={config.thumbnail_store} type="text" onChange={(e) => { config.thumbnail_store = e.currentTarget.value; setNewConfig(config); }} /></div>
-                <div className="row1"></div><div className="row1">CompressRate: </div><div className="row4">
-                    <select value={config.thumbnail_compression_rate} onChange={(e) => { config.thumbnail_compression_rate = parseFloat(e.currentTarget.value); setNewConfig(config) }}>
+                <div className="row1"></div><div className="row1">CompressQuality: </div><div className="row4">
+                    <select value={config.thumbnail_compression_quality} onChange={(e) => { config.thumbnail_compression_quality = parseFloat(e.currentTarget.value); setNewConfig(config) }}>
                         {[1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50].map((v, i) => {
                             return (
                                 <option key={i} value={v / 100}>{v}%</option>

@@ -16,7 +16,7 @@ const openBrowserToConsent = (port) => {
   }
   const randomString = Array.from({ length: 50 }, () => chars[parseInt(Math.random() * chars.length)]).join('');
   const url = 'https://www.rwds.net/cgi-bin/token.cgi?state=' + randomString + '&url=http%3A%2F%2Flocalhost%3A' + port;
-  axios.get(url).then(() => {
+  return axios.get(url).then(() => {
     return open('https://accounts.google.com/o/oauth2/auth?' +
       'response_type=code&' +
       'access_type=offline&' +

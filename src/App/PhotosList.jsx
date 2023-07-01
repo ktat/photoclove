@@ -127,20 +127,25 @@ function PhotosList(props) {
                     const allPhotos = photosListMiniAllPhotos
                     allPhotos.splice(currentPhotoIndex, 1);
                     setPhotosListMiniAllPhotos(allPhotos);
-                    // last photo
-                    if (currentPhotoIndex >= allPhotos.length) {
-                        const ci = currentPhotoIndex - 1;
-                        console.log("last photo!")
-                        setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
-                        setCurrentPhotoPath(photosListMiniAllPhotos[ci].file.path);
-                        setCurrentPhotoIndex(ci);
-                    }
-                    // not last photo
-                    else {
-                        const ci = currentPhotoIndex;
-                        console.log("Not last photo!")
-                        setPhotosListMiniReread(!photosListMiniReread);
-                        setCurrentPhotoPath(photosListMiniAllPhotos[ci].file.path);
+                    // no photos are remaining after the deleted photo
+                    if (allPhotos.length == 0) {
+                        closePhotoDisplay();
+                    } else {
+                        // last photo
+                        if (currentPhotoIndex >= allPhotos.length) {
+                            const ci = currentPhotoIndex - 1;
+                            console.log("last photo!")
+                            setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
+                            setCurrentPhotoPath(photosListMiniAllPhotos[ci].file.path);
+                            setCurrentPhotoIndex(ci);
+                        }
+                        // not last photo
+                        else {
+                            const ci = currentPhotoIndex;
+                            console.log("Not last photo!")
+                            setPhotosListMiniReread(!photosListMiniReread);
+                            setCurrentPhotoPath(photosListMiniAllPhotos[ci].file.path);
+                        }
                     }
                 }
             }
@@ -306,47 +311,49 @@ function PhotosList(props) {
                                 </select>
                             </div>
                         </div>
-                    </div>
-                    <div className="photos">
-                        {photos.photos.map((l, i) => {
-                            const thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
-                            return (
-                                <div key={i} className={"row pict-" + iconSize} style={{ textAlign: "center" }} >
-                                    <a href="#" onClick={() => { displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto) }}>
-                                        {l.file.path.match(/\.(mp4|webm)$/i)
-                                            ? <div className="photo-list-movie" style={{ minWidth: (iconSize - 20) + 'px', marginTop: (iconSize / 7) + "px" }}>
-                                                <span style={{ fontSize: (iconSize / 3) + 'px' }}>&#127909;</span>
-                                            </div>
-                                            : <img loading="eager"
-                                                alt={l.file.path}
-                                                style={{ maxWidth: iconSize + 'px', maxHeight: iconSize + 'px' }}
-                                                src={convertFileSrc(thumbnailSrc)}
-                                                onError={(e) => {
-                                                    if (!e.currentTarget.errorCount) {
-                                                        console.log(e);
-                                                        console.log(thumbnailSrc);
-                                                        e.currentTarget.errorCount = true;
-                                                        e.currentTarget.src = convertFileSrc(l.file.path)
-                                                    }
-                                                }}
+                        <div className="photos">
+                            {photos.photos.map((l, i) => {
+                                const thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
+                                return (
+                                    <div key={i} className={"row pict-" + iconSize} style={{ textAlign: "center" }} >
+                                        <a href="#" onClick={() => { displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto) }}>
+                                            {l.file.path.match(/\.(mp4|webm)$/i)
+                                                ? <div className="photo-list-movie" style={{ minWidth: (iconSize - 20) + 'px', marginTop: (iconSize / 7) + "px" }}>
+                                                    <span style={{ fontSize: (iconSize / 3) + 'px' }}>&#127909;</span>
+                                                </div>
+                                                : <div style={{ width: iconSize + 'px', height: iconSize + 'px', float: "left" }} >
+                                                    <img loading="eager"
+                                                        alt={l.file.path}
+                                                        style={{ width: "97%" }}
+                                                        src={convertFileSrc(thumbnailSrc)}
+                                                        onError={(e) => {
+                                                            if (!e.currentTarget.errorCount) {
+                                                                console.log(e);
+                                                                console.log(thumbnailSrc);
+                                                                e.currentTarget.errorCount = true;
+                                                                e.currentTarget.src = convertFileSrc(l.file.path)
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                            }
+                                        </a>
+                                        <div className="photo-list-menu">
+                                            <input type="checkbox"
+                                                id={"photo-checkbox-" + i}
+                                                checked={photoSelectionDict[l.file.path] ? "checked" : ""}
+                                                onChange={(e) => addSelection(e.target.checked, l.file.path)}
                                             />
-                                        }
-                                    </a>
-                                    <div className="photo-list-menu">
-                                        <input type="checkbox"
-                                            id={"photo-checkbox-" + i}
-                                            checked={photoSelectionDict[l.file.path] ? "checked" : ""}
-                                            onChange={(e) => addSelection(e.target.checked, l.file.path)}
-                                        />
-                                        <label className={"cneckbox-photo checkbox hover"} htmlFor={"photo-checkbox-" + i}></label><br />
-                                        <a href="#" onClick={() => setCurrentPhotoPath(l.file.path)} >(&#8505;)</a><br />
-                                        <a href="#" className="run-app" onClick={(e) => open("file://" + l.file.path)}>&#128640;</a>
+                                            <label className={"cneckbox-photo checkbox hover"} htmlFor={"photo-checkbox-" + i}></label><br />
+                                            <a href="#" onClick={() => setCurrentPhotoPath(l.file.path)} >(&#8505;)</a><br />
+                                            <a href="#" className="run-app" onClick={(e) => open("file://" + l.file.path)}>&#128640;</a>
+                                        </div>
                                     </div>
-                                </div>
-                            )
-                        })}
+                                )
+                            })}
+                        </div>
                     </div>
-                </div>
+                </div >
         }
         {
             currentPhotoPath

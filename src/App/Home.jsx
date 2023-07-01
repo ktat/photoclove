@@ -6,10 +6,6 @@ function Home(props) {
     const [showSplash, setShowSplash] = useState(true);
     const message = ``;
 
-
-    useEffect((e) => {
-    }, []);
-
     return (
         <div id="home-container">
             <div><pre style={{

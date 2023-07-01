@@ -98,14 +98,14 @@ function PhotoInfo(props) {
                         <tbody>
                             <tr><th>File Name</th>
                                 <td>
-                                    <a
-                                        onMouseEnter={() => { props.addFooterMessage("current_phtoo_path", "File Path: " + props.currentPhotoPath, false, 10000) }}>
-                                        {props.currentPhotoPath.replace(/^.+\//, '')}
-                                    </a>&nbsp;
                                     <a href="#" onClick={() => {
                                         writeText(props.currentPhotoPath);
                                         props.addFooterMessage("clipboard", "Copy file path to clipboard", 50000);
                                     }}>📋</a>
+                                    <a
+                                        onMouseEnter={() => { props.addFooterMessage("current_phtoo_path", "File Path: " + props.currentPhotoPath, false, 10000) }}>
+                                        {props.currentPhotoPath.replace(/^.+\//, '')}
+                                    </a>
                                 </td></tr>
                             <tr><th>ISO</th><td>{photoInfo.exif ? photoInfo.exif.iso : ""}</td></tr>
                             <tr><th>FNumber</th><td>{photoInfo.exif ? photoInfo.exif.fnumber : ""}</td></tr>

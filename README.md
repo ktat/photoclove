@@ -52,3 +52,4 @@ Just a plan, currentrly a few features are only implemented.
 - [ ] trashbox management
 - [ ] redo/undo
 - [ ] Show photos imported reacently
+- [ ] Crop photo and search with Google

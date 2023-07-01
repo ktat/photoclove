@@ -21,7 +21,14 @@ function Importer(props) {
     useEffect(() => {
         const unlisten = listen("import", (e) => {
             if (e.payload == "finish") {
-                props.addFooterMessage("importing", "Importing is finished", 5000);
+                props.getDates();
+                props.addFooterMessage("importing", "Importing is finished", true, 5000);
+            }
+            else if (e.payload == "thumbnail creation finish") {
+                props.addFooterMessage("importing", "thumbnail creation is finished", false, 5000);
+            }
+            else if (e.payload == "thumbnail creation failed") {
+                props.addFooterMessage("importing", "thumbnail creation is failed", false, 5000);
             }
             console.log(e.payload);
         });

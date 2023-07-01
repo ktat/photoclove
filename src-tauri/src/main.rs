@@ -278,6 +278,7 @@ async fn import_photos(
     for file in files {
         importer_selected.add_photo_file(file::File::new(file.to_string()));
     }
+
     let result = importer_selected.import_photos(
         &window,
         &state.repo_db,
@@ -287,10 +288,31 @@ async fn import_photos(
         np,
         Arc::new(&state.import_progress),
     );
-    if result {
+    let t = result.is_ok();
+    if t {
+        let dates = result.unwrap();
+        match photo_service::create_thumbnails(
+            dates,
+            &path::PathBuf::from(&c.import_to.to_string()),
+            &path::PathBuf::from(&c.thumbnail_store.to_string()),
+            c.thumbnail_parallel as u32,
+            c.thumbnail_compression_quality,
+            c.thumbnail_ratio,
+        )
+        .await
+        {
+            Ok(ret) => {
+                window.emit("import", "thumbnail creation finish");
+            }
+            Err(_) => {
+                window.emit("import", "thumbnail creation failed");
+            }
+        }
         window.emit_all("import", "finish");
+    } else {
+        window.emit_all("import", "error");
     }
-    return Ok(result);
+    return Ok(t);
 }
 
 #[tauri::command]
@@ -394,7 +416,7 @@ async fn create_thumbnails(
         &origin,
         &dest,
         c.thumbnail_parallel as u32,
-        c.thumbnail_compression_rate,
+        c.thumbnail_compression_quality,
         c.thumbnail_ratio,
     )
     .await
@@ -426,7 +448,7 @@ async fn create_thumbnails_in_date(
         &origin,
         &dest,
         c.thumbnail_parallel as u32,
-        c.thumbnail_compression_rate,
+        c.thumbnail_compression_quality,
         c.thumbnail_ratio,
     )
     .await

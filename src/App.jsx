@@ -10,7 +10,7 @@ import DateList from "./App/DateList.jsx"
 import Importer from "./App/Importer.jsx"
 import Preferences from "./App/Preferences.jsx"
 import Welcome from "./Welcome.jsx"
-import Home from "./Home.jsx"
+import Home from "./App/Home.jsx"
 import Login from "./App/Login.jsx"
 import Footer from "./App/Footer.jsx"
 import { tauri } from "@tauri-apps/api";
@@ -31,7 +31,6 @@ function App() {
   const [dateList, setDateList] = useState([]);
   const [datePage, setDatePage] = useState({});
   const [currentDate, setCurrentDate] = useState("");
-  const [reloadDates, setReloadDates] = useState(false);
   const [showImporter, setShowImporter] = useState(false);
   const [showPhotosList, setShowPhotosList] = useState(true);
   const [showPreferences, setShowPreferences] = useState(false);
@@ -94,7 +93,7 @@ function App() {
       console.log(e);
       if (e.payload === "load_dates") {
         console.log(reloadDates);
-        setReloadDates(true);
+        doReloadDates();
       } else if (e.payload === "import") {
         toggleImporter(true);
       } else if (e.payload === "pref") {
@@ -127,6 +126,44 @@ function App() {
       }
     });
   }, []);
+
+  function getDates() {
+    invoke("get_dates").then((r) => {
+      let l = JSON.parse(r);
+      setDateList(l);
+      let datesStr = "";
+      const newDateNum = {};
+      let n = 0;
+      const promises = [];
+      l.map((v, i) => {
+        n += 1;
+        datesStr += v.year + "-" + v.month + "-" + v.day;
+        if (i !== l.length - 1 && n < 20) {
+          datesStr += ",";
+        }
+        if (n == 20 || i == l.length - 1) {
+          const reqDatesStr = datesStr;
+          n = 0;
+          datesStr = "";
+          const promise = new Promise((resolve, reject) => {
+            invoke("get_dates_num", { datesStr: reqDatesStr }).then((r) => {
+              let l = JSON.parse(r);
+              return resolve(l);
+            }).catch((e) => { console.log(e) });
+          });
+          promises.push(promise);
+        }
+      });
+      Promise.all(promises).then((results) => {
+        results.map((result) => {
+          Object.keys(result).map((k) => {
+            newDateNum[k] = result[k];
+          })
+          setDateNum(newDateNum);
+        });
+      })
+    });
+  };
 
   function addFooterMessage(k, v, withDialog, deleteAfter) {
     const newMessages = {};
@@ -246,12 +283,11 @@ function App() {
 
           <p>{greetMsg}</p>
           <DateList
+            getDates={getDates}
             dateList={dateList}
             setDateList={setDateList}
             toggleImporter={toggleImporter}
             setCurrentDate={setCurrentDate}
-            setReloadDates={setReloadDates}
-            reloadDates={reloadDates}
             datePage={datePage}
             dateNum={dateNum}
             setDateNum={setDateNum}
@@ -275,15 +311,14 @@ function App() {
               dateNum={dateNum}
               setDateNum={setDateNum}
               setCurrentDateNum={setCurrentDateNum}
-              setReloadDates={setReloadDates}
             />
             :
             showImporter
               ?
               <Importer
+                getDates={getDates}
                 addFooterMessage={addFooterMessage}
                 removeFooterMessage={removeFooterMessage}
-                setReloadDates={setReloadDates}
               />
               :
               showLogin

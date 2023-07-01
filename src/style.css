@@ -28,7 +28,7 @@ body {
   width: 100%;
   overflow: hidden;
   padding: 100px 100px 100px 100px;
-  max-height: calc(100vh - 300px);
+  height: calc(100vh - 230px);
 }
 
 .inner-container {
@@ -139,6 +139,16 @@ button {
   border-color: white;
 }
 
+@media screen and (max-width: 1000px) {
+  .leftMenu {
+    display: none;
+  }
+
+  .centerDisplay {
+    min-height: calc(100vh - 60px);
+  }
+}
+
 .leftMenu .dateList {
   height: calc(90vh - 200px);
   overflow-y: scroll;
@@ -148,11 +158,6 @@ button {
   margin-left: 20px;
   text-align: left;
   list-style: none;
-}
-
-.centerDisplay {
-  width: 100%;
-  text-align: center;
 }
 
 .selectedPhoto,
@@ -166,6 +171,12 @@ button {
   border-color: white;
 }
 
+@media screen and (max-width: 1200px) {
+  .rightMenu {
+    display: none;
+  }
+}
+
 .photoDisplay {
   padding: 20px 20px 10px 20px;
   height: calc(100vh - 250px);
@@ -175,7 +186,6 @@ button {
 .importDisplay,
 .preferences,
 .photoLoadingOn {
-  min-width: 200px;
   max-width: calc(100vw - 662px);
   min-width: calc(100vw - 662px);
   max-height: calc(100vh - 30px);
@@ -188,6 +198,17 @@ button {
 .preferences,
 .photoLoadingOn {
   flex: 1;
+}
+
+.centerDisplay {
+  min-width: 710px;
+  width: calc(100vw - 600px);
+  text-align: center;
+
+}
+
+.centerDisplay .photos {
+  min-width: 700px;
 }
 
 .preferences {
@@ -210,14 +231,17 @@ button {
 .photo-list-header .navigation,
 .photo-list-header .photo-page-info {
   flex: 2;
+  white-space: nowrap;
 }
 
 .photo-operation {
   flex: 2;
+  white-space: nowrap;
 }
 
 .photo-list-header .photo-page-info {
   text-align: left;
+  white-space: nowrap;
 }
 
 .photo-list-header .photo-operation {
@@ -518,11 +542,20 @@ img.photo_dragging {
   color: #55ff55;
 }
 
+.rigthMenu table td {
+  overflow: hidden;
+}
+
 table {
   width: 90%;
   border-width: 1px;
   border-style: solid;
   border-color: white;
+}
+
+table td {
+  max-width: 150px;
+  overflow-x: scroll
 }
 
 table td,

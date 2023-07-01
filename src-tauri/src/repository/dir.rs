@@ -117,7 +117,11 @@ impl Dir {
                     df.has_next_file = false;
                     last_index = len;
                 }
-                df.files.files = df.files.files[start_index..last_index].to_vec()
+                if last_index > start_index {
+                    df.files.files = df.files.files[start_index..last_index].to_vec()
+                } else {
+                    eprintln!("why ? {} : {}", start_index, last_index);
+                }
             }
             return df;
         } else {
