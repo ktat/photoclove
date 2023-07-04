@@ -19,7 +19,7 @@ function DateList(props) {
                 <ul>
                     {props.dateList.map((l, i) => {
                         let date = new Date(l.year + '/' + l.month + '/' + l.day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
-                        return (<li key={i} style={{ listStyle: selectedStyle["li-" + date] || "none" }}>
+                        return (props.dateNum[date.replace(/\//g, "-")]) > 0 && (<li key={i} style={{ listStyle: selectedStyle["li-" + date] || "none" }}>
                             <a href="#" style={{ color: selectedStyle["a-" + date] || "#646cff" }} onClick={(e) => {
                                 setSelectedStyle({ ["a-" + date]: "#ccc", ["li-" + date]: "square" }); //  outside url('...')
                                 console.log(selectedStyle);
@@ -30,7 +30,7 @@ function DateList(props) {
                             } data-date={date} data-page={props.datePage[date]}>
                                 {date}
                                 {props.dateNum[date.replace(/\//g, "-")] !== undefined ? " (" + props.dateNum[date.replace(/\//g, "-")] + ")" : ""}
-                            </a></li>)
+                            </a></li>);
                     })
                     }
                 </ul>
