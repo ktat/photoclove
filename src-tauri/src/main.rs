@@ -514,46 +514,22 @@ async fn upload_to_google_photos(
 #[tauri::command]
 async fn move_to_trash(
     path_str: &str,
-    date_str: &str,
     sort_value: i32,
     state: tauri::State<'_, AppState>,
-) -> Result<Option<String>, ()> {
-    let date = date::Date::from_string(&date_str.to_string(), Option::None);
+) -> Result<String, ()> {
+    let photo = photo::Photo::new(file::File::new(path_str.to_string()));
+    let date = photo.get_imported_dir_date(state.config.import_to.clone());
     let repo_db = &state.repo_db;
     let meta_db = &state.meta_db;
     let meta_data = match meta_db.get_photo_meta_data_in_date(date) {
         Ok(data) => data,
         Err(_e) => photo_meta::PhotoMetas::new(),
     };
-    let mut photo = repo_db
-        .get_next_photo_in_date(
-            &meta_data,
-            path_str,
-            date,
-            repository::sort_from_int(sort_value),
-        )
-        .await;
-    if photo.is_none() {
-        let date = date::Date::from_string(&date_str.to_string(), Option::None);
-        photo = repo_db
-            .get_prev_photo_in_date(
-                &meta_data,
-                path_str,
-                date,
-                repository::sort_from_int(sort_value),
-            )
-            .await;
-    }
     eprintln!("to Trash: {:?}", path_str);
     let trash = trash::Trash::new(state.config.trash_path.to_string());
     let file = file::File::new(path_str.to_string());
     file_service::move_to_trash(file, trash);
-
-    if photo.is_none() {
-        return Ok(Option::None);
-    } else {
-        return Ok(Option::Some(photo.unwrap().file.path));
-    }
+    return Ok(date.to_string());
 }
 
 fn main() {

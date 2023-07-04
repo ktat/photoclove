@@ -61,6 +61,17 @@ impl Photo {
         }
     }
 
+    pub fn get_imported_dir_date(&self, import_path: String) -> date::Date {
+        let path = self.file.path.clone();
+        let reg = regex::Regex::new(r"/?[^/]+$").unwrap();
+        let date_file_string = path.replace(&import_path, "");
+        let date_string_with_slash = reg.replace(&date_file_string, "");
+        let reg2 = regex::Regex::new(r"^/").unwrap();
+        let date_string = reg2.replace(&date_string_with_slash, "");
+
+        return date::Date::from_string(&date_string.to_string(), Option::Some("-"));
+    }
+
     pub fn set_time(&mut self, time: String) {
         self.time = time;
         self.is_meta_not_loaded = false;

@@ -108,36 +108,32 @@ function PhotosList(props) {
 
     function moveToTrashCan(f) {
         console.log("delete file: " + f)
-        invoke("move_to_trash", { dateStr: props.currentDate, pathStr: f, sortValue: parseInt(sortOfPhotos) }).then((r) => {
-            const date = props.currentDate.replace(/\//g, "-");
-            if (props.dateNum[date] > 0) {
-                props.dateNum[date] -= 1;
-                props.setDateNum(props.dateNum);
-                props.setDateList(props.dateList.concat());
-            }
-            // no photo before the deleted photo
-            if (!r) {
-                closePhotoDisplay();
-                if (currentPhotoIndex > 0) {
-                    setCurrentPhotoIndex(currentPhotoIndex - 1)
+        invoke("move_to_trash", { pathStr: f, sortValue: parseInt(sortOfPhotos) }).then((d) => {
+            if (d) {
+                const date = d
+                const date_with_slash = d.replace(/-/g, "/");
+                if (props.dateNum[date] > 0) {
+                    props.dateNum[date] -= 1;
+                    props.setDateNum(props.dateNum);
+                    props.setDateList(props.dateList.concat());
                 }
-            } else {
+
                 // exists photo before the deleted photo
-                if (photosListMiniAllPhotos.length > 0) {
+                if (date_with_slash === props.currentDate) {
                     const allPhotos = photosListMiniAllPhotos
-                    allPhotos.splice(currentPhotoIndex, 1);
-                    setPhotosListMiniAllPhotos(allPhotos);
-                    // no photos are remaining after the deleted photo
-                    if (allPhotos.length == 0) {
-                        closePhotoDisplay();
-                    } else {
+                    if (allPhotos.length > 0) {
+                        allPhotos.splice(currentPhotoIndex, 1);
+                        setPhotosListMiniAllPhotos(allPhotos);
+                        // no photos are remaining after the deleted photo
                         // last photo
                         if (currentPhotoIndex >= allPhotos.length) {
                             const ci = currentPhotoIndex - 1;
                             console.log("last photo!")
-                            setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
-                            setCurrentPhotoPath(photosListMiniAllPhotos[ci].file.path);
-                            setCurrentPhotoIndex(ci);
+                            if (photosListMiniAllPhotos[ci]) {
+                                setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
+                                setCurrentPhotoPath(photosListMiniAllPhotos[ci].file.path);
+                                setCurrentPhotoIndex(ci);
+                            }
                         }
                         // not last photo
                         else {
@@ -146,6 +142,9 @@ function PhotosList(props) {
                             setPhotosListMiniReread(!photosListMiniReread);
                             setCurrentPhotoPath(photosListMiniAllPhotos[ci].file.path);
                         }
+                    }
+                    if (allPhotos.length == 0) {
+                        closePhotoDisplay();
                     }
                 }
             }
@@ -285,32 +284,35 @@ function PhotosList(props) {
                 :
                 <div className="centerDisplay" id="photoList" onWheel={(e) => photosScroll(e)} data-date={props.currentDate} data-page={props.datePage[props.currentDate]}>
                     <div>
-                        <div className="photo-list-header">
-                            <div className="photo-page-info">{props.currentDate} page:{props.datePage[props.currentDate]}</div>
-                            <div className="navigation">
-                                {photos.has_prev && (<span><a href="#" onClick={(e) => nextPhotosList(e, false)}>&lt;&lt; Prev&nbsp;</a></span>)}
-                                {photos.has_next && (<span><a href="#" onClick={(e) => nextPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
+                        {photos.photos.length > 0 ?
+                            <div className="photo-list-header">
+                                <div className="photo-page-info">{props.currentDate} page:{props.datePage[props.currentDate]}</div>
+                                <div className="navigation">
+                                    {photos.has_prev && (<span><a href="#" onClick={(e) => nextPhotosList(e, false)}>&lt;&lt; Prev&nbsp;</a></span>)}
+                                    {photos.has_next && (<span><a href="#" onClick={(e) => nextPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
+                                </div>
+                                <div className="photo-operation">
+                                    Icon:<select name="icon_size" defaultValue={iconSize} onChange={(e) => setIconSize(e.target.value)}>
+                                        <option value={50}>small</option>
+                                        <option value={100}>normal</option>
+                                        <option value={200}>large</option>
+                                        <option value={300}>huge</option>
+                                    </select>
+                                    Sort:<select name="sort" defaultValue={sortOfPhotos} onChange={(e) => setSort(e.target.value)}>
+                                        <option value={0}>photo time</option>
+                                        <option value={1}>time</option>
+                                        <option value={2}>name</option>
+                                    </select>
+                                    Num:<select name="num" defaultValue={numOfPhoto} onChange={(e) => setNumOfPhoto(e.target.value)}>
+                                        <option value={10}>10</option>
+                                        <option value={20}>20</option>
+                                        <option value={30}>30</option>
+                                        <option value={40}>40</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div className="photo-operation">
-                                Icon:<select name="icon_size" defaultValue={iconSize} onChange={(e) => setIconSize(e.target.value)}>
-                                    <option value={50}>small</option>
-                                    <option value={100}>normal</option>
-                                    <option value={200}>large</option>
-                                    <option value={300}>huge</option>
-                                </select>
-                                Sort:<select name="sort" defaultValue={sortOfPhotos} onChange={(e) => setSort(e.target.value)}>
-                                    <option value={0}>photo time</option>
-                                    <option value={1}>time</option>
-                                    <option value={2}>name</option>
-                                </select>
-                                Num:<select name="num" defaultValue={numOfPhoto} onChange={(e) => setNumOfPhoto(e.target.value)}>
-                                    <option value={10}>10</option>
-                                    <option value={20}>20</option>
-                                    <option value={30}>30</option>
-                                    <option value={40}>40</option>
-                                </select>
-                            </div>
-                        </div>
+                            : <>No Photo Found!</>
+                        }
                         <div className="photos">
                             {photos.photos.map((l, i) => {
                                 const thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
