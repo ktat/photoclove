@@ -21,6 +21,7 @@ function PhotosList(props) {
     const [photosListMiniAllPhotos, setPhotosListMiniAllPhotos] = useState([]);
     const [photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex] = useState(0);
     const [photosListMiniReread, setPhotosListMiniReread] = useState(false);
+    const [photosListImgSrc, setPhotosListImgSrc] = useState({});
 
     useEffect((e) => {
         invoke("get_config", {},).then((e) => {
@@ -316,6 +317,7 @@ function PhotosList(props) {
                         <div className="photos">
                             {photos.photos.map((l, i) => {
                                 const thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
+                                photosListImgSrc[l.file.path] = convertFileSrc(thumbnailSrc);
                                 return (
                                     <div key={i} className={"row pict-" + iconSize} style={{ textAlign: "center" }} >
                                         <a href="#" onClick={() => { displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto) }}>
@@ -327,13 +329,11 @@ function PhotosList(props) {
                                                     <img loading="eager"
                                                         alt={l.file.path}
                                                         style={{ width: "97%" }}
-                                                        src={convertFileSrc(thumbnailSrc)}
+                                                        src={photosListImgSrc[l.file.path]}
                                                         onError={(e) => {
-                                                            if (!e.currentTarget.errorCount) {
-                                                                console.log(e);
-                                                                console.log(thumbnailSrc);
-                                                                e.currentTarget.errorCount = true;
-                                                                e.currentTarget.src = convertFileSrc(l.file.path)
+                                                            if (!e.currentTarget.src != convertFileSrc(l.file.path)) {
+                                                                photosListImgSrc[l.file.path] = convertFileSrc(l.file.path);
+                                                                e.currentTarget.src = photosListImgSrc[l.file.path];
                                                             }
                                                         }}
                                                     />
