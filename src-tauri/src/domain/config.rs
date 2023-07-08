@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::{fs, io::BufReader, io::BufWriter};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub repository: RepositoryConfig,
     pub import_to: String,
@@ -17,12 +17,12 @@ pub struct Config {
     pub thumbnail_parallel: usize,
     pub use_count: i32,
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryConfig {
     pub store: String,
     pub option: RepositoryOption,
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryOption {}
 impl Config {
     pub fn reload(&mut self) {

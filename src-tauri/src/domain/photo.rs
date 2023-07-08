@@ -1,6 +1,8 @@
+use crate::domain::config::Config;
 use crate::value::{date, exif, file};
 use regex;
 use serde::{Deserialize, Serialize};
+use std::fs;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Photo {
@@ -10,6 +12,10 @@ pub struct Photo {
     time: String,
     is_exif_not_loaded: bool,
     is_meta_not_loaded: bool,
+    pub has_thumbnail: bool,
+    import_to: String,
+    thumbnail_store: String,
+    has_config: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -20,10 +26,18 @@ pub struct Photos {
 }
 
 impl Photo {
-    pub fn new(file: file::File) -> Photo {
+    pub fn new(file: file::File, opt_conf: Option<Config>) -> Photo {
         let created_time = file.created_datetime();
         let d = file.path.clone();
         let p = std::path::Path::new(&d);
+        let mut import_to: String = "".to_string();
+        let mut thumbnail_store: String = "".to_string();
+        let has_config = opt_conf.is_some();
+        if has_config {
+            let conf = opt_conf.unwrap();
+            import_to = conf.clone().import_to;
+            thumbnail_store = conf.clone().thumbnail_store;
+        }
 
         Photo {
             file: file,
@@ -32,6 +46,10 @@ impl Photo {
             meta_data: exif::ExifData::empty(),
             is_exif_not_loaded: true,
             is_meta_not_loaded: true,
+            has_thumbnail: false,
+            import_to: import_to,
+            thumbnail_store: thumbnail_store,
+            has_config: has_config,
         }
     }
 
@@ -40,7 +58,7 @@ impl Photo {
     }
 
     pub fn new_with_exif(file: file::File) -> Photo {
-        let mut photo = Photo::new(file.clone());
+        let mut photo = Photo::new(file.clone(), Option::None);
         let meta = exif::ExifData::new(file);
         photo.embed_exif(meta);
         photo.is_exif_not_loaded = false;
@@ -51,6 +69,22 @@ impl Photo {
         self.time = exif.date_time.clone();
         self.meta_data = exif;
         self.is_exif_not_loaded = false;
+    }
+
+    pub fn set_has_thumbnail(&mut self) {
+        if self.has_config {
+            let import_path = self.import_to.clone();
+            let thumbnail_store = self.thumbnail_store.clone();
+            let thumbnail_path = self.file.path.replace(&import_path, &thumbnail_store);
+            let ext_regex = regex::Regex::new(r"\.JPG$").unwrap();
+            let thumbnail_path_ext_changed = ext_regex.replace(&thumbnail_path, ".jpg");
+            let file_option = fs::OpenOptions::new()
+                .read(true)
+                .open(&thumbnail_path_ext_changed.to_string());
+            self.has_thumbnail = file_option.is_ok();
+        } else {
+            eprintln!("called set_has_thumbnail from photo doesn't have config");
+        }
     }
 
     pub fn load_exif(&mut self) {
@@ -119,15 +153,15 @@ mod tests {
     #[test]
     fn test_constructor() {
         let f = file::File::new("/tmp/photoclove.test.dummy.jpg".to_string());
-        let p = photo::Photo::new(f);
+        let p = photo::Photo::new(f, Option::None);
         assert_eq!(p.file.path, "/tmp/photoclove.test.dummy.jpg".to_string())
     }
     #[test]
     fn test_photos() {
         let f = file::File::new("/tmp/photoclove.test.dummy.jpg".to_string());
         let f2 = file::File::new("/tmp/photoclove.test.dummy.jpg".to_string());
-        let p = photo::Photo::new(f);
-        let p2 = photo::Photo::new(f2);
+        let p = photo::Photo::new(f, Option::None);
+        let p2 = photo::Photo::new(f2, Option::None);
         let mut photos = photo::Photos::new();
         photos.photos.push(p);
         photos.photos.push(p2);

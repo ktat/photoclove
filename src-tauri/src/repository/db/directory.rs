@@ -1,6 +1,6 @@
 // just a dummy module for test
 
-use crate::domain::{photo, photo_meta};
+use crate::domain::{config, photo, photo_meta};
 use crate::domain_service::dir_service;
 use crate::repository::{self, RepoDB, RepositoryDB, Sort};
 use crate::value::{date, exif, file};
@@ -91,13 +91,25 @@ impl RepositoryDB for Directory {
         num: u32,
         page: u32,
         offset: usize,
+        opt_conf: Option<config::Config>,
     ) -> photo::Photos {
         let dir = self.path.child(date.to_string());
         let mut photos = photo::Photos::new();
+        let mut conf: config::Config = config::Config::template();
+        let has_opt = opt_conf.is_some();
+        if has_opt {
+            conf = opt_conf.unwrap();
+        }
         if meta_data.keys().len() == 0 {
             let files = dir_service::find_files(&dir);
             for f in files.files {
-                let mut p = photo::Photo::new(f.clone());
+                let mut p: photo::Photo;
+                if has_opt {
+                    p = photo::Photo::new(f.clone(), Option::Some(conf.clone()));
+                    p.set_has_thumbnail();
+                } else {
+                    p = photo::Photo::new(f.clone(), Option::None);
+                }
                 let mut meta = exif::ExifData::empty();
                 let result = meta_data.get(&f.path);
                 if result.is_none() {
@@ -117,7 +129,13 @@ impl RepositoryDB for Directory {
                     continue;
                 }
                 let file = file_result.unwrap();
-                let mut p = photo::Photo::new(file);
+                let mut p: photo::Photo;
+                if has_opt {
+                    p = photo::Photo::new(file, Option::Some(conf.clone()));
+                    p.set_has_thumbnail();
+                } else {
+                    p = photo::Photo::new(file, Option::None);
+                }
                 let mut meta = exif::ExifData::empty();
                 meta.date_time = meta_data.get(f).unwrap().photo_time();
                 p.embed_exif(meta);
@@ -169,13 +187,14 @@ impl RepositoryDB for Directory {
         path: &str,
         date: date::Date,
         sort: Sort,
+        config: Option<config::Config>,
     ) -> Option<photo::Photo> {
         let mut page: u32 = 1;
         let mut next_is_target = false;
 
         'outer: loop {
             let photos = self
-                .get_photos_in_date(meta_data, date.clone(), sort, 100, page, 0)
+                .get_photos_in_date(meta_data, date.clone(), sort, 100, page, 0, Option::None)
                 .await;
             if photos.photos.len() == 0 {
                 break 'outer;
@@ -199,6 +218,7 @@ impl RepositoryDB for Directory {
         path: &str,
         date: date::Date,
         sort: Sort,
+        config: Option<config::Config>,
     ) -> Option<photo::Photo> {
         let mut page: u32 = 1;
         let mut prev_is_target = false;
@@ -206,7 +226,7 @@ impl RepositoryDB for Directory {
 
         'outer: loop {
             let photos = self
-                .get_photos_in_date(meta_data, date.clone(), sort, 100, page, 0)
+                .get_photos_in_date(meta_data, date.clone(), sort, 100, page, 0, Option::None)
                 .await;
             if photos.photos.len() == 0 {
                 break 'outer;
