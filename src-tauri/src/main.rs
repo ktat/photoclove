@@ -113,6 +113,7 @@ async fn get_photos(
             num,
             page,
             offset as usize,
+            Option::Some(state.config.clone()),
         )
         .await;
     Ok(photos.to_json())
@@ -140,6 +141,7 @@ async fn get_next_photo(
             path,
             date,
             repository::sort_from_int(sort_value),
+            Option::None,
         )
         .await;
     if photo.is_some() {
@@ -171,6 +173,7 @@ async fn get_prev_photo(
             path,
             date,
             repository::sort_from_int(sort_value),
+            Option::None,
         )
         .await;
     if photo.is_some() {
@@ -186,7 +189,7 @@ async fn get_prev_photo(
 fn get_photo_info(path_str: &str, window: tauri::Window, state: tauri::State<AppState>) -> String {
     match file::File::new_if_exists(path_str.to_string()) {
         Some(f) => {
-            let photo = photo::Photo::new(f);
+            let photo = photo::Photo::new(f, Option::None);
             let exif_data = exif::ExifData::new(photo.file.clone());
             let photo_meta = photo_meta::PhotoMeta::new_with_data(photo, &state.meta_db);
             let photo_meta_with_exif = photo_meta::PhotoMetaWithExif::new(photo_meta, exif_data);
@@ -202,7 +205,7 @@ fn get_photo_info(path_str: &str, window: tauri::Window, state: tauri::State<App
 #[tauri::command]
 fn save_star(window: tauri::Window, state: tauri::State<AppState>, path_str: &str, star_num: i32) {
     let db = &state.meta_db;
-    let photo = photo::Photo::new(file::File::new(path_str.to_string()));
+    let photo = photo::Photo::new(file::File::new(path_str.to_string()), Option::None);
     let star = star::Star::new(star_num);
     photo_service::save_photo_star(db, &photo, star);
 }
@@ -216,7 +219,7 @@ fn save_comment(
 ) {
     let db = &state.meta_db;
     let comment = comment::Comment::new(comment_str);
-    let photo = photo::Photo::new(file::File::new(path_str.to_string()));
+    let photo = photo::Photo::new(file::File::new(path_str.to_string()), Option::None);
     photo_service::save_photo_comment(db, &photo, comment);
 }
 
@@ -517,7 +520,7 @@ async fn move_to_trash(
     sort_value: i32,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, ()> {
-    let photo = photo::Photo::new(file::File::new(path_str.to_string()));
+    let photo = photo::Photo::new(file::File::new(path_str.to_string()), Option::None);
     let date = photo.get_imported_dir_date(state.config.import_to.clone());
     let repo_db = &state.repo_db;
     let meta_db = &state.meta_db;

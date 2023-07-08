@@ -183,7 +183,7 @@ impl ImporterSelectedFiles {
                         }
                     }
                     let df = file::File::new(destination_path.display().to_string());
-                    let mut d_photo = photo::Photo::new(df.clone());
+                    let mut d_photo = photo::Photo::new(df.clone(), Option::None);
                     d_photo.embed_exif(photo.meta_data);
                     photos.push(d_photo);
 

@@ -317,7 +317,7 @@ function PhotosList(props) {
                         <div className="photos">
                             {photos.photos.map((l, i) => {
                                 const thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
-                                photosListImgSrc[l.file.path] = convertFileSrc(thumbnailSrc);
+                                photosListImgSrc[l.file.path] = l.has_thumbnail ? convertFileSrc(thumbnailSrc) : convertFileSrc(l.file.path);
                                 return (
                                     <div key={i} className={"row pict-" + iconSize} style={{ textAlign: "center" }} >
                                         <a href="#" onClick={() => { displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto) }}>

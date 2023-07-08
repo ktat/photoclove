@@ -94,7 +94,7 @@ impl PhotoMeta {
         if f.is_none() {
             return None;
         }
-        let mut photo = photo::Photo::new(f.unwrap());
+        let mut photo = photo::Photo::new(f.unwrap(), Option::None);
         photo.set_time(record.date.clone());
         return Some(PhotoMeta {
             photo: photo,
