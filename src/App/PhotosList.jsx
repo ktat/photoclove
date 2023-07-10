@@ -316,6 +316,7 @@ function PhotosList(props) {
                         }
                         <div className="photos">
                             {photos.photos.map((l, i) => {
+                                const image_for_not_found = "/img_error.jpg";
                                 const thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
                                 photosListImgSrc[l.file.path] = l.has_thumbnail ? convertFileSrc(thumbnailSrc) : convertFileSrc(l.file.path);
                                 return (
@@ -331,8 +332,8 @@ function PhotosList(props) {
                                                         style={{ width: "97%" }}
                                                         src={photosListImgSrc[l.file.path]}
                                                         onError={(e) => {
-                                                            if (!e.currentTarget.src != convertFileSrc(l.file.path)) {
-                                                                photosListImgSrc[l.file.path] = convertFileSrc(l.file.path);
+                                                            if (e.currentTarget.src != image_for_not_found) {
+                                                                photosListImgSrc[l.file.path] = image_for_not_found;
                                                                 e.currentTarget.src = photosListImgSrc[l.file.path];
                                                             }
                                                         }}
