@@ -147,6 +147,9 @@ function PhotoDisplay(props) {
                             props.SetImgStyle({ opacity: 1, transition: "opacity 0.5s" }, e.target.width, e.target.height);
                         }, 150)
                     }}
+                    onError={(e) => {
+                        e.target.src = "/img_error.png";
+                    }}
                     style={props.imgStyle}
                     src={convertFileSrc(props.currentPhotoPath)}
                     onMouseDown={(e) => dragPhotoStart(e)}

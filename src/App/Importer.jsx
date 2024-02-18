@@ -4,13 +4,17 @@ import { listen } from "@tauri-apps/api/event";
 import SelectedPhotoInfo from "./Importer/SelectedPhotoInfo.jsx"
 
 
+function importerInitData() {
+    return { "has_next_files": false, "dirs_files": { dir: { "path": "" }, "dirs": { "dirs": [] }, "files": { "files": [] } } };
+}
+
 function Importer(props) {
     const [scrollLock, setScrollLock] = useState(false);
     const [importProgress, setImportProgress] = useState({});
     const [importPhotosPage, setImportPhotosPage] = useState(1);
     const [importPaths, setImportPaths] = useState([]);
     const [currentImportPath, setCurrentImportPath] = useState("");
-    const [importer, setImporter] = useState({ "has_next_files": false, "dirs_files": { dir: { "path": "" }, "dirs": { "dirs": [] }, "files": { "files": [] } } });
+    const [importer, setImporter] = useState(importerInitData());
     const [pathPage, setPathPage] = useState({});
     const [selectedForImport, setSelectedForImport] = useState({});
     const [imageInSelectedPhotos, setImageInSelectedPhotos] = useState(undefined);
@@ -40,6 +44,7 @@ function Importer(props) {
 
     let beforeScrollTop = -1;
     let isScrollBottom = 0;
+
     function importPhotosScroll(e) {
         if (scrollLock || currentImportPath === "") {
             return;
@@ -182,6 +187,7 @@ function Importer(props) {
     }
 
     function filterImporter(date) {
+        setImporter(importerInitData());
         setImporterFilter(date);
     }
 
@@ -199,7 +205,7 @@ function Importer(props) {
                 {importProgress.now_importing && (<>
                     <span>Now Importing...</span>
                     <span>{importProgress.progress} / {importProgress.num}</span><br />
-                    <span>({parseInt(importProgress.num_per_sec * 1000) / 1000} /sec : {parseInt((importProgress.num - importProgress.progress) / (importProgress.num_per_sec))} secs left)</span>
+                    <span>({parseInt(importProgress.num_per_sec * 100) / 100} /sec : {parseInt((importProgress.num - importProgress.progress) / (importProgress.num_per_sec) / 60 * 100) / 100} mins left)</span>
                 </>)}
                 {!importProgress.now_importing && importProgress.start_time && importProgress.start_time.secs_since_epoch && (<>
                     <span>Last Import: {new Date(importProgress.start_time.secs_since_epoch * 1000).toLocaleString("default", { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>

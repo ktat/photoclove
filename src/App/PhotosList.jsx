@@ -316,7 +316,7 @@ function PhotosList(props) {
                         }
                         <div className="photos">
                             {photos.photos.map((l, i) => {
-                                const image_for_not_found = "/img_error.jpg";
+                                const image_for_not_found = "/img_error.png";
                                 const thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
                                 photosListImgSrc[l.file.path] = l.has_thumbnail ? convertFileSrc(thumbnailSrc) : convertFileSrc(l.file.path);
                                 return (
@@ -331,6 +331,17 @@ function PhotosList(props) {
                                                         alt={l.file.path}
                                                         style={{ width: "97%" }}
                                                         src={photosListImgSrc[l.file.path]}
+                                                        onLoad={(e) => {
+                                                            let w = e.currentTarget.width;
+                                                            let h = e.currentTarget.height;
+                                                            if (w > h) {
+                                                                e.currentTarget.style.width = "97%";
+                                                                e.currentTarget.style.height = "auto";
+                                                            } else {
+                                                                e.currentTarget.style.height = "97%";
+                                                                e.currentTarget.style.width = "auto";
+                                                            }
+                                                        }}
                                                         onError={(e) => {
                                                             if (e.currentTarget.src != image_for_not_found) {
                                                                 photosListImgSrc[l.file.path] = image_for_not_found;
