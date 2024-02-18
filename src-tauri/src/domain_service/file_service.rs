@@ -1,4 +1,4 @@
-use crate::domain::trash;
+use crate::entity::trash;
 use crate::value::file;
 use std::{fs, path};
 

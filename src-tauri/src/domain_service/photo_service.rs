@@ -1,4 +1,4 @@
-use crate::domain::photo;
+use crate::entity::photo;
 use crate::repository::{MetaDB, MetaInfoDB};
 use crate::value::{comment, date, file, star};
 use image_compressor::{Factor, FolderCompressor};

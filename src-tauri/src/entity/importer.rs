@@ -1,4 +1,4 @@
-use crate::domain::photo;
+use crate::entity::photo;
 use crate::repository::{self};
 use crate::repository::{dir, MetaInfoDB};
 use crate::value::{date, file};
