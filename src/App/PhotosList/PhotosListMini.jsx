@@ -9,7 +9,7 @@ function preventScroll(e) {
 }
 
 function PhotosListMini(props) {
-    const [showPhotos, setShowPhotos] = useState([]);
+    const [showPhotosIndex, setShowPhotosIndex] = useState([]);
     const [hasNext, setHasNext] = useState(false);
     const [borderStyle, setBorderStyle] = useState([]);
     const [currentPhotoSize, setCurrentPhotoSize] = useState([]);
@@ -70,10 +70,10 @@ function PhotosListMini(props) {
                 if (i === props.currentPhotoIndex) {
                     selected = photos.length;
                 }
-                photos.push(props.allPhotos[i]);
+                photos.push(i);
             }
         }
-        setShowPhotos(photos);
+        setShowPhotosIndex(photos);
         resetSelectedBorder(selected);
     }
 
@@ -116,18 +116,20 @@ function PhotosListMini(props) {
     function setSetOfShowPhotos(index, mergedAllPhotos) {
         if (!mergedAllPhotos) {
             mergedAllPhotos = props.allPhotos;
+        } else {
+            props.setAllPhotos(mergedAllPhotos);
         }
-        const photos = [];
+        const photosIndex = [];
         let selected = -1;
         for (let i = index; i < (NUM_OF_PHOTO_LIST + index); i++) {
             if (mergedAllPhotos[i]) {
                 if (i === props.currentPhotoIndex) {
-                    selected = photos.length;
+                    selected = photosIndex.length;
                 }
-                photos.push(mergedAllPhotos[i]);
+                photosIndex.push(i);
             }
         }
-        setShowPhotos(photos);
+        setShowPhotosIndex(photosIndex);
         resetSelectedBorder(selected);
     }
 
@@ -213,7 +215,6 @@ function PhotosListMini(props) {
             if (nextIndex > Math.trunc(NUM_OF_PHOTO_LIST / 2)) {
                 props.setCurrentIndex(props.currentIndex + 1)
             }
-            console.log(props.currentIndex);
             _nextOrPrevPhoto(nextIndex);
         }
     }
@@ -254,12 +255,14 @@ function PhotosListMini(props) {
                 <div id="photos-list-mini">
                     <div className="row1"><a style={{ display: props.currentIndex == 0 ? "none" : "" }} onClick={() => { backwardPhotos() }}>◁</a></div>
                     {
-                        showPhotos.map((v, i) => {
+                        showPhotosIndex.map((vIndex, i) => {
+                            const v = props.allPhotos[vIndex];
                             const clientHeight = document.querySelector('#photos-list-mini').clientHeight - 20;
                             const thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + v.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
                             photosListImgSrc[v.file.path] = v.has_thumbnail ? convertFileSrc(thumbnailSrc) : convertFileSrc(v.file.path);
                             return <div className="row2" key={i}>
                                 <a onClick={(e) => {
+                                    props.setCurrentPhotoIndex(vIndex);
                                     props.setCurrentPhotoPath(v.file.path);
                                     resetSelectedBorder(i);
                                     props.datePage[props.currentDate] = Math.trunc((props.currentIndex + i) / props.num) + 1;
