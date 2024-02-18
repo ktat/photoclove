@@ -1,4 +1,4 @@
-use crate::domain::config::Config;
+use crate::entity::config::Config;
 use crate::value::{date, exif, file};
 use regex;
 use serde::{Deserialize, Serialize};
@@ -147,7 +147,7 @@ impl Photos {
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::photo;
+    use crate::entity::photo;
     use crate::value::file;
 
     #[test]

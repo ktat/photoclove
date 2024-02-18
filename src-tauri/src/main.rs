@@ -1,10 +1,10 @@
-use crate::domain::importer;
-use crate::domain::*;
 use crate::domain_service::{file_service, photo_service};
+use crate::entity::importer;
+use crate::entity::*;
 use crate::repository::RepositoryDB;
 use crate::repository::*;
 use crate::value::*;
-use domain::config::Config;
+use entity::config::Config;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::{
@@ -13,8 +13,8 @@ use std::{
 };
 use tauri::{CustomMenuItem, Manager, Menu, MenuItem, Submenu};
 
-mod domain;
 mod domain_service;
+mod entity;
 mod repository;
 mod value;
 
@@ -295,6 +295,7 @@ async fn import_photos(
     if t {
         let dates = result.unwrap();
         window.emit("import", "start thumbnail creation");
+
         match photo_service::create_thumbnails(
             dates,
             &path::PathBuf::from(&c.import_to.to_string()),

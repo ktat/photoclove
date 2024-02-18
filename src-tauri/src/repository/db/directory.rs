@@ -1,7 +1,7 @@
 // just a dummy module for test
 
-use crate::domain::{config, photo, photo_meta};
 use crate::domain_service::dir_service;
+use crate::entity::{config, photo, photo_meta};
 use crate::repository::{self, RepoDB, RepositoryDB, Sort};
 use crate::value::{date, exif, file};
 use async_trait::async_trait;

@@ -1,8 +1,7 @@
-use crate::domain::photo_meta;
 use crate::domain_service::{self, dir_service};
 use crate::{
-    domain::photo, repository, repository::meta_db, repository::MetaInfoDB, value::comment,
-    value::date, value::file, value::star,
+    entity::photo, entity::photo_meta, repository, repository::meta_db, repository::MetaInfoDB,
+    value::comment, value::date, value::file, value::star,
 };
 use csv::{ReaderBuilder, WriterBuilder};
 use std::collections::HashMap;

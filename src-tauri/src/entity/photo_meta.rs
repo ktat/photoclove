@@ -1,4 +1,4 @@
-use crate::domain::photo;
+use crate::entity::photo;
 use crate::repository::meta_db;
 use crate::repository::{self, MetaInfoDB};
 use crate::value::{comment, exif, file, star};
