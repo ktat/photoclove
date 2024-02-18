@@ -63,17 +63,17 @@ function PhotosListMini(props) {
 
     function _movePhotos(index) {
         props.setCurrentIndex(index);
-        const photos = [];
+        const photosIndex = [];
         let selected = -1;
         for (let i = index; i < (NUM_OF_PHOTO_LIST + index); i++) {
             if (props.allPhotos[i]) {
                 if (i === props.currentPhotoIndex) {
-                    selected = photos.length;
+                    selected = photosIndex.length;
                 }
-                photos.push(i);
+                photosIndex.push(i);
             }
         }
-        setShowPhotosIndex(photos);
+        setShowPhotosIndex(photosIndex);
         resetSelectedBorder(selected);
     }
 
