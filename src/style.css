@@ -119,6 +119,7 @@ button {
 }
 
 #search-input {
+  margin-bottom: 5px;
   margin-right: 5px;
   max-width: 70%;
 }
@@ -455,6 +456,7 @@ ul.list-of-selected li {
 
   input,
   button {
+    margin: 0 5px 0 5px;
     color: #ffffff;
     background-color: #0f0f0f98;
   }
@@ -749,6 +751,7 @@ label.checkbox-normal {
 
 label.checkbox-photo {
   padding: 0 0 0 0;
+  margin: 0 0 0 0;
 }
 
 label.checkbox:hover:after {
@@ -757,6 +760,8 @@ label.checkbox:hover:after {
 
 label.checkbox:after,
 label.checkbox:before {
+  padding: 0 0 0 0;
+  margin: 0 0 0 0;
   position: absolute;
   content: "";
   display: block;
@@ -764,8 +769,8 @@ label.checkbox:before {
 }
 
 label.checkbox:after {
-  left: 1px;
-  margin-top: 0px;
+  left: -7px;
+  margin-top: -10px;
   width: 12px;
   height: 12px;
   border: 2px solid #535bf2;
@@ -773,8 +778,8 @@ label.checkbox:after {
 }
 
 label.checkbox:before {
-  left: 6.5px;
-  margin-top: 2px;
+  left: 0px;
+  margin-top: -8px;
   width: 3px;
   height: 7px;
   border-right: 2px solid #ccc;

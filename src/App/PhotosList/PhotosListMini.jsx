@@ -22,6 +22,15 @@ function PhotosListMini(props) {
         maxHeight: "100%",
         overflow: "hidden"
     });
+    const [thumbnailStore, setThumbnailStore] = useState("");
+    const [photosListImgSrc, setPhotosListImgSrc] = useState({});
+
+    useEffect((e) => {
+        invoke("get_config", {},).then((e) => {
+            const json = JSON.parse(e);
+            setThumbnailStore(json.thumbnail_store);
+        });
+    }, [])
 
     useEffect((e) => {
         const page = props.datePage[props.currentDate];
@@ -247,6 +256,8 @@ function PhotosListMini(props) {
                     {
                         showPhotos.map((v, i) => {
                             const clientHeight = document.querySelector('#photos-list-mini').clientHeight - 20;
+                            const thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + v.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
+                            photosListImgSrc[v.file.path] = v.has_thumbnail ? convertFileSrc(thumbnailSrc) : convertFileSrc(v.file.path);
                             return <div className="row2" key={i}>
                                 <a onClick={(e) => {
                                     props.setCurrentPhotoPath(v.file.path);
@@ -258,7 +269,8 @@ function PhotosListMini(props) {
                                             <span>&#127909;</span>
                                         </div>
                                         : <>
-                                            <img src={convertFileSrc(v.file.path)} style={{ border: borderStyle[i], maxHeight: clientHeight + "px" }} alt={"photo-" + i} />
+                                            <img src={photosListImgSrc[v.file.path]} style={{ border: borderStyle[i], maxHeight: clientHeight + "px" }} alt={"photo-" + i}
+                                                onError={(e) => { e.target.src = "/img_error.png" }} />
                                         </>
                                     }
                                 </a>

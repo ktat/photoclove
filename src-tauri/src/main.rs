@@ -294,6 +294,7 @@ async fn import_photos(
     let t = result.is_ok();
     if t {
         let dates = result.unwrap();
+        window.emit("import", "start thumbnail creation");
         match photo_service::create_thumbnails(
             dates,
             &path::PathBuf::from(&c.import_to.to_string()),

@@ -5,6 +5,7 @@ use crate::value::{date, file};
 use filetime;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{
     fs,
@@ -58,7 +59,7 @@ impl ImportProgress {
             .as_secs();
         let t = self.current_time as f32;
         let progress = self.progress;
-        if self.num < progress {
+        if self.num <= progress {
             self.reset_import_progress()
         } else {
             self.num_per_sec = 0.5;
@@ -106,6 +107,7 @@ impl ImporterSelectedFiles {
         copy_parallel: usize,
         progress: Arc<&Mutex<ImportProgress>>,
     ) -> Result<date::Dates, ()> {
+        progress.lock().unwrap().start_time = time::SystemTime::now();
         progress.lock().unwrap().now_importing = true;
         progress.lock().unwrap().num = self.selected_photo_files.len();
         let mut handles = vec![];
