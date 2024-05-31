@@ -1,17 +1,19 @@
 use crate::value::date;
 use chrono::{Local, TimeZone};
+use path_abs::PathAbs;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::os::unix::prelude::MetadataExt;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct File {
     pub path: String,
     pub name: String,
+    pub dir: String,
     pub created_at: String,
+    pub is_link: bool,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Files {
@@ -49,15 +51,15 @@ impl Files {
 impl Dir {
     pub fn new(path: String) -> Dir {
         let p = Path::new(&path);
-        let cp = fs::canonicalize(p);
-        if cp.is_err() {
+        let cp = PathAbs::new(p);
+        if !p.exists() || cp.is_err() {
             eprintln!("Invalid path for Dir: {:?}", cp.err());
             return Dir {
                 path: "/".to_string(),
                 created_at: get_created_time("/".to_string()),
             };
         } else {
-            let ap = fs::canonicalize(p).unwrap().as_path().display().to_string();
+            let ap = PathAbs::new(p).unwrap().as_path().display().to_string();
             return Dir {
                 path: ap.clone(),
                 created_at: get_created_time(ap),
@@ -93,9 +95,16 @@ impl Dir {
 
 impl File {
     pub fn new(path: String) -> File {
+        let link = fs::read_link(Path::new(&path));
         let p = Path::new(&path);
-        let cp = fs::canonicalize(p);
-        if cp.is_err() {
+        let parent_path = match p.parent() {
+            Some(parent) => parent,
+            None => Path::new("/"),
+        };
+
+        let cp = PathAbs::new(p);
+
+        if !p.exists() || cp.is_err() {
             panic!("Invalid path for file(new): {:?}, {:?}", path, cp.err());
         } else {
             let ap = cp.unwrap().as_path().display().to_string();
@@ -103,15 +112,17 @@ impl File {
             return File {
                 path: ap.clone(),
                 name: file_name,
+                dir: parent_path.display().to_string(),
                 created_at: get_created_time(ap),
+                is_link: !link.is_err(),
             };
         }
     }
 
     pub fn new_if_exists(path: String) -> Option<File> {
         let p = Path::new(&path);
-        let cp = fs::canonicalize(p);
-        if cp.is_err() {
+        let cp = PathAbs::new(p);
+        if !p.exists() || cp.is_err() {
             eprintln!(
                 "Invalid path for file(new_if_exists): {:?}, {:?}",
                 path,

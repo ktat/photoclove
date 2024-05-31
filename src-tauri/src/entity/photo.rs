@@ -28,8 +28,7 @@ pub struct Photos {
 impl Photo {
     pub fn new(file: file::File, opt_conf: Option<Config>) -> Photo {
         let created_time = file.created_datetime();
-        let d = file.path.clone();
-        let p = std::path::Path::new(&d);
+        let dir = file.dir.clone();
         let mut import_to: String = "".to_string();
         let mut thumbnail_store: String = "".to_string();
         let has_config = opt_conf.is_some();
@@ -42,7 +41,7 @@ impl Photo {
         Photo {
             file: file,
             time: created_time,
-            dir: file::Dir::new(p.parent().unwrap().display().to_string()),
+            dir: file::Dir::new(dir),
             meta_data: exif::ExifData::empty(),
             is_exif_not_loaded: true,
             is_meta_not_loaded: true,
