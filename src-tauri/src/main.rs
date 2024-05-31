@@ -5,6 +5,8 @@ use crate::repository::RepositoryDB;
 use crate::repository::*;
 use crate::value::*;
 use entity::config::Config;
+use std::error::Error;
+use std::os::unix::fs::symlink;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::{
@@ -71,7 +73,7 @@ async fn get_dates_num(
 }
 
 #[tauri::command]
-async fn copy_file_to_public(
+async fn link_file_to_public(
     from_file_path: &str,
     to_file_name: &str,
     _state: tauri::State<'_, AppState>,
@@ -80,13 +82,33 @@ async fn copy_file_to_public(
     let to = path::Path::new("../public/").join(to_file_name.to_string());
     eprintln!("{:?} => {:?}", from, to);
 
-    return match std::fs::copy(from, to) {
-        Ok(_) => Ok("true".to_string()),
-        Err(e) => {
-            eprintln!("{:?}", e);
-            Ok("false".to_string())
+    if cfg!(target_os = "windows") {
+        return match std::fs::copy(from, to.clone()) {
+            Ok(_) => Ok("true".to_string()),
+            Err(e) => {
+                eprintln!("Cannot copy file {:?} => {:?}: {:?}", from, to, e);
+                Ok("false".to_string())
+            }
+        };
+    } else {
+        if path::Path::new(to.as_path()).exists() {
+            match fs::remove_file(to.as_path()) {
+                Ok(_) => {}
+                Err(e) => {
+                    eprintln!("Cannot delete file {:?} : {:?}", to.clone(), e);
+                    return Ok("false".to_string());
+                }
+            };
         }
-    };
+
+        return match symlink(from, to.clone()) {
+            Ok(_) => Ok("true".to_string()),
+            Err(e) => {
+                eprintln!("Cannot create symlink {:?} => {:?}: {:?}", from, to, e);
+                Ok("false".to_string())
+            }
+        };
+    }
 }
 
 #[tauri::command]
@@ -649,7 +671,7 @@ fn main() {
             save_config,
             save_star,
             save_comment,
-            copy_file_to_public,
+            link_file_to_public,
             move_photos_to_exif_date,
             upload_to_google_photos,
         ])

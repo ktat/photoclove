@@ -38,7 +38,7 @@ function PhotoDisplay(props) {
         if (currentFile != path) {
             invoke("lock", { t: false }).then(async (r) => {
                 // tauri cannot play movie file which is not in public folder. So copy movie file to public/movie
-                const result = await invoke("copy_file_to_public", {
+                const result = await invoke("link_file_to_public", {
                     fromFilePath: path,
                     toFileName: "movie.tmp"
                 }).then((r) => {
