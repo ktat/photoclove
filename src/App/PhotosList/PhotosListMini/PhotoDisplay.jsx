@@ -123,7 +123,7 @@ function PhotoDisplay(props) {
 
     return (
         <div className="photo">
-            {/* video doesn't work for local failes: https://github.com/tauri-apps/tauri/issues/3725#issuecomment-1160842638
+            {/* video doesn't work for local files: https://github.com/tauri-apps/tauri/issues/3725#issuecomment-1160842638
 
                     <video style={{ width: "100%", height: "100%" }} controls="" autoPlay="" name="media">
                         <source src={convertFileSrc(props.currentPhotoPath)} type={"video/" + (props.currentPhotoPath.match(/\.mp4$/) ? "mp4" : "webm")} />
