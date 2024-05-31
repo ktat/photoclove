@@ -33,6 +33,7 @@ async-trait = "0.1.36"
 image_compressor = "1.3.0"
 futures = "0.3.5"
 reqwest = "*"
+path_abs = "*"
 tauri-plugin-oauth = { git = "https://github.com/FabianLars/tauri-plugin-oauth/", branch = "main"}
 # turbojpeg-sys = {version = "0.2.3", features = ["bindgen"] }
 # turbojpeg = {version = "0.5", features = ["image"] }
