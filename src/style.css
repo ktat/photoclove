@@ -648,8 +648,14 @@ div.photo-clove {
   text-align: center;
 }
 
+.video-on div {
+  justify-content: center;
+  overflow: scroll;
+  display: flex;
+}
+
 .video-on video {
-  width: 100%;
+  object-fit: contain;
 }
 
 .video-off {

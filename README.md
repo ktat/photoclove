@@ -12,6 +12,14 @@ I try to use some free/paid applications, but they don't much my usecase and the
 
 So, I decided to create this by myself.
 
+## Dependency
+
+On ubuntu, install the following package to watch mp4 file.
+
+```
+sudo apt install gstreamer1.0-plugins-bad
+```
+
 ## Featurs to be ipmlemented
 
 Just a plan, currentrly a few features are only implemented.
@@ -34,8 +42,11 @@ Just a plan, currentrly a few features are only implemented.
   - [x] Comment/Note
   - [ ] Tag
   - [ ] Album(low priority)
-- [ ] Search
-- [ ] Filter
+- [ ] Search/Filter
+  - [ ] Star
+  - [ ] Camera
+  - [ ] Tag
+  - [ ] Comment/Note
 - [ ] Upload to cloud services
   - [x] Google Photos (works. but in progress)
   - [ ] Amazon Photos

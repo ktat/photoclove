@@ -1,6 +1,6 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from "react";
-import ReactPlayer from 'react-player';
+// import ReactPlayer from 'react-player';
 import { open } from '@tauri-apps/api/shell';
 import { tauri } from "@tauri-apps/api";
 
@@ -12,6 +12,8 @@ function PhotoDisplay(props) {
     const [photoDisplayImgClass, setPhotoDisplayImgClass] = useState("");
     const [videoSource, setVideoSource] = useState("");
     const [videoClass, setVideoClass] = useState("video-off");
+    const [photoDisplayWidth, setPhotoDisplayWidth] = useState("pdWidth");
+    const [photoDisplayHeight, setPhotoDisplayHeight] = useState("pdHeight");
 
     useEffect((e) => {
         currentFile = "";
@@ -23,9 +25,16 @@ function PhotoDisplay(props) {
         document.querySelector("#dummy-for-focus").focus();
         if (props.currentPhotoPath.match(/(mp4|webm)$/i)) {
             movie(props.currentPhotoPath);
-            setVideoClass("video-on")
+            let photoDisplayDiv = document.querySelector('.photoDisplay');
+            let width = photoDisplayDiv.clientWidth;
+            let height = photoDisplayDiv.clientHeight - 150;
+
+            setPhotoDisplayWidth(width + "px");
+            setPhotoDisplayHeight(height + "px");
+            setVideoClass("video-on");
         } else {
-            setVideoClass("video-off")
+            setVideoClass("video-off");
+            setVideoSource("");
         }
     }, [props.currentPhotoPath]);
 
@@ -38,18 +47,19 @@ function PhotoDisplay(props) {
         if (currentFile != path) {
             invoke("lock", { t: false }).then(async (r) => {
                 // tauri cannot play movie file which is not in public folder. So copy movie file to public/movie
+                const ext = path.split('.').pop();
                 const result = await invoke("link_file_to_public", {
                     fromFilePath: path,
-                    toFileName: "movie.tmp"
+                    toFileName: "movie.tmp." + ext
                 }).then((r) => {
-                    let videoPath = "/movie.tmp?" + path;
+                    let videoPath = "/movie.tmp." + ext + "?" + path;
                     currentFile = path;
                     // I don't know why it works only when set twice sometime.
                     setVideoSource("#");
                     // I don't know why react player require waiting for a while to play video correctly.
                     setTimeout(() => {
                         setVideoSource(videoPath);
-                    }, 100);
+                    }, 200);
                 });
             })
         }
@@ -123,25 +133,25 @@ function PhotoDisplay(props) {
 
     return (
         <div className="photo">
-            {/* video doesn't work for local files: https://github.com/tauri-apps/tauri/issues/3725#issuecomment-1160842638
-
-                    <video style={{ width: "100%", height: "100%" }} controls="" autoPlay="" name="media">
-                        <source src={convertFileSrc(props.currentPhotoPath)} type={"video/" + (props.currentPhotoPath.match(/\.mp4$/) ? "mp4" : "webm")} />
-                    </video>
-
-                */}
             <div className={videoClass}>
-                <ReactPlayer
+                <div style={{ "width": photoDisplayWidth, "height": photoDisplayHeight }}>
+                    { /* <ReactPlayer
                     width="100%"
                     height="100%"
                     controls
                     url={videoSource}
-                />
+                    */ }
+                    <video
+                        controls
+                        src={videoSource}
+                    >
+                    </video>
+                </div>
                 Open with other software: <a href="#" onClick={(e) => open("file://" + props.currentPhotoPath)}>{props.currentPhotoPath}</a>
             </div>
             {!props.currentPhotoPath.match(/\.(mp4|webm)$/i) &&
                 <img className={photoDisplayImgClass}
-                    lading="eager"
+                    loading="eager"
                     onLoad={(e) => {
                         setTimeout(() => {
                             props.SetImgStyle({ opacity: 1, transition: "opacity 0.5s" }, e.target.width, e.target.height);
