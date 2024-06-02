@@ -92,6 +92,15 @@ function Preferences(props) {
                         })}
                     </select>
                 </div>
+                <div className="row1"></div><div className="row1">IgnoreFileSize: </div><div className="row4">
+                    <select value={config.thumbnail_ignore_file_size} onChange={(e) => { config.thumbnail_ignore_file_size = parseFloat(e.currentTarget.value); setNewConfig(config) }}>
+                        {[0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((v, i) => {
+                            return (
+                                <option key={i} value={1024 * 1024 * v}>{v}MB</option>
+                            )
+                        })}
+                    </select>
+                </div>
                 <div className="row0">Num of Parallel:</div>
                 <div className="row1"></div><div className="row1">Import: </div><div className="row4"><input value={config.copy_parallel} type="text" onChange={(e) => { config.copy_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
                 <div className="row1"></div><div className="row1">Thumbnail: </div><div className="row4"><input value={config.thumbnail_parallel} type="text" onChange={(e) => { config.thumbnail_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>

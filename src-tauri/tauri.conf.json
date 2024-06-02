@@ -51,6 +51,9 @@
       "active": true,
       "category": "DeveloperTool",
       "copyright": "",
+      "appimage": {
+        "bundleMediaFramework": true
+      },
       "deb": {
         "depends": []
       },

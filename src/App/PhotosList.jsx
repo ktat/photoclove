@@ -317,12 +317,21 @@ function PhotosList(props) {
                         <div className="photos">
                             {photos.photos.map((l, i) => {
                                 const image_for_not_found = "/img_error.png";
-                                const thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
-                                photosListImgSrc[l.file.path] = l.has_thumbnail ? convertFileSrc(thumbnailSrc) : convertFileSrc(l.file.path);
+                                let thumbnailSrc = "";
+                                if (l.has_thumbnail) {
+                                    if (l.file.name.match(/(mp4|webm)$/i)) {
+                                        thumbnailSrc = thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + l.file.name + ".jpg";
+                                    } else {
+                                        thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
+                                    }
+                                    photosListImgSrc[l.file.path] = convertFileSrc(thumbnailSrc);
+                                } else {
+                                    photosListImgSrc[l.file.path] = convertFileSrc(l.file.path);
+                                }
                                 return (
                                     <div key={i} className={"row pict-" + iconSize} style={{ textAlign: "center" }} >
                                         <a href="#" onClick={() => { displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto) }}>
-                                            {l.file.path.match(/\.(mp4|webm)$/i)
+                                            {!l.has_thumbnail && l.file.path.match(/\.(mp4|webm)$/i)
                                                 ? <div className="photo-list-movie" style={{ minWidth: (iconSize - 20) + 'px', marginTop: (iconSize / 7) + "px" }}>
                                                     <span style={{ fontSize: (iconSize / 3) + 'px' }}>&#127909;</span>
                                                 </div>
@@ -349,6 +358,7 @@ function PhotosList(props) {
                                                             }
                                                         }}
                                                     />
+                                                    {l.file.path.match(/\.(mp4|webm)$/i) && <div style={{ color: "white", position: "relative", top: iconSize / -3, fontSize: (iconSize / 6) + 'px' }}>&#x25b6;</div>}
                                                 </div>
                                             }
                                         </a>

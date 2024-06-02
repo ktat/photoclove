@@ -14,10 +14,10 @@ So, I decided to create this by myself.
 
 ## Dependency
 
-On ubuntu, install the following package to watch mp4 file.
+On ubuntu, install the following package to watch mp4 file and to create movie thumbnail.
 
 ```
-sudo apt install gstreamer1.0-plugins-bad
+sudo apt install gstreamer1.0-plugins-bad ffmepg
 ```
 
 ## Featurs to be ipmlemented
