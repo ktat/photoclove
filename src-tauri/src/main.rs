@@ -91,15 +91,13 @@ async fn link_file_to_public(
             }
         };
     } else {
-        if path::Path::new(to.as_path()).exists() {
-            match fs::remove_file(to.as_path()) {
-                Ok(_) => {}
-                Err(e) => {
-                    eprintln!("Cannot delete file {:?} : {:?}", to.clone(), e);
-                    return Ok("false".to_string());
-                }
-            };
-        }
+        match fs::remove_file(to.as_path()) {
+            Ok(_) => {}
+            Err(e) => {
+                eprintln!("Cannot delete file {:?} : {:?}", to.clone(), e);
+                // return Ok("false".to_string());
+            }
+        };
 
         return match symlink(from, to.clone()) {
             Ok(_) => Ok("true".to_string()),
@@ -325,6 +323,7 @@ async fn import_photos(
             c.thumbnail_parallel as u32,
             c.thumbnail_compression_quality,
             c.thumbnail_ratio,
+            c.thumbnail_ignore_file_size,
         )
         .await
         {
@@ -445,6 +444,7 @@ async fn create_thumbnails(
         c.thumbnail_parallel as u32,
         c.thumbnail_compression_quality,
         c.thumbnail_ratio,
+        c.thumbnail_ignore_file_size,
     )
     .await
     {
@@ -477,6 +477,7 @@ async fn create_thumbnails_in_date(
         c.thumbnail_parallel as u32,
         c.thumbnail_compression_quality,
         c.thumbnail_ratio,
+        c.thumbnail_ignore_file_size,
     )
     .await
     {

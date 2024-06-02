@@ -258,8 +258,20 @@ function PhotosListMini(props) {
                         showPhotosIndex.map((vIndex, i) => {
                             const v = props.allPhotos[vIndex];
                             const clientHeight = document.querySelector('#photos-list-mini').clientHeight - 20;
-                            const thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + v.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
-                            photosListImgSrc[v.file.path] = v.has_thumbnail ? convertFileSrc(thumbnailSrc) : convertFileSrc(v.file.path);
+                            let thumbnailSrc = "";
+                            console.log(v.file.path + " : " + v.has_thumbnail);
+                            if (v.has_thumbnail) {
+                                if (v.file.name.match(/(mp4|webm)$/i)) {
+                                    thumbnailSrc = thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + v.file.name + ".jpg";
+                                    console.log(thumbnailSrc)
+                                } else {
+                                    thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + v.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
+                                    console.log(thumbnailSrc)
+                                }
+                                photosListImgSrc[v.file.path] = convertFileSrc(thumbnailSrc);
+                            } else {
+                                photosListImgSrc[v.file.path] = convertFileSrc(v.file.path);
+                            }
                             return <div className="row2" key={i}>
                                 <a onClick={(e) => {
                                     props.setCurrentPhotoIndex(vIndex);
@@ -267,13 +279,14 @@ function PhotosListMini(props) {
                                     resetSelectedBorder(i);
                                     props.datePage[props.currentDate] = Math.trunc((props.currentIndex + i) / props.num) + 1;
                                 }}>
-                                    {v.file.path.match(/\.(mp4|webm)$/i)
+                                    {!v.has_thumbnail && v.file.path.match(/\.(mp4|webm)$/i)
                                         ? <div className="photo-list-movie" style={{ border: borderStyle[i], maxHeight: clientHeight + "px" }}>
                                             <span>&#127909;</span>
                                         </div>
                                         : <>
                                             <img src={photosListImgSrc[v.file.path]} style={{ border: borderStyle[i], maxHeight: clientHeight + "px" }} alt={"photo-" + i}
                                                 onError={(e) => { e.target.src = "/img_error.png" }} />
+                                            {v.file.path.match(/\.(mp4|webm)$/i) && <div style={{ color: "white", position: "relative", top: clientHeight / -4 }}>&#x25b6;</div>}
                                         </>
                                     }
                                 </a>

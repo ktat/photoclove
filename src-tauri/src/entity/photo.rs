@@ -76,11 +76,16 @@ impl Photo {
             let thumbnail_store = self.thumbnail_store.clone();
             let thumbnail_path = self.file.path.replace(&import_path, &thumbnail_store);
             let ext_regex = regex::Regex::new(r"\.JPG$").unwrap();
-            let thumbnail_path_ext_changed = ext_regex.replace(&thumbnail_path, ".jpg");
-            let file_option = fs::OpenOptions::new()
-                .read(true)
-                .open(&thumbnail_path_ext_changed.to_string());
-            self.has_thumbnail = file_option.is_ok();
+            let thumbnail_path_ext_changed = ext_regex.replace(&thumbnail_path, ".jpg").to_string();
+            if thumbnail_path == thumbnail_path_ext_changed {
+                // maybe movie files
+                let thumbnail_path_for_movie = format!("{}.jpg", thumbnail_path);
+                let p = std::path::Path::new(&thumbnail_path_for_movie);
+                self.has_thumbnail = p.exists();
+            } else {
+                let p = std::path::Path::new(&thumbnail_path_ext_changed);
+                self.has_thumbnail = p.exists();
+            }
         } else {
             eprintln!("called set_has_thumbnail from photo doesn't have config");
         }

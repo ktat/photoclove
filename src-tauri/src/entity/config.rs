@@ -13,6 +13,7 @@ pub struct Config {
     pub thumbnail_store: String,
     pub thumbnail_ratio: f32,
     pub thumbnail_compression_quality: f32,
+    pub thumbnail_ignore_file_size: u32,
     pub copy_parallel: usize,
     pub thumbnail_parallel: usize,
     pub use_count: i32,
@@ -37,6 +38,7 @@ impl Config {
         self.thumbnail_parallel = config.thumbnail_parallel;
         self.thumbnail_ratio = config.thumbnail_ratio;
         self.thumbnail_compression_quality = config.thumbnail_compression_quality;
+        self.thumbnail_ignore_file_size = config.thumbnail_ignore_file_size;
         self.use_count = config.use_count;
     }
 
@@ -108,6 +110,7 @@ impl Config {
             thumbnail_store: home.join(".photoclove/thumbnail/").display().to_string(),
             thumbnail_ratio: 0.05,
             thumbnail_compression_quality: 0.5,
+            thumbnail_ignore_file_size: 1024 * 1024, // Don't create thumbnail if photo size <= 1MB
             copy_parallel: 2,
             thumbnail_parallel: 1,
             use_count: 0,
