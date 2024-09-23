@@ -227,6 +227,18 @@ function PhotosListMini(props) {
         props.setCurrentPhotoIndex(index);
     }
 
+    function getThumbnailSrc(photo) {
+        let thumbnailSrc = "";
+        if (photo && photo.has_thumbnail) {
+            if (photo.file.name.match(/(mp4|webm)$/i)) {
+                thumbnailSrc = thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + photo.file.name + ".jpg";
+            } else {
+                thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + photo.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
+            }
+        }
+        return thumbnailSrc;
+    }
+
     return (
         <>
             <div className="centerDisplay">
@@ -250,24 +262,22 @@ function PhotosListMini(props) {
                         photoZoomReady={photoZoomReady}
                         currentPhotoPath={props.currentPhotoPath}
                         currentPhotoSize={currentPhotoSize}
+                        thumbnailSrc={getThumbnailSrc(props.allPhotos[props.currentPhotoIndex])}
                     />
                 </div>
                 <div id="photos-list-mini">
                     <div className="row1"><a style={{ display: props.currentIndex == 0 ? "none" : "" }} onClick={() => { backwardPhotos() }}>◁</a></div>
                     {
                         showPhotosIndex.map((vIndex, i) => {
-                            const v = props.allPhotos[vIndex];
+                            let v = props.allPhotos[vIndex];
+                            if (!v) {
+                                vIndex -= 1;
+                                v = props.allPhotos[vIndex];
+                            }
                             const clientHeight = document.querySelector('#photos-list-mini').clientHeight - 20;
-                            let thumbnailSrc = "";
+                            const thumbnailSrc = getThumbnailSrc(v);
                             console.log(v.file.path + " : " + v.has_thumbnail);
-                            if (v.has_thumbnail) {
-                                if (v.file.name.match(/(mp4|webm)$/i)) {
-                                    thumbnailSrc = thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + v.file.name + ".jpg";
-                                    console.log(thumbnailSrc)
-                                } else {
-                                    thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + v.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
-                                    console.log(thumbnailSrc)
-                                }
+                            if (thumbnailSrc !== "") {
                                 photosListImgSrc[v.file.path] = convertFileSrc(thumbnailSrc);
                             } else {
                                 photosListImgSrc[v.file.path] = convertFileSrc(v.file.path);
