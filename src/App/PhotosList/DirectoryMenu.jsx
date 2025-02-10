@@ -90,13 +90,13 @@ function DirectoryMenu(props) {
             if (answer) {
                 localForage.getItem("GoogleOAuthTokens").then((tokens) => {
                     lockUpload = true;
-                    invoke("upload_to_google_photos", { dateStr: props.currentDate, selectedFiles: files, accessToken: tokens.accessToken }).then((r) => {
+                    invoke("upload_to_google_photos", { dateStr: props.currentDate, selectedFiles: files, accessToken: tokens.accessToken, refleshToken: tokens.refreshToken }).then((r) => {
                         props.clearPhotoSelection()
                         lockUpload = false;
                         let data = JSON.parse(r);
-                        console.log(data);
+                        console.log("1 === ", data);
                     }).catch(e => {
-                        console.log(e);
+                        console.log("2 === ", e);
                     });
                 }
                 ).catch((e) => {

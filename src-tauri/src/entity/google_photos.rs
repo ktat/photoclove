@@ -8,6 +8,7 @@ static USER_AGENT: &str = "photoclove/1.0";
 
 pub struct GooglePhotos {
     access_token: String,
+    refresh_token: String,
 }
 
 pub struct GooglePhotosAlbum {
@@ -62,8 +63,11 @@ pub struct GoogleSimpleMediaItem {
 static API_END_POINT_URL: &str = "https://photoslibrary.googleapis.com/v1/";
 
 impl GooglePhotos {
-    pub fn new(access_token: String) -> GooglePhotos {
-        GooglePhotos { access_token }
+    pub fn new(access_token: String, refresh_token: String) -> GooglePhotos {
+        GooglePhotos {
+            access_token: access_token,
+            refresh_token,
+        }
     }
 
     pub async fn get_album(&self, mut album_id: String) -> GooglePhotosAlbum {
@@ -98,9 +102,8 @@ impl GooglePhotos {
 
     pub async fn upload_photo(&self, files: Vec<&str>) {
         let uri = API_END_POINT_URL.to_string() + "uploads";
+        eprintln!(" upload_photo !!!!!!!!!!!");
 
-        let mut items_list: Vec<Vec<GoogleNewMediaItem>> = vec![];
-        let mut items = vec![];
         for f in files {
             let mut file = File::open(f).unwrap();
 
@@ -119,23 +122,32 @@ impl GooglePhotos {
                 .header("X-Google-Upload-Protocol", "raw")
                 .body(buffer)
                 .send()
-                .await
-                .unwrap()
-                .text()
                 .await;
-            let item = GoogleSimpleMediaItem {
-                file_name: f.to_string(),
-                upload_token: response.unwrap(),
-            };
-            let media_item = GoogleNewMediaItem {
-                description: "".to_string(),
-                simple_media_item: item,
-            };
-            items.push(media_item);
-            if items.len() == 50 {
-                items_list.push(items.clone());
-                items = Vec::new();
+            match response {
+                Ok(response) => {
+                    self.success_response(response, f).await;
+                }
+                Err(err) => if err.status().unwrap() == reqwest::StatusCode::UNAUTHORIZED {},
             }
+        }
+    }
+
+    async fn success_response(&self, response: reqwest::Response, f: &str) {
+        let mut items_list: Vec<Vec<GoogleNewMediaItem>> = vec![];
+        let mut items = vec![];
+        let r = response.text().await;
+        let item = GoogleSimpleMediaItem {
+            file_name: f.to_string(),
+            upload_token: r.unwrap(),
+        };
+        let media_item = GoogleNewMediaItem {
+            description: "".to_string(),
+            simple_media_item: item,
+        };
+        items.push(media_item);
+        if items.len() == 50 {
+            items_list.push(items.clone());
+            items = Vec::new();
         }
         if items.len() != 0 {
             items_list.push(items.clone());
@@ -167,11 +179,15 @@ impl GooglePhotos {
             .header(reqwest::header::AUTHORIZATION, &auth)
             .header(reqwest::header::ACCEPT, "application/json")
             .send()
-            .await
-            .unwrap()
-            .text()
-            .await;
-        return response;
+            .await?;
+
+        eprintln!("!!!!!!!!!!!!============== {}", response.status());
+
+        if response.status().is_success() {
+            return response.text().await;
+        }
+
+        return response.text().await;
     }
 
     async fn post_request(&self, path: &str, data: String) -> Result<String, reqwest::Error> {

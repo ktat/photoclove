@@ -529,11 +529,13 @@ async fn upload_to_google_photos(
     _state: tauri::State<'_, AppState>,
     date_str: &str,
     access_token: &str,
+    reflesh_token: &str,
     selected_files: Vec<&str>,
 ) -> Result<bool, ()> {
     eprintln!("{:?}", date_str);
     eprintln!("{:?}", selected_files);
-    let photos = google_photos::GooglePhotos::new(access_token.to_string());
+    let photos =
+        google_photos::GooglePhotos::new(access_token.to_string(), reflesh_token.to_string());
     photos.upload_photo(selected_files).await;
 
     return Ok(true);
