@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
-import { ask, message, confirm } from '@tauri-apps/api/dialog';
-import { relaunch } from "@tauri-apps/api/process";
+import { invoke } from "@tauri-apps/api/core";
+import { ask, message, confirm } from '@tauri-apps/plugin-dialog';
+import { relaunch } from "@tauri-apps/plugin-process";
 
 function Preferences(props) {
     const [config, setConfig] = useState({});
