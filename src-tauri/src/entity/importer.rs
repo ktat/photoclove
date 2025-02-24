@@ -14,6 +14,7 @@ use std::{
     sync::{Arc, Mutex, RwLock},
     thread, time,
 };
+use tauri::Emitter;
 
 static IN_PROGRESS_NUM: AtomicUsize = AtomicUsize::new(1);
 

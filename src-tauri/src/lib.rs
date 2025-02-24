@@ -14,7 +14,9 @@ use std::{
     sync::{Arc, Mutex},
 };
 use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
-
+use tauri::Emitter;
+use tauri::Event;
+use tauri::{Builder, Manager};
 mod domain_service;
 mod entity;
 mod repository;
@@ -314,7 +316,7 @@ async fn import_photos(
     let t = result.is_ok();
     if t {
         let dates = result.unwrap();
-        window.emit("import", "start thumbnail creation");
+        window.emit("import", "start thumbnail creation").unwrap();
 
         match photo_service::create_thumbnails(
             dates,
@@ -328,15 +330,15 @@ async fn import_photos(
         .await
         {
             Ok(ret) => {
-                window.emit("import", "thumbnail creation finish");
+                window.emit("import", "thumbnail creation finish").unwrap();
             }
             Err(_) => {
-                window.emit("import", "thumbnail creation failed");
+                window.emit("import", "thumbnail creation failed").unwrap();
             }
         }
-        window.emit_all("import", "finish");
+        window.emit("import", "finish").unwrap();
     } else {
-        window.emit_all("import", "error");
+        window.emit("import", "error").unwrap();
     }
     return Ok(t);
 }
@@ -537,7 +539,6 @@ async fn upload_to_google_photos(
     let photos =
         google_photos::GooglePhotos::new(access_token.to_string(), reflesh_token.to_string());
     photos.upload_photo(selected_files).await;
-
     return Ok(true);
 }
 
@@ -562,7 +563,8 @@ async fn move_to_trash(
     return Ok(date.to_string());
 }
 
-fn main() {
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
     use crate::repository::*;
     let c = config::Config::new();
     // if c.repository.store == "memory".to_string() {
@@ -581,71 +583,55 @@ fn main() {
     state.repo_db.connect();
     tauri::Builder::default()
         .plugin(tauri_plugin_oauth::init())
-        /*
-        .menu(menu)
-        .on_menu_event(|event| match event.menu_item_id() {
-            "quit" => {
-                std::process::exit(0);
-            }
-            "close" => {
-                event.window().close().unwrap();
-            }
-            "about" => {
-                event
-                    .window()
-                    .emit_all("click_menu_static", "about")
-                    .unwrap();
-            }
-            "github" => {
-                event
-                    .window()
-                    .emit_all("click_menu_static", "github")
-                    .unwrap();
-            }
-            "load_dates" => {
-                event.window().emit_all("click_menu", "load_dates").unwrap();
-            }
-            "create_db" => {
-                event.window().emit_all("click_menu", "create_db").unwrap();
-            }
-            "import" => {
-                event.window().emit_all("click_menu", "import").unwrap();
-            }
-            "login" => {
-                event.window().emit_all("click_menu", "login").unwrap();
-            }
-            "pref" => {
-                event.window().emit_all("click_menu", "pref").unwrap();
-            }
-            e => {
-                eprintln!("{:?}", e);
-            }
-        })
-         */
         .setup(|app| {
             let submenu = SubmenuBuilder::new(app, "File")
-                .item(MenuItemBuilder::new(app, "load_dates", "Load Date List"))
-                .item(MenuItemBuilder::new(app, "import", "Import"))
-                .item(MenuItemBuilder::new(app, "create_db", "Create DB"))
-                .item(MenuItemBuilder::new(app, "login", "Login"))
-                .item(MenuItemBuilder::new(app, "pref", "Preferences"))
-                .item(MenuItemBuilder::new(app, "quit", "Quit"))
+                .text("load_dates", "Load Date List")
+                .text("import", "Import")
+                .text("create_db", "Create DB")
+                .text("login", "Login")
+                .text("pref", "Preferences")
+                .text("quit", "Quit")
                 .build()?;
 
             let help_submenu = SubmenuBuilder::new(app, "?")
-                .item(MenuItemBuilder::new(app, "github", "GitHub"))
-                .item(MenuItemBuilder::new(app, "about", "About"))
+                .text("github", "GitHub")
+                .text("about", "About")
                 .build()?;
 
             let menu = MenuBuilder::new(app)
-                .add_native_item(PredefinedMenuItem::EditCopy)
+                .copy()
                 .item(&submenu)
                 .item(&help_submenu)
                 .build()?;
 
-            app.manage(state);
+            app.set_menu(menu)?;
+
+            app.on_menu_event(move |app, e| {
+                if e.id == "quit" {
+                    std::process::exit(0)
+                } else if e.id == "close" {
+                    app.exit(0)
+                } else if e.id == "about" {
+                    app.emit("click_menu_static", "about").unwrap();
+                } else if e.id == "github" {
+                    app.emit("click_menu_static", "github").unwrap();
+                } else if e.id == "load_dates" {
+                    app.emit("click_menu", "load_dates").unwrap();
+                } else if e.id == "create_db" {
+                    app.emit("click_menu", "create_db").unwrap();
+                } else if e.id == "import" {
+                    app.emit("click_menu", "import").unwrap();
+                } else if e.id == "login" {
+                    app.emit("click_menu", "login").unwrap();
+                } else if e.id == "pref" {
+                    app.emit("click_menu", "pref").unwrap();
+                } else {
+                    eprintln!("{:?}", e);
+                }
+            });
             Ok(())
         })
+        .manage(state)
         .invoke_handler(tauri::generate_handler![
             greet,
             get_dates,
