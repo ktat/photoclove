@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { message, confirm } from "@tauri-apps/plugin-dialog";
-// import { tauri } from "@tauri-apps/api";
 import { emit } from "@tauri-apps/api/event";
 import { localForage } from "../../storage/forage"
 
