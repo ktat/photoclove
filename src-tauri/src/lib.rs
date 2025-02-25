@@ -5,18 +5,20 @@ use crate::repository::RepositoryDB;
 use crate::repository::*;
 use crate::value::*;
 use entity::config::Config;
-use std::error::Error;
-use std::os::unix::fs::symlink;
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::{
-    fs, path,
+    error::Error,
+    fs,
+    os::unix::fs::symlink,
+    path,
+    path::PathBuf,
+    sync::atomic::{AtomicBool, Ordering},
     sync::{Arc, Mutex},
 };
-use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
-use tauri::Emitter;
-use tauri::Event;
-use tauri::{Builder, Manager};
+use tauri::{
+    menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder},
+    Builder, Emitter, Event, Manager,
+};
+
 mod domain_service;
 mod entity;
 mod repository;
@@ -377,18 +379,18 @@ async fn move_photos_to_exif_date(
     date_str: &str,
 ) -> Result<String, ()> {
     let date = date::Date::from_string(&date_str.to_string(), Option::Some("/"));
-    window.emit("move_files", "start");
+    window.emit("move_files", "start").unwrap();
     eprintln!("target date: {:?}", date);
     let dates = state.repo_db.move_photos_to_exif_date(date).await;
     eprintln!("date: {:?}", dates);
-    window.emit("move_files", "end_move");
+    window.emit("move_files", "end_move").unwrap();
     match state.meta_db.record_photos_all_meta_data(dates) {
         Ok(ret) => {
-            window.emit("move_files", "finish");
+            window.emit("move_files", "finish").unwrap();
             return Ok(serde_json::to_string(&ret).unwrap());
         }
         Err(_) => {
-            window.emit("move_files", "faile");
+            window.emit("move_files", "faile").unwrap();
             return Ok("false".to_string());
         }
     }
@@ -399,11 +401,11 @@ async fn create_db(window: tauri::Window, state: tauri::State<'_, AppState>) -> 
     let dates = state.repo_db.get_dates();
     match state.meta_db.record_photos_all_meta_data(dates) {
         Ok(ret) => {
-            window.emit("create_db", "finish");
+            window.emit("create_db", "finish").unwrap();
             return Ok(serde_json::to_string(&ret).unwrap());
         }
         Err(_) => {
-            window.emit("create_db", "failed");
+            window.emit("create_db", "failed").unwrap();
             return Ok("false".to_string());
         }
     }
@@ -419,11 +421,11 @@ async fn create_db_in_date(
     let dates = date::Dates::new(&[date]);
     match state.meta_db.record_photos_all_meta_data(dates) {
         Ok(ret) => {
-            window.emit("create_db", "finish");
+            window.emit("create_db", "finish").unwrap();
             return Ok(serde_json::to_string(&ret).unwrap());
         }
         Err(_) => {
-            window.emit("create_db", "failed");
+            window.emit("create_db", "failed").unwrap();
             return Ok("false".to_string());
         }
     }
@@ -451,11 +453,11 @@ async fn create_thumbnails(
     .await
     {
         Ok(ret) => {
-            window.emit("create_thumbnails", "finish");
+            window.emit("create_thumbnails", "finish").unwrap();
             return Ok(serde_json::to_string(&ret).unwrap());
         }
         Err(_) => {
-            window.emit("create_thumbnails", "failed");
+            window.emit("create_thumbnails", "failed").unwrap();
             return Ok("false".to_string());
         }
     }
@@ -484,11 +486,11 @@ async fn create_thumbnails_in_date(
     .await
     {
         Ok(ret) => {
-            window.emit("create_thumbnails", "finish");
+            window.emit("create_thumbnails", "finish").unwrap();
             return Ok(serde_json::to_string(&ret).unwrap());
         }
         Err(_) => {
-            window.emit("create_thumbnails", "failed");
+            window.emit("create_thumbnails", "failed").unwrap();
             return Ok("false".to_string());
         }
     }
@@ -582,6 +584,11 @@ pub fn run() {
 
     state.repo_db.connect();
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_oauth::init())
         .setup(|app| {
             let submenu = SubmenuBuilder::new(app, "File")
@@ -599,7 +606,6 @@ pub fn run() {
                 .build()?;
 
             let menu = MenuBuilder::new(app)
-                .copy()
                 .item(&submenu)
                 .item(&help_submenu)
                 .build()?;

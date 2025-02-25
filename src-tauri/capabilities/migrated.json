@@ -6,6 +6,28 @@
     "main"
   ],
   "permissions": [
-    "core:default"
+    "core:default",
+    "dialog:allow-ask",
+    "dialog:allow-confirm",
+    "dialog:allow-message",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "global-shortcut:default",
+    "clipboard-manager:allow-write-text",
+    "clipboard-manager:allow-read-text",
+    "oauth:allow-start",
+    {
+      "identifier": "shell:allow-open",
+      "allow": [
+        {
+          "open": "^(https?:|file:)"
+        }
+      ]
+    },
+    "process:default",
+    "notification:allow-show",
+    "clipboard-manager:default",
+    "shell:default",
+    "dialog:default"
   ]
 }

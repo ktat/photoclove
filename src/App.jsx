@@ -59,14 +59,11 @@ function App() {
   let in_db_creation = false;
 
   useEffect((e) => {
-    /* 
     invoke("get_config", {},).then((e) => {
       const json = JSON.parse(e);
       setUseCount(json.use_count);
     });
-    */
 
-    /*
     // const sab = new SharedArrayBuffer(1024);
     const unlisten1 = listen("create_db", (e) => {
       console.log(e);
@@ -132,7 +129,6 @@ function App() {
         });
       }
     });
-    */
   }, []);
 
   function getDates() {
