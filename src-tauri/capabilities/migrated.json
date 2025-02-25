@@ -25,7 +25,7 @@
       ]
     },
     "process:default",
-    "notification:allow-show",
+    "notification:default",
     "clipboard-manager:default",
     "shell:default",
     "dialog:default"

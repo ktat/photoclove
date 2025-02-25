@@ -13,20 +13,7 @@ import Welcome from "./Welcome.jsx"
 import Home from "./App/Home.jsx"
 import Login from "./App/Login.jsx"
 import Footer from "./App/Footer.jsx"
-async function setupEventListener() {
-  try {
-    const unlisten = listen("click_menu_static", (e) => {
-      if (e.payload === "about") {
-        message("PhotoClove is an application to manage photos.\n (c)ktat");
-      } else if (e.payload === "github") {
-        open("https://github.com/ktat/photoclove/");
-      }
-    });
-    return unlisten;
-  } catch (error) {
-    console.error("Event listener setup failed:", error);
-  }
-}
+
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
@@ -62,6 +49,14 @@ function App() {
     invoke("get_config", {},).then((e) => {
       const json = JSON.parse(e);
       setUseCount(json.use_count);
+    });
+
+    const unlisten0 = listen("click_menu_static", (e) => {
+      if (e.payload === "about") {
+        message("PhotoClove is an application to manage photos.\n (c)ktat");
+      } else if (e.payload === "github") {
+        open("https://github.com/ktat/photoclove/");
+      }
     });
 
     // const sab = new SharedArrayBuffer(1024);
