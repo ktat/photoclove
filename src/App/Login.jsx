@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { auth } from '../services/firebase';
 const { openGoogleSignIn, googleSignIn, signOut } = auth;

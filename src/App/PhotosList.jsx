@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import PhotosListMini from "./PhotosList/PhotosListMini.jsx";
 import PhotoInfo from "./PhotosList/PhotoInfo.jsx";
-import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import PhotoLoading from "./PhotosList/PhotoLoading.jsx";
 import DirectoryMenu from "./PhotosList/DirectoryMenu.jsx";
-import { open } from '@tauri-apps/api/shell';
+import { open } from '@tauri-apps/plugin-shell';
 
 function PhotosList(props) {
     const [iconSize, setIconSize] = useState(100);

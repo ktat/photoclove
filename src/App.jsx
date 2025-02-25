@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { register } from "@tauri-apps/api/globalShortcut";
-import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
-import { open } from "@tauri-apps/api/shell";
+import { register } from '@tauri-apps/plugin-global-shortcut';
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-shell";
 import { listen } from "@tauri-apps/api/event";
-import { ask, message, confirm } from '@tauri-apps/api/dialog';
+import { ask, message, confirm } from '@tauri-apps/plugin-dialog';
 import "./App.css";
 import PhotosList from "./App/PhotosList.jsx"
 import DateList from "./App/DateList.jsx"
@@ -13,15 +13,6 @@ import Welcome from "./Welcome.jsx"
 import Home from "./App/Home.jsx"
 import Login from "./App/Login.jsx"
 import Footer from "./App/Footer.jsx"
-import { tauri } from "@tauri-apps/api";
-
-const unlisten = listen("click_menu_static", (e) => {
-  if (e.payload === "about") {
-    message("PhotoClove is an application to manage photos.\n (c)ktat");
-  } else if (e.payload === "github") {
-    open("https://github.com/ktat/photoclove/");
-  }
-});
 
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
@@ -58,6 +49,14 @@ function App() {
     invoke("get_config", {},).then((e) => {
       const json = JSON.parse(e);
       setUseCount(json.use_count);
+    });
+
+    const unlisten0 = listen("click_menu_static", (e) => {
+      if (e.payload === "about") {
+        message("PhotoClove is an application to manage photos.\n (c)ktat");
+      } else if (e.payload === "github") {
+        open("https://github.com/ktat/photoclove/");
+      }
     });
 
     // const sab = new SharedArrayBuffer(1024);

@@ -1,8 +1,7 @@
-import { convertFileSrc, invoke } from "@tauri-apps/api/tauri";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 // import ReactPlayer from 'react-player';
-import { open } from '@tauri-apps/api/shell';
-import { tauri } from "@tauri-apps/api";
+import { open } from '@tauri-apps/plugin-shell';
 
 let currentFile = "";
 

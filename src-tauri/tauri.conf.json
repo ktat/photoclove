@@ -2,101 +2,72 @@
   "build": {
     "beforeDevCommand": "pnpm dev",
     "beforeBuildCommand": "pnpm build",
-    "devPath": "http://localhost:1420",
-    "distDir": "../dist",
-    "withGlobalTauri": true
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420"
   },
-  "package": {
-    "productName": "PhotoClove",
-    "version": "0.0.0"
-  },
-  "tauri": {
-    "allowlist": {
-      "all": false,
-      "shell": {
-        "all": false,
-        "open": "^(https?:|file:)"
-      },
-      "notification": {
-        "all": true
-      },
-      "dialog": {
-        "all": true,
-        "ask": true,
-        "confirm": true,
-        "message": true,
-        "open": true,
-        "save": true
-      },
-      "globalShortcut": {
-        "all": true
-      },
-      "protocol": {
-        "asset": true,
-        "assetScope": [
-          "**",
-          "**/.photoclove/**"
-        ]
-      },
-      "clipboard": {
-        "all": true,
-        "writeText": true,
-        "readText": true
-      },
-      "process": {
-        "relaunch": true
-      }
-    },
-    "bundle": {
-      "active": true,
-      "category": "DeveloperTool",
-      "copyright": "",
-      "appimage": {
-        "bundleMediaFramework": true
-      },
+  "bundle": {
+    "active": true,
+    "category": "DeveloperTool",
+    "copyright": "",
+    "linux": {
       "deb": {
         "depends": []
       },
-      "externalBin": [],
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ],
-      "identifier": "ktat.photoclove",
-      "longDescription": "",
-      "macOS": {
-        "entitlements": null,
-        "exceptionDomain": "",
-        "frameworks": [],
-        "providerShortName": null,
-        "signingIdentity": null
-      },
-      "resources": [],
-      "shortDescription": "",
-      "targets": "all",
-      "windows": {
-        "certificateThumbprint": null,
-        "digestAlgorithm": "sha256",
-        "timestampUrl": ""
+      "appimage": {
+        "bundleMediaFramework": true
       }
     },
-    "security": {
-      "csp": "default-src 'self'; img-src 'self' asset:; media-src 'self' asset: https://asset.localhost"
+    "targets": "all",
+    "externalBin": [],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
     },
-    "updater": {
-      "active": false
+    "longDescription": "",
+    "macOS": {
+      "entitlements": null,
+      "exceptionDomain": "",
+      "frameworks": [],
+      "providerShortName": null,
+      "signingIdentity": null
     },
+    "resources": [],
+    "shortDescription": ""
+  },
+  "productName": "PhotoClove",
+  "mainBinaryName": "PhotoClove",
+  "version": "0.0.0",
+  "identifier": "ktat.photoclove",
+  "plugins": {},
+  "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "fullscreen": false,
         "height": 1200,
         "resizable": true,
         "title": "🦀PhotoClove🦀",
-        "width": 1600
+        "width": 1600,
+        "useHttpsScheme": true
       }
-    ]
+    ],
+    "security": {
+      "assetProtocol": {
+        "scope": [
+          "**",
+          "**/.photoclove/**"
+        ],
+        "enable": true
+      },
+      "csp": "default-src 'self'; img-src 'self' asset:; media-src 'self' asset: https://asset.localhost; connect-src ipc: http://ipc.localhost"
+    }
   }
 }

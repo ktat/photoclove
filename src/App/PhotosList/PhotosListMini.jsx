@@ -1,4 +1,4 @@
-import { convertFileSrc, invoke } from "@tauri-apps/api/tauri";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import PhotoDisplay from "./PhotosListMini/PhotoDisplay.jsx";
 

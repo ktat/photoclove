@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
-import { writeText, readText } from '@tauri-apps/api/clipboard';
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
+import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager';
 
 function PhotoInfo(props) {
     const [photoInfo, setPhotoInfo] = useState({});

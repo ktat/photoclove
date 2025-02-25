@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { convertFileSrc, invoke } from "@tauri-apps/api/tauri";
-import { message } from "@tauri-apps/api/dialog";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { message } from "@tauri-apps/plugin-dialog";
 import { listen } from "@tauri-apps/api/event";
 
 const unlisten = {};

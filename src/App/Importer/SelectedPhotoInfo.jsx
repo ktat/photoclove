@@ -1,4 +1,4 @@
-import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 
 async function importPhotos(props) {
     const fn = (f) => {
