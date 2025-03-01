@@ -15,8 +15,9 @@ function PhotosListMini(props) {
     const [currentPhotoSize, setCurrentPhotoSize] = useState([]);
     const [photoZoomReady, setPhotoZoomReady] = useState(false);
     const [photoZoom, setPhotoZoom] = useState("auto");
+    const [linkRels, setLinkRels] = useState([])
     const [imgStyle, setImgStyle] = useState({
-        transition: 'opacity 0.7s',
+        transition: 'opacity 0.1s',
         opacity: 0.5,
         maxWith: "100%",
         maxHeight: "100%",
@@ -172,7 +173,7 @@ function PhotosListMini(props) {
         const photoSpaceHeight = document.querySelector('.photo').clientHeight;
         const photoSpaceWidth = document.querySelector('.photo').clientWidth;
         const st = {
-            transition: 'opacity 0.4s',
+            transition: 'opacity 0.1s',
         }
         Object.keys(style).map((k) => {
             st[k] = style[k];
@@ -200,8 +201,16 @@ function PhotosListMini(props) {
     }
 
     async function prevPhoto(f) {
+        console.log("len:" + props.allPhotos.length)
         const prevIndex = props.currentPhotoIndex - 1;
         if (prevIndex >= 0) {
+            let rels = []
+            for (let i = - 1; i < -4 && prevIndex + i > 0; i--) {
+                if (props.allPhotos[prevIndex + i] && props.allPhotos[prevIndex + i].file) {
+                    rels.push(props.allPhotos[prevIndex + i].file.path)
+                }
+            }
+            setLinkRels(rels)
             if (props.currentIndex > 0 && (props.allPhotos.length - prevIndex) > Math.trunc(NUM_OF_PHOTO_LIST / 2)) {
                 props.setCurrentIndex(props.currentIndex - 1)
             }
@@ -210,8 +219,16 @@ function PhotosListMini(props) {
     }
 
     async function nextPhoto() {
+        console.log("len:" + props.allPhotos.length)
         const nextIndex = props.currentPhotoIndex + 1;
         if (props.allPhotos.length > nextIndex) {
+            let rels = []
+            for (let i = 1; i < 4 && i < props.allPhotos.length; i++) {
+                if (props.allPhotos[nextIndex + i] && props.allPhotos[nextIndex + i].file) {
+                    rels.push(props.allPhotos[nextIndex + i].file.path)
+                }
+            }
+            setLinkRels(rels)
             if (nextIndex > Math.trunc(NUM_OF_PHOTO_LIST / 2)) {
                 props.setCurrentIndex(props.currentIndex + 1)
             }
@@ -242,6 +259,7 @@ function PhotosListMini(props) {
     return (
         <>
             <div className="centerDisplay">
+
                 <div
                     className="photoDisplay"
                     id="photoDisplay"
@@ -249,6 +267,9 @@ function PhotosListMini(props) {
                     onKeyDown={(e) => photoNavigation(e)}
                     onKeyUp={(e) => photoNavigationUp(e)}
                 >
+                    {linkRels.map((v, i) => {
+                        return <link key={i} rel="preload" href={convertFileSrc(v)} as="image" />
+                    })}
                     <a href="#" id="dummy-for-focus">{/* Dummy */}</a>
                     {props.currentPhotoIndex > 0 ? <><a href="#" onClick={() => prevPhoto()}>&lt;&lt; prev</a><></>&nbsp;&nbsp;|| </> : <>&lt;&lt; <s>prev</s>&nbsp;&nbsp;|| </>}
                     <a href="#" onClick={() => props.closePhotoDisplay()}>close</a>
@@ -276,7 +297,7 @@ function PhotosListMini(props) {
                             }
                             const clientHeight = document.querySelector('#photos-list-mini').clientHeight - 20;
                             const thumbnailSrc = getThumbnailSrc(v);
-                            console.log(v.file.path + " : " + v.has_thumbnail);
+                            // console.log(v.file.path + " : " + v.has_thumbnail);
                             if (thumbnailSrc !== "") {
                                 photosListImgSrc[v.file.path] = convertFileSrc(thumbnailSrc);
                             } else {

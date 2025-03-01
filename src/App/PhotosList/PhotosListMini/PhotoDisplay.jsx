@@ -20,7 +20,7 @@ function PhotoDisplay(props) {
     }, []);
 
     useEffect((e) => {
-        props.SetImgStyle({ opacity: 0.5 });
+        props.SetImgStyle({ opacity: 0.1 });
         document.querySelector("#dummy-for-focus").focus();
         if (props.currentPhotoPath.match(/(mp4|webm)$/i)) {
             movie(props.currentPhotoPath);
@@ -152,9 +152,7 @@ function PhotoDisplay(props) {
                 <img className={photoDisplayImgClass}
                     loading="eager"
                     onLoad={(e) => {
-                        setTimeout(() => {
-                            props.SetImgStyle({ opacity: 1, transition: "opacity 0.5s" }, e.target.width, e.target.height);
-                        }, 150)
+                        props.SetImgStyle({ opacity: 1, transition: "opacity 0.3s" }, e.target.width, e.target.height);
                     }}
                     onError={(e) => {
                         e.target.src = "/img_error.png";
