@@ -15,29 +15,33 @@ function PhotoInfo(props) {
     }, [props.currentPhotoPath])
 
     async function getPhotoInfo(path) {
-        await invoke("get_photo_info", { pathStr: path }).then((r) => {
-            let data = JSON.parse(r);
-            if (data.meta) {
-                if (data.meta.star.data > 0) {
-                    const newStar = [false, false, false, false, false];
-                    for (let i = 0; i < data.meta.star.data; i++) {
-                        newStar[i] = true;
+        if (props.imgCacheMap[path] && props.imgCacheMap[path][1]) {
+            setPhotoInfo(props.imgCacheMap[path][1])
+        } else {
+            await invoke("get_photo_info", { pathStr: path }).then((r) => {
+                let data = JSON.parse(r);
+                if (data.meta) {
+                    if (data.meta.star.data > 0) {
+                        const newStar = [false, false, false, false, false];
+                        for (let i = 0; i < data.meta.star.data; i++) {
+                            newStar[i] = true;
+                        }
+                        setStar(newStar);
+                    } else {
+                        setStar([false, false, false, false, false]);
                     }
-                    setStar(newStar);
+                    if (data.meta.comment) {
+                        setComment(data.meta.comment.data);
+                    } else {
+                        setComment("");
+                    }
                 } else {
                     setStar([false, false, false, false, false]);
-                }
-                if (data.meta.comment) {
-                    setComment(data.meta.comment.data);
-                } else {
                     setComment("");
                 }
-            } else {
-                setStar([false, false, false, false, false]);
-                setComment("");
-            }
-            setPhotoInfo(data);
-        });
+                setPhotoInfo(data);
+            });
+        }
     };
 
     function getCurrentStarRate() {

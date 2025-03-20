@@ -15,7 +15,6 @@ function PhotosListMini(props) {
     const [currentPhotoSize, setCurrentPhotoSize] = useState([]);
     const [photoZoomReady, setPhotoZoomReady] = useState(false);
     const [photoZoom, setPhotoZoom] = useState("auto");
-    const [linkRels, setLinkRels] = useState([])
     const [imgStyle, setImgStyle] = useState({
         transition: 'opacity 0.1s',
         opacity: 0.5,
@@ -25,6 +24,7 @@ function PhotosListMini(props) {
     });
     const [thumbnailStore, setThumbnailStore] = useState("");
     const [photosListImgSrc, setPhotosListImgSrc] = useState({});
+    const [imgCache, setImgCache] = useState([])
 
     useEffect((e) => {
         invoke("get_config", {},).then((e) => {
@@ -60,6 +60,27 @@ function PhotosListMini(props) {
             }
         }
         _movePhotos(props.currentIndex + 1)
+    }
+
+    async function setImageCache(links) {
+        for (let i = 0; i < links.length; i++) {
+            if (links[i].match(/\.jpe?g/i) && !props.imgCacheMap[links[i]]) {
+                const response = await fetch(convertFileSrc(links[i]), { cache: "force-cache" });
+                const blob = await response.blob();
+                const objectURL = URL.createObjectURL(blob);
+                props.imgCacheMap[links[i]] = [objectURL];
+                imgCache.push(links[i]);
+                invoke("get_photo_info", { pathStr: links[i] }).then((r) => {
+                    props.imgCacheMap[links[i]][1] = JSON.parse(r);
+                })
+            }
+        }
+        while (imgCache.length > 5) {
+            const shifted = imgCache.shift();
+            delete props.imgCacheMap[shifted];
+        }
+        props.setImgCacheMap(props.imgCacheMap)
+        setImgCache(imgCache)
     }
 
     function _movePhotos(index) {
@@ -201,7 +222,6 @@ function PhotosListMini(props) {
     }
 
     async function prevPhoto(f) {
-        console.log("len:" + props.allPhotos.length)
         const prevIndex = props.currentPhotoIndex - 1;
         if (prevIndex >= 0) {
             let rels = []
@@ -210,16 +230,15 @@ function PhotosListMini(props) {
                     rels.push(props.allPhotos[prevIndex + i].file.path)
                 }
             }
-            setLinkRels(rels)
             if (props.currentIndex > 0 && (props.allPhotos.length - prevIndex) > Math.trunc(NUM_OF_PHOTO_LIST / 2)) {
                 props.setCurrentIndex(props.currentIndex - 1)
             }
             _nextOrPrevPhoto(prevIndex);
+            setImageCache(rels).then(() => { })
         }
     }
 
     async function nextPhoto() {
-        console.log("len:" + props.allPhotos.length)
         const nextIndex = props.currentPhotoIndex + 1;
         if (props.allPhotos.length > nextIndex) {
             let rels = []
@@ -228,11 +247,11 @@ function PhotosListMini(props) {
                     rels.push(props.allPhotos[nextIndex + i].file.path)
                 }
             }
-            setLinkRels(rels)
             if (nextIndex > Math.trunc(NUM_OF_PHOTO_LIST / 2)) {
                 props.setCurrentIndex(props.currentIndex + 1)
             }
             _nextOrPrevPhoto(nextIndex);
+            setImageCache(rels).then(() => { })
         }
     }
 
@@ -267,9 +286,6 @@ function PhotosListMini(props) {
                     onKeyDown={(e) => photoNavigation(e)}
                     onKeyUp={(e) => photoNavigationUp(e)}
                 >
-                    {linkRels.map((v, i) => {
-                        return <link key={i} rel="preload" href={convertFileSrc(v)} as="image" />
-                    })}
                     <a href="#" id="dummy-for-focus">{/* Dummy */}</a>
                     {props.currentPhotoIndex > 0 ? <><a href="#" onClick={() => prevPhoto()}>&lt;&lt; prev</a><></>&nbsp;&nbsp;|| </> : <>&lt;&lt; <s>prev</s>&nbsp;&nbsp;|| </>}
                     <a href="#" onClick={() => props.closePhotoDisplay()}>close</a>
@@ -283,6 +299,7 @@ function PhotosListMini(props) {
                         photoZoomReady={photoZoomReady}
                         currentPhotoPath={props.currentPhotoPath}
                         currentPhotoSize={currentPhotoSize}
+                        imgCacheMap={props.imgCacheMap}
                         thumbnailSrc={getThumbnailSrc(props.allPhotos[props.currentPhotoIndex])}
                     />
                 </div>

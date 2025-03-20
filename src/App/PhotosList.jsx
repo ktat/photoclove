@@ -22,6 +22,7 @@ function PhotosList(props) {
     const [photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex] = useState(0);
     const [photosListMiniReread, setPhotosListMiniReread] = useState(false);
     const [photosListImgSrc, setPhotosListImgSrc] = useState({});
+    const [imgCacheMap, setImgCacheMap] = useState({});
 
     useEffect((e) => {
         invoke("get_config", {},).then((e) => {
@@ -280,6 +281,9 @@ function PhotosList(props) {
                         setAllPhotos={setPhotosListMiniAllPhotos}
                         currentIndex={photosListMiniCurrentIndex}
                         setCurrentIndex={setPhotosListMiniCurrentIndex}
+
+                        imgCacheMap={imgCacheMap}
+                        setImgCacheMap={setImgCacheMap}
                     />
                 </div>
                 :
@@ -388,6 +392,7 @@ function PhotosList(props) {
                     path={currentPhotoPath}
                     addFooterMessage={props.addFooterMessage}
                     setCurrentPhotoPath={setCurrentPhotoPath}
+                    imgCacheMap={imgCacheMap}
                 />
                 :
                 <DirectoryMenu

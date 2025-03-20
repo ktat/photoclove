@@ -158,7 +158,7 @@ function PhotoDisplay(props) {
                         e.target.src = "/img_error.png";
                     }}
                     style={props.imgStyle}
-                    src={convertFileSrc(props.currentPhotoPath)}
+                    src={(props.imgCacheMap[props.currentPhotoPath] && props.imgCacheMap[props.currentPhotoPath][0]) || convertFileSrc(props.currentPhotoPath)}
                     onMouseDown={(e) => dragPhotoStart(e)}
                     onMouseMove={(e) => dragPhoto(e)}
                     onMouseUp={(e) => dragPhotoEnd(e)}
