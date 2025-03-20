@@ -70,17 +70,20 @@ function PhotosListMini(props) {
                 const objectURL = URL.createObjectURL(blob);
                 props.imgCacheMap[links[i]] = [objectURL];
                 imgCache.push(links[i]);
+                props.setImgCacheMap(props.imgCacheMap)
+                setImgCache(imgCache)
                 invoke("get_photo_info", { pathStr: links[i] }).then((r) => {
                     props.imgCacheMap[links[i]][1] = JSON.parse(r);
+                    props.setImgCacheMap(props.imgCacheMap)
                 })
             }
         }
-        while (imgCache.length > 5) {
+        while (imgCache.length > 10) {
             const shifted = imgCache.shift();
             delete props.imgCacheMap[shifted];
         }
-        props.setImgCacheMap(props.imgCacheMap)
         setImgCache(imgCache)
+        props.setImgCacheMap(props.imgCacheMap)
     }
 
     function _movePhotos(index) {
