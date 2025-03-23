@@ -5,7 +5,7 @@ import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import PhotoLoading from "./PhotosList/PhotoLoading.jsx";
 import DirectoryMenu from "./PhotosList/DirectoryMenu.jsx";
 import { open } from '@tauri-apps/plugin-shell';
-import { ImgCacheContext } from "./ImgCacheContext";
+import { ImgCacheContext, AllPhotosContext } from "./ImgCacheContext.jsx";
 
 function PhotosList(props) {
     const [iconSize, setIconSize] = useState(100);
@@ -39,6 +39,7 @@ function PhotosList(props) {
             setPhotosList({ "photos": [] });
             props.setDatePage({});
             const fetchPhotos = async () => getPhotos(undefined, true);;
+            setCurrentPhotoIndex(0)
             fetchPhotos().catch(console.error);
         }
     }, [numOfPhoto, props.currentDate, sortOfPhotos]);
@@ -261,33 +262,33 @@ function PhotosList(props) {
             :
             <>
                 <div style={{ display: (!photoLoading && props.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
-                    <ImgCacheContext.Provider value={{ imgCacheMap, setImgCacheMap }}>
-                        <div className="photo-display">
-                            <PhotosListMini
-                                moveToTrashCan={moveToTrashCan}
-                                closePhotoDisplay={closePhotoDisplay}
+                    <AllPhotosContext.Provider value={{ photosListMiniAllPhotos, setPhotosListMiniAllPhotos }}>
+                        <ImgCacheContext.Provider value={{ imgCacheMap, setImgCacheMap }}>
+                            <div className="photo-display">
+                                <PhotosListMini
+                                    moveToTrashCan={moveToTrashCan}
+                                    closePhotoDisplay={closePhotoDisplay}
 
-                                setShortCutNavigation={props.setShortCutNavigation}
-                                setShowPhotoDisplay={props.setShowPhotoDisplay}
-                                shortCutNavigation={props.shortCutNavigation}
-                                getPhotos={getPhotos}
-                                currentPhotoPath={currentPhotoPath}
-                                setCurrentPhotoPath={setCurrentPhotoPath}
-                                sortOfPhotos={sortOfPhotos}
-                                currentDate={props.currentDate}
-                                datePage={props.datePage}
-                                num={numOfPhoto}
-                                currentPhotoIndex={currentPhotoIndex}
-                                setCurrentPhotoIndex={setCurrentPhotoIndex}
+                                    setShortCutNavigation={props.setShortCutNavigation}
+                                    setShowPhotoDisplay={props.setShowPhotoDisplay}
+                                    shortCutNavigation={props.shortCutNavigation}
+                                    getPhotos={getPhotos}
+                                    currentPhotoPath={currentPhotoPath}
+                                    setCurrentPhotoPath={setCurrentPhotoPath}
+                                    sortOfPhotos={sortOfPhotos}
+                                    currentDate={props.currentDate}
+                                    datePage={props.datePage}
+                                    num={numOfPhoto}
+                                    currentPhotoIndex={currentPhotoIndex}
+                                    setCurrentPhotoIndex={setCurrentPhotoIndex}
 
-                                reread={photosListMiniReread}
-                                allPhotos={photosListMiniAllPhotos}
-                                setAllPhotos={setPhotosListMiniAllPhotos}
-                                currentIndex={photosListMiniCurrentIndex}
-                                setCurrentIndex={setPhotosListMiniCurrentIndex}
-                            />
-                        </div>
-                    </ImgCacheContext.Provider>
+                                    reread={photosListMiniReread}
+                                    currentIndex={photosListMiniCurrentIndex}
+                                    setCurrentIndex={setPhotosListMiniCurrentIndex}
+                                />
+                            </div>
+                        </ImgCacheContext.Provider>
+                    </AllPhotosContext.Provider>
                 </div>
                 <div className="centerDisplay" id="photoList"
                     style={{ display: (!photoLoading && (!props.showPhotoDisplay || !currentPhotoPath)) ? "block" : "none" }}
@@ -340,7 +341,9 @@ function PhotosList(props) {
                                 }
                                 return (
                                     <div key={i} className={"row pict-" + iconSize} style={{ textAlign: "center" }} >
-                                        <a href="#" onClick={() => { displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto) }}>
+                                        <a href="#" onClick={() => {
+                                            displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto)
+                                        }}>
                                             {!l.has_thumbnail && l.file.path.match(/\.(mp4|webm)$/i)
                                                 ? <div className="photo-list-movie" style={{ minWidth: (iconSize - 20) + 'px', marginTop: (iconSize / 7) + "px" }}>
                                                     <span style={{ fontSize: (iconSize / 3) + 'px' }}>&#127909;</span>
@@ -388,35 +391,35 @@ function PhotosList(props) {
                         </div>
                     </div>
                 </div >
-                <div className="rightMenu">
-                    <div style={{ display: (!photoLoading && props.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
-                        <PhotoInfo
-                            currentPhotoPath={currentPhotoPath}
-                            closePhotoDisplay={closePhotoDisplay}
-                            path={currentPhotoPath}
-                            addFooterMessage={props.addFooterMessage}
-                            setCurrentPhotoPath={setCurrentPhotoPath}
-                            imgCacheMap={imgCacheMap}
-                        />
-                    </div>
-                    <div style={{ display: (!photoLoading && !props.showPhotoDisplay && currentPhotoPath) ? "none" : "block" }}>
-                        <DirectoryMenu
-                            addFooterMessage={props.addFooterMessage}
-                            tabClass={tabClass}
-                            setTabClass={setTabClass}
-                            changeTab={changeTab}
-                            currentDate={props.currentDate}
-                            photoSelection={photoSelection}
-                            clearPhotoSelection={clearPhotoSelection}
-                            selectAllPhotoToSelection={selectAllPhotoToSelection}
-                            dateNum={props.dateNum}
-                            setCurrentDateNum={props.setCurrentDateNum}
-                            moveToTrashCan={moveToTrashCan}
-                        />
-                    </div>
-                </div>
             </>
         }
+        <div className="rightMenu">
+            <div style={{ display: (props.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
+                <PhotoInfo
+                    currentPhotoPath={currentPhotoPath}
+                    closePhotoDisplay={closePhotoDisplay}
+                    path={currentPhotoPath}
+                    addFooterMessage={props.addFooterMessage}
+                    setCurrentPhotoPath={setCurrentPhotoPath}
+                    imgCacheMap={imgCacheMap}
+                />
+            </div>
+            <div style={{ display: (!props.showPhotoDisplay || !currentPhotoPath) ? "block" : "none" }}>
+                <DirectoryMenu
+                    addFooterMessage={props.addFooterMessage}
+                    tabClass={tabClass}
+                    setTabClass={setTabClass}
+                    changeTab={changeTab}
+                    currentDate={props.currentDate}
+                    photoSelection={photoSelection}
+                    clearPhotoSelection={clearPhotoSelection}
+                    selectAllPhotoToSelection={selectAllPhotoToSelection}
+                    dateNum={props.dateNum}
+                    setCurrentDateNum={props.setCurrentDateNum}
+                    moveToTrashCan={moveToTrashCan}
+                />
+            </div>
+        </div>
     </>
 }
 
