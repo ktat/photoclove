@@ -4,6 +4,7 @@ use path_abs::PathAbs;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs;
+#[cfg(unix)]
 use std::os::unix::prelude::MetadataExt;
 use std::path::{Path, PathBuf};
 
@@ -32,7 +33,10 @@ pub struct Dirs {
 
 fn get_created_time(path: String) -> String {
     let metadata = std::fs::metadata(path).unwrap();
+    #[cfg(unix)]
     let epoch = metadata.ctime();
+    #[cfg(windows)]
+    let epoch = metadata.created().unwrap().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64;
     Local.timestamp_opt(epoch, 0).unwrap().to_string()
 }
 
@@ -151,7 +155,10 @@ impl File {
 
     fn get_created_time(&self) -> chrono::DateTime<Local> {
         let metadata = std::fs::metadata(&self.path).unwrap();
+        #[cfg(unix)]
         let epoch = metadata.ctime();
+        #[cfg(windows)]
+        let epoch = metadata.created().unwrap().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64;
         Local.timestamp_opt(epoch, 0).unwrap()
     }
 

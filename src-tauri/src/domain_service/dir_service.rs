@@ -69,7 +69,7 @@ pub fn find_directories(dir: &file::Dir, regex: &Option<Regex>) -> file::Dirs {
 
 pub fn find_date_like_directories(dir: &file::Dir) -> file::Dirs {
     let re = &Option::Some(
-        Regex::new(r"/([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)/?$").unwrap(),
+        Regex::new(r"(?:\\|/)([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)(?:\\|/)?$").unwrap(),
     );
     find_directories(dir, re)
 }

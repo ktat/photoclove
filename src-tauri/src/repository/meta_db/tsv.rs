@@ -6,6 +6,8 @@ use crate::{
 use csv::{ReaderBuilder, WriterBuilder};
 use std::collections::HashMap;
 use std::fs;
+use std::fs::File;
+use fs2::FileExt;
 use std::path;
 
 static META_INFO_FILE_NAME: &str = ".photoclove-dir-info.tsv";
@@ -32,19 +34,19 @@ impl Tsv {
         path::Path::new(&dir.path).join(META_INFO_FILE_NAME)
     }
 
-    pub fn get_lock(&self) -> file_lock::FileLock {
-        let file_options = file_lock::FileOptions::new()
-            .write(true)
-            .read(true)
-            .create(true)
-            .append(true);
+    pub fn get_lock(&self) -> File {
         let temp = tempfile::NamedTempFile::new().unwrap();
-        let file_lock = file_lock::FileLock::lock(temp.path(), true, file_options);
-        if file_lock.is_ok() {
-            return file_lock.unwrap();
-        } else {
-            panic!("Error getting lock: {:?}", file_lock.err());
+        let temp_path = temp.path().to_path_buf();
+
+        // Create the file if it doesn't exist
+        let mut file = File::create(&temp_path).unwrap();
+
+        // Lock the file
+        if let Err(err) = file.lock_exclusive() {
+            panic!("Error getting lock: {:?}", err);
         }
+
+        file
     }
 
     fn read_photo_metas(&self, read_info_path: String) -> photo_meta::PhotoMetas {

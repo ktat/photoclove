@@ -8,7 +8,6 @@ use entity::config::Config;
 use std::{
     error::Error,
     fs,
-    os::unix::fs::symlink,
     path,
     path::PathBuf,
     sync::atomic::{AtomicBool, Ordering},
@@ -18,6 +17,13 @@ use tauri::{
     menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder},
     Builder, Emitter, Event, Manager,
 };
+
+
+#[cfg(unix)]
+use std::os::unix::fs::symlink;
+
+#[cfg(windows)]
+use std::os::windows::fs::symlink_file;
 
 mod domain_service;
 mod entity;
@@ -46,7 +52,7 @@ fn greet(name: &str) -> String {
 
 #[tauri::command]
 fn get_dates(window: tauri::Window, state: tauri::State<AppState>) -> String {
-    println!("get_dats is called from {}", window.label());
+    println!("get_dates is called from {}", window.label());
     let db = &state.repo_db;
     let dates = db.get_dates();
     dates.to_json()
@@ -103,7 +109,16 @@ async fn link_file_to_public(
             }
         };
 
+        # [cfg(unix)]
         return match symlink(from, to.clone()) {
+            Ok(_) => Ok("true".to_string()),
+            Err(e) => {
+                eprintln!("Cannot create symlink {:?} => {:?}: {:?}", from, to, e);
+                Ok("false".to_string())
+            }
+        };
+        # [cfg(windows)]
+        return match symlink_file(from, to.clone()) {
             Ok(_) => Ok("true".to_string()),
             Err(e) => {
                 eprintln!("Cannot create symlink {:?} => {:?}: {:?}", from, to, e);
