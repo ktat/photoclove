@@ -1,6 +1,8 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
-import { useEffect, useState } from "react";
+import React, { useRef, useContext, useEffect, useState } from 'react';
 import PhotoDisplay from "./PhotosListMini/PhotoDisplay.jsx";
+
+import { ImgCacheContext } from "../ImgCacheContext.jsx";
 
 const NUM_OF_PHOTO_LIST = 9;
 
@@ -9,6 +11,7 @@ function preventScroll(e) {
 }
 
 function PhotosListMini(props) {
+    const { imgCacheMap, setImgCacheMap } = useContext(ImgCacheContext);
     const [showPhotosIndex, setShowPhotosIndex] = useState([]);
     const [hasNext, setHasNext] = useState(false);
     const [borderStyle, setBorderStyle] = useState([]);
@@ -24,7 +27,8 @@ function PhotosListMini(props) {
     });
     const [thumbnailStore, setThumbnailStore] = useState("");
     const [photosListImgSrc, setPhotosListImgSrc] = useState({});
-    const [imgCache, setImgCache] = useState([])
+
+    const navigateLock = useRef(false);
 
     useEffect((e) => {
         invoke("get_config", {},).then((e) => {
@@ -62,28 +66,46 @@ function PhotosListMini(props) {
         _movePhotos(props.currentIndex + 1)
     }
 
-    async function setImageCache(links) {
-        for (let i = 0; i < links.length; i++) {
-            if (links[i].match(/\.jpe?g/i) && !props.imgCacheMap[links[i]]) {
-                const response = await fetch(convertFileSrc(links[i]), { cache: "force-cache" });
-                const blob = await response.blob();
-                const objectURL = URL.createObjectURL(blob);
-                props.imgCacheMap[links[i]] = [objectURL];
-                imgCache.push(links[i]);
-                props.setImgCacheMap(props.imgCacheMap)
-                setImgCache(imgCache)
-                invoke("get_photo_info", { pathStr: links[i] }).then((r) => {
-                    props.imgCacheMap[links[i]][1] = JSON.parse(r);
-                    props.setImgCacheMap(props.imgCacheMap)
-                })
+    async function setImageCache(i, direction) {
+        let minIndex = i - (direction == -1 ? 4 : 2)
+        let maxIndex = i + (direction == 1 ? 4 : 2)
+        const cacheCandidates = []
+        const allPhotos = props.allPhotos
+        const thisTimeCacheMap = {}
+        if (minIndex < 0) minIndex = 0;
+        if (maxIndex >= allPhotos.length) maxIndex = allPhotos.length - 1;
+
+        for (let j = minIndex; j <= maxIndex; j++) {
+            if (!allPhotos[j].file || !allPhotos[j].file.path.match(/\.jpe?g/i)) {
+                continue
+            }
+            const f = allPhotos[j].file.path
+            thisTimeCacheMap[f] = true
+            if (!imgCacheMap[f]) {
+                cacheCandidates.push(f)
             }
         }
-        while (imgCache.length > 10) {
-            const shifted = imgCache.shift();
-            delete props.imgCacheMap[shifted];
+        for (let j = 0; j < cacheCandidates.length; j++) {
+            const f = cacheCandidates[j]
+            const response = await fetch(convertFileSrc(f), { cache: "force-cache" })
+            const blob = await response.blob();
+            const objectURL = URL.createObjectURL(blob);
+            imgCacheMap[f] = [objectURL];
+            setImgCacheMap(imgCacheMap)
+            invoke("get_photo_info", { pathStr: f }).then((r) => {
+                if (imgCacheMap[f]) {
+                    imgCacheMap[f][1] = JSON.parse(r);
+                    setImgCacheMap(imgCacheMap)
+                }
+            })
         }
-        setImgCache(imgCache)
-        props.setImgCacheMap(props.imgCacheMap)
+        const keys = Object.keys(imgCacheMap)
+        keys.forEach((v) => {
+            if (!thisTimeCacheMap[v]) {
+                delete imgCacheMap[v];
+            }
+        });
+        setImgCacheMap(imgCacheMap)
     }
 
     function _movePhotos(index) {
@@ -103,12 +125,13 @@ function PhotosListMini(props) {
     }
 
     function getPhotos() {
-        let num = props.allPhotos.length === 0 ? props.currentPhotoIndex + NUM_OF_PHOTO_LIST * 2 : NUM_OF_PHOTO_LIST * 2;
+        let cpi = props.currentPhotoIndex ? props.currentPhotoIndex : 0
+        let num = props.allPhotos.length === 0 ? cpi + NUM_OF_PHOTO_LIST * 2 : NUM_OF_PHOTO_LIST * 2;
         invoke("get_photos", {
             dateStr: props.currentDate,
             sortValue: props.sortOfPhotos,
             page: 1,
-            num: num,
+            num: parseInt(num),
             offset: props.allPhotos.length,
         }).then((r) => {
             let index = props.currentIndex;
@@ -116,15 +139,21 @@ function PhotosListMini(props) {
             let mergedAllPhotos;
 
             if (data.photos.length > 0) {
-                mergedAllPhotos = props.allPhotos.concat(data.photos);
-                props.setAllPhotos(mergedAllPhotos);
+                const current = props.allPhotos
+                props.setAllPhotos(current.concat(data.photos));
             }
 
             setHasNext(data.has_next);
             adjustCurrentIndex(mergedAllPhotos);
+        }).catch(e => {
+            console.log("in PhotosListMini.jsx");
+            console.log(e);
+            console.log(num)
         });
     }
     function adjustCurrentIndex(allPhotos) {
+        if (!allPhotos) return
+
         const currentPhotoIndex = props.currentPhotoIndex;
         // currentIndex is the index of the start index of the mini photos list
         let index = currentPhotoIndex - Math.trunc(NUM_OF_PHOTO_LIST / 2);
@@ -224,46 +253,49 @@ function PhotosListMini(props) {
         setImgStyle(st);
     }
 
-    async function prevPhoto(f) {
+    function lockNavigate(f) {
+        if (navigateLock.current) {
+            return
+        }
+        navigateLock.current = true
+        f().then(() => {
+            navigateLock.current = false
+        })
+    }
+
+    async function prevPhoto() {
         const prevIndex = props.currentPhotoIndex - 1;
         if (prevIndex >= 0) {
-            let rels = []
-            for (let i = - 1; i < -4 && prevIndex + i > 0; i--) {
-                if (props.allPhotos[prevIndex + i] && props.allPhotos[prevIndex + i].file) {
-                    rels.push(props.allPhotos[prevIndex + i].file.path)
-                }
-            }
             if (props.currentIndex > 0 && (props.allPhotos.length - prevIndex) > Math.trunc(NUM_OF_PHOTO_LIST / 2)) {
                 props.setCurrentIndex(props.currentIndex - 1)
             }
             _nextOrPrevPhoto(prevIndex);
-            setImageCache(rels).then(() => { })
+            setImageCache(prevIndex, -1)
         }
     }
 
     async function nextPhoto() {
         const nextIndex = props.currentPhotoIndex + 1;
         if (props.allPhotos.length > nextIndex) {
-            let rels = []
-            for (let i = 1; i < 4 && i < props.allPhotos.length; i++) {
-                if (props.allPhotos[nextIndex + i] && props.allPhotos[nextIndex + i].file) {
-                    rels.push(props.allPhotos[nextIndex + i].file.path)
-                }
-            }
+            let cacheCandidates = []
             if (nextIndex > Math.trunc(NUM_OF_PHOTO_LIST / 2)) {
                 props.setCurrentIndex(props.currentIndex + 1)
             }
             _nextOrPrevPhoto(nextIndex);
-            setImageCache(rels).then(() => { })
+            setImageCache(nextIndex, 1)
         }
     }
 
     function _nextOrPrevPhoto(index) {
         SetImgStyle({ opacity: 0 });
         setPhotoZoom("auto");
-        props.setCurrentPhotoPath(props.allPhotos[index].file.path);
-        props.datePage[props.currentDate] = Math.trunc((index) / props.num) + 1;
-        props.setCurrentPhotoIndex(index);
+        if (props.allPhotos[index]) {
+            props.setCurrentPhotoPath(props.allPhotos[index].file.path);
+            props.datePage[props.currentDate] = Math.trunc((index) / props.num) + 1;
+            props.setCurrentPhotoIndex(index);
+        } else {
+            console.log("invalid index?: " + index)
+        }
     }
 
     function getThumbnailSrc(photo) {
@@ -290,9 +322,12 @@ function PhotosListMini(props) {
                     onKeyUp={(e) => photoNavigationUp(e)}
                 >
                     <a href="#" id="dummy-for-focus">{/* Dummy */}</a>
-                    {props.currentPhotoIndex > 0 ? <><a href="#" onClick={() => prevPhoto()}>&lt;&lt; prev</a><></>&nbsp;&nbsp;|| </> : <>&lt;&lt; <s>prev</s>&nbsp;&nbsp;|| </>}
+                    {props.currentPhotoIndex > 0 ? <><a href="#" onClick={() => lockNavigate(prevPhoto)}>&lt;&lt; prev</a><></>&nbsp;&nbsp;|| </> : <>&lt;&lt; <s>prev</s>&nbsp;&nbsp;|| </>}
                     <a href="#" onClick={() => props.closePhotoDisplay()}>close</a>
-                    {props.currentPhotoIndex < (props.allPhotos.length - 1) ? <> ||&nbsp;&nbsp;<a href="#" onClick={() => nextPhoto()}>next &gt;&gt;</a><br /><br /></> : <>||&nbsp;&nbsp;<s>next</s> &gt;&gt;</>}
+                    {
+                        // TODO: nextがたまにバグる
+                    }
+                    {props.currentPhotoIndex < (props.allPhotos.length - 1) ? <> ||&nbsp;&nbsp;<a href="#" onClick={() => lockNavigate(nextPhoto)}>next &gt;&gt;</a><br /><br /></> : <>||&nbsp;&nbsp;<s onClick={() => { console.log(props.currentPhotoIndex, props.allPhotos.length) }}>next</s> &gt;&gt;</>}
 
                     <PhotoDisplay
                         imgStyle={imgStyle}
@@ -302,7 +337,7 @@ function PhotosListMini(props) {
                         photoZoomReady={photoZoomReady}
                         currentPhotoPath={props.currentPhotoPath}
                         currentPhotoSize={currentPhotoSize}
-                        imgCacheMap={props.imgCacheMap}
+                        imgCacheMap={imgCacheMap}
                         thumbnailSrc={getThumbnailSrc(props.allPhotos[props.currentPhotoIndex])}
                     />
                 </div>
@@ -329,6 +364,7 @@ function PhotosListMini(props) {
                                     props.setCurrentPhotoPath(v.file.path);
                                     resetSelectedBorder(i);
                                     props.datePage[props.currentDate] = Math.trunc((props.currentIndex + i) / props.num) + 1;
+                                    setImageCache(vIndex, 0)
                                 }}>
                                     {!v.has_thumbnail && v.file.path.match(/\.(mp4|webm)$/i)
                                         ? <div className="photo-list-movie" style={{ border: borderStyle[i], maxHeight: clientHeight + "px" }}>

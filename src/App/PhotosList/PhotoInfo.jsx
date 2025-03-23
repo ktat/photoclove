@@ -91,7 +91,7 @@ function PhotoInfo(props) {
     }
 
     return (
-        <div className="rightMenu">
+        <>
             <div style={{ float: "right" }}>
                 <a href="#" onClick={(e) => props.setCurrentPhotoPath("")}>&#x2715;</a>
             </div>
@@ -150,7 +150,7 @@ function PhotoInfo(props) {
                     </div>
                 </div>
             )}
-        </div>);
+        </>);
 }
 
 export default PhotoInfo;

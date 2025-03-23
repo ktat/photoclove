@@ -116,7 +116,7 @@ function DirectoryMenu(props) {
     }
 
     return (
-        <div id="directory-maintenance" className="rightMenu">
+        <div id="directory-maintenance">
             <ul className="tabs-list">
                 <li className={props.tabClass['filter'] ? "tab tab-active" : "tab"} ><a onClick={(e) => props.changeTab(e, e.target.href)} href="#tab-filter">Filter</a></li>
                 <li className={props.tabClass['selection'] ? "tab tab-active" : "tab"} ><a onClick={(e) => props.changeTab(e, e.target.href)} href="#tab-selection">Selection</a></li>

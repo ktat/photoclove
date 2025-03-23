@@ -22,7 +22,7 @@ function PhotoDisplay(props) {
     useEffect((e) => {
         props.SetImgStyle({ opacity: 0.1 });
         document.querySelector("#dummy-for-focus").focus();
-        if (props.currentPhotoPath.match(/(mp4|webm)$/i)) {
+        if (props.currentPhotoPath && props.currentPhotoPath.match(/(mp4|webm)$/i)) {
             movie(props.currentPhotoPath);
             let photoDisplayDiv = document.querySelector('.photoDisplay');
             let width = photoDisplayDiv.clientWidth;
@@ -148,7 +148,7 @@ function PhotoDisplay(props) {
                 </div>
                 Open with other software: <a href="#" onClick={(e) => open("file://" + props.currentPhotoPath)}>{props.currentPhotoPath}</a>
             </div>
-            {!props.currentPhotoPath.match(/\.(mp4|webm)$/i) &&
+            {props.currentPhotoPath && !props.currentPhotoPath.match(/\.(mp4|webm)$/i) &&
                 <img className={photoDisplayImgClass}
                     loading="eager"
                     onLoad={(e) => {

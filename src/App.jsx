@@ -293,49 +293,50 @@ function App() {
             setShowPhotoDisplay={setShowPhotoDisplay}
           />
         </div>
-        {
-          (currentDate && showPhotosList)
-            ?
-            <PhotosList
-              dateList={dateList}
-              setDateList={setDateList}
-              setShowPhotoDisplay={setShowPhotoDisplay}
-              showPhotoDisplay={showPhotoDisplay}
-              setCurrentDate={setCurrentDate}
-              currentDate={currentDate}
-              datePage={datePage}
-              setDatePage={setDatePage}
-              shortCutNavigation={shortCutNavigation}
-              addFooterMessage={addFooterMessage}
-              dateNum={dateNum}
-              setDateNum={setDateNum}
-              setCurrentDateNum={setCurrentDateNum}
-            />
-            :
-            showImporter
-              ?
+        {(currentDate && showPhotosList) ? <>
+          <PhotosList
+            dateList={dateList}
+            setDateList={setDateList}
+            setShowPhotoDisplay={setShowPhotoDisplay}
+            showPhotoDisplay={showPhotoDisplay}
+            setCurrentDate={setCurrentDate}
+            currentDate={currentDate}
+            datePage={datePage}
+            setDatePage={setDatePage}
+            shortCutNavigation={shortCutNavigation}
+            addFooterMessage={addFooterMessage}
+            dateNum={dateNum}
+            setDateNum={setDateNum}
+            setCurrentDateNum={setCurrentDateNum}
+          />
+        </>
+          :
+          <>
+            <div style={{ display: showImporter ? "block" : "none" }}>
               <Importer
                 getDates={getDates}
                 addFooterMessage={addFooterMessage}
                 removeFooterMessage={removeFooterMessage}
               />
-              :
-              showLogin
-                ? <Login />
-                :
-                showPreferences
-                  ?
-                  <Preferences
-                    togglePreferences={togglePreferences}
-                    addFooterMessage={addFooterMessage}
-                    setShowPreferences={setShowPreferences}
-                  ></Preferences>
-                  :
-                  <Home />
+            </div>
+            <div style={{ display: showLogin ? "block" : "none" }}>
+              <Login />
+            </div>
+            <div style={{ display: showPreferences ? "block" : "none" }}>
+              <Preferences
+                togglePreferences={togglePreferences}
+                addFooterMessage={addFooterMessage}
+                setShowPreferences={setShowPreferences}
+              ></Preferences>
+            </div>
+            <div style={{ display: (!showImporter && !showLogin && !showPreferences && (!currentDate || !showPhotosList)) ? "block" : "none" }}>
+              <Home />
+            </div>
+          </>
         }
       </div>
       <Footer addFooterMessage={addFooterMessage} footerMessages={footerMessages} />
-    </div>
+    </div >
   );
 }
 
