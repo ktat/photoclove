@@ -51,7 +51,7 @@ pub fn find_directories(dir: &file::Dir, regex: &Option<Regex>) -> file::Dirs {
             )
             .is_none()
             {
-                print!("{:?}\n", cap);
+                print!("invalid path? {:?}\n", cap);
                 continue;
             }
 

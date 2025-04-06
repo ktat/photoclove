@@ -112,6 +112,9 @@ impl File {
             panic!("Invalid path for file(new): {:?}, {:?}", path, cp.err());
         } else {
             let ap = cp.unwrap().as_path().display().to_string();
+            if p.file_name().is_none() || p.file_name().unwrap().to_str().is_none() {
+                panic!("Invalid path for file(new): {:?}", path);
+            }
             let file_name = p.file_name().unwrap().to_str().unwrap().to_string();
             return File {
                 path: ap.clone(),
