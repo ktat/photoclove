@@ -51,7 +51,7 @@ pub fn find_directories(dir: &file::Dir, regex: &Option<Regex>) -> file::Dirs {
             )
             .is_none()
             {
-                print!("{:?}\n", cap);
+                print!("invalid path? {:?}\n", cap);
                 continue;
             }
 
@@ -78,11 +78,12 @@ pub fn find_date_like_directories(dir: &file::Dir) -> file::Dirs {
 mod tests {
     use crate::domain_service::dir_service::find_files;
     use crate::value::file;
+    use std::path::Path;
 
     #[test]
     fn test_find_files() {
-        let path = "tests/assets/files";
-        let dir = file::Dir::new(path.to_string());
+        let path = Path::new("tests/assets/files");
+        let dir = file::Dir::new(path.display().to_string());
         let files = find_files(&dir);
         assert_eq!(files.files.len(), 3);
     }

@@ -186,7 +186,11 @@ impl MetaInfoDB for Tsv {
     }
 
     fn get_photo_meta(&self, photo: photo::Photo) -> photo_meta::PhotoMeta {
-        let date = photo.dir.clone().to_date().unwrap();
+        let is_date = photo.dir.clone().to_date();
+        if is_date.is_none() {
+            return photo_meta::PhotoMeta::new(photo.clone());
+        }
+        let date = is_date.unwrap();
         let photo_metas = match self.get_photo_meta_data_in_date(date) {
             Ok(data) => data,
             Err(_e) => photo_meta::PhotoMetas::new(),
