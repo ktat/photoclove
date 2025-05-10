@@ -720,6 +720,7 @@ table th {
   border-style: solid;
   padding: 2px 5px 2px 5px;
   border-color: white;
+  overflow-x: hidden;
 }
 
 .star a {
