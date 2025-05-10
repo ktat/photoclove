@@ -24,6 +24,8 @@ function PhotosList(props) {
     const [photosListMiniReread, setPhotosListMiniReread] = useState(false);
     const [photosListImgSrc, setPhotosListImgSrc] = useState({});
     const [imgCacheMap, setImgCacheMap] = useState({});
+    const [rightMenuClass, setRightMenuClass] = useState("rightMenu");
+    const [centerDisplayClass, setCenterDisplayClass] = useState("centerDisplayMax");
 
     useEffect((e) => {
         invoke("get_config", {},).then((e) => {
@@ -156,6 +158,8 @@ function PhotosList(props) {
     }
 
     function closePhotoDisplay() {
+        setCenterDisplayClass("centerDisplayMax");
+        setRightMenuClass("rightMenu");
         props.setShowPhotoDisplay(false);
         if (props.currentPhotoPath !== "") setCurrentPhotoPath("");
         console.log("photos-list-close-photod-display -- getPhotos")
@@ -261,7 +265,7 @@ function PhotosList(props) {
             </div>
             :
             <>
-                <div style={{ display: (!photoLoading && props.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
+                <div style={{ width: "100%", display: (!photoLoading && props.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
                     <AllPhotosContext.Provider value={{ photosListMiniAllPhotos, setPhotosListMiniAllPhotos }}>
                         <ImgCacheContext.Provider value={{ imgCacheMap, setImgCacheMap }}>
                             <div className="photo-display">
@@ -281,6 +285,7 @@ function PhotosList(props) {
                                     num={numOfPhoto}
                                     currentPhotoIndex={currentPhotoIndex}
                                     setCurrentPhotoIndex={setCurrentPhotoIndex}
+                                    centerDisplayClass={centerDisplayClass}
 
                                     reread={photosListMiniReread}
                                     currentIndex={photosListMiniCurrentIndex}
@@ -342,6 +347,8 @@ function PhotosList(props) {
                                 return (
                                     <div key={i} className={"row pict-" + iconSize} style={{ textAlign: "center" }} >
                                         <a href="#" onClick={() => {
+                                            setCenterDisplayClass("centerDisplayMax");
+                                            setRightMenuClass("rightMenu-close");
                                             displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto)
                                         }}>
                                             {!l.has_thumbnail && l.file.path.match(/\.(mp4|webm)$/i)
@@ -382,7 +389,12 @@ function PhotosList(props) {
                                                 onChange={(e) => addSelection(e.target.checked, l.file.path)}
                                             />
                                             <label className={"cneckbox-photo checkbox hover"} htmlFor={"photo-checkbox-" + i}></label><br />
-                                            <a href="#" onClick={() => setCurrentPhotoPath(l.file.path)} >(&#8505;)</a><br />
+                                            <a href="#" onClick={() => {
+                                                displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto)
+                                                setCenterDisplayClass("centerDisplay");
+                                                setRightMenuClass("rightMenu");
+                                            }
+                                            } >(&#8505;)</a><br />
                                             <a href="#" className="run-app" onClick={(e) => open("file://" + l.file.path)}>&#128640;</a>
                                         </div>
                                     </div>
@@ -393,9 +405,11 @@ function PhotosList(props) {
                 </div >
             </>
         }
-        <div className="rightMenu">
+        <div className={rightMenuClass}>
             <div style={{ display: (props.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
                 <PhotoInfo
+                    setCenterDisplayClass={setCenterDisplayClass}
+                    setRightMenuClass={setRightMenuClass}
                     currentPhotoPath={currentPhotoPath}
                     closePhotoDisplay={closePhotoDisplay}
                     path={currentPhotoPath}

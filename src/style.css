@@ -148,6 +148,30 @@ button {
   .centerDisplay {
     min-height: calc(100vh - 60px);
   }
+
+  .centerDisplayMax {
+    min-height: calc(100vh - 60px);
+  }
+
+  .rightMenu-close {
+    display: none;
+  }
+
+  .photoLoadingOn h1 {
+    white-space: nowrap;
+  }
+
+  .photoLoadingOn {
+    flex: 1;
+    text-align: center;
+    display: block;
+    max-width: calc(100vw - 60px);
+    min-width: calc(100vw - 60px);
+    max-height: calc(100vh - 60px);
+    min-height: calc(100vh - 60px);
+    padding: 20px 20px 10px 20px;
+    margin: 0 0 0 0px;
+  }
 }
 
 .leftMenu .dateList {
@@ -172,6 +196,27 @@ button {
   border-color: white;
 }
 
+.closePhotoInfo {
+  float: right;
+}
+
+.rightMenu-close {
+  flex: 0 0 1%;
+  height: calc(100vh - 30px);
+  width: 15px;
+  padding-left: 20px;
+
+  border-width: 0px 0px 0px 1px;
+  border-style: solid;
+  border-color: white;
+}
+
+.rightMenu-close p,
+.rightMenu-close .closePhotoInfo {
+  display: none;
+}
+
+
 @media screen and (max-width: 1200px) {
   .rightMenu {
     display: none;
@@ -187,29 +232,38 @@ button {
 .importDisplay,
 .preferences,
 .photoLoadingOn {
-  max-width: calc(100vw - 662px);
+  flex: 1;
+  display: block;
   min-width: calc(100vw - 662px);
-  max-height: calc(100vh - 30px);
+  max-height: calc(100vh - 60px);
+  min-height: calc(100vh - 60px);
+  padding: 20px 20px 10px 20px;
+  margin: 0 0 0 0px;
+}
+
+.centerDisplayMax {
+  max-width: calc(100vw - 500px);
+  min-width: calc(100vw - 500px);
+  max-height: calc(100vh - 60px);
   padding: 20px 20px 10px 20px;
   margin: 0 0 0 0px;
 }
 
 .centerDisplay,
 .importDisplay,
-.preferences,
-.photoLoadingOn {
+.preferences {
   flex: 1;
 }
 
 .centerDisplay {
-  min-width: 710px;
+  min-width: calc(100vw - 662px);
   width: calc(100vw - 600px);
   text-align: center;
 
 }
 
 .centerDisplay .photos {
-  min-width: 700px;
+  min-width: calc(100vw - 662px);
 }
 
 .preferences {
@@ -291,6 +345,7 @@ button {
 .importDisplay div.photos,
 .centerDisplay div.photos {
   text-align: left;
+  min-width: 100%;
 }
 
 
@@ -460,10 +515,6 @@ ul.list-of-selected li {
     color: #ffffff;
     background-color: #0f0f0f98;
   }
-}
-
-.photoLoadingOn {
-  display: block;
 }
 
 .photoLoadingOff {
@@ -827,4 +878,8 @@ img.splash {
 a.run-app {
   color: gray;
   font-size: 0.7em;
+}
+
+.togglePhotoInfo {
+  float: left;
 }

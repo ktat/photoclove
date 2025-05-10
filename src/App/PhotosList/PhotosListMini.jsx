@@ -89,12 +89,6 @@ function PhotosListMini(props) {
             const objectURL = URL.createObjectURL(blob);
             imgCacheMap[f] = [objectURL];
             setImgCacheMap(imgCacheMap)
-            invoke("get_photo_info", { pathStr: f }).then((r) => {
-                if (imgCacheMap[f]) {
-                    imgCacheMap[f][1] = JSON.parse(r);
-                    setImgCacheMap(imgCacheMap)
-                }
-            })
         }
         const keys = Object.keys(imgCacheMap)
         keys.forEach((v) => {
@@ -312,7 +306,7 @@ function PhotosListMini(props) {
 
     return (
         <>
-            <div className="centerDisplay">
+            <div className={props.centerDisplayClass}>
 
                 <div
                     className="photoDisplay"
