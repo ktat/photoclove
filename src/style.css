@@ -343,9 +343,9 @@ button {
 .rightMenu-close {
   flex: 0 0 1%;
   height: calc(100vh - 30px);
-  width: 40px;
-  padding-left: 10px;
-  padding-right: 8px;
+  min-width: 40px;
+  padding-left: 8px;
+  padding-right: 2px;
 
   border-width: 0px 0px 0px 1px;
   border-style: solid;
@@ -1034,4 +1034,6 @@ a.run-app {
 
 .togglePhotoInfo {
   float: left;
+  margin: 0px 0px 0px 0px;
+  padding: 0px 0px 0px 0px;
 }
