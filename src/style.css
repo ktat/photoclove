@@ -214,6 +214,7 @@ button {
 .rightMenu {
   flex: 1;
   height: calc(100vh - 30px);
+  overflow-y: auto;
 }
 
 .leftMenu {
@@ -275,7 +276,7 @@ button {
 
 .leftMenu .dateList {
   height: calc(90vh - 200px);
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 
 .leftMenu ul {
@@ -286,8 +287,8 @@ button {
 
 .selectedPhoto,
 .rightMenu {
-  min-width: 280px;
-  max-width: 280px;
+  min-width: 275px;
+  max-width: 275px;
   padding-left: 20px;
 
   border-width: 0px 0px 0px 1px;
@@ -366,6 +367,7 @@ button {
 .centerDisplay .photos {
   min-width: calc(100vw - 560px);
   text-align: center;
+  overflow-y: auto;
 }
 
 .preferences {
@@ -728,7 +730,7 @@ table th {
 }
 
 .comment textarea {
-  min-width: 90%;
+  min-width: 80%;
   height: 3em;
 }
 
@@ -833,6 +835,10 @@ li.tab {
   border: 1px solid #777;
   border-bottom: none;
   margin-bottom: 10px;
+}
+
+#tab-maintenance ul li {
+  margin-left: -20px;
 }
 
 li.tab-active {
