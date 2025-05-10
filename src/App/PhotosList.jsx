@@ -50,11 +50,13 @@ function PhotosList(props) {
         setPhotosListMiniAllPhotos([]);
         setPhotosListMiniCurrentIndex(0);
         setCurrentPhotoPath(undefined);
+        setRightMenuClass("rightMenu");
     }, [props.currentDate])
 
     function displayPhoto(f, i) {
         setCurrentPhotoPath(f);
         setCurrentPhotoIndex(i)
+        setRightMenuClass("rightMenu-close");
         props.setShowPhotoDisplay(true);
     }
 

@@ -642,7 +642,7 @@ table th {
 }
 
 .comment textarea {
-  width: 90%;
+  min-width: 90%;
   height: 3em;
 }
 
