@@ -118,6 +118,11 @@ function PhotosListMini(props) {
     function getPhotos() {
         let cpi = props.currentPhotoIndex ? props.currentPhotoIndex : 0
         let num = cpi + NUM_OF_PHOTO_LIST * 2 - photosListMiniAllPhotos.length;
+        let needReset = true;
+        if (num <= 0 && showPhotosIndex.length <= NUM_OF_PHOTO_LIST) {
+            num = NUM_OF_PHOTO_LIST * 2;
+            needReset = false;
+        }
         if (num <= 0) {
             return
         }
@@ -138,13 +143,16 @@ function PhotosListMini(props) {
             }
 
             setHasNext(data.has_next);
-            adjustCurrentIndex(mergedAllPhotos);
+            if (needReset) {
+                adjustCurrentIndex(mergedAllPhotos);
+            }
         }).catch(e => {
             console.log("in PhotosListMini.jsx");
             console.log(e);
             console.log(num)
         });
     }
+
     function adjustCurrentIndex(allPhotos) {
         if (!allPhotos) return
 
@@ -275,6 +283,9 @@ function PhotosListMini(props) {
             if (nextIndex > Math.trunc(NUM_OF_PHOTO_LIST / 2)) {
                 props.setCurrentIndex(props.currentIndex + 1)
             }
+            if (hasNext && (photosListMiniAllPhotos.length - props.currentIndex) <= NUM_OF_PHOTO_LIST) {
+                getPhotos();
+            }
             _nextOrPrevPhoto(nextIndex);
             setImageCache(nextIndex, 1)
         }
@@ -318,9 +329,6 @@ function PhotosListMini(props) {
                     <a href="#" id="dummy-for-focus">{/* Dummy */}</a>
                     {props.currentPhotoIndex > 0 ? <><a href="#" onClick={() => lockNavigate(prevPhoto)}>&lt;&lt; prev</a><></>&nbsp;&nbsp;|| </> : <>&lt;&lt; <s>prev</s>&nbsp;&nbsp;|| </>}
                     <a href="#" onClick={() => props.closePhotoDisplay()}>close</a>
-                    {
-                        // TODO: nextがたまにバグる
-                    }
                     {props.currentPhotoIndex < (photosListMiniAllPhotos.length - 1) ? <> ||&nbsp;&nbsp;<a href="#" onClick={() => lockNavigate(nextPhoto)}>next &gt;&gt;</a><br /><br /></> : <>||&nbsp;&nbsp;<s onClick={() => { console.log(props.currentPhotoIndex, photosListMiniAllPhotos.length) }}>next</s> &gt;&gt;</>}
 
                     <PhotoDisplay
