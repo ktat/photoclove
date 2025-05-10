@@ -94,9 +94,6 @@ function PhotoInfo(props) {
 
     return (
         <>
-            <div className="closePhotoInfo">
-                <a href="#" onClick={(e) => props.setCurrentPhotoPath("")}>&#x2715;</a>
-            </div>
             <div className="togglePhotoInfo">
                 <a href="#" onClick={() => {
                     if (!showSideMenu) {

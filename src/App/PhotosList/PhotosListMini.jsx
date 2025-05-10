@@ -1,5 +1,5 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
-import React, { useRef, useContext, useEffect, useState } from 'react';
+import React, { useRef, useContext, useEffect, useState, useCallback } from 'react';
 import PhotoDisplay from "./PhotosListMini/PhotoDisplay.jsx";
 
 import { ImgCacheContext, AllPhotosContext } from "../ImgCacheContext.jsx";
@@ -31,6 +31,13 @@ function PhotosListMini(props) {
     const [photosListImgSrc, setPhotosListImgSrc] = useState({});
 
     const navigateLock = useRef(false);
+
+    const handleClick = useCallback((e) => {
+        // 既存の操作系（input／button など）をクリックした時は奪わない
+        const interactive = ['INPUT', 'BUTTON', 'SELECT', 'TEXTAREA', 'A'];
+        if (interactive.includes(e.target.tagName)) return;
+        document.querySelector("#dummy-for-focus").focus();
+    }, []);
 
     useEffect((e) => {
         invoke("get_config", {},).then((e) => {
@@ -325,6 +332,7 @@ function PhotosListMini(props) {
                     autoFocus={true}
                     onKeyDown={(e) => photoNavigation(e)}
                     onKeyUp={(e) => photoNavigationUp(e)}
+                    onClick={handleClick}
                 >
                     <a href="#" id="dummy-for-focus">{/* Dummy */}</a>
                     {props.currentPhotoIndex > 0 ? <><a href="#" onClick={() => lockNavigate(prevPhoto)}>&lt;&lt; prev</a><></>&nbsp;&nbsp;|| </> : <>&lt;&lt; <s>prev</s>&nbsp;&nbsp;|| </>}

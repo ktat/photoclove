@@ -416,7 +416,6 @@ function PhotosList(props) {
                     closePhotoDisplay={closePhotoDisplay}
                     path={currentPhotoPath}
                     addFooterMessage={props.addFooterMessage}
-                    setCurrentPhotoPath={setCurrentPhotoPath}
                     imgCacheMap={imgCacheMap}
                 />
             </div>
