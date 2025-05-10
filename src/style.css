@@ -146,11 +146,11 @@ button {
   }
 
   .centerDisplay {
-    min-height: calc(100vh - 60px);
+    min-height: calc(100vh);
   }
 
   .centerDisplayMax {
-    min-height: calc(100vh - 60px);
+    min-height: calc(100vh);
   }
 
   .rightMenu-close {
@@ -165,6 +165,7 @@ button {
     flex: 1;
     text-align: center;
     display: block;
+    width: 100%;
     max-width: calc(100vw - 60px);
     min-width: calc(100vw - 60px);
     max-height: calc(100vh - 60px);
@@ -172,6 +173,10 @@ button {
     padding: 20px 20px 10px 20px;
     margin: 0 0 0 0px;
   }
+}
+
+.photoLoadingOnParent {
+  width: 100%;
 }
 
 .leftMenu .dateList {
@@ -228,10 +233,8 @@ button {
   height: calc(100vh - 250px);
 }
 
-.centerDisplay,
 .importDisplay,
-.preferences,
-.photoLoadingOn {
+.preferences {
   flex: 1;
   display: block;
   min-width: calc(100vw - 662px);
@@ -255,15 +258,20 @@ button {
   flex: 1;
 }
 
-.centerDisplay {
-  min-width: calc(100vw - 662px);
-  width: calc(100vw - 600px);
-  text-align: center;
-
+.centerDisplay,
+.photoLoadingOn {
+  flex: 1;
+  display: block;
+  min-height: calc(100vh - 60px);
+  padding: 20px 20px 10px 20px;
+  margin: 0 0 0 0px;
 }
 
+.photoLoadingOn,
+.centerDisplay,
 .centerDisplay .photos {
-  min-width: calc(100vw - 662px);
+  min-width: calc(100vw - 560px);
+  text-align: center;
 }
 
 .preferences {

@@ -260,7 +260,7 @@ function PhotosList(props) {
 
     return <>
         {photoLoading ?
-            <div style={{ display: photoLoading ? "block" : "none" }}>
+            <div className="photoLoadingOnParent" style={{ display: photoLoading ? "block" : "none" }}>
                 <PhotoLoading />
             </div>
             :
