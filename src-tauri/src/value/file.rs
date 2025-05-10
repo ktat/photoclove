@@ -56,8 +56,13 @@ impl Dir {
     pub fn new(path: String) -> Dir {
         let p = Path::new(&path);
         let cp = PathAbs::new(p);
-        if !p.exists() || cp.is_err() {
-            eprintln!("Invalid path for Dir: {:?}", cp.err());
+        let result = p.try_exists();
+        if !result.is_ok() || cp.is_err() {
+            if cp.is_err() {
+                eprintln!("Invalid abs path for Dir: {:?}, error: {:?}", p, cp.err());
+            } else {
+                eprintln!("Invalid path for Dir: {:?}, CanonicalPath: {:?}", p, cp.unwrap().as_path());
+            }
             return Dir {
                 path: "/".to_string(),
                 created_at: get_created_time("/".to_string()),
@@ -93,7 +98,7 @@ impl Dir {
         );
     }
     pub fn child(&self, path: String) -> Dir {
-        Dir::new(self.path.to_string() + "/" + &path)
+        Dir::new(PathBuf::from(self.path.clone()).join(&path).display().to_string())
     }
 }
 

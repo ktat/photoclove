@@ -140,10 +140,13 @@ pub async fn create_thumbnails(
 mod tests {
     use crate::domain_service::{dir_service, photo_service};
     use crate::value::file;
+    use std::path::Path;
 
     #[test]
     fn test_make_photos() {
-        let dir = file::Dir::new("tests/assets/files".to_string());
+
+        let path = Path::new("tests/assets/files");
+        let dir = file::Dir::new(path.display().to_string());
         let files = dir_service::find_files(&dir);
         let photos = photo_service::photos_from_dir(files);
         assert_eq!(photos.photos.len(), 3)
