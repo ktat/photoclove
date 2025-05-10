@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager';
+import { show } from "@tauri-apps/api/app";
 
 function PhotoInfo(props) {
     const [photoInfo, setPhotoInfo] = useState({});
     const [star, setStar] = useState([false, false, false, false, false]);
     const [comment, setComment] = useState("");
+    const [showSideMenu, setShowSideMenu] = useState(false);
 
     useEffect((e) => {
-        if (props.currentPhotoPath && props.currentPhotoPath !== "") {
+        if (props.currentPhotoPath && props.currentPhotoPath !== "" && showSideMenu) {
             getPhotoInfo(props.currentPhotoPath).then((photoInfo) => {
             });
         }
@@ -17,7 +19,7 @@ function PhotoInfo(props) {
     async function getPhotoInfo(path) {
         if (props.imgCacheMap[path] && props.imgCacheMap[path][1]) {
             setPhotoInfo(props.imgCacheMap[path][1])
-        } else {
+        } else if (showSideMenu) {
             await invoke("get_photo_info", { pathStr: path }).then((r) => {
                 let data = JSON.parse(r);
                 if (data.meta) {
@@ -92,11 +94,25 @@ function PhotoInfo(props) {
 
     return (
         <>
-            <div style={{ float: "right" }}>
+            <div className="closePhotoInfo">
                 <a href="#" onClick={(e) => props.setCurrentPhotoPath("")}>&#x2715;</a>
             </div>
+            <div className="togglePhotoInfo">
+                <a href="#" onClick={() => {
+                    if (!showSideMenu) {
+                        props.setRightMenuClass("rightMenu");
+                        props.setCenterDisplayClass("centerDisplay");
+                    } else {
+                        props.setRightMenuClass("rightMenu-close");
+                        props.setCenterDisplayClass("centerDisplayMax");
+                    }
+                    setShowSideMenu(!showSideMenu);
+                }}>
+                    {showSideMenu ? ">" : "<"}
+                </a>
+            </div>
             <p><strong>Photo Info</strong></p>
-            {props.currentPhotoPath && (
+            {props.currentPhotoPath && showSideMenu && (
                 <div>
                     <table>
                         <tbody>
