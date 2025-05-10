@@ -173,6 +173,15 @@ button {
     padding: 20px 20px 10px 20px;
     margin: 0 0 0 0px;
   }
+
+  #photos-list-mini {
+    width: calc(100vw - 60px);
+  }
+
+  .photoDisplay {
+    width: calc(100vw - 60px);
+  }
+
 }
 
 .photoLoadingOnParent {
@@ -777,7 +786,6 @@ div#tab-selection img {
 }
 
 #photos-list-mini {
-  width: 100%;
   display: flex;
   overflow-y: hidden;
   height: 160px;
