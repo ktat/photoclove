@@ -4,19 +4,86 @@
   line-height: 24px;
   font-weight: 400;
 
-  color: #0f0f0f;
-  background-color: #f6f6f6;
-
+  color-scheme: dark light;
+  background: #1b1b1b;
+  color: #e4e4e4;
+ 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+
+/* dark theme */
+--bg: #1b1b1b;           /* ページ地 */
+  --bg-elevated: #242424;  /* 入力欄・カード */
+  --text: #e4e4e4;
+  --border: #444;
+  --accent: #4da3ff;       /* チェックボックスなどの強調色 */
 }
+
+/* start dark theme */
+input,
+textarea,
+select,
+button {
+  background: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #888;             /* グレーで控えめに */
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #888;             /* グレーで控えめに */
+}
+
+/* 2023 年以降の主要ブラウザでサポート */
+input[type="checkbox"],
+input[type="radio"],
+progress,
+meter {
+  accent-color: var(--accent);
+}/* 2023 年以降の主要ブラウザでサポート */
+
+input[type="checkbox"],
+input[type="radio"],
+progress,
+meter {
+  accent-color: var(--accent);
+}
+input[type="range"] {
+  accent-color: var(--accent);        /* 新ブラウザならこれだけで OK */
+  width: 100%;
+}
+
+/* 古い WebKit 互換を残したい場合のピンポイント上書き */
+input[type="range"]::-webkit-slider-runnable-track {
+  background: var(--accent);
+}
+input[type="range"]::-moz-range-track {
+  background: var(--accent);
+}
+/* 📅 アイコンも暗く反転させたい場合 */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+::-webkit-scrollbar { width: 12px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 6px;
+}
+/* finish dark theme */
 
 .inner-container,
 body {
-  overflow-y: hidden;
+  overflow: hidden;
 }
 
 body {
@@ -321,19 +388,19 @@ button {
 }
 
 .pict-50 {
-  min-width: 70px;
+  min-width: 80px;
 }
 
 .pict-100 {
-  min-width: 120px;
+  min-width: 130px;
 }
 
 .pict-200 {
-  min-width: 220px;
+  min-width: 230px;
 }
 
 .pict-300 {
-  min-width: 320px;
+  min-width: 330px;
 }
 
 #directory-maintenance ul,
