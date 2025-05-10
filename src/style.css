@@ -215,6 +215,7 @@ button {
   flex: 1;
   height: calc(100vh - 30px);
   overflow-y: auto;
+  padding-top: 15px;
 }
 
 .leftMenu {
