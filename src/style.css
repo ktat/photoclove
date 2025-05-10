@@ -1,3 +1,42 @@
+/* --- Windows / Linux ずれ防止パッチ --- */
+html {
+  scrollbar-gutter: stable both-edges;
+  /* フォールバック */
+}
+
+html,
+body,
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* 可変ビューポート幅 */
+@supports (width: 100dvw) {
+  :root {
+    --vw: 100dvw;
+  }
+}
+
+@supports not (width: 100dvw) {
+  :root {
+    --vw: 100vw;
+  }
+}
+
+body {
+  min-width: 100%;
+  max-width: 100%;
+}
+
+.centerDisplay,
+.photoLoadingOn,
+.photos {
+  min-width: calc(var(--vw) - 560px);
+}
+
+
 :root {
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
   font-size: 16px;
@@ -105,8 +144,8 @@ body {
 }
 
 body {
-  max-width: 100vw;
-  min-width: 100vw;
+  max-width: var(--vw);
+  min-width: var(--vw);
 }
 
 #home-container {
@@ -215,7 +254,7 @@ button {
   flex: 1;
   height: calc(100vh - 30px);
   overflow-y: auto;
-  padding-top: 15px;
+  padding-top: 10px;
 }
 
 .leftMenu {
@@ -253,8 +292,8 @@ button {
     text-align: center;
     display: block;
     width: 100%;
-    max-width: calc(100vw - 60px);
-    min-width: calc(100vw - 60px);
+    max-width: calc(var(--vw) - 60px);
+    min-width: calc(var(--vw) - 60px);
     max-height: calc(100vh - 60px);
     min-height: calc(100vh - 60px);
     padding: 20px 20px 10px 20px;
@@ -262,11 +301,11 @@ button {
   }
 
   #photos-list-mini {
-    width: calc(100vw - 60px);
+    width: calc(1var(--vw) - 60px);
   }
 
   .photoDisplay {
-    width: calc(100vw - 60px);
+    width: calc(1var(--vw) - 60px);
   }
 
 }
@@ -288,8 +327,8 @@ button {
 
 .selectedPhoto,
 .rightMenu {
-  min-width: 275px;
-  max-width: 275px;
+  min-width: 280px;
+  max-width: 280px;
   padding-left: 20px;
 
   border-width: 0px 0px 0px 1px;
@@ -304,16 +343,20 @@ button {
 .rightMenu-close {
   flex: 0 0 1%;
   height: calc(100vh - 30px);
-  width: 15px;
-  padding-left: 20px;
+  width: 40px;
+  padding-left: 10px;
+  padding-right: 8px;
 
   border-width: 0px 0px 0px 1px;
   border-style: solid;
   border-color: white;
 }
 
-.rightMenu-close p,
-.rightMenu-close .closePhotoInfo {
+.rightMenu p {
+  margin-top: 0px;
+}
+
+.rightMenu-close p {
   display: none;
 }
 
@@ -333,16 +376,16 @@ button {
 .preferences {
   flex: 1;
   display: block;
-  min-width: calc(100vw - 662px);
-  max-height: calc(100vh - 60px);
+  min-width: calc(var(--vw) - 662px);
+  max-height: calc(--0vh - 60px);
   min-height: calc(100vh - 60px);
   padding: 20px 20px 10px 20px;
   margin: 0 0 0 0px;
 }
 
 .centerDisplayMax {
-  max-width: calc(100vw - 100px);
-  min-width: calc(100vw - 500px);
+  max-width: calc(var(--vw) - 100px);
+  min-width: calc(var(--vw) - 500px);
   max-height: calc(100vh - 60px);
   padding: 20px 20px 10px 20px;
   margin: 0 0 0 0px;
@@ -484,7 +527,7 @@ ul.list-of-selected li {
 #import-container {
   display: flex;
   flex-direction: row;
-  max-width: calc(100vw - 662px);
+  max-width: calc(var(--vw) - 662px);
 }
 
 #importer-directories-list {
@@ -503,8 +546,8 @@ ul.list-of-selected li {
 }
 
 #importer-files-list {
-  min-width: calc(100vw - 800px);
-  max-width: calc(100vw - 800px);
+  min-width: calc(var(--vw) - 800px);
+  max-width: calc(var(--vw) - 800px);
   flex: 1;
   display: flex;
   flex-direction: row;
@@ -515,16 +558,16 @@ ul.list-of-selected li {
 #importer-files-list .row0-center {
   flex: 1;
   margin: 0px;
-  min-width: calc(100vw - 800px);
-  max-width: calc(100vw - 800px);
+  min-width: calc(var(--vw) - 800px);
+  max-width: calc(var(--vw) - 800px);
 }
 
 #importer-files-list .row1,
 #importer-files-list .row1-right {
   flex: 1;
   margin: 0px 10px 0px 10px;
-  min-width: calc((100vw - 840px) / 2);
-  max-width: calc((100vw - 840px) / 2);
+  min-width: calc((var(--vw) - 840px) / 2);
+  max-width: calc((var(--vw) - 840px) / 2);
 }
 
 #importer-files-list .row1 {
@@ -547,8 +590,8 @@ ul.list-of-selected li {
   flex-direction: row;
   flex-wrap: wrap;
   margin-top: 10px;
-  min-width: calc(100vw - 880px);
-  max-width: calc(100vw - 880px);
+  min-width: calc(var(--vw) - 880px);
+  max-width: calc(var(--vw) - 880px);
   min-height: calc(100vh - 300px);
   max-height: calc(100vh - 300px);
 }
@@ -560,8 +603,8 @@ ul.list-of-selected li {
   flex-direction: row;
   flex-wrap: wrap;
   margin-top: 10px;
-  min-width: calc(100vw - 662px);
-  max-width: calc(100vw - 662px);
+  min-width: calc(var(--vw) - 662px);
+  max-width: calc(var(--vw) - 662px);
   max-height: calc(100vh - 150px);
 }
 
@@ -636,7 +679,7 @@ ul.list-of-selected li {
   font-size: 1.5em;
   content: '\1f980';
   display: block;
-  padding-top: 50px;
+  padding-top: 15px;
   width: 65px;
   height: 64px;
   margin: 8px;

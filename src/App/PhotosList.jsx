@@ -26,6 +26,7 @@ function PhotosList(props) {
     const [imgCacheMap, setImgCacheMap] = useState({});
     const [rightMenuClass, setRightMenuClass] = useState("rightMenu");
     const [centerDisplayClass, setCenterDisplayClass] = useState("centerDisplayMax");
+    const [showSideMenu, setShowSideMenu] = useState(false);
 
     useEffect((e) => {
         invoke("get_config", {},).then((e) => {
@@ -162,6 +163,7 @@ function PhotosList(props) {
     function closePhotoDisplay() {
         setCenterDisplayClass("centerDisplayMax");
         setRightMenuClass("rightMenu");
+        setShowSideMenu(false);
         props.setShowPhotoDisplay(false);
         if (props.currentPhotoPath !== "") setCurrentPhotoPath("");
         console.log("photos-list-close-photod-display -- getPhotos")
@@ -395,6 +397,7 @@ function PhotosList(props) {
                                                 displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto)
                                                 setCenterDisplayClass("centerDisplay");
                                                 setRightMenuClass("rightMenu");
+                                                setShowSideMenu(true);
                                             }
                                             } >(&#8505;)</a><br />
                                             <a href="#" className="run-app" onClick={(e) => open("file://" + l.file.path)}>&#128640;</a>
@@ -410,8 +413,11 @@ function PhotosList(props) {
         <div className={rightMenuClass}>
             <div style={{ display: (props.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
                 <PhotoInfo
+                    setShowSideMenu={setShowSideMenu}
+                    showSideMenu={showSideMenu}
                     setCenterDisplayClass={setCenterDisplayClass}
                     setRightMenuClass={setRightMenuClass}
+                    rigthMenuClass={rightMenuClass}
                     currentPhotoPath={currentPhotoPath}
                     closePhotoDisplay={closePhotoDisplay}
                     path={currentPhotoPath}

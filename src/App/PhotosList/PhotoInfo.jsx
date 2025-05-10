@@ -7,10 +7,9 @@ function PhotoInfo(props) {
     const [photoInfo, setPhotoInfo] = useState({});
     const [star, setStar] = useState([false, false, false, false, false]);
     const [comment, setComment] = useState("");
-    const [showSideMenu, setShowSideMenu] = useState(false);
 
     useEffect((e) => {
-        if (props.currentPhotoPath && props.currentPhotoPath !== "" && showSideMenu) {
+        if (props.currentPhotoPath && props.currentPhotoPath !== "" && props.showSideMenu) {
             getPhotoInfo(props.currentPhotoPath).then((photoInfo) => {
             });
         }
@@ -19,7 +18,7 @@ function PhotoInfo(props) {
     async function getPhotoInfo(path) {
         if (props.imgCacheMap[path] && props.imgCacheMap[path][1]) {
             setPhotoInfo(props.imgCacheMap[path][1])
-        } else if (showSideMenu) {
+        } else if (props.showSideMenu) {
             await invoke("get_photo_info", { pathStr: path }).then((r) => {
                 let data = JSON.parse(r);
                 if (data.meta) {
@@ -96,20 +95,21 @@ function PhotoInfo(props) {
         <>
             <div className="togglePhotoInfo">
                 <a href="#" onClick={() => {
-                    if (!showSideMenu) {
+                    if (!props.showSideMenu) {
                         props.setRightMenuClass("rightMenu");
                         props.setCenterDisplayClass("centerDisplay");
                     } else {
                         props.setRightMenuClass("rightMenu-close");
+                        props.setShowSideMenu(false);
                         props.setCenterDisplayClass("centerDisplayMax");
                     }
-                    setShowSideMenu(!showSideMenu);
+                    props.setShowSideMenu(!props.showSideMenu);
                 }}>
-                    {showSideMenu ? ">" : "<"}
+                    {props.showSideMenu ? ">" : "<"}
                 </a>
             </div>
             <p><strong>Photo Info</strong></p>
-            {props.currentPhotoPath && showSideMenu && (
+            {props.currentPhotoPath && props.showSideMenu && (
                 <div>
                     <table>
                         <tbody>
