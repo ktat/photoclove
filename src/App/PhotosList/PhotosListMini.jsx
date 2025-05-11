@@ -30,6 +30,8 @@ function PhotosListMini(props) {
     const [thumbnailStore, setThumbnailStore] = useState("");
     const [photosListImgSrc, setPhotosListImgSrc] = useState({});
     const [photosListMiniClosed, setPhotosListMiniClosed] = useState(false)
+    const [selectedInfoHidden, setSelectedInfoHidden] = useState(true);
+    const [unselectedInfoHidden, setUnselectedInfoHidden] = useState(true);
 
     const navigateLock = useRef(false);
 
@@ -214,12 +216,30 @@ function PhotosListMini(props) {
         }
     }
 
+    function togglePhotoSelected() {
+        const t = props.toggleSelection(props.currentPhotoPath);
+        setTimeout(() => {
+            if (t) {
+                setSelectedInfoHidden(true);
+            } else {
+                setUnselectedInfoHidden(true);
+            }
+        }, 500)
+        if (t) {
+            setSelectedInfoHidden(false);
+        } else {
+            setUnselectedInfoHidden(false);
+        }
+    }
+
     function photoNavigation(e) {
         let f = props.currentPhotoPath;
         if (e.keyCode === 39) { // right arrow
             nextPhoto();
         } else if (e.keyCode === 37) { // left arrow
             prevPhoto();
+        } else if (e.keyCode === 67) { // c
+            togglePhotoSelected();
         } else if (e.keyCode === 46) { // Del
             props.moveToTrashCan(f)
         } else if (photoZoomReady && e.keyCode === 48) { // ctrl+0
@@ -353,6 +373,9 @@ function PhotosListMini(props) {
                         imgCacheMap={imgCacheMap}
                         thumbnailSrc={getThumbnailSrc(photosListMiniAllPhotos[props.currentPhotoIndex])}
                         photosListMiniClosed={photosListMiniClosed}
+                        togglePhotoSelected={togglePhotoSelected}
+                        selectedInfoHidden={selectedInfoHidden}
+                        unselectedInfoHidden={unselectedInfoHidden}
                     />
                 </div>
                 <div id="photos-list-mini" className={photosListMiniClosed ? "photosListMiniClosed" : "photosListMini"}>

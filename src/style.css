@@ -1056,3 +1056,32 @@ a.run-app {
   min-height: calc(100vh - 150px);
   max-height: calc(100vh - 150px);
 }
+
+#selectedInfo.hidden,
+#unselectedInfo.hidden {
+  display: none;
+}
+
+#selectedInfo,
+#unselectedInfo {
+  display: block;
+  position: absolute;
+  top: calc(100vh / 3);
+  left: calc(100vw / 2);
+  width: 300px;
+  height: 45px;
+  font-size: 20px;
+  padding-top: 10px;
+  background-color: #888;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 10px;
+}
+
+#selectedInfo {
+  color: #dd8;
+}
+
+#unselectedInfo {
+  color: #c44;
+}

@@ -22,7 +22,6 @@ function PhotoDisplay(props) {
     }, []);
 
     useEffect((e) => {
-        console.log("aaa")
         handleImgLoad();
     }, [props.photosListMiniClosed])
 
@@ -137,7 +136,6 @@ function PhotoDisplay(props) {
         setDragPhotoInfo({});
     }
 
-    // ① 画像がロードされた直後にサイズを送る
     const handleImgLoad = (e) => {
         if (e !== undefined) {
             width = e.target.width;
@@ -154,6 +152,12 @@ function PhotoDisplay(props) {
 
     return (
         <div id="photo" className={"photo" + (props.photosListMiniClosed ? " photosListMiniClosed" : "")}>
+            <div id="selectedInfo" class={props.selectedInfoHidden ? "hidden" : ""}>
+                Photo is selected
+            </div>
+            <div id="unselectedInfo" class={props.unselectedInfoHidden ? "hidden" : ""}>
+                Photo is unselected
+            </div>
             <div className={videoClass}>
                 <div style={{ "width": photoDisplayWidth, "height": photoDisplayHeight }}>
                     { /* <ReactPlayer
@@ -174,6 +178,7 @@ function PhotoDisplay(props) {
                 <img className={photoDisplayImgClass}
                     loading="eager"
                     onLoad={handleImgLoad}
+                    onDoubleClick={(e) => props.togglePhotoSelected()}
                     onError={(e) => {
                         e.target.src = "/img_error.png";
                     }}

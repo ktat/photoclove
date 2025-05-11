@@ -80,6 +80,15 @@ function PhotosList(props) {
         setPhotoSelection(selection);
     }
 
+    function toggleSelection(f) {
+        let t = true;
+        if (photoSelectionDict[f]) {
+            t = false;
+        }
+        addSelection(t, f);
+        return t;
+    }
+
     function clearPhotoSelection() {
         setPhotoSelectionDict({});
         setPhotoSelection([]);
@@ -276,6 +285,7 @@ function PhotosList(props) {
                                 <PhotosListMini
                                     moveToTrashCan={moveToTrashCan}
                                     closePhotoDisplay={closePhotoDisplay}
+                                    toggleSelection={toggleSelection}
 
                                     setShortCutNavigation={props.setShortCutNavigation}
                                     setShowPhotoDisplay={props.setShowPhotoDisplay}
