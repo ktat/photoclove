@@ -5,7 +5,6 @@ import { show } from "@tauri-apps/api/app";
 
 function PhotoInfo(props) {
     const [photoInfo, setPhotoInfo] = useState({});
-    const [star, setStar] = useState([false, false, false, false, false]);
     const [comment, setComment] = useState("");
 
     useEffect((e) => {
@@ -24,12 +23,12 @@ function PhotoInfo(props) {
                 if (data.meta) {
                     if (data.meta.star.data > 0) {
                         const newStar = [false, false, false, false, false];
-                        for (let i = 0; i <= data.meta.star.data; i++) {
+                        for (let i = 0; i < data.meta.star.data; i++) {
                             newStar[i] = true;
                         }
-                        setStar(newStar);
+                        props.setStar(newStar);
                     } else {
-                        setStar([false, false, false, false, false]);
+                        props.setStar([false, false, false, false, false]);
                     }
                     if (data.meta.comment) {
                         setComment(data.meta.comment.data);
@@ -37,7 +36,7 @@ function PhotoInfo(props) {
                         setComment("");
                     }
                 } else {
-                    setStar([false, false, false, false, false]);
+                    props.setStar([false, false, false, false, false]);
                     setComment("");
                 }
                 setPhotoInfo(data);
@@ -46,14 +45,14 @@ function PhotoInfo(props) {
     };
 
     function getCurrentStarRate() {
-        return getStarRate(star);
+        return getStarRate(props.star);
     }
 
     function getStarRate(star) {
         let starIndex = 0;
         for (let i = 0; i < 5; i++) {
-            if (star[i]) {
-                starIndex = i;
+            if (props.star[i]) {
+                starIndex = i + 1;
             } else {
                 break;
             }
@@ -64,7 +63,9 @@ function PhotoInfo(props) {
     function toggleStar(i) {
         const newStar = []
         const currentStarRate = getCurrentStarRate()
-        if (!star[i] || (star[i] && star[i + 1])) {
+        if (i === 0 && currentStarRate === 0) {
+            newStar[0] = true;
+        } else if (!props.star[i] || (props.star[i] && props.star[i + 1])) {
             for (let j = 0; j <= i; j++) {
                 newStar[j] = true;
             }
@@ -83,7 +84,7 @@ function PhotoInfo(props) {
         const newStarRate = getStarRate(newStar);
         if (currentStarRate !== newStarRate) {
             invoke("save_star", { pathStr: props.currentPhotoPath, starNum: newStarRate });
-            setStar(newStar);
+            props.setStar(newStar);
         }
     }
 
@@ -148,7 +149,7 @@ function PhotoInfo(props) {
                         <span className="star">
                             {
                                 [0, 1, 2, 3, 4].map((v, i) => {
-                                    return <a key={i} href="#" value={v} onClick={() => { toggleStar(v) }}>{star[i] ? "★" : "☆"}</a>
+                                    return <a key={i} href="#" value={v} onClick={() => { toggleStar(v) }}>{props.star[i] ? "★" : "☆"}</a>
                                 })
                             }
                         </span>

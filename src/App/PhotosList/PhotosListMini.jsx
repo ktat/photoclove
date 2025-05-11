@@ -32,6 +32,8 @@ function PhotosListMini(props) {
     const [photosListMiniClosed, setPhotosListMiniClosed] = useState(false)
     const [selectedInfoHidden, setSelectedInfoHidden] = useState(true);
     const [unselectedInfoHidden, setUnselectedInfoHidden] = useState(true);
+    const [selectedContent, setSelectedContent] = useState("");
+    const [unselectedContent, setUnselectedContent] = useState("");
 
     const navigateLock = useRef(false);
 
@@ -216,6 +218,37 @@ function PhotosListMini(props) {
         }
     }
 
+    function increaseStar() {
+        invoke("get_photo_info", { pathStr: props.currentPhotoPath }).then((r) => {
+            let data = JSON.parse(r);
+            let star = 0;
+            let curStar = 0;
+            if (data.meta) {
+                curStar = data.meta.star.data || 0;
+                if (curStar == 0) {
+                    star = 1;
+                } else if (curStar < 5) {
+                    star = curStar + 1;
+                }
+            }
+            setTimeout(() => {
+                setSelectedInfoHidden(true);
+            }, 700)
+            let stars = ["☆", "☆", "☆", "☆", "☆"];
+            let newStar = [false, false, false, false, false];
+            for (let i = 0; i < star; i++) {
+                stars[i] = "★";
+                newStar[i] = true;
+            }
+            props.setStar(newStar);
+            setSelectedContent("Star: " + stars.join(""));
+            setSelectedInfoHidden(false);
+            console.log("star: " + star);
+            console.log("curStar: " + curStar);
+            invoke("save_star", { pathStr: props.currentPhotoPath, starNum: star });
+        });
+    }
+
     function togglePhotoSelected() {
         const t = props.toggleSelection(props.currentPhotoPath);
         setTimeout(() => {
@@ -224,10 +257,12 @@ function PhotosListMini(props) {
             } else {
                 setUnselectedInfoHidden(true);
             }
-        }, 500)
+        }, 700)
         if (t) {
+            setSelectedContent("Photo is selected")
             setSelectedInfoHidden(false);
         } else {
+            setUnselectedContent("Photo is unselected")
             setUnselectedInfoHidden(false);
         }
     }
@@ -240,6 +275,8 @@ function PhotosListMini(props) {
             prevPhoto();
         } else if (e.keyCode === 67) { // c
             togglePhotoSelected();
+        } else if (e.keyCode === 83) { // s
+            increaseStar();
         } else if (e.keyCode === 46) { // Del
             props.moveToTrashCan(f)
         } else if (photoZoomReady && e.keyCode === 48) { // ctrl+0
@@ -376,6 +413,8 @@ function PhotosListMini(props) {
                         togglePhotoSelected={togglePhotoSelected}
                         selectedInfoHidden={selectedInfoHidden}
                         unselectedInfoHidden={unselectedInfoHidden}
+                        selectedContent={selectedContent}
+                        unselectedContent={unselectedContent}
                     />
                 </div>
                 <div id="photos-list-mini" className={photosListMiniClosed ? "photosListMiniClosed" : "photosListMini"}>

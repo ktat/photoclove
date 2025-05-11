@@ -153,10 +153,10 @@ function PhotoDisplay(props) {
     return (
         <div id="photo" className={"photo" + (props.photosListMiniClosed ? " photosListMiniClosed" : "")}>
             <div id="selectedInfo" class={props.selectedInfoHidden ? "hidden" : ""}>
-                Photo is selected
+                {props.selectedContent}
             </div>
             <div id="unselectedInfo" class={props.unselectedInfoHidden ? "hidden" : ""}>
-                Photo is unselected
+                {props.unselectedContent}
             </div>
             <div className={videoClass}>
                 <div style={{ "width": photoDisplayWidth, "height": photoDisplayHeight }}>

@@ -27,6 +27,7 @@ function PhotosList(props) {
     const [rightMenuClass, setRightMenuClass] = useState("rightMenu");
     const [centerDisplayClass, setCenterDisplayClass] = useState("centerDisplayMax");
     const [showSideMenu, setShowSideMenu] = useState(false);
+    const [star, setStar] = useState([false, false, false, false, false]);
 
     useEffect((e) => {
         invoke("get_config", {},).then((e) => {
@@ -300,6 +301,7 @@ function PhotosList(props) {
                                     currentPhotoIndex={currentPhotoIndex}
                                     setCurrentPhotoIndex={setCurrentPhotoIndex}
                                     centerDisplayClass={centerDisplayClass}
+                                    setStar={setStar}
 
                                     reread={photosListMiniReread}
                                     currentIndex={photosListMiniCurrentIndex}
@@ -433,6 +435,8 @@ function PhotosList(props) {
                     path={currentPhotoPath}
                     addFooterMessage={props.addFooterMessage}
                     imgCacheMap={imgCacheMap}
+                    setStar={setStar}
+                    star={star}
                 />
             </div>
             <div style={{ display: (!props.showPhotoDisplay || !currentPhotoPath) ? "block" : "none" }}>
