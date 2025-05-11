@@ -24,7 +24,7 @@ function PhotoInfo(props) {
                 if (data.meta) {
                     if (data.meta.star.data > 0) {
                         const newStar = [false, false, false, false, false];
-                        for (let i = 0; i < data.meta.star.data; i++) {
+                        for (let i = 0; i <= data.meta.star.data; i++) {
                             newStar[i] = true;
                         }
                         setStar(newStar);
