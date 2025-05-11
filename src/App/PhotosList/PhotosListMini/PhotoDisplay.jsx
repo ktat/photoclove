@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { open } from '@tauri-apps/plugin-shell';
 
 let currentFile = "";
+let width = 0;
+let height = 0;
 
 function PhotoDisplay(props) {
     const [dragPhotoInfo, setDragPhotoInfo] = useState([]);
@@ -18,6 +20,11 @@ function PhotoDisplay(props) {
         currentFile = "";
         document.querySelector("#dummy-for-focus").focus();
     }, []);
+
+    useEffect((e) => {
+        console.log("aaa")
+        handleImgLoad();
+    }, [props.photosListMiniClosed])
 
     useEffect((e) => {
         props.SetImgStyle({ opacity: 0.1 });
@@ -130,8 +137,23 @@ function PhotoDisplay(props) {
         setDragPhotoInfo({});
     }
 
+    // ① 画像がロードされた直後にサイズを送る
+    const handleImgLoad = (e) => {
+        if (e !== undefined) {
+            width = e.target.width;
+            height = e.target.height;
+        }
+        if (width != 0 && height != 0) {
+            props.SetImgStyle(
+                { opacity: 1, transition: "opacity 0.3s" },
+                width,
+                height
+            );
+        }
+    };
+
     return (
-        <div className="photo">
+        <div id="photo" className={"photo" + (props.photosListMiniClosed ? " photosListMiniClosed" : "")}>
             <div className={videoClass}>
                 <div style={{ "width": photoDisplayWidth, "height": photoDisplayHeight }}>
                     { /* <ReactPlayer
@@ -151,9 +173,7 @@ function PhotoDisplay(props) {
             {props.currentPhotoPath && !props.currentPhotoPath.match(/\.(mp4|webm)$/i) &&
                 <img className={photoDisplayImgClass}
                     loading="eager"
-                    onLoad={(e) => {
-                        props.SetImgStyle({ opacity: 1, transition: "opacity 0.3s" }, e.target.width, e.target.height);
-                    }}
+                    onLoad={handleImgLoad}
                     onError={(e) => {
                         e.target.src = "/img_error.png";
                     }}

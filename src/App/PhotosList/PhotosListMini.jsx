@@ -29,6 +29,7 @@ function PhotosListMini(props) {
     });
     const [thumbnailStore, setThumbnailStore] = useState("");
     const [photosListImgSrc, setPhotosListImgSrc] = useState({});
+    const [photosListMiniClosed, setPhotosListMiniClosed] = useState(false)
 
     const navigateLock = useRef(false);
 
@@ -327,7 +328,7 @@ function PhotosListMini(props) {
             <div className={props.centerDisplayClass}>
 
                 <div
-                    className="photoDisplay"
+                    className={"photoDisplay" + (photosListMiniClosed ? " photosListMiniClosed" : "")}
                     id="photoDisplay"
                     autoFocus={true}
                     onKeyDown={(e) => photoNavigation(e)}
@@ -349,9 +350,10 @@ function PhotosListMini(props) {
                         currentPhotoSize={currentPhotoSize}
                         imgCacheMap={imgCacheMap}
                         thumbnailSrc={getThumbnailSrc(photosListMiniAllPhotos[props.currentPhotoIndex])}
+                        photosListMiniClosed={photosListMiniClosed}
                     />
                 </div>
-                <div id="photos-list-mini">
+                <div id="photos-list-mini" className={photosListMiniClosed ? "photosListMiniClosed" : "photosListMini"}>
                     <div className="row1"><a style={{ display: props.currentIndex == 0 ? "none" : "" }} onClick={() => { backwardPhotos() }}>◁</a></div>
                     {
                         showPhotosIndex.map((vIndex, i) => {
@@ -395,6 +397,9 @@ function PhotosListMini(props) {
                     }
                     <div className="row1"><a style={{ display: (!hasNext && (photosListMiniAllPhotos.length - props.currentIndex) <= NUM_OF_PHOTO_LIST) ? "none" : "" }} onClick={() => { forwardPhotos() }}>▷</a></div>
                 </div >
+                <div style={{ textAlign: "center", width: "100%", margin: "0px 0px 0px 0px", padding: "0px 0px 0px 0px" }}>
+                    <a hre="#" onClick={() => { setPhotosListMiniClosed(!photosListMiniClosed) }}>{photosListMiniClosed ? "△ open mini list △" : "▽ close mini list ▽"}</a>
+                </div>
             </div>
         </>
     )
