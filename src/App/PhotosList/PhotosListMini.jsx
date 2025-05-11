@@ -398,7 +398,7 @@ function PhotosListMini(props) {
                     <div className="row1"><a style={{ display: (!hasNext && (photosListMiniAllPhotos.length - props.currentIndex) <= NUM_OF_PHOTO_LIST) ? "none" : "" }} onClick={() => { forwardPhotos() }}>▷</a></div>
                 </div >
                 <div style={{ textAlign: "center", width: "100%", margin: "0px 0px 0px 0px", padding: "0px 0px 0px 0px" }}>
-                    <a hre="#" onClick={() => { setPhotosListMiniClosed(!photosListMiniClosed) }}>{photosListMiniClosed ? "△ open mini list △" : "▽ close mini list ▽"}</a>
+                    <a hre="#" onClick={() => { setPhotosListMiniClosed(!photosListMiniClosed); document.querySelector("#dummy-for-focus").focus(); }}>{photosListMiniClosed ? "△ open mini list △" : "▽ close mini list ▽"}</a>
                 </div>
             </div>
         </>
