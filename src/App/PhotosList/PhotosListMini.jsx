@@ -338,7 +338,9 @@ function PhotosListMini(props) {
                     <a href="#" id="dummy-for-focus">{/* Dummy */}</a>
                     {props.currentPhotoIndex > 0 ? <><a href="#" onClick={() => lockNavigate(prevPhoto)}>&lt;&lt; prev</a><></>&nbsp;&nbsp;|| </> : <>&lt;&lt; <s>prev</s>&nbsp;&nbsp;|| </>}
                     <a href="#" onClick={() => props.closePhotoDisplay()}>close</a>
-                    {props.currentPhotoIndex < (photosListMiniAllPhotos.length - 1) ? <> ||&nbsp;&nbsp;<a href="#" onClick={() => lockNavigate(nextPhoto)}>next &gt;&gt;</a><br /><br /></> : <>||&nbsp;&nbsp;<s onClick={() => { console.log(props.currentPhotoIndex, photosListMiniAllPhotos.length) }}>next</s> &gt;&gt;</>}
+                    {props.currentPhotoIndex < (photosListMiniAllPhotos.length - 1) ?
+                        <> ||&nbsp;&nbsp;<a href="#" onClick={() => lockNavigate(nextPhoto)}>next &gt;&gt;</a><br /><br /></>
+                        : <> ||&nbsp;&nbsp;<s onClick={() => { console.log(props.currentPhotoIndex, photosListMiniAllPhotos.length) }}>next</s> &gt;&gt;<br /><br /></>}
 
                     <PhotoDisplay
                         imgStyle={imgStyle}
