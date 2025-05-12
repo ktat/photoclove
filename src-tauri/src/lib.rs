@@ -7,8 +7,7 @@ use crate::value::*;
 use entity::config::Config;
 use std::{
     error::Error,
-    fs,
-    path,
+    fs, path,
     path::PathBuf,
     sync::atomic::{AtomicBool, Ordering},
     sync::{Arc, Mutex},
@@ -17,7 +16,6 @@ use tauri::{
     menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder},
     Builder, Emitter, Event, Manager,
 };
-
 
 #[cfg(unix)]
 use std::os::unix::fs::symlink;
@@ -109,7 +107,7 @@ async fn link_file_to_public(
             }
         };
 
-        # [cfg(unix)]
+        #[cfg(unix)]
         return match symlink(from, to.clone()) {
             Ok(_) => Ok("true".to_string()),
             Err(e) => {
@@ -117,7 +115,7 @@ async fn link_file_to_public(
                 Ok("false".to_string())
             }
         };
-        # [cfg(windows)]
+        #[cfg(windows)]
         return match symlink_file(from, to.clone()) {
             Ok(_) => Ok("true".to_string()),
             Err(e) => {
@@ -152,6 +150,39 @@ async fn get_photos(
             num,
             page,
             offset as usize,
+            0,
+            Option::Some(state.config.clone()),
+        )
+        .await;
+    Ok(photos.to_json())
+}
+
+#[tauri::command]
+async fn get_photos_with_filter(
+    date_str: &str,
+    page: u32,
+    sort_value: i32,
+    num: u32,
+    star: i32,
+    state: tauri::State<'_, AppState>,
+    offset: u32,
+) -> Result<String, ()> {
+    let date = date::Date::from_string(&date_str.to_string(), Option::None);
+    let repo_db = &state.repo_db;
+    let meta_db = &state.meta_db;
+    let meta_data = match meta_db.get_photo_meta_data_in_date(date) {
+        Ok(data) => data,
+        Err(_e) => photo_meta::PhotoMetas::new(),
+    };
+    let photos = repo_db
+        .get_photos_in_date(
+            &meta_data,
+            date,
+            repository::sort_from_int(sort_value),
+            num,
+            page,
+            offset as usize,
+            star,
             Option::Some(state.config.clone()),
         )
         .await;
@@ -657,6 +688,7 @@ pub fn run() {
             greet,
             get_dates,
             get_photos,
+            get_photos_with_filter,
             get_photo_info,
             get_next_photo,
             get_prev_photo,

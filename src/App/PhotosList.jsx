@@ -28,6 +28,7 @@ function PhotosList(props) {
     const [centerDisplayClass, setCenterDisplayClass] = useState("centerDisplayMax");
     const [showSideMenu, setShowSideMenu] = useState(false);
     const [star, setStar] = useState([false, false, false, false, false]);
+    const [starFilter, setStarFilter] = useState(0);
 
     useEffect((e) => {
         invoke("get_config", {},).then((e) => {
@@ -46,7 +47,7 @@ function PhotosList(props) {
             setCurrentPhotoIndex(0)
             fetchPhotos().catch(console.error);
         }
-    }, [numOfPhoto, props.currentDate, sortOfPhotos]);
+    }, [numOfPhoto, props.currentDate, sortOfPhotos, starFilter]);
 
     useEffect(e => {
         setPhotosListMiniAllPhotos([]);
@@ -201,7 +202,14 @@ function PhotosList(props) {
             page = 1;
         }
         page = parseInt(page);
-        await invoke("get_photos", { dateStr: date, sortValue: parseInt(sort), page: page, num: parseInt(num), offset: 0 }).then((r) => {
+        await invoke("get_photos_with_filter", {
+            dateStr: date,
+            sortValue: parseInt(sort),
+            page: page,
+            num: parseInt(num),
+            offset: 0,
+            star: parseInt(starFilter, 10)
+        }).then((r) => {
             let data = JSON.parse(r);
             let l = data.photos;
             let tags = [];
@@ -452,6 +460,8 @@ function PhotosList(props) {
                     dateNum={props.dateNum}
                     setCurrentDateNum={props.setCurrentDateNum}
                     moveToTrashCan={moveToTrashCan}
+                    setStarFilter={setStarFilter}
+                    starFilter={starFilter}
                 />
             </div>
         </div>

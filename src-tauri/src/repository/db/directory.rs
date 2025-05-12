@@ -91,6 +91,7 @@ impl RepositoryDB for Directory {
         num: u32,
         page: u32,
         offset: usize,
+        star: i32,
         opt_conf: Option<config::Config>,
     ) -> photo::Photos {
         let dir = self.path.child(date.to_string());
@@ -124,6 +125,10 @@ impl RepositoryDB for Directory {
             }
         } else {
             for f in meta_data.keys() {
+                let md = meta_data.get(f).unwrap();
+                if star > 0 && md.star.star() < star {
+                    continue;
+                }
                 let file_result = file::File::new_if_exists(f.to_string());
                 if file_result.is_none() {
                     continue;
@@ -194,7 +199,7 @@ impl RepositoryDB for Directory {
 
         'outer: loop {
             let photos = self
-                .get_photos_in_date(meta_data, date.clone(), sort, 100, page, 0, Option::None)
+                .get_photos_in_date(meta_data, date.clone(), sort, 100, page, 0, 0, Option::None)
                 .await;
             if photos.photos.len() == 0 {
                 break 'outer;
@@ -226,7 +231,7 @@ impl RepositoryDB for Directory {
 
         'outer: loop {
             let photos = self
-                .get_photos_in_date(meta_data, date.clone(), sort, 100, page, 0, Option::None)
+                .get_photos_in_date(meta_data, date.clone(), sort, 100, page, 0, 0, Option::None)
                 .await;
             if photos.photos.len() == 0 {
                 break 'outer;

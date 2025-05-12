@@ -131,9 +131,15 @@ function DirectoryMenu(props) {
             </div>
             <div id="tab-filter" className={props.tabClass['filter'] ? "tab-active" : "tab"}>
                 <div>
-                    Stars: more than ...<br />
+                    <div>
+                        Stars:
+                        {[0, 1, 2, 3, 4, 5].map((v, i) => {
+                            return <span key={i} onClick={() => props.setStarFilter(v)}>{props.starFilter >= v ? " ★" + i : " ☆" + i}</span>
+                        })}
+                    </div>
                     has comment<br />
                     not comentted<br />
+                    etc.
                 </div>
             </div>
             <div id="tab-selection" className={props.tabClass['selection'] ? "tab-active" : "tab"}>
