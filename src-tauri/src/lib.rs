@@ -641,7 +641,7 @@ pub fn run() {
                 .text("load_dates", "Load Date List")
                 .text("import", "Import")
                 .text("create_db", "Create DB")
-                .text("login", "Login")
+                .text("login", "Login to Google")
                 .text("pref", "Preferences")
                 .text("quit", "Quit")
                 .build()?;
