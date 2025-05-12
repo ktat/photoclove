@@ -11,7 +11,7 @@ import Importer from "./App/Importer.jsx"
 import Preferences from "./App/Preferences.jsx"
 import Welcome from "./Welcome.jsx"
 import Home from "./App/Home.jsx"
-import Login from "./App/Login.jsx"
+import loginGoogle from "./App/Login.jsx"
 import Footer from "./App/Footer.jsx"
 
 function App() {
@@ -52,11 +52,18 @@ function App() {
     });
 
     const unlisten0 = listen("click_menu_static", (e) => {
-      if (e.payload === "about") {
-        message("PhotoClove is an application to manage photos.\n (c)ktat");
-      } else if (e.payload === "github") {
-        open("https://github.com/ktat/photoclove/");
-      }
+      invoke("lock", { t: true }).then((le) => {
+        if (le) {
+          if (e.payload === "about") {
+            message("PhotoClove is an application to manage photos.\n (c)ktat");
+          } else if (e.payload === "github") {
+            open("https://github.com/ktat/photoclove/");
+          }
+          setTimeout(() => {
+            invoke("lock", { t: false })
+          }, 1000);
+        }
+      })
     });
 
     // const sab = new SharedArrayBuffer(1024);
@@ -98,17 +105,28 @@ function App() {
       } else if (e.payload === "pref") {
         togglePreferences(true);
       } else if (e.payload == "login") {
-        toggleLogin(true);
+        invoke("lock", { t: true }).then((e) => {
+          if (e) {
+            loginGoogle();
+            setTimeout(() => {
+              invoke("lock", { t: false });
+            }, 1000);
+          }
+        });
       } else if (e.payload === "create_db") {
         // BUG: event is called twice in same time. I don't know the reason why.
         invoke("lock", { t: true }).then((e) => {
           if (e) {
             if (in_db_creation) {
               message("DB creation in progress");
-              invoke("lock", { t: false });
+              setTimeout(() => {
+                invoke("lock", { t: false });
+              }, 1000);
             } else {
               ask("It may cost long time.\nAre you OK?", "Create DB?").then((e) => {
-                invoke("lock", { t: false });
+                setTimeout(() => {
+                  invoke("lock", { t: false });
+                }, 1000);
                 if (e) {
                   in_db_creation = true;
                   invoke("create_db").then(() => {
@@ -116,7 +134,9 @@ function App() {
                   });
                 }
               }).catch((e) => {
-                invoke("lock", { t: false });
+                setTimeout(() => {
+                  invoke("lock", { t: false });
+                }, 1000);
                 console.log("error: " + e);
               })
             }
@@ -213,6 +233,7 @@ function App() {
     }
   }
 
+  // login page is not used now.
   function toggleLogin(t) {
     if (t) {
       setShowLogin(true);
@@ -226,6 +247,12 @@ function App() {
       setShowPhotosList(false);
     }
   }
+  /*
+    HTML code for login page
+            <div style={{ display: showLogin ? "block" : "none" }}>
+              <Login />
+            </div>
+  */
 
   function togglePreferences(t) {
     if (t) {
@@ -318,9 +345,6 @@ function App() {
                 addFooterMessage={addFooterMessage}
                 removeFooterMessage={removeFooterMessage}
               />
-            </div>
-            <div style={{ display: showLogin ? "block" : "none" }}>
-              <Login />
             </div>
             <div style={{ display: showPreferences ? "block" : "none" }}>
               <Preferences

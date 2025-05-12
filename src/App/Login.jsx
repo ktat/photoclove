@@ -1,20 +1,17 @@
-import React, { useState, useEffect } from "react";
-import { invoke, convertFileSrc } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { auth } from '../services/firebase';
 const { openGoogleSignIn, googleSignIn, signOut } = auth;
 import { localForage } from "../storage/forage";
 
-function Login(props) {
+function loginGoogle() {
+    listen('oauth://url', (data) => {
+        googleSignIn(data.payload);
+    });
 
-    function login() {
-        listen('oauth://url', (data) => {
-            googleSignIn(data.payload);
-        });
-
-        invoke('plugin:oauth|start', {
-            config: {
-                response: `<!DOCTYPE html>
+    invoke('plugin:oauth|start', {
+        config: {
+            response: `<!DOCTYPE html>
               <html lang="en">
               <head>
                 <meta charset="UTF-8">
@@ -39,24 +36,13 @@ function Login(props) {
               </body>
               </html>
               `
-            }
-        }).then((port) => {
-            openGoogleSignIn(port);
-        }).catch((e) => {
-            console.log("error: " + e);
-        })
-    }
-
-    return (
-        <div id="login-container">
-            <h1>Login to Other Service</h1>
-            <ul>
-                <li>
-                    <a href="#" onClick={(e) => { login() }}>Login to Google</a> ... to upload photos to Google Photos
-                </li>
-            </ul>
-        </div>
-    )
+        }
+    }).then((port) => {
+        openGoogleSignIn(port);
+    }).catch((e) => {
+        console.log("error: " + e);
+    })
 }
 
-export default Login;
+
+export default loginGoogle;
