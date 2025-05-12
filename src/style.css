@@ -149,10 +149,11 @@ body {
 }
 
 #home-container {
-  width: 100%;
+  text-align: center;
+  width: calc(var(--vw) - 200px);
   overflow: hidden;
-  padding: 100px 100px 100px 100px;
-  height: calc(100vh - 230px);
+  padding: 50px 100px 100px 100px;
+  height: calc(100vh - 100px);
 }
 
 .inner-container {
@@ -267,6 +268,11 @@ button {
 }
 
 @media screen and (max-width: 1000px) {
+  #home-container {
+    width: var(--vw);
+    height: calc(100vh - 30px);
+  }
+
   .leftMenu {
     display: none;
   }
