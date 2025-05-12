@@ -91,6 +91,10 @@ function PhotosList(props) {
         return t;
     }
 
+    function isSelected(f) {
+        return photoSelectionDict[f];
+    }
+
     function clearPhotoSelection() {
         setPhotoSelectionDict({});
         setPhotoSelection([]);
@@ -295,6 +299,7 @@ function PhotosList(props) {
                                     moveToTrashCan={moveToTrashCan}
                                     closePhotoDisplay={closePhotoDisplay}
                                     toggleSelection={toggleSelection}
+                                    isSelected={isSelected}
 
                                     setShortCutNavigation={props.setShortCutNavigation}
                                     setShowPhotoDisplay={props.setShowPhotoDisplay}

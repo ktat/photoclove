@@ -152,8 +152,8 @@ function PhotoDisplay(props) {
 
     return (
         <div id="photo" className={"photo" + (props.photosListMiniClosed ? " photosListMiniClosed" : "")}>
-            <div id="selectedInfo" class={props.selectedInfoHidden ? "hidden" : ""}>
-                {props.selectedContent}
+            <div id="selectedInfo" class={props.selectedInfoHidden ? "hidden" : ""}
+                dangerouslySetInnerHTML={{ __html: props.selectedContent }}>
             </div>
             <div id="unselectedInfo" class={props.unselectedInfoHidden ? "hidden" : ""}>
                 {props.unselectedContent}

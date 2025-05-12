@@ -34,6 +34,7 @@ function PhotosListMini(props) {
     const [unselectedInfoHidden, setUnselectedInfoHidden] = useState(true);
     const [selectedContent, setSelectedContent] = useState("");
     const [unselectedContent, setUnselectedContent] = useState("");
+    const [showHelp, setShowHelp] = useState(false);
 
     const navigateLock = useRef(false);
 
@@ -218,22 +219,23 @@ function PhotosListMini(props) {
         }
     }
 
-    function increaseStar() {
+    function changeStar(isIncrease, additionalMessage) {
         invoke("get_photo_info", { pathStr: props.currentPhotoPath }).then((r) => {
             let data = JSON.parse(r);
             let star = 0;
             let curStar = 0;
             if (data.meta) {
                 curStar = data.meta.star.data || 0;
-                if (curStar == 0) {
-                    star = 1;
-                } else if (curStar < 5) {
-                    star = curStar + 1;
+                if (isIncrease) {
+                    if (curStar < 5) {
+                        star = curStar + 1;
+                    } else {
+                        star = 5;
+                    }
+                } else if (!isIncrease && curStar > 0) {
+                    star = curStar - 1;
                 }
             }
-            setTimeout(() => {
-                setSelectedInfoHidden(true);
-            }, 700)
             let stars = ["☆", "☆", "☆", "☆", "☆"];
             let newStar = [false, false, false, false, false];
             for (let i = 0; i < star; i++) {
@@ -241,10 +243,15 @@ function PhotosListMini(props) {
                 newStar[i] = true;
             }
             props.setStar(newStar);
-            setSelectedContent("Star: " + stars.join(""));
+            let c = "Star: " + stars.join("")
+            if (additionalMessage && additionalMessage !== "") {
+                c = additionalMessage + "<br />" + c;
+            }
+            setSelectedContent(c);
+            setTimeout(() => {
+                setSelectedInfoHidden(true);
+            }, 700)
             setSelectedInfoHidden(false);
-            console.log("star: " + star);
-            console.log("curStar: " + curStar);
             invoke("save_star", { pathStr: props.currentPhotoPath, starNum: star });
         });
     }
@@ -273,10 +280,22 @@ function PhotosListMini(props) {
             nextPhoto();
         } else if (e.keyCode === 37) { // left arrow
             prevPhoto();
-        } else if (e.keyCode === 67) { // c
+        } else if (e.keyCode === 67) { // c ... choose as selected
             togglePhotoSelected();
-        } else if (e.keyCode === 83) { // s
-            increaseStar();
+        } else if (e.keyCode === 83) { // s ... increase star
+            changeStar(true);
+        } else if (e.keyCode === 68) { // d ... declease star
+            changeStar(false);
+        } else if (e.keyCode === 70) { // f ... c & s
+            let additionalMessage = "Photo is selected";
+            if (props.isSelected(f)) {
+                additionalMessage = "Photo is already selected";
+            } else {
+                props.toggleSelection(props.currentPhotoPath);
+            }
+            changeStar(true, additionalMessage);
+        } else if (e.keyCode === 191) { // ? ... show help
+            setShowHelp(!showHelp);
         } else if (e.keyCode === 46) { // Del
             props.moveToTrashCan(f)
         } else if (photoZoomReady && e.keyCode === 48) { // ctrl+0
@@ -428,7 +447,7 @@ function PhotosListMini(props) {
                             }
                             const clientHeight = document.querySelector('#photos-list-mini').clientHeight - 20;
                             const thumbnailSrc = getThumbnailSrc(v);
-                            // console.log(v.file.path + " : " + v.has_thumbnail);
+                            // console.log(v</td>.file.path + " : " + v.has_thumbnail);
                             if (thumbnailSrc !== "") {
                                 photosListImgSrc[v.file.path] = convertFileSrc(thumbnailSrc);
                             } else {
@@ -463,6 +482,22 @@ function PhotosListMini(props) {
                 </div >
                 <div style={{ textAlign: "center", width: "100%", margin: "0px 0px 0px 0px", padding: "0px 0px 0px 0px" }}>
                     <a hre="#" onClick={() => { setPhotosListMiniClosed(!photosListMiniClosed); document.querySelector("#dummy-for-focus").focus(); }}>{photosListMiniClosed ? "△ open mini list △" : "▽ close mini list ▽"}</a>
+                </div>
+                <div id="help" className={(showHelp ? "" : " hidden")} onClick={() => { setShowHelp(false); document.querySelector("#dummy-for-focus").focus(); }}>
+                    <h1>Help</h1>
+                    <table>
+                        <tr><th>Right/Left Arrow</th><td>navigate photos</td></tr>
+                        <tr><th>Ctrl + Mouse Wheel</th><td>zoom photo</td></tr>
+                        <tr><th>Ctrl + Drag</th><td>drag photo while zooming</td></tr>
+                        <tr><th>Ctrl + 0</th><td>reset zoom</td></tr>
+                        <tr><th>C</th><td>choose as selected</td></tr>
+                        <tr><th>S</th><td>increase star</td></tr>
+                        <tr><th>D</th><td>decrease star</td></tr>
+                        <tr><th>F</th><td>choose as selected and increase star</td></tr>
+                        <tr><th>Del</th><td>move to trash can</td></tr>
+                        <tr><th>?</th><td>toggle showing this help</td></tr>
+                    </table>
+
                 </div>
             </div>
         </>
