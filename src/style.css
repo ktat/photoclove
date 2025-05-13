@@ -1076,6 +1076,9 @@ a.run-app {
 }
 
 #help {
+  border-width: 1px;
+  border-style: solid;
+  border-color: white;
   z-index: 100;
   display: block;
   position: absolute;
@@ -1088,6 +1091,12 @@ a.run-app {
   text-align: left;
   border-radius: 10px;
   padding: 5px 20px 20px 20px;
+}
+
+#help table tr th,
+#help table tr td,
+#help table {
+  border-color: black;
 }
 
 #help h1 {
@@ -1110,6 +1119,9 @@ a.run-app {
 
 #selectedInfo,
 #unselectedInfo {
+  border-width: 1px;
+  border-style: solid;
+  border-color: #fff;
   z-index: 110;
   display: block;
   position: absolute;
