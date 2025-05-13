@@ -24,11 +24,10 @@ function PhotosList(props) {
     const [photosListMiniReread, setPhotosListMiniReread] = useState(false);
     const [photosListImgSrc, setPhotosListImgSrc] = useState({});
     const [imgCacheMap, setImgCacheMap] = useState({});
-    const [rightMenuClass, setRightMenuClass] = useState("rightMenu");
-    const [centerDisplayClass, setCenterDisplayClass] = useState("centerDisplayMax");
     const [showSideMenu, setShowSideMenu] = useState(false);
     const [star, setStar] = useState([false, false, false, false, false]);
     const [starFilter, setStarFilter] = useState(0);
+    const [hasCommentFilter, setHasCommentFilter] = useState(false);
 
     useEffect((e) => {
         invoke("get_config", {},).then((e) => {
@@ -38,6 +37,7 @@ function PhotosList(props) {
     }, [])
 
     useEffect((e) => {
+        setShowSideMenu(false);
         if (props.currentDate != "" && !props.showPhotoDisplay) {
             delete props.datePage[props.currentDate];
             photos.photos = [];
@@ -47,19 +47,17 @@ function PhotosList(props) {
             setCurrentPhotoIndex(0)
             fetchPhotos().catch(console.error);
         }
-    }, [numOfPhoto, props.currentDate, sortOfPhotos, starFilter]);
+    }, [numOfPhoto, props.currentDate, sortOfPhotos, starFilter, hasCommentFilter]);
 
     useEffect(e => {
         setPhotosListMiniAllPhotos([]);
         setPhotosListMiniCurrentIndex(0);
         setCurrentPhotoPath(undefined);
-        setRightMenuClass("rightMenu");
     }, [props.currentDate])
 
     function displayPhoto(f, i) {
         setCurrentPhotoPath(f);
         setCurrentPhotoIndex(i)
-        setRightMenuClass("rightMenu-close");
         props.setShowPhotoDisplay(true);
     }
 
@@ -176,8 +174,6 @@ function PhotosList(props) {
     }
 
     function closePhotoDisplay() {
-        setCenterDisplayClass("centerDisplayMax");
-        setRightMenuClass("rightMenu");
         setShowSideMenu(false);
         props.setShowPhotoDisplay(false);
         if (props.currentPhotoPath !== "") setCurrentPhotoPath("");
@@ -212,7 +208,8 @@ function PhotosList(props) {
             page: page,
             num: parseInt(num),
             offset: 0,
-            star: parseInt(starFilter, 10)
+            star: parseInt(starFilter, 10),
+            hasComment: hasCommentFilter
         }).then((r) => {
             let data = JSON.parse(r);
             let l = data.photos;
@@ -313,8 +310,9 @@ function PhotosList(props) {
                                     num={numOfPhoto}
                                     currentPhotoIndex={currentPhotoIndex}
                                     setCurrentPhotoIndex={setCurrentPhotoIndex}
-                                    centerDisplayClass={centerDisplayClass}
                                     setStar={setStar}
+                                    hasCommentFilter={hasCommentFilter}
+                                    starFilter={starFilter}
 
                                     reread={photosListMiniReread}
                                     currentIndex={photosListMiniCurrentIndex}
@@ -324,7 +322,7 @@ function PhotosList(props) {
                         </ImgCacheContext.Provider>
                     </AllPhotosContext.Provider>
                 </div>
-                <div className="centerDisplay" id="photoList"
+                <div className={(props.showSideMenu || !currentPhotoPath) ? "centerDisplay" : "centerDisplayMax"} id="photoList"
                     style={{ display: (!photoLoading && (!props.showPhotoDisplay || !currentPhotoPath)) ? "block" : "none" }}
                     onWheel={(e) => photosScroll(e)} data-date={props.currentDate} data-page={props.datePage[props.currentDate]}>
                     <div>
@@ -376,8 +374,7 @@ function PhotosList(props) {
                                 return (
                                     <div key={i} className={"row pict-" + iconSize} style={{ textAlign: "center" }} >
                                         <a href="#" onClick={() => {
-                                            setCenterDisplayClass("centerDisplayMax");
-                                            setRightMenuClass("rightMenu-close");
+                                            setShowSideMenu(false);
                                             displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto)
                                         }}>
                                             {!l.has_thumbnail && l.file.path.match(/\.(mp4|webm)$/i)
@@ -420,8 +417,6 @@ function PhotosList(props) {
                                             <label className={"cneckbox-photo checkbox hover"} htmlFor={"photo-checkbox-" + i}></label><br />
                                             <a href="#" onClick={() => {
                                                 displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto)
-                                                setCenterDisplayClass("centerDisplay");
-                                                setRightMenuClass("rightMenu");
                                                 setShowSideMenu(true);
                                             }
                                             } >(&#8505;)</a><br />
@@ -435,14 +430,11 @@ function PhotosList(props) {
                 </div >
             </>
         }
-        <div className={rightMenuClass}>
+        <div className={(showSideMenu || !currentPhotoPath) ? "rightMenu" : "rightMenu-close"}>
             <div style={{ display: (props.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
                 <PhotoInfo
                     setShowSideMenu={setShowSideMenu}
                     showSideMenu={showSideMenu}
-                    setCenterDisplayClass={setCenterDisplayClass}
-                    setRightMenuClass={setRightMenuClass}
-                    rigthMenuClass={rightMenuClass}
                     currentPhotoPath={currentPhotoPath}
                     closePhotoDisplay={closePhotoDisplay}
                     path={currentPhotoPath}
@@ -466,6 +458,7 @@ function PhotosList(props) {
                     setCurrentDateNum={props.setCurrentDateNum}
                     moveToTrashCan={moveToTrashCan}
                     setStarFilter={setStarFilter}
+                    setHasCommentFilter={setHasCommentFilter}
                     starFilter={starFilter}
                 />
             </div>

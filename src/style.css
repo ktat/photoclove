@@ -326,7 +326,7 @@ button {
 }
 
 .leftMenu ul {
-  margin-left: 20px;
+  margin-left: 10px;
   text-align: left;
   list-style: none;
 }
@@ -876,6 +876,7 @@ ul.tabs-list {
 }
 
 li.tab {
+  font-size: 14px;
   margin-right: 15px;
   border-top-left-radius: 10%;
   border-top-right-radius: 10%;
@@ -889,6 +890,11 @@ li.tab {
 
 #tab-maintenance ul li {
   margin-left: -20px;
+}
+
+#tab-filter ul li {
+  margin-left: -34px;
+  list-style: none;
 }
 
 li.tab-active {
@@ -963,10 +969,11 @@ input[type=checkbox] {
 
 label.checkbox {
   position: relative;
+  margin-left: 5px;
 }
 
 label.checkbox-normal {
-  padding: 20px 0 0 25px;
+  padding: 0px 0 0 15px;
 }
 
 label.checkbox-photo {
@@ -990,7 +997,7 @@ label.checkbox:before {
 
 label.checkbox:after {
   left: -7px;
-  margin-top: -10px;
+  margin-top: -8px;
   width: 12px;
   height: 12px;
   border: 2px solid #535bf2;
@@ -1125,4 +1132,10 @@ a.run-app {
 
 #unselectedInfo {
   color: #e77;
+}
+
+#preferences {
+  overflow-y: auto;
+  overflow-x: auto;
+  height: calc(100vh - 50px);
 }

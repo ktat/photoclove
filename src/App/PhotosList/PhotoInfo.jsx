@@ -96,14 +96,6 @@ function PhotoInfo(props) {
         <>
             <div className="togglePhotoInfo">
                 <a href="#" onClick={() => {
-                    if (!props.showSideMenu) {
-                        props.setRightMenuClass("rightMenu");
-                        props.setCenterDisplayClass("centerDisplay");
-                    } else {
-                        props.setRightMenuClass("rightMenu-close");
-                        props.setShowSideMenu(false);
-                        props.setCenterDisplayClass("centerDisplayMax");
-                    }
                     props.setShowSideMenu(!props.showSideMenu);
                 }}>
                     {props.showSideMenu ? ">" : "<"}

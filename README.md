@@ -26,7 +26,7 @@ Just a plan, currentrly a few features are only implemented.
 
 - [x] Fast photo viewer
   - [x] Fast when using NFS
-  - [ ] Allow photos over network drive(priority is very low because I uses NFS mount on Linux)
+  - [x] Allow photos over network drive(NFS/SMB mount on Linux. assign Network drive on Windows)
 - [x] Fast importer
   - [ ] only check duplication for the files which has same name prefix and different size.
   - [ ] import files created after last import file timestamp in directories.
@@ -43,10 +43,10 @@ Just a plan, currentrly a few features are only implemented.
   - [ ] Tag
   - [ ] Album(low priority)
 - [ ] Search/Filter
-  - [ ] Star
+  - [x] Star (currently, only in photo list view)
+  - [x] Comment/Note (currently, only in photo list view)
   - [ ] Camera
   - [ ] Tag
-  - [ ] Comment/Note
 - [ ] Upload to cloud services
   - [x] Google Photos (works. but in progress)
   - [ ] Amazon Photos

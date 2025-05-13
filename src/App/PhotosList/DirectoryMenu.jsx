@@ -130,17 +130,20 @@ function DirectoryMenu(props) {
                 </ul>
             </div>
             <div id="tab-filter" className={props.tabClass['filter'] ? "tab-active" : "tab"}>
-                <div>
-                    <div>
+                <ul>
+                    <li>
                         Stars:
                         {[0, 1, 2, 3, 4, 5].map((v, i) => {
                             return <span key={i} onClick={() => props.setStarFilter(v)}>{props.starFilter >= v ? " ★" + i : " ☆" + i}</span>
                         })}
-                    </div>
-                    has comment<br />
-                    not comentted<br />
-                    etc.
-                </div>
+                    </li>
+                    <li>
+                        <input type="checkbox" value="1" id="filter-has-comment-check"
+                            onChange={(e) => { props.setHasCommentFilter(e.target.checked); }}
+                        />
+                        <label className="checkbox checkbox-normal" htmlFor="filter-has-comment-check">Has comment</label>
+                    </li>
+                </ul>
             </div>
             <div id="tab-selection" className={props.tabClass['selection'] ? "tab-active" : "tab"}>
                 <div>

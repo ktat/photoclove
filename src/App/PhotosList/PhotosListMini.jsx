@@ -139,11 +139,13 @@ function PhotosListMini(props) {
         if (num <= 0) {
             return
         }
-        invoke("get_photos", {
+        invoke("get_photos_with_filter", {
             dateStr: props.currentDate,
             sortValue: props.sortOfPhotos,
             page: 1,
             num: num,
+            star: props.starFilter,
+            hasComment: props.hasCommentFilter,
             offset: photosListMiniAllPhotos.length,
         }).then((r) => {
             let index = props.currentIndex;

@@ -151,6 +151,7 @@ async fn get_photos(
             page,
             offset as usize,
             0,
+            false,
             Option::Some(state.config.clone()),
         )
         .await;
@@ -164,6 +165,7 @@ async fn get_photos_with_filter(
     sort_value: i32,
     num: u32,
     star: i32,
+    has_comment: bool,
     state: tauri::State<'_, AppState>,
     offset: u32,
 ) -> Result<String, ()> {
@@ -183,6 +185,7 @@ async fn get_photos_with_filter(
             page,
             offset as usize,
             star,
+            has_comment,
             Option::Some(state.config.clone()),
         )
         .await;

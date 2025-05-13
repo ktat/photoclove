@@ -4,7 +4,7 @@ import { ask, message, confirm } from '@tauri-apps/plugin-dialog';
 import { relaunch } from "@tauri-apps/plugin-process";
 
 function Preferences(props) {
-    const [config, setConfig] = useState({});
+    const [config, setConfig] = useState({ export_from: [] });
     const [additionalExportFrom, setAdditionalExportFrom] = useState(0);
     const [configLoaded, setConfigLoaded] = useState(false);
     const [useCount, setUseCount] = useState(-1);
@@ -21,9 +21,7 @@ function Preferences(props) {
     }, [configLoaded]);
 
     useEffect((e) => {
-        if (config.export_from) {
-            config.export_from.push("");
-        }
+        config.export_from.push("");
     }, [additionalExportFrom]);
 
     function setNewConfig(config) {
@@ -65,7 +63,7 @@ function Preferences(props) {
                 <div className="row2">TrashPath:</div><div className="row3"><input value={config.trash_path} type="text" onChange={(e) => { config.trash_path = e.currentTarget.value; setNewConfig(config); }} /></div>
                 <div className="row2">ImportTo: </div><div className="row3"><input value={config.import_to} type="text" onChange={(e) => { config.import_to = e.currentTarget.value; setNewConfig(config); }} /></div>
                 <div className="row0">ExportFrom: </div>
-                {config.export_from && config.export_from.map((v, i) => {
+                {config.export_from.map((v, i) => {
                     return (<React.Fragment key={i}>
                         < div className="row2" ></div><div className="row3"><input type="text" value={config.export_from[i]} onChange={(e) => { config.export_from[i] = e.currentTarget.value; setNewConfig(config); }} /></div>
                     </React.Fragment>)
