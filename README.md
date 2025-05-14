@@ -43,8 +43,8 @@ Just a plan, currentrly a few features are only implemented.
   - [ ] Tag
   - [ ] Album(low priority)
 - [ ] Search/Filter
-  - [x] Star (currently, only in photo list view)
-  - [x] Comment/Note (currently, only in photo list view)
+  - [x] Star
+  - [x] Comment/Note
   - [ ] Camera
   - [ ] Tag
 - [ ] Upload to cloud services
