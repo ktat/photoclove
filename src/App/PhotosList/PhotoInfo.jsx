@@ -12,7 +12,7 @@ function PhotoInfo(props) {
             getPhotoInfo(props.currentPhotoPath).then((photoInfo) => {
             });
         }
-    }, [props.currentPhotoPath])
+    }, [props.currentPhotoPath, props.showSideMenu])
 
     async function getPhotoInfo(path) {
         if (props.imgCacheMap[path] && props.imgCacheMap[path][1]) {
@@ -97,6 +97,7 @@ function PhotoInfo(props) {
             <div className="togglePhotoInfo">
                 <a href="#" onClick={() => {
                     props.setShowSideMenu(!props.showSideMenu);
+                    document.querySelector("#dummy-for-focus").focus();
                 }}>
                     {props.showSideMenu ? ">" : "<"}
                 </a>
