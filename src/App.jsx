@@ -343,7 +343,7 @@ function App() {
         </>
           :
           <>
-            <div style={{ display: showImporter ? "block" : "none" }}>
+            <div style={{ display: showImporter ? "flex" : "none" }}>
               <Importer
                 getDates={getDates}
                 addFooterMessage={addFooterMessage}

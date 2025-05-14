@@ -352,8 +352,8 @@ button {
 
 .selectedPhoto,
 .rightMenu {
-  min-width: 280px;
-  max-width: 280px;
+  min-width: 320px;
+  max-width: 320px;
   padding-left: 20px;
 
   border-width: 0px 0px 0px 1px;
@@ -401,7 +401,7 @@ button {
 .preferences {
   flex: 1;
   display: block;
-  min-width: calc(var(--vw) - 662px);
+  min-width: calc(var(--vw) - 562px);
   max-height: calc(--0vh - 60px);
   min-height: calc(100vh - 60px);
   padding: 20px 20px 10px 20px;
@@ -539,8 +539,9 @@ div.selected:after {
 
 ul.list-of-selected {
   text-align: left;
-  overflow-y: scroll;
-  height: calc(100vh - 300px - 200px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: calc(100vh - 300px - 150px);
 }
 
 ul.list-of-selected li {
@@ -555,14 +556,21 @@ ul.list-of-selected li {
   max-width: calc(var(--vw) - 662px);
 }
 
+#importPhotosDisplay {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 #importer-directories-list {
   min-width: 200px;
   max-width: 200px;
   flex: 1;
-  min-height: calc(100vh - 250px);
-  max-height: calc(100vh - 250px);
-  overflow: scroll;
+  min-height: calc(100vh - 150px);
+  max-height: calc(100vh - 150px);
+  overflow: auto;
   text-align: left;
+  margin-bottom: 0px;
+  padding-bottom: 0px;
 }
 
 #importer-directories-list li {
@@ -611,7 +619,8 @@ ul.list-of-selected li {
 .importer-photos {
   flex: 1;
   display: flex;
-  overflow-y: scroll;
+  overflow-y: auto;
+  overflow-x: hidden;
   flex-direction: row;
   flex-wrap: wrap;
   margin-top: 10px;
@@ -660,8 +669,10 @@ ul.list-of-selected li {
 }
 
 .imageInSelectedPhotos {
+  flex: 1;
   max-width: 100%;
   max-height: 200px;
+  overflow-y: hidden;
   overflow-y: scroll;
 }
 
