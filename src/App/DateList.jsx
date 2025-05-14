@@ -15,7 +15,7 @@ function DateList(props) {
 
     return (
         <>
-            <p>List of Date <a href="#" onClick={() => props.getDates()}>⟳</a></p>
+            <p className="dateListTitle">List of Date <a href="#" onClick={() => props.getDates()}>⟳</a></p>
             <div className="dateListLoading" style={{ display: props.hideLoading ? "none" : "inline-block" }}>
                 loading
             </div>
