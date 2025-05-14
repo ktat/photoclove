@@ -12,9 +12,24 @@ function DateList(props) {
         props.getDates();
     }, [])
 
+
     return (
         <>
             <p>List of Date <a href="#" onClick={() => props.getDates()}>⟳</a></p>
+            <div className="dateListLoading" style={{ display: props.hideLoading ? "none" : "inline-block" }}>
+                loading
+            </div>
+            <div className="dateListLoading-crub" style={{ display: props.hideLoading ? "none" : "inline-block" }}>
+                &#129408;
+            </div>
+            <div className="dateListLoading-crub" style={{ display: props.hideLoading ? "none" : "inline-block" }}>
+                &#129408;
+            </div>
+            <div className="dateListLoading-crub" style={{ display: props.hideLoading ? "none" : "inline-block" }}>
+                &#129408;
+            </div>
+            <div className="dateListLoading" style={{ display: props.hideLoading ? "none" : "inline-block" }}>
+            </div>
             <div className="dateList">
                 <ul>
                     {props.dateList.map((l, i) => {

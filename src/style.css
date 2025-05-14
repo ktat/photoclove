@@ -695,6 +695,29 @@ ul.list-of-selected li {
   animation: lds-dual-ring 1.2s linear infinite;
 }
 
+@keyframes date-list-loader {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+div.dateListLoading {
+  color: gray;
+  padding-right: 5px;
+}
+
+div.dateListLoading-crub {
+  padding-left: 5px;
+  vertical-align: middle;
+  display: inline-block;
+  font-size: 7px;
+  animation: date-list-loader 0.8s linear infinite;
+}
+
 #photo img {
   opacity: 0;
 }

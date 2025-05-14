@@ -29,6 +29,7 @@ function App() {
   const [footerMessages, setFooterMessages] = useState({});
   const [dateNum, setDateNum] = useState({});
   const [showPhotoDisplay, setShowPhotoDisplay] = useState({});
+  const [hideLoading, setHideLoading] = useState(false);
 
   const [shortCutNavigation, setShortCutNavigation] = useState({
     onKeyDown: (e) => { console.log(e) },
@@ -147,6 +148,7 @@ function App() {
   }, []);
 
   function getDates() {
+    setHideLoading(false);
     invoke("get_dates").then((r) => {
       let l = JSON.parse(r);
       setDateList(l);
@@ -179,6 +181,7 @@ function App() {
             newDateNum[k] = result[k];
           })
           setDateNum(newDateNum);
+          setHideLoading(true);
         });
       })
     });
@@ -318,6 +321,7 @@ function App() {
             dateNum={dateNum}
             setDateNum={setDateNum}
             setShowPhotoDisplay={setShowPhotoDisplay}
+            hideLoading={hideLoading}
           />
         </div>
         {(currentDate && showPhotosList) ? <>
