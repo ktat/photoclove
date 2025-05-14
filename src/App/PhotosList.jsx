@@ -46,6 +46,8 @@ function PhotosList(props) {
             const fetchPhotos = async () => getPhotos(undefined, true);;
             setCurrentPhotoIndex(0)
             fetchPhotos().catch(console.error);
+            setPhotosListMiniReread(!photosListMiniReread);
+            setPhotosListMiniAllPhotos([]);
         }
     }, [numOfPhoto, props.currentDate, sortOfPhotos, starFilter, hasCommentFilter]);
 
