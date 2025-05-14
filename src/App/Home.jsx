@@ -15,8 +15,9 @@ function Home(props) {
                 textAlign: "left",
                 fontFamily: ["Lucida Console", "Monaco", "monospace"]
             }} >{message}</pre>
-
-                <img className="splash" src="/bird.jpg" width="100%" />
+                <div className="splash-container">
+                    <img className="splash" src="/bird.jpg" width="100%" />
+                </div>
             </div>
         </div >
     )

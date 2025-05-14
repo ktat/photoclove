@@ -152,8 +152,27 @@ body {
   text-align: center;
   width: calc(var(--vw) - 200px);
   overflow: hidden;
-  padding: 50px 100px 100px 100px;
+  padding: 25px 100px 100px 100px;
   height: calc(100vh - 100px);
+}
+
+.splash-container {
+  text-align: center;
+  vertical-align: middle;
+  width: 100%;
+  padding: 0px 0px 0px 0px;
+  margin: 0px 0px 0px 0px;
+  height: calc(100vh - 150px);
+  border-radius: 10px;
+}
+
+img.splash {
+  overflow-y: hidden;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 90%;
+  border-radius: 10px;
 }
 
 .inner-container {
@@ -695,16 +714,6 @@ ul.list-of-selected li {
   animation: lds-dual-ring 1.2s linear infinite;
 }
 
-@keyframes date-list-loader {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
 p.dateListTitle {
   padding: 0px 0px 5px 0px;
   margin: 0px 0px 0px 0px;
@@ -716,14 +725,34 @@ div.dateList ul {
   margin-top: 0px;
 }
 
+@keyframes date-list-loader {
+  0% {
+    transform: rotate(-45deg);
+  }
+
+  50% {
+    transform: rotate(45deg);
+  }
+
+  100% {
+    transform: rotate(-45deg);
+  }
+}
+
+.dateListLoading-container {
+  display: inline-block;
+  padding: 0px 0px 0px 2px;
+}
+
 div.dateListLoading {
   color: gray;
-  padding-right: 5px;
+  display: inline-block;
+  animation: date-list-loader 2s linear infinite;
+  padding: 0px 0px 0px 2px;
 }
 
 div.dateListLoading-crub {
   padding-left: 5px;
-  vertical-align: middle;
   display: inline-block;
   font-size: 7px;
   animation: date-list-loader 0.8s linear infinite;
@@ -1061,15 +1090,6 @@ label.hover {
 
 label.hover:hover {
   cursor: pointer;
-}
-
-img.splash {
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 100%;
-  min-width: 100%;
-  min-height: 100%;
 }
 
 .rightMenu img {

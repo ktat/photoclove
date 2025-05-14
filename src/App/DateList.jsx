@@ -16,19 +16,18 @@ function DateList(props) {
     return (
         <>
             <p className="dateListTitle">List of Date <a href="#" onClick={() => props.getDates()}>⟳</a></p>
-            <div className="dateListLoading" style={{ display: props.hideLoading ? "none" : "inline-block" }}>
-                loading
-            </div>
-            <div className="dateListLoading-crub" style={{ display: props.hideLoading ? "none" : "inline-block" }}>
-                &#129408;
-            </div>
-            <div className="dateListLoading-crub" style={{ display: props.hideLoading ? "none" : "inline-block" }}>
-                &#129408;
-            </div>
-            <div className="dateListLoading-crub" style={{ display: props.hideLoading ? "none" : "inline-block" }}>
-                &#129408;
-            </div>
-            <div className="dateListLoading" style={{ display: props.hideLoading ? "none" : "inline-block" }}>
+            <div style={{ display: props.hideLoading ? "none" : "inline-block" }}>
+                <div className="dateListLoading-crub" style={{ display: props.hideLoading ? "none" : "inline-block" }}>
+                    &#129408;
+                </div>
+                <div className="dateListLoading-container">
+                    {["l", "o", "a", "d", "i", "n", "g"].map((l, i) => {
+                        return (<div className="dateListLoading" key={i}>{l}</div>);
+                    })}
+                </div>
+                <div className="dateListLoading-crub" style={{ display: props.hideLoading ? "none" : "inline-block" }}>
+                    &#129408;
+                </div>
             </div>
             <div className="dateList">
                 <ul>
