@@ -176,7 +176,7 @@ function DirectoryMenu(props) {
                         src={convertFileSrc(props.photoSelection[photoIndex])}
                     />}
             </div>
-            <div id="big-photo-in-selection" style={{ display: showBigPhoto ? "block" : "none" }}
+            <div className="big-photo-in-selection" style={{ display: showBigPhoto ? "block" : "none" }}
                 onMouseLeave={() => setShowBigPhoto(false)}
                 onClick={() => setShowBigPhoto(false)}
             >

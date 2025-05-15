@@ -1287,7 +1287,7 @@ a.run-app {
   margin: 0px;
 }
 
-#big-photo-in-selection {
+.big-photo-in-selection {
   display: none;
   text-align: center;
   vertical-align: middle;
@@ -1303,7 +1303,7 @@ a.run-app {
   text-align: center;
 }
 
-#big-photo-in-selection img {
+.big-photo-in-selection img {
   max-width: calc(100vw - 200px);
   max-height: calc(100vh - 200px);
   border-width: 1px;

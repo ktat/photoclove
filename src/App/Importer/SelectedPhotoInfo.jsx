@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 
 async function importPhotos(props) {
@@ -24,6 +25,8 @@ async function importPhotos(props) {
 }
 
 function SelectedPhotoInfo(props) {
+    const [showBigPhoto, setShowBigPhoto] = useState(false);
+
     return (
         <div className="selectedPhoto">
             <p>Selected Photos for import</p>
@@ -43,12 +46,24 @@ function SelectedPhotoInfo(props) {
             <div>
                 {props.lastSelected !== undefined &&
                     <>
-                        <img className="imageInSelectedPhotos" src={convertFileSrc(props.lastSelected.path)} /><br />
+                        <img className="imageInSelectedPhotos"
+                            src={convertFileSrc(props.lastSelected.path)}
+                            onMouseOver={() => setShowBigPhoto(true)}
+
+                        /><br />
                         {props.lastSelected.created_at}
                     </>
                 }
 
             </div>
+            {props.lastSelected !== undefined && <>
+                <div className="big-photo-in-selection" style={{ display: showBigPhoto ? "block" : "none" }}
+                    onMouseLeave={() => setShowBigPhoto(false)}
+                    onClick={() => setShowBigPhoto(false)}
+                >
+                    <img src={convertFileSrc(props.lastSelected.path)} />
+                </div>
+            </>}
         </div >
     );
 }
