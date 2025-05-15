@@ -290,7 +290,7 @@ function PhotosList(props) {
             </div>
             :
             <>
-                <div style={{ width: "100%", display: (!photoLoading && props.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
+                <div id="photos-display-wrapper" style={{ display: (!photoLoading && props.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
                     <AllPhotosContext.Provider value={{ photosListMiniAllPhotos, setPhotosListMiniAllPhotos }}>
                         <ImgCacheContext.Provider value={{ imgCacheMap, setImgCacheMap }}>
                             <div className="photo-display">

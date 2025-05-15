@@ -221,6 +221,8 @@ function Importer(props) {
                                     </a>
                                 </li>
                             }
+                        </ul>
+                        <ul>
                             {importer.dirs_files.dirs.dirs.map((l, i) => {
                                 return (
                                     <li key={i}>&#128193;

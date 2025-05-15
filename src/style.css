@@ -54,7 +54,7 @@ body {
   -webkit-text-size-adjust: 100%;
 
   /* dark theme */
-  --bg: #1b1b1b;
+  --bg: #5b5b5b;
   /* ページ地 */
   --bg-elevated: #242424;
   /* 入力欄・カード */
@@ -124,7 +124,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 ::-webkit-scrollbar {
-  width: 12px;
+  width: 0px;
+  height: 0px;
 }
 
 ::-webkit-scrollbar-track {
@@ -292,6 +293,11 @@ button {
     height: calc(100vh - 30px);
   }
 
+  #photos-display-wrapper {
+    min-width: 100%;
+    max-width: 100%;
+  }
+
   .leftMenu {
     display: none;
   }
@@ -325,6 +331,12 @@ button {
     margin: 0 0 0 0px;
   }
 
+  div#photos-display-wrapper {
+    min-width: 100%;
+    max-width: 100%;
+    height: calc(100vh - 30px);
+  }
+
   #photos-list-mini {
     width: calc(1var(--vw) - 60px);
   }
@@ -333,6 +345,45 @@ button {
     width: calc(1var(--vw) - 60px);
   }
 
+  /*
+  #importer-directories-list {
+    display: none;
+  }
+  */
+
+  div#importer-files-list,
+  div.importer-photos {
+    min-width: calc(var(--vw) - 200px);
+    max-width: calc(var(--vw) - 200px);
+    width: calc(var(--vw) - 200px);
+  }
+}
+
+@media screen and (max-width: 1400px) {
+  .selectedPhoto {
+    display: none;
+  }
+
+  #importPhotosDisplay,
+  #import-container {
+    min-width: 100%;
+    max-width: 100%;
+    width: calc(var(--vw) - 230px);
+  }
+
+  div#importer-files-list,
+  div.importer-photos {
+    min-width: calc(var(--vw) - 250px);
+    max-width: calc(var(--vw) - 250px);
+    width: calc(var(--vw) - 250px);
+  }
+}
+
+
+#photos-display-wrapper {
+  flex: 1;
+  max-width: calc(var(--vw) - 100px);
+  min-width: calc(var(--vw) - 550px);
 }
 
 .photoLoadingOnParent {
@@ -521,7 +572,6 @@ button {
   min-width: 100%;
 }
 
-
 .centerDisplay li,
 .importDisplay li {
   display: inline;
@@ -565,12 +615,17 @@ ul.list-of-selected li {
   min-width: 200px;
   max-width: 200px;
   flex: 1;
-  min-height: calc(100vh - 150px);
-  max-height: calc(100vh - 150px);
-  overflow: auto;
+  min-height: calc(100vh - 115px);
+  max-height: calc(100vh - 115px);
+  overflow-y: auto;
+  overflow-x: hidden;
   text-align: left;
   margin-bottom: 0px;
   padding-bottom: 0px;
+}
+
+#importer-directories-list ul {
+  margin-left: -40px;
 }
 
 #importer-directories-list li {
@@ -599,16 +654,22 @@ ul.list-of-selected li {
 #importer-files-list .row1-right {
   flex: 1;
   margin: 0px 10px 0px 10px;
-  min-width: calc((var(--vw) - 840px) / 2);
-  max-width: calc((var(--vw) - 840px) / 2);
+  white-space: nowrap;
+}
+
+#importer-files-list .row1-right {
+  min-width: 400px;
+  max-width: 400px;
 }
 
 #importer-files-list .row1 {
   text-align: left;
+  max-width: calc(100vw - 850px);
 }
 
 #importer-files-list .row0-center {
   text-align: center;
+  min-width: 650px;
 }
 
 #importer-files-list .navigation {
@@ -624,8 +685,8 @@ ul.list-of-selected li {
   flex-direction: row;
   flex-wrap: wrap;
   margin-top: 10px;
-  min-width: calc(var(--vw) - 880px);
-  max-width: calc(var(--vw) - 880px);
+  min-width: 100%;
+  max-width: 100%;
   min-height: calc(100vh - 300px);
   max-height: calc(100vh - 300px);
 }
@@ -1215,4 +1276,13 @@ a.run-app {
   overflow-y: auto;
   overflow-x: auto;
   height: calc(100vh - 50px);
+}
+
+.list-of-import-path {
+  overflow-y: hidden;
+  overflow-x: auto;
+  height: 50px;
+  white-space: nowrap;
+  padding: 10px 0px 10px 0px;
+  margin: 0px;
 }
