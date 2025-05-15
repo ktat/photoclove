@@ -124,8 +124,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 ::-webkit-scrollbar {
-  width: 0px;
-  height: 0px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -274,7 +274,7 @@ button {
 .rightMenu {
   flex: 1;
   height: calc(100vh - 30px);
-  overflow-y: auto;
+  overflow-y: hidden;
   padding-top: 10px;
 }
 
@@ -1285,4 +1285,28 @@ a.run-app {
   white-space: nowrap;
   padding: 10px 0px 10px 0px;
   margin: 0px;
+}
+
+#big-photo-in-selection {
+  display: none;
+  text-align: center;
+  vertical-align: middle;
+  position: absolute;
+  max-width: calc(100vw - 200px);
+  max-height: calc(100vh - 200px);
+  min-width: calc(100vw - 200px);
+  min-height: calc(100vh - 200px);
+  top: 50px;
+  left: calc(100vw / 2 - (100vw - 200px) / 2);
+  padding: 0px 0px 0px 0px;
+  margin: 0px 0px 0px 0px;
+  text-align: center;
+}
+
+#big-photo-in-selection img {
+  max-width: calc(100vw - 200px);
+  max-height: calc(100vh - 200px);
+  border-width: 1px;
+  border-style: solid;
+  border-color: #fff;
 }

@@ -7,6 +7,7 @@ import { localForage } from "../../storage/forage"
 function DirectoryMenu(props) {
 
     const [photoIndex, setPhotoIndex] = useState(-1);
+    const [showBigPhoto, setShowBigPhoto] = useState(false);
 
     useEffect(() => {
         let l = props.photoSelection.length;
@@ -169,7 +170,17 @@ function DirectoryMenu(props) {
                         <button onClick={() => props.clearPhotoSelection()}>Clear Selection</button>
                     </div>
                 }
-                {photoIndex >= 0 && <img src={convertFileSrc(props.photoSelection[photoIndex])} />}
+                {photoIndex >= 0 &&
+                    <img
+                        onMouseOver={() => setShowBigPhoto(true)}
+                        src={convertFileSrc(props.photoSelection[photoIndex])}
+                    />}
+            </div>
+            <div id="big-photo-in-selection" style={{ display: showBigPhoto ? "block" : "none" }}
+                onMouseLeave={() => setShowBigPhoto(false)}
+                onClick={() => setShowBigPhoto(false)}
+            >
+                <img src={convertFileSrc(props.photoSelection[photoIndex])} />
             </div>
         </div >
     )
