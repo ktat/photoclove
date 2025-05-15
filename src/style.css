@@ -391,7 +391,7 @@ button {
 }
 
 .leftMenu .dateList {
-  height: calc(90vh - 200px);
+  height: calc(90vh - 150px);
   overflow-y: auto;
 }
 
