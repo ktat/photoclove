@@ -282,6 +282,10 @@ function PhotosListMini(props) {
             nextPhoto();
         } else if (e.keyCode === 37) { // left arrow
             prevPhoto();
+        } else if (e.keyCode === 38) { // up arrow
+            setPhotosListMiniClosed(false);
+        } else if (e.keyCode === 40) { // down arrow
+            setPhotosListMiniClosed(true);
         } else if (e.keyCode === 67) { // c ... choose as selected
             togglePhotoSelected();
         } else if (e.keyCode === 83) { // s ... increase star
@@ -489,6 +493,7 @@ function PhotosListMini(props) {
                     <h1>Help</h1>
                     <table>
                         <tr><th>Right/Left Arrow</th><td>navigate photos</td></tr>
+                        <tr><th>Up Arrow/Down Arrow</th><td>Open/Close mini list</td></tr>
                         <tr><th>Ctrl + Mouse Wheel</th><td>zoom photo</td></tr>
                         <tr><th>Ctrl + Drag</th><td>drag photo while zooming</td></tr>
                         <tr><th>Ctrl + 0</th><td>reset zoom</td></tr>
