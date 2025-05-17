@@ -72,7 +72,7 @@ newgrp fuse
 
 ```sh
 rm -rf src-tauri/target
-env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') APPIMAGE_EXTRACT_AND_RUN=1 NO_STRIP=true pnpm tauri build
+env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
 ```
 
 ## Featurs to be ipmlemented
