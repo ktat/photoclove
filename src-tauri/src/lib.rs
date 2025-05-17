@@ -641,6 +641,7 @@ pub fn run() {
         .plugin(tauri_plugin_oauth::init())
         .setup(|app| {
             let submenu = SubmenuBuilder::new(app, "File")
+                .text("home", "HOME")
                 .text("load_dates", "Load Date List")
                 .text("import", "Import")
                 .text("create_db", "Create DB")
@@ -666,6 +667,8 @@ pub fn run() {
                     std::process::exit(0)
                 } else if e.id == "close" {
                     app.exit(0)
+                } else if e.id == "home" {
+                    app.emit("click_menu", "HOME").unwrap();
                 } else if e.id == "about" {
                     app.emit("click_menu_static", "about").unwrap();
                 } else if e.id == "github" {

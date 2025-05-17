@@ -16,7 +16,8 @@ function Home(props) {
                 fontFamily: ["Lucida Console", "Monaco", "monospace"]
             }} >{message}</pre>
                 <div className="splash-container">
-                    <img className="splash" src="/bird.jpg" width="100%" />
+                    <img className="splash" src={props.welcomeImage} width="100%"
+                    />
                 </div>
             </div>
         </div >

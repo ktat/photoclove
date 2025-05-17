@@ -13,6 +13,7 @@ import Welcome from "./Welcome.jsx"
 import Home from "./App/Home.jsx"
 import loginGoogle from "./App/Login.jsx"
 import Footer from "./App/Footer.jsx"
+import WelcomeImage from "./WelcomeImage.jsx";
 
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
@@ -30,6 +31,7 @@ function App() {
   const [dateNum, setDateNum] = useState({});
   const [showPhotoDisplay, setShowPhotoDisplay] = useState({});
   const [hideLoading, setHideLoading] = useState(false);
+  const [welcomeImage, setWelcomeImage] = useState("");
 
   const [shortCutNavigation, setShortCutNavigation] = useState({
     onKeyDown: (e) => { console.log(e) },
@@ -59,6 +61,8 @@ function App() {
             message("PhotoClove is an application to manage photos.\n (c)ktat");
           } else if (e.payload === "github") {
             open("https://github.com/ktat/photoclove/");
+          } else {
+            console.log("not match" + e.payload)
           }
           setTimeout(() => {
             invoke("lock", { t: false })
@@ -97,53 +101,63 @@ function App() {
     });
 
     const unlisten2 = listen("click_menu", (e) => {
-      console.log(e);
-      if (e.payload === "load_dates") {
-        console.log(reloadDates);
-        doReloadDates();
-      } else if (e.payload === "import") {
-        toggleImporter(true);
-      } else if (e.payload === "pref") {
-        togglePreferences(true);
-      } else if (e.payload == "login") {
-        invoke("lock", { t: true }).then((e) => {
-          if (e) {
-            loginGoogle();
-            setTimeout(() => {
-              invoke("lock", { t: false });
-            }, 1000);
-          }
-        });
-      } else if (e.payload === "create_db") {
-        // BUG: event is called twice in same time. I don't know the reason why.
-        invoke("lock", { t: true }).then((e) => {
-          if (e) {
-            if (in_db_creation) {
-              message("DB creation in progress");
+      invoke("lock", { t: true }).then((le) => {
+        console.log(e);
+        if (e.payload === "load_dates") {
+          getDates();
+        } else if (e.payload === "HOME") {
+          setCurrentDate("");
+          setShowPhotosList(false);
+          setShowImporter(false);
+          setShowPreferences(false);
+          setWelcomeImage(WelcomeImage());
+        } else if (e.payload === "import") {
+          toggleImporter(true);
+        } else if (e.payload === "pref") {
+          togglePreferences(true);
+        } else if (e.payload == "login") {
+          invoke("lock", { t: true }).then((e) => {
+            if (e) {
+              loginGoogle();
               setTimeout(() => {
                 invoke("lock", { t: false });
               }, 1000);
-            } else {
-              ask("It may cost long time.\nAre you OK?", "Create DB?").then((e) => {
-                setTimeout(() => {
-                  invoke("lock", { t: false });
-                }, 1000);
-                if (e) {
-                  in_db_creation = true;
-                  invoke("create_db").then(() => {
-                    in_db_creation = false;
-                  });
-                }
-              }).catch((e) => {
-                setTimeout(() => {
-                  invoke("lock", { t: false });
-                }, 1000);
-                console.log("error: " + e);
-              })
             }
-          }
-        });
-      }
+          });
+        } else if (e.payload === "create_db") {
+          // BUG: event is called twice in same time. I don't know the reason why.
+          invoke("lock", { t: true }).then((e) => {
+            if (e) {
+              if (in_db_creation) {
+                message("DB creation in progress");
+                setTimeout(() => {
+                  invoke("lock", { t: false });
+                }, 1000);
+              } else {
+                ask("It may cost long time.\nAre you OK?", "Create DB?").then((e) => {
+                  setTimeout(() => {
+                    invoke("lock", { t: false });
+                  }, 1000);
+                  if (e) {
+                    in_db_creation = true;
+                    invoke("create_db").then(() => {
+                      in_db_creation = false;
+                    });
+                  }
+                }).catch((e) => {
+                  setTimeout(() => {
+                    invoke("lock", { t: false });
+                  }, 1000);
+                  console.log("error: " + e);
+                })
+              }
+            }
+          });
+        }
+        setTimeout(() => {
+          invoke("lock", { t: false })
+        }, 1000);
+      })
     });
   }, []);
 
@@ -280,6 +294,8 @@ function App() {
     return (
       <>
         <Welcome
+          welcomeImage={welcomeImage}
+          setWelcomeImage={setWelcomeImage}
           setUseCount={setUseCount}
           useCount={useCount}
           togglePreferences={togglePreferences}
@@ -358,7 +374,7 @@ function App() {
               ></Preferences>
             </div>
             <div style={{ display: (!showImporter && !showLogin && !showPreferences && (!currentDate || !showPhotosList)) ? "block" : "none" }}>
-              <Home />
+              <Home welcomeImage={welcomeImage} setWelcomeImage={setWelcomeImage} />
             </div>
           </>
         }

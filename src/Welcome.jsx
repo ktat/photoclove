@@ -1,9 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
 import React, { useState, useEffect } from "react";
+import WelcomeImage from "./WelcomeImage.jsx";
 
 function Welcome(props) {
     const [showWelcome, setShowWelcome] = useState(false);
     const [showSplash, setShowSplash] = useState(true);
+
+    useEffect((e) => {
+        props.setWelcomeImage(WelcomeImage());
+    }, []);
 
     useEffect((e) => {
         setTimeout(() => {
@@ -27,7 +32,7 @@ function Welcome(props) {
             {showSplash &&
                 <div className="welcome-splash">
                     <div className="splash-container">
-                        <img className="splash" src="/bird.jpg" />
+                        <img className="splash" src={props.welcomeImage} />
                     </div>
                 </div>
             }
