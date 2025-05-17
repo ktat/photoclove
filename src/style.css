@@ -1208,7 +1208,7 @@ a.run-app {
   z-index: 100;
   display: block;
   position: absolute;
-  top: calc(100vh / 4);
+  top: calc(100vh / 2 - 257px);
   left: calc(100vw / 2 - 275px);
   width: 550px;
   font-size: 20px;

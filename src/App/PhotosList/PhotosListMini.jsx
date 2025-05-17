@@ -282,9 +282,9 @@ function PhotosListMini(props) {
             nextPhoto();
         } else if (e.keyCode === 37) { // left arrow
             prevPhoto();
-        } else if (e.keyCode === 38) { // up arrow
+        } else if (e.keyCode === 38) { // up arrow ... open mini list
             setPhotosListMiniClosed(false);
-        } else if (e.keyCode === 40) { // down arrow
+        } else if (e.keyCode === 40) { // down arrow ... close mini list
             setPhotosListMiniClosed(true);
         } else if (e.keyCode === 67) { // c ... choose as selected
             togglePhotoSelected();
@@ -292,6 +292,8 @@ function PhotosListMini(props) {
             changeStar(true);
         } else if (e.keyCode === 68) { // d ... declease star
             changeStar(false);
+        } else if (e.keyCode === 73) { // i ... toggle show photo info
+            props.setShowSideMenu(!props.showSideMenu);
         } else if (e.keyCode === 70) { // f ... c & s
             let additionalMessage = "Photo is selected";
             if (props.isSelected(f)) {
@@ -501,6 +503,7 @@ function PhotosListMini(props) {
                         <tr><th>S</th><td>increase star</td></tr>
                         <tr><th>D</th><td>decrease star</td></tr>
                         <tr><th>F</th><td>choose as selected and increase star</td></tr>
+                        <tr><th>I</th><td>toggle photo info</td></tr>
                         <tr><th>Del</th><td>move to trash can</td></tr>
                         <tr><th>?</th><td>toggle showing this help</td></tr>
                     </table>

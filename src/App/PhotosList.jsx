@@ -320,6 +320,8 @@ function PhotosList(props) {
                                     reread={photosListMiniReread}
                                     currentIndex={photosListMiniCurrentIndex}
                                     setCurrentIndex={setPhotosListMiniCurrentIndex}
+                                    setShowSideMenu={setShowSideMenu}
+                                    showSideMenu={showSideMenu}
                                 />
                             </div>
                         </ImgCacheContext.Provider>
@@ -401,17 +403,17 @@ function PhotosList(props) {
                                                             }
                                                         }}
                                                         onError={(e) => {
-/*
-// To debug image load error on Windows
-let url = e.currentTarget.src;
-    fetch(url)
-    .then(res => {
-        setDebugMessage(l.file.path + ","+ url + ", " + res.statusText);
-    })
-    .catch(err => {
-        setDebugMessage( url + ", Image load failed: ", l.file.path);
-    });
-*/
+                                                            /*
+                                                            // To debug image load error on Windows
+                                                            let url = e.currentTarget.src;
+                                                                fetch(url)
+                                                                .then(res => {
+                                                                    setDebugMessage(l.file.path + ","+ url + ", " + res.statusText);
+                                                                })
+                                                                .catch(err => {
+                                                                    setDebugMessage( url + ", Image load failed: ", l.file.path);
+                                                                });
+                                                            */
                                                             if (e.currentTarget.src != image_for_not_found) {
                                                                 photosListImgSrc[l.file.path] = image_for_not_found;
                                                                 e.currentTarget.src = photosListImgSrc[l.file.path];
@@ -441,7 +443,7 @@ let url = e.currentTarget.src;
                             })}
                         </div>
                     </div>
-                    <div className="debug" style={{ display: (debugMessage == "" ? "none": "block"), backgroundColor: "white", color:"black",position: "absolute", zIndex: "100",bottom: "0px", left: "0px", width: "400px", height: "200px" }}>
+                    <div className="debug" style={{ display: (debugMessage == "" ? "none" : "block"), backgroundColor: "white", color: "black", position: "absolute", zIndex: "100", bottom: "0px", left: "0px", width: "400px", height: "200px" }}>
                         {debugMessage}
                     </div>
                 </div >
