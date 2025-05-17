@@ -314,7 +314,7 @@ function App() {
         <div id="leftMenu" className="leftMenu">
           <a href="#" onClick={() => toggleImporter(true)}>&#10145;import</a>
           <div className="row">
-            <div>
+            <div style={{ display: "none" }}>
               <input
                 id="search-input"
                 onChange={(e) => setName(e.currentTarget.value)}
@@ -323,10 +323,9 @@ function App() {
               <button type="button" onClick={() => greet()}>
                 Search
               </button>
+              <p>{greetMsg}</p>
             </div>
           </div>
-
-          <p>{greetMsg}</p>
           <DateList
             getDates={getDates}
             dateList={dateList}
