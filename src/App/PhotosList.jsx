@@ -28,6 +28,7 @@ function PhotosList(props) {
     const [star, setStar] = useState([false, false, false, false, false]);
     const [starFilter, setStarFilter] = useState(0);
     const [hasCommentFilter, setHasCommentFilter] = useState(false);
+    const [debugMessage, setDebugMessage] = useState("");
 
     useEffect((e) => {
         invoke("get_config", {},).then((e) => {
@@ -400,6 +401,17 @@ function PhotosList(props) {
                                                             }
                                                         }}
                                                         onError={(e) => {
+/*
+// To debug image load error on Windows
+let url = e.currentTarget.src;
+    fetch(url)
+    .then(res => {
+        setDebugMessage(l.file.path + ","+ url + ", " + res.statusText);
+    })
+    .catch(err => {
+        setDebugMessage( url + ", Image load failed: ", l.file.path);
+    });
+*/
                                                             if (e.currentTarget.src != image_for_not_found) {
                                                                 photosListImgSrc[l.file.path] = image_for_not_found;
                                                                 e.currentTarget.src = photosListImgSrc[l.file.path];
@@ -428,6 +440,9 @@ function PhotosList(props) {
                                 )
                             })}
                         </div>
+                    </div>
+                    <div className="debug" style={{ display: (debugMessage == "" ? "none": "block"), backgroundColor: "white", color:"black",position: "absolute", zIndex: "100",bottom: "0px", left: "0px", width: "400px", height: "200px" }}>
+                        {debugMessage}
                     </div>
                 </div >
             </>
