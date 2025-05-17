@@ -14,10 +14,65 @@ So, I decided to create this by myself.
 
 ## Dependency
 
-On ubuntu, install the following package to watch mp4 file and to create movie thumbnail.
+### nodejs, pnpm
+
+- nodejs v23.8.0
+- pnpm
+
+### ffmpeg, gstreamer
+
+On Ubuntu, install the following package to watch mp4 file and to create movie thumbnail.
 
 ```
-sudo apt install gstreamer1.0-plugins-bad ffmepg
+sudo apt install gstreamer1.0-plugins-bad ffmpeg
+```
+
+## how to run
+
+```sh
+pnpm tauri dev
+```
+
+## how to build
+
+### on Windows
+
+```sh
+pnpm tauri build
+```
+
+### on WSL2 (Ubuntu 22.04)
+
+#### Update WSL
+
+```sh
+wsl --update
+wsl --shutdown
+```
+
+#### install required packages
+
+```sh
+sudo apt install libfuse2 librsvg2-dev libgstreamer1.0-dev patchelf
+```
+
+#### create fuse group if need
+
+if fuse group doesn't exist, create it
+
+```sh
+sudo addgroup --system fuse
+sudo chown root:fuse /dev/fuse
+sudo chmod 660 /dev/fuse
+sudo usermod -aG fuse $USER
+newgrp fuse
+```
+
+#### Build app
+
+```sh
+rm -rf src-tauri/target
+env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') APPIMAGE_EXTRACT_AND_RUN=1 NO_STRIP=true pnpm tauri build
 ```
 
 ## Featurs to be ipmlemented
