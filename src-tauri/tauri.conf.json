@@ -44,7 +44,7 @@
   },
   "productName": "PhotoClove",
   "mainBinaryName": "PhotoClove",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "identifier": "ktat.photoclove",
   "plugins": {},
   "app": {
