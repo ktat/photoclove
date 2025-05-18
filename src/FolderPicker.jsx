@@ -20,10 +20,7 @@ export default function PickFolderSingle(props) {
         <>
             <div className={props.class1 || "row2"}>{props.label}</div>
             <div className={props.class2 || "row3"}>
-                <button
-                    onClick={pickFolderSingle()}
-                    className="rounded-lg border px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
+                <button onClick={pickFolderSingle()}>
                     Select Folder
                 </button>
                 {props.folder && <>{props.folder}</>}
