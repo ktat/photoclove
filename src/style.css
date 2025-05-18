@@ -34,8 +34,8 @@ body {
 .photoLoadingOn,
 .photos {
   min-width: calc(var(--vw) - 560px);
+  overflow-x: hidden;
 }
-
 
 :root {
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
@@ -72,6 +72,8 @@ button {
   background: var(--bg-elevated);
   color: var(--text);
   border: 1px solid var(--border);
+  margin-right: 10px;
+  margin-left: 10px;
 }
 
 input::placeholder,
@@ -202,6 +204,7 @@ footer {
   justify-content: space-between;
   text-align: center;
   min-height: 25px;
+  max-height: 25px;
   margin: 5px 5px 0px 5px;
   padding: 0px 10px 0px 5px;
   border-width: 1px 0px 0px 0px;
@@ -296,6 +299,7 @@ button:hover {
   #photos-display-wrapper {
     min-width: 100%;
     max-width: 100%;
+
   }
 
   .leftMenu {
@@ -388,6 +392,7 @@ button:hover {
 
 .photoLoadingOnParent {
   width: 100%;
+  min-height: calc(100vh - 30px)
 }
 
 .leftMenu .dateList {
@@ -453,7 +458,7 @@ button:hover {
   flex: 1;
   display: block;
   min-width: calc(var(--vw) - 562px);
-  max-height: calc(--0vh - 60px);
+  max-height: calc(100vh - 60px);
   min-height: calc(100vh - 60px);
   padding: 20px 20px 10px 20px;
   margin: 0 0 0 0px;
@@ -485,7 +490,8 @@ button:hover {
 .photoLoadingOn,
 .centerDisplay,
 .centerDisplay .photos {
-  min-width: calc(100vw - 560px);
+  min-width: calc(var(--vw) - 560px);
+  min-height: calc(100vh - 100px);
   text-align: center;
   overflow-y: auto;
 }
@@ -664,7 +670,7 @@ ul.list-of-selected li {
 
 #importer-files-list .row1 {
   text-align: left;
-  max-width: calc(100vw - 850px);
+  max-width: calc(var(--vw) - 850px);
 }
 
 #importer-files-list .row0-center {
@@ -942,7 +948,7 @@ div.photo-clove {
   text-align: center;
   overflow-y: hidden;
   max-height: calc(100vh - 150px);
-  width: calc(100wh - 100px);
+  width: calc(var(--vw) - 100px);
   padding: 0px 50px 50px 50px;
 }
 
@@ -1209,7 +1215,7 @@ a.run-app {
   display: block;
   position: absolute;
   top: calc(100vh / 2 - 257px);
-  left: calc(100vw / 2 - 275px);
+  left: calc(var(--vw) / 2 - 275px);
   width: 550px;
   font-size: 20px;
   padding-top: 10px;
@@ -1252,7 +1258,7 @@ a.run-app {
   display: block;
   position: absolute;
   top: calc(100vh / 3);
-  left: calc(100vw / 2 - 150px);
+  left: calc(var(--vw) / 2 - 150px);
   width: 300px;
   min-height: 45px;
   max-height: 90px;
@@ -1292,19 +1298,19 @@ a.run-app {
   text-align: center;
   vertical-align: middle;
   position: absolute;
-  max-width: calc(100vw - 200px);
+  max-width: calc(var(--vw) - 200px);
   max-height: calc(100vh - 200px);
-  min-width: calc(100vw - 200px);
+  min-width: calc(var(--vw) - 200px);
   min-height: calc(100vh - 200px);
   top: 50px;
-  left: calc(100vw / 2 - (100vw - 200px) / 2);
+  left: calc(var(--vw) / 2 - (var(--vw) - 200px) / 2);
   padding: 0px 0px 0px 0px;
   margin: 0px 0px 0px 0px;
   text-align: center;
 }
 
 .big-photo-in-selection img {
-  max-width: calc(100vw - 200px);
+  max-width: calc(var(--vw) - 200px);
   max-height: calc(100vh - 200px);
   border-width: 1px;
   border-style: solid;
