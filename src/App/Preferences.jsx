@@ -2,13 +2,14 @@ import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { ask, message, confirm } from '@tauri-apps/plugin-dialog';
 import { relaunch } from "@tauri-apps/plugin-process";
+import PickFolderSingle from "../FolderPicker.jsx";
+
 
 function Preferences(props) {
     const [config, setConfig] = useState({ export_from: [] });
     const [additionalExportFrom, setAdditionalExportFrom] = useState(0);
     const [configLoaded, setConfigLoaded] = useState(false);
     const [useCount, setUseCount] = useState(-1);
-
 
     useEffect((e) => {
         invoke("get_config", {},).then((e) => {
@@ -59,19 +60,63 @@ function Preferences(props) {
         <div id="preferences" className="preferences">
             <h1>Preferences</h1>
             <div className="preferences-input">
-                <div className="row2">DataPath: </div><div className="row3"><input value={config.data_path} type="text" onChange={(e) => { config.data_path = e.currentTarget.value; setNewConfig(config); }} /></div>
-                <div className="row2">TrashPath:</div><div className="row3"><input value={config.trash_path} type="text" onChange={(e) => { config.trash_path = e.currentTarget.value; setNewConfig(config); }} /></div>
-                <div className="row2">ImportTo: </div><div className="row3"><input value={config.import_to} type="text" onChange={(e) => { config.import_to = e.currentTarget.value; setNewConfig(config); }} /></div>
+                <PickFolderSingle
+                    label="DataPath:"
+                    folder={config.data_path}
+                    onSet={
+                        (folder) => {
+                            config.data_path = folder;
+                            setNewConfig(config)
+                        }
+                    } />
+                <PickFolderSingle
+                    label="TashPath:"
+                    folder={config.trash_path}
+                    onSet={
+                        (folder) => {
+                            config.trash_path = folder;
+                            setNewConfig(config)
+                        }
+                    } />
+                <PickFolderSingle
+                    label="ImportTo:"
+                    folder={config.import_to}
+                    onSet={
+                        (folder) => {
+                            config.import_to = folder;
+                            setNewConfig(config)
+                        }
+                    } />
                 <div className="row0">ExportFrom: </div>
                 {config.export_from.map((v, i) => {
                     return (<React.Fragment key={i}>
-                        < div className="row2" ></div><div className="row3"><input type="text" value={config.export_from[i]} onChange={(e) => { config.export_from[i] = e.currentTarget.value; setNewConfig(config); }} /></div>
+                        <PickFolderSingle
+                            label=""
+                            class1="row2"
+                            class2="row3"
+                            folder={config.export_from[i]}
+                            onSet={
+                                (folder) => {
+                                    config.export_from[i] = folder;
+                                    setNewConfig(config)
+                                }
+                            } />
                     </React.Fragment>)
                 })}
                 <div className="row2"></div><div className="row3"><a href="#" onClick={() => setAdditionalExportFrom(additionalExportFrom + 1)}>+</a></div>
                 <div className="row0">Thumbnail:</div>
-
-                <div className="row1"></div><div className="row1">StorePath: </div><div className="row4"><input value={config.thumbnail_store} type="text" onChange={(e) => { config.thumbnail_store = e.currentTarget.value; setNewConfig(config); }} /></div>
+                <div className="row1"></div>
+                <PickFolderSingle
+                    class1="row1"
+                    class2="row4"
+                    label="Store Path:"
+                    folder={config.thumbnail_store}
+                    onSet={
+                        (folder) => {
+                            config.thumbnail_store = folder;
+                            setNewConfig(config);
+                        }
+                    } />
                 <div className="row1"></div><div className="row1">CompressQuality: </div><div className="row4">
                     <select value={config.thumbnail_compression_quality} onChange={(e) => { config.thumbnail_compression_quality = parseFloat(e.currentTarget.value); setNewConfig(config) }}>
                         {[1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50].map((v, i) => {
@@ -100,8 +145,8 @@ function Preferences(props) {
                     </select>
                 </div>
                 <div className="row0">Num of Parallel:</div>
-                <div className="row1"></div><div className="row1">Import: </div><div className="row4"><input value={config.copy_parallel} type="text" onChange={(e) => { config.copy_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
-                <div className="row1"></div><div className="row1">Thumbnail: </div><div className="row4"><input value={config.thumbnail_parallel} type="text" onChange={(e) => { config.thumbnail_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
+                <div className="row1"></div><div className="row1">Import: </div><div className="row4"><input value={config.copy_parallel} type="number" step="1" onChange={(e) => { config.copy_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
+                <div className="row1"></div><div className="row1">Thumbnail: </div><div className="row4"><input value={config.thumbnail_parallel} type="number" step="1" onChange={(e) => { config.thumbnail_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
                 <div className="row2"></div>
                 <div className="row0">
                     <input type="checkbox" id="preference-check" value="1" onChange={(e) => { config.use_count = e.target.checked ? 0 : useCount; setNewConfig(config) }} />
