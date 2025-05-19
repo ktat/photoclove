@@ -488,11 +488,16 @@ button:hover {
 }
 
 .photoLoadingOn,
-.centerDisplay,
-.centerDisplay .photos {
+.centerDisplay {
   min-width: calc(var(--vw) - 560px);
   min-height: calc(100vh - 100px);
   text-align: center;
+  overflow-y: auto;
+}
+
+
+.centerDisplay .photos {
+  min-width: calc(var(--vw) - 560px);
   overflow-y: auto;
 }
 
