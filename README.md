@@ -85,6 +85,7 @@ Just a plan, currentrly a few features are only implemented.
 - [x] Fast importer
   - [ ] only check duplication for the files which has same name prefix and different size.
   - [ ] import files created after last import file timestamp in directories.
+  - [ ] different SD card and same file name
   - [x] filter import targets by date
   - [x] importing in background
   - [x] Thumbnail creation
