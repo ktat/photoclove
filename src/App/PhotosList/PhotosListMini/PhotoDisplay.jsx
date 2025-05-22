@@ -1,5 +1,5 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 // import ReactPlayer from 'react-player';
 import { open } from '@tauri-apps/plugin-shell';
 
@@ -19,6 +19,9 @@ function PhotoDisplay(props) {
     useEffect((e) => {
         currentFile = "";
         document.querySelector("#dummy-for-focus").focus();
+
+        const el = document.querySelector("#photo")
+        window.addEventListener('resize', () => { handleImgLoad(el) });
     }, []);
 
     useEffect((e) => {
@@ -138,8 +141,8 @@ function PhotoDisplay(props) {
 
     const handleImgLoad = (e) => {
         if (e !== undefined) {
-            width = e.target.width;
-            height = e.target.height;
+            height = e.height;
+            width = e.width;
         }
         if (width != 0 && height != 0) {
             props.SetImgStyle(
@@ -175,9 +178,9 @@ function PhotoDisplay(props) {
                 Open with other software: <a href="#" onClick={(e) => open("file://" + props.currentPhotoPath)}>{props.currentPhotoPath}</a>
             </div>
             {props.currentPhotoPath && !props.currentPhotoPath.match(/\.(mp4|webm)$/i) &&
-                <img className={photoDisplayImgClass}
+                <img id="photoImgTag" className={photoDisplayImgClass}
                     loading="eager"
-                    onLoad={handleImgLoad}
+                    onLoad={(e) => handleImgLoad(e.target)}
                     onDoubleClick={(e) => props.togglePhotoSelected()}
                     onError={(e) => {
                         e.target.src = "/img_error.png";
