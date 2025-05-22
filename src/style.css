@@ -34,7 +34,7 @@ body {
 .photoLoadingOn,
 .photos {
   min-width: calc(var(--vw) - 560px);
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 :root {
@@ -169,7 +169,7 @@ body {
   width: calc(var(--vw) - 200px);
   overflow: hidden;
   padding: 25px 100px 100px 100px;
-  height: calc(100vh - 100px);
+  height: calc(100vh - 30px);
 }
 
 .splash-container {
@@ -197,6 +197,7 @@ img.splash {
   margin: 0;
   text-align: center;
   width: 100%;
+  height: calc(100vh - 30px);
 }
 
 footer {
@@ -299,7 +300,6 @@ button:hover {
   #photos-display-wrapper {
     min-width: 100%;
     max-width: 100%;
-
   }
 
   .leftMenu {
@@ -329,8 +329,8 @@ button:hover {
     width: 100%;
     max-width: calc(var(--vw) - 60px);
     min-width: calc(var(--vw) - 60px);
-    max-height: calc(100vh - 60px);
-    min-height: calc(100vh - 60px);
+    max-height: calc(100vh - 30px);
+    min-height: calc(100vh - 30px);
     padding: 20px 20px 10px 20px;
     margin: 0 0 0 0px;
   }
@@ -338,7 +338,7 @@ button:hover {
   div#photos-display-wrapper {
     min-width: 100%;
     max-width: 100%;
-    height: calc(100vh - 30px);
+    max-height: calc(100vh - 30px);
   }
 
   #photos-list-mini {
@@ -396,7 +396,7 @@ button:hover {
 }
 
 .leftMenu .dateList {
-  height: calc(100vh - 100px);
+  height: calc(100vh - 90px);
   overflow-y: auto;
 }
 
@@ -458,8 +458,8 @@ button:hover {
   flex: 1;
   display: block;
   min-width: calc(var(--vw) - 562px);
-  max-height: calc(100vh - 60px);
-  min-height: calc(100vh - 60px);
+  max-height: calc(100vh - 30px);
+  min-height: calc(100vh - 30px);
   padding: 20px 20px 10px 20px;
   margin: 0 0 0 0px;
 }
@@ -467,7 +467,7 @@ button:hover {
 .centerDisplayMax {
   max-width: calc(var(--vw) - 100px);
   min-width: calc(var(--vw) - 500px);
-  max-height: calc(100vh - 60px);
+  max-height: calc(100vh - 30px);
   padding: 20px 20px 10px 20px;
   margin: 0 0 0 0px;
 }
@@ -482,7 +482,7 @@ button:hover {
 .photoLoadingOn {
   flex: 1;
   display: block;
-  min-height: calc(100vh - 60px);
+  min-height: calc(100vh - 30px);
   padding: 20px 20px 10px 20px;
   margin: 0 0 0 0px;
 }
@@ -490,14 +490,15 @@ button:hover {
 .photoLoadingOn,
 .centerDisplay {
   min-width: calc(var(--vw) - 560px);
-  min-height: calc(100vh - 100px);
+  min-height: calc(100vh - 30px);
   text-align: center;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 
 .centerDisplay .photos {
   min-width: calc(var(--vw) - 560px);
+  max-height: calc(100vh - 85px);
   overflow-y: auto;
 }
 
@@ -505,11 +506,9 @@ button:hover {
   overflow: scroll;
 }
 
-
 .importDisplay {
   overflow-y: scroll;
 }
-
 
 .photo-list-header {
   display: flex;
@@ -583,8 +582,7 @@ button:hover {
   min-width: 100%;
 }
 
-.centerDisplay li,
-.importDisplay li {
+.centerDisplay li .importDisplay li {
   display: inline;
   padding-right: 20px;
   margin-right: 10px;
@@ -698,12 +696,10 @@ ul.list-of-selected li {
   margin-top: 10px;
   min-width: 100%;
   max-width: 100%;
-  min-height: calc(100vh - 300px);
   max-height: calc(100vh - 300px);
 }
 
 .photos {
-  flex: 1;
   display: flex;
   overflow-y: scroll;
   flex-direction: row;
@@ -716,9 +712,7 @@ ul.list-of-selected li {
 
 .photos .row,
 .importer-photos .row {
-  flex: 1;
   margin: 10px;
-  flex-grow: unset;
 }
 
 .photos .navigation {

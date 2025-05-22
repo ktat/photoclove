@@ -6,6 +6,8 @@ import PhotoLoading from "./PhotosList/PhotoLoading.jsx";
 import DirectoryMenu from "./PhotosList/DirectoryMenu.jsx";
 import { open } from '@tauri-apps/plugin-shell';
 import { ImgCacheContext, AllPhotosContext } from "./ImgCacheContext.jsx";
+import Scrollable from "../Scrollable.jsx";
+import '../scrollable.css';
 
 function PhotosList(props) {
     const [iconSize, setIconSize] = useState(100);
@@ -191,7 +193,7 @@ function PhotosList(props) {
         let sort = sortOfPhotos;
         let num = numOfPhoto;
         let date;
-        if (e && e.currentTarget && e.currentTarget.getAttribute("data-date")) {
+        if (e && e.currentTarget && e.currentTarget.getAttribute && e.currentTarget.getAttribute("data-date")) {
             date = e.currentTarget.getAttribute("data-date");
         } else {
             date = props.currentDate;
@@ -262,7 +264,7 @@ function PhotosList(props) {
         }
 
         let isForward = true;
-        const list = document.querySelector(".photos");
+        const list = document.querySelector("#photoList .scroll-box");
         if (e.deltaY < 0) {
             isForward = false;
         } else if (beforeScrollTop == list.scrollTop && list.scrollTop !== 0) {
@@ -329,7 +331,7 @@ function PhotosList(props) {
                 </div>
                 <div className={(props.showSideMenu || !currentPhotoPath) ? "centerDisplay" : "centerDisplayMax"} id="photoList"
                     style={{ display: (!photoLoading && (!props.showPhotoDisplay || !currentPhotoPath)) ? "block" : "none" }}
-                    onWheel={(e) => photosScroll(e)} data-date={props.currentDate} data-page={props.datePage[props.currentDate]}>
+                    data-date={props.currentDate} data-page={props.datePage[props.currentDate]}>
                     <div>
                         {photos.photos.length > 0 ?
                             <div className="photo-list-header">
@@ -362,7 +364,7 @@ function PhotosList(props) {
                             </div>
                             : <>No Photo Found!</>
                         }
-                        <div className="photos">
+                        <Scrollable f={photosScroll} className="photos" hasNext={photos.has_next} hasPrev={photos.has_prev} >
                             {photos.photos.map((l, i) => {
                                 const image_for_not_found = "/img_error.png";
                                 let thumbnailSrc = "";
@@ -377,76 +379,79 @@ function PhotosList(props) {
                                     photosListImgSrc[l.file.path] = convertFileSrc(l.file.path);
                                 }
                                 return (
-                                    <div key={i} className={"row pict-" + iconSize} style={{ textAlign: "center" }} >
-                                        <a href="#" onClick={() => {
-                                            setShowSideMenu(false);
-                                            displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto)
-                                        }}>
-                                            {!l.has_thumbnail && l.file.path.match(/\.(mp4|webm)$/i)
-                                                ? <div className="photo-list-movie" style={{ minWidth: (iconSize - 20) + 'px', marginTop: (iconSize / 7) + "px" }}>
-                                                    <span style={{ fontSize: (iconSize / 3) + 'px' }}>&#127909;</span>
-                                                </div>
-                                                : <div style={{ width: iconSize + 'px', height: iconSize + 'px', float: "left" }} >
-                                                    <img loading="eager"
-                                                        alt={l.file.path}
-                                                        style={{ width: "97%" }}
-                                                        src={photosListImgSrc[l.file.path]}
-                                                        onLoad={(e) => {
-                                                            let w = e.currentTarget.width;
-                                                            let h = e.currentTarget.height;
-                                                            if (w > h) {
-                                                                e.currentTarget.style.width = "97%";
-                                                                e.currentTarget.style.height = "auto";
-                                                            } else {
-                                                                e.currentTarget.style.height = "97%";
-                                                                e.currentTarget.style.width = "auto";
-                                                            }
-                                                        }}
-                                                        onError={(e) => {
-                                                            /*
-                                                            // To debug image load error on Windows
-                                                            let url = e.currentTarget.src;
-                                                                fetch(url)
-                                                                .then(res => {
-                                                                    setDebugMessage(l.file.path + ","+ url + ", " + res.statusText);
-                                                                })
-                                                                .catch(err => {
-                                                                    setDebugMessage( url + ", Image load failed: ", l.file.path);
-                                                                });
-                                                            */
-                                                            if (e.currentTarget.src != image_for_not_found) {
-                                                                photosListImgSrc[l.file.path] = image_for_not_found;
-                                                                e.currentTarget.src = photosListImgSrc[l.file.path];
-                                                            }
-                                                        }}
-                                                    />
-                                                    {l.file.path.match(/\.(mp4|webm)$/i) && <div style={{ color: "white", position: "relative", top: iconSize / -3, fontSize: (iconSize / 6) + 'px' }}>&#x25b6;</div>}
-                                                </div>
-                                            }
-                                        </a>
-                                        <div className="photo-list-menu">
-                                            <input type="checkbox"
-                                                id={"photo-checkbox-" + i}
-                                                checked={photoSelectionDict[l.file.path] ? "checked" : ""}
-                                                onChange={(e) => addSelection(e.target.checked, l.file.path)}
-                                            />
-                                            <label className={"cneckbox-photo checkbox hover"} htmlFor={"photo-checkbox-" + i}></label><br />
+                                    <>
+                                        <div key={i} className={"row pict-" + iconSize} style={{ flex: "0 0 " + ((iconSize / 1) + 41) + "px", textAlign: "center", verticalAlign: "middle" }} >
                                             <a href="#" onClick={() => {
+                                                setShowSideMenu(false);
                                                 displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto)
-                                                setShowSideMenu(true);
-                                            }
-                                            } >(&#8505;)</a><br />
-                                            <a href="#" className="run-app" onClick={(e) => open("file://" + l.file.path)}>&#128640;</a>
+                                            }}>
+                                                {!l.has_thumbnail && l.file.path.match(/\.(mp4|webm)$/i)
+                                                    ? <div className="photo-list-movie" style={{ minWidth: (iconSize - 20) + 'px', marginTop: (iconSize / 7) + "px" }}>
+                                                        <span style={{ fontSize: (iconSize / 3) + 'px' }}>&#127909;</span>
+                                                    </div>
+                                                    : <div style={{ width: iconSize + 'px', height: iconSize + 'px', float: "left" }} >
+                                                        <img loading="eager"
+                                                            alt={l.file.path}
+                                                            style={{ width: "97%" }}
+                                                            src={photosListImgSrc[l.file.path]}
+                                                            onLoad={(e) => {
+                                                                let w = e.currentTarget.width;
+                                                                let h = e.currentTarget.height;
+                                                                if (w > h) {
+                                                                    e.currentTarget.style.width = "97%";
+                                                                    e.currentTarget.style.height = "auto";
+                                                                } else {
+                                                                    e.currentTarget.style.height = "97%";
+                                                                    e.currentTarget.style.width = "auto";
+                                                                }
+                                                            }}
+                                                            onError={(e) => {
+                                                                /*
+                                                                // To debug image load error on Windows
+                                                                let url = e.currentTarget.src;
+                                                                    fetch(url)
+                                                                    .then(res => {
+                                                                        setDebugMessage(l.file.path + ","+ url + ", " + res.statusText);
+                                                                    })
+                                                                    .catch(err => {
+                                                                        setDebugMessage( url + ", Image load failed: ", l.file.path);
+                                                                    });
+                                                                */
+                                                                if (e.currentTarget.src != image_for_not_found) {
+                                                                    photosListImgSrc[l.file.path] = image_for_not_found;
+                                                                    e.currentTarget.src = photosListImgSrc[l.file.path];
+                                                                }
+                                                            }}
+                                                        />
+                                                        {l.file.path.match(/\.(mp4|webm)$/i) && <div style={{ color: "white", position: "relative", top: iconSize / -3, fontSize: (iconSize / 6) + 'px' }}>&#x25b6;</div>}
+                                                    </div>
+                                                }
+                                            </a>
+                                            <div className="photo-list-menu">
+                                                <input type="checkbox"
+                                                    id={"photo-checkbox-" + i}
+                                                    checked={photoSelectionDict[l.file.path] ? "checked" : ""}
+                                                    onChange={(e) => addSelection(e.target.checked, l.file.path)}
+                                                />
+                                                <label className={"cneckbox-photo checkbox hover"} htmlFor={"photo-checkbox-" + i}></label><br />
+                                                <a href="#" onClick={() => {
+                                                    displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto)
+                                                    setShowSideMenu(true);
+                                                }
+                                                } >(&#8505;)</a><br />
+                                                <a href="#" className="run-app" onClick={(e) => open("file://" + l.file.path)}>&#128640;</a>
+                                            </div>
                                         </div>
-                                    </div>
+                                        {photos.has_next && (photos.photos.length - 1) == i && <div className={"row pict-" + iconSize} style={{ flex: "0 0 " + (iconSize / 1 + 41) + "px", maxWidth: iconSize + 'px', minHeight: "80px", textAlign: "center", verticalAlign: "middle" }} ><img style={{width: iconSize + 'px'}} src="/scroll-to-load-more.png" /></div >}
+                                    </>
                                 )
                             })}
-                        </div>
+                        </Scrollable>
                     </div>
                     <div className="debug" style={{ display: (debugMessage == "" ? "none" : "block"), backgroundColor: "white", color: "black", position: "absolute", zIndex: "100", bottom: "0px", left: "0px", width: "400px", height: "200px" }}>
                         {debugMessage}
                     </div>
-                </div >
+                </div>
             </>
         }
         <div className={(showSideMenu || !currentPhotoPath) ? "rightMenu" : "rightMenu-close"}>
