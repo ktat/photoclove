@@ -63,7 +63,7 @@ function Preferences(props) {
                 <PickFolderSingle
                     label="DataPath:"
                     folder={config.data_path}
-                    onSet={
+                    setFunc={
                         (folder) => {
                             config.data_path = folder;
                             setNewConfig(config)
@@ -72,7 +72,7 @@ function Preferences(props) {
                 <PickFolderSingle
                     label="TashPath:"
                     folder={config.trash_path}
-                    onSet={
+                    setFunc={
                         (folder) => {
                             config.trash_path = folder;
                             setNewConfig(config)
@@ -81,7 +81,7 @@ function Preferences(props) {
                 <PickFolderSingle
                     label="ImportTo:"
                     folder={config.import_to}
-                    onSet={
+                    setFunc={
                         (folder) => {
                             config.import_to = folder;
                             setNewConfig(config)
@@ -95,7 +95,7 @@ function Preferences(props) {
                             class1="row2"
                             class2="row3"
                             folder={config.export_from[i]}
-                            onSet={
+                            setFunc={
                                 (folder) => {
                                     config.export_from[i] = folder;
                                     setNewConfig(config)
@@ -111,7 +111,7 @@ function Preferences(props) {
                     class2="row4"
                     label="Store Path:"
                     folder={config.thumbnail_store}
-                    onSet={
+                    setFunc={
                         (folder) => {
                             config.thumbnail_store = folder;
                             setNewConfig(config);
