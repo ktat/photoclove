@@ -53,19 +53,7 @@ wsl --shutdown
 #### install required packages
 
 ```sh
-sudo apt install libfuse2 librsvg2-dev libgstreamer1.0-dev patchelf
-```
-
-#### create fuse group if need
-
-if fuse group doesn't exist, create it
-
-```sh
-sudo addgroup --system fuse
-sudo chown root:fuse /dev/fuse
-sudo chmod 660 /dev/fuse
-sudo usermod -aG fuse $USER
-newgrp fuse
+sudo apt install librsvg2-dev libgstreamer1.0-dev patchelf
 ```
 
 #### Build app
