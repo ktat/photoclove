@@ -4,10 +4,10 @@ use crate::{
     value::comment, value::date, value::file, value::star,
 };
 use csv::{ReaderBuilder, WriterBuilder};
+use fs2::FileExt;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
-use fs2::FileExt;
 use std::path;
 
 static META_INFO_FILE_NAME: &str = ".photoclove-dir-info.tsv";

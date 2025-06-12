@@ -18,9 +18,22 @@
     "oauth:allow-start",
     {
       "identifier": "shell:allow-open",
+      "scope": [
+        "^https?://.*$",
+        "^file://.*$"
+      ]
+    },
+    {
+      "identifier": "opener:allow-open-url",
       "allow": [
         {
-          "open": "^(https?:|file:)"
+          "url": "https:/*"
+        },
+        {
+          "url": "http://*"
+        },
+        {
+          "url": "file://*"
         }
       ]
     },
@@ -28,6 +41,7 @@
     "notification:default",
     "clipboard-manager:default",
     "shell:default",
-    "dialog:default"
+    "dialog:default",
+    "opener:default"
   ]
 }

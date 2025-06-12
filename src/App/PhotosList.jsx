@@ -4,7 +4,7 @@ import PhotoInfo from "./PhotosList/PhotoInfo.jsx";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import PhotoLoading from "./PhotosList/PhotoLoading.jsx";
 import DirectoryMenu from "./PhotosList/DirectoryMenu.jsx";
-import { open } from '@tauri-apps/plugin-shell';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { ImgCacheContext, AllPhotosContext } from "./ImgCacheContext.jsx";
 import Scrollable from "../Scrollable.jsx";
 import '../scrollable.css';
@@ -439,10 +439,10 @@ function PhotosList(props) {
                                                     setShowSideMenu(true);
                                                 }
                                                 } >(&#8505;)</a><br />
-                                                <a href="#" className="run-app" onClick={(e) => open("file://" + l.file.path)}>&#128640;</a>
+                                                <a href="#" className="run-app" onClick={(e) => openUrl("file://" + l.file.path)}>&#128640;</a>
                                             </div>
                                         </div>
-                                        {photos.has_next && (photos.photos.length - 1) == i && <div className={"row pict-" + iconSize} style={{ flex: "0 0 " + (iconSize / 1 + 41) + "px", maxWidth: iconSize + 'px', minHeight: "80px", textAlign: "center", verticalAlign: "middle" }} ><img style={{width: iconSize + 'px'}} src="/scroll-to-load-more.png" /></div >}
+                                        {photos.has_next && (photos.photos.length - 1) == i && <div className={"row pict-" + iconSize} style={{ flex: "0 0 " + (iconSize / 1 + 41) + "px", maxWidth: iconSize + 'px', minHeight: "80px", textAlign: "center", verticalAlign: "middle" }} ><img style={{ width: iconSize + 'px' }} src="/scroll-to-load-more.png" /></div >}
                                     </>
                                 )
                             })}

@@ -101,63 +101,56 @@ function App() {
     });
 
     const unlisten2 = listen("click_menu", (e) => {
+      console.log(e)
       invoke("lock", { t: true }).then((le) => {
-        console.log(e);
-        if (e.payload === "load_dates") {
-          getDates();
-        } else if (e.payload === "HOME") {
-          setCurrentDate("");
-          setShowPhotosList(false);
-          setShowImporter(false);
-          setShowPreferences(false);
-          setWelcomeImage(WelcomeImage());
-        } else if (e.payload === "import") {
-          toggleImporter(true);
-        } else if (e.payload === "pref") {
-          togglePreferences(true);
-        } else if (e.payload == "login") {
-          invoke("lock", { t: true }).then((e) => {
-            if (e) {
-              loginGoogle();
+        if (le) {
+          if (e.payload === "load_dates") {
+            getDates();
+          } else if (e.payload === "HOME") {
+            setCurrentDate("");
+            setShowPhotosList(false);
+            setShowImporter(false);
+            setShowPreferences(false);
+            setWelcomeImage(WelcomeImage());
+          } else if (e.payload === "import") {
+            toggleImporter(true);
+          } else if (e.payload === "pref") {
+            togglePreferences(true);
+          } else if (e.payload == "login") {
+            loginGoogle();
+          }
+          setTimeout(() => {
+            invoke("lock", { t: false });
+          }, 1000);
+        }
+      });
+      if (e.payload === "create_db") {
+        invoke("lock", { t: true }).then((le) => {
+          if (le) {
+            // BUG: event is called twice in same time. I don't know the reason why.
+            if (in_db_creation) {
+              message("DB creation in progress");
               setTimeout(() => {
                 invoke("lock", { t: false });
               }, 1000);
-            }
-          });
-        } else if (e.payload === "create_db") {
-          // BUG: event is called twice in same time. I don't know the reason why.
-          invoke("lock", { t: true }).then((e) => {
-            if (e) {
-              if (in_db_creation) {
-                message("DB creation in progress");
+            } else {
+              ask("It may cost long time.\nAre you OK?", "Create DB?").then((e) => {
+               if (e) {
+                  in_db_creation = true;
+                  invoke("create_db").then(() => {
+                    in_db_creation = false;
+                  });
+                }
+              }).catch((e) => {
                 setTimeout(() => {
                   invoke("lock", { t: false });
                 }, 1000);
-              } else {
-                ask("It may cost long time.\nAre you OK?", "Create DB?").then((e) => {
-                  setTimeout(() => {
-                    invoke("lock", { t: false });
-                  }, 1000);
-                  if (e) {
-                    in_db_creation = true;
-                    invoke("create_db").then(() => {
-                      in_db_creation = false;
-                    });
-                  }
-                }).catch((e) => {
-                  setTimeout(() => {
-                    invoke("lock", { t: false });
-                  }, 1000);
-                  console.log("error: " + e);
-                })
-              }
+                console.log("error: " + e);
+              })
             }
-          });
-        }
-        setTimeout(() => {
-          invoke("lock", { t: false })
-        }, 1000);
-      })
+          }
+        })
+      }
     });
   }, []);
 

@@ -144,7 +144,6 @@ mod tests {
 
     #[test]
     fn test_make_photos() {
-
         let path = Path::new("tests/assets/files");
         let dir = file::Dir::new(path.display().to_string());
         let files = dir_service::find_files(&dir);

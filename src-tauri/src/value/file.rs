@@ -36,7 +36,12 @@ fn get_created_time(path: String) -> String {
     #[cfg(unix)]
     let epoch = metadata.ctime();
     #[cfg(windows)]
-    let epoch = metadata.created().unwrap().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64;
+    let epoch = metadata
+        .created()
+        .unwrap()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64;
     Local.timestamp_opt(epoch, 0).unwrap().to_string()
 }
 
@@ -61,7 +66,11 @@ impl Dir {
             if cp.is_err() {
                 eprintln!("Invalid abs path for Dir: {:?}, error: {:?}", p, cp.err());
             } else {
-                eprintln!("Invalid path for Dir: {:?}, CanonicalPath: {:?}", p, cp.unwrap().as_path());
+                eprintln!(
+                    "Invalid path for Dir: {:?}, CanonicalPath: {:?}",
+                    p,
+                    cp.unwrap().as_path()
+                );
             }
             return Dir {
                 path: "/".to_string(),
@@ -98,7 +107,12 @@ impl Dir {
         );
     }
     pub fn child(&self, path: String) -> Dir {
-        Dir::new(PathBuf::from(self.path.clone()).join(&path).display().to_string())
+        Dir::new(
+            PathBuf::from(self.path.clone())
+                .join(&path)
+                .display()
+                .to_string(),
+        )
     }
 }
 
@@ -166,7 +180,12 @@ impl File {
         #[cfg(unix)]
         let epoch = metadata.ctime();
         #[cfg(windows)]
-        let epoch = metadata.created().unwrap().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64;
+        let epoch = metadata
+            .created()
+            .unwrap()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
         Local.timestamp_opt(epoch, 0).unwrap()
     }
 

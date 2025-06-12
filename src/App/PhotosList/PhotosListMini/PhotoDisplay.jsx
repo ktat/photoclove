@@ -1,7 +1,7 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { useEffect, useState, useRef } from "react";
 // import ReactPlayer from 'react-player';
-import { open } from '@tauri-apps/plugin-shell';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 let currentFile = "";
 let width = 0;
@@ -53,7 +53,7 @@ function PhotoDisplay(props) {
 
     async function movie(path) {
         if (currentFile != path) {
-            invoke("lock", { t: false }).then(async (r) => {
+            invoke("lock", { t: true }).then(async (r) => {
                 // tauri cannot play movie file which is not in public folder. So copy movie file to public/movie
                 const ext = path.split('.').pop();
                 const result = await invoke("link_file_to_public", {
@@ -69,6 +69,9 @@ function PhotoDisplay(props) {
                         setVideoSource(videoPath);
                     }, 200);
                 });
+                setTimeout(() => {
+                    invoke("lock", { t: false })
+                }, 1000);
             })
         }
         return true;
@@ -175,7 +178,7 @@ function PhotoDisplay(props) {
                     >
                     </video>
                 </div>
-                Open with other software: <a href="#" onClick={(e) => open("file://" + props.currentPhotoPath)}>{props.currentPhotoPath}</a>
+                Open with other software: <a href="#" onClick={(e) => openUrl("file://" + props.currentPhotoPath)}>{props.currentPhotoPath}</a>
             </div>
             {props.currentPhotoPath && !props.currentPhotoPath.match(/\.(mp4|webm)$/i) &&
                 <img id="photoImgTag" className={photoDisplayImgClass}
