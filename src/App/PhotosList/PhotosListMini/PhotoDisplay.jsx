@@ -2,6 +2,7 @@ import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { useEffect, useState, useRef } from "react";
 // import ReactPlayer from 'react-player';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import fileUrl from "../../../PathUtil.jsx";
 
 let currentFile = "";
 let width = 0;
@@ -178,7 +179,7 @@ function PhotoDisplay(props) {
                     >
                     </video>
                 </div>
-                Open with other software: <a href="#" onClick={(e) => openUrl("file://" + props.currentPhotoPath)}>{props.currentPhotoPath}</a>
+                Open with other software: <a href="#" onClick={(e) => openUrl(fileUrl(props.currentPhotoPath))}>{props.currentPhotoPath}</a>
             </div>
             {props.currentPhotoPath && !props.currentPhotoPath.match(/\.(mp4|webm)$/i) &&
                 <img id="photoImgTag" className={photoDisplayImgClass}
