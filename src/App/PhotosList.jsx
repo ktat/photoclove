@@ -31,6 +31,7 @@ function PhotosList(props) {
     const [star, setStar] = useState([false, false, false, false, false]);
     const [starFilter, setStarFilter] = useState(0);
     const [hasCommentFilter, setHasCommentFilter] = useState(false);
+    const [extensionFilter, setExtensionFilter] = useState("all");
     const [debugMessage, setDebugMessage] = useState("");
 
     useEffect((e) => {
@@ -53,7 +54,7 @@ function PhotosList(props) {
             setPhotosListMiniReread(!photosListMiniReread);
             setPhotosListMiniAllPhotos([]);
         }
-    }, [numOfPhoto, props.currentDate, sortOfPhotos, starFilter, hasCommentFilter]);
+    }, [numOfPhoto, props.currentDate, sortOfPhotos, starFilter, hasCommentFilter, extensionFilter]);
 
     useEffect(e => {
         setPhotosListMiniAllPhotos([]);
@@ -215,7 +216,8 @@ function PhotosList(props) {
             num: parseInt(num),
             offset: 0,
             star: parseInt(starFilter, 10),
-            hasComment: hasCommentFilter
+            hasComment: hasCommentFilter,
+            extension: extensionFilter
         }).then((r) => {
             let data = JSON.parse(r);
             let l = data.photos;
@@ -319,6 +321,7 @@ function PhotosList(props) {
                                     setStar={setStar}
                                     hasCommentFilter={hasCommentFilter}
                                     starFilter={starFilter}
+                                    extensionFilter={extensionFilter}
 
                                     reread={photosListMiniReread}
                                     currentIndex={photosListMiniCurrentIndex}
@@ -360,6 +363,17 @@ function PhotosList(props) {
                                         <option value={40}>40</option>
                                         <option value={50}>50</option>
                                         <option value={60}>60</option>
+                                    </select>
+                                    Ext:<select name="extension_filter" value={extensionFilter} onChange={(e) => setExtensionFilter(e.target.value)}>
+                                        <option value="all">all</option>
+                                        <option value="jpeg">jpeg</option>
+                                        <option value="jpg">jpg</option>
+                                        <option value="mp4">mp4</option>
+                                        <option value="gif">gif</option>
+                                        <option value="png">png</option>
+                                        <option value="webm">webm</option>
+                                        <option value="bmp">bmp</option>
+                                        <option value="tiff">tiff</option>
                                     </select>
                                 </div>
                             </div>
@@ -485,6 +499,8 @@ function PhotosList(props) {
                     setStarFilter={setStarFilter}
                     setHasCommentFilter={setHasCommentFilter}
                     starFilter={starFilter}
+                    setExtensionFilter={setExtensionFilter}
+                    extensionFilter={extensionFilter}
                 />
             </div>
         </div>
