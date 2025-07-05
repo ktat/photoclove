@@ -77,6 +77,7 @@ function DirectoryMenu(props) {
         }
     }
 
+
     async function uploadToGooglePhotos() {
         if (lockUpload) {
             message("Currently, this operation is locked. Pelase wait for a while", "This operation is locked");

@@ -63,6 +63,19 @@ rm -rf src-tauri/target
 env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
 ```
 
+## Recent Updates
+
+### SQLite Database Migration (v2.0)
+- **Performance improvements**: Migrated from TSV files to SQLite database for better performance
+- **Automatic migration**: Seamless upgrade from old TSV format to new SQLite schema
+- **Optimized queries**: GROUP BY aggregation for efficient photo counting
+- **Better date handling**: Proper SQLite date functions for reliable comparisons
+- **Access via File menu**: TSV to SQLite migration available in File → "Migrate TSV to SQLite"
+
+### UI Enhancements
+- **Extension filtering**: Added UI filter for file extensions (jpg, png, mp4, etc.)
+- **Improved debugging**: Comprehensive logging for troubleshooting date and photo count issues
+
 ## Featurs to be ipmlemented
 
 Just a plan, currentrly a few features are only implemented.
@@ -89,7 +102,7 @@ Just a plan, currentrly a few features are only implemented.
 - [ ] Search/Filter
   - [x] Star
   - [x] Comment/Note
-  - [x] File extention(jpg, mp4 etc.)
+  - [x] File extension (jpg, mp4 etc.) with UI filter
   - [ ] Camera
   - [ ] Tag
 - [ ] Upload to cloud services
@@ -107,5 +120,20 @@ Just a plan, currentrly a few features are only implemented.
 - [ ] i18n(low priority)
 - [ ] trashbox management
 - [ ] redo/undo
-- [ ] Show photos imported reacently
+- [ ] Show photos imported recently
 - [ ] Crop photo and search with Google
+
+## Recent Improvements
+
+### Data Storage Migration (SQLite)
+
+The application has been migrated from TSV file storage to SQLite database for improved performance and data integrity:
+
+- **Better Performance**: SQLite provides faster queries and data access compared to reading/writing multiple TSV files
+- **Data Integrity**: ACID compliance ensures photo metadata consistency
+- **Scalability**: Better handling of large photo collections with efficient indexing
+- **Concurrent Access**: Improved support for multiple operations on photo metadata
+
+### Enhanced User Interface
+
+- **Extension Filter**: Added a new extension filter input field in the DirectoryMenu component, allowing users to filter photos by file extensions (e.g., jpg,png,mp4)
