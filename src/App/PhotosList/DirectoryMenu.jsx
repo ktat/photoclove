@@ -144,6 +144,12 @@ function DirectoryMenu(props) {
                         />
                         <label className="checkbox checkbox-normal" htmlFor="filter-has-comment-check">Has comment</label>
                     </li>
+                    <li>
+                        Extensions:
+                        <input type="text" id="extension-filter-input" placeholder="jpg,png,mp4" 
+                            onChange={(e) => { props.setExtensionFilter(e.target.value); }}
+                        />
+                    </li>
                 </ul>
             </div>
             <div id="tab-selection" className={props.tabClass['selection'] ? "tab-active" : "tab"}>
