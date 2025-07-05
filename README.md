@@ -1,6 +1,6 @@
 # PhotoClove
 
-PhotoClove is a photo manager application written in Rust with tauri.
+PhotoClove is a photo manager application written in Rust & JavaScript(React) with tauri.
 
 ## Motivation
 
@@ -89,6 +89,7 @@ Just a plan, currentrly a few features are only implemented.
 - [ ] Search/Filter
   - [x] Star
   - [x] Comment/Note
+  - [x] File extention(jpg, mp4 etc.)
   - [ ] Camera
   - [ ] Tag
 - [ ] Upload to cloud services
