@@ -137,9 +137,9 @@ function PhotosListMini(props) {
             needReset = false;
         }
         if (num <= 0) {
-            return
+            return Promise.resolve(photosListMiniAllPhotos)
         }
-        invoke("get_photos_with_filter", {
+        return invoke("get_photos_with_filter", {
             dateStr: props.currentDate,
             sortValue: props.sortOfPhotos,
             page: 1,
@@ -155,16 +155,20 @@ function PhotosListMini(props) {
             if (data.photos.length > 0) {
                 mergedAllPhotos = photosListMiniAllPhotos.concat(data.photos)
                 setPhotosListMiniAllPhotos(mergedAllPhotos);
+            } else {
+                mergedAllPhotos = photosListMiniAllPhotos;
             }
 
             setHasNext(data.has_next);
             if (needReset) {
                 adjustCurrentIndex(mergedAllPhotos);
             }
+            return mergedAllPhotos;
         }).catch(e => {
             console.log("in PhotosListMini.jsx");
             console.log(e);
             console.log(num)
+            return photosListMiniAllPhotos;
         });
     }
 
@@ -370,6 +374,8 @@ function PhotosListMini(props) {
 
     async function nextPhoto() {
         const nextIndex = props.currentPhotoIndex + 1;
+        
+        // If next photo is already loaded, navigate to it normally
         if (photosListMiniAllPhotos.length > nextIndex) {
             let cacheCandidates = []
             if (nextIndex > Math.trunc(NUM_OF_PHOTO_LIST / 2)) {
@@ -380,6 +386,17 @@ function PhotosListMini(props) {
             }
             _nextOrPrevPhoto(nextIndex);
             setImageCache(nextIndex, 1)
+        } 
+        // If we're at the end of loaded photos but more exist on server, load more photos first
+        else if (hasNext) {
+            console.log('Loading more photos for navigation - current:', props.currentPhotoIndex, 'total loaded:', photosListMiniAllPhotos.length);
+            // Load more photos first, then navigate
+            const updatedPhotos = await getPhotos();
+            // After loading, check if we can navigate to the next photo
+            if (updatedPhotos && updatedPhotos.length > nextIndex) {
+                _nextOrPrevPhoto(nextIndex);
+                setImageCache(nextIndex, 1)
+            }
         }
     }
 
@@ -422,9 +439,9 @@ function PhotosListMini(props) {
                     <a href="#" id="dummy-for-focus">{/* Dummy */}</a>
                     {props.currentPhotoIndex > 0 ? <><a href="#" onClick={() => lockNavigate(prevPhoto)}>&lt;&lt; prev</a><></>&nbsp;&nbsp;|| </> : <>&lt;&lt; <s>prev</s>&nbsp;&nbsp;|| </>}
                     <a href="#" onClick={() => props.closePhotoDisplay()}>close</a>
-                    {props.currentPhotoIndex < (photosListMiniAllPhotos.length - 1) ?
+                    {(props.currentPhotoIndex < (photosListMiniAllPhotos.length - 1)) || hasNext ?
                         <> ||&nbsp;&nbsp;<a href="#" onClick={() => lockNavigate(nextPhoto)}>next &gt;&gt;</a><br /><br /></>
-                        : <> ||&nbsp;&nbsp;<s onClick={() => { console.log(props.currentPhotoIndex, photosListMiniAllPhotos.length) }}>next</s> &gt;&gt;<br /><br /></>}
+                        : <> ||&nbsp;&nbsp;<s onClick={() => { console.log('Debug - currentPhotoIndex:', props.currentPhotoIndex, 'allPhotos.length:', photosListMiniAllPhotos.length, 'hasNext:', hasNext) }}>next</s> &gt;&gt;<br /><br /></>}
 
                     <PhotoDisplay
                         imgStyle={imgStyle}
