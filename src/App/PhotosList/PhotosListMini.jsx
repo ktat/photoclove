@@ -146,6 +146,7 @@ function PhotosListMini(props) {
             num: num,
             star: props.starFilter,
             hasComment: props.hasCommentFilter,
+            extension: props.extensionFilter,
             offset: photosListMiniAllPhotos.length,
         }).then((r) => {
             let index = props.currentIndex;

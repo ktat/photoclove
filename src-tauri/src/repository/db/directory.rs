@@ -93,6 +93,7 @@ impl RepositoryDB for Directory {
         offset: usize,
         star: i32,
         hasComment: bool,
+        extension: &str,
         opt_conf: Option<config::Config>,
     ) -> photo::Photos {
         let dir = self.path.child(date.to_string());
@@ -102,9 +103,24 @@ impl RepositoryDB for Directory {
         if has_opt {
             conf = opt_conf.unwrap();
         }
+        
+        // Parse extension filter
+        let extension_filters: Vec<&str> = if extension == "all" || extension.is_empty() {
+            vec![]
+        } else {
+            extension.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect()
+        };
         if meta_data.keys().len() == 0 {
             let files = dir_service::find_files(&dir);
             for f in files.files {
+                // Apply extension filter
+                if !extension_filters.is_empty() {
+                    let file_extension = f.path.split('.').last().unwrap_or("").to_lowercase();
+                    if !extension_filters.iter().any(|&ext| ext.to_lowercase() == file_extension) {
+                        continue;
+                    }
+                }
+                
                 let mut p: photo::Photo;
                 if has_opt {
                     p = photo::Photo::new(f.clone(), Option::Some(conf.clone()));
@@ -132,6 +148,14 @@ impl RepositoryDB for Directory {
                 }
                 if hasComment && md.comment.comment().len() == 0 {
                     continue;
+                }
+                
+                // Apply extension filter
+                if !extension_filters.is_empty() {
+                    let file_extension = f.split('.').last().unwrap_or("").to_lowercase();
+                    if !extension_filters.iter().any(|&ext| ext.to_lowercase() == file_extension) {
+                        continue;
+                    }
                 }
                 let file_result = file::File::new_if_exists(f.to_string());
                 if file_result.is_none() {
@@ -212,6 +236,7 @@ impl RepositoryDB for Directory {
                     0,
                     0,
                     false,
+                    "all",
                     Option::None,
                 )
                 .await;
@@ -254,6 +279,7 @@ impl RepositoryDB for Directory {
                     0,
                     0,
                     false,
+                    "all",
                     Option::None,
                 )
                 .await;

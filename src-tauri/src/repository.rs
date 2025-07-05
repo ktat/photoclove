@@ -72,6 +72,7 @@ pub(crate) trait RepositoryDB {
         offset: usize,
         star: i32,
         hasComment: bool,
+        extension: &str,
         conifg: Option<config::Config>,
     ) -> photo::Photos;
     async fn move_photos_to_exif_date(&self, date: date::Date) -> date::Dates;
