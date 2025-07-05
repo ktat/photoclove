@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::path;
 
 pub type RepoDB = crate::repository::db::directory::Directory;
-pub type MetaDB = crate::repository::meta_db::tsv::Tsv;
+pub type MetaDB = crate::repository::meta_db::sqlite::SQLite;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Sort {

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 pub mod tsv;
-// pub mod sqlite;
+pub mod sqlite;
 #[derive(Debug, Deserialize, Serialize)]
 pub struct PhotoInfo {
     pub path: String,

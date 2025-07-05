@@ -51,9 +51,39 @@ fn greet(name: &str) -> String {
 #[tauri::command]
 fn get_dates(window: tauri::Window, state: tauri::State<AppState>) -> String {
     println!("get_dates is called from {}", window.label());
+    
+    // First try to get dates from SQLite metadata database
+    let meta_db = &state.meta_db;
+    let sqlite_db = repository::meta_db::sqlite::SQLite::new(state.config.import_to.clone());
+    
+    if sqlite_db.has_metadata() {
+        println!("Using SQLite database for dates");
+        match sqlite_db.get_available_dates() {
+            Ok(dates) => {
+                println!("get_dates() - SQLite returned {} dates", dates.len());
+                let mut date_list = date::Dates::empty();
+                date_list.dates = dates;
+                let json_result = date_list.to_json();
+                println!("get_dates() - JSON result: {}", json_result);
+                println!("get_dates() - FINAL JSON SENT TO REACT: {}", json_result);
+                return json_result;
+            }
+            Err(e) => {
+                eprintln!("Error getting dates from SQLite: {}", e);
+                // Fall through to filesystem scanning
+            }
+        }
+    } else {
+        println!("SQLite database has no metadata, falling back to filesystem scanning");
+    }
+    
+    // Fallback to filesystem directory scanning
+    println!("Using filesystem directory scanning for dates");
     let db = &state.repo_db;
     let dates = db.get_dates();
-    dates.to_json()
+    let filesystem_json = dates.to_json();
+    println!("get_dates() - FINAL JSON SENT TO REACT: {}", filesystem_json);
+    filesystem_json
 }
 
 #[tauri::command]
@@ -62,22 +92,32 @@ async fn get_dates_num(
     state: tauri::State<'_, AppState>,
     dates_str: &str,
 ) -> Result<String, ()> {
+    println!("get_dates_num() - Input dates_str: {:?}", dates_str);
     let mut dates = date::Dates::empty();
-    eprintln!("{:?}", dates_str);
     let splitted = dates_str.split(",");
     for date_tupple in splitted.enumerate() {
         let date_str = date_tupple.1;
-        eprintln!("{:?}", date_str);
+        println!("get_dates_num() - Processing date: {:?}", date_str);
         dates.dates.push(date::Date::from_string(
             &date_str.to_string(),
             Option::Some("-"),
         ));
     }
+    println!("get_dates_num() - Parsed {} dates", dates.dates.len());
+    
     let meta_db = &state.meta_db;
     let db = &state.repo_db;
+    
+    println!("get_dates_num() - Getting photo count from meta_db (SQLite)");
     let meta_data = meta_db.get_photo_count_per_dates(dates.clone());
+    println!("get_dates_num() - Meta data result: {}", meta_data.to_json());
+    
+    println!("get_dates_num() - Getting photo count from repo_db (filesystem)");
     let dates_num = db.get_photo_count_per_dates(dates, meta_data);
-    Ok(dates_num.to_json())
+    let final_json = dates_num.to_json();
+    println!("get_dates_num() - FINAL RESULT JSON: {}", final_json);
+    
+    Ok(final_json)
 }
 
 #[tauri::command]
@@ -614,6 +654,22 @@ async fn move_to_trash(
     return Ok(date.to_string());
 }
 
+#[tauri::command]
+async fn migrate_tsv_to_sqlite(
+    root_path: Option<&str>,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    let path_to_scan = root_path.unwrap_or(&state.config.import_to);
+    
+    // Create a new SQLite instance for migration
+    let sqlite_db = repository::meta_db::sqlite::SQLite::new(state.config.import_to.clone());
+    
+    match sqlite_db.migrate_from_tsv_files(path_to_scan) {
+        Ok(count) => Ok(format!("Successfully migrated {} records from TSV files to SQLite database", count)),
+        Err(e) => Err(format!("Migration failed: {}", e)),
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use crate::repository::*;
@@ -646,6 +702,7 @@ pub fn run() {
                 .text("load_dates", "Load Date List")
                 .text("import", "Import")
                 .text("create_db", "Create DB")
+                .text("migrate_tsv", "Migrate TSV to SQLite")
                 .text("login", "Login to Google")
                 .text("pref", "Preferences")
                 .text("quit", "Quit")
@@ -680,6 +737,8 @@ pub fn run() {
                     app.emit("click_menu", "create_db").unwrap();
                 } else if e.id == "import" {
                     app.emit("click_menu", "import").unwrap();
+                } else if e.id == "migrate_tsv" {
+                    app.emit("click_menu", "migrate_tsv").unwrap();
                 } else if e.id == "login" {
                     app.emit("click_menu", "login").unwrap();
                 } else if e.id == "pref" {
@@ -717,6 +776,7 @@ pub fn run() {
             link_file_to_public,
             move_photos_to_exif_date,
             upload_to_google_photos,
+            migrate_tsv_to_sqlite,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

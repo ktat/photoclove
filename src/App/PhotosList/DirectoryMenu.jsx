@@ -77,6 +77,7 @@ function DirectoryMenu(props) {
         }
     }
 
+
     async function uploadToGooglePhotos() {
         if (lockUpload) {
             message("Currently, this operation is locked. Pelase wait for a while", "This operation is locked");
@@ -143,6 +144,12 @@ function DirectoryMenu(props) {
                             onChange={(e) => { props.setHasCommentFilter(e.target.checked); }}
                         />
                         <label className="checkbox checkbox-normal" htmlFor="filter-has-comment-check">Has comment</label>
+                    </li>
+                    <li>
+                        Extensions:
+                        <input type="text" id="extension-filter-input" placeholder="jpg,png,mp4" 
+                            onChange={(e) => { props.setExtensionFilter(e.target.value); }}
+                        />
                     </li>
                 </ul>
             </div>

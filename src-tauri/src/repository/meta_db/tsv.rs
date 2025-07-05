@@ -106,8 +106,8 @@ impl Tsv {
 impl MetaInfoDB for Tsv {
     fn connect(&self, path: String) {}
 
-    fn new_connect(&self) -> Tsv {
-        Tsv::new(self.path.path.clone())
+    fn new_connect(&self) -> crate::repository::meta_db::sqlite::SQLite {
+        crate::repository::meta_db::sqlite::SQLite::new(self.path.path.clone())
     }
 
     fn record_photo_metas(
