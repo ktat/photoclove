@@ -137,9 +137,9 @@ function PhotosListMini(props) {
             needReset = false;
         }
         if (num <= 0) {
-            return
+            return Promise.resolve(photosListMiniAllPhotos)
         }
-        invoke("get_photos_with_filter", {
+        return invoke("get_photos_with_filter", {
             dateStr: props.currentDate,
             sortValue: props.sortOfPhotos,
             page: 1,
@@ -155,16 +155,20 @@ function PhotosListMini(props) {
             if (data.photos.length > 0) {
                 mergedAllPhotos = photosListMiniAllPhotos.concat(data.photos)
                 setPhotosListMiniAllPhotos(mergedAllPhotos);
+            } else {
+                mergedAllPhotos = photosListMiniAllPhotos;
             }
 
             setHasNext(data.has_next);
             if (needReset) {
                 adjustCurrentIndex(mergedAllPhotos);
             }
+            return mergedAllPhotos;
         }).catch(e => {
             console.log("in PhotosListMini.jsx");
             console.log(e);
             console.log(num)
+            return photosListMiniAllPhotos;
         });
     }
 
@@ -383,12 +387,16 @@ function PhotosListMini(props) {
             _nextOrPrevPhoto(nextIndex);
             setImageCache(nextIndex, 1)
         } 
-        // If we're at the end of loaded photos but more exist on server, trigger navigation
-        // The useEffect will detect the index change and load more photos automatically
+        // If we're at the end of loaded photos but more exist on server, load more photos first
         else if (hasNext) {
-            console.log('Navigating to next photo with auto-load - current:', props.currentPhotoIndex, 'total loaded:', photosListMiniAllPhotos.length);
-            // Set the next photo index - this will trigger the useEffect to load more photos
-            props.setCurrentPhotoIndex(nextIndex);
+            console.log('Loading more photos for navigation - current:', props.currentPhotoIndex, 'total loaded:', photosListMiniAllPhotos.length);
+            // Load more photos first, then navigate
+            const updatedPhotos = await getPhotos();
+            // After loading, check if we can navigate to the next photo
+            if (updatedPhotos && updatedPhotos.length > nextIndex) {
+                _nextOrPrevPhoto(nextIndex);
+                setImageCache(nextIndex, 1)
+            }
         }
     }
 
