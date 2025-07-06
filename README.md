@@ -65,6 +65,19 @@ env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
 
 ## Recent Updates
 
+### Photo Display Improvements (v2.1)
+- **Responsive photo sizing**: Fixed photo display sizing issues for resizable app windows
+- **Dynamic expansion**: Images now properly expand when app window is resized larger
+- **Improved first load**: Fixed bug where images appeared as small icons on first photo selection from thumbnails
+- **Better margins**: Added proper spacing around photos (20px sides, 40px bottom) for better visual presentation
+- **Enhanced navigation**: Preserved photo dimensions during photo navigation to prevent sizing loss
+- **CSS-based approach**: Replaced complex JavaScript calculations with responsive CSS for more reliable sizing
+
+### Extension Filter Enhancements
+- **Grouped filtering**: Organized extension filters into Image and Movie categories with group checkboxes
+- **Better UI**: Improved checkbox layout with proper labeling and hierarchical structure
+- **Combined extensions**: JPEG files now handled as single filter for both .jpg and .jpeg extensions
+
 ### SQLite Database Migration (v2.0)
 - **Performance improvements**: Migrated from TSV files to SQLite database for better performance
 - **Automatic migration**: Seamless upgrade from old TSV format to new SQLite schema
@@ -72,9 +85,10 @@ env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
 - **Better date handling**: Proper SQLite date functions for reliable comparisons
 - **Access via File menu**: TSV to SQLite migration available in File → "Migrate TSV to SQLite"
 
-### UI Enhancements
-- **Extension filtering**: Added UI filter for file extensions (jpg, png, mp4, etc.)
-- **Improved debugging**: Comprehensive logging for troubleshooting date and photo count issues
+### Photo Navigation Fixes
+- **Timing improvements**: Fixed photo navigation timing issues for better user experience
+- **Button state management**: Corrected next/previous button disable logic
+- **Smoother transitions**: Enhanced photo loading and transition animations
 
 ## Featurs to be ipmlemented
 
@@ -136,4 +150,6 @@ The application has been migrated from TSV file storage to SQLite database for i
 
 ### Enhanced User Interface
 
-- **Extension Filter**: Added a new extension filter input field in the DirectoryMenu component, allowing users to filter photos by file extensions (e.g., jpg,png,mp4)
+- **Extension Filter**: Added a comprehensive extension filter system with grouped checkboxes for Image and Movie categories, allowing users to filter photos by file extensions (e.g., jpg,png,mp4)
+- **Photo Display**: Implemented responsive photo sizing that automatically adapts to window resizing and provides consistent image display across different screen sizes
+- **Improved Navigation**: Enhanced photo navigation with better timing and state management for smoother user experience
