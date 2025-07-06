@@ -21,8 +21,26 @@ function PhotoDisplay(props) {
         currentFile = "";
         document.querySelector("#dummy-for-focus").focus();
 
-        const el = document.querySelector("#photo")
-        window.addEventListener('resize', () => { handleImgLoad(el) });
+        const resizeHandler = () => {
+            // Recalculate image sizing on window resize
+            if (width > 0 && height > 0) {
+                // Small delay to ensure container has updated dimensions
+                setTimeout(() => {
+                    props.SetImgStyle(
+                        { opacity: 1, transition: "opacity 0.3s" },
+                        width,
+                        height
+                    );
+                }, 50);
+            }
+        };
+        
+        window.addEventListener('resize', resizeHandler);
+        
+        // Cleanup on unmount
+        return () => {
+            window.removeEventListener('resize', resizeHandler);
+        };
     }, []);
 
     useEffect((e) => {
@@ -30,21 +48,25 @@ function PhotoDisplay(props) {
     }, [props.photosListMiniClosed])
 
     useEffect((e) => {
-        props.SetImgStyle({ opacity: 0.1 });
+        // Don't set opacity here - let handleImgLoad handle it when image is ready
         document.querySelector("#dummy-for-focus").focus();
-        if (props.currentPhotoPath && props.currentPhotoPath.match(/(mp4|webm)$/i)) {
-            movie(props.currentPhotoPath);
-            let photoDisplayDiv = document.querySelector('.photoDisplay');
-            let width = photoDisplayDiv.clientWidth;
-            let height = photoDisplayDiv.clientHeight - 150;
+        
+        // Small delay to ensure container is ready when transitioning from thumbnail view
+        setTimeout(() => {
+            if (props.currentPhotoPath && props.currentPhotoPath.match(/(mp4|webm)$/i)) {
+                movie(props.currentPhotoPath);
+                let photoDisplayDiv = document.querySelector('.photoDisplay');
+                let width = photoDisplayDiv.clientWidth;
+                let height = photoDisplayDiv.clientHeight - 150;
 
-            setPhotoDisplayWidth(width + "px");
-            setPhotoDisplayHeight(height + "px");
-            setVideoClass("video-on");
-        } else {
-            setVideoClass("video-off");
-            setVideoSource("");
-        }
+                setPhotoDisplayWidth(width + "px");
+                setPhotoDisplayHeight(height + "px");
+                setVideoClass("video-on");
+            } else {
+                setVideoClass("video-off");
+                setVideoSource("");
+            }
+        }, 50);
     }, [props.currentPhotoPath]);
 
     function dragPhotoStart(e) {
@@ -145,14 +167,20 @@ function PhotoDisplay(props) {
 
     const handleImgLoad = (e) => {
         if (e !== undefined) {
-            height = e.height;
-            width = e.width;
+            height = e.naturalHeight;
+            width = e.naturalWidth;
         }
-        if (width != 0 && height != 0) {
+        
+        // Use the event target dimensions if available, otherwise use globals
+        const imgWidth = e?.naturalWidth || width;
+        const imgHeight = e?.naturalHeight || height;
+        
+        if (imgWidth > 0 && imgHeight > 0) {
+            // Always apply styling immediately - no container dimension checks needed
             props.SetImgStyle(
                 { opacity: 1, transition: "opacity 0.3s" },
-                width,
-                height
+                imgWidth,
+                imgHeight
             );
         }
     };

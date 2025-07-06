@@ -1,9 +1,11 @@
 extern crate rusqlite;
 
 use crate::domain::photo;
+use crate::domain::photo_meta;
 use crate::repository::*;
 use crate::value::date;
 use crate::value::file;
+use crate::value::config;
 use async_trait::async_trait;
 use rusqlite::{params, Connection, Result};
 #[derive(Debug)]
@@ -46,29 +48,40 @@ impl RepositoryDB for SQLite {
     }
     async fn get_photos_in_date(
         &self,
+        meta_data: &photo_meta::PhotoMetas,
         date: date::Date,
         sort: Sort,
         num: u32,
         page: u32,
+        offset: usize,
+        star: i32,
+        hasComment: bool,
+        extension: &str,
+        opt_conf: Option<config::Config>,
     ) -> photo::Photos {
+        // SQLite implementation not fully implemented yet, return empty
         photo::Photos::new()
     }
     async fn get_next_photo_in_date(
         &self,
+        meta_data: &photo_meta::PhotoMetas,
         path: &str,
         date: date::Date,
         sort: Sort,
+        conifg: Option<config::Config>,
     ) -> Option<photo::Photo> {
-        self.get_photos_in_date(date, sort, 100, 1).await;
+        // SQLite implementation not fully implemented yet
         Option::None
     }
     async fn get_prev_photo_in_date(
         &self,
+        meta_data: &photo_meta::PhotoMetas,
         path: &str,
         date: date::Date,
         sort: Sort,
+        conifg: Option<config::Config>,
     ) -> Option<photo::Photo> {
-        self.get_photos_in_date(date, sort, 100, 1).await;
+        // SQLite implementation not fully implemented yet
         Option::None
     }
     fn record_photos(&self, photos: Vec<photo::Photo>) -> Result<bool, &str> {

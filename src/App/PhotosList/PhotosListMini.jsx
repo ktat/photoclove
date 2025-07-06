@@ -146,6 +146,7 @@ function PhotosListMini(props) {
             num: num,
             star: props.starFilter,
             hasComment: props.hasCommentFilter,
+            extension: props.extensionFilter,
             offset: photosListMiniAllPhotos.length,
         }).then((r) => {
             let index = props.currentIndex;
@@ -321,33 +322,73 @@ function PhotosListMini(props) {
     }
 
     function SetImgStyle(style, w, h) {
-        const photoSpaceHeight = document.querySelector('.photo').clientHeight;
-        const photoSpaceWidth = document.querySelector('.photo').clientWidth;
         const st = {
-            transition: 'opacity 0.1s',
+            transition: 'opacity 0.3s',
         }
         Object.keys(style).map((k) => {
             st[k] = style[k];
         })
-        if (currentPhotoSize[0] || w) {
-            if ((currentPhotoSize[0] || w) > (currentPhotoSize[1] || h)) {
-                let adjustH = photoSpaceWidth * (currentPhotoSize[1] || h) / (currentPhotoSize[0] || w);
-                if (adjustH > photoSpaceHeight) {
-                    st["maxWidth"] = "calc(" + photoSpaceWidth * (photoSpaceHeight / adjustH) + "px - 20px)";
-                } else {
-                    st["maxWidth"] = "calc(" + photoSpaceWidth + "px - 10px)";
-                }
-                st["transition"] += ", maxWidth 0.7s";
-            } else {
-                st["maxHeight"] = "calc(" + photoSpaceHeight + "px - 10px)";
-                st["transition"] += ", maxHeight 0.7s";
-            }
-        } else {
+        
+        // Update current photo size for future reference
+        if (w && h) {
+            setCurrentPhotoSize([w, h]);
+        }
+        
+        // Get current container dimensions
+        const photoContainer = document.querySelector('.photo');
+        if (!photoContainer) {
+            // Fallback if container not found
+            st["width"] = "auto";
+            st["height"] = "auto";
             st["maxWidth"] = "100%";
             st["maxHeight"] = "100%";
-            st["transition"] += ", maxWidth 0.7s";
-            st["transition"] += ", maxHeight 0.7s";
+            setImgStyle(st);
+            return;
         }
+        
+        // Account for padding (20px left/right, 20px top, 40px bottom = 40px width, 60px height)
+        const containerWidth = photoContainer.clientWidth - 40;
+        const containerHeight = photoContainer.clientHeight - 60;
+        
+        if (containerWidth <= 0 || containerHeight <= 0) {
+            // Container not ready, use basic responsive styling
+            st["width"] = "auto";
+            st["height"] = "auto";
+            st["maxWidth"] = "calc(100% - 40px)";
+            st["maxHeight"] = "calc(100% - 60px)";
+            setImgStyle(st);
+            return;
+        }
+        
+        if (currentPhotoSize[0] || w) {
+            const imgWidth = currentPhotoSize[0] || w;
+            const imgHeight = currentPhotoSize[1] || h;
+            
+            // Calculate aspect ratios
+            const imgAspectRatio = imgWidth / imgHeight;
+            const containerAspectRatio = containerWidth / containerHeight;
+            
+            if (imgAspectRatio > containerAspectRatio) {
+                // Image is wider - constrain by width
+                st["width"] = containerWidth + "px";
+                st["height"] = "auto";
+                st["maxWidth"] = containerWidth + "px";
+                st["maxHeight"] = containerHeight + "px";
+            } else {
+                // Image is taller - constrain by height
+                st["width"] = "auto";
+                st["height"] = containerHeight + "px";
+                st["maxWidth"] = containerWidth + "px";
+                st["maxHeight"] = containerHeight + "px";
+            }
+        } else {
+            // Fallback when image dimensions aren't available
+            st["width"] = "auto";
+            st["height"] = "auto";
+            st["maxWidth"] = containerWidth + "px";
+            st["maxHeight"] = containerHeight + "px";
+        }
+        
         setImgStyle(st);
     }
 
@@ -401,7 +442,14 @@ function PhotosListMini(props) {
     }
 
     function _nextOrPrevPhoto(index) {
-        SetImgStyle({ opacity: 0 });
+        // Preserve dimensions when hiding current photo
+        const currentW = currentPhotoSize[0];
+        const currentH = currentPhotoSize[1];
+        if (currentW && currentH) {
+            SetImgStyle({ opacity: 0 }, currentW, currentH);
+        } else {
+            SetImgStyle({ opacity: 0 });
+        }
         setPhotoZoom("auto");
         if (photosListMiniAllPhotos[index]) {
             props.setCurrentPhotoPath(photosListMiniAllPhotos[index].file.path);

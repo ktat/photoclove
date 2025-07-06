@@ -147,9 +147,32 @@ function DirectoryMenu(props) {
                     </li>
                     <li>
                         Extensions:
-                        <input type="text" id="extension-filter-input" placeholder="jpg,png,mp4" 
-                            onChange={(e) => { props.setExtensionFilter(e.target.value); }}
-                        />
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '5px' }}>
+                            {['jpg', 'jpeg', 'png', 'gif', 'mp4', 'webm', 'bmp', 'tiff'].map(ext => (
+                                <label key={ext} style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                    <input 
+                                        type="checkbox" 
+                                        value={ext}
+                                        onChange={(e) => {
+                                            const checked = e.target.checked;
+                                            const currentFilters = props.extensionFilter === "all" ? [] : props.extensionFilter.split(',').filter(f => f.trim() !== '');
+                                            
+                                            let newFilters;
+                                            if (checked) {
+                                                newFilters = [...currentFilters, ext];
+                                            } else {
+                                                newFilters = currentFilters.filter(f => f !== ext);
+                                            }
+                                            
+                                            const filterString = newFilters.length === 0 ? "all" : newFilters.join(',');
+                                            props.setExtensionFilter(filterString);
+                                        }}
+                                        checked={props.extensionFilter !== "all" && props.extensionFilter.split(',').includes(ext)}
+                                    />
+                                    <span style={{ fontSize: '12px' }}>{ext}</span>
+                                </label>
+                            ))}
+                        </div>
                     </li>
                 </ul>
             </div>

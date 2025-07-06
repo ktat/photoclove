@@ -559,9 +559,14 @@ button:hover {
 }
 
 .photoDisplay .photo {
-  overflow-x: hidden;
-  overflow-y: hidden;
-  max-height: calc(100vh - 320px);
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 20px 40px 20px;
+  box-sizing: border-box;
 }
 
 .selectedPhotos li {
@@ -836,7 +841,8 @@ div.dateListLoading-crub {
 }
 
 #photo img {
-  opacity: 0;
+  opacity: 0.1;
+  display: block;
 }
 
 img.photo_dragging {
