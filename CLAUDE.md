@@ -6,7 +6,7 @@ Read files under `improvement/*.md` order by file name as int.
 And then do the task in the file.
 Before starting task, create branch from current branch.
 And `*.md` file which you did move the file to `improvement/done` directory.
-At last commit changes to the branch.
+At last commit your changes to the branch.
 
 If `improvement/*.md` are left, repeat this step.
 
