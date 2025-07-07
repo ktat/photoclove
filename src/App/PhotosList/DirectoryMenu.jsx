@@ -147,31 +147,131 @@ function DirectoryMenu(props) {
                     </li>
                     <li>
                         Extensions:
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '5px' }}>
-                            {['jpg', 'jpeg', 'png', 'gif', 'mp4', 'webm', 'bmp', 'tiff'].map(ext => (
-                                <label key={ext} style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <div style={{ marginTop: '5px' }}>
+                            {/* Image Extensions Group */}
+                            <div style={{ marginBottom: '10px' }}>
+                                <div>
                                     <input 
                                         type="checkbox" 
-                                        value={ext}
+                                        id="filter-extension-image-group-check"
                                         onChange={(e) => {
                                             const checked = e.target.checked;
                                             const currentFilters = props.extensionFilter === "all" ? [] : props.extensionFilter.split(',').filter(f => f.trim() !== '');
+                                            const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'];
                                             
                                             let newFilters;
                                             if (checked) {
-                                                newFilters = [...currentFilters, ext];
+                                                // Add all image extensions
+                                                newFilters = [...currentFilters.filter(f => !imageExtensions.includes(f)), ...imageExtensions];
                                             } else {
-                                                newFilters = currentFilters.filter(f => f !== ext);
+                                                // Remove all image extensions
+                                                newFilters = currentFilters.filter(f => !imageExtensions.includes(f));
                                             }
                                             
                                             const filterString = newFilters.length === 0 ? "all" : newFilters.join(',');
                                             props.setExtensionFilter(filterString);
                                         }}
-                                        checked={props.extensionFilter !== "all" && props.extensionFilter.split(',').includes(ext)}
+                                        checked={props.extensionFilter !== "all" && ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'].some(ext => props.extensionFilter.split(',').includes(ext))}
                                     />
-                                    <span style={{ fontSize: '12px' }}>{ext}</span>
-                                </label>
-                            ))}
+                                    <label className="checkbox checkbox-normal" htmlFor="filter-extension-image-group-check"><strong>Image</strong></label>
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '5px', marginLeft: '20px' }}>
+                                    {[
+                                        { value: 'jpeg', label: 'jpeg(jpg)', extensions: ['jpg', 'jpeg'] },
+                                        { value: 'png', label: 'png', extensions: ['png'] },
+                                        { value: 'gif', label: 'gif', extensions: ['gif'] },
+                                        { value: 'bmp', label: 'bmp', extensions: ['bmp'] },
+                                        { value: 'tiff', label: 'tiff', extensions: ['tiff'] }
+                                    ].map(item => (
+                                        <div key={item.value}>
+                                            <input 
+                                                type="checkbox" 
+                                                value={item.value}
+                                                id={`filter-extension-${item.value}-check`}
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    const currentFilters = props.extensionFilter === "all" ? [] : props.extensionFilter.split(',').filter(f => f.trim() !== '');
+                                                    
+                                                    let newFilters;
+                                                    if (checked) {
+                                                        // Add all extensions for this item
+                                                        newFilters = [...currentFilters, ...item.extensions];
+                                                    } else {
+                                                        // Remove all extensions for this item
+                                                        newFilters = currentFilters.filter(f => !item.extensions.includes(f));
+                                                    }
+                                                    
+                                                    const filterString = newFilters.length === 0 ? "all" : newFilters.join(',');
+                                                    props.setExtensionFilter(filterString);
+                                                }}
+                                                checked={props.extensionFilter !== "all" && item.extensions.some(ext => props.extensionFilter.split(',').includes(ext))}
+                                            />
+                                            <label className="checkbox checkbox-normal" htmlFor={`filter-extension-${item.value}-check`}>{item.label}</label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            {/* Movie Extensions Group */}
+                            <div>
+                                <div>
+                                    <input 
+                                        type="checkbox" 
+                                        id="filter-extension-movie-group-check"
+                                        onChange={(e) => {
+                                            const checked = e.target.checked;
+                                            const currentFilters = props.extensionFilter === "all" ? [] : props.extensionFilter.split(',').filter(f => f.trim() !== '');
+                                            const movieExtensions = ['mp4', 'webm'];
+                                            
+                                            let newFilters;
+                                            if (checked) {
+                                                // Add all movie extensions
+                                                newFilters = [...currentFilters.filter(f => !movieExtensions.includes(f)), ...movieExtensions];
+                                            } else {
+                                                // Remove all movie extensions
+                                                newFilters = currentFilters.filter(f => !movieExtensions.includes(f));
+                                            }
+                                            
+                                            const filterString = newFilters.length === 0 ? "all" : newFilters.join(',');
+                                            props.setExtensionFilter(filterString);
+                                        }}
+                                        checked={props.extensionFilter !== "all" && ['mp4', 'webm'].some(ext => props.extensionFilter.split(',').includes(ext))}
+                                    />
+                                    <label className="checkbox checkbox-normal" htmlFor="filter-extension-movie-group-check"><strong>Movie</strong></label>
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '5px', marginLeft: '20px' }}>
+                                    {[
+                                        { value: 'mp4', label: 'mp4', extensions: ['mp4'] },
+                                        { value: 'webm', label: 'webm', extensions: ['webm'] }
+                                    ].map(item => (
+                                        <div key={item.value}>
+                                            <input 
+                                                type="checkbox" 
+                                                value={item.value}
+                                                id={`filter-extension-${item.value}-check`}
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    const currentFilters = props.extensionFilter === "all" ? [] : props.extensionFilter.split(',').filter(f => f.trim() !== '');
+                                                    
+                                                    let newFilters;
+                                                    if (checked) {
+                                                        // Add all extensions for this item
+                                                        newFilters = [...currentFilters, ...item.extensions];
+                                                    } else {
+                                                        // Remove all extensions for this item
+                                                        newFilters = currentFilters.filter(f => !item.extensions.includes(f));
+                                                    }
+                                                    
+                                                    const filterString = newFilters.length === 0 ? "all" : newFilters.join(',');
+                                                    props.setExtensionFilter(filterString);
+                                                }}
+                                                checked={props.extensionFilter !== "all" && item.extensions.some(ext => props.extensionFilter.split(',').includes(ext))}
+                                            />
+                                            <label className="checkbox checkbox-normal" htmlFor={`filter-extension-${item.value}-check`}>{item.label}</label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </li>
                 </ul>

@@ -361,6 +361,16 @@ button:hover {
     max-width: calc(var(--vw) - 200px);
     width: calc(var(--vw) - 200px);
   }
+
+  .photos {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    min-width: calc(var(--vw) - 60px);
+    max-width: calc(var(--vw) - 60px);
+  }
+
+  .importer-photos {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
 }
 
 @media screen and (max-width: 1400px) {
@@ -693,31 +703,37 @@ ul.list-of-selected li {
 
 .importer-photos {
   flex: 1;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
   overflow-y: auto;
   overflow-x: hidden;
-  flex-direction: row;
-  flex-wrap: wrap;
   margin-top: 10px;
   min-width: 100%;
   max-width: 100%;
   max-height: calc(100vh - 300px);
+  padding: 10px;
 }
 
 .photos {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
   overflow-y: scroll;
-  flex-direction: row;
-  flex-wrap: wrap;
   margin-top: 10px;
   min-width: calc(var(--vw) - 662px);
   max-width: calc(var(--vw) - 662px);
   max-height: calc(100vh - 150px);
+  padding: 10px;
 }
 
 .photos .row,
 .importer-photos .row {
-  margin: 10px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .photos .navigation {

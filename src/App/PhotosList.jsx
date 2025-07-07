@@ -380,6 +380,11 @@ function PhotosList(props) {
                             : <>No Photo Found!</>
                         }
                         <Scrollable f={photosScroll} className="photos" hasNext={photos.has_next} hasPrev={photos.has_prev} >
+                            {photos.has_prev && props.datePage[props.currentDate] > 1 && 
+                                <div className={"row pict-" + iconSize} style={{ flex: "0 0 " + (iconSize / 1 + 41) + "px", maxWidth: iconSize + 'px', minHeight: "80px", textAlign: "center", verticalAlign: "middle" }}>
+                                    <img style={{ width: iconSize + 'px' }} src="/scroll-to-load-more.png" />
+                                </div>
+                            }
                             {photos.photos.map((l, i) => {
                                 const image_for_not_found = "/img_error.png";
                                 let thumbnailSrc = "";

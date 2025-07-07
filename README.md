@@ -65,6 +65,13 @@ env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
 
 ## Recent Updates
 
+### UI Layout Improvements (v2.2)
+- **Grid layout**: Replaced flex layout with CSS Grid for photo list display, providing better responsive design
+- **Auto-responsive columns**: Grid automatically adjusts column count based on available space (200px minimum width, 150px on mobile)
+- **Improved spacing**: Consistent 10px gap between photo items with better padding
+- **Previous page indicator**: Added scroll-to-load-more indicator at the beginning of photo lists when previous pages exist
+- **Enhanced navigation**: Visual feedback for both next and previous page availability
+
 ### Photo Display Improvements (v2.1)
 - **Responsive photo sizing**: Fixed photo display sizing issues for resizable app windows
 - **Dynamic expansion**: Images now properly expand when app window is resized larger
