@@ -236,9 +236,11 @@ function Importer(props) {
                     <div id="importer-files-list">
                         {(importer.dirs_files.files.files.length || (importerFilter !== undefined && importerFilter !== "")) > 0 && (
                             <>
-                                <div className="row1">page. {pathPage[currentImportPath]}</div>
-                                <div className="row1-right">
-                                    Created Date: after <input id="filterDate" name="date" type="date" value={importerFilter} onChange={(e) => filterImporter(e.target.value)} />
+                                <div className="row1-container">
+                                    <div className="row1">page. {pathPage[currentImportPath]}</div>
+                                    <div className="row1-right">
+                                        Created Date: after <input id="filterDate" name="date" type="date" value={importerFilter} onChange={(e) => filterImporter(e.target.value)} />
+                                    </div>
                                 </div>
                                 {
                                     importer.dirs_files.files.files.length > 0 && <div className="row0-center">

@@ -65,12 +65,19 @@ env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
 
 ## Recent Updates
 
+### Import Page & Photo Date Improvements (v2.3)
+- **Import page layout**: Reduced excessive spacing between selection buttons and photo grid for better visual flow
+- **Smart photo dating**: When EXIF data is missing or cannot be parsed, the application now uses file creation/modification datetime instead of fallback default dates
+- **Better date accuracy**: Photos without EXIF data now display meaningful dates based on file system timestamps rather than placeholder values like "0000/00/00" or "1970/01/01"
+
 ### UI Layout Improvements (v2.2)
 - **Grid layout**: Replaced flex layout with CSS Grid for photo list display, providing better responsive design
 - **Auto-responsive columns**: Grid automatically adjusts column count based on available space (200px minimum width, 150px on mobile)
 - **Improved spacing**: Consistent 10px gap between photo items with better padding
-- **Previous page indicator**: Added scroll-to-load-more indicator at the beginning of photo lists when previous pages exist
-- **Enhanced navigation**: Visual feedback for both next and previous page availability
+- **Animated scroll indicators**: Replaced image-based scroll indicators with animated text ("⬆ scroll to load more ⬆" / "⬇ scroll to load more ⬇")
+- **Enhanced scroll behavior**: Fixed scroll limits to prevent scrolling beyond load indicators, ensuring proper scroll-to-load functionality
+- **Dynamic dummy items**: Smart grid filler items that adjust based on photo count to maintain consistent scroll experience
+- **Visual feedback**: Bounce animations provide clear indication of scroll-to-load areas
 
 ### Photo Display Improvements (v2.1)
 - **Responsive photo sizing**: Fixed photo display sizing issues for resizable app windows

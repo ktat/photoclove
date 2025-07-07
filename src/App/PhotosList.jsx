@@ -41,6 +41,11 @@ function PhotosList(props) {
         });
     }, [])
 
+    useEffect(() => {
+        // Set CSS custom property for grid column sizing based on icon size
+        document.documentElement.style.setProperty('--photo-grid-size', `${iconSize + 41}px`);
+    }, [iconSize])
+
     useEffect((e) => {
         setShowSideMenu(false);
         if (props.currentDate != "" && !props.showPhotoDisplay) {
@@ -277,7 +282,7 @@ function PhotosList(props) {
         if ((isForward && photos.has_next) || (!isForward && photos.has_prev)) {
             beforeScrollTop = list.scrollTop;
             if (
-                list.offsetHeight === list.scrollHeight
+                (list.offsetHeight === list.scrollHeight && list.scrollTop === 0)
                 || (!isForward && list.scrollTop === 0)
                 || (isForward && isScrollBottom > 5)
             ) {
@@ -381,8 +386,8 @@ function PhotosList(props) {
                         }
                         <Scrollable f={photosScroll} className="photos" hasNext={photos.has_next} hasPrev={photos.has_prev} >
                             {photos.has_prev && props.datePage[props.currentDate] > 1 && 
-                                <div className={"row pict-" + iconSize} style={{ flex: "0 0 " + (iconSize / 1 + 41) + "px", maxWidth: iconSize + 'px', minHeight: "80px", textAlign: "center", verticalAlign: "middle" }}>
-                                    <img style={{ width: iconSize + 'px' }} src="/scroll-to-load-more.png" />
+                                <div className="scroll-indicator" style={{ textAlign: "center", minHeight: "80px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <div className="scroll-indicator-text up">⬆ scroll to load more ⬆</div>
                                 </div>
                             }
                             {photos.photos.map((l, i) => {
@@ -401,15 +406,16 @@ function PhotosList(props) {
                                 return (
                                     <>
                                         <div key={i} className={"row pict-" + iconSize} style={{ flex: "0 0 " + ((iconSize / 1) + 41) + "px", textAlign: "center", verticalAlign: "middle" }} >
-                                            <a href="#" onClick={() => {
-                                                setShowSideMenu(false);
-                                                displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto)
-                                            }}>
-                                                {!l.has_thumbnail && l.file.path.match(/\.(mp4|webm)$/i)
-                                                    ? <div className="photo-list-movie" style={{ minWidth: (iconSize - 20) + 'px', marginTop: (iconSize / 7) + "px" }}>
-                                                        <span style={{ fontSize: (iconSize / 3) + 'px' }}>&#127909;</span>
-                                                    </div>
-                                                    : <div style={{ width: iconSize + 'px', height: iconSize + 'px', float: "left" }} >
+                                            <div style={{ flexShrink: 0 }}>
+                                                <a href="#" onClick={() => {
+                                                    setShowSideMenu(false);
+                                                    displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto)
+                                                }}>
+                                                    {!l.has_thumbnail && l.file.path.match(/\.(mp4|webm)$/i)
+                                                        ? <div className="photo-list-movie" style={{ minWidth: (iconSize - 20) + 'px', marginTop: (iconSize / 7) + "px" }}>
+                                                            <span style={{ fontSize: (iconSize / 3) + 'px' }}>&#127909;</span>
+                                                        </div>
+                                                        : <div style={{ width: iconSize + 'px', height: iconSize + 'px', flexShrink: 0 }} >
                                                         <img loading="eager"
                                                             alt={l.file.path}
                                                             style={{ width: "97%" }}
@@ -443,29 +449,37 @@ function PhotosList(props) {
                                                                 }
                                                             }}
                                                         />
-                                                        {l.file.path.match(/\.(mp4|webm)$/i) && <div style={{ color: "white", position: "relative", top: iconSize / -3, fontSize: (iconSize / 6) + 'px' }}>&#x25b6;</div>}
-                                                    </div>
-                                                }
-                                            </a>
+                                                            {l.file.path.match(/\.(mp4|webm)$/i) && <div style={{ color: "white", position: "relative", top: iconSize / -3, fontSize: (iconSize / 6) + 'px' }}>&#x25b6;</div>}
+                                                        </div>
+                                                    }
+                                                </a>
+                                            </div>
                                             <div className="photo-list-menu">
                                                 <input type="checkbox"
                                                     id={"photo-checkbox-" + i}
                                                     checked={photoSelectionDict[l.file.path] ? "checked" : ""}
                                                     onChange={(e) => addSelection(e.target.checked, l.file.path)}
                                                 />
-                                                <label className={"cneckbox-photo checkbox hover"} htmlFor={"photo-checkbox-" + i}></label><br />
+                                                <label className={"cneckbox-photo checkbox hover"} htmlFor={"photo-checkbox-" + i}></label>
                                                 <a href="#" onClick={() => {
                                                     displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto)
                                                     setShowSideMenu(true);
                                                 }
-                                                } >(&#8505;)</a><br />
+                                                } >(&#8505;)</a>
                                                 <a href="#" className="run-app" onClick={(e) => openUrl(fileUrl(l.file.path))}>&#128640;</a>
                                             </div>
                                         </div>
-                                        {photos.has_next && (photos.photos.length - 1) == i && <div className={"row pict-" + iconSize} style={{ flex: "0 0 " + (iconSize / 1 + 41) + "px", maxWidth: iconSize + 'px', minHeight: "80px", textAlign: "center", verticalAlign: "middle" }} ><img style={{ width: iconSize + 'px' }} src="/scroll-to-load-more.png" /></div >}
+                                        {photos.has_next && (photos.photos.length - 1) == i && <div className="scroll-indicator" style={{ textAlign: "center", minHeight: "80px", display: "flex", alignItems: "center", justifyContent: "center" }}><div className="scroll-indicator-text down">⬇ scroll to load more ⬇</div></div>}
                                     </>
                                 )
                             })}
+                            {/* Add dummy grid items to ensure scroll effect */}
+                            {photos.has_next && Array.from({ length: Math.max(0, 25 - photos.photos.length) }, (_, index) => (
+                                <div key={`dummy-${index}`} className="dummy-grid-item" style={{ height: iconSize + 'px' }}></div>
+                            ))}
+                            {!photos.has_next && Array.from({ length: Math.max(0, 10 - photos.photos.length) }, (_, index) => (
+                                <div key={`dummy-${index}`} className="dummy-grid-item" style={{ height: iconSize + 'px' }}></div>
+                            ))}
                         </Scrollable>
                     </div>
                     <div className="debug" style={{ display: (debugMessage == "" ? "none" : "block"), backgroundColor: "white", color: "black", position: "absolute", zIndex: "100", bottom: "0px", left: "0px", width: "400px", height: "200px" }}>

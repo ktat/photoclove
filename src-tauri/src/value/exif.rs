@@ -58,7 +58,9 @@ impl ExifData {
         let exif_data = rexif::parse_file(file.path.to_string());
         let mut data = ExifData::empty();
         if !exif_data.is_ok() {
-            data.date_time = "1970/01/01 00:00:00".to_string();
+            let file_created_time = file.created_datetime();
+            let re = regex::Regex::new(r"^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})").unwrap();
+            data.date_time = re.replace(&file_created_time, "$1/$2/$3").to_string();
         } else {
             for e in exif_data.unwrap().entries {
                 match e.tag {
@@ -213,7 +215,9 @@ impl ExifData {
                 let re = regex::Regex::new(r"^([0-9]{4}):([0-9]{1,2}):([0-9]{1,2})").unwrap();
                 data.date_time = re.replace(&t, "$1/$2/$3").to_string();
             } else {
-                data.date_time = "0000/00/00 00:00:00".to_string();
+                let file_created_time = file.created_datetime();
+                let re = regex::Regex::new(r"^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})").unwrap();
+                data.date_time = re.replace(&file_created_time, "$1/$2/$3").to_string();
             }
         }
         data
