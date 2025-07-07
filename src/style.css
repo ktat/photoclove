@@ -361,6 +361,11 @@ button:hover {
     max-width: calc(var(--vw) - 200px);
     width: calc(var(--vw) - 200px);
   }
+
+  .photos {
+    min-width: calc(var(--vw) - 60px);
+    max-width: calc(var(--vw) - 60px);
+  }
 }
 
 @media screen and (max-width: 1400px) {
@@ -507,7 +512,7 @@ button:hover {
 }
 
 .importDisplay {
-  overflow-y: scroll;
+  overflow-y: hidden;
 }
 
 .photo-list-header {
@@ -618,19 +623,18 @@ ul.list-of-selected li {
   display: flex;
   flex-direction: row;
   max-width: calc(var(--vw) - 662px);
+  height: calc(100vh - 80px);
 }
 
 #importPhotosDisplay {
-  overflow-y: auto;
   overflow-x: hidden;
 }
 
 #importer-directories-list {
   min-width: 200px;
   max-width: 200px;
-  flex: 1;
-  min-height: calc(100vh - 115px);
-  max-height: calc(100vh - 115px);
+  flex: 0 0 200px;
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
   text-align: left;
@@ -652,22 +656,31 @@ ul.list-of-selected li {
   max-width: calc(var(--vw) - 800px);
   flex: 1;
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 }
 
 #importer-files-list .row0,
 #importer-files-list .row0-center {
-  flex: 1;
+  flex: 0 0 auto;
   margin: 0px;
-  min-width: calc(var(--vw) - 800px);
-  max-width: calc(var(--vw) - 800px);
+  width: 100%;
+}
+
+#importer-files-list .row1-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 0 0 auto;
+  margin: 0px 10px 5px 10px;
+  width: calc(100% - 20px);
 }
 
 #importer-files-list .row1,
 #importer-files-list .row1-right {
-  flex: 1;
-  margin: 0px 10px 0px 10px;
+  flex: 0 0 auto;
+  margin: 0px;
   white-space: nowrap;
 }
 
@@ -683,41 +696,108 @@ ul.list-of-selected li {
 
 #importer-files-list .row0-center {
   text-align: center;
-  min-width: 650px;
+  margin-bottom: 10px;
+  flex: 0 0 auto;
 }
 
 #importer-files-list .navigation {
   width: 100%;
   text-align: center;
+  flex: 0 0 auto;
+  margin-bottom: 10px;
 }
 
 .importer-photos {
   flex: 1;
-  display: flex;
-  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, max-content));
+  gap: 10px;
+  overflow-y: hidden;
   overflow-x: hidden;
-  flex-direction: row;
-  flex-wrap: wrap;
-  margin-top: 10px;
+  margin-top: 0px;
   min-width: 100%;
   max-width: 100%;
-  max-height: calc(100vh - 300px);
+  min-height: 0;
+  padding: 5px 10px 10px 10px;
+  justify-content: start;
+  align-content: start;
 }
 
 .photos {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--photo-grid-size, 141px), max-content));
+  gap: 10px;
   overflow-y: scroll;
-  flex-direction: row;
-  flex-wrap: wrap;
   margin-top: 10px;
   min-width: calc(var(--vw) - 662px);
   max-width: calc(var(--vw) - 662px);
   max-height: calc(100vh - 150px);
+  padding: 10px;
+  justify-content: start;
+  align-content: start;
 }
 
 .photos .row,
 .importer-photos .row {
-  margin: 10px;
+  margin: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: flex-start;
+  height: auto;
+}
+
+.photos .scroll-indicator {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.scroll-indicator-text {
+  font-size: 16px;
+  font-weight: bold;
+  color: #666;
+  animation: scrollPulse 2s ease-in-out infinite;
+}
+
+.scroll-indicator-text.up {
+  animation: scrollBounceUp 2s ease-in-out infinite;
+}
+
+.scroll-indicator-text.down {
+  animation: scrollBounceDown 2s ease-in-out infinite;
+}
+
+@keyframes scrollPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes scrollBounceUp {
+  0%, 100% { 
+    transform: translateY(0); 
+    opacity: 0.7; 
+  }
+  50% { 
+    transform: translateY(-5px); 
+    opacity: 1; 
+  }
+}
+
+@keyframes scrollBounceDown {
+  0%, 100% { 
+    transform: translateY(0); 
+    opacity: 0.7; 
+  }
+  50% { 
+    transform: translateY(5px); 
+    opacity: 1; 
+  }
+}
+
+.photos .dummy-grid-item {
+  width: var(--photo-grid-size, 141px);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .photos .navigation {
@@ -732,11 +812,44 @@ ul.list-of-selected li {
 }
 
 .photo-list-menu {
-  float: right;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  margin-left: 8px;
+  margin-top: 5px;
+  gap: 8px;
+  min-width: 25px;
 }
 
 .photo-list-menu input {
   background-color: white;
+  margin: 0;
+}
+
+.photo-list-menu a {
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 1;
+  margin: 0;
+  padding: 2px;
+  display: block;
+  text-align: center;
+}
+
+.photo-list-menu label.checkbox {
+  margin-left: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 16px;
+  height: 16px;
+}
+
+.photo-list-menu label.checkbox:after {
+  left: 2px;
+  position: static;
+  margin: 0;
 }
 
 .imageInSelectedPhotos {
