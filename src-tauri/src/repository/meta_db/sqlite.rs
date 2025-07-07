@@ -30,6 +30,11 @@ impl SQLite {
                     )",
                     [],
                 );
+                // Also create the index
+                let _ = conn.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_photo_date ON photo_metadata(photo_date)",
+                    [],
+                );
             }
         }
         sqlite
@@ -38,9 +43,15 @@ impl SQLite {
     fn init_db(&self) -> Result<()> {
         let conn = Connection::open(&self.db_path)?;
         
-        // Check if table exists and what columns it has
-        let table_info = conn.prepare("PRAGMA table_info(photo_metadata)");
-        let table_exists = table_info.is_ok();
+        // Check if table exists by trying to query it
+        let table_exists = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='photo_metadata'")
+            .and_then(|mut stmt| {
+                stmt.query_row([], |row| {
+                    let _name: String = row.get(0)?;
+                    Ok(true)
+                })
+            })
+            .unwrap_or(false);
         
         if table_exists {
             // Check if old 'date' column exists
@@ -120,6 +131,17 @@ impl SQLite {
     }
 
     fn get_connection(&self) -> Result<Connection> {
+        // Ensure parent directory exists
+        if let Some(parent) = std::path::Path::new(&self.db_path).parent() {
+            if !parent.exists() {
+                std::fs::create_dir_all(parent).map_err(|e| {
+                    rusqlite::Error::SqliteFailure(
+                        rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_CANTOPEN),
+                        Some(format!("Failed to create directory: {}", e))
+                    )
+                })?;
+            }
+        }
         Connection::open(&self.db_path)
     }
 

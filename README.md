@@ -65,6 +65,13 @@ env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
 
 ## Recent Updates
 
+### SQLite Database Improvements (v2.4)
+- **Enhanced initialization**: Fixed SQLite database initialization for edge cases where database files exist without schemas
+- **Robust table detection**: Improved table existence checking using `sqlite_master` query instead of `PRAGMA table_info`
+- **Directory handling**: Automatic creation of parent directories for database files to prevent path errors
+- **Fallback improvements**: Complete index creation in fallback initialization paths for better reliability
+- **Edge case handling**: Better support for corrupted or incomplete database files
+
 ### Import Page & Photo Date Improvements (v2.3)
 - **Import page layout**: Reduced excessive spacing between selection buttons and photo grid for better visual flow
 - **Smart photo dating**: When EXIF data is missing or cannot be parsed, the application now uses file creation/modification datetime instead of fallback default dates
@@ -92,12 +99,14 @@ env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
 - **Better UI**: Improved checkbox layout with proper labeling and hierarchical structure
 - **Combined extensions**: JPEG files now handled as single filter for both .jpg and .jpeg extensions
 
-### SQLite Database Migration (v2.0)
+### SQLite Database Migration (v2.0+)
 - **Performance improvements**: Migrated from TSV files to SQLite database for better performance
 - **Automatic migration**: Seamless upgrade from old TSV format to new SQLite schema
 - **Optimized queries**: GROUP BY aggregation for efficient photo counting
 - **Better date handling**: Proper SQLite date functions for reliable comparisons
 - **Access via File menu**: TSV to SQLite migration available in File → "Migrate TSV to SQLite"
+- **Enhanced initialization**: Fixed database initialization for edge cases with schema-less databases
+- **Robust error handling**: Better support for corrupted or incomplete database files
 
 ### Photo Navigation Fixes
 - **Timing improvements**: Fixed photo navigation timing issues for better user experience

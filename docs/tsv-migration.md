@@ -135,10 +135,14 @@ sqlite3 /path/to/photoclove.db "SELECT date(photo_date), COUNT(*) FROM photo_met
 - **Single query execution**: All date counts retrieved in one database operation
 - **Reduced overhead**: Eliminates N+1 query performance issues
 
-### Error Handling
+### Error Handling & Initialization Improvements
 - **Graceful degradation**: Fallback to basic table creation if migration fails
 - **Comprehensive logging**: Detailed debug output for troubleshooting
 - **Non-blocking errors**: Application continues even if database initialization has issues
+- **Enhanced table detection**: Improved table existence checking using `sqlite_master` query instead of `PRAGMA table_info`
+- **Directory creation**: Automatic creation of parent directories for database files
+- **Schema-less database support**: Fixed initialization failures when SQLite files exist without schemas
+- **Robust fallback**: Complete index creation in fallback initialization paths
 
 ## Technical Implementation
 
