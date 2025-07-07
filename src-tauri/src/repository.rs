@@ -103,5 +103,6 @@ pub(crate) trait MetaInfoDB {
     fn get_photo_meta(&self, photo: photo::Photo) -> photo_meta::PhotoMeta;
     fn save_star(&self, photo: &photo::Photo, star: star::Star);
     fn save_comment(&self, photo: &photo::Photo, comment: comment::Comment);
+    fn delete_photo(&self, photo: &photo::Photo);
     fn get_photo_count_per_dates(&self, dates: date::Dates) -> DatesNum;
 }

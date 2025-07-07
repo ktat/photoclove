@@ -654,6 +654,10 @@ async fn move_to_trash(
     let trash = trash::Trash::new(state.config.trash_path.to_string());
     let file = file::File::new(path_str.to_string());
     file_service::move_to_trash(file, trash);
+    
+    // Delete from database
+    meta_db.delete_photo(&photo);
+    
     return Ok(date.to_string());
 }
 

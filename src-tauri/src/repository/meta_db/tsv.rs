@@ -177,6 +177,27 @@ impl MetaInfoDB for Tsv {
             let files = dir_service::find_files(&date_dir);
             let photos = domain_service::photo_service::photos_from_dir(files);
             date_num.insert(date.to_string(), photos.photos.len());
+            
+            // Get existing photo paths from metadata for this date
+            let existing_photos = match self.get_photo_meta_data_in_date(date.clone()) {
+                Ok(photo_metas) => photo_metas.photo_metas,
+                Err(_) => Vec::new(),
+            };
+
+            // Create a set of current file paths from filesystem
+            let current_paths: std::collections::HashSet<String> = photos.photos
+                .iter()
+                .map(|p| p.file.path.clone())
+                .collect();
+
+            // Delete photos from metadata that are no longer in filesystem
+            for existing_photo in existing_photos {
+                if !current_paths.contains(&existing_photo.photo.file.path) {
+                    eprintln!("Deleting orphaned photo from TSV: {}", existing_photo.photo.file.path);
+                    self.delete_photo(&existing_photo.photo);
+                }
+            }
+            
             let result = self.record_photos_meta_data(photos.photos);
             if result.is_err() {
                 eprintln!("{:?}", result.err());
@@ -302,6 +323,18 @@ impl MetaInfoDB for Tsv {
                 photo_metas.insert(&file_path, data);
             }
         }
+        let info_path = self.meta_file_path_from_photo(photo);
+        self.record_photo_metas(info_path, photo_metas);
+    }
+
+    fn delete_photo(&self, photo: &photo::Photo) {
+        let mut dir = photo.dir.clone();
+        let mut photo_metas = match self.get_photo_meta_data_in_date(dir.to_date().unwrap()) {
+            Ok(data) => data,
+            Err(_e) => return, // No metadata file exists, nothing to delete
+        };
+        let file_path = photo.file.path.clone();
+        photo_metas.remove(&file_path);
         let info_path = self.meta_file_path_from_photo(photo);
         self.record_photo_metas(info_path, photo_metas);
     }

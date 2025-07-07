@@ -551,6 +551,26 @@ impl MetaInfoDB for SQLite {
 
             date_num.insert(date.to_string(), photos.photos.len());
 
+            // Get existing photo paths from database for this date
+            let existing_photos = match self.get_photo_meta_data_in_date(date.clone()) {
+                Ok(photo_metas) => photo_metas.photo_metas,
+                Err(_) => Vec::new(),
+            };
+
+            // Create a set of current file paths from filesystem
+            let current_paths: std::collections::HashSet<String> = photos.photos
+                .iter()
+                .map(|p| p.file.path.clone())
+                .collect();
+
+            // Delete photos from database that are no longer in filesystem
+            for existing_photo in existing_photos {
+                if !current_paths.contains(&existing_photo.photo.file.path) {
+                    eprintln!("Deleting orphaned photo from DB: {}", existing_photo.photo.file.path);
+                    self.delete_photo(&existing_photo.photo);
+                }
+            }
+
             let result = self.record_photos_meta_data(photos.photos);
             if result.is_err() {
                 eprintln!(
@@ -666,6 +686,18 @@ impl MetaInfoDB for SQLite {
                 existing_meta.star.star(),
                 comment.comment()
             ],
+        );
+    }
+
+    fn delete_photo(&self, photo: &photo::Photo) {
+        let conn = match self.get_connection() {
+            Ok(conn) => conn,
+            Err(_) => return,
+        };
+
+        let _ = conn.execute(
+            "DELETE FROM photo_metadata WHERE path = ?1",
+            params![photo.file.path],
         );
     }
 
