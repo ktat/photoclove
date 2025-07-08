@@ -1,0 +1,16 @@
+{
+  "github.copilot.enable": {
+    "plaintext": false,
+    "markdown": true,
+    "scminput": false,
+    "*": true
+  },
+  "emmet.includeLanguages": {
+    "rust": "html"
+  },
+  "rust-analyzer.linkedProjects": [
+    "./src-tauri/Cargo.toml",
+    "./src-tauri/Cargo.toml"
+  ],
+  "git.ignoreLimitWarning": true
+}

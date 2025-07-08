@@ -553,8 +553,8 @@ impl MetaInfoDB for SQLite {
 
             // Get existing photo paths from database for this date
             let existing_photos = match self.get_photo_meta_data_in_date(date.clone()) {
-                Ok(photo_metas) => photo_metas.photo_metas,
-                Err(_) => Vec::new(),
+                Ok(photo_metas) => photo_metas,
+                Err(_) => photo_meta::PhotoMetas::new(),
             };
 
             // Create a set of current file paths from filesystem
@@ -564,9 +564,9 @@ impl MetaInfoDB for SQLite {
                 .collect();
 
             // Delete photos from database that are no longer in filesystem
-            for existing_photo in existing_photos {
-                if !current_paths.contains(&existing_photo.photo.file.path) {
-                    eprintln!("Deleting orphaned photo from DB: {}", existing_photo.photo.file.path);
+            for (path, existing_photo) in existing_photos.iter() {
+                if !current_paths.contains(path) {
+                    eprintln!("Deleting orphaned photo from DB: {}", path);
                     self.delete_photo(&existing_photo.photo);
                 }
             }

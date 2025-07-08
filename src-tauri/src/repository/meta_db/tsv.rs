@@ -180,8 +180,8 @@ impl MetaInfoDB for Tsv {
             
             // Get existing photo paths from metadata for this date
             let existing_photos = match self.get_photo_meta_data_in_date(date.clone()) {
-                Ok(photo_metas) => photo_metas.photo_metas,
-                Err(_) => Vec::new(),
+                Ok(photo_metas) => photo_metas,
+                Err(_) => photo_meta::PhotoMetas::new(),
             };
 
             // Create a set of current file paths from filesystem
@@ -191,9 +191,9 @@ impl MetaInfoDB for Tsv {
                 .collect();
 
             // Delete photos from metadata that are no longer in filesystem
-            for existing_photo in existing_photos {
-                if !current_paths.contains(&existing_photo.photo.file.path) {
-                    eprintln!("Deleting orphaned photo from TSV: {}", existing_photo.photo.file.path);
+            for (path, existing_photo) in existing_photos.iter() {
+                if !current_paths.contains(path) {
+                    eprintln!("Deleting orphaned photo from TSV: {}", path);
                     self.delete_photo(&existing_photo.photo);
                 }
             }

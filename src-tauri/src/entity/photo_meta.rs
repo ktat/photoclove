@@ -75,6 +75,10 @@ impl PhotoMetas {
         self.data.insert(key.to_owned(), value);
     }
 
+    pub fn remove(&mut self, key: &str) -> Option<PhotoMeta> {
+        self.data.remove(key)
+    }
+
     pub fn get_with_photo(&self, photo: photo::Photo) -> Option<&PhotoMeta> {
         return self.get(&photo.file.path);
     }
