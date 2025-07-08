@@ -65,6 +65,20 @@ env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
 
 ## Recent Updates
 
+### UUID-Based Import Directory Structure (v2.5)
+- **Conflict Prevention**: Implemented UUID-based subdirectory structure to prevent filename conflicts when importing from different SD cards
+- **Automatic UUID Management**: Creates `.photoclove-uuid` files in source directories to track unique source identifiers
+- **Hierarchical Storage**: Photos are now imported to `YYYY-MM-DD/UUID/` directory structure (e.g., `2025-01-15/abc123-def456-789/photo.jpg`)
+- **Flat Display**: Photos from both date directories and UUID subdirectories are displayed together in a unified view
+- **Recursive Photo Discovery**: Updated photo scanning to recursively find files in UUID subdirectories
+- **Backward Compatibility**: Existing photos in date directories continue to work alongside new UUID-based imports
+- **Enhanced Import Logic**: Improved directory creation and file organization during import process
+
+### Database Deletion on Trash (v2.4)
+- **Automatic Cleanup**: Photos moved to trash are now automatically removed from the database
+- **Data Integrity**: Prevents orphaned database entries when photos are deleted from the filesystem
+- **Metadata Synchronization**: Ensures metadata consistency between filesystem and database state
+
 ### SQLite Database Improvements (v2.4)
 - **Enhanced initialization**: Fixed SQLite database initialization for edge cases where database files exist without schemas
 - **Robust table detection**: Improved table existence checking using `sqlite_master` query instead of `PRAGMA table_info`
@@ -123,7 +137,7 @@ Just a plan, currentrly a few features are only implemented.
 - [x] Fast importer
   - [ ] only check duplication for the files which has same name prefix and different size.
   - [ ] import files created after last import file timestamp in directories.
-  - [ ] different SD card and same file name
+  - [x] different SD card and same file name (UUID-based directory structure)
   - [x] filter import targets by date
   - [x] importing in background
   - [x] Thumbnail creation
