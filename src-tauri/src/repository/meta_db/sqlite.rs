@@ -516,7 +516,10 @@ impl MetaInfoDB for SQLite {
                         format!("{} 00:00:00", date_str)  // Add default time
                     }
                 },
-                None => continue,
+                None => {
+                    eprintln!("WARNING: Skipping photo due to missing date: {} (dir: {})", photo.file.path, photo.dir.path);
+                    continue;
+                },
             };
 
             // Check if photo already exists
@@ -528,7 +531,12 @@ impl MetaInfoDB for SQLite {
                 existing_meta.star.star(),
                 existing_meta.comment.comment()
             ])
-            .map_err(|_| "Failed to execute statement")?;
+            .map_err(|e| {
+                eprintln!("Failed to execute database statement for {}: {}", photo.file.path, e);
+                "Failed to execute statement"
+            })?;
+            
+            eprintln!("Successfully inserted metadata for: {} (date: {})", photo.file.path, date);
         }
 
         Ok(true)

@@ -90,21 +90,35 @@ impl Dir {
     }
 
     pub fn to_date(&mut self) -> Option<date::Date> {
-        let re = Regex::new(r"([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)/?$").unwrap();
-        let cap_result = re.captures(self.path.as_str());
-        if cap_result.is_none() {
-            print!("capture error: {}", self.path);
-            return Option::None;
+        // First try the original pattern for backward compatibility (date at end)
+        let re_end = Regex::new(r"([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)/?$").unwrap();
+        if let Some(cap) = re_end.captures(self.path.as_str()) {
+            return Option::Some(
+                date::Date::new(
+                    cap[1].parse::<i32>().unwrap(),
+                    cap[2].parse::<u32>().unwrap(),
+                    cap[3].parse::<u32>().unwrap(),
+                )
+                .unwrap(),
+            );
         }
-        let cap = cap_result.unwrap();
-        return Option::Some(
-            date::Date::new(
-                cap[1].parse::<i32>().unwrap(),
-                cap[2].parse::<u32>().unwrap(),
-                cap[3].parse::<u32>().unwrap(),
-            )
-            .unwrap(),
-        );
+        
+        // If not found at end, search for date pattern anywhere in the path (for UUID subdirectories)
+        // This handles paths like /path/to/2025-01-15/abc123-def456-789
+        let re_anywhere = Regex::new(r"/([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)(/|$)").unwrap();
+        if let Some(cap) = re_anywhere.captures(self.path.as_str()) {
+            return Option::Some(
+                date::Date::new(
+                    cap[1].parse::<i32>().unwrap(),
+                    cap[2].parse::<u32>().unwrap(),
+                    cap[3].parse::<u32>().unwrap(),
+                )
+                .unwrap(),
+            );
+        }
+        
+        print!("capture error: {}", self.path);
+        return Option::None;
     }
     pub fn child(&self, path: String) -> Dir {
         Dir::new(
