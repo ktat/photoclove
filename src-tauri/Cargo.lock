@@ -3556,6 +3556,7 @@ dependencies = [
  "tauri-plugin-shell",
  "tempfile",
  "url",
+ "uuid",
 ]
 
 [[package]]

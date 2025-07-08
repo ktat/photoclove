@@ -1,6 +1,7 @@
 use crate::value::{date, file};
 use regex::Regex;
 use std::fs;
+use uuid::Uuid;
 
 pub fn find_files(dir: &file::Dir) -> file::Files {
     let mut f = file::Files { files: Vec::new() };
@@ -14,9 +15,19 @@ pub fn find_files(dir: &file::Dir) -> file::Files {
             if file_name.to_string_lossy().chars().next().unwrap() == '.' {
                 continue;
             }
+            
             if entry_path.display().to_string() != ".".to_string() && entry_path.is_file() {
                 f.files
                     .push(file::File::new(entry_path.display().to_string()));
+            } else if entry_path.is_dir() {
+                // Check if this is a UUID directory (UUID-like format)
+                let dir_name = file_name.to_string_lossy();
+                if Uuid::parse_str(&dir_name).is_ok() {
+                    // Recursively scan UUID subdirectory
+                    let uuid_dir = file::Dir::new(entry_path.display().to_string());
+                    let uuid_files = find_files(&uuid_dir);
+                    f.files.extend(uuid_files.files);
+                }
             }
         }
         return f;

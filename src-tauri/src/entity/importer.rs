@@ -9,12 +9,13 @@ use std::fmt::Debug;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{
     fs,
-    io::{self},
+    io::{self, Read, Write},
     path,
     sync::{Arc, Mutex, RwLock},
     thread, time,
 };
 use tauri::Emitter;
+use uuid::Uuid;
 
 static IN_PROGRESS_NUM: AtomicUsize = AtomicUsize::new(1);
 
@@ -81,6 +82,36 @@ impl ImportProgress {
     }
 }
 
+fn get_or_create_source_uuid(source_path: &str) -> Result<String, Box<dyn std::error::Error>> {
+    // Get the parent directory of the source path
+    let source_parent = path::Path::new(source_path)
+        .parent()
+        .ok_or("Cannot get parent directory of source path")?;
+    
+    let uuid_file_path = source_parent.join(".photoclove-uuid");
+    
+    // Check if .photoclove-uuid file exists
+    if uuid_file_path.exists() {
+        // Read the UUID from the file
+        let mut file = fs::File::open(&uuid_file_path)?;
+        let mut uuid_string = String::new();
+        file.read_to_string(&mut uuid_string)?;
+        let uuid_string = uuid_string.trim();
+        
+        // Validate that it's a valid UUID
+        if Uuid::parse_str(uuid_string).is_ok() {
+            return Ok(uuid_string.to_string());
+        }
+    }
+    
+    // Generate a new UUID and write to file
+    let new_uuid = Uuid::new_v4().to_string();
+    let mut file = fs::File::create(&uuid_file_path)?;
+    file.write_all(new_uuid.as_bytes())?;
+    
+    Ok(new_uuid)
+}
+
 fn copy_file(from: &str, to: &str) -> io::Result<u64> {
     let result = fs::copy(from.clone(), to.clone());
 
@@ -111,6 +142,20 @@ impl ImporterSelectedFiles {
         progress.lock().unwrap().start_time = time::SystemTime::now();
         progress.lock().unwrap().now_importing = true;
         progress.lock().unwrap().num = self.selected_photo_files.len();
+        
+        // Determine the source UUID for the import session
+        let source_uuid = if let Some(first_file) = self.selected_photo_files.first() {
+            match get_or_create_source_uuid(&first_file.path) {
+                Ok(uuid) => Some(uuid),
+                Err(e) => {
+                    eprintln!("Failed to get or create source UUID: {}", e);
+                    None
+                }
+            }
+        } else {
+            None
+        };
+        
         let mut handles = vec![];
         let mut photos_file_chunks: Vec<Vec<file::File>> = Vec::new();
         let len = self.selected_photo_files.len();
@@ -139,6 +184,7 @@ impl ImporterSelectedFiles {
             let arc_dest_path = Arc::clone(&destination_dir);
             let arc_trash_path = Arc::clone(&trash_dir);
             let arc_date_list_clone = Arc::clone(&arc_date_list);
+            let source_uuid_clone = source_uuid.clone();
             // eprintln!("{:?}", &arc_trash_path);
             let handle = thread::spawn(move || {
                 let mut n: usize = 0;
@@ -152,12 +198,38 @@ impl ImporterSelectedFiles {
                         .unwrap()
                         .entry(photo.created_date_string())
                         .or_insert(true);
-                    let destination_path = destination_date_dir.join(filename);
+                    
+                    // Create the final destination path with UUID if available
+                    let destination_path = if let Some(ref uuid) = source_uuid_clone {
+                        let uuid_dir = destination_date_dir.join(uuid);
+                        if !uuid_dir.exists() {
+                            match fs::create_dir_all(&uuid_dir) {
+                                Ok(_) => {}
+                                Err(e) => {
+                                    eprintln!("cannot create UUID directory: {}", e);
+                                }
+                            }
+                        }
+                        uuid_dir.join(filename)
+                    } else {
+                        // Fallback to original behavior if UUID is not available
+                        if !destination_date_dir.exists() {
+                            match fs::create_dir(destination_date_dir.clone()) {
+                                Ok(_) => {}
+                                Err(e) => {
+                                    eprintln!("cannot create directory: {}", e);
+                                }
+                            }
+                        }
+                        destination_date_dir.join(filename)
+                    };
+                    
+                    // Ensure the date directory exists
                     if !destination_date_dir.exists() {
-                        match fs::create_dir(destination_date_dir.clone()) {
+                        match fs::create_dir_all(&destination_date_dir) {
                             Ok(_) => {}
                             Err(e) => {
-                                eprintln!("cannot create directory: {}", e);
+                                eprintln!("cannot create date directory: {}", e);
                             }
                         }
                     }
