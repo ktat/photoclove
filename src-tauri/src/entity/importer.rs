@@ -83,10 +83,15 @@ impl ImportProgress {
 }
 
 fn get_or_create_source_uuid(source_path: &str) -> Result<String, Box<dyn std::error::Error>> {
-    // Get the parent directory of the source path
-    let source_parent = path::Path::new(source_path)
+    // Get the parent directory of the image file's directory
+    // For /foo/bar/image.png, we want to create .photoclove-uuid in /foo/
+    let image_parent = path::Path::new(source_path)
         .parent()
-        .ok_or("Cannot get parent directory of source path")?;
+        .ok_or("Cannot get parent directory of image file")?;
+    
+    let source_parent = image_parent
+        .parent()
+        .ok_or("Cannot get parent directory of image file's directory")?;
     
     let uuid_file_path = source_parent.join(".photoclove-uuid");
     

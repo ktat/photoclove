@@ -36,7 +36,8 @@ import_to_directory/
 
 The `.photoclove-uuid` file:
 - Contains a single UUID string (e.g., `abc123-def456-789`)
-- Is created in the parent directory of the source files
+- Is created in the parent directory of the image file's directory
+- For `/foo/bar/image.png`, the UUID file is created at `/foo/.photoclove-uuid`
 - Persists across multiple import sessions from the same source
 - Ensures consistent UUID assignment for the same SD card/source
 
@@ -46,10 +47,10 @@ Example file structure:
 ├── .photoclove-uuid        # Contains: abc123-def456-789
 ├── DCIM/
 │   └── 100CANON/
-│       ├── IMG_001.jpg
-│       └── IMG_002.jpg
+│       ├── IMG_001.jpg     # UUID file is in /media/user/SDCARD/
+│       └── IMG_002.jpg     # Not in /media/user/SDCARD/DCIM/
 └── other_folder/
-    └── more_photos.jpg
+    └── more_photos.jpg     # UUID file is in /media/user/SDCARD/
 ```
 
 ## Technical Implementation
@@ -58,6 +59,7 @@ Example file structure:
 
 1. **UUID Generation Function**: `get_or_create_source_uuid()`
    - Manages UUID creation and retrieval
+   - Places UUID files in the parent directory of the image file's directory
    - Handles file I/O for `.photoclove-uuid` files
    - Validates existing UUIDs
 
