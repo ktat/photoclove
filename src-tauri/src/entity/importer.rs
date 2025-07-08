@@ -4,6 +4,7 @@ use crate::repository::{dir, MetaInfoDB};
 use crate::value::{date, file};
 use filetime;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -82,7 +83,83 @@ impl ImportProgress {
     }
 }
 
-fn get_or_create_source_uuid(source_path: &str) -> Result<String, Box<dyn std::error::Error>> {
+fn is_sha256_hash(s: &str) -> bool {
+    s.len() == 64 && s.chars().all(|c| c.is_ascii_hexdigit())
+}
+
+fn get_directory_sha256_hash(path: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(path.as_bytes());
+    format!("{:x}", hasher.finalize())
+}
+
+fn migrate_files_from_sha256_to_uuid(
+    destination_dir: &path::Path,
+    sha256_hash: &str,
+    uuid: &str,
+    origin_meta_db: &repository::MetaDB,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // Find all date directories in the destination
+    let entries = fs::read_dir(destination_dir)?;
+    
+    for entry in entries {
+        let entry = entry?;
+        let path = entry.path();
+        
+        if path.is_dir() {
+            // Check if this looks like a date directory (YYYY-MM-DD format)
+            if let Some(dir_name) = path.file_name().and_then(|n| n.to_str()) {
+                if dir_name.len() == 10 && dir_name.chars().nth(4) == Some('-') && dir_name.chars().nth(7) == Some('-') {
+                    let sha256_dir = path.join(sha256_hash);
+                    let uuid_dir = path.join(uuid);
+                    
+                    if sha256_dir.exists() && sha256_dir.is_dir() {
+                        // Create UUID directory if it doesn't exist
+                        if !uuid_dir.exists() {
+                            fs::create_dir_all(&uuid_dir)?;
+                        }
+                        
+                        // Move files from SHA256 directory to UUID directory
+                        let files = fs::read_dir(&sha256_dir)?;
+                        for file_entry in files {
+                            let file_entry = file_entry?;
+                            let file_path = file_entry.path();
+                            
+                            if file_path.is_file() {
+                                let file_name = file_path.file_name().unwrap();
+                                let dest_path = uuid_dir.join(file_name);
+                                
+                                // Move the file
+                                fs::rename(&file_path, &dest_path)?;
+                                
+                                // Update database record
+                                if let Err(e) = origin_meta_db.update_photo_path(
+                                    &file_path.to_string_lossy(),
+                                    &dest_path.to_string_lossy()
+                                ) {
+                                    eprintln!("Failed to update photo path in database: {}", e);
+                                }
+                            }
+                        }
+                        
+                        // Remove the empty SHA256 directory
+                        if let Err(e) = fs::remove_dir(&sha256_dir) {
+                            eprintln!("Failed to remove SHA256 directory: {}", e);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    Ok(())
+}
+
+fn get_or_create_source_uuid(
+    source_path: &str,
+    destination_dir: Option<&path::Path>,
+    origin_meta_db: Option<&repository::MetaDB>
+) -> Result<String, Box<dyn std::error::Error>> {
     // Get the parent directory of the image file's directory
     // For /foo/bar/image.png, we want to create .photoclove-uuid in /foo/
     let image_parent = path::Path::new(source_path)
@@ -94,6 +171,33 @@ fn get_or_create_source_uuid(source_path: &str) -> Result<String, Box<dyn std::e
         .ok_or("Cannot get parent directory of image file's directory")?;
     
     let uuid_file_path = source_parent.join(".photoclove-uuid");
+    
+    // Calculate SHA256 hash of the source directory path
+    let sha256_hash = get_directory_sha256_hash(&image_parent.to_string_lossy());
+    
+    // Check if there's an existing SHA256 hash directory in the destination
+    let has_existing_sha256_dir = if let Some(dest_dir) = destination_dir {
+        // Look for any date directories that contain the SHA256 hash
+        if let Ok(entries) = fs::read_dir(dest_dir) {
+            entries.filter_map(|entry| entry.ok())
+                .any(|entry| {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        if let Some(dir_name) = path.file_name().and_then(|n| n.to_str()) {
+                            // Check if this looks like a date directory (YYYY-MM-DD format)
+                            if dir_name.len() == 10 && dir_name.chars().nth(4) == Some('-') && dir_name.chars().nth(7) == Some('-') {
+                                return path.join(&sha256_hash).exists();
+                            }
+                        }
+                    }
+                    false
+                })
+        } else {
+            false
+        }
+    } else {
+        false
+    };
     
     // Check if .photoclove-uuid file exists
     if uuid_file_path.exists() {
@@ -109,12 +213,29 @@ fn get_or_create_source_uuid(source_path: &str) -> Result<String, Box<dyn std::e
         }
     }
     
-    // Generate a new UUID and write to file
-    let new_uuid = Uuid::new_v4().to_string();
-    let mut file = fs::File::create(&uuid_file_path)?;
-    file.write_all(new_uuid.as_bytes())?;
-    
-    Ok(new_uuid)
+    // Try to create .photoclove-uuid file
+    match fs::File::create(&uuid_file_path) {
+        Ok(mut file) => {
+            // Successfully created the file
+            let new_uuid = Uuid::new_v4().to_string();
+            file.write_all(new_uuid.as_bytes())?;
+            
+            // If there was an existing SHA256 directory, migrate files from it to the new UUID directory
+            if has_existing_sha256_dir {
+                if let (Some(dest_dir), Some(meta_db)) = (destination_dir, origin_meta_db) {
+                    if let Err(e) = migrate_files_from_sha256_to_uuid(dest_dir, &sha256_hash, &new_uuid, meta_db) {
+                        eprintln!("Failed to migrate files from SHA256 to UUID directory: {}", e);
+                    }
+                }
+            }
+            
+            Ok(new_uuid)
+        }
+        Err(_) => {
+            // Failed to create .photoclove-uuid file, fall back to SHA256 hash
+            Ok(sha256_hash)
+        }
+    }
 }
 
 fn copy_file(from: &str, to: &str) -> io::Result<u64> {
@@ -150,7 +271,11 @@ impl ImporterSelectedFiles {
         
         // Determine the source UUID for the import session
         let source_uuid = if let Some(first_file) = self.selected_photo_files.first() {
-            match get_or_create_source_uuid(&first_file.path) {
+            match get_or_create_source_uuid(
+                &first_file.path,
+                Some(destination_dir.as_ref()),
+                Some(origin_meta_db)
+            ) {
                 Ok(uuid) => Some(uuid),
                 Err(e) => {
                     eprintln!("Failed to get or create source UUID: {}", e);

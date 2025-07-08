@@ -709,6 +709,18 @@ impl MetaInfoDB for SQLite {
         );
     }
 
+    fn update_photo_path(&self, old_path: &str, new_path: &str) -> Result<bool, &str> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database")?;
+        
+        let rows_affected = conn.execute(
+            "UPDATE photo_metadata SET path = ?1 WHERE path = ?2",
+            params![new_path, old_path],
+        ).map_err(|_| "Failed to update photo path")?;
+        
+        Ok(rows_affected > 0)
+    }
+
     fn get_photo_count_per_dates(&self, dates: date::Dates) -> DatesNum {
         println!(
             "SQLite::get_photo_count_per_dates() - Getting counts for {} dates",

@@ -338,4 +338,41 @@ impl MetaInfoDB for Tsv {
         let info_path = self.meta_file_path_from_photo(photo);
         self.record_photo_metas(info_path, photo_metas);
     }
+
+    fn update_photo_path(&self, old_path: &str, new_path: &str) -> Result<bool, &str> {
+        // For TSV implementation, we need to find all date directories and update paths
+        // This is a simplified implementation - in practice, you might want to optimize this
+        
+        // Extract date from old path to find the correct TSV file
+        let old_file = file::File::new(old_path.to_string());
+        let old_photo = photo::Photo::new(old_file, None);
+        
+        // Get the date directory
+        let dir = old_photo.dir.clone();
+        let date = match dir.to_date() {
+            Some(d) => d,
+            None => return Err("Cannot determine date from old path"),
+        };
+        
+        // Get existing metadata for this date
+        let mut photo_metas = match self.get_photo_meta_data_in_date(date) {
+            Ok(data) => data,
+            Err(_) => return Ok(false), // No metadata file, nothing to update
+        };
+        
+        // Check if old path exists in metadata
+        if let Some(photo_meta) = photo_metas.remove(old_path) {
+            // Update the path and re-insert
+            photo_metas.insert(new_path.to_string(), photo_meta);
+            
+            // Save updated metadata
+            let info_path = self.meta_file_path_for_date(date.to_string());
+            match self.record_photo_metas(info_path, photo_metas) {
+                Ok(_) => Ok(true),
+                Err(e) => Err(e),
+            }
+        } else {
+            Ok(false) // Old path not found in metadata
+        }
+    }
 }
