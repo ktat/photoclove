@@ -13,8 +13,9 @@ The UUID-based import system creates unique subdirectories for each source (SD c
 When importing photos, PhotoClove:
 1. Checks for a `.photoclove-uuid` file in the parent directory of the source files
 2. If the file exists, reads the UUID from it
-3. If the file doesn't exist, generates a new UUID and creates the file
-4. Uses this UUID to create a unique subdirectory structure
+3. If the file doesn't exist, tries to create a new UUID file
+4. If UUID file creation fails (due to permission restrictions), falls back to using a SHA256 hash of the source directory path
+5. Uses this UUID (or SHA256 hash) to create a unique subdirectory structure
 
 ### 2. Directory Structure
 
@@ -62,6 +63,8 @@ Example file structure:
    - Places UUID files in the parent directory of the image file's directory
    - Handles file I/O for `.photoclove-uuid` files
    - Validates existing UUIDs
+   - Implements SHA256 fallback when UUID file creation fails
+   - Automatically migrates files from SHA256 directories to UUID directories when permissions are restored
 
 2. **Import Process Enhancement**
    - Determines source UUID before threading
@@ -96,6 +99,28 @@ The `find_files()` function has been enhanced to:
 - Recursively scan UUID subdirectories
 - Validate directory names as UUIDs before scanning
 - Combine results for flat display
+
+### SHA256 Fallback Mechanism
+
+When `.photoclove-uuid` file creation is forbidden due to permission restrictions:
+
+1. **Fallback Logic**:
+   - Calculates SHA256 hash of the source directory path
+   - Uses this hash as the subdirectory name instead of UUID
+   - Provides the same conflict prevention benefits
+
+2. **Permission Recovery**:
+   - When permissions are later restored, the system attempts UUID file creation on next import
+   - If successful, automatically migrates files from SHA256 directories to new UUID directories
+   - Updates database records to reflect new paths
+   - Removes empty SHA256 directories after migration
+
+3. **Migration Process**:
+   - Scans destination for existing SHA256 hash directories
+   - Creates UUID subdirectories if they don't exist
+   - Moves files from SHA256 to UUID directories
+   - Updates metadata database with new file paths
+   - Maintains data integrity throughout the process
 
 ## Benefits
 
@@ -234,16 +259,24 @@ The UUID-based import system works automatically without configuration. However,
    - Ensure write access to source directories
    - Check permissions on destination directories
    - Verify disk space availability
+   - System automatically falls back to SHA256 hash if UUID file creation fails
 
 2. **UUID File Issues**
    - Corrupted UUID files will be regenerated
    - Invalid UUID format triggers new generation
    - Missing files are automatically created
+   - SHA256 fallback used when UUID creation is forbidden
 
 3. **Directory Creation Failures**
    - Check destination directory permissions
    - Verify file system supports nested directories
    - Ensure sufficient disk space
+
+4. **SHA256 Fallback Scenarios**
+   - When source directory is read-only or write-protected
+   - System uses SHA256 hash of source path as directory identifier
+   - Automatic migration occurs when permissions are restored
+   - Database paths are updated during migration
 
 ### Debugging
 
@@ -263,6 +296,7 @@ tail -f ~/.photoclove/logs/import.log
 
 ### Rust Crates
 - `uuid` crate for UUID generation and validation
+- `sha2` crate for SHA256 hash generation (fallback mechanism)
 - `std::fs` for file system operations
 - `std::path` for path manipulation
 
@@ -273,7 +307,13 @@ tail -f ~/.photoclove/logs/import.log
 
 ## Version History
 
-### v2.5 (Current)
+### v2.6 (Current)
+- SHA256 fallback mechanism for permission-restricted environments
+- Automatic migration from SHA256 to UUID directories when permissions are restored
+- Enhanced database path update functionality for both SQLite and TSV backends
+- Improved UUID file placement logic
+
+### v2.5
 - Initial UUID-based import implementation
 - Automatic UUID file management
 - Recursive photo discovery
