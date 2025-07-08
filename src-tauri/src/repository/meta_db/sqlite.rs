@@ -567,7 +567,7 @@ impl MetaInfoDB for SQLite {
             for (path, existing_photo) in existing_photos.iter() {
                 if !current_paths.contains(path) {
                     eprintln!("Deleting orphaned photo from DB: {}", path);
-                    self.delete_photo(&existing_photo.photo);
+                    self.delete_photo(existing_photo.photo());
                 }
             }
 

@@ -115,6 +115,10 @@ impl PhotoMeta {
         }
     }
 
+    pub fn photo(&self) -> &photo::Photo {
+        &self.photo
+    }
+
     pub fn photo_time(&self) -> String {
         if self.photo.is_exif_empty() && self.photo.is_meta_empty() {
             let mut photo = self.photo.clone();
