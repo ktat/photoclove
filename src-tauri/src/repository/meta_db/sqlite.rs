@@ -764,7 +764,7 @@ impl MetaInfoDB for SQLite {
 impl SQLite {
     // Job Queue Methods
     pub fn create_job_unit(&self, job_unit: &crate::entity::job_queue::JobUnit) -> Result<(), String> {
-        let conn = self.get_connection()
+        let conn = Connection::open(&self.db_path)
             .map_err(|e| format!("Failed to connect to database: {}", e))?;
             
         let jobs_json = serde_json::to_string(&job_unit.jobs)
@@ -779,7 +779,7 @@ impl SQLite {
     }
     
     pub fn create_job(&self, queued_job: &crate::entity::job_queue::QueuedJob) -> Result<i64, String> {
-        let conn = self.get_connection()
+        let conn = Connection::open(&self.db_path)
             .map_err(|e| format!("Failed to connect to database: {}", e))?;
             
         let job_json = serde_json::to_string(&queued_job.job)
@@ -794,7 +794,8 @@ impl SQLite {
     }
     
     pub fn get_pending_jobs(&self) -> Result<Vec<crate::entity::job_queue::QueuedJob>, String> {
-        let conn = self.get_connection()
+        // Always create a fresh connection for thread safety
+        let conn = Connection::open(&self.db_path)
             .map_err(|e| format!("Failed to connect to database: {}", e))?;
             
         let mut stmt = conn.prepare(
@@ -828,7 +829,7 @@ impl SQLite {
     }
     
     pub fn update_job_status(&self, job_id: i64, status: &crate::entity::job_queue::JobStatus, error_message: Option<String>) -> Result<(), String> {
-        let conn = self.get_connection()
+        let conn = Connection::open(&self.db_path)
             .map_err(|e| format!("Failed to connect to database: {}", e))?;
             
         let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
@@ -864,7 +865,7 @@ impl SQLite {
     }
     
     pub fn get_job_unit_progress(&self, job_unit_id: &str) -> Result<crate::entity::job_queue::JobProgress, String> {
-        let conn = self.get_connection()
+        let conn = Connection::open(&self.db_path)
             .map_err(|e| format!("Failed to connect to database: {}", e))?;
             
         let mut stmt = conn.prepare(
@@ -895,7 +896,7 @@ impl SQLite {
     }
     
     pub fn cleanup_completed_jobs(&self) -> Result<(), String> {
-        let conn = self.get_connection()
+        let conn = Connection::open(&self.db_path)
             .map_err(|e| format!("Failed to connect to database: {}", e))?;
             
         // Delete completed jobs older than 24 hours

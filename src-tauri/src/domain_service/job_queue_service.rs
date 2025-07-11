@@ -57,6 +57,9 @@ impl JobQueueManager {
                 }
                 match db.get_pending_jobs() {
                     Ok(pending_jobs) => {
+                        if iteration_count <= 3 || iteration_count % 10 == 0 {
+                            eprintln!("Query returned {} jobs", pending_jobs.len());
+                        }
                         if !pending_jobs.is_empty() {
                             eprintln!("Found {} pending jobs", pending_jobs.len());
                             
