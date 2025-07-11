@@ -385,11 +385,16 @@ async fn import_photos(
     files: Vec<&str>,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
+    eprintln!("import_photos called with {} files", files.len());
+    
     // Convert Vec<&str> to Vec<String>
     let file_strings: Vec<String> = files.iter().map(|s| s.to_string()).collect();
     
     // Submit jobs to the queue
+    eprintln!("Acquiring job_queue_manager lock...");
     let job_queue_manager = state.job_queue_manager.lock().unwrap();
+    eprintln!("Lock acquired, submitting jobs...");
+    
     match job_queue_manager.submit_import_jobs(file_strings) {
         Ok(job_unit_id) => {
             eprintln!("Import jobs submitted with job unit ID: {}", job_unit_id);
@@ -653,9 +658,12 @@ pub fn run() {
     // Create job queue manager with same database instance
     let sqlite_db = repository::meta_db::sqlite::SQLite::new(c.import_to.clone());
     // Initialize the database to ensure job queue tables are created
+    eprintln!("Initializing job queue database...");
     if let Err(e) = sqlite_db.init_db() {
+        eprintln!("Failed to initialize job queue database: {}", e);
         panic!("Failed to initialize job queue database: {}", e);
     }
+    eprintln!("Job queue database initialized successfully");
     let job_queue_manager = job_queue_service::JobQueueManager::new(sqlite_db, c.copy_parallel as usize);
     
     let state = AppState {
