@@ -650,8 +650,12 @@ pub fn run() {
     // }
     let ip: importer::ImportProgress = importer::ImportProgress::new();
     
-    // Create job queue manager
+    // Create job queue manager with same database instance
     let sqlite_db = repository::meta_db::sqlite::SQLite::new(c.import_to.clone());
+    // Initialize the database to ensure job queue tables are created
+    if let Err(e) = sqlite_db.init_db() {
+        panic!("Failed to initialize job queue database: {}", e);
+    }
     let job_queue_manager = job_queue_service::JobQueueManager::new(sqlite_db, c.copy_parallel as usize);
     
     let state = AppState {
@@ -721,10 +725,12 @@ pub fn run() {
             });
             
             // Start background job processing
+            eprintln!("Starting background job processing...");
             let app_handle = app.handle().clone();
             let state = app.state::<AppState>();
             let job_queue_manager = state.job_queue_manager.lock().unwrap();
             job_queue_manager.start_background_processing(app_handle);
+            eprintln!("Background job processing started");
             
             Ok(())
         })

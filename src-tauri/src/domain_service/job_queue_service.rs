@@ -36,8 +36,13 @@ impl JobQueueManager {
 
         thread::spawn(move || {
             eprintln!("Job queue background processing started");
+            let mut iteration_count = 0;
             
             loop {
+                iteration_count += 1;
+                if iteration_count <= 3 || iteration_count % 10 == 0 {
+                    eprintln!("Background processing loop iteration #{}", iteration_count);
+                }
                 // Check if we should stop
                 {
                     let running = is_running.lock().unwrap();
@@ -47,6 +52,9 @@ impl JobQueueManager {
                 }
 
                 // Process pending jobs
+                if iteration_count <= 3 || iteration_count % 10 == 0 {
+                    eprintln!("Checking for pending jobs...");
+                }
                 match db.get_pending_jobs() {
                     Ok(pending_jobs) => {
                         if !pending_jobs.is_empty() {
@@ -98,13 +106,18 @@ impl JobQueueManager {
     }
 
     pub fn submit_import_jobs(&self, files: Vec<String>) -> Result<String, String> {
+        eprintln!("Submitting import jobs for {} files", files.len());
+        
         // Create job unit
         let job_types = vec!["import".to_string(), "thumbnail".to_string(), "create_db".to_string()];
         let job_unit = job_queue::JobUnit::new(job_types);
         let job_unit_id = job_unit.id.clone();
+        
+        eprintln!("Created job unit with ID: {}", job_unit_id);
 
         // Save job unit
         self.db.create_job_unit(&job_unit)?;
+        eprintln!("Job unit saved to database");
 
         // Create individual jobs
         let import_job = job_queue::Job::new(
@@ -128,9 +141,11 @@ impl JobQueueManager {
         let thumbnail_queued = job_queue::QueuedJob::new(job_unit_id.clone(), thumbnail_job);
         let create_db_queued = job_queue::QueuedJob::new(job_unit_id.clone(), create_db_job);
 
-        self.db.create_job(&import_queued)?;
-        self.db.create_job(&thumbnail_queued)?;
-        self.db.create_job(&create_db_queued)?;
+        let import_id = self.db.create_job(&import_queued)?;
+        let thumbnail_id = self.db.create_job(&thumbnail_queued)?;
+        let create_db_id = self.db.create_job(&create_db_queued)?;
+        
+        eprintln!("Created jobs with IDs: {}, {}, {}", import_id, thumbnail_id, create_db_id);
 
         Ok(job_unit_id)
     }

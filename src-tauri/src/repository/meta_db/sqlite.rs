@@ -38,7 +38,7 @@ impl SQLite {
         sqlite
     }
 
-    fn init_db(&self) -> Result<()> {
+    pub fn init_db(&self) -> Result<()> {
         let conn = Connection::open(&self.db_path)?;
         
         // Check if table exists by trying to query it
