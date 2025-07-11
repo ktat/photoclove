@@ -116,8 +116,6 @@ function App() {
             toggleImporter(true);
           } else if (e.payload === "pref") {
             togglePreferences(true);
-          } else if (e.payload === "migrate_tsv") {
-            migrateTsvToSqlite();
           } else if (e.payload == "login") {
             loginGoogle();
           }
@@ -296,21 +294,6 @@ function App() {
     setGreetMsg(await invoke("greet", { name }));
   }
 
-  async function migrateTsvToSqlite() {
-    const answer = await confirm("This will migrate all TSV data to SQLite database. This operation may take some time.\n\nDo you want to proceed?", { title: "Migrate TSV to SQLite", kind: "warning" });
-    if (answer) {
-      addFooterMessage("migrate_tsv", "TSV migration in progress...", false);
-      try {
-        const result = await invoke("migrate_tsv_to_sqlite", { rootPath: null });
-        addFooterMessage("migrate_tsv", result, true, 10000);
-        console.log("Migration result:", result);
-      } catch (error) {
-        const errorMsg = "Migration failed: " + error;
-        addFooterMessage("migrate_tsv", errorMsg, true, 10000);
-        console.error("Migration error:", error);
-      }
-    }
-  }
 
   if (!showPreferences && !showImporter && useCount <= 2) {
     return (

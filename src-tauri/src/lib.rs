@@ -661,21 +661,6 @@ async fn move_to_trash(
     return Ok(date.to_string());
 }
 
-#[tauri::command]
-async fn migrate_tsv_to_sqlite(
-    root_path: Option<&str>,
-    state: tauri::State<'_, AppState>,
-) -> Result<String, String> {
-    let path_to_scan = root_path.unwrap_or(&state.config.import_to);
-    
-    // Create a new SQLite instance for migration
-    let sqlite_db = repository::meta_db::sqlite::SQLite::new(state.config.import_to.clone());
-    
-    match sqlite_db.migrate_from_tsv_files(path_to_scan) {
-        Ok(count) => Ok(format!("Successfully migrated {} records from TSV files to SQLite database", count)),
-        Err(e) => Err(format!("Migration failed: {}", e)),
-    }
-}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -709,7 +694,6 @@ pub fn run() {
                 .text("load_dates", "Load Date List")
                 .text("import", "Import")
                 .text("create_db", "Create DB")
-                .text("migrate_tsv", "Migrate TSV to SQLite")
                 .text("login", "Login to Google")
                 .text("pref", "Preferences")
                 .text("quit", "Quit")
@@ -744,8 +728,6 @@ pub fn run() {
                     app.emit("click_menu", "create_db").unwrap();
                 } else if e.id == "import" {
                     app.emit("click_menu", "import").unwrap();
-                } else if e.id == "migrate_tsv" {
-                    app.emit("click_menu", "migrate_tsv").unwrap();
                 } else if e.id == "login" {
                     app.emit("click_menu", "login").unwrap();
                 } else if e.id == "pref" {
@@ -783,7 +765,6 @@ pub fn run() {
             link_file_to_public,
             move_photos_to_exif_date,
             upload_to_google_photos,
-            migrate_tsv_to_sqlite,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

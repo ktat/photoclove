@@ -1,10 +1,8 @@
 use crate::entity::{photo, photo_meta};
 use crate::repository::{meta_db, DatesNum, MetaInfoDB};
 use crate::value::{comment, date, file, star};
-use csv::ReaderBuilder;
 use rusqlite::{params, Connection, Result};
 use std::collections::HashMap;
-use std::fs;
 use std::path;
 
 pub struct SQLite {
@@ -159,106 +157,6 @@ impl SQLite {
         }
     }
 
-    pub fn migrate_from_tsv_files(&self, root_path: &str) -> Result<usize, String> {
-        let conn = self
-            .get_connection()
-            .map_err(|e| format!("Failed to connect to database: {}", e))?;
-        let mut total_migrated = 0;
-
-        // Find all .photoclove-dir-info.tsv files
-        let tsv_files = self.find_tsv_files(root_path)?;
-
-        for tsv_file in tsv_files {
-            match self.migrate_single_tsv_file(&conn, &tsv_file) {
-                Ok(count) => {
-                    total_migrated += count;
-                    println!("Migrated {} records from {}", count, tsv_file.display());
-                }
-                Err(e) => {
-                    eprintln!("Error migrating {}: {}", tsv_file.display(), e);
-                }
-            }
-        }
-
-        Ok(total_migrated)
-    }
-
-    fn find_tsv_files(&self, root_path: &str) -> Result<Vec<path::PathBuf>, String> {
-        let mut tsv_files = Vec::new();
-
-        fn visit_dir(dir: &path::Path, tsv_files: &mut Vec<path::PathBuf>) -> Result<(), String> {
-            if !dir.is_dir() {
-                return Ok(());
-            }
-
-            let entries = fs::read_dir(dir)
-                .map_err(|e| format!("Failed to read directory {}: {}", dir.display(), e))?;
-
-            for entry in entries {
-                let entry = entry.map_err(|e| format!("Failed to read directory entry: {}", e))?;
-                let path = entry.path();
-
-                if path.is_dir() {
-                    visit_dir(&path, tsv_files)?;
-                } else if path.file_name().and_then(|n| n.to_str())
-                    == Some(".photoclove-dir-info.tsv")
-                {
-                    tsv_files.push(path);
-                }
-            }
-            Ok(())
-        }
-
-        visit_dir(path::Path::new(root_path), &mut tsv_files)?;
-        Ok(tsv_files)
-    }
-
-    fn migrate_single_tsv_file(
-        &self,
-        conn: &Connection,
-        tsv_file: &path::Path,
-    ) -> Result<usize, String> {
-        let file = fs::File::open(tsv_file)
-            .map_err(|e| format!("Failed to open {}: {}", tsv_file.display(), e))?;
-
-        let mut rdr = ReaderBuilder::new()
-            .delimiter(b'\t')
-            .flexible(true)
-            .from_reader(file);
-
-        let mut stmt = conn
-            .prepare("INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment) VALUES (?1, ?2, ?3, ?4)")
-            .map_err(|e| format!("Failed to prepare statement: {}", e))?;
-
-        let mut count = 0;
-        for result in rdr.deserialize() {
-            match result {
-                Ok(record) => {
-                    let photo_info: meta_db::PhotoInfo = record;
-                    // Convert date format from "yyyy/mm/dd hh:mm:ss" to "yyyy-mm-dd hh:mm:ss"
-                    let converted_date = photo_info.date.replace("/", "-");
-                    println!("Migration: Converting date '{}' to '{}'", photo_info.date, converted_date);
-                    stmt.execute(params![
-                        photo_info.path,
-                        converted_date,
-                        photo_info.star,
-                        photo_info.comment
-                    ])
-                    .map_err(|e| format!("Failed to insert record: {}", e))?;
-                    count += 1;
-                }
-                Err(e) => {
-                    eprintln!(
-                        "Warning: Failed to parse row in {}: {}",
-                        tsv_file.display(),
-                        e
-                    );
-                }
-            }
-        }
-
-        Ok(count)
-    }
 
     pub fn clear_all_metadata(&self) -> Result<(), String> {
         let conn = self
