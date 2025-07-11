@@ -125,6 +125,42 @@ impl SQLite {
             )?;
         }
         
+        // Create job queue tables
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS job_unit (
+                id TEXT PRIMARY KEY,
+                jobs TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending'
+            )",
+            [],
+        )?;
+        
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS job_queue (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_unit_id TEXT NOT NULL,
+                job TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                created_at TEXT NOT NULL,
+                started_at TEXT,
+                completed_at TEXT,
+                error_message TEXT,
+                FOREIGN KEY(job_unit_id) REFERENCES job_unit(id)
+            )",
+            [],
+        )?;
+        
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_job_queue_status ON job_queue(status)",
+            [],
+        )?;
+        
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_job_queue_unit_id ON job_queue(job_unit_id)",
+            [],
+        )?;
+        
         Ok(())
     }
 
@@ -721,5 +757,156 @@ impl MetaInfoDB for SQLite {
             dates_num.to_json()
         );
         dates_num
+    }
+    
+    // Job Queue Methods
+    pub fn create_job_unit(&self, job_unit: &crate::entity::job_queue::JobUnit) -> Result<(), String> {
+        let conn = self.get_connection()
+            .map_err(|e| format!("Failed to connect to database: {}", e))?;
+            
+        let jobs_json = serde_json::to_string(&job_unit.jobs)
+            .map_err(|e| format!("Failed to serialize jobs: {}", e))?;
+            
+        conn.execute(
+            "INSERT INTO job_unit (id, jobs, created_at, status) VALUES (?1, ?2, ?3, ?4)",
+            params![job_unit.id, jobs_json, job_unit.created_at, job_unit.status.to_string()],
+        ).map_err(|e| format!("Failed to insert job unit: {}", e))?;
+        
+        Ok(())
+    }
+    
+    pub fn create_job(&self, queued_job: &crate::entity::job_queue::QueuedJob) -> Result<i64, String> {
+        let conn = self.get_connection()
+            .map_err(|e| format!("Failed to connect to database: {}", e))?;
+            
+        let job_json = serde_json::to_string(&queued_job.job)
+            .map_err(|e| format!("Failed to serialize job: {}", e))?;
+            
+        conn.execute(
+            "INSERT INTO job_queue (job_unit_id, job, status, created_at) VALUES (?1, ?2, ?3, ?4)",
+            params![queued_job.job_unit_id, job_json, queued_job.status.to_string(), queued_job.created_at],
+        ).map_err(|e| format!("Failed to insert job: {}", e))?;
+        
+        Ok(conn.last_insert_rowid())
+    }
+    
+    pub fn get_pending_jobs(&self) -> Result<Vec<crate::entity::job_queue::QueuedJob>, String> {
+        let conn = self.get_connection()
+            .map_err(|e| format!("Failed to connect to database: {}", e))?;
+            
+        let mut stmt = conn.prepare(
+            "SELECT id, job_unit_id, job, status, created_at, started_at, completed_at, error_message 
+             FROM job_queue WHERE status = 'pending' ORDER BY created_at ASC"
+        ).map_err(|e| format!("Failed to prepare statement: {}", e))?;
+        
+        let job_iter = stmt.query_map([], |row| {
+            let job_json: String = row.get(2)?;
+            let job: crate::entity::job_queue::Job = serde_json::from_str(&job_json)
+                .map_err(|e| rusqlite::Error::InvalidColumnType(2, "job".to_string(), rusqlite::types::Type::Text))?;
+                
+            Ok(crate::entity::job_queue::QueuedJob {
+                id: Some(row.get(0)?),
+                job_unit_id: row.get(1)?,
+                job,
+                status: crate::entity::job_queue::JobStatus::from(row.get::<_, String>(3)?),
+                created_at: row.get(4)?,
+                started_at: row.get(5)?,
+                completed_at: row.get(6)?,
+                error_message: row.get(7)?,
+            })
+        }).map_err(|e| format!("Failed to query jobs: {}", e))?;
+        
+        let mut jobs = Vec::new();
+        for job in job_iter {
+            jobs.push(job.map_err(|e| format!("Failed to parse job: {}", e))?);
+        }
+        
+        Ok(jobs)
+    }
+    
+    pub fn update_job_status(&self, job_id: i64, status: &crate::entity::job_queue::JobStatus, error_message: Option<String>) -> Result<(), String> {
+        let conn = self.get_connection()
+            .map_err(|e| format!("Failed to connect to database: {}", e))?;
+            
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        
+        match status {
+            crate::entity::job_queue::JobStatus::Running => {
+                conn.execute(
+                    "UPDATE job_queue SET status = ?1, started_at = ?2 WHERE id = ?3",
+                    params![status.to_string(), now, job_id],
+                ).map_err(|e| format!("Failed to update job status: {}", e))?;
+            },
+            crate::entity::job_queue::JobStatus::Completed => {
+                conn.execute(
+                    "UPDATE job_queue SET status = ?1, completed_at = ?2 WHERE id = ?3",
+                    params![status.to_string(), now, job_id],
+                ).map_err(|e| format!("Failed to update job status: {}", e))?;
+            },
+            crate::entity::job_queue::JobStatus::Failed => {
+                conn.execute(
+                    "UPDATE job_queue SET status = ?1, completed_at = ?2, error_message = ?3 WHERE id = ?4",
+                    params![status.to_string(), now, error_message, job_id],
+                ).map_err(|e| format!("Failed to update job status: {}", e))?;
+            },
+            _ => {
+                conn.execute(
+                    "UPDATE job_queue SET status = ?1 WHERE id = ?2",
+                    params![status.to_string(), job_id],
+                ).map_err(|e| format!("Failed to update job status: {}", e))?;
+            }
+        }
+        
+        Ok(())
+    }
+    
+    pub fn get_job_unit_progress(&self, job_unit_id: &str) -> Result<crate::entity::job_queue::JobProgress, String> {
+        let conn = self.get_connection()
+            .map_err(|e| format!("Failed to connect to database: {}", e))?;
+            
+        let mut stmt = conn.prepare(
+            "SELECT status, COUNT(*) FROM job_queue WHERE job_unit_id = ?1 GROUP BY status"
+        ).map_err(|e| format!("Failed to prepare statement: {}", e))?;
+        
+        let mut total_jobs = 0;
+        let mut completed_jobs = 0;
+        
+        let rows = stmt.query_map([job_unit_id], |row| {
+            let status: String = row.get(0)?;
+            let count: i32 = row.get(1)?;
+            Ok((status, count))
+        }).map_err(|e| format!("Failed to query job progress: {}", e))?;
+        
+        for row in rows {
+            let (status, count) = row.map_err(|e| format!("Failed to parse job progress row: {}", e))?;
+            total_jobs += count;
+            if status == "completed" {
+                completed_jobs += count;
+            }
+        }
+        
+        let mut progress = crate::entity::job_queue::JobProgress::new(job_unit_id.to_string(), total_jobs as usize);
+        progress.update_progress(completed_jobs as usize, None);
+        
+        Ok(progress)
+    }
+    
+    pub fn cleanup_completed_jobs(&self) -> Result<(), String> {
+        let conn = self.get_connection()
+            .map_err(|e| format!("Failed to connect to database: {}", e))?;
+            
+        // Delete completed jobs older than 24 hours
+        conn.execute(
+            "DELETE FROM job_queue WHERE status = 'completed' AND datetime(completed_at) < datetime('now', '-1 day')",
+            [],
+        ).map_err(|e| format!("Failed to cleanup completed jobs: {}", e))?;
+        
+        // Delete completed job units that have no remaining jobs
+        conn.execute(
+            "DELETE FROM job_unit WHERE status = 'completed' AND id NOT IN (SELECT DISTINCT job_unit_id FROM job_queue)",
+            [],
+        ).map_err(|e| format!("Failed to cleanup completed job units: {}", e))?;
+        
+        Ok(())
     }
 }

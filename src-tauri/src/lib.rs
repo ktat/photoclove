@@ -1,4 +1,4 @@
-use crate::domain_service::{file_service, photo_service};
+use crate::domain_service::{file_service, photo_service, job_queue_service};
 use crate::entity::importer;
 use crate::entity::*;
 use crate::repository::RepositoryDB;
@@ -39,6 +39,7 @@ struct AppState {
     repo_db: repository::RepoDB,
     meta_db: repository::MetaDB,
     import_progress: Mutex<importer::ImportProgress>,
+    job_queue_manager: Arc<Mutex<job_queue_service::JobQueueManager>>,
     config: Config,
 }
 
@@ -380,61 +381,25 @@ fn show_importer(
 
 #[tauri::command]
 async fn import_photos(
-    window: tauri::Window,
+    _window: tauri::Window,
     files: Vec<&str>,
     state: tauri::State<'_, AppState>,
-) -> Result<bool, ()> {
-    // When now importing, do nothing.
-    if state.import_progress.lock().unwrap().now_importing {
-        eprintln!("now importing ...");
-        return Ok(false);
-    }
-    let c = Config::new();
-    let arc_trash_path = Arc::new(path::PathBuf::from(c.trash_path.to_string()));
-    let arc_import_path = Arc::new(path::PathBuf::from(c.import_to.to_string()));
-    let np = state.config.copy_parallel.clone();
-    let mut importer_selected = importer::ImporterSelectedFiles::new();
-    for file in files {
-        importer_selected.add_photo_file(file::File::new(file.to_string()));
-    }
-
-    let result = importer_selected.import_photos(
-        &window,
-        &state.repo_db,
-        &state.meta_db,
-        arc_import_path,
-        arc_trash_path,
-        np,
-        Arc::new(&state.import_progress),
-    );
-    let t = result.is_ok();
-    if t {
-        let dates = result.unwrap();
-        window.emit("import", "start thumbnail creation").unwrap();
-
-        match photo_service::create_thumbnails(
-            dates,
-            &path::PathBuf::from(&c.import_to.to_string()),
-            &path::PathBuf::from(&c.thumbnail_store.to_string()),
-            c.thumbnail_parallel as u32,
-            c.thumbnail_compression_quality,
-            c.thumbnail_ratio,
-            c.thumbnail_ignore_file_size,
-        )
-        .await
-        {
-            Ok(ret) => {
-                window.emit("import", "thumbnail creation finish").unwrap();
-            }
-            Err(_) => {
-                window.emit("import", "thumbnail creation failed").unwrap();
-            }
+) -> Result<String, String> {
+    // Convert Vec<&str> to Vec<String>
+    let file_strings: Vec<String> = files.iter().map(|s| s.to_string()).collect();
+    
+    // Submit jobs to the queue
+    let job_queue_manager = state.job_queue_manager.lock().unwrap();
+    match job_queue_manager.submit_import_jobs(file_strings) {
+        Ok(job_unit_id) => {
+            eprintln!("Import jobs submitted with job unit ID: {}", job_unit_id);
+            Ok(job_unit_id)
         }
-        window.emit("import", "finish").unwrap();
-    } else {
-        window.emit("import", "error").unwrap();
+        Err(e) => {
+            eprintln!("Failed to submit import jobs: {}", e);
+            Err(e)
+        }
     }
-    return Ok(t);
 }
 
 #[tauri::command]
@@ -442,6 +407,18 @@ fn get_import_progress(state: tauri::State<AppState>) -> String {
     let ip = &state.import_progress;
     _ = ip.lock().unwrap().get_import_progress();
     return serde_json::to_string(ip).unwrap();
+}
+
+#[tauri::command]
+async fn get_job_progress(
+    job_unit_id: &str,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    let job_queue_manager = state.job_queue_manager.lock().unwrap();
+    match job_queue_manager.get_job_progress(job_unit_id) {
+        Ok(progress) => Ok(serde_json::to_string(&progress).unwrap()),
+        Err(e) => Err(e),
+    }
 }
 
 #[tauri::command]
@@ -672,10 +649,16 @@ pub fn run() {
     //     db = repository::RepoDB::new("".to_string());
     // }
     let ip: importer::ImportProgress = importer::ImportProgress::new();
+    
+    // Create job queue manager
+    let sqlite_db = repository::meta_db::sqlite::SQLite::new(c.import_to.clone());
+    let job_queue_manager = job_queue_service::JobQueueManager::new(sqlite_db, c.copy_parallel as usize);
+    
     let state = AppState {
         repo_db: repository::RepoDB::new(c.import_to.to_string()),
         meta_db: repository::MetaDB::new(c.import_to.to_string()),
         import_progress: Mutex::new(ip),
+        job_queue_manager: Arc::new(Mutex::new(job_queue_manager)),
         config: c,
     };
 
@@ -736,6 +719,13 @@ pub fn run() {
                     eprintln!("{:?}", e);
                 }
             });
+            
+            // Start background job processing
+            let app_handle = app.handle().clone();
+            let state = app.state::<AppState>();
+            let job_queue_manager = state.job_queue_manager.lock().unwrap();
+            job_queue_manager.start_background_processing(app_handle);
+            
             Ok(())
         })
         .manage(state)
@@ -750,6 +740,7 @@ pub fn run() {
             show_importer,
             import_photos,
             get_import_progress,
+            get_job_progress,
             get_photos_to_import_under_directory,
             get_dates_num,
             move_to_trash,
