@@ -759,6 +759,9 @@ impl MetaInfoDB for SQLite {
         dates_num
     }
     
+}
+
+impl SQLite {
     // Job Queue Methods
     pub fn create_job_unit(&self, job_unit: &crate::entity::job_queue::JobUnit) -> Result<(), String> {
         let conn = self.get_connection()

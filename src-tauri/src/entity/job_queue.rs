@@ -122,7 +122,7 @@ impl From<String> for JobStatus {
 
 impl JobUnit {
     pub fn new(jobs: Vec<String>) -> Self {
-        let uuid = Uuid::now_v1(&[1, 2, 3, 4, 5, 6]).to_string();
+        let uuid = Uuid::new_v4().to_string();
         let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
         
         JobUnit {
