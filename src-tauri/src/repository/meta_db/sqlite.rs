@@ -895,21 +895,48 @@ impl SQLite {
         Ok(progress)
     }
     
+    pub fn update_job_unit_status_if_complete(&self, job_unit_id: &str) -> Result<(), String> {
+        let conn = Connection::open(&self.db_path)
+            .map_err(|e| format!("Failed to connect to database: {}", e))?;
+            
+        // Check if all jobs for this job unit are completed
+        let incomplete_count: i32 = conn.query_row(
+            "SELECT COUNT(*) FROM job_queue WHERE job_unit_id = ?1 AND status != 'completed'",
+            [job_unit_id],
+            |row| row.get(0)
+        ).map_err(|e| format!("Failed to query incomplete jobs: {}", e))?;
+        
+        // If no incomplete jobs, mark job unit as completed
+        if incomplete_count == 0 {
+            eprintln!("All jobs completed for job unit {}, updating status", job_unit_id);
+            conn.execute(
+                "UPDATE job_unit SET status = 'completed' WHERE id = ?1",
+                [job_unit_id],
+            ).map_err(|e| format!("Failed to update job unit status: {}", e))?;
+        }
+        
+        Ok(())
+    }
+    
     pub fn cleanup_completed_jobs(&self) -> Result<(), String> {
         let conn = Connection::open(&self.db_path)
             .map_err(|e| format!("Failed to connect to database: {}", e))?;
             
-        // Delete completed jobs older than 24 hours
-        conn.execute(
-            "DELETE FROM job_queue WHERE status = 'completed' AND datetime(completed_at) < datetime('now', '-1 day')",
+        // First, delete all completed jobs (no time restriction for immediate cleanup)
+        let deleted_jobs = conn.execute(
+            "DELETE FROM job_queue WHERE status = 'completed'",
             [],
         ).map_err(|e| format!("Failed to cleanup completed jobs: {}", e))?;
         
-        // Delete completed job units that have no remaining jobs
-        conn.execute(
+        // Then delete completed job units that have no remaining jobs
+        let deleted_units = conn.execute(
             "DELETE FROM job_unit WHERE status = 'completed' AND id NOT IN (SELECT DISTINCT job_unit_id FROM job_queue)",
             [],
         ).map_err(|e| format!("Failed to cleanup completed job units: {}", e))?;
+        
+        if deleted_jobs > 0 || deleted_units > 0 {
+            eprintln!("Cleaned up {} completed jobs and {} completed job units", deleted_jobs, deleted_units);
+        }
         
         Ok(())
     }

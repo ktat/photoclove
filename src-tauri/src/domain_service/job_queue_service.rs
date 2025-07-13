@@ -90,7 +90,7 @@ impl JobQueueManager {
                     }
                 }
 
-                // Cleanup completed jobs periodically
+                // Cleanup completed jobs after each batch
                 if let Err(e) = db.cleanup_completed_jobs() {
                     eprintln!("Error cleaning up completed jobs: {}", e);
                 }
@@ -181,6 +181,11 @@ impl JobQueueManager {
                     eprintln!("Failed to update job status to completed: {}", e);
                 }
                 eprintln!("Job {} completed successfully", job_id);
+                
+                // Check if all jobs in the job unit are completed and update job unit status
+                if let Err(e) = db.update_job_unit_status_if_complete(&job.job_unit_id) {
+                    eprintln!("Failed to update job unit status: {}", e);
+                }
                 
                 // Emit progress event
                 if let Err(e) = app_handle.emit("job_completed", &job.job_unit_id) {
