@@ -10,6 +10,7 @@ use tauri::{Emitter, Manager};
 use sha2::{Sha256, Digest};
 use uuid::Uuid;
 use regex::Regex;
+use chrono;
 
 pub struct JobQueueManager {
     db: Arc<SQLite>,
@@ -286,32 +287,18 @@ impl JobQueueManager {
                 .map_err(|e| format!("Failed to get UUID for source directory: {}", e))?;
             eprintln!("UUID: {}", uuid);
             
-            // Determine destination date directory from EXIF or filename
+            // Determine destination date directory using the same logic as original importer
             eprintln!("Determining date from photo...");
+            eprintln!("Photo time field: '{}'", photo.time());
             
-            // Try to get date from EXIF data first
-            let date = if !photo.meta_data.date_time_original.is_empty() {
-                eprintln!("Found EXIF date_time_original: {}", photo.meta_data.date_time_original);
-                // Parse EXIF date format like "2025:07:10 19:02:45" to Date
-                if let Some(captures) = Regex::new(r"(\d{4}):(\d{2}):(\d{2})")
-                    .unwrap()
-                    .captures(&photo.meta_data.date_time_original) {
-                    let year = captures.get(1).unwrap().as_str().parse::<i32>().unwrap();
-                    let month = captures.get(2).unwrap().as_str().parse::<u32>().unwrap();
-                    let day = captures.get(3).unwrap().as_str().parse::<u32>().unwrap();
-                    
-                    if let Some(date) = crate::value::date::Date::new(year, month, day) {
-                        eprintln!("Parsed EXIF date: {}-{:02}-{:02}", year, month, day);
-                        date
-                    } else {
-                        return Err(format!("Invalid EXIF date: {}-{:02}-{:02}", year, month, day));
-                    }
-                } else {
-                    eprintln!("Could not parse EXIF date format: {}", photo.meta_data.date_time_original);
-                    return Err(format!("Invalid EXIF date format: {}", photo.meta_data.date_time_original));
-                }
+            // Use the same approach as original importer: photo.created_date()
+            let date = if !photo.time().is_empty() {
+                eprintln!("Using photo.created_date() method...");
+                let created_date = photo.created_date();
+                eprintln!("Photo created_date result: {}-{:02}-{:02}", created_date.year, created_date.month, created_date.day);
+                created_date
             } else {
-                eprintln!("No EXIF date found, trying to extract from filename...");
+                eprintln!("Photo time is empty, trying to extract from filename...");
                 // Try to extract date from filename (like IMG_20250710_190245626.jpg)
                 let filename = std::path::Path::new(file_path).file_name()
                     .ok_or_else(|| format!("Cannot get filename from: {}", file_path))?
@@ -334,7 +321,20 @@ impl JobQueueManager {
                         return Err(format!("Invalid date extracted from filename: {}-{:02}-{:02}", year, month, day));
                     }
                 } else {
-                    return Err(format!("Cannot determine date from EXIF or filename for photo: {}", file_path));
+                    eprintln!("No date pattern found in filename, using file modification time as fallback");
+                    // Use file modification time as fallback for files without date information
+                    let metadata = std::fs::metadata(file_path)
+                        .map_err(|e| format!("Cannot get file metadata: {}", e))?;
+                    let modified = metadata.modified()
+                        .map_err(|e| format!("Cannot get file modification time: {}", e))?;
+                    let datetime = chrono::DateTime::<chrono::Utc>::from(modified);
+                    
+                    if let Some(date) = crate::value::date::Date::new(datetime.year(), datetime.month(), datetime.day()) {
+                        eprintln!("Using file modification time as fallback: {}-{:02}-{:02}", datetime.year(), datetime.month(), datetime.day());
+                        date
+                    } else {
+                        return Err(format!("Failed to create date from file modification time"));
+                    }
                 }
             };
             
@@ -463,12 +463,23 @@ impl JobQueueManager {
         // Convert to date objects
         let mut dates = Vec::new();
         for date_str in dates_set {
-            let date = crate::value::date::Date::from_string(&date_str, Some("-"));
-            dates.push(date);
+            eprintln!("Processing date string for thumbnails: '{}'", date_str);
+            // Only process if it looks like a date (YYYY-MM-DD format)
+            if Regex::new(r"^\d{4}-\d{2}-\d{2}$").unwrap().is_match(&date_str) {
+                if let Some(date) = crate::value::date::Date::from_string(&date_str, Some("-")) {
+                    eprintln!("Valid date found for thumbnails: {}", date_str);
+                    dates.push(date);
+                } else {
+                    eprintln!("Invalid date format, skipping: {}", date_str);
+                }
+            } else {
+                eprintln!("Not a date pattern, skipping: {}", date_str);
+            }
         }
         
         if dates.is_empty() {
-            return Ok(()); // No valid dates
+            eprintln!("No valid dates found for thumbnail generation, skipping");
+            return Ok(());
         }
         
         let dates_obj = crate::value::date::Dates::new(&dates);
@@ -545,12 +556,22 @@ impl JobQueueManager {
         // Convert to date objects
         let mut dates = Vec::new();
         for date_str in dates_set {
-            let date = crate::value::date::Date::from_string(&date_str, Some("-"));
-            dates.push(date);
+            eprintln!("Processing date string for database: '{}'", date_str);
+            // Only process if it looks like a date (YYYY-MM-DD format)
+            if Regex::new(r"^\d{4}-\d{2}-\d{2}$").unwrap().is_match(&date_str) {
+                if let Some(date) = crate::value::date::Date::from_string(&date_str, Some("-")) {
+                    eprintln!("Valid date found for database: {}", date_str);
+                    dates.push(date);
+                } else {
+                    eprintln!("Invalid date format, skipping: {}", date_str);
+                }
+            } else {
+                eprintln!("Not a date pattern, skipping: {}", date_str);
+            }
         }
         
         if dates.is_empty() {
-            eprintln!("No valid dates found for database creation");
+            eprintln!("No valid dates found for database creation, skipping");
             return Ok(());
         }
         
