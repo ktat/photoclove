@@ -65,7 +65,11 @@ impl JobQueueManager {
                             eprintln!("Query returned {} jobs", pending_jobs.len());
                         }
                         if !pending_jobs.is_empty() {
-                            eprintln!("Found {} pending jobs", pending_jobs.len());
+                            eprintln!("=== FOUND {} PENDING JOBS ===", pending_jobs.len());
+                            for (idx, job) in pending_jobs.iter().enumerate() {
+                                eprintln!("Job {}: ID={:?}, Type={:?}, Unit={}, Files={}", 
+                                    idx + 1, job.id, job.job.job_type, job.job_unit_id, job.job.target.len());
+                            }
                             
                             // Process jobs in batches up to max_concurrent
                             let batch_size = std::cmp::min(pending_jobs.len(), max_concurrent);
@@ -163,20 +167,42 @@ impl JobQueueManager {
 
     fn process_job(db: Arc<SQLite>, job: job_queue::QueuedJob, app_handle: tauri::AppHandle) {
         let job_id = job.id.unwrap();
-        eprintln!("Processing job {}: {:?}", job_id, job.job.job_type);
+        eprintln!("=== STARTING JOB PROCESSING ===");
+        eprintln!("Job ID: {}", job_id);
+        eprintln!("Job Type: {:?}", job.job.job_type);
+        eprintln!("Job Unit ID: {}", job.job_unit_id);
+        eprintln!("Target files count: {}", job.job.target.len());
+        for (i, target) in job.job.target.iter().enumerate() {
+            eprintln!("  Target file {}: {}", i + 1, target);
+        }
+        eprintln!("==============================");
 
         // Mark job as running
+        eprintln!("Updating job {} status to running...", job_id);
         if let Err(e) = db.update_job_status(job_id, &job_queue::JobStatus::Running, None) {
-            eprintln!("Failed to update job status to running: {}", e);
+            eprintln!("ERROR: Failed to update job status to running: {}", e);
             return;
         }
+        eprintln!("Job {} status updated to running successfully", job_id);
 
         // Process the job based on type
+        eprintln!("Starting job execution for job {} (type: {:?})", job_id, job.job.job_type);
         let result = match job.job.job_type {
-            job_queue::JobType::Import => Self::process_import_job(&job, &app_handle),
-            job_queue::JobType::Thumbnail => Self::process_thumbnail_job(&job, &app_handle),
-            job_queue::JobType::CreateDb => Self::process_create_db_job(&job, &app_handle),
+            job_queue::JobType::Import => {
+                eprintln!("Calling process_import_job for job {}", job_id);
+                Self::process_import_job(&job, &app_handle)
+            },
+            job_queue::JobType::Thumbnail => {
+                eprintln!("Calling process_thumbnail_job for job {}", job_id);
+                Self::process_thumbnail_job(&job, &app_handle)
+            },
+            job_queue::JobType::CreateDb => {
+                eprintln!("Calling process_create_db_job for job {}", job_id);
+                Self::process_create_db_job(&job, &app_handle)
+            },
         };
+        
+        eprintln!("Job {} execution completed with result: {:?}", job_id, result.is_ok());
 
         // Update job status based on result
         match result {
@@ -211,81 +237,118 @@ impl JobQueueManager {
     }
 
     fn process_import_job(job: &job_queue::QueuedJob, app_handle: &tauri::AppHandle) -> Result<(), String> {
-        eprintln!("Processing import job for {} files", job.job.target.len());
+        eprintln!("=== IMPORT JOB EXECUTION START ===");
+        eprintln!("Import job for {} files", job.job.target.len());
         
         // Get app state to access configuration
+        eprintln!("Getting app state and configuration...");
         let state = app_handle.state::<crate::AppState>();
         let config = &state.config;
         let destination_dir = &config.import_to;
         let trash_path = std::path::Path::new(&config.trash_path);
         
+        eprintln!("Configuration loaded:");
+        eprintln!("  Destination directory: {}", destination_dir);
+        eprintln!("  Trash path: {}", config.trash_path);
+        
         // Emit progress event
+        eprintln!("Emitting import progress event...");
         if let Err(e) = app_handle.emit("import_progress", (&job.job_unit_id, "Processing import job", 0)) {
-            eprintln!("Failed to emit import_progress event: {}", e);
+            eprintln!("ERROR: Failed to emit import_progress event: {}", e);
+        } else {
+            eprintln!("Import progress event emitted successfully");
         }
         
         let mut imported_photos = Vec::new();
+        eprintln!("Starting to process {} files for import", job.job.target.len());
         
         for (i, file_path) in job.job.target.iter().enumerate() {
-            eprintln!("Importing file: {}", file_path);
+            eprintln!("");
+            eprintln!("--- Processing file {} of {} ---", i + 1, job.job.target.len());
+            eprintln!("Source file: {}", file_path);
             
             // Create file and photo objects
+            eprintln!("Creating file and photo objects...");
             let source_file = file::File::new(file_path.clone());
             let mut photo = crate::entity::photo::Photo::new(source_file.clone(), Some(config.clone()));
+            eprintln!("Loading EXIF data...");
             photo.load_exif();
+            eprintln!("EXIF data loaded successfully");
             
             // Get or create UUID for the source directory
             let source_dir = std::path::Path::new(file_path).parent()
                 .ok_or_else(|| format!("Cannot get parent directory for: {}", file_path))?;
+            eprintln!("Source directory: {}", source_dir.display());
             
+            eprintln!("Getting or creating UUID for source directory...");
             let uuid = Self::get_or_create_source_uuid(source_dir)
                 .map_err(|e| format!("Failed to get UUID for source directory: {}", e))?;
+            eprintln!("UUID: {}", uuid);
             
             // Determine destination date directory from EXIF or filename
+            eprintln!("Determining date from photo...");
             let date = photo.dir.to_date()
                 .ok_or_else(|| format!("Cannot determine date for photo: {}", file_path))?;
+            eprintln!("Date determined: {}", date.to_string());
             
             let filename = std::path::Path::new(file_path).file_name()
                 .ok_or_else(|| format!("Cannot get filename from: {}", file_path))?
                 .to_string_lossy();
+            eprintln!("Filename: {}", filename);
             
             // Build destination path: [destination_dir]/[YYYY-MM-DD]/[UUID]/[filename]
             let destination_date_dir = std::path::Path::new(destination_dir).join(date.to_string());
             let destination_uuid_dir = destination_date_dir.join(&uuid);
             let destination_path = destination_uuid_dir.join(filename.as_ref());
             
+            eprintln!("Destination path: {}", destination_path.display());
+            
             // Skip if source and destination are the same
             if file_path == &destination_path.display().to_string() {
-                eprintln!("Skipping same file: {}", file_path);
+                eprintln!("SKIPPING: Source and destination are the same: {}", file_path);
                 continue;
             }
             
             // Skip if file exists in trash
             let trash_file_path = trash_path.join(destination_path.strip_prefix("/").unwrap_or(&destination_path));
+            eprintln!("Checking trash path: {}", trash_file_path.display());
             if trash_file_path.exists() {
-                eprintln!("Skipping file in trash: {}", file_path);
+                eprintln!("SKIPPING: File exists in trash: {}", file_path);
                 continue;
             }
             
             // Create destination directories
+            eprintln!("Creating destination directory: {}", destination_uuid_dir.display());
             if let Err(e) = std::fs::create_dir_all(&destination_uuid_dir) {
-                return Err(format!("Failed to create destination directory {}: {}", destination_uuid_dir.display(), e));
+                let error_msg = format!("Failed to create destination directory {}: {}", destination_uuid_dir.display(), e);
+                eprintln!("ERROR: {}", error_msg);
+                return Err(error_msg);
             }
+            eprintln!("Destination directory created successfully");
             
             // Copy the file with timestamp preservation
+            eprintln!("Starting file copy operation...");
+            eprintln!("  FROM: {}", file_path);
+            eprintln!("  TO:   {}", destination_path.display());
+            
             match Self::copy_file_with_timestamp(file_path, &destination_path.display().to_string()) {
-                Ok(_) => {
-                    eprintln!("Successfully copied: {} to {}", file_path, destination_path.display());
+                Ok(bytes_copied) => {
+                    eprintln!("SUCCESS: File copied successfully ({} bytes)", bytes_copied);
+                    eprintln!("  Source: {}", file_path);
+                    eprintln!("  Destination: {}", destination_path.display());
                     
                     // Create photo object for the copied file
+                    eprintln!("Creating photo object for copied file...");
                     let destination_file = file::File::new(destination_path.display().to_string());
                     let mut destination_photo = crate::entity::photo::Photo::new(destination_file, Some(config.clone()));
                     destination_photo.embed_exif(photo.meta_data);
                     imported_photos.push(destination_photo);
+                    eprintln!("Photo object created and added to imported_photos list");
                 }
                 Err(e) => {
-                    eprintln!("Failed to copy file: {} - {}", file_path, e);
-                    return Err(format!("Failed to copy file {}: {}", file_path, e));
+                    let error_msg = format!("Failed to copy file {}: {}", file_path, e);
+                    eprintln!("ERROR: {}", error_msg);
+                    return Err(error_msg);
                 }
             }
             
@@ -297,14 +360,22 @@ impl JobQueueManager {
         }
         
         // Record metadata for imported photos
+        eprintln!("");
+        eprintln!("=== RECORDING METADATA ===");
         if !imported_photos.is_empty() {
+            eprintln!("Recording metadata for {} imported photos...", imported_photos.len());
             let meta_db = &state.meta_db;
-            if let Err(e) = meta_db.record_photos_meta_data(imported_photos) {
-                eprintln!("Failed to record photo metadata: {:?}", e);
-                return Err(format!("Failed to record photo metadata: {:?}", e));
+            if let Err(e) = meta_db.record_photos_meta_data(imported_photos.clone()) {
+                let error_msg = format!("Failed to record photo metadata: {:?}", e);
+                eprintln!("ERROR: {}", error_msg);
+                return Err(error_msg);
             }
+            eprintln!("Metadata recorded successfully for {} photos", imported_photos.len());
+        } else {
+            eprintln!("No photos were imported, skipping metadata recording");
         }
         
+        eprintln!("=== IMPORT JOB COMPLETED SUCCESSFULLY ===");
         Ok(())
     }
 
@@ -459,13 +530,33 @@ impl JobQueueManager {
     
     // Helper method to copy file with timestamp preservation
     fn copy_file_with_timestamp(from: &str, to: &str) -> std::io::Result<u64> {
+        eprintln!("copy_file_with_timestamp called:");
+        eprintln!("  FROM: {}", from);
+        eprintln!("  TO:   {}", to);
+        
+        // Check if source file exists
+        if !std::path::Path::new(from).exists() {
+            eprintln!("ERROR: Source file does not exist: {}", from);
+            return Err(std::io::Error::new(std::io::ErrorKind::NotFound, format!("Source file not found: {}", from)));
+        }
+        
+        eprintln!("Source file exists, proceeding with copy...");
         let result = std::fs::copy(from, to);
         
+        match &result {
+            Ok(bytes) => eprintln!("File copy successful: {} bytes copied", bytes),
+            Err(e) => eprintln!("File copy failed: {}", e),
+        }
+        
         // Preserve original file's modification time
+        eprintln!("Preserving file timestamp...");
         if let Ok(meta) = std::fs::metadata(from) {
             if let Ok(modified) = meta.modified() {
                 let ft = filetime::FileTime::from_system_time(modified);
-                let _ = filetime::set_file_mtime(to, ft);
+                match filetime::set_file_mtime(to, ft) {
+                    Ok(_) => eprintln!("File timestamp preserved successfully"),
+                    Err(e) => eprintln!("Warning: Failed to preserve timestamp: {}", e),
+                }
             }
         }
         
