@@ -9,6 +9,7 @@ use std::time::Duration;
 use tauri::{Emitter, Manager};
 use sha2::{Sha256, Digest};
 use uuid::Uuid;
+use regex::Regex;
 
 pub struct JobQueueManager {
     db: Arc<SQLite>,
@@ -287,9 +288,57 @@ impl JobQueueManager {
             
             // Determine destination date directory from EXIF or filename
             eprintln!("Determining date from photo...");
-            let date = photo.dir.to_date()
-                .ok_or_else(|| format!("Cannot determine date for photo: {}", file_path))?;
-            eprintln!("Date determined: {}", date.to_string());
+            
+            // Try to get date from EXIF data first
+            let date = if !photo.meta_data.date_time_original.is_empty() {
+                eprintln!("Found EXIF date_time_original: {}", photo.meta_data.date_time_original);
+                // Parse EXIF date format like "2025:07:10 19:02:45" to Date
+                if let Some(captures) = Regex::new(r"(\d{4}):(\d{2}):(\d{2})")
+                    .unwrap()
+                    .captures(&photo.meta_data.date_time_original) {
+                    let year = captures.get(1).unwrap().as_str().parse::<i32>().unwrap();
+                    let month = captures.get(2).unwrap().as_str().parse::<u32>().unwrap();
+                    let day = captures.get(3).unwrap().as_str().parse::<u32>().unwrap();
+                    
+                    if let Some(date) = crate::value::date::Date::new(year, month, day) {
+                        eprintln!("Parsed EXIF date: {}-{:02}-{:02}", year, month, day);
+                        date
+                    } else {
+                        return Err(format!("Invalid EXIF date: {}-{:02}-{:02}", year, month, day));
+                    }
+                } else {
+                    eprintln!("Could not parse EXIF date format: {}", photo.meta_data.date_time_original);
+                    return Err(format!("Invalid EXIF date format: {}", photo.meta_data.date_time_original));
+                }
+            } else {
+                eprintln!("No EXIF date found, trying to extract from filename...");
+                // Try to extract date from filename (like IMG_20250710_190245626.jpg)
+                let filename = std::path::Path::new(file_path).file_name()
+                    .ok_or_else(|| format!("Cannot get filename from: {}", file_path))?
+                    .to_string_lossy();
+                
+                eprintln!("Analyzing filename for date: {}", filename);
+                
+                // Pattern for filenames like IMG_20250710_xxxxxx.jpg
+                if let Some(captures) = Regex::new(r"(\d{4})(\d{2})(\d{2})")
+                    .unwrap()
+                    .captures(&filename) {
+                    let year = captures.get(1).unwrap().as_str().parse::<i32>().unwrap();
+                    let month = captures.get(2).unwrap().as_str().parse::<u32>().unwrap();
+                    let day = captures.get(3).unwrap().as_str().parse::<u32>().unwrap();
+                    
+                    if let Some(date) = crate::value::date::Date::new(year, month, day) {
+                        eprintln!("Extracted date from filename: {}-{:02}-{:02}", year, month, day);
+                        date
+                    } else {
+                        return Err(format!("Invalid date extracted from filename: {}-{:02}-{:02}", year, month, day));
+                    }
+                } else {
+                    return Err(format!("Cannot determine date from EXIF or filename for photo: {}", file_path));
+                }
+            };
+            
+            eprintln!("Final date determined: {}", date.to_string());
             
             let filename = std::path::Path::new(file_path).file_name()
                 .ok_or_else(|| format!("Cannot get filename from: {}", file_path))?
