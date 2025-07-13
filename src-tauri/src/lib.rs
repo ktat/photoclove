@@ -381,7 +381,7 @@ fn show_importer(
 
 #[tauri::command]
 async fn import_photos(
-    _window: tauri::Window,
+    window: tauri::Window,
     files: Vec<&str>,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
@@ -390,12 +390,15 @@ async fn import_photos(
     // Convert Vec<&str> to Vec<String>
     let file_strings: Vec<String> = files.iter().map(|s| s.to_string()).collect();
     
+    // Get app handle for job processing
+    let app_handle = window.app_handle().clone();
+    
     // Submit jobs to the queue
     eprintln!("Acquiring job_queue_manager lock...");
     let job_queue_manager = state.job_queue_manager.lock().unwrap();
     eprintln!("Lock acquired, submitting jobs...");
     
-    match job_queue_manager.submit_import_jobs(file_strings) {
+    match job_queue_manager.submit_import_jobs(file_strings, app_handle) {
         Ok(job_unit_id) => {
             eprintln!("Import jobs submitted with job unit ID: {}", job_unit_id);
             Ok(job_unit_id)

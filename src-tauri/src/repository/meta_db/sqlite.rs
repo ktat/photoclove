@@ -24,7 +24,8 @@ impl SQLite {
                         path TEXT PRIMARY KEY,
                         photo_date TEXT NOT NULL,
                         star INTEGER NOT NULL DEFAULT 0,
-                        comment TEXT NOT NULL DEFAULT ''
+                        comment TEXT NOT NULL DEFAULT '',
+                        created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
                     )",
                     [],
                 );
@@ -52,9 +53,10 @@ impl SQLite {
             .unwrap_or(false);
         
         if table_exists {
-            // Check if old 'date' column exists
+            // Check if old 'date' column exists and if new columns exist
             let mut has_old_date_column = false;
             let mut has_new_photo_date_column = false;
+            let mut has_created_at_column = false;
             
             if let Ok(mut stmt) = conn.prepare("PRAGMA table_info(photo_metadata)") {
                 if let Ok(rows) = stmt.query_map([], |row| {
@@ -69,6 +71,9 @@ impl SQLite {
                             if column_name == "photo_date" {
                                 has_new_photo_date_column = true;
                             }
+                            if column_name == "created_at" {
+                                has_created_at_column = true;
+                            }
                         }
                     }
                 }
@@ -78,22 +83,24 @@ impl SQLite {
             if has_old_date_column && !has_new_photo_date_column {
                 println!("Migrating database schema from 'date' to 'photo_date' column");
                 
-                // Create new table with correct schema
+                // Create new table with correct schema (including created_at)
                 conn.execute(
                     "CREATE TABLE photo_metadata_new (
                         path TEXT PRIMARY KEY,
                         photo_date TEXT NOT NULL,
                         star INTEGER NOT NULL DEFAULT 0,
-                        comment TEXT NOT NULL DEFAULT ''
+                        comment TEXT NOT NULL DEFAULT '',
+                        created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
                     )",
                     [],
                 )?;
                 
-                // Copy data from old table to new table, converting date format
+                // Copy data from old table to new table, converting date format and adding created_at
+                let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
                 conn.execute(
-                    "INSERT INTO photo_metadata_new (path, photo_date, star, comment)
-                     SELECT path, REPLACE(date, '/', '-'), star, comment FROM photo_metadata",
-                    [],
+                    "INSERT INTO photo_metadata_new (path, photo_date, star, comment, created_at)
+                     SELECT path, REPLACE(date, '/', '-'), star, comment, ?1 FROM photo_metadata",
+                    params![now],
                 )?;
                 
                 // Drop old table and rename new one
@@ -107,6 +114,40 @@ impl SQLite {
                 )?;
                 
                 println!("Database schema migration completed");
+            } else if has_new_photo_date_column && !has_created_at_column {
+                println!("Adding created_at column to existing photo_metadata table");
+                
+                // Create new table with created_at column
+                conn.execute(
+                    "CREATE TABLE photo_metadata_new (
+                        path TEXT PRIMARY KEY,
+                        photo_date TEXT NOT NULL,
+                        star INTEGER NOT NULL DEFAULT 0,
+                        comment TEXT NOT NULL DEFAULT '',
+                        created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
+                    )",
+                    [],
+                )?;
+                
+                // Copy data from old table to new table, adding created_at
+                let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+                conn.execute(
+                    "INSERT INTO photo_metadata_new (path, photo_date, star, comment, created_at)
+                     SELECT path, photo_date, star, comment, ?1 FROM photo_metadata",
+                    params![now],
+                )?;
+                
+                // Drop old table and rename new one
+                conn.execute("DROP TABLE photo_metadata", [])?;
+                conn.execute("ALTER TABLE photo_metadata_new RENAME TO photo_metadata", [])?;
+                
+                // Create index
+                conn.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_photo_date ON photo_metadata(photo_date)",
+                    [],
+                )?;
+                
+                println!("Created_at column migration completed");
             }
         } else {
             // Create new table with correct schema
@@ -115,7 +156,8 @@ impl SQLite {
                     path TEXT PRIMARY KEY,
                     photo_date TEXT NOT NULL,
                     star INTEGER NOT NULL DEFAULT 0,
-                    comment TEXT NOT NULL DEFAULT ''
+                    comment TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
                 )",
                 [],
             )?;
@@ -414,15 +456,17 @@ impl MetaInfoDB for SQLite {
             .get_connection()
             .map_err(|_| "Failed to connect to database")?;
         let mut stmt = conn
-            .prepare("INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment) VALUES (?1, ?2, ?3, ?4)")
+            .prepare("INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment, created_at) VALUES (?1, ?2, ?3, ?4, ?5)")
             .map_err(|_| "Failed to prepare statement")?;
 
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
         for (path, meta) in photo_metas.iter() {
             stmt.execute(params![
                 path,
                 meta.photo_time(),
                 meta.star.star(),
-                meta.comment.comment()
+                meta.comment.comment(),
+                now
             ])
             .map_err(|_| "Failed to execute statement")?;
         }
@@ -435,9 +479,10 @@ impl MetaInfoDB for SQLite {
             .get_connection()
             .map_err(|_| "Failed to connect to database")?;
         let mut stmt = conn
-            .prepare("INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment) VALUES (?1, ?2, ?3, ?4)")
+            .prepare("INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment, created_at) VALUES (?1, ?2, ?3, ?4, ?5)")
             .map_err(|_| "Failed to prepare statement")?;
 
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
         for mut photo in photos {
             photo.load_exif();
             let date = match photo.dir.to_date() {
@@ -463,7 +508,8 @@ impl MetaInfoDB for SQLite {
                 photo.file.path,
                 date,
                 existing_meta.star.star(),
-                existing_meta.comment.comment()
+                existing_meta.comment.comment(),
+                now
             ])
             .map_err(|e| {
                 eprintln!("Failed to execute database statement for {}: {}", photo.file.path, e);
@@ -601,13 +647,15 @@ impl MetaInfoDB for SQLite {
 
         let existing_meta = self.get_photo_meta(photo.clone());
 
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
         let _ = conn.execute(
-            "INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment) VALUES (?1, ?2, ?3, ?4)",
+            "INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
                 photo.file.path,
                 existing_meta.photo_time(),
                 star.star(),
-                existing_meta.comment.comment()
+                existing_meta.comment.comment(),
+                now
             ],
         );
     }
@@ -620,13 +668,15 @@ impl MetaInfoDB for SQLite {
 
         let existing_meta = self.get_photo_meta(photo.clone());
 
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
         let _ = conn.execute(
-            "INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment) VALUES (?1, ?2, ?3, ?4)",
+            "INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
                 photo.file.path,
                 existing_meta.photo_time(),
                 existing_meta.star.star(),
-                comment.comment()
+                comment.comment(),
+                now
             ],
         );
     }
@@ -996,5 +1046,17 @@ impl SQLite {
         }
         
         Ok(jobs)
+    }
+
+    pub fn reset_running_jobs_to_pending(&self) -> Result<usize, String> {
+        let conn = Connection::open(&self.db_path)
+            .map_err(|e| format!("Failed to connect to database: {}", e))?;
+            
+        let affected_rows = conn.execute(
+            "UPDATE job_queue SET status = 'pending' WHERE status = 'running'",
+            [],
+        ).map_err(|e| format!("Failed to reset running jobs: {}", e))?;
+        
+        Ok(affected_rows)
     }
 }

@@ -29,9 +29,7 @@ impl JobQueueManager {
     }
 
     pub fn start_background_processing(&self, app_handle: tauri::AppHandle) {
-        let db = Arc::clone(&self.db);
         let is_running = Arc::clone(&self.is_running);
-        let max_concurrent = self.max_concurrent_jobs;
 
         {
             let mut running = is_running.lock().unwrap();
@@ -41,77 +39,20 @@ impl JobQueueManager {
             *running = true;
         }
 
-        thread::spawn(move || {
-            eprintln!("Job queue background processing started");
-            let mut iteration_count = 0;
-            
-            loop {
-                iteration_count += 1;
-                if iteration_count <= 3 || iteration_count % 10 == 0 {
-                    eprintln!("Background processing loop iteration #{}", iteration_count);
-                }
-                // Check if we should stop
-                {
-                    let running = is_running.lock().unwrap();
-                    if !*running {
-                        break;
-                    }
-                }
-
-                // Process pending jobs
-                if iteration_count <= 3 || iteration_count % 10 == 0 {
-                    eprintln!("Checking for pending jobs...");
-                }
-                match db.get_pending_jobs() {
-                    Ok(pending_jobs) => {
-                        if iteration_count <= 3 || iteration_count % 10 == 0 {
-                            eprintln!("Query returned {} jobs", pending_jobs.len());
-                        }
-                        if !pending_jobs.is_empty() {
-                            eprintln!("=== FOUND {} PENDING JOBS ===", pending_jobs.len());
-                            for (idx, job) in pending_jobs.iter().enumerate() {
-                                eprintln!("Job {}: ID={:?}, Type={:?}, Unit={}, Files={}", 
-                                    idx + 1, job.id, job.job.job_type, job.job_unit_id, job.job.target.len());
-                            }
-                            
-                            // Process jobs in batches up to max_concurrent
-                            let batch_size = std::cmp::min(pending_jobs.len(), max_concurrent);
-                            let mut handles = Vec::new();
-                            
-                            for job in pending_jobs.into_iter().take(batch_size) {
-                                let db_clone = Arc::clone(&db);
-                                let app_handle_clone = app_handle.clone();
-                                
-                                let handle = thread::spawn(move || {
-                                    Self::process_job(db_clone, job, app_handle_clone)
-                                });
-                                handles.push(handle);
-                            }
-                            
-                            // Wait for all jobs in this batch to complete
-                            for handle in handles {
-                                if let Err(e) = handle.join() {
-                                    eprintln!("Job thread panicked: {:?}", e);
-                                }
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        eprintln!("Error getting pending jobs: {}", e);
-                    }
-                }
-
-                // Cleanup completed jobs after each batch
-                if let Err(e) = db.cleanup_completed_jobs() {
-                    eprintln!("Error cleaning up completed jobs: {}", e);
-                }
-
-                // Sleep before next iteration
-                thread::sleep(Duration::from_secs(2));
-            }
-            
-            eprintln!("Job queue background processing stopped");
-        });
+        eprintln!("=== STARTING JOB QUEUE MANAGER ===");
+        
+        // 1. At startup: Reset any running jobs to pending (they were interrupted)
+        eprintln!("Resetting interrupted running jobs to pending...");
+        if let Err(e) = self.reset_running_jobs_to_pending() {
+            eprintln!("Failed to reset running jobs: {}", e);
+        }
+        
+        // 2. At startup: Process any existing pending jobs once
+        eprintln!("Processing existing pending jobs at startup...");
+        self.process_startup_jobs(app_handle.clone());
+        
+        eprintln!("=== JOB QUEUE STARTUP COMPLETE ===");
+        eprintln!("Job queue manager is now ready to process new jobs submitted via submit_import_jobs()");
     }
 
     pub fn stop_background_processing(&self) {
@@ -119,7 +60,130 @@ impl JobQueueManager {
         *running = false;
     }
 
-    pub fn submit_import_jobs(&self, files: Vec<String>) -> Result<String, String> {
+    // Reset any jobs that were "running" to "pending" (they were interrupted by app shutdown)
+    fn reset_running_jobs_to_pending(&self) -> Result<(), String> {
+        eprintln!("Checking for interrupted running jobs...");
+        match self.db.reset_running_jobs_to_pending() {
+            Ok(count) => {
+                if count > 0 {
+                    eprintln!("Reset {} interrupted running jobs to pending", count);
+                } else {
+                    eprintln!("No interrupted running jobs found");
+                }
+                Ok(())
+            }
+            Err(e) => {
+                eprintln!("Failed to reset running jobs: {}", e);
+                Err(e)
+            }
+        }
+    }
+    
+    // Process existing pending jobs at startup (one-time operation)
+    fn process_startup_jobs(&self, app_handle: tauri::AppHandle) {
+        let db = Arc::clone(&self.db);
+        let max_concurrent = self.max_concurrent_jobs;
+        
+        eprintln!("Checking for pending jobs at startup...");
+        match db.get_pending_jobs() {
+            Ok(pending_jobs) => {
+                if pending_jobs.is_empty() {
+                    eprintln!("No pending jobs found at startup");
+                    return;
+                }
+                
+                eprintln!("=== FOUND {} PENDING JOBS AT STARTUP ===", pending_jobs.len());
+                for (idx, job) in pending_jobs.iter().enumerate() {
+                    eprintln!("Startup Job {}: ID={:?}, Type={:?}, Unit={}, Files={}", 
+                        idx + 1, job.id, job.job.job_type, job.job_unit_id, job.job.target.len());
+                }
+                
+                // Process jobs in batches up to max_concurrent
+                let batch_size = std::cmp::min(pending_jobs.len(), max_concurrent);
+                let mut handles = Vec::new();
+                
+                for job in pending_jobs.into_iter().take(batch_size) {
+                    let db_clone = Arc::clone(&db);
+                    let app_handle_clone = app_handle.clone();
+                    
+                    let handle = thread::spawn(move || {
+                        Self::process_job(db_clone, job, app_handle_clone)
+                    });
+                    handles.push(handle);
+                }
+                
+                // Wait for all startup jobs to complete
+                for handle in handles {
+                    if let Err(e) = handle.join() {
+                        eprintln!("Startup job thread panicked: {:?}", e);
+                    }
+                }
+                
+                eprintln!("=== STARTUP JOBS PROCESSING COMPLETE ===");
+            }
+            Err(e) => {
+                eprintln!("Error getting pending jobs at startup: {}", e);
+            }
+        }
+        
+        // Cleanup completed jobs after startup processing
+        if let Err(e) = db.cleanup_completed_jobs() {
+            eprintln!("Error cleaning up completed jobs after startup: {}", e);
+        }
+    }
+    
+    // Process new jobs when they are submitted (called from submit_import_jobs)
+    pub fn process_new_jobs(&self, app_handle: tauri::AppHandle) {
+        let db = Arc::clone(&self.db);
+        let max_concurrent = self.max_concurrent_jobs;
+        
+        thread::spawn(move || {
+            eprintln!("Processing newly submitted jobs...");
+            match db.get_pending_jobs() {
+                Ok(pending_jobs) => {
+                    if pending_jobs.is_empty() {
+                        eprintln!("No pending jobs to process");
+                        return;
+                    }
+                    
+                    eprintln!("=== PROCESSING {} NEW JOBS ===", pending_jobs.len());
+                    
+                    // Process jobs in batches up to max_concurrent
+                    let batch_size = std::cmp::min(pending_jobs.len(), max_concurrent);
+                    let mut handles = Vec::new();
+                    
+                    for job in pending_jobs.into_iter().take(batch_size) {
+                        let db_clone = Arc::clone(&db);
+                        let app_handle_clone = app_handle.clone();
+                        
+                        let handle = thread::spawn(move || {
+                            Self::process_job(db_clone, job, app_handle_clone)
+                        });
+                        handles.push(handle);
+                    }
+                    
+                    // Wait for all jobs in this batch to complete
+                    for handle in handles {
+                        if let Err(e) = handle.join() {
+                            eprintln!("Job thread panicked: {:?}", e);
+                        }
+                    }
+                    
+                    // Cleanup completed jobs after processing
+                    if let Err(e) = db.cleanup_completed_jobs() {
+                        eprintln!("Error cleaning up completed jobs: {}", e);
+                    }
+                    
+                    eprintln!("=== NEW JOBS PROCESSING COMPLETE ===");
+                }
+                Err(e) => {
+                    eprintln!("Error getting pending jobs: {}", e);
+                }
+            }
+        });
+    }
+
+    pub fn submit_import_jobs(&self, files: Vec<String>, app_handle: tauri::AppHandle) -> Result<String, String> {
         eprintln!("Submitting import jobs for {} files", files.len());
         
         // Create job unit
@@ -160,6 +224,10 @@ impl JobQueueManager {
         let create_db_id = self.db.create_job(&create_db_queued)?;
         
         eprintln!("Created jobs with IDs: {}, {}, {}", import_id, thumbnail_id, create_db_id);
+
+        // Immediately start processing the newly submitted jobs
+        eprintln!("Starting processing of newly submitted jobs...");
+        self.process_new_jobs(app_handle);
 
         Ok(job_unit_id)
     }
