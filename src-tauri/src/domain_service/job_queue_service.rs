@@ -10,7 +10,8 @@ use tauri::{Emitter, Manager};
 use sha2::{Sha256, Digest};
 use uuid::Uuid;
 use regex::Regex;
-use chrono;
+use chrono::{self, Datelike};
+use serde_json;
 
 pub struct JobQueueManager {
     db: Arc<SQLite>,
@@ -219,9 +220,29 @@ impl JobQueueManager {
                     eprintln!("Failed to update job unit status: {}", e);
                 }
                 
-                // Emit progress event
-                if let Err(e) = app_handle.emit("job_completed", &job.job_unit_id) {
-                    eprintln!("Failed to emit job_completed event: {}", e);
+                // Check if the entire job unit is now complete
+                match db.get_job_unit_progress(&job.job_unit_id) {
+                    Ok(progress) => {
+                        eprintln!("Job unit progress: {:?}", progress);
+                        
+                        // Emit individual job completion event
+                        if let Err(e) = app_handle.emit("job_completed", &job.job_unit_id) {
+                            eprintln!("Failed to emit job_completed event: {}", e);
+                        }
+                        
+                        // If all jobs are complete, emit legacy import completion events
+                        if progress.completed_jobs >= progress.total_jobs {
+                            eprintln!("=== ALL JOBS COMPLETE - EMITTING COMPLETION EVENTS ===");
+                            Self::emit_import_completion_events(&app_handle, &job.job_unit_id, &db);
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to get job unit progress: {}", e);
+                        // Still emit job completed event
+                        if let Err(e) = app_handle.emit("job_completed", &job.job_unit_id) {
+                            eprintln!("Failed to emit job_completed event: {}", e);
+                        }
+                    }
                 }
             }
             Err(error_msg) => {
@@ -466,12 +487,9 @@ impl JobQueueManager {
             eprintln!("Processing date string for thumbnails: '{}'", date_str);
             // Only process if it looks like a date (YYYY-MM-DD format)
             if Regex::new(r"^\d{4}-\d{2}-\d{2}$").unwrap().is_match(&date_str) {
-                if let Some(date) = crate::value::date::Date::from_string(&date_str, Some("-")) {
-                    eprintln!("Valid date found for thumbnails: {}", date_str);
-                    dates.push(date);
-                } else {
-                    eprintln!("Invalid date format, skipping: {}", date_str);
-                }
+                eprintln!("Valid date pattern found for thumbnails: {}", date_str);
+                let date = crate::value::date::Date::from_string(&date_str, Some("-"));
+                dates.push(date);
             } else {
                 eprintln!("Not a date pattern, skipping: {}", date_str);
             }
@@ -559,12 +577,9 @@ impl JobQueueManager {
             eprintln!("Processing date string for database: '{}'", date_str);
             // Only process if it looks like a date (YYYY-MM-DD format)
             if Regex::new(r"^\d{4}-\d{2}-\d{2}$").unwrap().is_match(&date_str) {
-                if let Some(date) = crate::value::date::Date::from_string(&date_str, Some("-")) {
-                    eprintln!("Valid date found for database: {}", date_str);
-                    dates.push(date);
-                } else {
-                    eprintln!("Invalid date format, skipping: {}", date_str);
-                }
+                eprintln!("Valid date pattern found for database: {}", date_str);
+                let date = crate::value::date::Date::from_string(&date_str, Some("-"));
+                dates.push(date);
             } else {
                 eprintln!("Not a date pattern, skipping: {}", date_str);
             }
@@ -664,5 +679,93 @@ impl JobQueueManager {
         }
         
         Ok(new_uuid)
+    }
+
+    // Method to emit completion events for backward compatibility with frontend
+    fn emit_import_completion_events(
+        app_handle: &tauri::AppHandle, 
+        job_unit_id: &str, 
+        db: &Arc<SQLite>
+    ) {
+        eprintln!("Emitting import completion events for job unit: {}", job_unit_id);
+        
+        // Get the imported dates from the completed jobs
+        let imported_dates = Self::get_imported_dates_from_job_unit(db, job_unit_id);
+        
+        // Emit the sequence of events that the original import system used
+        // These events trigger frontend to reload date lists and show notifications
+        
+        // 1. Notify that thumbnail creation is starting
+        if let Err(e) = app_handle.emit("import", "start thumbnail creation") {
+            eprintln!("Failed to emit 'start thumbnail creation' event: {}", e);
+        }
+        
+        // 2. Notify that thumbnail creation finished
+        if let Err(e) = app_handle.emit("import", "thumbnail creation finish") {
+            eprintln!("Failed to emit 'thumbnail creation finish' event: {}", e);
+        }
+        
+        // 3. Emit final completion event with dates information
+        // The frontend expects this to trigger date list reload and notifications
+        if let Err(e) = app_handle.emit("import", "finish") {
+            eprintln!("Failed to emit 'finish' event: {}", e);
+        }
+        
+        // 4. Also emit modern job unit completion event with dates
+        let completion_data = serde_json::json!({
+            "job_unit_id": job_unit_id,
+            "imported_dates": imported_dates,
+            "status": "completed"
+        });
+        
+        if let Err(e) = app_handle.emit("import_job_unit_completed", completion_data) {
+            eprintln!("Failed to emit 'import_job_unit_completed' event: {}", e);
+        }
+        
+        eprintln!("=== IMPORT COMPLETION EVENTS EMITTED ===");
+    }
+    
+    // Helper method to extract the list of dates that had photos imported
+    fn get_imported_dates_from_job_unit(db: &Arc<SQLite>, job_unit_id: &str) -> Vec<String> {
+        eprintln!("Getting imported dates for job unit: {}", job_unit_id);
+        
+        // Get all jobs for this job unit to find the import job
+        match db.get_jobs_for_unit(job_unit_id) {
+            Ok(jobs) => {
+                let mut dates_set = std::collections::HashSet::new();
+                
+                // Look through completed jobs to find dates
+                for job in jobs {
+                    if job.job.job_type == crate::entity::job_queue::JobType::Import {
+                        // Extract dates from the imported file paths
+                        for file_path in &job.job.target {
+                            // For imported files, extract date from destination path structure
+                            let path = std::path::Path::new(file_path);
+                            if let Some(parent) = path.parent() {
+                                if let Some(_uuid_dir) = parent.file_name() {
+                                    if let Some(date_dir) = parent.parent() {
+                                        if let Some(date_str) = date_dir.file_name() {
+                                            let date_string = date_str.to_string_lossy().to_string();
+                                            // Only add if it looks like a date (YYYY-MM-DD format)
+                                            if regex::Regex::new(r"^\d{4}-\d{2}-\d{2}$").unwrap().is_match(&date_string) {
+                                                dates_set.insert(date_string);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                let dates: Vec<String> = dates_set.into_iter().collect();
+                eprintln!("Found imported dates: {:?}", dates);
+                dates
+            }
+            Err(e) => {
+                eprintln!("Failed to get jobs for unit {}: {}", job_unit_id, e);
+                vec![]
+            }
+        }
     }
 }

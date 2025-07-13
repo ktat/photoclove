@@ -107,7 +107,16 @@ impl Photo {
         let reg2 = regex::Regex::new(r"^/").unwrap();
         let date_string = reg2.replace(&date_string_with_slash, "");
 
-        return date::Date::from_string(&date_string.to_string(), Option::Some("-"));
+        // Handle UUID-based directory structure: extract only the date part
+        // For paths like "2025-06-20/cb06329f-01ad-4895-842e-dea81d3eaac4", we want just "2025-06-20"
+        let date_only = if date_string.contains("/") {
+            // Split by "/" and take the first part (the date)
+            date_string.split("/").next().unwrap_or(&date_string).to_string()
+        } else {
+            date_string.to_string()
+        };
+
+        return date::Date::from_string(&date_only, Option::Some("-"));
     }
 
     pub fn set_time(&mut self, time: String) {

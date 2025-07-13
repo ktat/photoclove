@@ -53,7 +53,7 @@ pub struct Job {
     pub created_at: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum JobType {
     #[serde(rename = "import")]
     Import,

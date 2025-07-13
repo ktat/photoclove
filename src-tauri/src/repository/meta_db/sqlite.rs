@@ -940,4 +940,61 @@ impl SQLite {
         
         Ok(())
     }
+
+    pub fn get_jobs_for_unit(&self, job_unit_id: &str) -> Result<Vec<crate::entity::job_queue::QueuedJob>, String> {
+        let conn = Connection::open(&self.db_path)
+            .map_err(|e| format!("Failed to connect to database: {}", e))?;
+            
+        let mut stmt = conn.prepare(
+            "SELECT id, job_unit_id, job_type, target, status, error_message, created_at 
+             FROM job_queue WHERE job_unit_id = ?1"
+        ).map_err(|e| format!("Failed to prepare statement: {}", e))?;
+        
+        let job_iter = stmt.query_map([job_unit_id], |row| {
+            let job_id: i64 = row.get(0)?;
+            let job_unit_id: String = row.get(1)?;
+            let job_type_str: String = row.get(2)?;
+            let target_json: String = row.get(3)?;
+            let status_str: String = row.get(4)?;
+            let error_message: Option<String> = row.get(5)?;
+            let _created_at: String = row.get(6)?;
+            
+            // Parse job type
+            let job_type = match job_type_str.as_str() {
+                "import" => crate::entity::job_queue::JobType::Import,
+                "thumbnail" => crate::entity::job_queue::JobType::Thumbnail,
+                "create_db" => crate::entity::job_queue::JobType::CreateDb,
+                _ => return Err(rusqlite::Error::InvalidColumnType(2, "job_type".to_string(), rusqlite::types::Type::Text)),
+            };
+            
+            // Parse target files
+            let target: Vec<String> = serde_json::from_str(&target_json)
+                .map_err(|_| rusqlite::Error::InvalidColumnType(3, "target".to_string(), rusqlite::types::Type::Text))?;
+            
+            // Parse status
+            let status = match status_str.as_str() {
+                "pending" => crate::entity::job_queue::JobStatus::Pending,
+                "running" => crate::entity::job_queue::JobStatus::Running,
+                "completed" => crate::entity::job_queue::JobStatus::Completed,
+                "failed" => crate::entity::job_queue::JobStatus::Failed,
+                _ => return Err(rusqlite::Error::InvalidColumnType(4, "status".to_string(), rusqlite::types::Type::Text)),
+            };
+            
+            // Create job
+            let job = crate::entity::job_queue::Job::new(job_unit_id.clone(), job_type, target);
+            let mut queued_job = crate::entity::job_queue::QueuedJob::new(job_unit_id, job);
+            queued_job.id = Some(job_id);
+            queued_job.status = status;
+            queued_job.error_message = error_message;
+            
+            Ok(queued_job)
+        }).map_err(|e| format!("Failed to query jobs: {}", e))?;
+        
+        let mut jobs = Vec::new();
+        for job_result in job_iter {
+            jobs.push(job_result.map_err(|e| format!("Failed to parse job: {}", e))?);
+        }
+        
+        Ok(jobs)
+    }
 }
