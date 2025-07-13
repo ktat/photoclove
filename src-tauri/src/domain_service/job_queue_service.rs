@@ -1,10 +1,14 @@
-use crate::entity::{job_queue, photo};
+use crate::entity::job_queue;
 use crate::repository::meta_db::sqlite::SQLite;
+use crate::repository::MetaInfoDB;
 use crate::value::file;
+use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 use tauri::{Emitter, Manager};
+use sha2::{Sha256, Digest};
+use uuid::Uuid;
 
 pub struct JobQueueManager {
     db: Arc<SQLite>,
@@ -157,7 +161,7 @@ impl JobQueueManager {
         self.db.get_job_unit_progress(job_unit_id)
     }
 
-    fn process_job(db: Arc<SQLite>, mut job: job_queue::QueuedJob, app_handle: tauri::AppHandle) {
+    fn process_job(db: Arc<SQLite>, job: job_queue::QueuedJob, app_handle: tauri::AppHandle) {
         let job_id = job.id.unwrap();
         eprintln!("Processing job {}: {:?}", job_id, job.job.job_type);
 
@@ -209,23 +213,95 @@ impl JobQueueManager {
     fn process_import_job(job: &job_queue::QueuedJob, app_handle: &tauri::AppHandle) -> Result<(), String> {
         eprintln!("Processing import job for {} files", job.job.target.len());
         
+        // Get app state to access configuration
+        let state = app_handle.state::<crate::AppState>();
+        let config = &state.config;
+        let destination_dir = &config.import_to;
+        let trash_path = std::path::Path::new(&config.trash_path);
+        
         // Emit progress event
         if let Err(e) = app_handle.emit("import_progress", (&job.job_unit_id, "Processing import job", 0)) {
             eprintln!("Failed to emit import_progress event: {}", e);
         }
         
-        // TODO: Implement actual import logic here
-        // For now, simulate processing
+        let mut imported_photos = Vec::new();
+        
         for (i, file_path) in job.job.target.iter().enumerate() {
-            eprintln!("Processing file: {}", file_path);
+            eprintln!("Importing file: {}", file_path);
             
-            // Simulate work
-            thread::sleep(Duration::from_millis(100));
+            // Create file and photo objects
+            let source_file = file::File::new(file_path.clone());
+            let mut photo = crate::entity::photo::Photo::new(source_file.clone(), Some(config.clone()));
+            photo.load_exif();
+            
+            // Get or create UUID for the source directory
+            let source_dir = std::path::Path::new(file_path).parent()
+                .ok_or_else(|| format!("Cannot get parent directory for: {}", file_path))?;
+            
+            let uuid = Self::get_or_create_source_uuid(source_dir)
+                .map_err(|e| format!("Failed to get UUID for source directory: {}", e))?;
+            
+            // Determine destination date directory from EXIF or filename
+            let date = photo.dir.to_date()
+                .ok_or_else(|| format!("Cannot determine date for photo: {}", file_path))?;
+            
+            let filename = std::path::Path::new(file_path).file_name()
+                .ok_or_else(|| format!("Cannot get filename from: {}", file_path))?
+                .to_string_lossy();
+            
+            // Build destination path: [destination_dir]/[YYYY-MM-DD]/[UUID]/[filename]
+            let destination_date_dir = std::path::Path::new(destination_dir).join(date.to_string());
+            let destination_uuid_dir = destination_date_dir.join(&uuid);
+            let destination_path = destination_uuid_dir.join(filename.as_ref());
+            
+            // Skip if source and destination are the same
+            if file_path == &destination_path.display().to_string() {
+                eprintln!("Skipping same file: {}", file_path);
+                continue;
+            }
+            
+            // Skip if file exists in trash
+            let trash_file_path = trash_path.join(destination_path.strip_prefix("/").unwrap_or(&destination_path));
+            if trash_file_path.exists() {
+                eprintln!("Skipping file in trash: {}", file_path);
+                continue;
+            }
+            
+            // Create destination directories
+            if let Err(e) = std::fs::create_dir_all(&destination_uuid_dir) {
+                return Err(format!("Failed to create destination directory {}: {}", destination_uuid_dir.display(), e));
+            }
+            
+            // Copy the file with timestamp preservation
+            match Self::copy_file_with_timestamp(file_path, &destination_path.display().to_string()) {
+                Ok(_) => {
+                    eprintln!("Successfully copied: {} to {}", file_path, destination_path.display());
+                    
+                    // Create photo object for the copied file
+                    let destination_file = file::File::new(destination_path.display().to_string());
+                    let mut destination_photo = crate::entity::photo::Photo::new(destination_file, Some(config.clone()));
+                    destination_photo.embed_exif(photo.meta_data);
+                    imported_photos.push(destination_photo);
+                }
+                Err(e) => {
+                    eprintln!("Failed to copy file: {} - {}", file_path, e);
+                    return Err(format!("Failed to copy file {}: {}", file_path, e));
+                }
+            }
             
             // Emit progress
             let progress = ((i + 1) as f64 / job.job.target.len() as f64) * 100.0;
             if let Err(e) = app_handle.emit("import_progress", (&job.job_unit_id, file_path, progress)) {
                 eprintln!("Failed to emit import_progress event: {}", e);
+            }
+        }
+        
+        // Record metadata for imported photos
+        if !imported_photos.is_empty() {
+            let meta_db = &state.meta_db;
+            if let Err(e) = meta_db.record_photos_meta_data(imported_photos) {
+                eprintln!("Failed to record photo metadata: {:?}", e);
+                return Err(format!("Failed to record photo metadata: {:?}", e));
             }
         }
         
@@ -235,52 +311,197 @@ impl JobQueueManager {
     fn process_thumbnail_job(job: &job_queue::QueuedJob, app_handle: &tauri::AppHandle) -> Result<(), String> {
         eprintln!("Processing thumbnail job for {} files", job.job.target.len());
         
+        // Get app state to access configuration
+        let state = app_handle.state::<crate::AppState>();
+        let config = &state.config;
+        
         // Emit progress event
         if let Err(e) = app_handle.emit("thumbnail_progress", (&job.job_unit_id, "Processing thumbnails", 0)) {
             eprintln!("Failed to emit thumbnail_progress event: {}", e);
         }
         
-        // TODO: Implement actual thumbnail logic here
-        // For now, simulate processing
-        for (i, file_path) in job.job.target.iter().enumerate() {
-            eprintln!("Creating thumbnail for: {}", file_path);
-            
-            // Simulate work
-            thread::sleep(Duration::from_millis(50));
-            
-            // Emit progress
-            let progress = ((i + 1) as f64 / job.job.target.len() as f64) * 100.0;
-            if let Err(e) = app_handle.emit("thumbnail_progress", (&job.job_unit_id, file_path, progress)) {
-                eprintln!("Failed to emit thumbnail_progress event: {}", e);
+        // Get unique dates from the imported files to create thumbnails for those dates
+        let mut dates_set = std::collections::HashSet::new();
+        for file_path in &job.job.target {
+            // For imported files, extract date from destination path structure: [dest]/[YYYY-MM-DD]/[UUID]/[filename]
+            let path = std::path::Path::new(file_path);
+            if let Some(parent) = path.parent() {
+                if let Some(uuid_dir) = parent.file_name() {
+                    if let Some(date_dir) = parent.parent() {
+                        if let Some(date_str) = date_dir.file_name() {
+                            dates_set.insert(date_str.to_string_lossy().to_string());
+                        }
+                    }
+                }
             }
         }
         
-        Ok(())
+        if dates_set.is_empty() {
+            return Ok(()); // No dates to process
+        }
+        
+        // Convert to date objects
+        let mut dates = Vec::new();
+        for date_str in dates_set {
+            let date = crate::value::date::Date::from_string(&date_str, Some("-"));
+            dates.push(date);
+        }
+        
+        if dates.is_empty() {
+            return Ok(()); // No valid dates
+        }
+        
+        let dates_obj = crate::value::date::Dates::new(&dates);
+        
+        // Create thumbnails using the existing photo service
+        let origin = std::path::PathBuf::from(&config.import_to);
+        let dest = std::path::PathBuf::from(&config.thumbnail_store);
+        
+        // Use futures blocking approach for thumbnail creation
+        let thumbnail_result = futures::executor::block_on(async {
+            crate::domain_service::photo_service::create_thumbnails(
+                dates_obj,
+                &origin,
+                &dest,
+                config.thumbnail_parallel as u32,
+                config.thumbnail_compression_quality,
+                config.thumbnail_ratio,
+                config.thumbnail_ignore_file_size,
+            ).await
+        });
+        
+        match thumbnail_result {
+            Ok(_) => {
+                eprintln!("Successfully created thumbnails for {} dates", dates.len());
+                
+                // Emit final progress
+                if let Err(e) = app_handle.emit("thumbnail_progress", (&job.job_unit_id, "Thumbnails completed", 100.0)) {
+                    eprintln!("Failed to emit thumbnail_progress event: {}", e);
+                }
+                
+                Ok(())
+            }
+            Err(e) => {
+                let error_msg = format!("Failed to create thumbnails: {}", e);
+                eprintln!("{}", error_msg);
+                Err(error_msg)
+            }
+        }
     }
 
     fn process_create_db_job(job: &job_queue::QueuedJob, app_handle: &tauri::AppHandle) -> Result<(), String> {
         eprintln!("Processing create_db job for {} files", job.job.target.len());
+        
+        // Get app state to access configuration and database
+        let state = app_handle.state::<crate::AppState>();
+        let meta_db = &state.meta_db;
         
         // Emit progress event
         if let Err(e) = app_handle.emit("create_db_progress", (&job.job_unit_id, "Creating database entries", 0)) {
             eprintln!("Failed to emit create_db_progress event: {}", e);
         }
         
-        // TODO: Implement actual database creation logic here
-        // For now, simulate processing
-        for (i, file_path) in job.job.target.iter().enumerate() {
-            eprintln!("Creating DB entry for: {}", file_path);
-            
-            // Simulate work
-            thread::sleep(Duration::from_millis(25));
-            
-            // Emit progress
-            let progress = ((i + 1) as f64 / job.job.target.len() as f64) * 100.0;
-            if let Err(e) = app_handle.emit("create_db_progress", (&job.job_unit_id, file_path, progress)) {
-                eprintln!("Failed to emit create_db_progress event: {}", e);
+        // Get unique dates from the imported files
+        let mut dates_set = std::collections::HashSet::new();
+        for file_path in &job.job.target {
+            // For imported files, extract date from destination path structure: [dest]/[YYYY-MM-DD]/[UUID]/[filename]
+            let path = std::path::Path::new(file_path);
+            if let Some(parent) = path.parent() {
+                if let Some(uuid_dir) = parent.file_name() {
+                    if let Some(date_dir) = parent.parent() {
+                        if let Some(date_str) = date_dir.file_name() {
+                            dates_set.insert(date_str.to_string_lossy().to_string());
+                        }
+                    }
+                }
             }
         }
         
-        Ok(())
+        if dates_set.is_empty() {
+            eprintln!("No dates found for database creation");
+            return Ok(());
+        }
+        
+        // Convert to date objects
+        let mut dates = Vec::new();
+        for date_str in dates_set {
+            let date = crate::value::date::Date::from_string(&date_str, Some("-"));
+            dates.push(date);
+        }
+        
+        if dates.is_empty() {
+            eprintln!("No valid dates found for database creation");
+            return Ok(());
+        }
+        
+        let dates_obj = crate::value::date::Dates::new(&dates);
+        
+        // Create database entries for the imported photos using existing functionality
+        match meta_db.record_photos_all_meta_data(dates_obj) {
+            Ok(result) => {
+                eprintln!("Successfully created database entries for {} dates", dates.len());
+                eprintln!("Database creation result: {:?}", result);
+                
+                // Emit final progress
+                if let Err(e) = app_handle.emit("create_db_progress", (&job.job_unit_id, "Database entries completed", 100.0)) {
+                    eprintln!("Failed to emit create_db_progress event: {}", e);
+                }
+                
+                Ok(())
+            }
+            Err(e) => {
+                let error_msg = format!("Failed to create database entries: {:?}", e);
+                eprintln!("{}", error_msg);
+                Err(error_msg)
+            }
+        }
+    }
+    
+    // Helper method to copy file with timestamp preservation
+    fn copy_file_with_timestamp(from: &str, to: &str) -> std::io::Result<u64> {
+        let result = std::fs::copy(from, to);
+        
+        // Preserve original file's modification time
+        if let Ok(meta) = std::fs::metadata(from) {
+            if let Ok(modified) = meta.modified() {
+                let ft = filetime::FileTime::from_system_time(modified);
+                let _ = filetime::set_file_mtime(to, ft);
+            }
+        }
+        
+        result
+    }
+    
+    // Helper method to get or create UUID for source directory
+    fn get_or_create_source_uuid(source_dir: &std::path::Path) -> std::io::Result<String> {
+        let uuid_file = source_dir.join(".photoclove-uuid");
+        
+        // Try to read existing UUID file
+        if uuid_file.exists() {
+            if let Ok(uuid_content) = std::fs::read_to_string(&uuid_file) {
+                let uuid = uuid_content.trim();
+                if !uuid.is_empty() {
+                    return Ok(uuid.to_string());
+                }
+            }
+        }
+        
+        // Create new UUID
+        let new_uuid = uuid::Uuid::new_v4().to_string();
+        
+        // Try to write UUID file, but don't fail if we can't
+        match std::fs::write(&uuid_file, &new_uuid) {
+            Ok(_) => eprintln!("Created UUID file: {}", uuid_file.display()),
+            Err(e) => {
+                eprintln!("Failed to create UUID file {}: {}", uuid_file.display(), e);
+                // Fall back to SHA256 hash of the source directory path
+                let mut hasher = Sha256::new();
+                hasher.update(source_dir.display().to_string().as_bytes());
+                let hash = hasher.finalize();
+                return Ok(format!("{:x}", hash));
+            }
+        }
+        
+        Ok(new_uuid)
     }
 }
