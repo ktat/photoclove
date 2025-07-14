@@ -19,15 +19,6 @@ function DirectoryMenu(props) {
     let lockUpload = false;
     let lockDelete = false;
     
-    // Editor state
-    const [editorStyles, setEditorStyles] = useState({
-        rotate: 0,
-        brightness: 100,
-        contrast: 100,
-        saturation: 100,
-        hue: 0,
-        scale: 100
-    });
 
     function doOperation(e) {
         const selected = e.target.value;
@@ -127,172 +118,12 @@ function DirectoryMenu(props) {
         }
     }
 
-    // Editor functions
-    function updateStyle(property, value) {
-        setEditorStyles(prev => ({
-            ...prev,
-            [property]: value
-        }));
-        
-        // Update the value display
-        const valueSpan = document.getElementById(`${property}-value`);
-        if (valueSpan) {
-            valueSpan.textContent = value;
-        }
-        
-        // Generate CSS and update preview
-        const css = generateCSS();
-        const previewTextarea = document.getElementById('css-preview-text');
-        if (previewTextarea) {
-            previewTextarea.value = css;
-        }
-        
-        // Apply to current image immediately
-        applyTempStyle(css);
-    }
-
-    function generateCSS() {
-        const { rotate, brightness, contrast, saturation, hue, scale } = editorStyles;
-        
-        let transform = [];
-        let filter = [];
-        
-        if (rotate !== 0) transform.push(`rotate(${rotate}deg)`);
-        if (scale !== 100) transform.push(`scale(${scale / 100})`);
-        
-        if (brightness !== 100) filter.push(`brightness(${brightness}%)`);
-        if (contrast !== 100) filter.push(`contrast(${contrast}%)`);
-        if (saturation !== 100) filter.push(`saturate(${saturation}%)`);
-        if (hue !== 0) filter.push(`hue-rotate(${hue}deg)`);
-        
-        let css = '';
-        if (transform.length > 0) {
-            css += `transform: ${transform.join(' ')}; `;
-        }
-        if (filter.length > 0) {
-            css += `filter: ${filter.join(' ')}; `;
-        }
-        
-        return css.trim();
-    }
-
-    function applyTempStyle(css) {
-        // Apply temporary style to the currently displayed image
-        const currentImage = document.querySelector('.photo-display img');
-        if (currentImage) {
-            currentImage.style.cssText = css;
-        }
-    }
-
-    async function applyStyle() {
-        if (props.photoSelection.length === 0) {
-            alert('Please select a photo first');
-            return;
-        }
-        
-        const css = generateCSS();
-        if (!css) {
-            alert('No styles to apply');
-            return;
-        }
-        
-        try {
-            const photoPath = props.photoSelection[0];
-            await invoke('save_css_style', {
-                photoPath: photoPath,
-                cssStyle: css
-            });
-            
-            alert('Style applied successfully');
-        } catch (error) {
-            console.error('Failed to apply style:', error);
-            alert('Failed to apply style');
-        }
-    }
-
-    async function saveAsCopy() {
-        if (props.photoSelection.length === 0) {
-            alert('Please select a photo first');
-            return;
-        }
-        
-        const css = generateCSS();
-        if (!css) {
-            alert('No styles to save');
-            return;
-        }
-        
-        // Generate hash of CSS for filename
-        const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(css));
-        const hashArray = Array.from(new Uint8Array(hash));
-        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        const shortHash = hashHex.substring(0, 16);
-        
-        const originalPath = props.photoSelection[0];
-        const pathParts = originalPath.split('.');
-        const extension = pathParts.pop();
-        const nameWithoutExt = pathParts.join('.');
-        const newPath = `${nameWithoutExt}-${shortHash}.${extension}`;
-        
-        alert(`Save as copy functionality not yet implemented. Would save as: ${newPath}`);
-    }
-
-    function resetStyle() {
-        setEditorStyles({
-            rotate: 0,
-            brightness: 100,
-            contrast: 100,
-            saturation: 100,
-            hue: 0,
-            scale: 100
-        });
-        
-        // Reset all sliders and values
-        document.querySelectorAll('#tab-editor input[type="range"]').forEach(slider => {
-            slider.value = slider.defaultValue;
-        });
-        
-        ['rotate', 'brightness', 'contrast', 'saturation', 'hue', 'scale'].forEach(prop => {
-            const valueSpan = document.getElementById(`${prop}-value`);
-            if (valueSpan) {
-                valueSpan.textContent = prop === 'brightness' || prop === 'contrast' || prop === 'saturation' || prop === 'scale' ? '100' : '0';
-            }
-        });
-        
-        // Clear CSS preview
-        const previewTextarea = document.getElementById('css-preview-text');
-        if (previewTextarea) {
-            previewTextarea.value = '';
-        }
-        
-        // Remove temporary styling
-        const currentImage = document.querySelector('.photo-display img');
-        if (currentImage) {
-            currentImage.style.cssText = '';
-        }
-    }
-
-    async function downloadStyled() {
-        if (props.photoSelection.length === 0) {
-            alert('Please select a photo first');
-            return;
-        }
-        
-        const css = generateCSS();
-        if (!css) {
-            alert('No styles to download');
-            return;
-        }
-        
-        alert('Download functionality not yet implemented');
-    }
 
     return (
         <div id="directory-maintenance">
             <ul className="tabs-list">
                 <li className={props.tabClass['filter'] ? "tab tab-active" : "tab"} ><a onClick={(e) => props.changeTab(e, e.target.href)} href="#tab-filter">Filter</a></li>
                 <li className={props.tabClass['selection'] ? "tab tab-active" : "tab"} ><a onClick={(e) => props.changeTab(e, e.target.href)} href="#tab-selection">Selection</a></li>
-                <li className={props.tabClass['editor'] ? "tab tab-active" : "tab"} ><a onClick={(e) => props.changeTab(e, e.target.href)} href="#tab-editor">Editor</a></li>
                 <li className={props.tabClass['maintenance'] ? "tab tab-active" : "tab"} ><a onClick={(e) => props.changeTab(e, e.target.href)} href="#tab-maintenance">Maintenance</a></li>
             </ul>
             <div id="tab-maintenance" className={props.tabClass['maintenance'] ? "tab-active" : "tab"}>
@@ -301,59 +132,6 @@ function DirectoryMenu(props) {
                     <li><a href="#" onClick={() => { movePhotosToExifDate() }}>Move files according to Exif date</a></li>
                     <li><a href="#" onClick={() => { createThumbnails() }}>Make thumbnails</a></li>
                 </ul>
-            </div>
-            <div id="tab-editor" className={props.tabClass['editor'] ? "tab-active" : "tab"}>
-                <div>
-                    <h4>Image Editor</h4>
-                    <div className="editor-controls">
-                        <div className="editor-control">
-                            <label>Rotation (deg):</label>
-                            <input type="range" min="0" max="360" defaultValue="0" 
-                                   onChange={(e) => updateStyle('rotate', e.target.value)} />
-                            <span id="rotate-value">0</span>
-                        </div>
-                        <div className="editor-control">
-                            <label>Brightness:</label>
-                            <input type="range" min="0" max="200" defaultValue="100" 
-                                   onChange={(e) => updateStyle('brightness', e.target.value)} />
-                            <span id="brightness-value">100</span>
-                        </div>
-                        <div className="editor-control">
-                            <label>Contrast:</label>
-                            <input type="range" min="0" max="200" defaultValue="100" 
-                                   onChange={(e) => updateStyle('contrast', e.target.value)} />
-                            <span id="contrast-value">100</span>
-                        </div>
-                        <div className="editor-control">
-                            <label>Saturation:</label>
-                            <input type="range" min="0" max="200" defaultValue="100" 
-                                   onChange={(e) => updateStyle('saturation', e.target.value)} />
-                            <span id="saturation-value">100</span>
-                        </div>
-                        <div className="editor-control">
-                            <label>Hue (deg):</label>
-                            <input type="range" min="0" max="360" defaultValue="0" 
-                                   onChange={(e) => updateStyle('hue', e.target.value)} />
-                            <span id="hue-value">0</span>
-                        </div>
-                        <div className="editor-control">
-                            <label>Scale:</label>
-                            <input type="range" min="50" max="200" defaultValue="100" 
-                                   onChange={(e) => updateStyle('scale', e.target.value)} />
-                            <span id="scale-value">100</span>
-                        </div>
-                    </div>
-                    <div className="editor-buttons">
-                        <button onClick={() => applyStyle()}>Apply</button>
-                        <button onClick={() => saveAsCopy()}>Save as Copy</button>
-                        <button onClick={() => resetStyle()}>Reset</button>
-                        <button onClick={() => downloadStyled()}>Download</button>
-                    </div>
-                    <div className="css-preview">
-                        <label>CSS Preview:</label>
-                        <textarea id="css-preview-text" rows="4" readOnly></textarea>
-                    </div>
-                </div>
             </div>
             <div id="tab-filter" className={props.tabClass['filter'] ? "tab-active" : "tab"}>
                 <ul>
