@@ -135,61 +135,6 @@ function PhotoInfo(props) {
         invoke("save_comment", { pathStr: props.currentPhotoPath, commentStr: comment });
     }
 
-    // Helper functions for style management
-    function storeOriginalStyle(element, key) {
-        if (!originalStyles.has(key)) {
-            const computedStyle = window.getComputedStyle(element);
-            const currentTransform = computedStyle.transform !== 'none' ? computedStyle.transform : '';
-            const currentFilter = computedStyle.filter !== 'none' ? computedStyle.filter : '';
-            
-            setOriginalStyles(prev => new Map(prev.set(key, {
-                transform: currentTransform,
-                filter: currentFilter,
-                cssText: element.style.cssText
-            })));
-        }
-    }
-
-    function mergeWithOriginalStyle(element, key, editorCSS) {
-        const original = originalStyles.get(key);
-        if (!original) return editorCSS;
-
-        // Parse editor styles
-        const editorTransforms = [];
-        const editorFilters = [];
-        
-        const { rotate, brightness, contrast, saturation, hue, scale } = editorStyles;
-        
-        if (rotate !== 0) editorTransforms.push(`rotate(${rotate}deg)`);
-        if (scale !== 100) editorTransforms.push(`scale(${scale / 100})`);
-        
-        if (brightness !== 100) editorFilters.push(`brightness(${brightness}%)`);
-        if (contrast !== 100) editorFilters.push(`contrast(${contrast}%)`);
-        if (saturation !== 100) editorFilters.push(`saturate(${saturation}%)`);
-        if (hue !== 0) editorFilters.push(`hue-rotate(${hue}deg)`);
-
-        // Combine original and editor styles
-        let finalTransform = '';
-        let finalFilter = '';
-
-        // Merge transforms
-        if (original.transform || editorTransforms.length > 0) {
-            const transforms = [];
-            if (original.transform) transforms.push(original.transform);
-            transforms.push(...editorTransforms);
-            finalTransform = `transform: ${transforms.join(' ')}; `;
-        }
-
-        // Merge filters  
-        if (original.filter || editorFilters.length > 0) {
-            const filters = [];
-            if (original.filter) filters.push(original.filter);
-            filters.push(...editorFilters);
-            finalFilter = `filter: ${filters.join(' ')}; `;
-        }
-
-        return (finalTransform + finalFilter).trim();
-    }
 
     // Editor functions
     function updateStyle(property, value) {
@@ -241,65 +186,111 @@ function PhotoInfo(props) {
     }
 
     function applyTempStyle(css) {
+        const { rotate, brightness, contrast, saturation, hue, scale } = editorStyles;
+        
         // Apply temporary style to the main photo display
         const mainImage = document.querySelector('#photoImgTag');
         if (mainImage) {
-            const key = 'main-image';
-            storeOriginalStyle(mainImage, key);
-            const mergedCSS = mergeWithOriginalStyle(mainImage, key, css);
-            
-            // Apply only the new editor styles as additional CSS, not replacement
-            const originalCssText = originalStyles.get(key)?.cssText || '';
-            mainImage.style.cssText = originalCssText;
-            
-            // Apply editor styles as additional properties
-            if (mergedCSS) {
-                const tempDiv = document.createElement('div');
-                tempDiv.style.cssText = mergedCSS;
-                if (tempDiv.style.transform) mainImage.style.transform = tempDiv.style.transform;
-                if (tempDiv.style.filter) mainImage.style.filter = tempDiv.style.filter;
+            // Store original styles only once
+            if (!originalStyles.has('main-image')) {
+                setOriginalStyles(prev => new Map(prev.set('main-image', {
+                    transform: mainImage.style.transform || '',
+                    filter: mainImage.style.filter || '',
+                    cssText: mainImage.style.cssText || ''
+                })));
             }
+            
+            // Get original transform and filter
+            const original = originalStyles.get('main-image') || { transform: '', filter: '' };
+            
+            // Build editor transforms and filters
+            const editorTransforms = [];
+            const editorFilters = [];
+            
+            if (rotate !== 0) editorTransforms.push(`rotate(${rotate}deg)`);
+            if (scale !== 100) editorTransforms.push(`scale(${scale / 100})`);
+            
+            if (brightness !== 100) editorFilters.push(`brightness(${brightness}%)`);
+            if (contrast !== 100) editorFilters.push(`contrast(${contrast}%)`);
+            if (saturation !== 100) editorFilters.push(`saturate(${saturation}%)`);
+            if (hue !== 0) editorFilters.push(`hue-rotate(${hue}deg)`);
+            
+            // Combine original and editor styles
+            let finalTransform = '';
+            let finalFilter = '';
+            
+            if (original.transform || editorTransforms.length > 0) {
+                const allTransforms = [];
+                if (original.transform) allTransforms.push(original.transform);
+                allTransforms.push(...editorTransforms);
+                finalTransform = allTransforms.join(' ');
+            }
+            
+            if (original.filter || editorFilters.length > 0) {
+                const allFilters = [];
+                if (original.filter) allFilters.push(original.filter);
+                allFilters.push(...editorFilters);
+                finalFilter = allFilters.join(' ');
+            }
+            
+            // Apply combined styles
+            mainImage.style.transform = finalTransform;
+            mainImage.style.filter = finalFilter;
         }
         
-        // Also apply to grid thumbnails (PhotosList)
-        const gridThumbnails = document.querySelectorAll('.photos .row img');
-        gridThumbnails.forEach((img, index) => {
-            if (img.src && props.currentPhotoPath && img.src.includes(props.currentPhotoPath.split('/').pop())) {
-                const key = `grid-thumb-${index}`;
-                storeOriginalStyle(img, key);
-                const mergedCSS = mergeWithOriginalStyle(img, key, css);
-                
-                const originalCssText = originalStyles.get(key)?.cssText || '';
-                img.style.cssText = originalCssText;
-                
-                if (mergedCSS) {
-                    const tempDiv = document.createElement('div');
-                    tempDiv.style.cssText = mergedCSS;
-                    if (tempDiv.style.transform) img.style.transform = tempDiv.style.transform;
-                    if (tempDiv.style.filter) img.style.filter = tempDiv.style.filter;
+        // Apply to thumbnails with similar logic
+        const applyToThumbnails = (selector, keyPrefix) => {
+            const thumbnails = document.querySelectorAll(selector);
+            thumbnails.forEach((img, index) => {
+                if (img.src && props.currentPhotoPath && img.src.includes(props.currentPhotoPath.split('/').pop())) {
+                    const key = `${keyPrefix}-${index}`;
+                    
+                    if (!originalStyles.has(key)) {
+                        setOriginalStyles(prev => new Map(prev.set(key, {
+                            transform: img.style.transform || '',
+                            filter: img.style.filter || '',
+                            cssText: img.style.cssText || ''
+                        })));
+                    }
+                    
+                    const original = originalStyles.get(key) || { transform: '', filter: '' };
+                    
+                    const editorTransforms = [];
+                    const editorFilters = [];
+                    
+                    if (rotate !== 0) editorTransforms.push(`rotate(${rotate}deg)`);
+                    if (scale !== 100) editorTransforms.push(`scale(${scale / 100})`);
+                    
+                    if (brightness !== 100) editorFilters.push(`brightness(${brightness}%)`);
+                    if (contrast !== 100) editorFilters.push(`contrast(${contrast}%)`);
+                    if (saturation !== 100) editorFilters.push(`saturate(${saturation}%)`);
+                    if (hue !== 0) editorFilters.push(`hue-rotate(${hue}deg)`);
+                    
+                    let finalTransform = '';
+                    let finalFilter = '';
+                    
+                    if (original.transform || editorTransforms.length > 0) {
+                        const allTransforms = [];
+                        if (original.transform) allTransforms.push(original.transform);
+                        allTransforms.push(...editorTransforms);
+                        finalTransform = allTransforms.join(' ');
+                    }
+                    
+                    if (original.filter || editorFilters.length > 0) {
+                        const allFilters = [];
+                        if (original.filter) allFilters.push(original.filter);
+                        allFilters.push(...editorFilters);
+                        finalFilter = allFilters.join(' ');
+                    }
+                    
+                    img.style.transform = finalTransform;
+                    img.style.filter = finalFilter;
                 }
-            }
-        });
+            });
+        };
         
-        // Also apply to mini list thumbnails (PhotosListMini)
-        const miniThumbnails = document.querySelectorAll('#photos-list-mini img');
-        miniThumbnails.forEach((img, index) => {
-            if (img.src && props.currentPhotoPath && img.src.includes(props.currentPhotoPath.split('/').pop())) {
-                const key = `mini-thumb-${index}`;
-                storeOriginalStyle(img, key);
-                const mergedCSS = mergeWithOriginalStyle(img, key, css);
-                
-                const originalCssText = originalStyles.get(key)?.cssText || '';
-                img.style.cssText = originalCssText;
-                
-                if (mergedCSS) {
-                    const tempDiv = document.createElement('div');
-                    tempDiv.style.cssText = mergedCSS;
-                    if (tempDiv.style.transform) img.style.transform = tempDiv.style.transform;
-                    if (tempDiv.style.filter) img.style.filter = tempDiv.style.filter;
-                }
-            }
-        });
+        applyToThumbnails('.photos .row img', 'grid-thumb');
+        applyToThumbnails('#photos-list-mini img', 'mini-thumb');
     }
 
     async function applyStyle() {
@@ -375,37 +366,32 @@ function PhotoInfo(props) {
         if (mainImage) {
             const originalStyle = originalStyles.get('main-image');
             if (originalStyle) {
-                mainImage.style.cssText = originalStyle.cssText;
+                mainImage.style.transform = originalStyle.transform;
+                mainImage.style.filter = originalStyle.filter;
             } else {
-                // Clear only editor-specific properties, preserve others
                 mainImage.style.transform = '';
                 mainImage.style.filter = '';
             }
         }
         
-        // Restore original styles to grid thumbnails
-        const gridThumbnails = document.querySelectorAll('.photos .row img');
-        gridThumbnails.forEach((img, index) => {
-            const originalStyle = originalStyles.get(`grid-thumb-${index}`);
-            if (originalStyle) {
-                img.style.cssText = originalStyle.cssText;
-            } else {
-                img.style.transform = '';
-                img.style.filter = '';
-            }
-        });
+        // Restore original styles to thumbnails
+        const restoreThumbnails = (selector, keyPrefix) => {
+            const thumbnails = document.querySelectorAll(selector);
+            thumbnails.forEach((img, index) => {
+                const key = `${keyPrefix}-${index}`;
+                const originalStyle = originalStyles.get(key);
+                if (originalStyle) {
+                    img.style.transform = originalStyle.transform;
+                    img.style.filter = originalStyle.filter;
+                } else {
+                    img.style.transform = '';
+                    img.style.filter = '';
+                }
+            });
+        };
         
-        // Restore original styles to mini thumbnails
-        const miniThumbnails = document.querySelectorAll('#photos-list-mini img');
-        miniThumbnails.forEach((img, index) => {
-            const originalStyle = originalStyles.get(`mini-thumb-${index}`);
-            if (originalStyle) {
-                img.style.cssText = originalStyle.cssText;
-            } else {
-                img.style.transform = '';
-                img.style.filter = '';
-            }
-        });
+        restoreThumbnails('.photos .row img', 'grid-thumb');
+        restoreThumbnails('#photos-list-mini img', 'mini-thumb');
         
         // Clear stored original styles for the current photo
         setOriginalStyles(new Map());
