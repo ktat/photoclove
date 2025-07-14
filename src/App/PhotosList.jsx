@@ -394,10 +394,34 @@ function PhotosList(props) {
                                 const image_for_not_found = "/img_error.png";
                                 let thumbnailSrc = "";
                                 if (l.has_thumbnail) {
-                                    if (l.file.name.match(/(mp4|webm)$/i)) {
-                                        thumbnailSrc = thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + l.file.name + ".jpg";
+                                    // Extract UUID from the full file path
+                                    // Path format: /path/to/target/2025-07-01/[UUID]/image.jpg
+                                    const pathParts = l.file.path.split('/');
+                                    let uuid = null;
+                                    
+                                    // Find the date directory and the UUID directory after it
+                                    const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+                                    for (let j = 0; j < pathParts.length - 1; j++) {
+                                        if (datePattern.test(pathParts[j]) && pathParts[j + 1]) {
+                                            uuid = pathParts[j + 1];
+                                            break;
+                                        }
+                                    }
+                                    
+                                    if (uuid) {
+                                        // Build thumbnail path with UUID directory
+                                        if (l.file.name.match(/(mp4|webm)$/i)) {
+                                            thumbnailSrc = thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + uuid + '/' + l.file.name + ".jpg";
+                                        } else {
+                                            thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + uuid + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
+                                        }
                                     } else {
-                                        thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
+                                        // Fallback to old behavior if UUID cannot be extracted
+                                        if (l.file.name.match(/(mp4|webm)$/i)) {
+                                            thumbnailSrc = thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + l.file.name + ".jpg";
+                                        } else {
+                                            thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
+                                        }
                                     }
                                     photosListImgSrc[l.file.path] = convertFileSrc(thumbnailSrc);
                                 } else {

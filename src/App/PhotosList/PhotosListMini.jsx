@@ -463,10 +463,35 @@ function PhotosListMini(props) {
     function getThumbnailSrc(photo) {
         let thumbnailSrc = "";
         if (photo && photo.has_thumbnail) {
-            if (photo.file.name.match(/(mp4|webm)$/i)) {
-                thumbnailSrc = thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + photo.file.name + ".jpg";
+            // Extract UUID from the full file path
+            // Path format: /path/to/target/2025-07-01/[UUID]/image.jpg
+            // We need to extract the UUID directory from the full path
+            const pathParts = photo.file.path.split('/');
+            let uuid = null;
+            
+            // Find the date directory and the UUID directory after it
+            const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+            for (let i = 0; i < pathParts.length - 1; i++) {
+                if (datePattern.test(pathParts[i]) && pathParts[i + 1]) {
+                    uuid = pathParts[i + 1];
+                    break;
+                }
+            }
+            
+            if (uuid) {
+                // Build thumbnail path with UUID directory
+                if (photo.file.name.match(/(mp4|webm)$/i)) {
+                    thumbnailSrc = thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + uuid + '/' + photo.file.name + ".jpg";
+                } else {
+                    thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + uuid + '/' + photo.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
+                }
             } else {
-                thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + photo.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
+                // Fallback to old behavior if UUID cannot be extracted
+                if (photo.file.name.match(/(mp4|webm)$/i)) {
+                    thumbnailSrc = thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + photo.file.name + ".jpg";
+                } else {
+                    thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + photo.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
+                }
             }
         }
         return thumbnailSrc;
