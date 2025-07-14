@@ -138,30 +138,41 @@ function PhotoInfo(props) {
 
     // Editor functions
     function updateStyle(property, value) {
-        setEditorStyles(prev => ({
-            ...prev,
-            [property]: value
-        }));
+        // Update state
+        setEditorStyles(prev => {
+            const newStyles = {
+                ...prev,
+                [property]: parseInt(value)
+            };
+            
+            // Generate CSS with the new values immediately
+            const css = generateCSSFromValues(newStyles);
+            
+            // Update CSS preview
+            const previewTextarea = document.getElementById('css-preview-text');
+            if (previewTextarea) {
+                previewTextarea.value = css;
+            }
+            
+            // Apply to current image immediately with new values
+            applyTempStyleWithValues(newStyles);
+            
+            return newStyles;
+        });
         
         // Update the value display
         const valueSpan = document.getElementById(`${property}-value`);
         if (valueSpan) {
             valueSpan.textContent = value;
         }
-        
-        // Generate CSS and update preview
-        const css = generateCSS();
-        const previewTextarea = document.getElementById('css-preview-text');
-        if (previewTextarea) {
-            previewTextarea.value = css;
-        }
-        
-        // Apply to current image immediately
-        applyTempStyle(css);
     }
 
     function generateCSS() {
-        const { rotate, brightness, contrast, saturation, hue, scale } = editorStyles;
+        return generateCSSFromValues(editorStyles);
+    }
+
+    function generateCSSFromValues(styles) {
+        const { rotate, brightness, contrast, saturation, hue, scale } = styles;
         
         let transform = [];
         let filter = [];
@@ -186,7 +197,11 @@ function PhotoInfo(props) {
     }
 
     function applyTempStyle(css) {
-        const { rotate, brightness, contrast, saturation, hue, scale } = editorStyles;
+        applyTempStyleWithValues(editorStyles);
+    }
+
+    function applyTempStyleWithValues(styles) {
+        const { rotate, brightness, contrast, saturation, hue, scale } = styles;
         
         // Apply temporary style to the main photo display
         const mainImage = document.querySelector('#photoImgTag');
