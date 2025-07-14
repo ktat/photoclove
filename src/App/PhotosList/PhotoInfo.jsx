@@ -7,6 +7,7 @@ function PhotoInfo(props) {
     const [photoInfo, setPhotoInfo] = useState({});
     const [comment, setComment] = useState("");
     const [activeTab, setActiveTab] = useState("info");
+    const [originalStyles, setOriginalStyles] = useState(new Map());
     const [editorStyles, setEditorStyles] = useState({
         rotate: 0,
         brightness: 100,
@@ -22,6 +23,39 @@ function PhotoInfo(props) {
             });
         }
     }, [props.currentPhotoPath, props.showSideMenu])
+
+    // Clear stored original styles when photo changes
+    useEffect(() => {
+        setOriginalStyles(new Map());
+        // Reset editor styles when photo changes
+        setEditorStyles({
+            rotate: 0,
+            brightness: 100,
+            contrast: 100,
+            saturation: 100,
+            hue: 0,
+            scale: 100
+        });
+        
+        // Reset UI sliders
+        setTimeout(() => {
+            document.querySelectorAll('.photo-info-editor input[type="range"]').forEach(slider => {
+                slider.value = slider.defaultValue;
+            });
+            
+            ['rotate', 'brightness', 'contrast', 'saturation', 'hue', 'scale'].forEach(prop => {
+                const valueSpan = document.getElementById(`${prop}-value`);
+                if (valueSpan) {
+                    valueSpan.textContent = prop === 'brightness' || prop === 'contrast' || prop === 'saturation' || prop === 'scale' ? '100' : '0';
+                }
+            });
+            
+            const previewTextarea = document.getElementById('css-preview-text');
+            if (previewTextarea) {
+                previewTextarea.value = '';
+            }
+        }, 100);
+    }, [props.currentPhotoPath])
 
     async function getPhotoInfo(path) {
         if (props.imgCacheMap[path] && props.imgCacheMap[path][1]) {
@@ -101,6 +135,62 @@ function PhotoInfo(props) {
         invoke("save_comment", { pathStr: props.currentPhotoPath, commentStr: comment });
     }
 
+    // Helper functions for style management
+    function storeOriginalStyle(element, key) {
+        if (!originalStyles.has(key)) {
+            const computedStyle = window.getComputedStyle(element);
+            const currentTransform = computedStyle.transform !== 'none' ? computedStyle.transform : '';
+            const currentFilter = computedStyle.filter !== 'none' ? computedStyle.filter : '';
+            
+            setOriginalStyles(prev => new Map(prev.set(key, {
+                transform: currentTransform,
+                filter: currentFilter,
+                cssText: element.style.cssText
+            })));
+        }
+    }
+
+    function mergeWithOriginalStyle(element, key, editorCSS) {
+        const original = originalStyles.get(key);
+        if (!original) return editorCSS;
+
+        // Parse editor styles
+        const editorTransforms = [];
+        const editorFilters = [];
+        
+        const { rotate, brightness, contrast, saturation, hue, scale } = editorStyles;
+        
+        if (rotate !== 0) editorTransforms.push(`rotate(${rotate}deg)`);
+        if (scale !== 100) editorTransforms.push(`scale(${scale / 100})`);
+        
+        if (brightness !== 100) editorFilters.push(`brightness(${brightness}%)`);
+        if (contrast !== 100) editorFilters.push(`contrast(${contrast}%)`);
+        if (saturation !== 100) editorFilters.push(`saturate(${saturation}%)`);
+        if (hue !== 0) editorFilters.push(`hue-rotate(${hue}deg)`);
+
+        // Combine original and editor styles
+        let finalTransform = '';
+        let finalFilter = '';
+
+        // Merge transforms
+        if (original.transform || editorTransforms.length > 0) {
+            const transforms = [];
+            if (original.transform) transforms.push(original.transform);
+            transforms.push(...editorTransforms);
+            finalTransform = `transform: ${transforms.join(' ')}; `;
+        }
+
+        // Merge filters  
+        if (original.filter || editorFilters.length > 0) {
+            const filters = [];
+            if (original.filter) filters.push(original.filter);
+            filters.push(...editorFilters);
+            finalFilter = `filter: ${filters.join(' ')}; `;
+        }
+
+        return (finalTransform + finalFilter).trim();
+    }
+
     // Editor functions
     function updateStyle(property, value) {
         setEditorStyles(prev => ({
@@ -154,22 +244,60 @@ function PhotoInfo(props) {
         // Apply temporary style to the main photo display
         const mainImage = document.querySelector('#photoImgTag');
         if (mainImage) {
-            mainImage.style.cssText = css;
+            const key = 'main-image';
+            storeOriginalStyle(mainImage, key);
+            const mergedCSS = mergeWithOriginalStyle(mainImage, key, css);
+            
+            // Apply only the new editor styles as additional CSS, not replacement
+            const originalCssText = originalStyles.get(key)?.cssText || '';
+            mainImage.style.cssText = originalCssText;
+            
+            // Apply editor styles as additional properties
+            if (mergedCSS) {
+                const tempDiv = document.createElement('div');
+                tempDiv.style.cssText = mergedCSS;
+                if (tempDiv.style.transform) mainImage.style.transform = tempDiv.style.transform;
+                if (tempDiv.style.filter) mainImage.style.filter = tempDiv.style.filter;
+            }
         }
         
         // Also apply to grid thumbnails (PhotosList)
         const gridThumbnails = document.querySelectorAll('.photos .row img');
-        gridThumbnails.forEach(img => {
+        gridThumbnails.forEach((img, index) => {
             if (img.src && props.currentPhotoPath && img.src.includes(props.currentPhotoPath.split('/').pop())) {
-                img.style.cssText = css;
+                const key = `grid-thumb-${index}`;
+                storeOriginalStyle(img, key);
+                const mergedCSS = mergeWithOriginalStyle(img, key, css);
+                
+                const originalCssText = originalStyles.get(key)?.cssText || '';
+                img.style.cssText = originalCssText;
+                
+                if (mergedCSS) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.style.cssText = mergedCSS;
+                    if (tempDiv.style.transform) img.style.transform = tempDiv.style.transform;
+                    if (tempDiv.style.filter) img.style.filter = tempDiv.style.filter;
+                }
             }
         });
         
         // Also apply to mini list thumbnails (PhotosListMini)
         const miniThumbnails = document.querySelectorAll('#photos-list-mini img');
-        miniThumbnails.forEach(img => {
+        miniThumbnails.forEach((img, index) => {
             if (img.src && props.currentPhotoPath && img.src.includes(props.currentPhotoPath.split('/').pop())) {
-                img.style.cssText = css;
+                const key = `mini-thumb-${index}`;
+                storeOriginalStyle(img, key);
+                const mergedCSS = mergeWithOriginalStyle(img, key, css);
+                
+                const originalCssText = originalStyles.get(key)?.cssText || '';
+                img.style.cssText = originalCssText;
+                
+                if (mergedCSS) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.style.cssText = mergedCSS;
+                    if (tempDiv.style.transform) img.style.transform = tempDiv.style.transform;
+                    if (tempDiv.style.filter) img.style.filter = tempDiv.style.filter;
+                }
             }
         });
     }
@@ -242,23 +370,45 @@ function PhotoInfo(props) {
             previewTextarea.value = '';
         }
         
-        // Remove temporary styling from main image
+        // Restore original styling to main image
         const mainImage = document.querySelector('#photoImgTag');
         if (mainImage) {
-            mainImage.style.cssText = '';
+            const originalStyle = originalStyles.get('main-image');
+            if (originalStyle) {
+                mainImage.style.cssText = originalStyle.cssText;
+            } else {
+                // Clear only editor-specific properties, preserve others
+                mainImage.style.transform = '';
+                mainImage.style.filter = '';
+            }
         }
         
-        // Clear thumbnail styles from grid view
+        // Restore original styles to grid thumbnails
         const gridThumbnails = document.querySelectorAll('.photos .row img');
-        gridThumbnails.forEach(img => {
-            img.style.cssText = '';
+        gridThumbnails.forEach((img, index) => {
+            const originalStyle = originalStyles.get(`grid-thumb-${index}`);
+            if (originalStyle) {
+                img.style.cssText = originalStyle.cssText;
+            } else {
+                img.style.transform = '';
+                img.style.filter = '';
+            }
         });
         
-        // Clear thumbnail styles from mini view
+        // Restore original styles to mini thumbnails
         const miniThumbnails = document.querySelectorAll('#photos-list-mini img');
-        miniThumbnails.forEach(img => {
-            img.style.cssText = '';
+        miniThumbnails.forEach((img, index) => {
+            const originalStyle = originalStyles.get(`mini-thumb-${index}`);
+            if (originalStyle) {
+                img.style.cssText = originalStyle.cssText;
+            } else {
+                img.style.transform = '';
+                img.style.filter = '';
+            }
         });
+        
+        // Clear stored original styles for the current photo
+        setOriginalStyles(new Map());
     }
 
     async function downloadStyled() {
