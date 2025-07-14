@@ -9,6 +9,7 @@ import PhotosList from "./App/PhotosList.jsx"
 import DateList from "./App/DateList.jsx"
 import Importer from "./App/Importer.jsx"
 import Preferences from "./App/Preferences.jsx"
+import JobQueue from "./App/JobQueue.jsx"
 import Welcome from "./Welcome.jsx"
 import Home from "./App/Home.jsx"
 import loginGoogle from "./App/Login.jsx"
@@ -26,6 +27,7 @@ function App() {
   const [showImporter, setShowImporter] = useState(false);
   const [showPhotosList, setShowPhotosList] = useState(true);
   const [showPreferences, setShowPreferences] = useState(false);
+  const [showJobQueue, setShowJobQueue] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [footerMessages, setFooterMessages] = useState({});
   const [dateNum, setDateNum] = useState({});
@@ -116,6 +118,8 @@ function App() {
             toggleImporter(true);
           } else if (e.payload === "pref") {
             togglePreferences(true);
+          } else if (e.payload === "job_queue") {
+            toggleJobQueue(true);
           } else if (e.payload == "login") {
             loginGoogle();
           }
@@ -245,10 +249,12 @@ function App() {
       setShowImporter(true);
       setShowPhotosList(false);
       setShowPreferences(false);
+      setShowJobQueue(false);
       setShowLogin(false);
     } else {
       setShowImporter(false);
       setShowPreferences(false);
+      setShowJobQueue(false);
       setShowLogin(false);
       setShowPhotosList(true);
     }
@@ -261,9 +267,11 @@ function App() {
       setShowImporter(false);
       setShowPhotosList(false);
       setShowPreferences(false);
+      setShowJobQueue(false);
     } else {
       setShowImporter(false);
       setShowPreferences(false);
+      setShowJobQueue(false);
       setShowLogin(false);
       setShowPhotosList(false);
     }
@@ -280,10 +288,28 @@ function App() {
       setShowImporter(false);
       setShowPhotosList(false);
       setShowLogin(false);
+      setShowJobQueue(false);
       setShowPreferences(true);
     } else {
       setShowImporter(false);
       setShowPreferences(false);
+      setShowJobQueue(false);
+      setShowLogin(false);
+      setShowPhotosList(true);
+    }
+  }
+
+  function toggleJobQueue(t) {
+    if (t) {
+      setShowImporter(false);
+      setShowPhotosList(false);
+      setShowLogin(false);
+      setShowPreferences(false);
+      setShowJobQueue(true);
+    } else {
+      setShowImporter(false);
+      setShowPreferences(false);
+      setShowJobQueue(false);
       setShowLogin(false);
       setShowPhotosList(true);
     }
@@ -377,7 +403,14 @@ function App() {
                 setShowPreferences={setShowPreferences}
               ></Preferences>
             </div>
-            <div style={{ display: (!showImporter && !showLogin && !showPreferences && (!currentDate || !showPhotosList)) ? "block" : "none" }}>
+            <div style={{ display: showJobQueue ? "block" : "none" }}>
+              <JobQueue
+                toggleJobQueue={toggleJobQueue}
+                addFooterMessage={addFooterMessage}
+                setShowJobQueue={setShowJobQueue}
+              ></JobQueue>
+            </div>
+            <div style={{ display: (!showImporter && !showLogin && !showPreferences && !showJobQueue && (!currentDate || !showPhotosList)) ? "block" : "none" }}>
               <Home welcomeImage={welcomeImage} setWelcomeImage={setWelcomeImage} />
             </div>
           </>

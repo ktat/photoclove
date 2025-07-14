@@ -1110,6 +1110,79 @@ impl SQLite {
         Ok(affected_rows)
     }
 
+    pub fn get_all_jobs(&self) -> Result<Vec<crate::entity::job_queue::QueuedJob>, String> {
+        let conn = Connection::open(&self.db_path)
+            .map_err(|e| format!("Failed to connect to database: {}", e))?;
+            
+        let mut stmt = conn.prepare(
+            "SELECT id, job_unit_id, job, status, created_at, started_at, completed_at, error_message 
+             FROM job_queue ORDER BY created_at DESC"
+        ).map_err(|e| format!("Failed to prepare statement: {}", e))?;
+        
+        let job_iter = stmt.query_map([], |row| {
+            let job_json: String = row.get(2)?;
+            let job: crate::entity::job_queue::Job = serde_json::from_str(&job_json)
+                .map_err(|e| rusqlite::Error::InvalidColumnType(2, "job".to_string(), rusqlite::types::Type::Text))?;
+                
+            Ok(crate::entity::job_queue::QueuedJob {
+                id: Some(row.get(0)?),
+                job_unit_id: row.get(1)?,
+                job,
+                status: crate::entity::job_queue::JobStatus::from(row.get::<_, String>(3)?),
+                created_at: row.get(4)?,
+                started_at: row.get(5)?,
+                completed_at: row.get(6)?,
+                error_message: row.get(7)?,
+            })
+        }).map_err(|e| format!("Failed to query jobs: {}", e))?;
+        
+        let mut jobs = Vec::new();
+        for job in job_iter {
+            jobs.push(job.map_err(|e| format!("Failed to parse job: {}", e))?);
+        }
+        
+        Ok(jobs)
+    }
+
+    pub fn delete_job(&self, job_id: i64) -> Result<(), String> {
+        let conn = Connection::open(&self.db_path)
+            .map_err(|e| format!("Failed to connect to database: {}", e))?;
+            
+        let affected_rows = conn.execute(
+            "DELETE FROM job_queue WHERE id = ?1 AND status IN ('pending', 'failed')",
+            [job_id],
+        ).map_err(|e| format!("Failed to delete job: {}", e))?;
+        
+        if affected_rows == 0 {
+            return Err("Job not found or cannot be deleted (job may be running)".to_string());
+        }
+        
+        Ok(())
+    }
+
+    pub fn delete_job_unit(&self, job_unit_id: &str) -> Result<(), String> {
+        let conn = Connection::open(&self.db_path)
+            .map_err(|e| format!("Failed to connect to database: {}", e))?;
+            
+        // Delete all jobs for this unit (only if not running)
+        let affected_jobs = conn.execute(
+            "DELETE FROM job_queue WHERE job_unit_id = ?1 AND status IN ('pending', 'failed', 'completed')",
+            [job_unit_id],
+        ).map_err(|e| format!("Failed to delete jobs for unit: {}", e))?;
+        
+        // Delete the job unit itself
+        let affected_units = conn.execute(
+            "DELETE FROM job_unit WHERE id = ?1",
+            [job_unit_id],
+        ).map_err(|e| format!("Failed to delete job unit: {}", e))?;
+        
+        if affected_units == 0 {
+            return Err("Job unit not found".to_string());
+        }
+        
+        Ok(())
+    }
+
     pub fn get_photo_created_at(&self, photo: &photo::Photo) -> String {
         let conn = match self.get_connection() {
             Ok(conn) => conn,

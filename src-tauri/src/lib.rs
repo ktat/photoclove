@@ -588,6 +588,90 @@ fn save_config(state: tauri::State<AppState>, config: Config) -> String {
     }
 }
 
+#[tauri::command]
+async fn get_all_job_units(state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let job_queue_manager = &state.job_queue_manager;
+    let job_units = {
+        let manager = job_queue_manager.lock().unwrap();
+        manager.get_all_job_units().await
+    };
+    
+    match serde_json::to_string(&job_units) {
+        Ok(json) => Ok(json),
+        Err(e) => Err(format!("Failed to serialize job units: {}", e)),
+    }
+}
+
+#[tauri::command]
+async fn get_all_jobs(state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let job_queue_manager = &state.job_queue_manager;
+    let jobs = {
+        let manager = job_queue_manager.lock().unwrap();
+        manager.get_all_jobs().await
+    };
+    
+    match serde_json::to_string(&jobs) {
+        Ok(json) => Ok(json),
+        Err(e) => Err(format!("Failed to serialize jobs: {}", e)),
+    }
+}
+
+#[tauri::command]
+async fn retry_job(job_id: i64, state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let job_queue_manager = &state.job_queue_manager;
+    let result = {
+        let manager = job_queue_manager.lock().unwrap();
+        manager.retry_job(job_id).await
+    };
+    
+    match result {
+        Ok(success) => Ok(format!("{{\"result\": {}}}", success)),
+        Err(e) => Err(format!("Failed to retry job: {}", e)),
+    }
+}
+
+#[tauri::command]
+async fn delete_job(job_id: i64, state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let job_queue_manager = &state.job_queue_manager;
+    let result = {
+        let manager = job_queue_manager.lock().unwrap();
+        manager.delete_job(job_id).await
+    };
+    
+    match result {
+        Ok(success) => Ok(format!("{{\"result\": {}}}", success)),
+        Err(e) => Err(format!("Failed to delete job: {}", e)),
+    }
+}
+
+#[tauri::command]
+async fn delete_job_unit(job_unit_id: String, state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let job_queue_manager = &state.job_queue_manager;
+    let result = {
+        let manager = job_queue_manager.lock().unwrap();
+        manager.delete_job_unit(job_unit_id).await
+    };
+    
+    match result {
+        Ok(success) => Ok(format!("{{\"result\": {}}}", success)),
+        Err(e) => Err(format!("Failed to delete job unit: {}", e)),
+    }
+}
+
+#[tauri::command]
+async fn cleanup_completed_jobs(state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let job_queue_manager = &state.job_queue_manager;
+    let result = {
+        let manager = job_queue_manager.lock().unwrap();
+        manager.cleanup_completed_jobs().await
+    };
+    
+    match result {
+        Ok(success) => Ok(format!("{{\"result\": {}}}", success)),
+        Err(e) => Err(format!("Failed to cleanup completed jobs: {}", e)),
+    }
+}
+
 // to avoid event happens twice in same time.
 #[tauri::command]
 fn lock(t: bool) -> bool {
@@ -693,6 +777,7 @@ pub fn run() {
                 .text("import", "Import")
                 .text("create_db", "Create DB")
                 .text("login", "Login to Google")
+                .text("job_queue", "Job Queue")
                 .text("pref", "Preferences")
                 .text("quit", "Quit")
                 .build()?;
@@ -728,6 +813,8 @@ pub fn run() {
                     app.emit("click_menu", "import").unwrap();
                 } else if e.id == "login" {
                     app.emit("click_menu", "login").unwrap();
+                } else if e.id == "job_queue" {
+                    app.emit("click_menu", "job_queue").unwrap();
                 } else if e.id == "pref" {
                     app.emit("click_menu", "pref").unwrap();
                 } else {
@@ -758,6 +845,12 @@ pub fn run() {
             import_photos,
             get_import_progress,
             get_job_progress,
+            get_all_job_units,
+            get_all_jobs,
+            retry_job,
+            delete_job,
+            delete_job_unit,
+            cleanup_completed_jobs,
             get_photos_to_import_under_directory,
             get_dates_num,
             move_to_trash,
