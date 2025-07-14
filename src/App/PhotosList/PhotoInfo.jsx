@@ -6,6 +6,7 @@ import { show } from "@tauri-apps/api/app";
 function PhotoInfo(props) {
     const [photoInfo, setPhotoInfo] = useState({});
     const [comment, setComment] = useState("");
+    const [activeTab, setActiveTab] = useState("info");
     const [editorStyles, setEditorStyles] = useState({
         rotate: 0,
         brightness: 100,
@@ -285,110 +286,132 @@ function PhotoInfo(props) {
                     {props.showSideMenu ? ">" : "<"}
                 </a>
             </div>
-            <p><strong>Photo Info</strong></p>
+            <div className="photo-info-tabs">
+                <div className="tab-header">
+                    <button 
+                        className={activeTab === "info" ? "tab-button active" : "tab-button"}
+                        onClick={() => setActiveTab("info")}
+                    >
+                        📷 Info
+                    </button>
+                    <button 
+                        className={activeTab === "editor" ? "tab-button active" : "tab-button"}
+                        onClick={() => setActiveTab("editor")}
+                    >
+                        🎨 Editor
+                    </button>
+                </div>
+            </div>
             {props.currentPhotoPath && props.showSideMenu && (
-                <div>
-                    <table>
-                        <tbody>
-                            <tr><th>File Name</th>
-                                <td>
-                                    <a href="#" onClick={() => {
-                                        writeText(props.currentPhotoPath);
-                                        props.addFooterMessage("clipboard", "Copy file path to clipboard", 50000);
-                                    }}>📋</a>
-                                    <a
-                                        onMouseEnter={() => { props.addFooterMessage("current_phtoo_path", "File Path: " + props.currentPhotoPath, false, 10000) }}>
-                                        {props.currentPhotoPath.replace(/^.+\//, '')}
-                                    </a>
-                                </td></tr>
-                            <tr><th>ISO</th><td>{photoInfo.exif ? photoInfo.exif.iso : ""}</td></tr>
-                            <tr><th>FNumber</th><td>{photoInfo.exif ? photoInfo.exif.fnumber : ""}</td></tr>
-                            <tr><th>Shutter Speed</th><td>{photoInfo.exif ? photoInfo.exif.exposure_time : ""}</td></tr>
-                            <tr><th>LensModel</th><td>{photoInfo.exif ? photoInfo.exif.lens_model : ""}</td></tr>
-                            <tr><th>LensMake</th><td>{photoInfo.exif ? photoInfo.exif.lens_make : ""}</td></tr>
-                            <tr><th>Make</th><td>{photoInfo.exif ? photoInfo.exif.make : ""}</td></tr>
-                            <tr><th>Model</th><td>{photoInfo.exif ? photoInfo.exif.model : ""}</td></tr>
-                            <tr><th>Date & Time</th><td>{photoInfo.exif ? photoInfo.exif.date_time : ""}</td></tr>
-                            <tr><th>Focal Length</th><td>{photoInfo.exif ?
-                                photoInfo.exif.focal_length == photoInfo.exif.focal_length_in35mm_film
-                                    ? photoInfo.exif.focal_length
-                                    : photoInfo.exif.focal_length + "(" + photoInfo.exif.focal_length_in35mm_film + ")" : ""}
-                            </td></tr>
-                            <tr><th>Digital Zoom Ratio</th><td>{photoInfo.exif ? photoInfo.exif.digital_zoom_ratio : ""}</td></tr>
-                            <tr><th>Exposure Mode</th><td>{photoInfo.exif ? photoInfo.exif.exposure_mode : ""}</td></tr>
-                            <tr><th>WhiteBalance Mode</th><td>{photoInfo.exif ? photoInfo.exif.white_balance_mode : ""}</td></tr>
-                            <tr><th>Orientation</th><td>{photoInfo.exif ? photoInfo.exif.orientation : ""}</td></tr>
-                        </tbody>
-                    </table>
-                    <div>
-                        Stars:
-                        <span className="star">
-                            {
-                                [0, 1, 2, 3, 4].map((v, i) => {
-                                    return <a key={i} href="#" value={v} onClick={() => { toggleStar(v) }}>{props.star[i] ? "★" : "☆"}</a>
-                                })
-                            }
-                        </span>
-                    </div>
-                    <div className="comment">
-                        Comment:<br />
-                        <textarea
-                            onChange={(e) => setComment(e.target.value)}
-                            value={comment}>
-                        </textarea>
-                        <button onClick={() => saveComment()}>SAVE</button>
-                    </div>
-                    <div className="photo-info-editor">
-                        <h4>Image Editor</h4>
-                        <div className="editor-controls">
-                            <div className="editor-control">
-                                <label>Rotation (deg):</label>
-                                <input type="range" min="0" max="360" defaultValue="0" 
-                                       onChange={(e) => updateStyle('rotate', e.target.value)} />
-                                <span id="rotate-value">0</span>
+                <div className="tab-content">
+                    {activeTab === "info" && (
+                        <div className="info-tab">
+                            <table>
+                                <tbody>
+                                    <tr><th>File Name</th>
+                                        <td>
+                                            <a href="#" onClick={() => {
+                                                writeText(props.currentPhotoPath);
+                                                props.addFooterMessage("clipboard", "Copy file path to clipboard", 50000);
+                                            }}>📋</a>
+                                            <a
+                                                onMouseEnter={() => { props.addFooterMessage("current_phtoo_path", "File Path: " + props.currentPhotoPath, false, 10000) }}>
+                                                {props.currentPhotoPath.replace(/^.+\//, '')}
+                                            </a>
+                                        </td></tr>
+                                    <tr><th>ISO</th><td>{photoInfo.exif ? photoInfo.exif.iso : ""}</td></tr>
+                                    <tr><th>FNumber</th><td>{photoInfo.exif ? photoInfo.exif.fnumber : ""}</td></tr>
+                                    <tr><th>Shutter Speed</th><td>{photoInfo.exif ? photoInfo.exif.exposure_time : ""}</td></tr>
+                                    <tr><th>LensModel</th><td>{photoInfo.exif ? photoInfo.exif.lens_model : ""}</td></tr>
+                                    <tr><th>LensMake</th><td>{photoInfo.exif ? photoInfo.exif.lens_make : ""}</td></tr>
+                                    <tr><th>Make</th><td>{photoInfo.exif ? photoInfo.exif.make : ""}</td></tr>
+                                    <tr><th>Model</th><td>{photoInfo.exif ? photoInfo.exif.model : ""}</td></tr>
+                                    <tr><th>Date & Time</th><td>{photoInfo.exif ? photoInfo.exif.date_time : ""}</td></tr>
+                                    <tr><th>Focal Length</th><td>{photoInfo.exif ?
+                                        photoInfo.exif.focal_length == photoInfo.exif.focal_length_in35mm_film
+                                            ? photoInfo.exif.focal_length
+                                            : photoInfo.exif.focal_length + "(" + photoInfo.exif.focal_length_in35mm_film + ")" : ""}
+                                    </td></tr>
+                                    <tr><th>Digital Zoom Ratio</th><td>{photoInfo.exif ? photoInfo.exif.digital_zoom_ratio : ""}</td></tr>
+                                    <tr><th>Exposure Mode</th><td>{photoInfo.exif ? photoInfo.exif.exposure_mode : ""}</td></tr>
+                                    <tr><th>WhiteBalance Mode</th><td>{photoInfo.exif ? photoInfo.exif.white_balance_mode : ""}</td></tr>
+                                    <tr><th>Orientation</th><td>{photoInfo.exif ? photoInfo.exif.orientation : ""}</td></tr>
+                                </tbody>
+                            </table>
+                            <div>
+                                Stars:
+                                <span className="star">
+                                    {
+                                        [0, 1, 2, 3, 4].map((v, i) => {
+                                            return <a key={i} href="#" value={v} onClick={() => { toggleStar(v) }}>{props.star[i] ? "★" : "☆"}</a>
+                                        })
+                                    }
+                                </span>
                             </div>
-                            <div className="editor-control">
-                                <label>Brightness:</label>
-                                <input type="range" min="0" max="200" defaultValue="100" 
-                                       onChange={(e) => updateStyle('brightness', e.target.value)} />
-                                <span id="brightness-value">100</span>
-                            </div>
-                            <div className="editor-control">
-                                <label>Contrast:</label>
-                                <input type="range" min="0" max="200" defaultValue="100" 
-                                       onChange={(e) => updateStyle('contrast', e.target.value)} />
-                                <span id="contrast-value">100</span>
-                            </div>
-                            <div className="editor-control">
-                                <label>Saturation:</label>
-                                <input type="range" min="0" max="200" defaultValue="100" 
-                                       onChange={(e) => updateStyle('saturation', e.target.value)} />
-                                <span id="saturation-value">100</span>
-                            </div>
-                            <div className="editor-control">
-                                <label>Hue (deg):</label>
-                                <input type="range" min="0" max="360" defaultValue="0" 
-                                       onChange={(e) => updateStyle('hue', e.target.value)} />
-                                <span id="hue-value">0</span>
-                            </div>
-                            <div className="editor-control">
-                                <label>Scale:</label>
-                                <input type="range" min="50" max="200" defaultValue="100" 
-                                       onChange={(e) => updateStyle('scale', e.target.value)} />
-                                <span id="scale-value">100</span>
+                            <div className="comment">
+                                Comment:<br />
+                                <textarea
+                                    onChange={(e) => setComment(e.target.value)}
+                                    value={comment}>
+                                </textarea>
+                                <button onClick={() => saveComment()}>SAVE</button>
                             </div>
                         </div>
-                        <div className="editor-buttons">
-                            <button onClick={() => applyStyle()}>Apply</button>
-                            <button onClick={() => saveAsCopy()}>Save as Copy</button>
-                            <button onClick={() => resetStyle()}>Reset</button>
-                            <button onClick={() => downloadStyled()}>Download</button>
+                    )}
+                    {activeTab === "editor" && (
+                        <div className="editor-tab">
+                            <div className="photo-info-editor">
+                                <div className="editor-controls">
+                                    <div className="editor-control">
+                                        <label>Rotation (deg):</label>
+                                        <input type="range" min="0" max="360" defaultValue="0" 
+                                               onChange={(e) => updateStyle('rotate', e.target.value)} />
+                                        <span id="rotate-value">0</span>
+                                    </div>
+                                    <div className="editor-control">
+                                        <label>Brightness:</label>
+                                        <input type="range" min="0" max="200" defaultValue="100" 
+                                               onChange={(e) => updateStyle('brightness', e.target.value)} />
+                                        <span id="brightness-value">100</span>
+                                    </div>
+                                    <div className="editor-control">
+                                        <label>Contrast:</label>
+                                        <input type="range" min="0" max="200" defaultValue="100" 
+                                               onChange={(e) => updateStyle('contrast', e.target.value)} />
+                                        <span id="contrast-value">100</span>
+                                    </div>
+                                    <div className="editor-control">
+                                        <label>Saturation:</label>
+                                        <input type="range" min="0" max="200" defaultValue="100" 
+                                               onChange={(e) => updateStyle('saturation', e.target.value)} />
+                                        <span id="saturation-value">100</span>
+                                    </div>
+                                    <div className="editor-control">
+                                        <label>Hue (deg):</label>
+                                        <input type="range" min="0" max="360" defaultValue="0" 
+                                               onChange={(e) => updateStyle('hue', e.target.value)} />
+                                        <span id="hue-value">0</span>
+                                    </div>
+                                    <div className="editor-control">
+                                        <label>Scale:</label>
+                                        <input type="range" min="50" max="200" defaultValue="100" 
+                                               onChange={(e) => updateStyle('scale', e.target.value)} />
+                                        <span id="scale-value">100</span>
+                                    </div>
+                                </div>
+                                <div className="editor-buttons">
+                                    <button onClick={() => applyStyle()}>Apply</button>
+                                    <button onClick={() => saveAsCopy()}>Save as Copy</button>
+                                    <button onClick={() => resetStyle()}>Reset</button>
+                                    <button onClick={() => downloadStyled()}>Download</button>
+                                </div>
+                                <div className="css-preview">
+                                    <label>CSS Preview:</label>
+                                    <textarea id="css-preview-text" rows="4" readOnly></textarea>
+                                </div>
+                            </div>
                         </div>
-                        <div className="css-preview">
-                            <label>CSS Preview:</label>
-                            <textarea id="css-preview-text" rows="4" readOnly></textarea>
-                        </div>
-                    </div>
+                    )}
                 </div>
             )}
         </>);
