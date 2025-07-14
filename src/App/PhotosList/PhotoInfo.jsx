@@ -415,7 +415,83 @@ function PhotoInfo(props) {
             return;
         }
         
-        props.addFooterMessage('Download functionality not yet implemented');
+        try {
+            // Get the main image element
+            const mainImage = document.querySelector('#photoImgTag');
+            if (!mainImage) {
+                props.addFooterMessage('Photo not found');
+                return;
+            }
+            
+            // Create a canvas to render the styled image
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size to match image
+            canvas.width = mainImage.naturalWidth || mainImage.width;
+            canvas.height = mainImage.naturalHeight || mainImage.height;
+            
+            // Create a new image with applied styles
+            const tempImg = new Image();
+            tempImg.crossOrigin = 'anonymous';
+            
+            tempImg.onload = function() {
+                // Apply CSS transforms to canvas context
+                ctx.save();
+                
+                // Move to center for rotation
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                
+                // Parse and apply transforms from editor styles
+                const { rotate, brightness, contrast, saturation, scale } = editorStyles;
+                
+                if (rotate !== 0) {
+                    ctx.rotate((rotate * Math.PI) / 180);
+                }
+                
+                if (scale !== 100) {
+                    const scaleValue = scale / 100;
+                    ctx.scale(scaleValue, scaleValue);
+                }
+                
+                // Apply filter effects (brightness, contrast, saturation are approximated)
+                if (brightness !== 100 || contrast !== 100 || saturation !== 100) {
+                    ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
+                }
+                
+                // Draw the image centered
+                ctx.drawImage(tempImg, -tempImg.width / 2, -tempImg.height / 2);
+                ctx.restore();
+                
+                // Convert canvas to blob and download
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    const fileName = props.currentPhotoPath.split('/').pop().replace(/\.[^/.]+$/, '_styled.png');
+                    link.download = fileName;
+                    link.href = url;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    
+                    // Show notification with download path
+                    const downloadPath = `Downloads/${fileName}`;
+                    props.addFooterMessage(`Styled image downloaded to: ${downloadPath}`);
+                }, 'image/png');
+            };
+            
+            tempImg.onerror = function() {
+                props.addFooterMessage('Failed to load image for download');
+            };
+            
+            // Load the original image
+            tempImg.src = mainImage.src;
+            
+        } catch (error) {
+            console.error('Download failed:', error);
+            props.addFooterMessage('Download failed: ' + error.message);
+        }
     }
 
     return (
