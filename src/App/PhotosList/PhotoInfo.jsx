@@ -206,7 +206,7 @@ function PhotoInfo(props) {
         // Apply temporary style to the main photo display
         const mainImage = document.querySelector('#photoImgTag');
         if (mainImage) {
-            // Store original styles only once
+            // Store original styles only once, and only if we haven't stored them yet
             if (!originalStyles.has('main-image')) {
                 setOriginalStyles(prev => new Map(prev.set('main-image', {
                     transform: mainImage.style.transform || '',
@@ -215,7 +215,7 @@ function PhotoInfo(props) {
                 })));
             }
             
-            // Get original transform and filter
+            // Get the stored original values
             const original = originalStyles.get('main-image') || { transform: '', filter: '' };
             
             // Build editor transforms and filters
@@ -230,27 +230,22 @@ function PhotoInfo(props) {
             if (saturation !== 100) editorFilters.push(`saturate(${saturation}%)`);
             if (hue !== 0) editorFilters.push(`hue-rotate(${hue}deg)`);
             
-            // Combine original and editor styles
-            let finalTransform = '';
-            let finalFilter = '';
-            
-            if (original.transform || editorTransforms.length > 0) {
-                const allTransforms = [];
-                if (original.transform) allTransforms.push(original.transform);
-                allTransforms.push(...editorTransforms);
-                finalTransform = allTransforms.join(' ');
+            // Combine original and editor styles - always start fresh from original
+            const allTransforms = [];
+            if (original.transform && original.transform !== 'none') {
+                allTransforms.push(original.transform);
             }
+            allTransforms.push(...editorTransforms);
             
-            if (original.filter || editorFilters.length > 0) {
-                const allFilters = [];
-                if (original.filter) allFilters.push(original.filter);
-                allFilters.push(...editorFilters);
-                finalFilter = allFilters.join(' ');
+            const allFilters = [];
+            if (original.filter && original.filter !== 'none') {
+                allFilters.push(original.filter);
             }
+            allFilters.push(...editorFilters);
             
-            // Apply combined styles
-            mainImage.style.transform = finalTransform;
-            mainImage.style.filter = finalFilter;
+            // Apply combined styles directly
+            mainImage.style.transform = allTransforms.length > 0 ? allTransforms.join(' ') : '';
+            mainImage.style.filter = allFilters.length > 0 ? allFilters.join(' ') : '';
         }
         
         // Apply to thumbnails with similar logic
@@ -281,25 +276,22 @@ function PhotoInfo(props) {
                     if (saturation !== 100) editorFilters.push(`saturate(${saturation}%)`);
                     if (hue !== 0) editorFilters.push(`hue-rotate(${hue}deg)`);
                     
-                    let finalTransform = '';
-                    let finalFilter = '';
-                    
-                    if (original.transform || editorTransforms.length > 0) {
-                        const allTransforms = [];
-                        if (original.transform) allTransforms.push(original.transform);
-                        allTransforms.push(...editorTransforms);
-                        finalTransform = allTransforms.join(' ');
+                    // Combine original and editor styles - always start fresh from original
+                    const allTransforms = [];
+                    if (original.transform && original.transform !== 'none') {
+                        allTransforms.push(original.transform);
                     }
+                    allTransforms.push(...editorTransforms);
                     
-                    if (original.filter || editorFilters.length > 0) {
-                        const allFilters = [];
-                        if (original.filter) allFilters.push(original.filter);
-                        allFilters.push(...editorFilters);
-                        finalFilter = allFilters.join(' ');
+                    const allFilters = [];
+                    if (original.filter && original.filter !== 'none') {
+                        allFilters.push(original.filter);
                     }
+                    allFilters.push(...editorFilters);
                     
-                    img.style.transform = finalTransform;
-                    img.style.filter = finalFilter;
+                    // Apply combined styles directly
+                    img.style.transform = allTransforms.length > 0 ? allTransforms.join(' ') : '';
+                    img.style.filter = allFilters.length > 0 ? allFilters.join(' ') : '';
                 }
             });
         };
