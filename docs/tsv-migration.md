@@ -1,6 +1,8 @@
-# TSV to SQLite Migration
+# TSV Support Deprecation Notice
 
-This document describes the migration functionality added to PhotoClove to migrate photo metadata from TSV files to SQLite database.
+**⚠️ DEPRECATED: TSV support has been removed in PhotoClove v2.6+**
+
+This document is kept for historical reference. TSV migration functionality was available in versions prior to v2.6 but has been completely removed.
 
 ## Overview
 
@@ -43,11 +45,14 @@ CREATE TABLE photo_metadata (
     path TEXT PRIMARY KEY,
     photo_date TEXT NOT NULL,
     star INTEGER NOT NULL DEFAULT 0,
-    comment TEXT NOT NULL DEFAULT ''
+    comment TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
 );
 
 CREATE INDEX idx_photo_date ON photo_metadata(photo_date);
 ```
+
+**Note**: The `created_at` column was added in v2.6 to track when photos were imported into the system.
 
 ### Schema Improvements
 - **Column rename**: `date` → `photo_date` to avoid conflict with SQLite's `date()` function
@@ -55,14 +60,20 @@ CREATE INDEX idx_photo_date ON photo_metadata(photo_date);
 - **Automatic migration**: Existing databases are automatically upgraded to new schema
 - **Index optimization**: Efficient date-based queries using `date(photo_date)` function
 
-## Usage
+## Migration Path for Legacy Users
 
-### Frontend Interface
-1. Open PhotoClove application
-2. Click on the **"File"** menu in the menu bar
-3. Select **"Migrate TSV to SQLite"** from the dropdown
-4. Confirm the migration in the dialog
-5. Wait for completion message with migration results
+**If you are upgrading from an older version that used TSV files:**
+
+1. **Before upgrading to v2.6+**: Use PhotoClove v2.5 or earlier to migrate your TSV data to SQLite
+2. **Migration process** (in older versions):
+   - Open PhotoClove application
+   - Click on the **"File"** menu in the menu bar  
+   - Select **"Migrate TSV to SQLite"** from the dropdown
+   - Confirm the migration in the dialog
+   - Wait for completion message with migration results
+3. **After migration**: Upgrade to the latest version of PhotoClove
+
+**Important**: You cannot migrate TSV data using PhotoClove v2.6 or later, as the TSV migration feature has been removed.
 
 ### Programmatic Usage
 ```rust

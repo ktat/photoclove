@@ -65,6 +65,28 @@ env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
 
 ## Recent Updates
 
+### Asynchronous Job Queue System (v2.6)
+- **Background Processing**: Complete rewrite of import system using asynchronous job queue for non-blocking operations
+- **Job Types**: Support for Import, Thumbnail creation, and Database creation jobs with individual progress tracking
+- **Real-time Progress**: Live progress updates and status monitoring via event system
+- **Error Recovery**: Automatic recovery of interrupted jobs on application restart
+- **Concurrent Execution**: Configurable concurrent job processing for optimal performance
+- **Database Persistence**: Job status and progress persisted in SQLite database (`job_unit` and `job_queue` tables)
+- **Event-driven UI**: Frontend receives real-time updates via `job_completed`, `job_failed`, and progress events
+- **Breaking Change**: Import API now returns job unit ID immediately instead of blocking until completion
+
+### Database Schema Enhancement (v2.6)
+- **Created At Tracking**: Added `created_at` column to `photo_metadata` table for timestamp tracking
+- **Automatic Migration**: Seamless migration of existing databases with default timestamp values
+- **Job Queue Tables**: New database schema for job management and progress tracking
+- **Enhanced Metadata**: Better tracking of when photos were imported and processed
+
+### TSV Support Removed (v2.6)
+- **Breaking Change**: TSV file format support completely removed in favor of SQLite-only approach
+- **Migration Required**: Users must migrate to SQLite before upgrading (see migration documentation)
+- **Performance Benefits**: Simplified codebase and improved performance with single database backend
+- **UI Cleanup**: Removed TSV migration interface from application menu
+
 ### UUID-Based Import Directory Structure (v2.5)
 - **Conflict Prevention**: Implemented UUID-based subdirectory structure to prevent filename conflicts when importing from different SD cards
 - **Automatic UUID Management**: Creates `.photoclove-uuid` files in source directories to track unique source identifiers
@@ -139,9 +161,11 @@ Just a plan, currentrly a few features are only implemented.
   - [ ] import files created after last import file timestamp in directories.
   - [x] different SD card and same file name (UUID-based directory structure)
   - [x] filter import targets by date
-  - [x] importing in background
+  - [x] importing in background (asynchronous job queue system)
   - [x] Thumbnail creation
-     - [x] Thumbnail creation in background
+     - [x] Thumbnail creation in background (asynchronous job processing)
+  - [x] Real-time progress tracking and event notifications
+  - [x] Error recovery and job resumption
 - [ ] Provide very simple editor
   - [ ] rotation
   - [ ] crop
