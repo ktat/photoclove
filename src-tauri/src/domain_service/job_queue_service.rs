@@ -804,8 +804,17 @@ impl JobQueueManager {
     }
     
     // Helper method to get or create UUID for source directory
+    // .photoclove-uuid file should be placed in the parent directory of the directory containing images
+    // For example: if images are at /path/to/target/image1.jpg, UUID file should be at /path/to/.photoclove-uuid
     fn get_or_create_source_uuid(source_dir: &std::path::Path) -> std::io::Result<String> {
-        let uuid_file = source_dir.join(".photoclove-uuid");
+        // Get the parent directory of the source directory containing images
+        let parent_dir = source_dir.parent()
+            .ok_or_else(|| std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Cannot get parent directory of source directory"
+            ))?;
+        
+        let uuid_file = parent_dir.join(".photoclove-uuid");
         
         // Try to read existing UUID file
         if uuid_file.exists() {
