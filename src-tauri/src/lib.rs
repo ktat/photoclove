@@ -691,7 +691,7 @@ fn lock(t: bool) -> bool {
 #[tauri::command]
 async fn upload_to_google_photos(
     _window: tauri::Window,
-    _state: tauri::State<'_, AppState>,
+    state: tauri::State<'_, AppState>,
     date_str: &str,
     access_token: &str,
     reflesh_token: &str,
@@ -700,7 +700,7 @@ async fn upload_to_google_photos(
     eprintln!("{:?}", date_str);
     eprintln!("{:?}", selected_files);
     let photos =
-        google_photos::GooglePhotos::new(access_token.to_string(), reflesh_token.to_string());
+        google_photos::GooglePhotos::new(access_token.to_string(), reflesh_token.to_string(), state.config.import_to.clone());
     photos.upload_photo(selected_files).await;
     return Ok(true);
 }

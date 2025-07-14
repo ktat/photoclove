@@ -26,7 +26,8 @@ impl SQLite {
                         star INTEGER NOT NULL DEFAULT 0,
                         comment TEXT NOT NULL DEFAULT '',
                         created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
-                        updated_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
+                        updated_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
+                        google_photos_url TEXT
                     )",
                     [],
                 );
@@ -59,6 +60,7 @@ impl SQLite {
             let mut has_new_photo_date_column = false;
             let mut has_created_at_column = false;
             let mut has_updated_at_column = false;
+            let mut has_google_photos_url_column = false;
             
             if let Ok(mut stmt) = conn.prepare("PRAGMA table_info(photo_metadata)") {
                 if let Ok(rows) = stmt.query_map([], |row| {
@@ -79,6 +81,9 @@ impl SQLite {
                             if column_name == "updated_at" {
                                 has_updated_at_column = true;
                             }
+                            if column_name == "google_photos_url" {
+                                has_google_photos_url_column = true;
+                            }
                         }
                     }
                 }
@@ -88,7 +93,7 @@ impl SQLite {
             if has_old_date_column && !has_new_photo_date_column {
                 println!("Migrating database schema from 'date' to 'photo_date' column");
                 
-                // Create new table with correct schema (including created_at and updated_at)
+                // Create new table with correct schema (including created_at, updated_at, and google_photos_url)
                 conn.execute(
                     "CREATE TABLE photo_metadata_new (
                         path TEXT PRIMARY KEY,
@@ -96,16 +101,17 @@ impl SQLite {
                         star INTEGER NOT NULL DEFAULT 0,
                         comment TEXT NOT NULL DEFAULT '',
                         created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
-                        updated_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
+                        updated_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
+                        google_photos_url TEXT
                     )",
                     [],
                 )?;
                 
-                // Copy data from old table to new table, converting date format and adding created_at and updated_at
+                // Copy data from old table to new table, converting date format and adding created_at, updated_at, and google_photos_url
                 let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
                 conn.execute(
-                    "INSERT INTO photo_metadata_new (path, photo_date, star, comment, created_at, updated_at)
-                     SELECT path, REPLACE(date, '/', '-'), star, comment, ?1, ?2 FROM photo_metadata",
+                    "INSERT INTO photo_metadata_new (path, photo_date, star, comment, created_at, updated_at, google_photos_url)
+                     SELECT path, REPLACE(date, '/', '-'), star, comment, ?1, ?2, NULL FROM photo_metadata",
                     params![now, now],
                 )?;
                 
@@ -121,9 +127,9 @@ impl SQLite {
                 
                 println!("Database schema migration completed");
             } else if has_new_photo_date_column && !has_created_at_column {
-                println!("Adding created_at and updated_at columns to existing photo_metadata table");
+                println!("Adding created_at, updated_at, and google_photos_url columns to existing photo_metadata table");
                 
-                // Create new table with created_at and updated_at columns
+                // Create new table with created_at, updated_at, and google_photos_url columns
                 conn.execute(
                     "CREATE TABLE photo_metadata_new (
                         path TEXT PRIMARY KEY,
@@ -131,16 +137,17 @@ impl SQLite {
                         star INTEGER NOT NULL DEFAULT 0,
                         comment TEXT NOT NULL DEFAULT '',
                         created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
-                        updated_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
+                        updated_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
+                        google_photos_url TEXT
                     )",
                     [],
                 )?;
                 
-                // Copy data from old table to new table, adding created_at and updated_at
+                // Copy data from old table to new table, adding created_at, updated_at, and google_photos_url
                 let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
                 conn.execute(
-                    "INSERT INTO photo_metadata_new (path, photo_date, star, comment, created_at, updated_at)
-                     SELECT path, photo_date, star, comment, ?1, ?2 FROM photo_metadata",
+                    "INSERT INTO photo_metadata_new (path, photo_date, star, comment, created_at, updated_at, google_photos_url)
+                     SELECT path, photo_date, star, comment, ?1, ?2, NULL FROM photo_metadata",
                     params![now, now],
                 )?;
                 
@@ -154,11 +161,11 @@ impl SQLite {
                     [],
                 )?;
                 
-                println!("Created_at and updated_at columns migration completed");
+                println!("Created_at, updated_at, and google_photos_url columns migration completed");
             } else if has_new_photo_date_column && has_created_at_column && !has_updated_at_column {
-                println!("Adding updated_at column to existing photo_metadata table");
+                println!("Adding updated_at and google_photos_url columns to existing photo_metadata table");
                 
-                // Create new table with updated_at column
+                // Create new table with updated_at and google_photos_url columns
                 conn.execute(
                     "CREATE TABLE photo_metadata_new (
                         path TEXT PRIMARY KEY,
@@ -166,16 +173,17 @@ impl SQLite {
                         star INTEGER NOT NULL DEFAULT 0,
                         comment TEXT NOT NULL DEFAULT '',
                         created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
-                        updated_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
+                        updated_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
+                        google_photos_url TEXT
                     )",
                     [],
                 )?;
                 
-                // Copy data from old table to new table, adding updated_at (keep existing created_at)
+                // Copy data from old table to new table, adding updated_at and google_photos_url (keep existing created_at)
                 let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
                 conn.execute(
-                    "INSERT INTO photo_metadata_new (path, photo_date, star, comment, created_at, updated_at)
-                     SELECT path, photo_date, star, comment, created_at, ?1 FROM photo_metadata",
+                    "INSERT INTO photo_metadata_new (path, photo_date, star, comment, created_at, updated_at, google_photos_url)
+                     SELECT path, photo_date, star, comment, created_at, ?1, NULL FROM photo_metadata",
                     params![now],
                 )?;
                 
@@ -189,7 +197,42 @@ impl SQLite {
                     [],
                 )?;
                 
-                println!("Updated_at column migration completed");
+                println!("Updated_at and google_photos_url columns migration completed");
+            } else if has_new_photo_date_column && has_created_at_column && has_updated_at_column && !has_google_photos_url_column {
+                println!("Adding google_photos_url column to existing photo_metadata table");
+                
+                // Create new table with google_photos_url column
+                conn.execute(
+                    "CREATE TABLE photo_metadata_new (
+                        path TEXT PRIMARY KEY,
+                        photo_date TEXT NOT NULL,
+                        star INTEGER NOT NULL DEFAULT 0,
+                        comment TEXT NOT NULL DEFAULT '',
+                        created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
+                        updated_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
+                        google_photos_url TEXT
+                    )",
+                    [],
+                )?;
+                
+                // Copy data from old table to new table, adding google_photos_url
+                conn.execute(
+                    "INSERT INTO photo_metadata_new (path, photo_date, star, comment, created_at, updated_at, google_photos_url)
+                     SELECT path, photo_date, star, comment, created_at, updated_at, NULL FROM photo_metadata",
+                    [],
+                )?;
+                
+                // Drop old table and rename new one
+                conn.execute("DROP TABLE photo_metadata", [])?;
+                conn.execute("ALTER TABLE photo_metadata_new RENAME TO photo_metadata", [])?;
+                
+                // Create index
+                conn.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_photo_date ON photo_metadata(photo_date)",
+                    [],
+                )?;
+                
+                println!("Google_photos_url column migration completed");
             }
         } else {
             // Create new table with correct schema
@@ -200,7 +243,8 @@ impl SQLite {
                     star INTEGER NOT NULL DEFAULT 0,
                     comment TEXT NOT NULL DEFAULT '',
                     created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
-                    updated_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
+                    updated_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
+                    google_photos_url TEXT
                 )",
                 [],
             )?;
@@ -499,7 +543,7 @@ impl MetaInfoDB for SQLite {
             .get_connection()
             .map_err(|_| "Failed to connect to database")?;
         let mut stmt = conn
-            .prepare("INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)")
+            .prepare("INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment, created_at, updated_at, google_photos_url) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)")
             .map_err(|_| "Failed to prepare statement")?;
 
         let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
@@ -510,7 +554,8 @@ impl MetaInfoDB for SQLite {
                 meta.star.star(),
                 meta.comment.comment(),
                 now,
-                now
+                now,
+                None::<String>
             ])
             .map_err(|_| "Failed to execute statement")?;
         }
@@ -523,7 +568,7 @@ impl MetaInfoDB for SQLite {
             .get_connection()
             .map_err(|_| "Failed to connect to database")?;
         let mut stmt = conn
-            .prepare("INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)")
+            .prepare("INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment, created_at, updated_at, google_photos_url) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)")
             .map_err(|_| "Failed to prepare statement")?;
 
         let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
@@ -554,7 +599,8 @@ impl MetaInfoDB for SQLite {
                 existing_meta.star.star(),
                 existing_meta.comment.comment(),
                 now,
-                now
+                now,
+                None::<String>
             ])
             .map_err(|e| {
                 eprintln!("Failed to execute database statement for {}: {}", photo.file.path, e);
@@ -696,14 +742,15 @@ impl MetaInfoDB for SQLite {
 
         let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
         let _ = conn.execute(
-            "INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            "INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment, created_at, updated_at, google_photos_url) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             params![
                 photo.file.path,
                 existing_meta.photo_time(),
                 star.star(),
                 existing_meta.comment.comment(),
                 created_at,
-                now
+                now,
+                None::<String>
             ],
         );
     }
@@ -719,14 +766,15 @@ impl MetaInfoDB for SQLite {
 
         let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
         let _ = conn.execute(
-            "INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            "INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment, created_at, updated_at, google_photos_url) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             params![
                 photo.file.path,
                 existing_meta.photo_time(),
                 existing_meta.star.star(),
                 comment.comment(),
                 created_at,
-                now
+                now,
+                None::<String>
             ],
         );
     }
@@ -1205,5 +1253,22 @@ impl SQLite {
             Ok(created_at) => created_at,
             Err(_) => "1970-01-01 00:00:00".to_string(),
         }
+    }
+
+    pub fn save_google_photos_url(&self, photo_path: &str, google_photos_url: &str) -> Result<(), String> {
+        let conn = self.get_connection()
+            .map_err(|e| format!("Failed to connect to database: {}", e))?;
+        
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        let affected_rows = conn.execute(
+            "UPDATE photo_metadata SET google_photos_url = ?1, updated_at = ?2 WHERE path = ?3",
+            params![google_photos_url, now, photo_path],
+        ).map_err(|e| format!("Failed to update Google Photos URL: {}", e))?;
+        
+        if affected_rows == 0 {
+            return Err("Photo not found in database".to_string());
+        }
+        
+        Ok(())
     }
 }

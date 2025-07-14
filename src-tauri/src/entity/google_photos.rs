@@ -3,12 +3,14 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fs::File;
 use std::io::Read;
+use crate::repository::meta_db::sqlite::SQLite;
 
 static USER_AGENT: &str = "photoclove/1.0";
 
 pub struct GooglePhotos {
     access_token: String,
     refresh_token: String,
+    db_path: String,
 }
 
 pub struct GooglePhotosAlbum {
@@ -60,13 +62,44 @@ pub struct GoogleSimpleMediaItem {
     upload_token: String,
 }
 
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GoogleBatchCreateResponse {
+    new_media_item_results: Vec<GoogleNewMediaItemResult>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GoogleNewMediaItemResult {
+    upload_token: String,
+    status: GoogleStatus,
+    media_item: Option<GoogleMediaItem>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GoogleStatus {
+    message: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GoogleMediaItem {
+    id: String,
+    product_url: String,
+    base_url: String,
+    mime_type: String,
+    filename: String,
+}
+
 static API_END_POINT_URL: &str = "https://photoslibrary.googleapis.com/v1/";
 
 impl GooglePhotos {
-    pub fn new(access_token: String, refresh_token: String) -> GooglePhotos {
+    pub fn new(access_token: String, refresh_token: String, db_path: String) -> GooglePhotos {
         GooglePhotos {
             access_token: access_token,
             refresh_token,
+            db_path,
         }
     }
 
@@ -136,9 +169,10 @@ impl GooglePhotos {
         let mut items_list: Vec<Vec<GoogleNewMediaItem>> = vec![];
         let mut items = vec![];
         let r = response.text().await;
+        let upload_token = r.unwrap();
         let item = GoogleSimpleMediaItem {
             file_name: f.to_string(),
-            upload_token: r.unwrap(),
+            upload_token: upload_token.clone(),
         };
         let media_item = GoogleNewMediaItem {
             description: "".to_string(),
@@ -155,7 +189,7 @@ impl GooglePhotos {
         for target_items in items_list {
             eprintln!("{:?}", &target_items);
             let data = GoogleAlbumData {
-                new_media_items: target_items,
+                new_media_items: target_items.clone(),
             };
 
             let res_post_request = self
@@ -164,7 +198,47 @@ impl GooglePhotos {
                     serde_json::to_string(&data).unwrap(),
                 )
                 .await;
-            eprintln!("{:?}", res_post_request);
+            
+            // Parse the response and store URLs in database
+            if let Ok(response_text) = res_post_request {
+                eprintln!("batchCreate response: {:?}", response_text);
+                
+                match serde_json::from_str::<GoogleBatchCreateResponse>(&response_text) {
+                    Ok(batch_response) => {
+                        let sqlite_db = SQLite::new(self.db_path.clone());
+                        
+                        // Create a mapping from upload_token to file_name
+                        let mut token_to_filename: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+                        for item in &target_items {
+                            token_to_filename.insert(
+                                item.simple_media_item.upload_token.clone(),
+                                item.simple_media_item.file_name.clone()
+                            );
+                        }
+                        
+                        // Process each result
+                        for result in batch_response.new_media_item_results {
+                            if let Some(media_item) = result.media_item {
+                                if let Some(file_path) = token_to_filename.get(&result.upload_token) {
+                                    match sqlite_db.save_google_photos_url(file_path, &media_item.product_url) {
+                                        Ok(()) => {
+                                            eprintln!("Saved Google Photos URL for {}: {}", file_path, media_item.product_url);
+                                        }
+                                        Err(e) => {
+                                            eprintln!("Failed to save Google Photos URL for {}: {}", file_path, e);
+                                        }
+                                    }
+                                }
+                            } else {
+                                eprintln!("Upload failed for token {}: {}", result.upload_token, result.status.message);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to parse batchCreate response: {}", e);
+                    }
+                }
+            }
         }
     }
 
