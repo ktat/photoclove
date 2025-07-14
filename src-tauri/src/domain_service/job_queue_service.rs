@@ -5,10 +5,8 @@ use crate::value::file;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Duration;
 use tauri::{Emitter, Manager};
 use sha2::{Sha256, Digest};
-use uuid::Uuid;
 use regex::Regex;
 use chrono::{self, Datelike};
 use serde_json;
@@ -186,8 +184,8 @@ impl JobQueueManager {
     pub fn submit_import_jobs(&self, files: Vec<String>, app_handle: tauri::AppHandle) -> Result<String, String> {
         eprintln!("Submitting import jobs for {} files", files.len());
         
-        // Create job unit
-        let job_types = vec!["import".to_string(), "thumbnail".to_string(), "create_db".to_string()];
+        // Create job unit - only list import initially, dependent jobs will be added later
+        let job_types = vec!["import".to_string()];
         let job_unit = job_queue::JobUnit::new(job_types);
         let job_unit_id = job_unit.id.clone();
         
@@ -197,36 +195,22 @@ impl JobQueueManager {
         self.db.create_job_unit(&job_unit)?;
         eprintln!("Job unit saved to database");
 
-        // Create individual jobs
+        // Create only the import job initially
+        // Thumbnail and create_db jobs will be created when import completes
         let import_job = job_queue::Job::new(
             job_unit_id.clone(),
             job_queue::JobType::Import,
-            files.clone(),
-        );
-        let thumbnail_job = job_queue::Job::new(
-            job_unit_id.clone(),
-            job_queue::JobType::Thumbnail,
-            files.clone(),
-        );
-        let create_db_job = job_queue::Job::new(
-            job_unit_id.clone(),
-            job_queue::JobType::CreateDb,
             files,
         );
 
-        // Queue the jobs
+        // Queue only the import job
         let import_queued = job_queue::QueuedJob::new(job_unit_id.clone(), import_job);
-        let thumbnail_queued = job_queue::QueuedJob::new(job_unit_id.clone(), thumbnail_job);
-        let create_db_queued = job_queue::QueuedJob::new(job_unit_id.clone(), create_db_job);
-
         let import_id = self.db.create_job(&import_queued)?;
-        let thumbnail_id = self.db.create_job(&thumbnail_queued)?;
-        let create_db_id = self.db.create_job(&create_db_queued)?;
         
-        eprintln!("Created jobs with IDs: {}, {}, {}", import_id, thumbnail_id, create_db_id);
+        eprintln!("Created import job with ID: {}", import_id);
 
         // Immediately start processing the newly submitted jobs
-        eprintln!("Starting processing of newly submitted jobs...");
+        eprintln!("Starting processing of newly submitted import job...");
         self.process_new_jobs(app_handle);
 
         Ok(job_unit_id)
@@ -234,6 +218,94 @@ impl JobQueueManager {
 
     pub fn get_job_progress(&self, job_unit_id: &str) -> Result<job_queue::JobProgress, String> {
         self.db.get_job_unit_progress(job_unit_id)
+    }
+
+    // Helper method to create dependent jobs after import completes
+    fn create_dependent_jobs(db: &Arc<SQLite>, job_unit_id: &str, imported_files: Vec<String>, app_handle: &tauri::AppHandle) -> Result<(), String> {
+        eprintln!("Creating dependent jobs for job unit: {}", job_unit_id);
+        eprintln!("Imported files count: {}", imported_files.len());
+        
+        if imported_files.is_empty() {
+            eprintln!("No files were imported, skipping dependent job creation");
+            return Ok(());
+        }
+        
+        // Create thumbnail job with destination file paths
+        let thumbnail_job = job_queue::Job::new(
+            job_unit_id.to_string(),
+            job_queue::JobType::Thumbnail,
+            imported_files.clone(),
+        );
+        
+        // Create create_db job with destination file paths  
+        let create_db_job = job_queue::Job::new(
+            job_unit_id.to_string(),
+            job_queue::JobType::CreateDb,
+            imported_files,
+        );
+
+        // Queue the dependent jobs
+        let thumbnail_queued = job_queue::QueuedJob::new(job_unit_id.to_string(), thumbnail_job);
+        let create_db_queued = job_queue::QueuedJob::new(job_unit_id.to_string(), create_db_job);
+
+        let thumbnail_id = db.create_job(&thumbnail_queued)?;
+        let create_db_id = db.create_job(&create_db_queued)?;
+        
+        eprintln!("Created dependent jobs with IDs: thumbnail={}, create_db={}", thumbnail_id, create_db_id);
+
+        // Immediately process the newly created dependent jobs in order
+        eprintln!("Starting immediate processing of dependent jobs...");
+        let job_ids = vec![thumbnail_id, create_db_id]; // Process thumbnail first, then create_db
+        Self::process_specific_jobs_immediately(db.clone(), job_ids, app_handle.clone());
+
+        Ok(())
+    }
+
+    // Static method to immediately process specific jobs (used for dependent jobs)
+    fn process_specific_jobs_immediately(db: Arc<SQLite>, job_ids: Vec<i64>, app_handle: tauri::AppHandle) {
+        thread::spawn(move || {
+            eprintln!("Processing specific dependent jobs immediately: {:?}", job_ids);
+            
+            // Get all pending jobs and filter for the specific job IDs
+            match db.get_pending_jobs() {
+                Ok(pending_jobs) => {
+                    // Filter and sort jobs by the specified job_ids to maintain order
+                    let mut jobs_to_process = Vec::new();
+                    for job_id in &job_ids {
+                        if let Some(job) = pending_jobs.iter().find(|j| j.id == Some(*job_id)) {
+                            jobs_to_process.push(job.clone());
+                        }
+                    }
+                    
+                    if jobs_to_process.is_empty() {
+                        eprintln!("No matching dependent jobs found to process");
+                        return;
+                    }
+                    
+                    eprintln!("=== PROCESSING {} SPECIFIC DEPENDENT JOBS ===", jobs_to_process.len());
+                    
+                    // Process each dependent job sequentially to maintain order
+                    for job in jobs_to_process {
+                        eprintln!("Processing dependent job: ID={:?}, Type={:?}", job.id, job.job.job_type);
+                        let db_clone = Arc::clone(&db);
+                        let app_handle_clone = app_handle.clone();
+                        
+                        // Process job in the same thread to maintain order (thumbnail before create_db)
+                        Self::process_job(db_clone, job, app_handle_clone);
+                    }
+                    
+                    // Cleanup completed jobs after processing
+                    if let Err(e) = db.cleanup_completed_jobs() {
+                        eprintln!("Error cleaning up completed dependent jobs: {}", e);
+                    }
+                    
+                    eprintln!("=== DEPENDENT JOBS PROCESSING COMPLETE ===");
+                }
+                Err(e) => {
+                    eprintln!("Error getting pending jobs for dependent processing: {}", e);
+                }
+            }
+        });
     }
 
     fn process_job(db: Arc<SQLite>, job: job_queue::QueuedJob, app_handle: tauri::AppHandle) {
@@ -261,15 +333,24 @@ impl JobQueueManager {
         let result = match job.job.job_type {
             job_queue::JobType::Import => {
                 eprintln!("Calling process_import_job for job {}", job_id);
-                Self::process_import_job(&job, &app_handle)
+                match Self::process_import_job(&job, &app_handle) {
+                    Ok(imported_files) => {
+                        // Create dependent jobs when import completes successfully
+                        if let Err(e) = Self::create_dependent_jobs(&db, &job.job_unit_id, imported_files, &app_handle) {
+                            eprintln!("Failed to create dependent jobs: {}", e);
+                        }
+                        Ok(())
+                    },
+                    Err(e) => Err(e),
+                }
             },
             job_queue::JobType::Thumbnail => {
                 eprintln!("Calling process_thumbnail_job for job {}", job_id);
-                Self::process_thumbnail_job(&job, &app_handle)
+                Self::process_thumbnail_job(&job, &app_handle).map(|_| ())
             },
             job_queue::JobType::CreateDb => {
                 eprintln!("Calling process_create_db_job for job {}", job_id);
-                Self::process_create_db_job(&job, &app_handle)
+                Self::process_create_db_job(&job, &app_handle).map(|_| ())
             },
         };
         
@@ -327,7 +408,7 @@ impl JobQueueManager {
         }
     }
 
-    fn process_import_job(job: &job_queue::QueuedJob, app_handle: &tauri::AppHandle) -> Result<(), String> {
+    fn process_import_job(job: &job_queue::QueuedJob, app_handle: &tauri::AppHandle) -> Result<Vec<String>, String> {
         eprintln!("=== IMPORT JOB EXECUTION START ===");
         eprintln!("Import job for {} files", job.job.target.len());
         
@@ -351,6 +432,7 @@ impl JobQueueManager {
         }
         
         let mut imported_photos = Vec::new();
+        let mut imported_file_paths = Vec::new();
         eprintln!("Starting to process {} files for import", job.job.target.len());
         
         for (i, file_path) in job.job.target.iter().enumerate() {
@@ -475,9 +557,14 @@ impl JobQueueManager {
                     eprintln!("  Source: {}", file_path);
                     eprintln!("  Destination: {}", destination_path.display());
                     
+                    // Add destination path to imported files list
+                    let destination_path_str = destination_path.display().to_string();
+                    imported_file_paths.push(destination_path_str.clone());
+                    eprintln!("Added destination path to imported files: {}", destination_path_str);
+                    
                     // Create photo object for the copied file
                     eprintln!("Creating photo object for copied file...");
-                    let destination_file = file::File::new(destination_path.display().to_string());
+                    let destination_file = file::File::new(destination_path_str);
                     let mut destination_photo = crate::entity::photo::Photo::new(destination_file, Some(config.clone()));
                     destination_photo.embed_exif(photo.meta_data);
                     imported_photos.push(destination_photo);
@@ -514,11 +601,12 @@ impl JobQueueManager {
         }
         
         eprintln!("=== IMPORT JOB COMPLETED SUCCESSFULLY ===");
-        Ok(())
+        eprintln!("Total imported files: {}", imported_file_paths.len());
+        Ok(imported_file_paths)
     }
 
     fn process_thumbnail_job(job: &job_queue::QueuedJob, app_handle: &tauri::AppHandle) -> Result<(), String> {
-        eprintln!("Processing thumbnail job for {} files", job.job.target.len());
+        eprintln!("Processing thumbnail job for {} imported files", job.job.target.len());
         
         // Get app state to access configuration
         let state = app_handle.state::<crate::AppState>();
@@ -529,16 +617,23 @@ impl JobQueueManager {
             eprintln!("Failed to emit thumbnail_progress event: {}", e);
         }
         
-        // Get unique dates from the imported files to create thumbnails for those dates
+        // Extract unique dates from the imported file paths
+        // The imported files have destination path structure: [dest]/[YYYY-MM-DD]/[UUID]/[filename]
         let mut dates_set = std::collections::HashSet::new();
+        
         for file_path in &job.job.target {
-            // For imported files, extract date from destination path structure: [dest]/[YYYY-MM-DD]/[UUID]/[filename]
             let path = std::path::Path::new(file_path);
+            
+            // Extract date from destination path structure: [dest]/[YYYY-MM-DD]/[UUID]/[filename]
             if let Some(parent) = path.parent() {
-                if let Some(uuid_dir) = parent.file_name() {
+                if let Some(_uuid_dir) = parent.file_name() {
                     if let Some(date_dir) = parent.parent() {
                         if let Some(date_str) = date_dir.file_name() {
-                            dates_set.insert(date_str.to_string_lossy().to_string());
+                            let date_string = date_str.to_string_lossy().to_string();
+                            if Regex::new(r"^\d{4}-\d{2}-\d{2}$").unwrap().is_match(&date_string) {
+                                eprintln!("Found date from imported file path: {}", date_string);
+                                dates_set.insert(date_string);
+                            }
                         }
                     }
                 }
@@ -546,26 +641,16 @@ impl JobQueueManager {
         }
         
         if dates_set.is_empty() {
-            return Ok(()); // No dates to process
+            eprintln!("No valid dates found for thumbnail generation");
+            return Ok(());
         }
         
         // Convert to date objects
         let mut dates = Vec::new();
         for date_str in dates_set {
-            eprintln!("Processing date string for thumbnails: '{}'", date_str);
-            // Only process if it looks like a date (YYYY-MM-DD format)
-            if Regex::new(r"^\d{4}-\d{2}-\d{2}$").unwrap().is_match(&date_str) {
-                eprintln!("Valid date pattern found for thumbnails: {}", date_str);
-                let date = crate::value::date::Date::from_string(&date_str, Some("-"));
-                dates.push(date);
-            } else {
-                eprintln!("Not a date pattern, skipping: {}", date_str);
-            }
-        }
-        
-        if dates.is_empty() {
-            eprintln!("No valid dates found for thumbnail generation, skipping");
-            return Ok(());
+            eprintln!("Processing date for thumbnails: '{}'", date_str);
+            let date = crate::value::date::Date::from_string(&date_str, Some("-"));
+            dates.push(date);
         }
         
         let dates_obj = crate::value::date::Dates::new(&dates);
@@ -573,6 +658,10 @@ impl JobQueueManager {
         // Create thumbnails using the existing photo service
         let origin = std::path::PathBuf::from(&config.import_to);
         let dest = std::path::PathBuf::from(&config.thumbnail_store);
+        
+        eprintln!("Creating thumbnails for {} dates", dates.len());
+        eprintln!("Origin: {}", origin.display());
+        eprintln!("Destination: {}", dest.display());
         
         // Use futures blocking approach for thumbnail creation
         let thumbnail_result = futures::executor::block_on(async {
@@ -607,7 +696,7 @@ impl JobQueueManager {
     }
 
     fn process_create_db_job(job: &job_queue::QueuedJob, app_handle: &tauri::AppHandle) -> Result<(), String> {
-        eprintln!("Processing create_db job for {} files", job.job.target.len());
+        eprintln!("Processing create_db job for {} imported files", job.job.target.len());
         
         // Get app state to access configuration and database
         let state = app_handle.state::<crate::AppState>();
@@ -618,16 +707,23 @@ impl JobQueueManager {
             eprintln!("Failed to emit create_db_progress event: {}", e);
         }
         
-        // Get unique dates from the imported files
+        // Extract unique dates from the imported file paths
+        // The imported files have destination path structure: [dest]/[YYYY-MM-DD]/[UUID]/[filename]
         let mut dates_set = std::collections::HashSet::new();
+        
         for file_path in &job.job.target {
-            // For imported files, extract date from destination path structure: [dest]/[YYYY-MM-DD]/[UUID]/[filename]
             let path = std::path::Path::new(file_path);
+            
+            // Extract date from destination path structure: [dest]/[YYYY-MM-DD]/[UUID]/[filename]
             if let Some(parent) = path.parent() {
-                if let Some(uuid_dir) = parent.file_name() {
+                if let Some(_uuid_dir) = parent.file_name() {
                     if let Some(date_dir) = parent.parent() {
                         if let Some(date_str) = date_dir.file_name() {
-                            dates_set.insert(date_str.to_string_lossy().to_string());
+                            let date_string = date_str.to_string_lossy().to_string();
+                            if Regex::new(r"^\d{4}-\d{2}-\d{2}$").unwrap().is_match(&date_string) {
+                                eprintln!("Found date from imported file path: {}", date_string);
+                                dates_set.insert(date_string);
+                            }
                         }
                     }
                 }
@@ -635,30 +731,21 @@ impl JobQueueManager {
         }
         
         if dates_set.is_empty() {
-            eprintln!("No dates found for database creation");
+            eprintln!("No valid dates found for database creation");
             return Ok(());
         }
         
         // Convert to date objects
         let mut dates = Vec::new();
         for date_str in dates_set {
-            eprintln!("Processing date string for database: '{}'", date_str);
-            // Only process if it looks like a date (YYYY-MM-DD format)
-            if Regex::new(r"^\d{4}-\d{2}-\d{2}$").unwrap().is_match(&date_str) {
-                eprintln!("Valid date pattern found for database: {}", date_str);
-                let date = crate::value::date::Date::from_string(&date_str, Some("-"));
-                dates.push(date);
-            } else {
-                eprintln!("Not a date pattern, skipping: {}", date_str);
-            }
-        }
-        
-        if dates.is_empty() {
-            eprintln!("No valid dates found for database creation, skipping");
-            return Ok(());
+            eprintln!("Processing date for database: '{}'", date_str);
+            let date = crate::value::date::Date::from_string(&date_str, Some("-"));
+            dates.push(date);
         }
         
         let dates_obj = crate::value::date::Dates::new(&dates);
+        
+        eprintln!("Creating database entries for {} dates", dates.len());
         
         // Create database entries for the imported photos using existing functionality
         match meta_db.record_photos_all_meta_data(dates_obj) {
