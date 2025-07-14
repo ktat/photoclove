@@ -203,52 +203,52 @@ function PhotoInfo(props) {
     function applyTempStyleWithValues(styles) {
         const { rotate, brightness, contrast, saturation, hue, scale } = styles;
         
-        // Apply temporary style to the main photo display
+        // Store and apply styles to main image
         const mainImage = document.querySelector('#photoImgTag');
         if (mainImage) {
-            // Store original styles only once, and only if we haven't stored them yet
+            // Store original styles immediately if not stored
             if (!originalStyles.has('main-image')) {
-                setOriginalStyles(prev => new Map(prev.set('main-image', {
+                const originalStyle = {
                     transform: mainImage.style.transform || '',
                     filter: mainImage.style.filter || '',
                     cssText: mainImage.style.cssText || ''
-                })));
+                };
+                // Use callback to ensure immediate update
+                setOriginalStyles(prev => new Map(prev.set('main-image', originalStyle)));
+                // Also store locally for immediate use
+                originalStyles.set('main-image', originalStyle);
             }
             
-            // Get the stored original values
+            // Get the stored original values (use local Map for immediate access)
             const original = originalStyles.get('main-image') || { transform: '', filter: '' };
             
-            // Build editor transforms and filters
-            const editorTransforms = [];
-            const editorFilters = [];
+            // Build combined styles directly
+            const transforms = [];
+            const filters = [];
             
-            if (rotate !== 0) editorTransforms.push(`rotate(${rotate}deg)`);
-            if (scale !== 100) editorTransforms.push(`scale(${scale / 100})`);
-            
-            if (brightness !== 100) editorFilters.push(`brightness(${brightness}%)`);
-            if (contrast !== 100) editorFilters.push(`contrast(${contrast}%)`);
-            if (saturation !== 100) editorFilters.push(`saturate(${saturation}%)`);
-            if (hue !== 0) editorFilters.push(`hue-rotate(${hue}deg)`);
-            
-            // Combine original and editor styles - always start fresh from original
-            const allTransforms = [];
+            // Add original styles first
             if (original.transform && original.transform !== 'none') {
-                allTransforms.push(original.transform);
+                transforms.push(original.transform);
             }
-            allTransforms.push(...editorTransforms);
-            
-            const allFilters = [];
             if (original.filter && original.filter !== 'none') {
-                allFilters.push(original.filter);
+                filters.push(original.filter);
             }
-            allFilters.push(...editorFilters);
             
-            // Apply combined styles directly
-            mainImage.style.transform = allTransforms.length > 0 ? allTransforms.join(' ') : '';
-            mainImage.style.filter = allFilters.length > 0 ? allFilters.join(' ') : '';
+            // Add editor styles
+            if (rotate !== 0) transforms.push(`rotate(${rotate}deg)`);
+            if (scale !== 100) transforms.push(`scale(${scale / 100})`);
+            
+            if (brightness !== 100) filters.push(`brightness(${brightness}%)`);
+            if (contrast !== 100) filters.push(`contrast(${contrast}%)`);
+            if (saturation !== 100) filters.push(`saturate(${saturation}%)`);
+            if (hue !== 0) filters.push(`hue-rotate(${hue}deg)`);
+            
+            // Apply styles immediately
+            mainImage.style.transform = transforms.length > 0 ? transforms.join(' ') : '';
+            mainImage.style.filter = filters.length > 0 ? filters.join(' ') : '';
         }
         
-        // Apply to thumbnails with similar logic
+        // Apply to thumbnails with same immediate approach
         const applyToThumbnails = (selector, keyPrefix) => {
             const thumbnails = document.querySelectorAll(selector);
             thumbnails.forEach((img, index) => {
@@ -256,42 +256,37 @@ function PhotoInfo(props) {
                     const key = `${keyPrefix}-${index}`;
                     
                     if (!originalStyles.has(key)) {
-                        setOriginalStyles(prev => new Map(prev.set(key, {
+                        const originalStyle = {
                             transform: img.style.transform || '',
                             filter: img.style.filter || '',
                             cssText: img.style.cssText || ''
-                        })));
+                        };
+                        setOriginalStyles(prev => new Map(prev.set(key, originalStyle)));
+                        originalStyles.set(key, originalStyle);
                     }
                     
                     const original = originalStyles.get(key) || { transform: '', filter: '' };
                     
-                    const editorTransforms = [];
-                    const editorFilters = [];
+                    const transforms = [];
+                    const filters = [];
                     
-                    if (rotate !== 0) editorTransforms.push(`rotate(${rotate}deg)`);
-                    if (scale !== 100) editorTransforms.push(`scale(${scale / 100})`);
-                    
-                    if (brightness !== 100) editorFilters.push(`brightness(${brightness}%)`);
-                    if (contrast !== 100) editorFilters.push(`contrast(${contrast}%)`);
-                    if (saturation !== 100) editorFilters.push(`saturate(${saturation}%)`);
-                    if (hue !== 0) editorFilters.push(`hue-rotate(${hue}deg)`);
-                    
-                    // Combine original and editor styles - always start fresh from original
-                    const allTransforms = [];
                     if (original.transform && original.transform !== 'none') {
-                        allTransforms.push(original.transform);
+                        transforms.push(original.transform);
                     }
-                    allTransforms.push(...editorTransforms);
-                    
-                    const allFilters = [];
                     if (original.filter && original.filter !== 'none') {
-                        allFilters.push(original.filter);
+                        filters.push(original.filter);
                     }
-                    allFilters.push(...editorFilters);
                     
-                    // Apply combined styles directly
-                    img.style.transform = allTransforms.length > 0 ? allTransforms.join(' ') : '';
-                    img.style.filter = allFilters.length > 0 ? allFilters.join(' ') : '';
+                    if (rotate !== 0) transforms.push(`rotate(${rotate}deg)`);
+                    if (scale !== 100) transforms.push(`scale(${scale / 100})`);
+                    
+                    if (brightness !== 100) filters.push(`brightness(${brightness}%)`);
+                    if (contrast !== 100) filters.push(`contrast(${contrast}%)`);
+                    if (saturation !== 100) filters.push(`saturate(${saturation}%)`);
+                    if (hue !== 0) filters.push(`hue-rotate(${hue}deg)`);
+                    
+                    img.style.transform = transforms.length > 0 ? transforms.join(' ') : '';
+                    img.style.filter = filters.length > 0 ? filters.join(' ') : '';
                 }
             });
         };
@@ -341,34 +336,7 @@ function PhotoInfo(props) {
     }
 
     function resetStyle() {
-        setEditorStyles({
-            rotate: 0,
-            brightness: 100,
-            contrast: 100,
-            saturation: 100,
-            hue: 0,
-            scale: 100
-        });
-        
-        // Reset all sliders and values
-        document.querySelectorAll('.photo-info-editor input[type="range"]').forEach(slider => {
-            slider.value = slider.defaultValue;
-        });
-        
-        ['rotate', 'brightness', 'contrast', 'saturation', 'hue', 'scale'].forEach(prop => {
-            const valueSpan = document.getElementById(`${prop}-value`);
-            if (valueSpan) {
-                valueSpan.textContent = prop === 'brightness' || prop === 'contrast' || prop === 'saturation' || prop === 'scale' ? '100' : '0';
-            }
-        });
-        
-        // Clear CSS preview
-        const previewTextarea = document.getElementById('css-preview-text');
-        if (previewTextarea) {
-            previewTextarea.value = '';
-        }
-        
-        // Restore original styling to main image
+        // First restore original styles before resetting state
         const mainImage = document.querySelector('#photoImgTag');
         if (mainImage) {
             const originalStyle = originalStyles.get('main-image');
@@ -400,8 +368,39 @@ function PhotoInfo(props) {
         restoreThumbnails('.photos .row img', 'grid-thumb');
         restoreThumbnails('#photos-list-mini img', 'mini-thumb');
         
-        // Clear stored original styles for the current photo
+        // Clear stored original styles BEFORE resetting state
         setOriginalStyles(new Map());
+        
+        // Reset state (this will trigger applyTempStyleWithValues)
+        setEditorStyles({
+            rotate: 0,
+            brightness: 100,
+            contrast: 100,
+            saturation: 100,
+            hue: 0,
+            scale: 100
+        });
+        
+        // Reset UI elements after state is set
+        setTimeout(() => {
+            // Reset all sliders and values
+            document.querySelectorAll('.photo-info-editor input[type="range"]').forEach(slider => {
+                slider.value = slider.defaultValue;
+            });
+            
+            ['rotate', 'brightness', 'contrast', 'saturation', 'hue', 'scale'].forEach(prop => {
+                const valueSpan = document.getElementById(`${prop}-value`);
+                if (valueSpan) {
+                    valueSpan.textContent = prop === 'brightness' || prop === 'contrast' || prop === 'saturation' || prop === 'scale' ? '100' : '0';
+                }
+            });
+            
+            // Clear CSS preview
+            const previewTextarea = document.getElementById('css-preview-text');
+            if (previewTextarea) {
+                previewTextarea.value = '';
+            }
+        }, 0);
     }
 
     async function downloadStyled() {
