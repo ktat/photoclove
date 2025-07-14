@@ -38,7 +38,8 @@ impl SQLite {
             exif_digital_zoom_ratio TEXT,
             exif_exposure_mode TEXT,
             exif_white_balance_mode TEXT,
-            exif_orientation TEXT
+            exif_orientation TEXT,
+            css_style TEXT
         )"
     }
 
@@ -107,6 +108,9 @@ impl SQLite {
             let mut has_exif_exposure_mode = false;
             let mut has_exif_white_balance_mode = false;
             let mut has_exif_orientation = false;
+            
+            // CSS style field
+            let mut has_css_style = false;
             
             if let Ok(mut stmt) = conn.prepare("PRAGMA table_info(photo_metadata)") {
                 if let Ok(rows) = stmt.query_map([], |row| {
@@ -191,6 +195,9 @@ impl SQLite {
                             if column_name == "exif_orientation" {
                                 has_exif_orientation = true;
                             }
+                            if column_name == "css_style" {
+                                has_css_style = true;
+                            }
                         }
                     }
                 }
@@ -212,9 +219,9 @@ impl SQLite {
                     "INSERT INTO photo_metadata_new (path, photo_date, star, comment, created_at, updated_at, google_photos_url,
                      exif_iso, exif_fnumber, exif_date_time, exif_date_time_original, exif_lens_model, exif_make, exif_lens_make, exif_model,
                      exif_xresolution, exif_yresolution, exif_resolution_unit, exif_copyright, exif_exposure_time, exif_shutter_speed_value,
-                     exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode, exif_white_balance_mode, exif_orientation)
+                     exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode, exif_white_balance_mode, exif_orientation, css_style)
                      SELECT path, REPLACE(date, '/', '-'), star, comment, ?1, ?2, NULL,
-                     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL 
+                     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL 
                      FROM photo_metadata",
                     params![now, now],
                 )?;
@@ -245,9 +252,9 @@ impl SQLite {
                     "INSERT INTO photo_metadata_new (path, photo_date, star, comment, created_at, updated_at, google_photos_url,
                      exif_iso, exif_fnumber, exif_date_time, exif_date_time_original, exif_lens_model, exif_make, exif_lens_make, exif_model,
                      exif_xresolution, exif_yresolution, exif_resolution_unit, exif_copyright, exif_exposure_time, exif_shutter_speed_value,
-                     exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode, exif_white_balance_mode, exif_orientation)
+                     exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode, exif_white_balance_mode, exif_orientation, css_style)
                      SELECT path, photo_date, star, comment, ?1, ?2, NULL,
-                     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL 
+                     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL 
                      FROM photo_metadata",
                     params![now, now],
                 )?;
@@ -278,9 +285,9 @@ impl SQLite {
                     "INSERT INTO photo_metadata_new (path, photo_date, star, comment, created_at, updated_at, google_photos_url,
                      exif_iso, exif_fnumber, exif_date_time, exif_date_time_original, exif_lens_model, exif_make, exif_lens_make, exif_model,
                      exif_xresolution, exif_yresolution, exif_resolution_unit, exif_copyright, exif_exposure_time, exif_shutter_speed_value,
-                     exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode, exif_white_balance_mode, exif_orientation)
+                     exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode, exif_white_balance_mode, exif_orientation, css_style)
                      SELECT path, photo_date, star, comment, created_at, ?1, NULL,
-                     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL 
+                     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL 
                      FROM photo_metadata",
                     params![now],
                 )?;
@@ -310,9 +317,9 @@ impl SQLite {
                     "INSERT INTO photo_metadata_new (path, photo_date, star, comment, created_at, updated_at, google_photos_url,
                      exif_iso, exif_fnumber, exif_date_time, exif_date_time_original, exif_lens_model, exif_make, exif_lens_make, exif_model,
                      exif_xresolution, exif_yresolution, exif_resolution_unit, exif_copyright, exif_exposure_time, exif_shutter_speed_value,
-                     exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode, exif_white_balance_mode, exif_orientation)
+                     exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode, exif_white_balance_mode, exif_orientation, css_style)
                      SELECT path, photo_date, star, comment, created_at, updated_at, NULL,
-                     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL 
+                     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL 
                      FROM photo_metadata",
                     [],
                 )?;
@@ -351,9 +358,9 @@ impl SQLite {
                     "INSERT INTO photo_metadata (path, photo_date, star, comment, created_at, updated_at, google_photos_url,
                      exif_iso, exif_fnumber, exif_date_time, exif_date_time_original, exif_lens_model, exif_make, exif_lens_make, exif_model,
                      exif_xresolution, exif_yresolution, exif_resolution_unit, exif_copyright, exif_exposure_time, exif_shutter_speed_value,
-                     exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode, exif_white_balance_mode, exif_orientation)
+                     exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode, exif_white_balance_mode, exif_orientation, css_style)
                      SELECT path, photo_date, star, comment, created_at, updated_at, google_photos_url,
-                     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL 
+                     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL 
                      FROM photo_metadata_old",
                     [],
                 )?;
@@ -368,6 +375,40 @@ impl SQLite {
                 )?;
                 
                 println!("EXIF columns migration completed");
+            } else if has_new_photo_date_column && has_created_at_column && has_updated_at_column && has_google_photos_url_column && has_exif_iso && !has_css_style {
+                println!("Adding CSS style column to existing photo_metadata table");
+                
+                // Create new table with CSS style column
+                conn.execute(
+                    &SQLite::get_full_schema().replace("CREATE TABLE photo_metadata", "CREATE TABLE photo_metadata_new"),
+                    [],
+                )?;
+                
+                // Copy data from old table to new table, adding CSS style column as NULL
+                conn.execute(
+                    "INSERT INTO photo_metadata_new (path, photo_date, star, comment, created_at, updated_at, google_photos_url,
+                     exif_iso, exif_fnumber, exif_date_time, exif_date_time_original, exif_lens_model, exif_make, exif_lens_make, exif_model,
+                     exif_xresolution, exif_yresolution, exif_resolution_unit, exif_copyright, exif_exposure_time, exif_shutter_speed_value,
+                     exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode, exif_white_balance_mode, exif_orientation, css_style)
+                     SELECT path, photo_date, star, comment, created_at, updated_at, google_photos_url,
+                     exif_iso, exif_fnumber, exif_date_time, exif_date_time_original, exif_lens_model, exif_make, exif_lens_make, exif_model,
+                     exif_xresolution, exif_yresolution, exif_resolution_unit, exif_copyright, exif_exposure_time, exif_shutter_speed_value,
+                     exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode, exif_white_balance_mode, exif_orientation, NULL 
+                     FROM photo_metadata",
+                    [],
+                )?;
+                
+                // Drop old table and rename new one
+                conn.execute("DROP TABLE photo_metadata", [])?;
+                conn.execute("ALTER TABLE photo_metadata_new RENAME TO photo_metadata", [])?;
+                
+                // Create index
+                conn.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_photo_date ON photo_metadata(photo_date)",
+                    [],
+                )?;
+                
+                println!("CSS style column migration completed");
             }
         } else {
             // Create new table with full schema including EXIF columns
@@ -673,8 +714,8 @@ impl MetaInfoDB for SQLite {
             .prepare("INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment, created_at, updated_at, google_photos_url,
                      exif_iso, exif_fnumber, exif_date_time, exif_date_time_original, exif_lens_model, exif_make, exif_lens_make, exif_model,
                      exif_xresolution, exif_yresolution, exif_resolution_unit, exif_copyright, exif_exposure_time, exif_shutter_speed_value,
-                     exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode, exif_white_balance_mode, exif_orientation)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27)")
+                     exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode, exif_white_balance_mode, exif_orientation, css_style)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28)")
             .map_err(|_| "Failed to prepare statement")?;
 
         let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
@@ -690,7 +731,9 @@ impl MetaInfoDB for SQLite {
                 // EXIF fields as NULL for now since PhotoMeta doesn't have them
                 None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>,
                 None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>, None::<String>,
-                None::<String>, None::<String>, None::<String>, None::<String>
+                None::<String>, None::<String>, None::<String>, None::<String>,
+                // CSS style field
+                None::<String>
             ])
             .map_err(|_| "Failed to execute statement")?;
         }
@@ -706,8 +749,8 @@ impl MetaInfoDB for SQLite {
             .prepare("INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment, created_at, updated_at, google_photos_url,
                      exif_iso, exif_fnumber, exif_date_time, exif_date_time_original, exif_lens_model, exif_make, exif_lens_make, exif_model,
                      exif_xresolution, exif_yresolution, exif_resolution_unit, exif_copyright, exif_exposure_time, exif_shutter_speed_value,
-                     exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode, exif_white_balance_mode, exif_orientation)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27)")
+                     exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode, exif_white_balance_mode, exif_orientation, css_style)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28)")
             .map_err(|_| "Failed to prepare statement")?;
 
         let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
@@ -763,7 +806,9 @@ impl MetaInfoDB for SQLite {
                 if exif.digital_zoom_ratio.is_empty() { None } else { Some(exif.digital_zoom_ratio.clone()) },
                 if exif.exposure_mode.is_empty() { None } else { Some(exif.exposure_mode.clone()) },
                 if exif.white_balance_mode.is_empty() { None } else { Some(exif.white_balance_mode.clone()) },
-                if exif.orientation.is_empty() { None } else { Some(exif.orientation.clone()) }
+                if exif.orientation.is_empty() { None } else { Some(exif.orientation.clone()) },
+                // CSS style field - default to None for now
+                None::<String>
             ])
             .map_err(|e| {
                 eprintln!("Failed to execute database statement for {}: {}", photo.file.path, e);
@@ -1433,5 +1478,44 @@ impl SQLite {
         }
         
         Ok(())
+    }
+
+    pub fn save_css_style(&self, photo_path: &str, css_style: &str) -> Result<(), String> {
+        let conn = self.get_connection()
+            .map_err(|e| format!("Failed to connect to database: {}", e))?;
+        
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        let affected_rows = conn.execute(
+            "UPDATE photo_metadata SET css_style = ?1, updated_at = ?2 WHERE path = ?3",
+            params![css_style, now, photo_path],
+        ).map_err(|e| format!("Failed to update CSS style: {}", e))?;
+        
+        if affected_rows == 0 {
+            return Err("Photo not found in database".to_string());
+        }
+        
+        Ok(())
+    }
+
+    pub fn get_css_style(&self, photo_path: &str) -> Option<String> {
+        let conn = match self.get_connection() {
+            Ok(conn) => conn,
+            Err(_) => return None,
+        };
+
+        let mut stmt = match conn.prepare("SELECT css_style FROM photo_metadata WHERE path = ?1") {
+            Ok(stmt) => stmt,
+            Err(_) => return None,
+        };
+
+        let result = stmt.query_row(params![photo_path], |row| {
+            let css_style: Option<String> = row.get(0)?;
+            Ok(css_style)
+        });
+
+        match result {
+            Ok(css_style) => css_style,
+            Err(_) => None,
+        }
     }
 }

@@ -730,6 +730,33 @@ async fn move_to_trash(
     return Ok(date.to_string());
 }
 
+#[tauri::command]
+async fn save_css_style(
+    photo_path: &str,
+    css_style: &str,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    let sqlite_db = repository::meta_db::sqlite::SQLite::new(state.config.import_to.clone());
+    
+    match sqlite_db.save_css_style(photo_path, css_style) {
+        Ok(()) => Ok("{\"result\": true}".to_string()),
+        Err(e) => Err(e),
+    }
+}
+
+#[tauri::command]
+async fn get_css_style(
+    photo_path: &str,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    let sqlite_db = repository::meta_db::sqlite::SQLite::new(state.config.import_to.clone());
+    
+    match sqlite_db.get_css_style(photo_path) {
+        Some(css_style) => Ok(css_style),
+        None => Ok("".to_string()),
+    }
+}
+
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -866,6 +893,8 @@ pub fn run() {
             link_file_to_public,
             move_photos_to_exif_date,
             upload_to_google_photos,
+            save_css_style,
+            get_css_style,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
