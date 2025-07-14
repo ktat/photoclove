@@ -2,7 +2,6 @@ use crate::entity::job_queue;
 use crate::repository::meta_db::sqlite::SQLite;
 use crate::repository::MetaInfoDB;
 use crate::value::file;
-use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use tauri::{Emitter, Manager};
@@ -933,20 +932,20 @@ impl JobQueueManager {
         }
     }
 
-    pub async fn get_all_job_units(&self) -> Result<Vec<job_queue::JobUnit>, String> {
+    pub fn get_all_job_units(&self) -> Result<Vec<job_queue::JobUnit>, String> {
         // This method would need to be implemented in the database layer
         // For now, return a placeholder
         Ok(vec![])
     }
 
-    pub async fn get_all_jobs(&self) -> Result<Vec<job_queue::QueuedJob>, String> {
+    pub fn get_all_jobs(&self) -> Result<Vec<job_queue::QueuedJob>, String> {
         match self.db.get_all_jobs() {
             Ok(jobs) => Ok(jobs),
             Err(e) => Err(format!("Failed to get jobs: {}", e)),
         }
     }
 
-    pub async fn retry_job(&self, job_id: i64) -> Result<bool, String> {
+    pub fn retry_job(&self, job_id: i64) -> Result<bool, String> {
         // Reset job status to pending so it can be retried
         match self.db.update_job_status(job_id, &job_queue::JobStatus::Pending, None) {
             Ok(()) => Ok(true),
@@ -954,21 +953,21 @@ impl JobQueueManager {
         }
     }
 
-    pub async fn delete_job(&self, job_id: i64) -> Result<bool, String> {
+    pub fn delete_job(&self, job_id: i64) -> Result<bool, String> {
         match self.db.delete_job(job_id) {
             Ok(()) => Ok(true),
             Err(e) => Err(format!("Failed to delete job: {}", e)),
         }
     }
 
-    pub async fn delete_job_unit(&self, job_unit_id: String) -> Result<bool, String> {
+    pub fn delete_job_unit(&self, job_unit_id: String) -> Result<bool, String> {
         match self.db.delete_job_unit(&job_unit_id) {
             Ok(()) => Ok(true),
             Err(e) => Err(format!("Failed to delete job unit: {}", e)),
         }
     }
 
-    pub async fn cleanup_completed_jobs(&self) -> Result<bool, String> {
+    pub fn cleanup_completed_jobs(&self) -> Result<bool, String> {
         match self.db.cleanup_completed_jobs() {
             Ok(()) => Ok(true),
             Err(e) => Err(format!("Failed to cleanup completed jobs: {}", e)),

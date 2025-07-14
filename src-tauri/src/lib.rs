@@ -6,15 +6,14 @@ use crate::repository::*;
 use crate::value::*;
 use entity::config::Config;
 use std::{
-    error::Error,
     fs, path,
     path::PathBuf,
     sync::atomic::{AtomicBool, Ordering},
     sync::{Arc, Mutex},
 };
 use tauri::{
-    menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder},
-    Builder, Emitter, Event, Manager,
+    menu::{MenuBuilder, SubmenuBuilder},
+    Emitter, Manager,
 };
 
 #[cfg(unix)]
@@ -589,11 +588,11 @@ fn save_config(state: tauri::State<AppState>, config: Config) -> String {
 }
 
 #[tauri::command]
-async fn get_all_job_units(state: tauri::State<'_, AppState>) -> Result<String, String> {
-    let job_queue_manager = &state.job_queue_manager;
+fn get_all_job_units(state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let job_queue_manager = state.job_queue_manager.clone();
     let job_units = {
         let manager = job_queue_manager.lock().unwrap();
-        manager.get_all_job_units().await
+        manager.get_all_job_units()
     };
     
     match serde_json::to_string(&job_units) {
@@ -603,11 +602,11 @@ async fn get_all_job_units(state: tauri::State<'_, AppState>) -> Result<String, 
 }
 
 #[tauri::command]
-async fn get_all_jobs(state: tauri::State<'_, AppState>) -> Result<String, String> {
-    let job_queue_manager = &state.job_queue_manager;
+fn get_all_jobs(state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let job_queue_manager = state.job_queue_manager.clone();
     let jobs = {
         let manager = job_queue_manager.lock().unwrap();
-        manager.get_all_jobs().await
+        manager.get_all_jobs()
     };
     
     match serde_json::to_string(&jobs) {
@@ -617,11 +616,11 @@ async fn get_all_jobs(state: tauri::State<'_, AppState>) -> Result<String, Strin
 }
 
 #[tauri::command]
-async fn retry_job(job_id: i64, state: tauri::State<'_, AppState>) -> Result<String, String> {
-    let job_queue_manager = &state.job_queue_manager;
+fn retry_job(job_id: i64, state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let job_queue_manager = state.job_queue_manager.clone();
     let result = {
         let manager = job_queue_manager.lock().unwrap();
-        manager.retry_job(job_id).await
+        manager.retry_job(job_id)
     };
     
     match result {
@@ -631,11 +630,11 @@ async fn retry_job(job_id: i64, state: tauri::State<'_, AppState>) -> Result<Str
 }
 
 #[tauri::command]
-async fn delete_job(job_id: i64, state: tauri::State<'_, AppState>) -> Result<String, String> {
-    let job_queue_manager = &state.job_queue_manager;
+fn delete_job(job_id: i64, state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let job_queue_manager = state.job_queue_manager.clone();
     let result = {
         let manager = job_queue_manager.lock().unwrap();
-        manager.delete_job(job_id).await
+        manager.delete_job(job_id)
     };
     
     match result {
@@ -645,11 +644,11 @@ async fn delete_job(job_id: i64, state: tauri::State<'_, AppState>) -> Result<St
 }
 
 #[tauri::command]
-async fn delete_job_unit(job_unit_id: String, state: tauri::State<'_, AppState>) -> Result<String, String> {
-    let job_queue_manager = &state.job_queue_manager;
+fn delete_job_unit(job_unit_id: String, state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let job_queue_manager = state.job_queue_manager.clone();
     let result = {
         let manager = job_queue_manager.lock().unwrap();
-        manager.delete_job_unit(job_unit_id).await
+        manager.delete_job_unit(job_unit_id)
     };
     
     match result {
@@ -659,11 +658,11 @@ async fn delete_job_unit(job_unit_id: String, state: tauri::State<'_, AppState>)
 }
 
 #[tauri::command]
-async fn cleanup_completed_jobs(state: tauri::State<'_, AppState>) -> Result<String, String> {
-    let job_queue_manager = &state.job_queue_manager;
+fn cleanup_completed_jobs(state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let job_queue_manager = state.job_queue_manager.clone();
     let result = {
         let manager = job_queue_manager.lock().unwrap();
-        manager.cleanup_completed_jobs().await
+        manager.cleanup_completed_jobs()
     };
     
     match result {

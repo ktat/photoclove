@@ -2,7 +2,6 @@ use crate::entity::config::Config;
 use crate::value::{date, exif, file};
 use regex;
 use serde::{Deserialize, Serialize};
-use std::fs;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Photo {

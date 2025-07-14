@@ -45,10 +45,29 @@ const JobQueue = (props) => {
       setLoading(true);
       setError(null);
       const result = await invoke("get_all_jobs");
-      const jobsData = JSON.parse(result);
-      setJobs(jobsData);
+      
+      // Parse the JSON result
+      let jobsData;
+      try {
+        jobsData = JSON.parse(result);
+      } catch (parseError) {
+        // If JSON parsing fails, the result might be an error string
+        setError("Failed to parse jobs data: " + result);
+        setJobs([]);
+        return;
+      }
+      
+      // Ensure jobsData is an array
+      if (Array.isArray(jobsData)) {
+        setJobs(jobsData);
+      } else {
+        setError("Invalid jobs data format received");
+        setJobs([]);
+      }
     } catch (err) {
+      // This catches Tauri command errors
       setError("Failed to load jobs: " + err.message);
+      setJobs([]);
       console.error("Error loading jobs:", err);
     } finally {
       setLoading(false);
@@ -58,7 +77,14 @@ const JobQueue = (props) => {
   const retryJob = async (jobId) => {
     try {
       const result = await invoke("retry_job", { jobId });
-      const response = JSON.parse(result);
+      let response;
+      try {
+        response = JSON.parse(result);
+      } catch (parseError) {
+        props.addFooterMessage("Failed to parse retry response: " + result);
+        return;
+      }
+      
       if (response.result) {
         props.addFooterMessage("Job queued for retry");
         loadJobs(); // Reload jobs
@@ -77,7 +103,13 @@ const JobQueue = (props) => {
 
     try {
       const result = await invoke("delete_job", { jobId });
-      const response = JSON.parse(result);
+      let response;
+      try {
+        response = JSON.parse(result);
+      } catch (parseError) {
+        props.addFooterMessage("Failed to parse delete response: " + result);
+        return;
+      }
       if (response.result) {
         props.addFooterMessage("Job deleted successfully");
         loadJobs(); // Reload jobs
@@ -92,7 +124,14 @@ const JobQueue = (props) => {
   const cleanupCompletedJobs = async () => {
     try {
       const result = await invoke("cleanup_completed_jobs");
-      const response = JSON.parse(result);
+      let response;
+      try {
+        response = JSON.parse(result);
+      } catch (parseError) {
+        props.addFooterMessage("Failed to parse cleanup response: " + result);
+        return;
+      }
+      
       if (response.result) {
         props.addFooterMessage("Completed jobs cleaned up");
         loadJobs(); // Reload jobs
