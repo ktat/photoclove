@@ -65,6 +65,44 @@ env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
 
 ## Recent Updates
 
+### CSS-Based Image Editor (v2.7)
+- **Non-Destructive Editing**: CSS-based image transformations with real-time preview
+- **Comprehensive Controls**: Rotation, brightness, contrast, saturation, hue rotation, and scaling
+- **Database Storage**: CSS styles stored in `css_style` column for persistent transformations
+- **User Interface**: Intuitive editor tab with range sliders and live preview
+- **Apply/Reset System**: Save transformations or reset to original state
+- **Future-Ready**: Framework for save-as-copy and download functionality
+
+### EXIF Data Storage (v2.7)
+- **Complete EXIF Support**: All EXIF metadata fields stored in database for fast searching
+- **Camera Information**: Make, model, lens details stored for equipment tracking
+- **Technical Settings**: ISO, aperture, shutter speed, focal length, and exposure data
+- **Image Quality**: Resolution, orientation, and processing information
+- **Date Tracking**: Original capture date and modification timestamps
+- **Search Ready**: EXIF data immediately available for filtering and organization
+
+### Google Photos Integration (v2.7)
+- **Seamless Upload**: Direct upload to Google Photos with URL tracking
+- **Batch Operations**: Upload multiple selected photos simultaneously
+- **URL Storage**: Google Photos URLs stored in database for reference
+- **Authentication**: OAuth2 integration with token management
+- **Progress Tracking**: Real-time upload progress and status updates
+- **Error Handling**: Robust error recovery and user feedback
+
+### Enhanced Database Schema (v2.7)
+- **Updated Timestamp**: Added `updated_at` column for tracking record modifications
+- **Migration System**: Automatic database migration with column existence checks
+- **Comprehensive Schema**: Full EXIF fields and integration columns
+- **Performance Optimized**: Proper indexing and query optimization
+- **Future-Proof**: Extensible schema design for new features
+
+### Job Queue Management Interface (v2.7)
+- **Visual Management**: Dedicated job queue interface for monitoring background tasks
+- **Job Operations**: Retry failed jobs, delete completed jobs, and cleanup operations
+- **Status Tracking**: Real-time job status, progress, and error information
+- **Bulk Operations**: Cleanup completed jobs and manage job units
+- **User Control**: Full visibility and control over background processing
+
 ### Asynchronous Job Queue System (v2.6)
 - **Background Processing**: Complete rewrite of import system using asynchronous job queue for non-blocking operations
 - **Job Types**: Support for Import, Thumbnail creation, and Database creation jobs with individual progress tracking
