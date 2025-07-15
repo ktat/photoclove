@@ -52,9 +52,8 @@ function PhotoInfo(props) {
                             console.log('Updating UI elements with saved values');
                             updateUIElementsWithValues(editorValues, savedCssStyle);
                             
-                            // Apply the saved styles immediately to the main image
-                            console.log('Applying saved styles to main image');
-                            applyTempStyleWithValues(editorValues);
+                            // Note: Don't apply temp styles here - PhotoDisplay will apply saved CSS via props
+                            console.log('Saved styles will be applied by PhotoDisplay via props');
                         }, 200);
                     } else {
                         // No saved CSS, use default values

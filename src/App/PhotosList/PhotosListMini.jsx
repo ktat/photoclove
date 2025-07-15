@@ -551,7 +551,14 @@ function PhotosListMini(props) {
                         unselectedInfoHidden={unselectedInfoHidden}
                         selectedContent={selectedContent}
                         unselectedContent={unselectedContent}
-                        currentPhotoCssStyle={photosListMiniAllPhotos[props.currentPhotoIndex]?.css_style}
+                        currentPhotoCssStyle={(() => {
+                            const cssStyle = photosListMiniAllPhotos[props.currentPhotoIndex]?.css_style;
+                            console.log('=== PHOTOSLISTMINI DEBUG ===');
+                            console.log('currentPhotoIndex:', props.currentPhotoIndex);
+                            console.log('photo object:', photosListMiniAllPhotos[props.currentPhotoIndex]);
+                            console.log('css_style from photo:', cssStyle);
+                            return cssStyle;
+                        })()}
                     />
                 </div>
                 <div id="photos-list-mini" className={photosListMiniClosed ? "photosListMiniClosed" : "photosListMini"}>

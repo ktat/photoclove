@@ -240,6 +240,13 @@ function PhotoDisplay(props) {
                         ...props.imgStyle,
                         ...parseCssStyle(props.currentPhotoCssStyle)
                     }}
+                    onLoad={(e) => {
+                        console.log('=== PHOTODISPLAY DEBUG ===');
+                        console.log('currentPhotoCssStyle:', props.currentPhotoCssStyle);
+                        console.log('parsed CSS style:', parseCssStyle(props.currentPhotoCssStyle));
+                        console.log('imgStyle:', props.imgStyle);
+                        handleImgLoad(e.target);
+                    }}
                     src={(props.imgCacheMap[props.currentPhotoPath] && props.imgCacheMap[props.currentPhotoPath][0]) || convertFileSrc(props.currentPhotoPath)}
                     onMouseDown={(e) => dragPhotoStart(e)}
                     onMouseMove={(e) => dragPhoto(e)}
