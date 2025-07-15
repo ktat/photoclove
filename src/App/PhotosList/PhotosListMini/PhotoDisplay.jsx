@@ -17,6 +17,25 @@ function PhotoDisplay(props) {
     const [photoDisplayWidth, setPhotoDisplayWidth] = useState("pdWidth");
     const [photoDisplayHeight, setPhotoDisplayHeight] = useState("pdHeight");
 
+    // Function to parse CSS style string and convert to style object
+    const parseCssStyle = (cssString) => {
+        if (!cssString) return {};
+        
+        const styles = {};
+        const declarations = cssString.split(';').filter(decl => decl.trim());
+        
+        declarations.forEach(declaration => {
+            const [property, value] = declaration.split(':').map(s => s.trim());
+            if (property && value) {
+                // Convert CSS property names to camelCase for React
+                const camelCaseProperty = property.replace(/-([a-z])/g, (match, letter) => letter.toUpperCase());
+                styles[camelCaseProperty] = value;
+            }
+        });
+        
+        return styles;
+    };
+
     useEffect((e) => {
         currentFile = "";
         document.querySelector("#dummy-for-focus").focus();
@@ -217,7 +236,10 @@ function PhotoDisplay(props) {
                     onError={(e) => {
                         e.target.src = "/img_error.png";
                     }}
-                    style={props.imgStyle}
+                    style={{
+                        ...props.imgStyle,
+                        ...parseCssStyle(props.currentPhotoCssStyle)
+                    }}
                     src={(props.imgCacheMap[props.currentPhotoPath] && props.imgCacheMap[props.currentPhotoPath][0]) || convertFileSrc(props.currentPhotoPath)}
                     onMouseDown={(e) => dragPhotoStart(e)}
                     onMouseMove={(e) => dragPhoto(e)}

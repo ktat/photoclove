@@ -170,8 +170,11 @@ impl RepositoryDB for Directory {
                     p = photo::Photo::new(file, Option::None);
                 }
                 let mut meta = exif::ExifData::empty();
-                meta.date_time = meta_data.get(f).unwrap().photo_time();
+                let photo_meta = meta_data.get(f).unwrap();
+                meta.date_time = photo_meta.photo_time();
                 p.embed_exif(meta);
+                // Set CSS style from metadata
+                p.set_css_style(photo_meta.photo().css_style.clone());
                 photos.photos.push(p)
             }
         }

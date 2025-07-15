@@ -38,6 +38,25 @@ function PhotosListMini(props) {
 
     const navigateLock = useRef(false);
 
+    // Function to parse CSS style string and convert to style object
+    const parseCssStyle = (cssString) => {
+        if (!cssString) return {};
+        
+        const styles = {};
+        const declarations = cssString.split(';').filter(decl => decl.trim());
+        
+        declarations.forEach(declaration => {
+            const [property, value] = declaration.split(':').map(s => s.trim());
+            if (property && value) {
+                // Convert CSS property names to camelCase for React
+                const camelCaseProperty = property.replace(/-([a-z])/g, (match, letter) => letter.toUpperCase());
+                styles[camelCaseProperty] = value;
+            }
+        });
+        
+        return styles;
+    };
+
     const handleClick = useCallback((e) => {
         // 既存の操作系（input／button など）をクリックした時は奪わない
         const interactive = ['INPUT', 'BUTTON', 'SELECT', 'TEXTAREA', 'A'];
@@ -532,6 +551,7 @@ function PhotosListMini(props) {
                         unselectedInfoHidden={unselectedInfoHidden}
                         selectedContent={selectedContent}
                         unselectedContent={unselectedContent}
+                        currentPhotoCssStyle={photosListMiniAllPhotos[props.currentPhotoIndex]?.css_style}
                     />
                 </div>
                 <div id="photos-list-mini" className={photosListMiniClosed ? "photosListMiniClosed" : "photosListMini"}>
@@ -567,7 +587,13 @@ function PhotosListMini(props) {
                                             <span>&#127909;</span>
                                         </div>
                                         : <>
-                                            <img src={photosListImgSrc[v.file.path]} style={{ border: borderStyle[i], maxHeight: clientHeight + "px" }} alt={"photo-" + i}
+                                            <img src={photosListImgSrc[v.file.path]} 
+                                                style={{ 
+                                                    border: borderStyle[i], 
+                                                    maxHeight: clientHeight + "px",
+                                                    ...parseCssStyle(v.css_style)
+                                                }} 
+                                                alt={"photo-" + i}
                                                 onError={(e) => { e.target.src = "/img_error.png" }} />
                                             {v.file.path.match(/\.(mp4|webm)$/i) && <div style={{ color: "white", position: "relative", top: clientHeight / -4 }}>&#x25b6;</div>}
                                         </>

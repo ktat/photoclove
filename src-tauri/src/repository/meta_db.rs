@@ -7,4 +7,5 @@ pub struct PhotoInfo {
     pub date: String,
     pub star: i32,
     pub comment: String,
+    pub css_style: Option<String>,
 }

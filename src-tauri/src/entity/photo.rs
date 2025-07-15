@@ -15,6 +15,7 @@ pub struct Photo {
     import_to: String,
     thumbnail_store: String,
     has_config: bool,
+    pub css_style: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -48,6 +49,7 @@ impl Photo {
             import_to: import_to,
             thumbnail_store: thumbnail_store,
             has_config: has_config,
+            css_style: None,
         }
     }
 
@@ -121,6 +123,10 @@ impl Photo {
     pub fn set_time(&mut self, time: String) {
         self.time = time;
         self.is_meta_not_loaded = false;
+    }
+
+    pub fn set_css_style(&mut self, css_style: Option<String>) {
+        self.css_style = css_style;
     }
 
     pub fn is_meta_empty(&self) -> bool {

@@ -34,6 +34,25 @@ function PhotosList(props) {
     const [extensionFilter, setExtensionFilter] = useState("all");
     const [debugMessage, setDebugMessage] = useState("");
 
+    // Function to parse CSS style string and convert to style object
+    const parseCssStyle = (cssString) => {
+        if (!cssString) return {};
+        
+        const styles = {};
+        const declarations = cssString.split(';').filter(decl => decl.trim());
+        
+        declarations.forEach(declaration => {
+            const [property, value] = declaration.split(':').map(s => s.trim());
+            if (property && value) {
+                // Convert CSS property names to camelCase for React
+                const camelCaseProperty = property.replace(/-([a-z])/g, (match, letter) => letter.toUpperCase());
+                styles[camelCaseProperty] = value;
+            }
+        });
+        
+        return styles;
+    };
+
     useEffect((e) => {
         invoke("get_config", {},).then((e) => {
             const json = JSON.parse(e);
@@ -442,7 +461,10 @@ function PhotosList(props) {
                                                         : <div style={{ width: iconSize + 'px', height: iconSize + 'px', flexShrink: 0 }} >
                                                         <img loading="eager"
                                                             alt={l.file.path}
-                                                            style={{ width: "97%" }}
+                                                            style={{ 
+                                                                width: "97%",
+                                                                ...parseCssStyle(l.css_style)
+                                                            }}
                                                             src={photosListImgSrc[l.file.path]}
                                                             onLoad={(e) => {
                                                                 let w = e.currentTarget.width;

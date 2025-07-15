@@ -28,38 +28,79 @@ function PhotoInfo(props) {
         }
     }, [props.currentPhotoPath, props.showSideMenu])
 
-    // Clear stored original styles when photo changes
+    // Load saved CSS styles when photo changes
     useEffect(() => {
         setOriginalStyles(new Map());
-        // Reset editor styles when photo changes
-        setEditorStyles({
-            rotate: 0,
-            brightness: 100,
-            contrast: 100,
-            saturation: 100,
-            hue: 0,
-            scale: 100
-        });
         
-        // Reset UI sliders
-        setTimeout(() => {
-            document.querySelectorAll('.photo-info-editor input[type="range"]').forEach(slider => {
-                slider.value = slider.defaultValue;
-            });
-            
-            ['rotate', 'brightness', 'contrast', 'saturation', 'hue', 'scale'].forEach(prop => {
-                const valueSpan = document.getElementById(`${prop}-value`);
-                if (valueSpan) {
-                    valueSpan.textContent = prop === 'brightness' || prop === 'contrast' || prop === 'saturation' || prop === 'scale' ? '100' : '0';
-                }
-            });
-            
-            const previewTextarea = document.getElementById('css-preview-text');
-            if (previewTextarea) {
-                previewTextarea.value = '';
-            }
-        }, 100);
+        if (props.currentPhotoPath) {
+            // Load saved CSS style for this photo
+            invoke("get_css_style", { photoPath: props.currentPhotoPath })
+                .then((savedCssStyle) => {
+                    console.log('Loaded CSS style:', savedCssStyle); // Debug log
+                    
+                    if (savedCssStyle && savedCssStyle.trim() !== '') {
+                        // Parse the saved CSS and update editor values
+                        const editorValues = parseCssToEditorValues(savedCssStyle);
+                        setEditorStyles(editorValues);
+                        
+                        // Update UI elements with saved values
+                        setTimeout(() => {
+                            updateUIElementsWithValues(editorValues, savedCssStyle);
+                            
+                            // Apply the saved styles immediately
+                            applyTempStyleWithValues(editorValues);
+                        }, 100);
+                    } else {
+                        // No saved CSS, use default values
+                        const defaultValues = {
+                            rotate: 0,
+                            brightness: 100,
+                            contrast: 100,
+                            saturation: 100,
+                            hue: 0,
+                            scale: 100
+                        };
+                        setEditorStyles(defaultValues);
+                        
+                        setTimeout(() => {
+                            updateUIElementsWithValues(defaultValues, '');
+                        }, 100);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Failed to load CSS style:', error);
+                    // Fallback to reset editor styles
+                    const defaultValues = {
+                        rotate: 0,
+                        brightness: 100,
+                        contrast: 100,
+                        saturation: 100,
+                        hue: 0,
+                        scale: 100
+                    };
+                    setEditorStyles(defaultValues);
+                    
+                    setTimeout(() => {
+                        updateUIElementsWithValues(defaultValues, '');
+                    }, 100);
+                });
+        }
     }, [props.currentPhotoPath])
+
+    // Update CSS preview when editor tab is opened
+    useEffect(() => {
+        if (activeTab === "editor" && props.currentPhotoPath) {
+            // Ensure CSS preview is populated when switching to editor tab
+            setTimeout(() => {
+                const css = generateCSSFromValues(editorStyles);
+                const previewTextarea = document.getElementById('css-preview-text');
+                if (previewTextarea && css) {
+                    previewTextarea.value = css;
+                    console.log('Updated CSS preview on tab switch:', css); // Debug log
+                }
+            }, 100);
+        }
+    }, [activeTab, editorStyles])
 
     async function getPhotoInfo(path) {
         if (props.imgCacheMap[path] && props.imgCacheMap[path][1]) {
@@ -140,6 +181,104 @@ function PhotoInfo(props) {
     }
 
 
+    // Helper function to update UI elements with values
+    function updateUIElementsWithValues(editorValues, cssStyle) {
+        Object.entries(editorValues).forEach(([prop, value]) => {
+            // Update slider
+            const slider = document.querySelector(`input[type="range"][onchange*="${prop}"]`);
+            if (slider) {
+                slider.value = value;
+            }
+            
+            // Update input field
+            const input = document.getElementById(`${prop}-input`);
+            if (input) {
+                input.value = value;
+            }
+            
+            // Update value display
+            const valueSpan = document.getElementById(`${prop}-value`);
+            if (valueSpan) {
+                valueSpan.textContent = value;
+            }
+        });
+        
+        // Update CSS preview with the actual saved CSS
+        const previewTextarea = document.getElementById('css-preview-text');
+        if (previewTextarea) {
+            previewTextarea.value = cssStyle || '';
+            console.log('Updated CSS preview with:', cssStyle); // Debug log
+        }
+    }
+    
+    // Function to parse CSS string and extract editor values
+    function parseCssToEditorValues(cssString) {
+        const defaultValues = {
+            rotate: 0,
+            brightness: 100,
+            contrast: 100,
+            saturation: 100,
+            hue: 0,
+            scale: 100
+        };
+
+        if (!cssString || cssString.trim() === '') {
+            return defaultValues;
+        }
+
+        const values = { ...defaultValues };
+        
+        // Parse transform property
+        const transformMatch = cssString.match(/transform:\s*([^;]+)/);
+        if (transformMatch) {
+            const transformValue = transformMatch[1];
+            
+            // Parse rotation: rotate(90deg)
+            const rotateMatch = transformValue.match(/rotate\((-?\d+(?:\.\d+)?)deg\)/);
+            if (rotateMatch) {
+                values.rotate = parseInt(rotateMatch[1]);
+            }
+            
+            // Parse scale: scale(1.5)
+            const scaleMatch = transformValue.match(/scale\((\d+(?:\.\d+)?)\)/);
+            if (scaleMatch) {
+                values.scale = Math.round(parseFloat(scaleMatch[1]) * 100);
+            }
+        }
+        
+        // Parse filter property
+        const filterMatch = cssString.match(/filter:\s*([^;]+)/);
+        if (filterMatch) {
+            const filterValue = filterMatch[1];
+            
+            // Parse brightness: brightness(150%)
+            const brightnessMatch = filterValue.match(/brightness\((\d+(?:\.\d+)?)%\)/);
+            if (brightnessMatch) {
+                values.brightness = parseInt(brightnessMatch[1]);
+            }
+            
+            // Parse contrast: contrast(120%)
+            const contrastMatch = filterValue.match(/contrast\((\d+(?:\.\d+)?)%\)/);
+            if (contrastMatch) {
+                values.contrast = parseInt(contrastMatch[1]);
+            }
+            
+            // Parse saturation: saturate(80%)
+            const saturationMatch = filterValue.match(/saturate\((\d+(?:\.\d+)?)%\)/);
+            if (saturationMatch) {
+                values.saturation = parseInt(saturationMatch[1]);
+            }
+            
+            // Parse hue rotation: hue-rotate(45deg)
+            const hueMatch = filterValue.match(/hue-rotate\((-?\d+(?:\.\d+)?)deg\)/);
+            if (hueMatch) {
+                values.hue = parseInt(hueMatch[1]);
+            }
+        }
+        
+        return values;
+    }
+
     // Editor functions
     function updateStyle(property, value) {
         // Handle rotation 360 = 0 case
@@ -157,10 +296,11 @@ function PhotoInfo(props) {
             // Generate CSS with the new values immediately
             const css = generateCSSFromValues(newStyles);
             
-            // Update CSS preview
+            // Update CSS preview with the generated CSS
             const previewTextarea = document.getElementById('css-preview-text');
             if (previewTextarea) {
                 previewTextarea.value = css;
+                console.log('Updated CSS preview in updateStyle:', css); // Debug log
             }
             
             // Apply to current image immediately with new values
@@ -169,14 +309,19 @@ function PhotoInfo(props) {
             return newStyles;
         });
         
-        // Update the value display and slider
+        // Update both slider and input field
         const valueSpan = document.getElementById(`${property}-value`);
-        const slider = document.querySelector(`input[onchange*="${property}"]`);
+        const slider = document.querySelector(`input[type="range"][onchange*="${property}"]`);
+        const input = document.getElementById(`${property}-input`);
+        
         if (valueSpan) {
             valueSpan.textContent = value;
         }
-        if (slider) {
+        if (slider && slider.value !== value) {
             slider.value = value;
+        }
+        if (input && input.value !== value) {
+            input.value = value;
         }
     }
 
@@ -420,9 +565,14 @@ function PhotoInfo(props) {
             });
             
             ['rotate', 'brightness', 'contrast', 'saturation', 'hue', 'scale'].forEach(prop => {
+                const defaultValue = prop === 'brightness' || prop === 'contrast' || prop === 'saturation' || prop === 'scale' ? '100' : '0';
                 const valueSpan = document.getElementById(`${prop}-value`);
+                const input = document.getElementById(`${prop}-input`);
                 if (valueSpan) {
-                    valueSpan.textContent = prop === 'brightness' || prop === 'contrast' || prop === 'saturation' || prop === 'scale' ? '100' : '0';
+                    valueSpan.textContent = defaultValue;
+                }
+                if (input) {
+                    input.value = defaultValue;
                 }
             });
             
@@ -733,7 +883,9 @@ function PhotoInfo(props) {
                                             <label>Rotation (deg):</label>
                                             <input type="range" min="0" max="360" defaultValue="0" 
                                                    onChange={(e) => updateStyle('rotate', e.target.value)} />
-                                            <span id="rotate-value">0</span>
+                                            <input type="number" min="0" max="360" defaultValue="0" 
+                                                   id="rotate-input" className="value-input"
+                                                   onChange={(e) => updateStyle('rotate', e.target.value)} />
                                             <button className="reset-btn" onClick={() => resetSingleControl('rotate')} title="Reset rotation">↻</button>
                                         </div>
                                         <div className="rotation-shortcuts">
@@ -746,7 +898,9 @@ function PhotoInfo(props) {
                                             <label>Brightness:</label>
                                             <input type="range" min="0" max="200" defaultValue="100" 
                                                    onChange={(e) => updateStyle('brightness', e.target.value)} />
-                                            <span id="brightness-value">100</span>
+                                            <input type="number" min="0" max="200" defaultValue="100" 
+                                                   id="brightness-input" className="value-input"
+                                                   onChange={(e) => updateStyle('brightness', e.target.value)} />
                                             <button className="reset-btn" onClick={() => resetSingleControl('brightness')} title="Reset brightness">↻</button>
                                         </div>
                                     </div>
@@ -755,7 +909,9 @@ function PhotoInfo(props) {
                                             <label>Contrast:</label>
                                             <input type="range" min="0" max="200" defaultValue="100" 
                                                    onChange={(e) => updateStyle('contrast', e.target.value)} />
-                                            <span id="contrast-value">100</span>
+                                            <input type="number" min="0" max="200" defaultValue="100" 
+                                                   id="contrast-input" className="value-input"
+                                                   onChange={(e) => updateStyle('contrast', e.target.value)} />
                                             <button className="reset-btn" onClick={() => resetSingleControl('contrast')} title="Reset contrast">↻</button>
                                         </div>
                                     </div>
@@ -764,7 +920,9 @@ function PhotoInfo(props) {
                                             <label>Saturation:</label>
                                             <input type="range" min="0" max="200" defaultValue="100" 
                                                    onChange={(e) => updateStyle('saturation', e.target.value)} />
-                                            <span id="saturation-value">100</span>
+                                            <input type="number" min="0" max="200" defaultValue="100" 
+                                                   id="saturation-input" className="value-input"
+                                                   onChange={(e) => updateStyle('saturation', e.target.value)} />
                                             <button className="reset-btn" onClick={() => resetSingleControl('saturation')} title="Reset saturation">↻</button>
                                         </div>
                                     </div>
@@ -773,7 +931,9 @@ function PhotoInfo(props) {
                                             <label>Hue (deg):</label>
                                             <input type="range" min="0" max="360" defaultValue="0" 
                                                    onChange={(e) => updateStyle('hue', e.target.value)} />
-                                            <span id="hue-value">0</span>
+                                            <input type="number" min="0" max="360" defaultValue="0" 
+                                                   id="hue-input" className="value-input"
+                                                   onChange={(e) => updateStyle('hue', e.target.value)} />
                                             <button className="reset-btn" onClick={() => resetSingleControl('hue')} title="Reset hue">↻</button>
                                         </div>
                                     </div>
@@ -782,7 +942,9 @@ function PhotoInfo(props) {
                                             <label>Scale:</label>
                                             <input type="range" min="50" max="200" defaultValue="100" 
                                                    onChange={(e) => updateStyle('scale', e.target.value)} />
-                                            <span id="scale-value">100</span>
+                                            <input type="number" min="50" max="200" defaultValue="100" 
+                                                   id="scale-input" className="value-input"
+                                                   onChange={(e) => updateStyle('scale', e.target.value)} />
                                             <button className="reset-btn" onClick={() => resetSingleControl('scale')} title="Reset scale">↻</button>
                                         </div>
                                     </div>

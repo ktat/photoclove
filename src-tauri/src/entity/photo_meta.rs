@@ -100,6 +100,7 @@ impl PhotoMeta {
         }
         let mut photo = photo::Photo::new(f.unwrap(), Option::None);
         photo.set_time(record.date.clone());
+        photo.set_css_style(record.css_style.clone());
         return Some(PhotoMeta {
             photo: photo,
             star: star::Star::new(record.star),
