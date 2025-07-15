@@ -65,13 +65,18 @@ env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
 
 ## Recent Updates
 
-### CSS-Based Image Editor (v2.7)
+### Enhanced CSS-Based Image Editor (v2.8)
 - **Non-Destructive Editing**: CSS-based image transformations with real-time preview
 - **Comprehensive Controls**: Rotation, brightness, contrast, saturation, hue rotation, and scaling
+- **Enhanced UI**: Moved to PhotoInfo tabbed interface with individual reset buttons and compact design
+- **Rotation Shortcuts**: Quick 90-degree rotation buttons (left/right) for faster editing
+- **Smart Value Handling**: Rotation 360° automatically converts to 0° for consistency
+- **Download Feature**: Export styled images as PNG files with canvas-based rendering
+- **Configurable Downloads**: Download directory configurable through preferences
+- **Notification System**: System notifications and clickable footer messages for downloads
+- **Click-to-Open**: Downloaded files open automatically when notification is clicked
 - **Database Storage**: CSS styles stored in `css_style` column for persistent transformations
-- **User Interface**: Intuitive editor tab with range sliders and live preview
 - **Apply/Reset System**: Save transformations or reset to original state
-- **Future-Ready**: Framework for save-as-copy and download functionality
 
 ### EXIF Data Storage (v2.7)
 - **Complete EXIF Support**: All EXIF metadata fields stored in database for fast searching
@@ -204,8 +209,12 @@ Just a plan, currentrly a few features are only implemented.
      - [x] Thumbnail creation in background (asynchronous job processing)
   - [x] Real-time progress tracking and event notifications
   - [x] Error recovery and job resumption
-- [ ] Provide very simple editor
-  - [ ] rotation
+- [x] Provide very simple editor
+  - [x] rotation (with shortcuts and smart value handling)
+  - [x] brightness, contrast, saturation, hue adjustment
+  - [x] scaling
+  - [x] real-time preview
+  - [x] download styled images
   - [ ] crop
 - [ ] Additional photo data
   - [x] Star
@@ -224,6 +233,7 @@ Just a plan, currentrly a few features are only implemented.
 - [x] Preferences editor(low priority)
   - [x] directories(import from)
   - [x] directory(import to)
+  - [x] download directory(styled images)
   - [x] num of parralel when copying photos
   - [x] thumbnail settings
   - [ ] directory date format(currentry, yyyy-mm-dd only)
