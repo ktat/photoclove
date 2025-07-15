@@ -36,7 +36,11 @@ function PhotoInfo(props) {
             // Load saved CSS style for this photo
             invoke("get_css_style", { photoPath: props.currentPhotoPath })
                 .then((savedCssStyle) => {
-                    console.log('Loaded CSS style:', savedCssStyle); // Debug log
+                    console.log('=== CSS LOADING DEBUG ===');
+                    console.log('Photo path:', props.currentPhotoPath);
+                    console.log('Raw saved CSS style:', savedCssStyle);
+                    console.log('CSS style length:', savedCssStyle ? savedCssStyle.length : 0);
+                    console.log('CSS style trimmed:', savedCssStyle ? savedCssStyle.trim() : 'null');
                     
                     if (savedCssStyle && savedCssStyle.trim() !== '') {
                         // Parse the saved CSS and update editor values
@@ -45,11 +49,13 @@ function PhotoInfo(props) {
                         
                         // Update UI elements with saved values
                         setTimeout(() => {
+                            console.log('Updating UI elements with saved values');
                             updateUIElementsWithValues(editorValues, savedCssStyle);
                             
-                            // Apply the saved styles immediately
+                            // Apply the saved styles immediately to the main image
+                            console.log('Applying saved styles to main image');
                             applyTempStyleWithValues(editorValues);
-                        }, 100);
+                        }, 200);
                     } else {
                         // No saved CSS, use default values
                         const defaultValues = {
@@ -183,23 +189,34 @@ function PhotoInfo(props) {
 
     // Helper function to update UI elements with values
     function updateUIElementsWithValues(editorValues, cssStyle) {
+        console.log('Updating UI elements with values:', editorValues); // Debug log
+        
         Object.entries(editorValues).forEach(([prop, value]) => {
-            // Update slider
-            const slider = document.querySelector(`input[type="range"][onchange*="${prop}"]`);
+            // Update slider by ID
+            const slider = document.getElementById(`${prop}-slider`);
             if (slider) {
                 slider.value = value;
+                console.log(`Updated ${prop} slider to:`, value); // Debug log
+            } else {
+                console.warn(`Slider not found for ${prop}`); // Debug log
             }
             
             // Update input field
             const input = document.getElementById(`${prop}-input`);
             if (input) {
                 input.value = value;
+                console.log(`Updated ${prop} input to:`, value); // Debug log
+            } else {
+                console.warn(`Input not found for ${prop}`); // Debug log
             }
             
             // Update value display
             const valueSpan = document.getElementById(`${prop}-value`);
             if (valueSpan) {
                 valueSpan.textContent = value;
+                console.log(`Updated ${prop} value display to:`, value); // Debug log
+            } else {
+                console.warn(`Value span not found for ${prop}`); // Debug log
             }
         });
         
@@ -213,6 +230,9 @@ function PhotoInfo(props) {
     
     // Function to parse CSS string and extract editor values
     function parseCssToEditorValues(cssString) {
+        console.log('=== PARSING CSS ===');
+        console.log('Input CSS string:', cssString);
+        
         const defaultValues = {
             rotate: 0,
             brightness: 100,
@@ -223,6 +243,7 @@ function PhotoInfo(props) {
         };
 
         if (!cssString || cssString.trim() === '') {
+            console.log('CSS string is empty, returning defaults');
             return defaultValues;
         }
 
@@ -276,6 +297,7 @@ function PhotoInfo(props) {
             }
         }
         
+        console.log('Parsed values:', values);
         return values;
     }
 
@@ -311,7 +333,7 @@ function PhotoInfo(props) {
         
         // Update both slider and input field
         const valueSpan = document.getElementById(`${property}-value`);
-        const slider = document.querySelector(`input[type="range"][onchange*="${property}"]`);
+        const slider = document.getElementById(`${property}-slider`);
         const input = document.getElementById(`${property}-input`);
         
         if (valueSpan) {
@@ -377,10 +399,13 @@ function PhotoInfo(props) {
     }
 
     function applyTempStyleWithValues(styles) {
+        console.log('=== APPLYING TEMP STYLES ===');
+        console.log('Styles to apply:', styles);
         const { rotate, brightness, contrast, saturation, hue, scale } = styles;
         
         // Store and apply styles to main image
         const mainImage = document.querySelector('#photoImgTag');
+        console.log('Main image element found:', !!mainImage);
         if (mainImage) {
             // Store original styles immediately if not stored
             if (!originalStyles.has('main-image')) {
@@ -882,10 +907,11 @@ function PhotoInfo(props) {
                                         <div className="control-row">
                                             <label>Rotation (deg):</label>
                                             <input type="range" min="0" max="360" defaultValue="0" 
-                                                   onChange={(e) => updateStyle('rotate', e.target.value)} />
+                                                   id="rotate-slider" onChange={(e) => updateStyle('rotate', e.target.value)} />
                                             <input type="number" min="0" max="360" defaultValue="0" 
                                                    id="rotate-input" className="value-input"
                                                    onChange={(e) => updateStyle('rotate', e.target.value)} />
+                                            <span id="rotate-value">0</span>
                                             <button className="reset-btn" onClick={() => resetSingleControl('rotate')} title="Reset rotation">↻</button>
                                         </div>
                                         <div className="rotation-shortcuts">
@@ -897,10 +923,11 @@ function PhotoInfo(props) {
                                         <div className="control-row">
                                             <label>Brightness:</label>
                                             <input type="range" min="0" max="200" defaultValue="100" 
-                                                   onChange={(e) => updateStyle('brightness', e.target.value)} />
+                                                   id="brightness-slider" onChange={(e) => updateStyle('brightness', e.target.value)} />
                                             <input type="number" min="0" max="200" defaultValue="100" 
                                                    id="brightness-input" className="value-input"
                                                    onChange={(e) => updateStyle('brightness', e.target.value)} />
+                                            <span id="brightness-value">100</span>
                                             <button className="reset-btn" onClick={() => resetSingleControl('brightness')} title="Reset brightness">↻</button>
                                         </div>
                                     </div>
@@ -908,10 +935,11 @@ function PhotoInfo(props) {
                                         <div className="control-row">
                                             <label>Contrast:</label>
                                             <input type="range" min="0" max="200" defaultValue="100" 
-                                                   onChange={(e) => updateStyle('contrast', e.target.value)} />
+                                                   id="contrast-slider" onChange={(e) => updateStyle('contrast', e.target.value)} />
                                             <input type="number" min="0" max="200" defaultValue="100" 
                                                    id="contrast-input" className="value-input"
                                                    onChange={(e) => updateStyle('contrast', e.target.value)} />
+                                            <span id="contrast-value">100</span>
                                             <button className="reset-btn" onClick={() => resetSingleControl('contrast')} title="Reset contrast">↻</button>
                                         </div>
                                     </div>
@@ -919,10 +947,11 @@ function PhotoInfo(props) {
                                         <div className="control-row">
                                             <label>Saturation:</label>
                                             <input type="range" min="0" max="200" defaultValue="100" 
-                                                   onChange={(e) => updateStyle('saturation', e.target.value)} />
+                                                   id="saturation-slider" onChange={(e) => updateStyle('saturation', e.target.value)} />
                                             <input type="number" min="0" max="200" defaultValue="100" 
                                                    id="saturation-input" className="value-input"
                                                    onChange={(e) => updateStyle('saturation', e.target.value)} />
+                                            <span id="saturation-value">100</span>
                                             <button className="reset-btn" onClick={() => resetSingleControl('saturation')} title="Reset saturation">↻</button>
                                         </div>
                                     </div>
@@ -930,10 +959,11 @@ function PhotoInfo(props) {
                                         <div className="control-row">
                                             <label>Hue (deg):</label>
                                             <input type="range" min="0" max="360" defaultValue="0" 
-                                                   onChange={(e) => updateStyle('hue', e.target.value)} />
+                                                   id="hue-slider" onChange={(e) => updateStyle('hue', e.target.value)} />
                                             <input type="number" min="0" max="360" defaultValue="0" 
                                                    id="hue-input" className="value-input"
                                                    onChange={(e) => updateStyle('hue', e.target.value)} />
+                                            <span id="hue-value">0</span>
                                             <button className="reset-btn" onClick={() => resetSingleControl('hue')} title="Reset hue">↻</button>
                                         </div>
                                     </div>
@@ -941,10 +971,11 @@ function PhotoInfo(props) {
                                         <div className="control-row">
                                             <label>Scale:</label>
                                             <input type="range" min="50" max="200" defaultValue="100" 
-                                                   onChange={(e) => updateStyle('scale', e.target.value)} />
+                                                   id="scale-slider" onChange={(e) => updateStyle('scale', e.target.value)} />
                                             <input type="number" min="50" max="200" defaultValue="100" 
                                                    id="scale-input" className="value-input"
                                                    onChange={(e) => updateStyle('scale', e.target.value)} />
+                                            <span id="scale-value">100</span>
                                             <button className="reset-btn" onClick={() => resetSingleControl('scale')} title="Reset scale">↻</button>
                                         </div>
                                     </div>
