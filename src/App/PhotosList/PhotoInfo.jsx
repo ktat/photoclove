@@ -97,12 +97,22 @@ function PhotoInfo(props) {
         if (activeTab === "editor" && props.currentPhotoPath) {
             // Ensure CSS preview is populated when switching to editor tab
             setTimeout(() => {
+                console.log('=== EDITOR TAB SWITCH DEBUG ===');
+                console.log('Current editorStyles:', editorStyles);
+                
                 const css = generateCSSFromValues(editorStyles);
+                console.log('Generated CSS from editorStyles:', css);
+                
                 const previewTextarea = document.getElementById('css-preview-text');
-                if (previewTextarea && css) {
+                if (previewTextarea) {
                     previewTextarea.value = css;
-                    console.log('Updated CSS preview on tab switch:', css); // Debug log
+                    console.log('Updated CSS preview on tab switch:', css);
+                } else {
+                    console.warn('CSS preview textarea not found on tab switch');
                 }
+                
+                // Also ensure UI elements reflect current editorStyles
+                updateUIElementsWithValues(editorStyles, css);
             }, 100);
         }
     }, [activeTab, editorStyles])
