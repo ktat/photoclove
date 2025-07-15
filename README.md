@@ -68,15 +68,18 @@ env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
 ### Enhanced CSS-Based Image Editor (v2.8)
 - **Non-Destructive Editing**: CSS-based image transformations with real-time preview
 - **Comprehensive Controls**: Rotation, brightness, contrast, saturation, hue rotation, and scaling
-- **Enhanced UI**: Moved to PhotoInfo tabbed interface with individual reset buttons and compact design
-- **Rotation Shortcuts**: Quick 90-degree rotation buttons (left/right) for faster editing
+- **Enhanced UI**: Optimized tabbed interface with individual reset buttons and inline label layout
+- **Rotation Shortcuts**: Quick 90-degree rotation buttons (left/right) positioned below rotation slider
 - **Smart Value Handling**: Rotation 360° automatically converts to 0° for consistency
-- **Download Feature**: Export styled images as PNG files with canvas-based rendering
+- **Robust Download Feature**: Export styled images with pixel-level filtering for accurate color transformations
+- **Advanced Image Processing**: Canvas-based rendering with manual pixel manipulation for brightness, contrast, saturation, and hue
+- **Cross-Browser Compatibility**: Reliable download functionality that works consistently across different browsers
 - **Configurable Downloads**: Download directory configurable through preferences
 - **Notification System**: System notifications and clickable footer messages for downloads
 - **Click-to-Open**: Downloaded files open automatically when notification is clicked
 - **Database Storage**: CSS styles stored in `css_style` column for persistent transformations
 - **Apply/Reset System**: Save transformations or reset to original state
+- **Optimized Layout**: Compact controls that fit properly within the right panel without scrollbars
 
 ### EXIF Data Storage (v2.7)
 - **Complete EXIF Support**: All EXIF metadata fields stored in database for fast searching
