@@ -467,14 +467,89 @@ function PhotoInfo(props) {
             tempImg.crossOrigin = 'anonymous';
             
             tempImg.onload = function() {
-                // Apply CSS transforms to canvas context
-                ctx.save();
-                
-                // Move to center for rotation
-                ctx.translate(canvas.width / 2, canvas.height / 2);
-                
                 // Parse and apply transforms from editor styles
                 const { rotate, brightness, contrast, saturation, hue, scale } = editorStyles;
+                
+                // First, draw the image to a temporary canvas to apply filters
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = tempImg.width;
+                tempCanvas.height = tempImg.height;
+                
+                // Draw the original image
+                tempCtx.drawImage(tempImg, 0, 0);
+                
+                // Apply filters by manipulating image data if needed
+                if (brightness !== 100 || contrast !== 100 || saturation !== 100 || hue !== 0) {
+                    const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                    const data = imageData.data;
+                    
+                    // Apply brightness, contrast, saturation, and hue adjustments
+                    for (let i = 0; i < data.length; i += 4) {
+                        let r = data[i];
+                        let g = data[i + 1];
+                        let b = data[i + 2];
+                        
+                        // Apply brightness (simple multiplication)
+                        if (brightness !== 100) {
+                            const brightnessMultiplier = brightness / 100;
+                            r = Math.min(255, r * brightnessMultiplier);
+                            g = Math.min(255, g * brightnessMultiplier);
+                            b = Math.min(255, b * brightnessMultiplier);
+                        }
+                        
+                        // Apply contrast (using formula: (pixel - 128) * contrast + 128)
+                        if (contrast !== 100) {
+                            const contrastMultiplier = contrast / 100;
+                            r = Math.min(255, Math.max(0, (r - 128) * contrastMultiplier + 128));
+                            g = Math.min(255, Math.max(0, (g - 128) * contrastMultiplier + 128));
+                            b = Math.min(255, Math.max(0, (b - 128) * contrastMultiplier + 128));
+                        }
+                        
+                        // Apply saturation (convert to HSL, adjust saturation, convert back)
+                        if (saturation !== 100) {
+                            const saturationMultiplier = saturation / 100;
+                            const max = Math.max(r, g, b);
+                            const min = Math.min(r, g, b);
+                            const delta = max - min;
+                            
+                            if (delta !== 0) {
+                                const avg = (max + min) / 2;
+                                const adjustedDelta = delta * saturationMultiplier;
+                                const factor = adjustedDelta / delta;
+                                
+                                r = Math.min(255, Math.max(0, avg + (r - avg) * factor));
+                                g = Math.min(255, Math.max(0, avg + (g - avg) * factor));
+                                b = Math.min(255, Math.max(0, avg + (b - avg) * factor));
+                            }
+                        }
+                        
+                        // Apply hue rotation (simplified RGB hue shift)
+                        if (hue !== 0) {
+                            const hueRadians = (hue * Math.PI) / 180;
+                            const cosHue = Math.cos(hueRadians);
+                            const sinHue = Math.sin(hueRadians);
+                            
+                            const newR = r * (cosHue + (1 - cosHue) / 3) + g * ((1 - cosHue) / 3 - sinHue * Math.sqrt(1/3)) + b * ((1 - cosHue) / 3 + sinHue * Math.sqrt(1/3));
+                            const newG = r * ((1 - cosHue) / 3 + sinHue * Math.sqrt(1/3)) + g * (cosHue + (1 - cosHue) / 3) + b * ((1 - cosHue) / 3 - sinHue * Math.sqrt(1/3));
+                            const newB = r * ((1 - cosHue) / 3 - sinHue * Math.sqrt(1/3)) + g * ((1 - cosHue) / 3 + sinHue * Math.sqrt(1/3)) + b * (cosHue + (1 - cosHue) / 3);
+                            
+                            r = Math.min(255, Math.max(0, newR));
+                            g = Math.min(255, Math.max(0, newG));
+                            b = Math.min(255, Math.max(0, newB));
+                        }
+                        
+                        data[i] = r;
+                        data[i + 1] = g;
+                        data[i + 2] = b;
+                    }
+                    
+                    tempCtx.putImageData(imageData, 0, 0);
+                }
+                
+                // Now apply transforms (rotation, scale) to the final canvas
+                ctx.save();
+                ctx.translate(canvas.width / 2, canvas.height / 2);
                 
                 if (rotate !== 0) {
                     ctx.rotate((rotate * Math.PI) / 180);
@@ -485,19 +560,8 @@ function PhotoInfo(props) {
                     ctx.scale(scaleValue, scaleValue);
                 }
                 
-                // Apply filter effects - include all filter properties including hue
-                const filters = [];
-                if (brightness !== 100) filters.push(`brightness(${brightness}%)`);
-                if (contrast !== 100) filters.push(`contrast(${contrast}%)`);
-                if (saturation !== 100) filters.push(`saturate(${saturation}%)`);
-                if (hue !== 0) filters.push(`hue-rotate(${hue}deg)`);
-                
-                if (filters.length > 0) {
-                    ctx.filter = filters.join(' ');
-                }
-                
-                // Draw the image centered
-                ctx.drawImage(tempImg, -tempImg.width / 2, -tempImg.height / 2);
+                // Draw the filtered image centered
+                ctx.drawImage(tempCanvas, -tempCanvas.width / 2, -tempCanvas.height / 2);
                 ctx.restore();
                 
                 // Convert canvas to blob and download
