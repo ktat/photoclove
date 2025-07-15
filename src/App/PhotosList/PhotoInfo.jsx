@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager';
 import { show } from "@tauri-apps/api/app";
+import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 
 function PhotoInfo(props) {
     const [photoInfo, setPhotoInfo] = useState({});
@@ -464,7 +465,7 @@ function PhotoInfo(props) {
                 ctx.restore();
                 
                 // Convert canvas to blob and download
-                canvas.toBlob(function(blob) {
+                canvas.toBlob(async function(blob) {
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
                     const fileName = props.currentPhotoPath.split('/').pop().replace(/\.[^/.]+$/, '_styled.png');
@@ -475,9 +476,33 @@ function PhotoInfo(props) {
                     document.body.removeChild(link);
                     URL.revokeObjectURL(url);
                     
-                    // Show notification with download path
-                    const downloadPath = `Downloads/${fileName}`;
-                    props.addFooterMessage(`Styled image downloaded to: ${downloadPath}`);
+                    // Get configurable download directory and show notification
+                    try {
+                        const downloadDir = await invoke('get_download_dir');
+                        const fullPath = `${downloadDir}/${fileName}`;
+                        
+                        // Check and request notification permission if needed
+                        let permissionGranted = await isPermissionGranted();
+                        if (!permissionGranted) {
+                            const permission = await requestPermission();
+                            permissionGranted = permission === 'granted';
+                        }
+                        
+                        // Show system notification if permission is granted
+                        if (permissionGranted) {
+                            await sendNotification({
+                                title: 'Download Complete',
+                                body: `Styled image saved to: ${fullPath}`
+                            });
+                        }
+                        
+                        // Also show footer message with full path
+                        props.addFooterMessage(`Styled image downloaded to: ${fullPath}`);
+                    } catch (error) {
+                        console.error('Failed to get download directory or show notification:', error);
+                        // Fallback to footer message only
+                        props.addFooterMessage(`Styled image downloaded: ${fileName}`);
+                    }
                 }, 'image/png');
             };
             

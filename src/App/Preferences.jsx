@@ -79,6 +79,15 @@ function Preferences(props) {
                         }
                     } />
                 <PickFolderSingle
+                    label="DownloadDir:"
+                    folder={config.download_dir}
+                    setFunc={
+                        (folder) => {
+                            config.download_dir = folder;
+                            setNewConfig(config)
+                        }
+                    } />
+                <PickFolderSingle
                     label="ImportTo:"
                     folder={config.import_to}
                     setFunc={

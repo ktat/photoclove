@@ -756,6 +756,11 @@ async fn get_css_style(
     }
 }
 
+#[tauri::command]
+fn get_download_dir(state: tauri::State<AppState>) -> Result<String, String> {
+    Ok(state.config.download_dir.clone())
+}
+
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -894,6 +899,7 @@ pub fn run() {
             upload_to_google_photos,
             save_css_style,
             get_css_style,
+            get_download_dir,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

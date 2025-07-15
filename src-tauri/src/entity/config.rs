@@ -17,6 +17,7 @@ pub struct Config {
     pub copy_parallel: usize,
     pub thumbnail_parallel: usize,
     pub use_count: i32,
+    pub download_dir: String,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryConfig {
@@ -40,6 +41,7 @@ impl Config {
         self.thumbnail_compression_quality = config.thumbnail_compression_quality;
         self.thumbnail_ignore_file_size = config.thumbnail_ignore_file_size;
         self.use_count = config.use_count;
+        self.download_dir = config.download_dir;
     }
 
     pub fn config_path() -> String {
@@ -114,6 +116,10 @@ impl Config {
             copy_parallel: 2,
             thumbnail_parallel: 1,
             use_count: 0,
+            download_dir: dirs::download_dir()
+                .unwrap_or_else(|| home.join("Downloads"))
+                .display()
+                .to_string(),
         }
     }
 
