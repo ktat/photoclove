@@ -187,44 +187,17 @@ function PhotoInfo(props) {
     }
 
 
-    // Helper function to update UI elements with values
+    // Helper function to update CSS preview (sliders/inputs are controlled by React state)
     function updateUIElementsWithValues(editorValues, cssStyle) {
-        console.log('Updating UI elements with values:', editorValues); // Debug log
-        
-        Object.entries(editorValues).forEach(([prop, value]) => {
-            // Update slider by ID
-            const slider = document.getElementById(`${prop}-slider`);
-            if (slider) {
-                slider.value = value;
-                console.log(`Updated ${prop} slider to:`, value); // Debug log
-            } else {
-                console.warn(`Slider not found for ${prop}`); // Debug log
-            }
-            
-            // Update input field
-            const input = document.getElementById(`${prop}-input`);
-            if (input) {
-                input.value = value;
-                console.log(`Updated ${prop} input to:`, value); // Debug log
-            } else {
-                console.warn(`Input not found for ${prop}`); // Debug log
-            }
-            
-            // Update value display
-            const valueSpan = document.getElementById(`${prop}-value`);
-            if (valueSpan) {
-                valueSpan.textContent = value;
-                console.log(`Updated ${prop} value display to:`, value); // Debug log
-            } else {
-                console.warn(`Value span not found for ${prop}`); // Debug log
-            }
-        });
+        console.log('Updating CSS preview with values:', editorValues); // Debug log
         
         // Update CSS preview with the actual saved CSS
         const previewTextarea = document.getElementById('css-preview-text');
         if (previewTextarea) {
             previewTextarea.value = cssStyle || '';
             console.log('Updated CSS preview with:', cssStyle); // Debug log
+        } else {
+            console.warn('CSS preview textarea not found'); // Debug log
         }
     }
     
@@ -331,20 +304,8 @@ function PhotoInfo(props) {
             return newStyles;
         });
         
-        // Update both slider and input field
-        const valueSpan = document.getElementById(`${property}-value`);
-        const slider = document.getElementById(`${property}-slider`);
-        const input = document.getElementById(`${property}-input`);
-        
-        if (valueSpan) {
-            valueSpan.textContent = value;
-        }
-        if (slider && slider.value !== value) {
-            slider.value = value;
-        }
-        if (input && input.value !== value) {
-            input.value = value;
-        }
+        // Note: Sliders and inputs are now controlled by React state (editorStyles)
+        // so no manual DOM manipulation needed
     }
 
     function resetSingleControl(property) {
@@ -582,26 +543,8 @@ function PhotoInfo(props) {
             scale: 100
         });
         
-        // Reset UI elements after state is set
+        // Clear CSS preview (sliders/inputs controlled by React state)
         setTimeout(() => {
-            // Reset all sliders and values
-            document.querySelectorAll('.photo-info-editor input[type="range"]').forEach(slider => {
-                slider.value = slider.defaultValue;
-            });
-            
-            ['rotate', 'brightness', 'contrast', 'saturation', 'hue', 'scale'].forEach(prop => {
-                const defaultValue = prop === 'brightness' || prop === 'contrast' || prop === 'saturation' || prop === 'scale' ? '100' : '0';
-                const valueSpan = document.getElementById(`${prop}-value`);
-                const input = document.getElementById(`${prop}-input`);
-                if (valueSpan) {
-                    valueSpan.textContent = defaultValue;
-                }
-                if (input) {
-                    input.value = defaultValue;
-                }
-            });
-            
-            // Clear CSS preview
             const previewTextarea = document.getElementById('css-preview-text');
             if (previewTextarea) {
                 previewTextarea.value = '';
@@ -906,12 +849,12 @@ function PhotoInfo(props) {
                                     <div className="editor-control">
                                         <div className="control-row">
                                             <label>Rotation (deg):</label>
-                                            <input type="range" min="0" max="360" defaultValue="0" 
+                                            <input type="range" min="0" max="360" value={editorStyles.rotate}
                                                    id="rotate-slider" onChange={(e) => updateStyle('rotate', e.target.value)} />
-                                            <input type="number" min="0" max="360" defaultValue="0" 
+                                            <input type="number" min="0" max="360" value={editorStyles.rotate}
                                                    id="rotate-input" className="value-input"
                                                    onChange={(e) => updateStyle('rotate', e.target.value)} />
-                                            <span id="rotate-value">0</span>
+                                            <span id="rotate-value">{editorStyles.rotate}</span>
                                             <button className="reset-btn" onClick={() => resetSingleControl('rotate')} title="Reset rotation">↻</button>
                                         </div>
                                         <div className="rotation-shortcuts">
@@ -922,60 +865,60 @@ function PhotoInfo(props) {
                                     <div className="editor-control">
                                         <div className="control-row">
                                             <label>Brightness:</label>
-                                            <input type="range" min="0" max="200" defaultValue="100" 
+                                            <input type="range" min="0" max="200" value={editorStyles.brightness}
                                                    id="brightness-slider" onChange={(e) => updateStyle('brightness', e.target.value)} />
-                                            <input type="number" min="0" max="200" defaultValue="100" 
+                                            <input type="number" min="0" max="200" value={editorStyles.brightness}
                                                    id="brightness-input" className="value-input"
                                                    onChange={(e) => updateStyle('brightness', e.target.value)} />
-                                            <span id="brightness-value">100</span>
+                                            <span id="brightness-value">{editorStyles.brightness}</span>
                                             <button className="reset-btn" onClick={() => resetSingleControl('brightness')} title="Reset brightness">↻</button>
                                         </div>
                                     </div>
                                     <div className="editor-control">
                                         <div className="control-row">
                                             <label>Contrast:</label>
-                                            <input type="range" min="0" max="200" defaultValue="100" 
+                                            <input type="range" min="0" max="200" value={editorStyles.contrast}
                                                    id="contrast-slider" onChange={(e) => updateStyle('contrast', e.target.value)} />
-                                            <input type="number" min="0" max="200" defaultValue="100" 
+                                            <input type="number" min="0" max="200" value={editorStyles.contrast}
                                                    id="contrast-input" className="value-input"
                                                    onChange={(e) => updateStyle('contrast', e.target.value)} />
-                                            <span id="contrast-value">100</span>
+                                            <span id="contrast-value">{editorStyles.contrast}</span>
                                             <button className="reset-btn" onClick={() => resetSingleControl('contrast')} title="Reset contrast">↻</button>
                                         </div>
                                     </div>
                                     <div className="editor-control">
                                         <div className="control-row">
                                             <label>Saturation:</label>
-                                            <input type="range" min="0" max="200" defaultValue="100" 
+                                            <input type="range" min="0" max="200" value={editorStyles.saturation}
                                                    id="saturation-slider" onChange={(e) => updateStyle('saturation', e.target.value)} />
-                                            <input type="number" min="0" max="200" defaultValue="100" 
+                                            <input type="number" min="0" max="200" value={editorStyles.saturation}
                                                    id="saturation-input" className="value-input"
                                                    onChange={(e) => updateStyle('saturation', e.target.value)} />
-                                            <span id="saturation-value">100</span>
+                                            <span id="saturation-value">{editorStyles.saturation}</span>
                                             <button className="reset-btn" onClick={() => resetSingleControl('saturation')} title="Reset saturation">↻</button>
                                         </div>
                                     </div>
                                     <div className="editor-control">
                                         <div className="control-row">
                                             <label>Hue (deg):</label>
-                                            <input type="range" min="0" max="360" defaultValue="0" 
+                                            <input type="range" min="0" max="360" value={editorStyles.hue}
                                                    id="hue-slider" onChange={(e) => updateStyle('hue', e.target.value)} />
-                                            <input type="number" min="0" max="360" defaultValue="0" 
+                                            <input type="number" min="0" max="360" value={editorStyles.hue}
                                                    id="hue-input" className="value-input"
                                                    onChange={(e) => updateStyle('hue', e.target.value)} />
-                                            <span id="hue-value">0</span>
+                                            <span id="hue-value">{editorStyles.hue}</span>
                                             <button className="reset-btn" onClick={() => resetSingleControl('hue')} title="Reset hue">↻</button>
                                         </div>
                                     </div>
                                     <div className="editor-control">
                                         <div className="control-row">
                                             <label>Scale:</label>
-                                            <input type="range" min="50" max="200" defaultValue="100" 
+                                            <input type="range" min="50" max="200" value={editorStyles.scale}
                                                    id="scale-slider" onChange={(e) => updateStyle('scale', e.target.value)} />
-                                            <input type="number" min="50" max="200" defaultValue="100" 
+                                            <input type="number" min="50" max="200" value={editorStyles.scale}
                                                    id="scale-input" className="value-input"
                                                    onChange={(e) => updateStyle('scale', e.target.value)} />
-                                            <span id="scale-value">100</span>
+                                            <span id="scale-value">{editorStyles.scale}</span>
                                             <button className="reset-btn" onClick={() => resetSingleControl('scale')} title="Reset scale">↻</button>
                                         </div>
                                     </div>
