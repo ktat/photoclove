@@ -3,6 +3,21 @@ use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::{fs, io::BufReader, io::BufWriter};
 
+fn default_download_dir() -> String {
+    let home = match home_dir() {
+        Some(path) => path,
+        None => {
+            eprintln!("Cannot get HOME directory!");
+            return "Downloads".to_string();
+        }
+    };
+    
+    dirs::download_dir()
+        .unwrap_or_else(|| home.join("Downloads"))
+        .display()
+        .to_string()
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub repository: RepositoryConfig,
@@ -17,6 +32,7 @@ pub struct Config {
     pub copy_parallel: usize,
     pub thumbnail_parallel: usize,
     pub use_count: i32,
+    #[serde(default = "default_download_dir")]
     pub download_dir: String,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
