@@ -1857,3 +1857,129 @@ a.run-app {
     font-size: 12px;
     resize: vertical;
 }
+
+/* Enhanced Editor Controls */
+.control-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.control-row input[type="range"] {
+    flex: 1;
+}
+
+.control-row span {
+    min-width: 35px;
+    text-align: center;
+    font-weight: bold;
+    color: #4CAF50;
+    font-size: 12px;
+}
+
+.reset-btn {
+    background: #666 !important;
+    color: white !important;
+    border: 1px solid #888 !important;
+    border-radius: 3px !important;
+    padding: 4px 6px !important;
+    cursor: pointer;
+    font-size: 14px;
+    min-width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 !important;
+    transition: background-color 0.2s;
+}
+
+.reset-btn:hover {
+    background: #777 !important;
+}
+
+.rotation-shortcuts {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.shortcut-btn {
+    background: #4a4a4a !important;
+    color: #ccc !important;
+    border: 1px solid #666 !important;
+    border-radius: 3px !important;
+    padding: 4px 8px !important;
+    cursor: pointer;
+    font-size: 11px;
+    transition: background-color 0.2s;
+    margin: 0 !important;
+}
+
+.shortcut-btn:hover {
+    background: #555 !important;
+    color: #fff !important;
+}
+
+.action-btn {
+    background: #4CAF50 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 4px !important;
+    padding: 6px 12px !important;
+    cursor: pointer;
+    font-size: 11px !important;
+    font-weight: 500;
+    transition: background 0.2s;
+    margin: 0 4px 0 0 !important;
+    min-width: auto;
+}
+
+.action-btn:hover {
+    background: #45a049 !important;
+}
+
+.action-btn:nth-child(2) {
+    background: #2196F3 !important;
+}
+
+.action-btn:nth-child(2):hover {
+    background: #1976D2 !important;
+}
+
+.action-btn:nth-child(3) {
+    background: #ff9800 !important;
+}
+
+.action-btn:nth-child(3):hover {
+    background: #f57c00 !important;
+}
+
+.action-btn:nth-child(4) {
+    background: #9c27b0 !important;
+}
+
+.action-btn:nth-child(4):hover {
+    background: #7b1fa2 !important;
+}
+
+/* Override editor buttons to be more compact */
+.editor-tab .editor-buttons {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.editor-tab .editor-control {
+    margin-bottom: 8px;
+}
+
+.editor-tab .editor-control label {
+    display: block;
+    color: #ccc;
+    font-size: 12px;
+    margin-bottom: 4px;
+    min-width: auto;
+}

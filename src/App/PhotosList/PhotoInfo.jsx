@@ -142,6 +142,11 @@ function PhotoInfo(props) {
 
     // Editor functions
     function updateStyle(property, value) {
+        // Handle rotation 360 = 0 case
+        if (property === 'rotate' && parseInt(value) === 360) {
+            value = 0;
+        }
+        
         // Update state
         setEditorStyles(prev => {
             const newStyles = {
@@ -164,11 +169,33 @@ function PhotoInfo(props) {
             return newStyles;
         });
         
-        // Update the value display
+        // Update the value display and slider
         const valueSpan = document.getElementById(`${property}-value`);
+        const slider = document.querySelector(`input[onchange*="${property}"]`);
         if (valueSpan) {
             valueSpan.textContent = value;
         }
+        if (slider) {
+            slider.value = value;
+        }
+    }
+
+    function resetSingleControl(property) {
+        const defaultValues = {
+            rotate: 0,
+            brightness: 100,
+            contrast: 100,
+            saturation: 100,
+            hue: 0,
+            scale: 100
+        };
+        updateStyle(property, defaultValues[property]);
+    }
+
+    function rotateBy(degrees) {
+        const currentRotation = editorStyles.rotate;
+        const newRotation = (currentRotation + degrees) % 360;
+        updateStyle('rotate', newRotation < 0 ? newRotation + 360 : newRotation);
     }
 
     function generateCSS() {
@@ -633,46 +660,68 @@ function PhotoInfo(props) {
                                 <div className="editor-controls">
                                     <div className="editor-control">
                                         <label>Rotation (deg):</label>
-                                        <input type="range" min="0" max="360" defaultValue="0" 
-                                               onChange={(e) => updateStyle('rotate', e.target.value)} />
-                                        <span id="rotate-value">0</span>
+                                        <div className="control-row">
+                                            <input type="range" min="0" max="360" defaultValue="0" 
+                                                   onChange={(e) => updateStyle('rotate', e.target.value)} />
+                                            <span id="rotate-value">0</span>
+                                            <button className="reset-btn" onClick={() => resetSingleControl('rotate')} title="Reset rotation">↻</button>
+                                        </div>
+                                        <div className="rotation-shortcuts">
+                                            <button className="shortcut-btn" onClick={() => rotateBy(-90)} title="Turn left 90°">↶ 90°</button>
+                                            <button className="shortcut-btn" onClick={() => rotateBy(90)} title="Turn right 90°">↷ 90°</button>
+                                        </div>
                                     </div>
                                     <div className="editor-control">
                                         <label>Brightness:</label>
-                                        <input type="range" min="0" max="200" defaultValue="100" 
-                                               onChange={(e) => updateStyle('brightness', e.target.value)} />
-                                        <span id="brightness-value">100</span>
+                                        <div className="control-row">
+                                            <input type="range" min="0" max="200" defaultValue="100" 
+                                                   onChange={(e) => updateStyle('brightness', e.target.value)} />
+                                            <span id="brightness-value">100</span>
+                                            <button className="reset-btn" onClick={() => resetSingleControl('brightness')} title="Reset brightness">↻</button>
+                                        </div>
                                     </div>
                                     <div className="editor-control">
                                         <label>Contrast:</label>
-                                        <input type="range" min="0" max="200" defaultValue="100" 
-                                               onChange={(e) => updateStyle('contrast', e.target.value)} />
-                                        <span id="contrast-value">100</span>
+                                        <div className="control-row">
+                                            <input type="range" min="0" max="200" defaultValue="100" 
+                                                   onChange={(e) => updateStyle('contrast', e.target.value)} />
+                                            <span id="contrast-value">100</span>
+                                            <button className="reset-btn" onClick={() => resetSingleControl('contrast')} title="Reset contrast">↻</button>
+                                        </div>
                                     </div>
                                     <div className="editor-control">
                                         <label>Saturation:</label>
-                                        <input type="range" min="0" max="200" defaultValue="100" 
-                                               onChange={(e) => updateStyle('saturation', e.target.value)} />
-                                        <span id="saturation-value">100</span>
+                                        <div className="control-row">
+                                            <input type="range" min="0" max="200" defaultValue="100" 
+                                                   onChange={(e) => updateStyle('saturation', e.target.value)} />
+                                            <span id="saturation-value">100</span>
+                                            <button className="reset-btn" onClick={() => resetSingleControl('saturation')} title="Reset saturation">↻</button>
+                                        </div>
                                     </div>
                                     <div className="editor-control">
                                         <label>Hue (deg):</label>
-                                        <input type="range" min="0" max="360" defaultValue="0" 
-                                               onChange={(e) => updateStyle('hue', e.target.value)} />
-                                        <span id="hue-value">0</span>
+                                        <div className="control-row">
+                                            <input type="range" min="0" max="360" defaultValue="0" 
+                                                   onChange={(e) => updateStyle('hue', e.target.value)} />
+                                            <span id="hue-value">0</span>
+                                            <button className="reset-btn" onClick={() => resetSingleControl('hue')} title="Reset hue">↻</button>
+                                        </div>
                                     </div>
                                     <div className="editor-control">
                                         <label>Scale:</label>
-                                        <input type="range" min="50" max="200" defaultValue="100" 
-                                               onChange={(e) => updateStyle('scale', e.target.value)} />
-                                        <span id="scale-value">100</span>
+                                        <div className="control-row">
+                                            <input type="range" min="50" max="200" defaultValue="100" 
+                                                   onChange={(e) => updateStyle('scale', e.target.value)} />
+                                            <span id="scale-value">100</span>
+                                            <button className="reset-btn" onClick={() => resetSingleControl('scale')} title="Reset scale">↻</button>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="editor-buttons">
-                                    <button onClick={() => applyStyle()}>Apply</button>
-                                    <button onClick={() => saveAsCopy()}>Save as Copy</button>
-                                    <button onClick={() => resetStyle()}>Reset</button>
-                                    <button onClick={() => downloadStyled()}>Download</button>
+                                    <button className="action-btn" onClick={() => applyStyle()}>Apply</button>
+                                    <button className="action-btn" onClick={() => saveAsCopy()}>Copy</button>
+                                    <button className="action-btn" onClick={() => resetStyle()}>Reset</button>
+                                    <button className="action-btn" onClick={() => downloadStyled()}>Download</button>
                                 </div>
                                 <div className="css-preview">
                                     <label>CSS Preview:</label>
