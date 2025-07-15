@@ -1867,7 +1867,8 @@ a.run-app {
 }
 
 .control-row input[type="range"] {
-    flex: 1;
+    width: 140px;
+    flex: none;
 }
 
 .control-row span {
@@ -1981,5 +1982,6 @@ a.run-app {
     color: #ccc;
     font-size: 12px;
     margin-bottom: 4px;
-    min-width: auto;
+    min-width: 90px;
+    width: 90px;
 }
