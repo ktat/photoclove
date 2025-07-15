@@ -474,7 +474,7 @@ function PhotoInfo(props) {
                 ctx.translate(canvas.width / 2, canvas.height / 2);
                 
                 // Parse and apply transforms from editor styles
-                const { rotate, brightness, contrast, saturation, scale } = editorStyles;
+                const { rotate, brightness, contrast, saturation, hue, scale } = editorStyles;
                 
                 if (rotate !== 0) {
                     ctx.rotate((rotate * Math.PI) / 180);
@@ -485,9 +485,15 @@ function PhotoInfo(props) {
                     ctx.scale(scaleValue, scaleValue);
                 }
                 
-                // Apply filter effects (brightness, contrast, saturation are approximated)
-                if (brightness !== 100 || contrast !== 100 || saturation !== 100) {
-                    ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
+                // Apply filter effects - include all filter properties including hue
+                const filters = [];
+                if (brightness !== 100) filters.push(`brightness(${brightness}%)`);
+                if (contrast !== 100) filters.push(`contrast(${contrast}%)`);
+                if (saturation !== 100) filters.push(`saturate(${saturation}%)`);
+                if (hue !== 0) filters.push(`hue-rotate(${hue}deg)`);
+                
+                if (filters.length > 0) {
+                    ctx.filter = filters.join(' ');
                 }
                 
                 // Draw the image centered
