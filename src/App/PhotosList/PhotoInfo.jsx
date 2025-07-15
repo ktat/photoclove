@@ -659,8 +659,8 @@ function PhotoInfo(props) {
                             <div className="photo-info-editor">
                                 <div className="editor-controls">
                                     <div className="editor-control">
-                                        <label>Rotation (deg):</label>
                                         <div className="control-row">
+                                            <label>Rotation (deg):</label>
                                             <input type="range" min="0" max="360" defaultValue="0" 
                                                    onChange={(e) => updateStyle('rotate', e.target.value)} />
                                             <span id="rotate-value">0</span>
@@ -672,8 +672,8 @@ function PhotoInfo(props) {
                                         </div>
                                     </div>
                                     <div className="editor-control">
-                                        <label>Brightness:</label>
                                         <div className="control-row">
+                                            <label>Brightness:</label>
                                             <input type="range" min="0" max="200" defaultValue="100" 
                                                    onChange={(e) => updateStyle('brightness', e.target.value)} />
                                             <span id="brightness-value">100</span>
@@ -681,8 +681,8 @@ function PhotoInfo(props) {
                                         </div>
                                     </div>
                                     <div className="editor-control">
-                                        <label>Contrast:</label>
                                         <div className="control-row">
+                                            <label>Contrast:</label>
                                             <input type="range" min="0" max="200" defaultValue="100" 
                                                    onChange={(e) => updateStyle('contrast', e.target.value)} />
                                             <span id="contrast-value">100</span>
@@ -690,8 +690,8 @@ function PhotoInfo(props) {
                                         </div>
                                     </div>
                                     <div className="editor-control">
-                                        <label>Saturation:</label>
                                         <div className="control-row">
+                                            <label>Saturation:</label>
                                             <input type="range" min="0" max="200" defaultValue="100" 
                                                    onChange={(e) => updateStyle('saturation', e.target.value)} />
                                             <span id="saturation-value">100</span>
@@ -699,8 +699,8 @@ function PhotoInfo(props) {
                                         </div>
                                     </div>
                                     <div className="editor-control">
-                                        <label>Hue (deg):</label>
                                         <div className="control-row">
+                                            <label>Hue (deg):</label>
                                             <input type="range" min="0" max="360" defaultValue="0" 
                                                    onChange={(e) => updateStyle('hue', e.target.value)} />
                                             <span id="hue-value">0</span>
@@ -708,8 +708,8 @@ function PhotoInfo(props) {
                                         </div>
                                     </div>
                                     <div className="editor-control">
-                                        <label>Scale:</label>
                                         <div className="control-row">
+                                            <label>Scale:</label>
                                             <input type="range" min="50" max="200" defaultValue="100" 
                                                    onChange={(e) => updateStyle('scale', e.target.value)} />
                                             <span id="scale-value">100</span>

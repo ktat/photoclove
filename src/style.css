@@ -1386,7 +1386,6 @@ a.run-app {
 }
 
 .editor-tab .editor-control input[type="range"] {
-  width: 100%;
   margin-bottom: 4px;
 }
 
@@ -1866,8 +1865,8 @@ a.run-app {
     flex: 1;
 }
 
-.control-row input[type="range"] {
-    width: 140px;
+.editor-tab .control-row input[type="range"] {
+    width: 80px;
     flex: none;
 }
 
@@ -1975,13 +1974,15 @@ a.run-app {
 
 .editor-tab .editor-control {
     margin-bottom: 8px;
+    display: block;
 }
 
-.editor-tab .editor-control label {
-    display: block;
+.editor-tab .control-row label {
+    display: inline-block;
     color: #ccc;
     font-size: 12px;
-    margin-bottom: 4px;
-    min-width: 90px;
-    width: 90px;
+    margin-bottom: 0;
+    min-width: 60px;
+    width: 60px;
+    flex: none;
 }
