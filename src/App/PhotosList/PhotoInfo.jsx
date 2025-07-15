@@ -3,6 +3,9 @@ import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager';
 import { show } from "@tauri-apps/api/app";
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
+import { openUrl } from '@tauri-apps/plugin-opener';
+import { listen } from "@tauri-apps/api/event";
+import fileUrl from '../../PathUtil.jsx';
 
 function PhotoInfo(props) {
     const [photoInfo, setPhotoInfo] = useState({});
@@ -496,8 +499,31 @@ function PhotoInfo(props) {
                             });
                         }
                         
-                        // Also show footer message with full path
-                        props.addFooterMessage("download", `Styled image downloaded to: ${fullPath}`, false, 5000);
+                        // Also show footer message with full path and click-to-open functionality
+                        props.addFooterMessage("download", `Styled image downloaded to: ${fullPath} (Click to open)`, false, 8000);
+                        
+                        // Add click handler to footer message
+                        setTimeout(() => {
+                            const downloadMessage = document.querySelector('.download');
+                            if (downloadMessage) {
+                                downloadMessage.style.cursor = 'pointer';
+                                downloadMessage.style.textDecoration = 'underline';
+                                downloadMessage.title = 'Click to open file';
+                                downloadMessage.addEventListener('click', async () => {
+                                    try {
+                                        await invoke('open_file_in_default_app', { filePath: fullPath });
+                                    } catch (error) {
+                                        console.error('Failed to open downloaded file:', error);
+                                        // Fallback to plugin opener
+                                        try {
+                                            await openUrl(fileUrl(fullPath));
+                                        } catch (fallbackError) {
+                                            console.error('Fallback file opening also failed:', fallbackError);
+                                        }
+                                    }
+                                });
+                            }
+                        }, 100);
                     } catch (error) {
                         console.error('Failed to get download directory or show notification:', error);
                         // Fallback to footer message only

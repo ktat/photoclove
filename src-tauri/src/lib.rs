@@ -761,6 +761,31 @@ fn get_download_dir(state: tauri::State<AppState>) -> Result<String, String> {
     Ok(state.config.download_dir.clone())
 }
 
+#[tauri::command]
+async fn open_file_in_default_app(file_path: &str) -> Result<(), String> {
+    use std::process::Command;
+    
+    let result = if cfg!(target_os = "windows") {
+        Command::new("cmd")
+            .args(["/C", "start", "", file_path])
+            .status()
+    } else if cfg!(target_os = "macos") {
+        Command::new("open")
+            .arg(file_path)
+            .status()
+    } else {
+        Command::new("xdg-open")
+            .arg(file_path)
+            .status()
+    };
+    
+    match result {
+        Ok(status) if status.success() => Ok(()),
+        Ok(_) => Err("Failed to open file".to_string()),
+        Err(e) => Err(format!("Failed to execute command: {}", e)),
+    }
+}
+
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -900,6 +925,7 @@ pub fn run() {
             save_css_style,
             get_css_style,
             get_download_dir,
+            open_file_in_default_app,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
