@@ -298,13 +298,13 @@ function PhotoInfo(props) {
 
     async function applyStyle() {
         if (!props.currentPhotoPath) {
-            props.addFooterMessage('Please select a photo first');
+            props.addFooterMessage('editor', 'Please select a photo first', false, 3000);
             return;
         }
         
         const css = generateCSS();
         if (!css) {
-            props.addFooterMessage('No styles to apply');
+            props.addFooterMessage('editor', 'No styles to apply', false, 3000);
             return;
         }
         
@@ -314,26 +314,26 @@ function PhotoInfo(props) {
                 cssStyle: css
             });
             
-            props.addFooterMessage('Style applied successfully');
+            props.addFooterMessage('editor', 'Style applied successfully', false, 3000);
         } catch (error) {
             console.error('Failed to apply style:', error);
-            props.addFooterMessage('Failed to apply style');
+            props.addFooterMessage('editor', 'Failed to apply style', false, 3000);
         }
     }
 
     async function saveAsCopy() {
         if (!props.currentPhotoPath) {
-            props.addFooterMessage('Please select a photo first');
+            props.addFooterMessage('editor', 'Please select a photo first', false, 3000);
             return;
         }
         
         const css = generateCSS();
         if (!css) {
-            props.addFooterMessage('No styles to save');
+            props.addFooterMessage('editor', 'No styles to save', false, 3000);
             return;
         }
         
-        props.addFooterMessage('Save as copy functionality not yet implemented');
+        props.addFooterMessage('editor', 'Save as copy functionality not yet implemented', false, 3000);
     }
 
     function resetStyle() {
@@ -406,13 +406,13 @@ function PhotoInfo(props) {
 
     async function downloadStyled() {
         if (!props.currentPhotoPath) {
-            props.addFooterMessage('Please select a photo first');
+            props.addFooterMessage('editor', 'Please select a photo first', false, 3000);
             return;
         }
         
         const css = generateCSS();
         if (!css) {
-            props.addFooterMessage('No styles to download');
+            props.addFooterMessage('editor', 'No styles to download', false, 3000);
             return;
         }
         
@@ -420,7 +420,7 @@ function PhotoInfo(props) {
             // Get the main image element
             const mainImage = document.querySelector('#photoImgTag');
             if (!mainImage) {
-                props.addFooterMessage('Photo not found');
+                props.addFooterMessage('editor', 'Photo not found', false, 3000);
                 return;
             }
             
@@ -497,17 +497,17 @@ function PhotoInfo(props) {
                         }
                         
                         // Also show footer message with full path
-                        props.addFooterMessage(`Styled image downloaded to: ${fullPath}`);
+                        props.addFooterMessage("download", `Styled image downloaded to: ${fullPath}`, false, 5000);
                     } catch (error) {
                         console.error('Failed to get download directory or show notification:', error);
                         // Fallback to footer message only
-                        props.addFooterMessage(`Styled image downloaded: ${fileName}`);
+                        props.addFooterMessage("download", `Styled image downloaded: ${fileName}`, false, 5000);
                     }
                 }, 'image/png');
             };
             
             tempImg.onerror = function() {
-                props.addFooterMessage('Failed to load image for download');
+                props.addFooterMessage('editor', 'Failed to load image for download', false, 3000);
             };
             
             // Load the original image
@@ -515,7 +515,7 @@ function PhotoInfo(props) {
             
         } catch (error) {
             console.error('Download failed:', error);
-            props.addFooterMessage('Download failed: ' + error.message);
+            props.addFooterMessage('editor', 'Download failed: ' + error.message, false, 3000);
         }
     }
 
@@ -555,7 +555,7 @@ function PhotoInfo(props) {
                                         <td>
                                             <a href="#" onClick={() => {
                                                 writeText(props.currentPhotoPath);
-                                                props.addFooterMessage("clipboard", "Copy file path to clipboard", 50000);
+                                                props.addFooterMessage("clipboard", "Copy file path to clipboard", false, 5000);
                                             }}>📋</a>
                                             <a
                                                 onMouseEnter={() => { props.addFooterMessage("current_phtoo_path", "File Path: " + props.currentPhotoPath, false, 10000) }}>
