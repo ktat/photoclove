@@ -22,4 +22,6 @@ After finishing document update, commit your changes and update "docs/.current-d
 
 # Compile check
 
+If I say `compile check`, do the follwoing.
+
 You should check `cd src-tauri/src/` and `cargo check` when you change `*.rs` files.

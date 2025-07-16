@@ -503,7 +503,27 @@ function PhotoInfo(props) {
             return;
         }
         
-        props.addFooterMessage('editor', 'Save as copy functionality not yet implemented', false, 3000);
+        try {
+            props.addFooterMessage('editor', 'Creating styled copy...', false, 2000);
+            
+            const newPhotoPath = await invoke('save_styled_copy', {
+                photoPath: props.currentPhotoPath,
+                cssStyle: css
+            });
+            
+            // Extract filename from path for display
+            const newFilename = newPhotoPath.split('/').pop();
+            props.addFooterMessage('editor', `Styled copy created: ${newFilename}`, false, 5000);
+            
+            // Optionally refresh the photo list to show the new image
+            if (props.onPhotosRefresh) {
+                props.onPhotosRefresh();
+            }
+            
+        } catch (error) {
+            console.error('Failed to save styled copy:', error);
+            props.addFooterMessage('editor', `Failed to create styled copy: ${error}`, false, 5000);
+        }
     }
 
     function resetStyle() {
@@ -934,7 +954,7 @@ function PhotoInfo(props) {
                                 </div>
                                 <div className="editor-buttons">
                                     <button className="action-btn" onClick={() => applyStyle()}>Apply</button>
-                                    <button className="action-btn" onClick={() => saveAsCopy()}>Copy</button>
+                                    <button className="action-btn" onClick={() => saveAsCopy()}>Save As Copy</button>
                                     <button className="action-btn" onClick={() => resetStyle()}>Reset</button>
                                     <button className="action-btn" onClick={() => downloadStyled()}>Download</button>
                                 </div>

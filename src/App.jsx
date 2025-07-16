@@ -56,7 +56,10 @@ function App() {
       setUseCount(json.use_count);
     });
 
-    const unlisten0 = listen("click_menu_static", (e) => {
+    let unlisten0, unlisten1, unlisten2, unlisten3, unlisten4;
+
+    const setupListeners = async () => {
+      unlisten0 = await listen("click_menu_static", (e) => {
       invoke("lock", { t: true }).then((le) => {
         if (le) {
           if (e.payload === "about") {
@@ -73,8 +76,8 @@ function App() {
       })
     });
 
-    // const sab = new SharedArrayBuffer(1024);
-    const unlisten1 = listen("create_db", (e) => {
+      // const sab = new SharedArrayBuffer(1024);
+      unlisten1 = await listen("create_db", (e) => {
       console.log(e);
       if (e.payload === "start") {
         addFooterMessage("create_db", "Database (re)creation is started", false, 10000);
@@ -83,7 +86,7 @@ function App() {
       }
     });
 
-    const unlisten4 = listen("create_thumbnails", (e) => {
+      unlisten4 = await listen("create_thumbnails", (e) => {
       console.log(e);
       if (e.payload === "start") {
         addFooterMessage("create_thumbnail", "Thumbnail creation is started", false, 10000);
@@ -92,7 +95,7 @@ function App() {
       }
     });
 
-    const unlisten3 = listen("move_files", (e) => {
+      unlisten3 = await listen("move_files", (e) => {
       if (e.payload === "start") {
         addFooterMessage("move_files", "Start moving files");
       } else if (e.payload === "ned_move") {
@@ -102,7 +105,7 @@ function App() {
       }
     });
 
-    const unlisten2 = listen("click_menu", (e) => {
+      unlisten2 = await listen("click_menu", (e) => {
       console.log(e)
       invoke("lock", { t: true }).then((le) => {
         if (le) {
@@ -156,6 +159,26 @@ function App() {
         })
       }
     });
+    };
+
+    setupListeners();
+
+    // Listen for refreshDates custom event from Save As Copy feature
+    const handleRefreshDates = () => {
+      getDates();
+    };
+    
+    window.addEventListener('refreshDates', handleRefreshDates);
+
+    // Cleanup function to remove event listeners
+    return () => {
+      if (unlisten0) unlisten0();
+      if (unlisten1) unlisten1();
+      if (unlisten2) unlisten2(); 
+      if (unlisten3) unlisten3();
+      if (unlisten4) unlisten4();
+      window.removeEventListener('refreshDates', handleRefreshDates);
+    };
   }, []);
 
   function getDates() {

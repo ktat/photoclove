@@ -231,7 +231,6 @@ function PhotoDisplay(props) {
             {props.currentPhotoPath && !props.currentPhotoPath.match(/\.(mp4|webm)$/i) &&
                 <img id="photoImgTag" className={photoDisplayImgClass}
                     loading="eager"
-                    onLoad={(e) => handleImgLoad(e.target)}
                     onDoubleClick={(e) => props.togglePhotoSelected()}
                     onError={(e) => {
                         e.target.src = "/img_error.png";
