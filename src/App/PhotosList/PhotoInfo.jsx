@@ -18,8 +18,25 @@ function PhotoInfo(props) {
         contrast: 100,
         saturation: 100,
         hue: 0,
-        scale: 100
+        scale: 100,
+        crop: { x: 0, y: 0, width: 100, height: 100 } // crop values as percentages
     });
+    const [cropMode, setCropMode] = useState(false);
+    const [cropSelection, setCropSelection] = useState({ x: 0, y: 0, width: 100, height: 100 });
+    const [cropOverlayBounds, setCropOverlayBounds] = useState({ left: 0, top: 0, width: 0, height: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const [dragMode, setDragMode] = useState('create'); // 'create', 'move', 'resize'
+    const [cropPresets] = useState([
+        { name: 'Original', ratio: null },
+        { name: 'Square', ratio: 1 },
+        { name: 'Portrait 4:3', ratio: 4/3 },
+        { name: 'Landscape 3:4', ratio: 3/4 },
+        { name: 'Portrait 3:2', ratio: 3/2 },
+        { name: 'Landscape 2:3', ratio: 2/3 },
+        { name: 'Wide 16:9', ratio: 16/9 },
+        { name: 'Tall 9:16', ratio: 9/16 }
+    ]);
 
     useEffect((e) => {
         if (props.currentPhotoPath && props.currentPhotoPath !== "" && props.showSideMenu) {
@@ -63,7 +80,8 @@ function PhotoInfo(props) {
                             contrast: 100,
                             saturation: 100,
                             hue: 0,
-                            scale: 100
+                            scale: 100,
+                            crop: { x: 0, y: 0, width: 100, height: 100 }
                         };
                         setEditorStyles(defaultValues);
                         
@@ -81,7 +99,8 @@ function PhotoInfo(props) {
                         contrast: 100,
                         saturation: 100,
                         hue: 0,
-                        scale: 100
+                        scale: 100,
+                        crop: { x: 0, y: 0, width: 100, height: 100 }
                     };
                     setEditorStyles(defaultValues);
                     
@@ -221,7 +240,8 @@ function PhotoInfo(props) {
             contrast: 100,
             saturation: 100,
             hue: 0,
-            scale: 100
+            scale: 100,
+            crop: { x: 0, y: 0, width: 100, height: 100 }
         };
 
         if (!cssString || cssString.trim() === '') {
@@ -279,6 +299,22 @@ function PhotoInfo(props) {
             }
         }
         
+        // Parse clip-path property for crop
+        const clipPathMatch = cssString.match(/clip-path:\s*inset\((\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%\)/);
+        if (clipPathMatch) {
+            const top = parseFloat(clipPathMatch[1]);
+            const right = parseFloat(clipPathMatch[2]);
+            const bottom = parseFloat(clipPathMatch[3]);
+            const left = parseFloat(clipPathMatch[4]);
+            
+            values.crop = {
+                x: left,
+                y: top,
+                width: 100 - left - right,
+                height: 100 - top - bottom
+            };
+        }
+        
         console.log('Parsed values:', values);
         return values;
     }
@@ -324,7 +360,8 @@ function PhotoInfo(props) {
             contrast: 100,
             saturation: 100,
             hue: 0,
-            scale: 100
+            scale: 100,
+            crop: { x: 0, y: 0, width: 100, height: 100 }
         };
         updateStyle(property, defaultValues[property]);
     }
@@ -340,7 +377,7 @@ function PhotoInfo(props) {
     }
 
     function generateCSSFromValues(styles) {
-        const { rotate, brightness, contrast, saturation, hue, scale } = styles;
+        const { rotate, brightness, contrast, saturation, hue, scale, crop } = styles;
         
         let transform = [];
         let filter = [];
@@ -361,6 +398,15 @@ function PhotoInfo(props) {
             css += `filter: ${filter.join(' ')}; `;
         }
         
+        // Add crop as clip-path if it's not the default (full image)
+        if (crop && (crop.x !== 0 || crop.y !== 0 || crop.width !== 100 || crop.height !== 100)) {
+            const top = crop.y;
+            const right = 100 - crop.x - crop.width;
+            const bottom = 100 - crop.y - crop.height;
+            const left = crop.x;
+            css += `clip-path: inset(${top}% ${right}% ${bottom}% ${left}%); `;
+        }
+        
         return css.trim();
     }
 
@@ -371,7 +417,7 @@ function PhotoInfo(props) {
     function applyTempStyleWithValues(styles) {
         console.log('=== APPLYING TEMP STYLES ===');
         console.log('Styles to apply:', styles);
-        const { rotate, brightness, contrast, saturation, hue, scale } = styles;
+        const { rotate, brightness, contrast, saturation, hue, scale, crop } = styles;
         
         // Store and apply styles to main image
         const mainImage = document.querySelector('#photoImgTag');
@@ -417,6 +463,17 @@ function PhotoInfo(props) {
             // Apply styles immediately
             mainImage.style.transform = transforms.length > 0 ? transforms.join(' ') : '';
             mainImage.style.filter = filters.length > 0 ? filters.join(' ') : '';
+            
+            // Apply crop as clip-path if it's not the default (full image)
+            if (crop && (crop.x !== 0 || crop.y !== 0 || crop.width !== 100 || crop.height !== 100)) {
+                const top = crop.y;
+                const right = 100 - crop.x - crop.width;
+                const bottom = 100 - crop.y - crop.height;
+                const left = crop.x;
+                mainImage.style.clipPath = `inset(${top}% ${right}% ${bottom}% ${left}%)`;
+            } else {
+                mainImage.style.clipPath = '';
+            }
         }
         
         // Apply to thumbnails with same immediate approach
@@ -458,6 +515,17 @@ function PhotoInfo(props) {
                     
                     img.style.transform = transforms.length > 0 ? transforms.join(' ') : '';
                     img.style.filter = filters.length > 0 ? filters.join(' ') : '';
+                    
+                    // Apply crop as clip-path if it's not the default (full image)
+                    if (crop && (crop.x !== 0 || crop.y !== 0 || crop.width !== 100 || crop.height !== 100)) {
+                        const top = crop.y;
+                        const right = 100 - crop.x - crop.width;
+                        const bottom = 100 - crop.y - crop.height;
+                        const left = crop.x;
+                        img.style.clipPath = `inset(${top}% ${right}% ${bottom}% ${left}%)`;
+                    } else {
+                        img.style.clipPath = '';
+                    }
                 }
             });
         };
@@ -741,8 +809,13 @@ function PhotoInfo(props) {
             contrast: 100,
             saturation: 100,
             hue: 0,
-            scale: 100
+            scale: 100,
+            crop: { x: 0, y: 0, width: 100, height: 100 }
         });
+        
+        // Reset crop mode
+        setCropMode(false);
+        setCropSelection({ x: 0, y: 0, width: 100, height: 100 });
         
         // Clear CSS preview (sliders/inputs controlled by React state)
         setTimeout(() => {
@@ -961,6 +1034,111 @@ function PhotoInfo(props) {
         }
     }
 
+    // Crop functionality
+    function enterCropMode() {
+        setCropMode(true);
+        setCropSelection({ x: 0, y: 0, width: 100, height: 100 });
+        
+        // Calculate image bounds
+        setTimeout(() => {
+            const img = document.querySelector('#photoImgTag');
+            if (img) {
+                const rect = img.getBoundingClientRect();
+                setCropOverlayBounds({
+                    left: rect.left,
+                    top: rect.top,
+                    width: rect.width,
+                    height: rect.height
+                });
+            }
+        }, 100);
+    }
+
+    function exitCropMode() {
+        setCropMode(false);
+        setCropSelection({ x: 0, y: 0, width: 100, height: 100 });
+    }
+
+    function applyCrop() {
+        setEditorStyles(prev => ({
+            ...prev,
+            crop: { ...cropSelection }
+        }));
+        setCropMode(false);
+        
+        // Apply the crop immediately
+        const newStyles = {
+            ...editorStyles,
+            crop: { ...cropSelection }
+        };
+        applyTempStyleWithValues(newStyles);
+    }
+
+    function setCropPreset(preset) {
+        if (!preset.ratio) {
+            // Original size
+            setCropSelection({ x: 0, y: 0, width: 100, height: 100 });
+            return;
+        }
+
+        // Calculate crop area to maintain aspect ratio
+        const ratio = preset.ratio;
+        let width = 100;
+        let height = 100;
+        let x = 0;
+        let y = 0;
+
+        if (ratio > 1) {
+            // Landscape: limit by height
+            height = 100 / ratio;
+            y = (100 - height) / 2;
+        } else {
+            // Portrait: limit by width
+            width = 100 * ratio;
+            x = (100 - width) / 2;
+        }
+
+        setCropSelection({ x, y, width, height });
+    }
+
+    function handleImageMouseDown(e) {
+        if (!cropMode) return;
+
+        const x = ((e.clientX - cropOverlayBounds.left) / cropOverlayBounds.width) * 100;
+        const y = ((e.clientY - cropOverlayBounds.top) / cropOverlayBounds.height) * 100;
+
+        setIsDragging(true);
+        setDragStart({ x, y });
+        setDragMode('create');
+        setCropSelection({ x, y, width: 0, height: 0 });
+    }
+
+    function handleImageMouseMove(e) {
+        if (!cropMode || !isDragging) return;
+
+        const x = ((e.clientX - cropOverlayBounds.left) / cropOverlayBounds.width) * 100;
+        const y = ((e.clientY - cropOverlayBounds.top) / cropOverlayBounds.height) * 100;
+
+        if (dragMode === 'create') {
+            const width = Math.abs(x - dragStart.x);
+            const height = Math.abs(y - dragStart.y);
+            const startX = Math.min(x, dragStart.x);
+            const startY = Math.min(y, dragStart.y);
+
+            setCropSelection({
+                x: Math.max(0, Math.min(startX, 100)),
+                y: Math.max(0, Math.min(startY, 100)),
+                width: Math.max(0, Math.min(width, 100 - Math.max(0, startX))),
+                height: Math.max(0, Math.min(height, 100 - Math.max(0, startY)))
+            });
+        }
+    }
+
+    function handleImageMouseUp(e) {
+        if (!cropMode) return;
+        setIsDragging(false);
+    }
+
     return (
         <>
             <div className="togglePhotoInfo">
@@ -971,6 +1149,93 @@ function PhotoInfo(props) {
                     {props.showSideMenu ? ">" : "<"}
                 </a>
             </div>
+            {cropMode && (
+                <div 
+                    id="crop-overlay"
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        zIndex: 9999,
+                        pointerEvents: 'none'
+                    }}
+                >
+                    {/* Semi-transparent overlay only over the photo display area */}
+                    <div style={{
+                        position: 'absolute',
+                        left: `${cropOverlayBounds.left}px`,
+                        top: `${cropOverlayBounds.top}px`,
+                        width: `${cropOverlayBounds.width}px`,
+                        height: `${cropOverlayBounds.height}px`,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        pointerEvents: 'none'
+                    }} />
+                    
+                    {/* Interactive area only over the image */}
+                    <div
+                        id="crop-interactive-area"
+                        style={{
+                            position: 'absolute',
+                            left: `${cropOverlayBounds.left}px`,
+                            top: `${cropOverlayBounds.top}px`,
+                            width: `${cropOverlayBounds.width}px`,
+                            height: `${cropOverlayBounds.height}px`,
+                            pointerEvents: 'auto',
+                            cursor: 'crosshair'
+                        }}
+                        onMouseDown={handleImageMouseDown}
+                        onMouseMove={handleImageMouseMove}
+                        onMouseUp={handleImageMouseUp}
+                    />
+                    
+                    {/* Crop selection rectangle positioned over the image */}
+                    <div
+                        id="crop-selection"
+                        style={{
+                            position: 'absolute',
+                            border: '2px dashed #ffffff',
+                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                            pointerEvents: 'none',
+                            // Position relative to the image bounds
+                            left: `${cropOverlayBounds.left + (cropSelection.x * cropOverlayBounds.width / 100)}px`,
+                            top: `${cropOverlayBounds.top + (cropSelection.y * cropOverlayBounds.height / 100)}px`,
+                            width: `${cropSelection.width * cropOverlayBounds.width / 100}px`,
+                            height: `${cropSelection.height * cropOverlayBounds.height / 100}px`
+                        }}
+                    >
+                        <div style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            color: 'white',
+                            fontSize: '12px',
+                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            whiteSpace: 'nowrap'
+                        }}>
+                            {Math.round(cropSelection.width)}% × {Math.round(cropSelection.height)}%
+                        </div>
+                    </div>
+                    
+                    <div style={{
+                        position: 'absolute',
+                        top: '10px',
+                        left: '10px',
+                        color: 'white',
+                        fontSize: '14px',
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        pointerEvents: 'none'
+                    }}>
+                        Click and drag on the photo to select crop area
+                    </div>
+                </div>
+            )}
             <div className="photo-info-tabs">
                 <div className="tab-header">
                     <button 
@@ -1122,6 +1387,36 @@ function PhotoInfo(props) {
                                             <span id="scale-value">{editorStyles.scale}</span>
                                             <button className="reset-btn" onClick={() => resetSingleControl('scale')} title="Reset scale">↻</button>
                                         </div>
+                                    </div>
+                                    <div className="editor-control crop-control">
+                                        <div className="control-row">
+                                            <label>Crop:</label>
+                                            {!cropMode ? (
+                                                <button className="action-btn" onClick={enterCropMode}>Crop</button>
+                                            ) : (
+                                                <div className="crop-buttons">
+                                                    <button className="action-btn" onClick={applyCrop}>Done</button>
+                                                    <button className="action-btn" onClick={exitCropMode}>Cancel</button>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {cropMode && (
+                                            <div className="crop-presets">
+                                                <label>Presets:</label>
+                                                <div className="preset-buttons">
+                                                    {cropPresets.map((preset, index) => (
+                                                        <button
+                                                            key={index}
+                                                            className="preset-btn"
+                                                            onClick={() => setCropPreset(preset)}
+                                                            title={`Set crop to ${preset.name}`}
+                                                        >
+                                                            {preset.name}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="editor-buttons">
