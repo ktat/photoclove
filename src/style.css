@@ -285,10 +285,8 @@ button:hover {
 .leftMenu {
   max-width: 230px;
   min-width: 230px;
-
-  border-width: 0px 1px 0px 0px;
-  border-style: solid;
-  border-color: white;
+  border: none;
+  background-color: #1f1f1f;
 }
 
 @media screen and (max-width: 1000px) {
@@ -417,6 +415,7 @@ button:hover {
   max-width: 320px;
   padding-left: 20px;
   border: none;
+  background-color: #1f1f1f;
 }
 
 .closePhotoInfo {
