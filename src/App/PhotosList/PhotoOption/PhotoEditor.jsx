@@ -958,25 +958,46 @@ function PhotoEditor(props) {
         setCropSelection({ x: 0, y: 0, width: 100, height: 100 });
         
         // Calculate image bounds with more robust detection
-        setTimeout(() => {
+        const calculateBounds = () => {
             const img = document.querySelector('#photoImgTag');
-            if (img) {
+            console.log('Looking for image element #photoImgTag');
+            
+            if (img && img.offsetWidth > 0 && img.offsetHeight > 0) {
                 const rect = img.getBoundingClientRect();
+                console.log('Image element found:', img);
                 console.log('Image bounds:', rect);
-                setCropOverlayBounds({
-                    left: rect.left + window.scrollX,
-                    top: rect.top + window.scrollY,
+                console.log('Image computed style:', window.getComputedStyle(img));
+                console.log('Image parent element:', img.parentElement);
+                
+                const bounds = {
+                    left: rect.left,
+                    top: rect.top, 
                     width: rect.width,
                     height: rect.height
-                });
+                };
+                
+                console.log('Setting crop overlay bounds:', bounds);
+                setCropOverlayBounds(bounds);
                 
                 // Add global mouse event listeners for more reliable crop selection
                 document.addEventListener('mousemove', handleGlobalMouseMove);
                 document.addEventListener('mouseup', handleGlobalMouseUp);
+                
+                return true;
             } else {
-                console.error('Photo image element not found for crop mode');
+                console.error('Photo image element not found or not visible for crop mode', img);
+                return false;
             }
-        }, 100);
+        };
+        
+        // Try immediately, then with increasing delays if not found
+        if (!calculateBounds()) {
+            setTimeout(() => {
+                if (!calculateBounds()) {
+                    setTimeout(calculateBounds, 500);
+                }
+            }, 100);
+        }
     }
 
     function exitCropMode() {
@@ -1157,8 +1178,30 @@ function PhotoEditor(props) {
                     width: `${cropOverlayBounds.width}px`,
                     height: `${cropOverlayBounds.height}px`,
                     backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                    pointerEvents: 'none'
+                    pointerEvents: 'none',
+                    border: '2px solid red' // Debug border to see where the overlay is
                 }} />
+                
+                {/* Debug info showing calculated bounds */}
+                <div style={{
+                    position: 'fixed',
+                    top: '10px',
+                    right: '10px',
+                    color: 'white',
+                    fontSize: '12px',
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    pointerEvents: 'none',
+                    zIndex: 10001,
+                    fontFamily: 'monospace'
+                }}>
+                    Crop Bounds:<br/>
+                    left: {Math.round(cropOverlayBounds.left)}<br/>
+                    top: {Math.round(cropOverlayBounds.top)}<br/>
+                    width: {Math.round(cropOverlayBounds.width)}<br/>
+                    height: {Math.round(cropOverlayBounds.height)}
+                </div>
                 
                 {/* Interactive area only over the image */}
                 <div
