@@ -570,6 +570,12 @@ button:hover {
     transition: right 0.15s ease;
 }
 
+.directory-vertical-tab-button:nth-child(2),
+.directory-vertical-tab-button:nth-child(3) {
+    padding-top: 32px;
+    padding-bottom: 32px;
+}
+
 .directory-vertical-tab-button {
     writing-mode: initial;
     text-orientation: initial;
