@@ -234,6 +234,11 @@ function PhotosList(props) {
         fetchPhotos().catch(console.error)
     }
 
+    function closeRightColumn() {
+        setShowSideMenu(false);
+        props.setShowPhotoDisplay(false);
+    }
+
     async function getPhotos(e, isForward) {
         // Cancel any existing photo loading request
         if (currentPhotoLoadingController) {
@@ -593,6 +598,7 @@ function PhotosList(props) {
                     imgCacheMap={imgCacheMap}
                     setStar={setStar}
                     star={star}
+                    onPhotosRefresh={getPhotos}
                 />
             </div>
             <div style={{ display: (!props.showPhotoDisplay || !currentPhotoPath) ? "block" : "none" }}>
@@ -602,6 +608,7 @@ function PhotosList(props) {
                     setTabClass={setTabClass}
                     changeTab={changeTab}
                     currentDate={props.currentDate}
+                    closeRightColumn={closeRightColumn}
                     photoSelection={photoSelection}
                     clearPhotoSelection={clearPhotoSelection}
                     selectAllPhotoToSelection={selectAllPhotoToSelection}

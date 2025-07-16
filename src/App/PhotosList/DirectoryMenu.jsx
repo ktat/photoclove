@@ -121,11 +121,36 @@ function DirectoryMenu(props) {
 
     return (
         <div id="directory-maintenance">
-            <ul className="tabs-list">
-                <li className={props.tabClass['filter'] ? "tab tab-active" : "tab"} ><a onClick={(e) => props.changeTab(e, e.target.href)} href="#tab-filter">Filter</a></li>
-                <li className={props.tabClass['selection'] ? "tab tab-active" : "tab"} ><a onClick={(e) => props.changeTab(e, e.target.href)} href="#tab-selection">Selection</a></li>
-                <li className={props.tabClass['maintenance'] ? "tab tab-active" : "tab"} ><a onClick={(e) => props.changeTab(e, e.target.href)} href="#tab-maintenance">Maintenance</a></li>
-            </ul>
+            <div className="directory-vertical-tabs">
+                <button 
+                    className={props.tabClass['filter'] ? "directory-vertical-tab-button active" : "directory-vertical-tab-button"}
+                    onClick={(e) => props.changeTab(e, "#tab-filter")}
+                    title="Filter Photos"
+                >
+                    <span className="directory-vertical-text">Filter</span>
+                </button>
+                <button 
+                    className={props.tabClass['selection'] ? "directory-vertical-tab-button active" : "directory-vertical-tab-button"}
+                    onClick={(e) => props.changeTab(e, "#tab-selection")}
+                    title="Photo Selection"
+                >
+                    <span className="directory-vertical-text">Selection</span>
+                </button>
+                <button 
+                    className={props.tabClass['maintenance'] ? "directory-vertical-tab-button active" : "directory-vertical-tab-button"}
+                    onClick={(e) => props.changeTab(e, "#tab-maintenance")}
+                    title="Maintenance Tools"
+                >
+                    <span className="directory-vertical-text">Maintenance</span>
+                </button>
+                <button 
+                    className="directory-vertical-tab-button directory-close-tab"
+                    onClick={props.closeRightColumn}
+                    title="Close Panel"
+                >
+                    ×
+                </button>
+            </div>
             <div id="tab-maintenance" className={props.tabClass['maintenance'] ? "tab-active" : "tab"}>
                 <ul>
                     <li><a href="#" onClick={() => { createDbInDate() }}>(re)Create database of the date</a></li>

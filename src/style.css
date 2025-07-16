@@ -557,6 +557,77 @@ button:hover {
   text-align: left;
 }
 
+/* Directory vertical tabs */
+.directory-vertical-tabs {
+    position: fixed;
+    right: 320px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 1000;
+    transition: right 0.15s ease;
+}
+
+.directory-vertical-tab-button {
+    writing-mode: initial;
+    text-orientation: initial;
+    padding: 12px 4px;
+    background: var(--bg-elevated);
+    color: var(--text);
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    min-height: 60px;
+    width: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    border-radius: 5px 0 0 5px;
+}
+
+.directory-vertical-text {
+    transform: rotate(90deg);
+    display: inline-block;
+}
+
+.directory-vertical-tab-button:hover {
+    background: var(--accent);
+    color: white;
+}
+
+.directory-vertical-tab-button.active {
+    background: #4CAF50;
+    color: white;
+}
+
+.directory-vertical-tab-button:first-child {
+    border-radius: 5px 0 0 0;
+}
+
+.directory-vertical-tab-button:last-child {
+    border-radius: 0 0 0 5px;
+}
+
+.directory-vertical-tab-button.directory-close-tab {
+    background-color: #d32f2f;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    writing-mode: horizontal-tb;
+    text-orientation: mixed;
+    padding: 8px;
+    min-height: 40px;
+}
+
+.directory-vertical-tab-button.directory-close-tab:hover {
+    background-color: #b71c1c;
+}
+
 .photoDisplay .photo {
   overflow: hidden;
   height: 100%;
