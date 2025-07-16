@@ -98,6 +98,15 @@ function PhotoEditor(props) {
         }
     }, [props.currentPhotoPath])
 
+    // Cleanup effect to remove event listeners when component unmounts
+    useEffect(() => {
+        return () => {
+            // Remove global mouse event listeners on cleanup
+            document.removeEventListener('mousemove', handleGlobalMouseMove);
+            document.removeEventListener('mouseup', handleGlobalMouseUp);
+        };
+    }, [])
+
     // Update CSS preview when editor is opened
     useEffect(() => {
         if (props.currentPhotoPath) {
@@ -948,17 +957,24 @@ function PhotoEditor(props) {
         setCropMode(true);
         setCropSelection({ x: 0, y: 0, width: 100, height: 100 });
         
-        // Calculate image bounds
+        // Calculate image bounds with more robust detection
         setTimeout(() => {
             const img = document.querySelector('#photoImgTag');
             if (img) {
                 const rect = img.getBoundingClientRect();
+                console.log('Image bounds:', rect);
                 setCropOverlayBounds({
-                    left: rect.left,
-                    top: rect.top,
+                    left: rect.left + window.scrollX,
+                    top: rect.top + window.scrollY,
                     width: rect.width,
                     height: rect.height
                 });
+                
+                // Add global mouse event listeners for more reliable crop selection
+                document.addEventListener('mousemove', handleGlobalMouseMove);
+                document.addEventListener('mouseup', handleGlobalMouseUp);
+            } else {
+                console.error('Photo image element not found for crop mode');
             }
         }, 100);
     }
@@ -966,6 +982,11 @@ function PhotoEditor(props) {
     function exitCropMode() {
         setCropMode(false);
         setCropSelection({ x: 0, y: 0, width: 100, height: 100 });
+        setIsDragging(false);
+        
+        // Remove global mouse event listeners
+        document.removeEventListener('mousemove', handleGlobalMouseMove);
+        document.removeEventListener('mouseup', handleGlobalMouseUp);
     }
 
     function applyCrop() {
@@ -974,6 +995,11 @@ function PhotoEditor(props) {
             crop: { ...cropSelection }
         }));
         setCropMode(false);
+        setIsDragging(false);
+        
+        // Remove global mouse event listeners
+        document.removeEventListener('mousemove', handleGlobalMouseMove);
+        document.removeEventListener('mouseup', handleGlobalMouseUp);
         
         // Apply the crop immediately
         const newStyles = {
@@ -1012,14 +1038,24 @@ function PhotoEditor(props) {
 
     function handleImageMouseDown(e) {
         if (!cropMode) return;
+        
+        console.log('Mouse down event in crop mode');
+        console.log('cropOverlayBounds:', cropOverlayBounds);
+        console.log('Mouse position:', { clientX: e.clientX, clientY: e.clientY });
 
         const x = ((e.clientX - cropOverlayBounds.left) / cropOverlayBounds.width) * 100;
         const y = ((e.clientY - cropOverlayBounds.top) / cropOverlayBounds.height) * 100;
+        
+        console.log('Calculated crop position:', { x, y });
 
         setIsDragging(true);
         setDragStart({ x, y });
         setDragMode('create');
         setCropSelection({ x, y, width: 0, height: 0 });
+        
+        // Prevent default to avoid any interference
+        e.preventDefault();
+        e.stopPropagation();
     }
 
     function handleImageMouseMove(e) {
@@ -1041,10 +1077,47 @@ function PhotoEditor(props) {
                 height: Math.max(0, Math.min(height, 100 - Math.max(0, startY)))
             });
         }
+        
+        // Prevent default to avoid any interference
+        e.preventDefault();
+        e.stopPropagation();
     }
 
     function handleImageMouseUp(e) {
         if (!cropMode) return;
+        console.log('Mouse up event in crop mode');
+        setIsDragging(false);
+        
+        // Prevent default to avoid any interference
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    // Global mouse event handlers for more reliable crop selection
+    function handleGlobalMouseMove(e) {
+        if (!cropMode || !isDragging) return;
+        
+        const x = ((e.clientX - cropOverlayBounds.left) / cropOverlayBounds.width) * 100;
+        const y = ((e.clientY - cropOverlayBounds.top) / cropOverlayBounds.height) * 100;
+
+        if (dragMode === 'create') {
+            const width = Math.abs(x - dragStart.x);
+            const height = Math.abs(y - dragStart.y);
+            const startX = Math.min(x, dragStart.x);
+            const startY = Math.min(y, dragStart.y);
+
+            setCropSelection({
+                x: Math.max(0, Math.min(startX, 100)),
+                y: Math.max(0, Math.min(startY, 100)),
+                width: Math.max(0, Math.min(width, 100 - Math.max(0, startX))),
+                height: Math.max(0, Math.min(height, 100 - Math.max(0, startY)))
+            });
+        }
+    }
+
+    function handleGlobalMouseUp(e) {
+        if (!cropMode) return;
+        console.log('Global mouse up event in crop mode');
         setIsDragging(false);
     }
 
@@ -1065,14 +1138,25 @@ function PhotoEditor(props) {
                     pointerEvents: 'none'
                 }}
             >
-                {/* Semi-transparent overlay only over the photo display area */}
+                {/* Full screen dark overlay with cutout for photo area */}
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                    pointerEvents: 'none'
+                }} />
+                
+                {/* Lighter overlay specifically over the photo area */}
                 <div style={{
                     position: 'absolute',
                     left: `${cropOverlayBounds.left}px`,
                     top: `${cropOverlayBounds.top}px`,
                     width: `${cropOverlayBounds.width}px`,
                     height: `${cropOverlayBounds.height}px`,
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
                     pointerEvents: 'none'
                 }} />
                 
@@ -1089,8 +1173,6 @@ function PhotoEditor(props) {
                         cursor: 'crosshair'
                     }}
                     onMouseDown={handleImageMouseDown}
-                    onMouseMove={handleImageMouseMove}
-                    onMouseUp={handleImageMouseUp}
                 />
                 
                 {/* Crop selection rectangle positioned over the image */}
@@ -1126,14 +1208,15 @@ function PhotoEditor(props) {
                 
                 <div style={{
                     position: 'absolute',
-                    top: '10px',
-                    left: '10px',
+                    top: `${cropOverlayBounds.top + 10}px`,
+                    left: `${cropOverlayBounds.left + 10}px`,
                     color: 'white',
                     fontSize: '14px',
                     backgroundColor: 'rgba(0, 0, 0, 0.8)',
                     padding: '8px 12px',
                     borderRadius: '6px',
-                    pointerEvents: 'none'
+                    pointerEvents: 'none',
+                    zIndex: 10000
                 }}>
                     Click and drag on the photo to select crop area
                 </div>
