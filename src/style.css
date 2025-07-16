@@ -1367,6 +1367,82 @@ a.run-app {
   box-sizing: border-box;
 }
 
+/* Vertical tabs styles */
+.vertical-tabs {
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1000;
+  border-radius: 8px 0 0 8px;
+  overflow: hidden;
+  border: 1px solid #444;
+  border-right: none;
+  background-color: #2a2a2a;
+}
+
+
+.vertical-tab-button:last-child {
+  border-bottom: none;
+}
+
+.vertical-tab-button:hover {
+  background-color: #4a4a4a;
+  color: #fff;
+}
+
+.vertical-tab-button.active {
+  background-color: #4CAF50;
+  color: white;
+  font-weight: 600;
+}
+
+/* Photo Info table styles */
+.photo-info-table-wrapper {
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+
+.photo-info-table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  table-layout: fixed;
+}
+
+.photo-info-table th {
+  background-color: #3a3a3a;
+  color: #ccc;
+  padding: 6px 8px;
+  text-align: left;
+  font-weight: 500;
+  border: 1px solid #444;
+  width: 30%;
+  word-wrap: break-word;
+}
+
+.photo-info-table td {
+  padding: 6px 8px;
+  border: 1px solid #444;
+  background-color: #2a2a2a;
+  color: #e4e4e4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 0;
+}
+
+.photo-info-table td a {
+  color: #4CAF50;
+  text-decoration: none;
+}
+
+.photo-info-table td a:hover {
+  text-decoration: underline;
+}
+
 /* Editor-specific styles within tab */
 .editor-tab .photo-info-editor {
   width: 100%;
@@ -1860,6 +1936,133 @@ a.run-app {
     box-sizing: border-box;
     overflow-x: auto;
     word-wrap: break-word;
+}
+
+/* Vertical tabs for PhotoOption toggle */
+.vertical-tabs {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 1000;
+    transition: right 0.3s ease;
+}
+
+.vertical-tabs.menu-closed {
+    right: 40px;
+}
+
+.vertical-tabs.menu-open {
+    right: 320px;
+}
+
+.vertical-tab-button {
+    writing-mode: initial;
+    text-orientation: initial;
+    padding: 12px 4px;
+    background: var(--bg-elevated);
+    color: var(--text);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    min-height: 60px;
+    width: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.vertical-tabs.menu-closed .vertical-tab-button {
+    border-radius: 5px 0 0 5px;
+}
+
+.vertical-tabs.menu-open .vertical-tab-button {
+    border-radius: 5px 0 0 5px;
+}
+
+.vertical-text {
+    transform: rotate(90deg);
+    display: inline-block;
+}
+
+.vertical-tab-button:hover {
+    background: var(--accent);
+    color: white;
+}
+
+.vertical-tab-button.active {
+    background: #4CAF50;
+    color: white;
+    border-color: #4CAF50;
+}
+
+.vertical-tabs.menu-closed .vertical-tab-button:first-child {
+    border-radius: 5px 0 0 0;
+}
+
+.vertical-tabs.menu-closed .vertical-tab-button:last-child {
+    border-radius: 0 0 0 5px;
+}
+
+.vertical-tabs.menu-open .vertical-tab-button:first-child {
+    border-radius: 5px 0 0 0;
+}
+
+.vertical-tabs.menu-open .vertical-tab-button:last-child {
+    border-radius: 0 0 0 5px;
+}
+
+.vertical-tab-button.close-tab {
+    background-color: #d32f2f;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    writing-mode: horizontal-tb;
+    text-orientation: mixed;
+    padding: 8px;
+    min-height: 40px;
+}
+
+.vertical-tab-button.close-tab:hover {
+    background-color: #b71c1c;
+}
+
+/* Photo info table overflow fix */
+.photo-info-table-wrapper {
+    overflow-x: auto;
+    max-width: 100%;
+    margin-bottom: 15px;
+}
+
+.photo-info-table {
+    width: 100%;
+    max-width: 300px;
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+.photo-info-table th {
+    width: 35%;
+    padding: 4px 8px;
+    font-size: 11px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    word-wrap: break-word;
+}
+
+.photo-info-table td {
+    width: 65%;
+    padding: 4px 8px;
+    font-size: 11px;
+    border-bottom: 1px solid var(--border);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 0;
 }
 
 /* Enhanced Editor Controls */

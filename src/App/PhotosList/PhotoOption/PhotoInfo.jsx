@@ -93,38 +93,40 @@ function PhotoInfo(props) {
 
     return (
         <div className="info-tab">
-            <table>
-                <tbody>
-                    <tr><th>File Name</th>
-                        <td>
-                            <a href="#" onClick={() => {
-                                writeText(props.currentPhotoPath);
-                                props.addFooterMessage("clipboard", "Copy file path to clipboard", false, 5000);
-                            }}>📋</a>
-                            <a
-                                onMouseEnter={() => { props.addFooterMessage("current_phtoo_path", "File Path: " + props.currentPhotoPath, false, 10000) }}>
-                                {props.currentPhotoPath.replace(/^.+\//, '')}
-                            </a>
+            <div className="photo-info-table-wrapper">
+                <table className="photo-info-table">
+                    <tbody>
+                        <tr><th>File Name</th>
+                            <td>
+                                <a href="#" onClick={() => {
+                                    writeText(props.currentPhotoPath);
+                                    props.addFooterMessage("clipboard", "Copy file path to clipboard", false, 5000);
+                                }}>📋</a>
+                                <a
+                                    onMouseEnter={() => { props.addFooterMessage("current_phtoo_path", "File Path: " + props.currentPhotoPath, false, 10000) }}>
+                                    {props.currentPhotoPath.replace(/^.+\//, '')}
+                                </a>
+                            </td></tr>
+                        <tr><th>ISO</th><td>{photoInfo.exif ? photoInfo.exif.iso : ""}</td></tr>
+                        <tr><th>FNumber</th><td>{photoInfo.exif ? photoInfo.exif.fnumber : ""}</td></tr>
+                        <tr><th>Shutter Speed</th><td>{photoInfo.exif ? photoInfo.exif.exposure_time : ""}</td></tr>
+                        <tr><th>LensModel</th><td>{photoInfo.exif ? photoInfo.exif.lens_model : ""}</td></tr>
+                        <tr><th>LensMake</th><td>{photoInfo.exif ? photoInfo.exif.lens_make : ""}</td></tr>
+                        <tr><th>Make</th><td>{photoInfo.exif ? photoInfo.exif.make : ""}</td></tr>
+                        <tr><th>Model</th><td>{photoInfo.exif ? photoInfo.exif.model : ""}</td></tr>
+                        <tr><th>Date & Time</th><td>{photoInfo.exif ? photoInfo.exif.date_time : ""}</td></tr>
+                        <tr><th>Focal Length</th><td>{photoInfo.exif ?
+                            photoInfo.exif.focal_length == photoInfo.exif.focal_length_in35mm_film
+                                ? photoInfo.exif.focal_length
+                                : photoInfo.exif.focal_length + "(" + photoInfo.exif.focal_length_in35mm_film + ")" : ""}
                         </td></tr>
-                    <tr><th>ISO</th><td>{photoInfo.exif ? photoInfo.exif.iso : ""}</td></tr>
-                    <tr><th>FNumber</th><td>{photoInfo.exif ? photoInfo.exif.fnumber : ""}</td></tr>
-                    <tr><th>Shutter Speed</th><td>{photoInfo.exif ? photoInfo.exif.exposure_time : ""}</td></tr>
-                    <tr><th>LensModel</th><td>{photoInfo.exif ? photoInfo.exif.lens_model : ""}</td></tr>
-                    <tr><th>LensMake</th><td>{photoInfo.exif ? photoInfo.exif.lens_make : ""}</td></tr>
-                    <tr><th>Make</th><td>{photoInfo.exif ? photoInfo.exif.make : ""}</td></tr>
-                    <tr><th>Model</th><td>{photoInfo.exif ? photoInfo.exif.model : ""}</td></tr>
-                    <tr><th>Date & Time</th><td>{photoInfo.exif ? photoInfo.exif.date_time : ""}</td></tr>
-                    <tr><th>Focal Length</th><td>{photoInfo.exif ?
-                        photoInfo.exif.focal_length == photoInfo.exif.focal_length_in35mm_film
-                            ? photoInfo.exif.focal_length
-                            : photoInfo.exif.focal_length + "(" + photoInfo.exif.focal_length_in35mm_film + ")" : ""}
-                    </td></tr>
-                    <tr><th>Digital Zoom Ratio</th><td>{photoInfo.exif ? photoInfo.exif.digital_zoom_ratio : ""}</td></tr>
-                    <tr><th>Exposure Mode</th><td>{photoInfo.exif ? photoInfo.exif.exposure_mode : ""}</td></tr>
-                    <tr><th>WhiteBalance Mode</th><td>{photoInfo.exif ? photoInfo.exif.white_balance_mode : ""}</td></tr>
-                    <tr><th>Orientation</th><td>{photoInfo.exif ? photoInfo.exif.orientation : ""}</td></tr>
-                </tbody>
-            </table>
+                        <tr><th>Digital Zoom Ratio</th><td>{photoInfo.exif ? photoInfo.exif.digital_zoom_ratio : ""}</td></tr>
+                        <tr><th>Exposure Mode</th><td>{photoInfo.exif ? photoInfo.exif.exposure_mode : ""}</td></tr>
+                        <tr><th>WhiteBalance Mode</th><td>{photoInfo.exif ? photoInfo.exif.white_balance_mode : ""}</td></tr>
+                        <tr><th>Orientation</th><td>{photoInfo.exif ? photoInfo.exif.orientation : ""}</td></tr>
+                    </tbody>
+                </table>
+            </div>
             <div>
                 Stars:
                 <span className="star">

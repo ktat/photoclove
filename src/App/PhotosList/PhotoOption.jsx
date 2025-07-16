@@ -5,32 +5,50 @@ import PhotoEditor from "./PhotoOption/PhotoEditor.jsx";
 function PhotoOption(props) {
     const [activeTab, setActiveTab] = useState("info");
 
+    const handleTabClick = (tab) => {
+        setActiveTab(tab);
+        // Show the side menu when a tab is clicked
+        if (!props.showSideMenu) {
+            props.setShowSideMenu(true);
+        }
+        document.querySelector("#dummy-for-focus").focus();
+    };
+
+    const handleCloseTab = () => {
+        props.setShowSideMenu(false);
+        document.querySelector("#dummy-for-focus").focus();
+    };
+
     return (
         <>
-            <div className="togglePhotoInfo">
-                <a href="#" onClick={() => {
-                    props.setShowSideMenu(!props.showSideMenu);
-                    document.querySelector("#dummy-for-focus").focus();
-                }}>
-                    {props.showSideMenu ? ">" : "<"}
-                </a>
-            </div>
-            <div className="photo-info-tabs">
-                <div className="tab-header">
+            {/* Vertical tabs replacing the toggle */}
+            <div className={`vertical-tabs ${props.showSideMenu ? 'menu-open' : 'menu-closed'}`}>
+                <button 
+                    className={activeTab === "info" ? "vertical-tab-button active" : "vertical-tab-button"}
+                    onClick={() => handleTabClick("info")}
+                    title="Photo Information"
+                >
+                    <span className="vertical-text">Info</span>
+                </button>
+                <button 
+                    className={activeTab === "editor" ? "vertical-tab-button active" : "vertical-tab-button"}
+                    onClick={() => handleTabClick("editor")}
+                    title="Photo Editor"
+                >
+                    <span className="vertical-text">Editor</span>
+                </button>
+                {props.showSideMenu && (
                     <button 
-                        className={activeTab === "info" ? "tab-button active" : "tab-button"}
-                        onClick={() => setActiveTab("info")}
+                        className="vertical-tab-button close-tab"
+                        onClick={handleCloseTab}
+                        title="Close Panel"
                     >
-                        📷 Info
+                        ×
                     </button>
-                    <button 
-                        className={activeTab === "editor" ? "tab-button active" : "tab-button"}
-                        onClick={() => setActiveTab("editor")}
-                    >
-                        🎨 Editor
-                    </button>
-                </div>
+                )}
             </div>
+            
+            {/* Content area */}
             {props.currentPhotoPath && props.showSideMenu && (
                 <div className="tab-content">
                     {activeTab === "info" && (
