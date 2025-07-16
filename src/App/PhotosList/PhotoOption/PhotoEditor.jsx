@@ -1,16 +1,10 @@
 import { useState, useEffect } from "react";
-import { invoke, convertFileSrc } from "@tauri-apps/api/core";
-import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager';
-import { show } from "@tauri-apps/api/app";
+import { invoke } from "@tauri-apps/api/core";
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 import { openUrl } from '@tauri-apps/plugin-opener';
-import { listen } from "@tauri-apps/api/event";
-import fileUrl from '../../PathUtil.jsx';
+import fileUrl from '../../../PathUtil.jsx';
 
-function PhotoInfo(props) {
-    const [photoInfo, setPhotoInfo] = useState({});
-    const [comment, setComment] = useState("");
-    const [activeTab, setActiveTab] = useState("info");
+function PhotoEditor(props) {
     const [originalStyles, setOriginalStyles] = useState(new Map());
     const [editorStyles, setEditorStyles] = useState({
         rotate: 0,
@@ -19,14 +13,14 @@ function PhotoInfo(props) {
         saturation: 100,
         hue: 0,
         scale: 100,
-        crop: { x: 0, y: 0, width: 100, height: 100 } // crop values as percentages
+        crop: { x: 0, y: 0, width: 100, height: 100 }
     });
     const [cropMode, setCropMode] = useState(false);
     const [cropSelection, setCropSelection] = useState({ x: 0, y: 0, width: 100, height: 100 });
     const [cropOverlayBounds, setCropOverlayBounds] = useState({ left: 0, top: 0, width: 0, height: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-    const [dragMode, setDragMode] = useState('create'); // 'create', 'move', 'resize'
+    const [dragMode, setDragMode] = useState('create');
     const [cropPresets] = useState([
         { name: 'Original', ratio: null },
         { name: 'Square', ratio: 1 },
@@ -37,13 +31,6 @@ function PhotoInfo(props) {
         { name: 'Wide 16:9', ratio: 16/9 },
         { name: 'Tall 9:16', ratio: 9/16 }
     ]);
-
-    useEffect((e) => {
-        if (props.currentPhotoPath && props.currentPhotoPath !== "" && props.showSideMenu) {
-            getPhotoInfo(props.currentPhotoPath).then((photoInfo) => {
-            });
-        }
-    }, [props.currentPhotoPath, props.showSideMenu])
 
     // Load saved CSS styles when photo changes
     useEffect(() => {
@@ -111,12 +98,12 @@ function PhotoInfo(props) {
         }
     }, [props.currentPhotoPath])
 
-    // Update CSS preview when editor tab is opened
+    // Update CSS preview when editor is opened
     useEffect(() => {
-        if (activeTab === "editor" && props.currentPhotoPath) {
-            // Ensure CSS preview is populated when switching to editor tab
+        if (props.currentPhotoPath) {
+            // Ensure CSS preview is populated
             setTimeout(() => {
-                console.log('=== EDITOR TAB SWITCH DEBUG ===');
+                console.log('=== EDITOR OPEN DEBUG ===');
                 console.log('Current editorStyles:', editorStyles);
                 
                 const css = generateCSSFromValues(editorStyles);
@@ -125,107 +112,28 @@ function PhotoInfo(props) {
                 const previewTextarea = document.getElementById('css-preview-text');
                 if (previewTextarea) {
                     previewTextarea.value = css;
-                    console.log('Updated CSS preview on tab switch:', css);
+                    console.log('Updated CSS preview:', css);
                 } else {
-                    console.warn('CSS preview textarea not found on tab switch');
+                    console.warn('CSS preview textarea not found');
                 }
                 
                 // Also ensure UI elements reflect current editorStyles
                 updateUIElementsWithValues(editorStyles, css);
             }, 100);
         }
-    }, [activeTab, editorStyles])
+    }, [editorStyles])
 
-    async function getPhotoInfo(path) {
-        if (props.imgCacheMap[path] && props.imgCacheMap[path][1]) {
-            setPhotoInfo(props.imgCacheMap[path][1])
-        } else if (props.showSideMenu) {
-            await invoke("get_photo_info", { pathStr: path }).then((r) => {
-                let data = JSON.parse(r);
-                if (data.meta) {
-                    if (data.meta.star.data > 0) {
-                        const newStar = [false, false, false, false, false];
-                        for (let i = 0; i < data.meta.star.data; i++) {
-                            newStar[i] = true;
-                        }
-                        props.setStar(newStar);
-                    } else {
-                        props.setStar([false, false, false, false, false]);
-                    }
-                    if (data.meta.comment) {
-                        setComment(data.meta.comment.data);
-                    } else {
-                        setComment("");
-                    }
-                } else {
-                    props.setStar([false, false, false, false, false]);
-                    setComment("");
-                }
-                setPhotoInfo(data);
-            });
-        }
-    };
-
-    function getCurrentStarRate() {
-        return getStarRate(props.star);
-    }
-
-    function getStarRate(star) {
-        let starIndex = 0;
-        for (let i = 0; i < 5; i++) {
-            if (props.star[i]) {
-                starIndex = i + 1;
-            } else {
-                break;
-            }
-        }
-        return starIndex;
-    }
-
-    function toggleStar(i) {
-        const newStar = []
-        const currentStarRate = getCurrentStarRate()
-        if (i === 0 && currentStarRate === 0) {
-            newStar[0] = true;
-        } else if (!props.star[i] || (props.star[i] && props.star[i + 1])) {
-            for (let j = 0; j <= i; j++) {
-                newStar[j] = true;
-            }
-            if (i < 4) {
-                for (let j = i + 1; j < 5; j++) {
-                    newStar[j] = false;
-                }
-            }
-        } else {
-            if (i < 4) {
-                for (let j = i + 1; j < 5; j++) {
-                    newStar[j] = false;
-                }
-            }
-        }
-        const newStarRate = getStarRate(newStar);
-        if (currentStarRate !== newStarRate) {
-            invoke("save_star", { pathStr: props.currentPhotoPath, starNum: newStarRate });
-            props.setStar(newStar);
-        }
-    }
-
-    function saveComment() {
-        invoke("save_comment", { pathStr: props.currentPhotoPath, commentStr: comment });
-    }
-
-
-    // Helper function to update CSS preview (sliders/inputs are controlled by React state)
+    // Helper function to update CSS preview
     function updateUIElementsWithValues(editorValues, cssStyle) {
-        console.log('Updating CSS preview with values:', editorValues); // Debug log
+        console.log('Updating CSS preview with values:', editorValues);
         
         // Update CSS preview with the actual saved CSS
         const previewTextarea = document.getElementById('css-preview-text');
         if (previewTextarea) {
             previewTextarea.value = cssStyle || '';
-            console.log('Updated CSS preview with:', cssStyle); // Debug log
+            console.log('Updated CSS preview with:', cssStyle);
         } else {
-            console.warn('CSS preview textarea not found'); // Debug log
+            console.warn('CSS preview textarea not found');
         }
     }
     
@@ -322,7 +230,7 @@ function PhotoInfo(props) {
     // Editor functions
     function updateStyle(property, value) {
         // Handle rotation 360 = 0 case
-        if (property === 'rotate' && parseInt(value) === 360) {
+        if ((property === 'rotate' || property === 'hue')  && parseInt(value) === 360) {
             value = 0;
         }
         
@@ -340,7 +248,7 @@ function PhotoInfo(props) {
             const previewTextarea = document.getElementById('css-preview-text');
             if (previewTextarea) {
                 previewTextarea.value = css;
-                console.log('Updated CSS preview in updateStyle:', css); // Debug log
+                console.log('Updated CSS preview in updateStyle:', css);
             }
             
             // Apply to current image immediately with new values
@@ -348,9 +256,6 @@ function PhotoInfo(props) {
             
             return newStyles;
         });
-        
-        // Note: Sliders and inputs are now controlled by React state (editorStyles)
-        // so no manual DOM manipulation needed
     }
 
     function resetSingleControl(property) {
@@ -431,13 +336,11 @@ function PhotoInfo(props) {
                     clipPath: mainImage.style.clipPath || '',
                     cssText: mainImage.style.cssText || ''
                 };
-                // Use callback to ensure immediate update
                 setOriginalStyles(prev => new Map(prev.set('main-image', originalStyle)));
-                // Also store locally for immediate use
                 originalStyles.set('main-image', originalStyle);
             }
             
-            // Get the stored original values (use local Map for immediate access)
+            // Get the stored original values
             const original = originalStyles.get('main-image') || { transform: '', filter: '' };
             
             // Build combined styles directly
@@ -823,7 +726,7 @@ function PhotoInfo(props) {
         setCropMode(false);
         setCropSelection({ x: 0, y: 0, width: 100, height: 100 });
         
-        // Clear CSS preview (sliders/inputs controlled by React state)
+        // Clear CSS preview
         setTimeout(() => {
             const previewTextarea = document.getElementById('css-preview-text');
             if (previewTextarea) {
@@ -1145,302 +1048,214 @@ function PhotoInfo(props) {
         setIsDragging(false);
     }
 
-    return (
-        <>
-            <div className="togglePhotoInfo">
-                <a href="#" onClick={() => {
-                    props.setShowSideMenu(!props.showSideMenu);
-                    document.querySelector("#dummy-for-focus").focus();
-                }}>
-                    {props.showSideMenu ? ">" : "<"}
-                </a>
-            </div>
-            {cropMode && (
-                <div 
-                    id="crop-overlay"
+    // Render crop overlay
+    const renderCropOverlay = () => {
+        if (!cropMode) return null;
+
+        return (
+            <div 
+                id="crop-overlay"
+                style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    zIndex: 9999,
+                    pointerEvents: 'none'
+                }}
+            >
+                {/* Semi-transparent overlay only over the photo display area */}
+                <div style={{
+                    position: 'absolute',
+                    left: `${cropOverlayBounds.left}px`,
+                    top: `${cropOverlayBounds.top}px`,
+                    width: `${cropOverlayBounds.width}px`,
+                    height: `${cropOverlayBounds.height}px`,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    pointerEvents: 'none'
+                }} />
+                
+                {/* Interactive area only over the image */}
+                <div
+                    id="crop-interactive-area"
                     style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        zIndex: 9999,
-                        pointerEvents: 'none'
-                    }}
-                >
-                    {/* Semi-transparent overlay only over the photo display area */}
-                    <div style={{
                         position: 'absolute',
                         left: `${cropOverlayBounds.left}px`,
                         top: `${cropOverlayBounds.top}px`,
                         width: `${cropOverlayBounds.width}px`,
                         height: `${cropOverlayBounds.height}px`,
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                        pointerEvents: 'none'
-                    }} />
-                    
-                    {/* Interactive area only over the image */}
-                    <div
-                        id="crop-interactive-area"
-                        style={{
-                            position: 'absolute',
-                            left: `${cropOverlayBounds.left}px`,
-                            top: `${cropOverlayBounds.top}px`,
-                            width: `${cropOverlayBounds.width}px`,
-                            height: `${cropOverlayBounds.height}px`,
-                            pointerEvents: 'auto',
-                            cursor: 'crosshair'
-                        }}
-                        onMouseDown={handleImageMouseDown}
-                        onMouseMove={handleImageMouseMove}
-                        onMouseUp={handleImageMouseUp}
-                    />
-                    
-                    {/* Crop selection rectangle positioned over the image */}
-                    <div
-                        id="crop-selection"
-                        style={{
-                            position: 'absolute',
-                            border: '2px dashed #ffffff',
-                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                            pointerEvents: 'none',
-                            // Position relative to the image bounds
-                            left: `${cropOverlayBounds.left + (cropSelection.x * cropOverlayBounds.width / 100)}px`,
-                            top: `${cropOverlayBounds.top + (cropSelection.y * cropOverlayBounds.height / 100)}px`,
-                            width: `${cropSelection.width * cropOverlayBounds.width / 100}px`,
-                            height: `${cropSelection.height * cropOverlayBounds.height / 100}px`
-                        }}
-                    >
-                        <div style={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            color: 'white',
-                            fontSize: '12px',
-                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                            padding: '2px 8px',
-                            borderRadius: '4px',
-                            whiteSpace: 'nowrap'
-                        }}>
-                            {Math.round(cropSelection.width)}% × {Math.round(cropSelection.height)}%
-                        </div>
-                    </div>
-                    
+                        pointerEvents: 'auto',
+                        cursor: 'crosshair'
+                    }}
+                    onMouseDown={handleImageMouseDown}
+                    onMouseMove={handleImageMouseMove}
+                    onMouseUp={handleImageMouseUp}
+                />
+                
+                {/* Crop selection rectangle positioned over the image */}
+                <div
+                    id="crop-selection"
+                    style={{
+                        position: 'absolute',
+                        border: '2px dashed #ffffff',
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        pointerEvents: 'none',
+                        // Position relative to the image bounds
+                        left: `${cropOverlayBounds.left + (cropSelection.x * cropOverlayBounds.width / 100)}px`,
+                        top: `${cropOverlayBounds.top + (cropSelection.y * cropOverlayBounds.height / 100)}px`,
+                        width: `${cropSelection.width * cropOverlayBounds.width / 100}px`,
+                        height: `${cropSelection.height * cropOverlayBounds.height / 100}px`
+                    }}
+                >
                     <div style={{
                         position: 'absolute',
-                        top: '10px',
-                        left: '10px',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
                         color: 'white',
-                        fontSize: '14px',
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: '8px 12px',
-                        borderRadius: '6px',
-                        pointerEvents: 'none'
+                        fontSize: '12px',
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        whiteSpace: 'nowrap'
                     }}>
-                        Click and drag on the photo to select crop area
+                        {Math.round(cropSelection.width)}% × {Math.round(cropSelection.height)}%
                     </div>
                 </div>
-            )}
-            <div className="photo-info-tabs">
-                <div className="tab-header">
-                    <button 
-                        className={activeTab === "info" ? "tab-button active" : "tab-button"}
-                        onClick={() => setActiveTab("info")}
-                    >
-                        📷 Info
-                    </button>
-                    <button 
-                        className={activeTab === "editor" ? "tab-button active" : "tab-button"}
-                        onClick={() => setActiveTab("editor")}
-                    >
-                        🎨 Editor
-                    </button>
+                
+                <div style={{
+                    position: 'absolute',
+                    top: '10px',
+                    left: '10px',
+                    color: 'white',
+                    fontSize: '14px',
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    pointerEvents: 'none'
+                }}>
+                    Click and drag on the photo to select crop area
                 </div>
             </div>
-            {props.currentPhotoPath && props.showSideMenu && (
-                <div className="tab-content">
-                    {activeTab === "info" && (
-                        <div className="info-tab">
-                            <table>
-                                <tbody>
-                                    <tr><th>File Name</th>
-                                        <td>
-                                            <a href="#" onClick={() => {
-                                                writeText(props.currentPhotoPath);
-                                                props.addFooterMessage("clipboard", "Copy file path to clipboard", false, 5000);
-                                            }}>📋</a>
-                                            <a
-                                                onMouseEnter={() => { props.addFooterMessage("current_phtoo_path", "File Path: " + props.currentPhotoPath, false, 10000) }}>
-                                                {props.currentPhotoPath.replace(/^.+\//, '')}
-                                            </a>
-                                        </td></tr>
-                                    <tr><th>ISO</th><td>{photoInfo.exif ? photoInfo.exif.iso : ""}</td></tr>
-                                    <tr><th>FNumber</th><td>{photoInfo.exif ? photoInfo.exif.fnumber : ""}</td></tr>
-                                    <tr><th>Shutter Speed</th><td>{photoInfo.exif ? photoInfo.exif.exposure_time : ""}</td></tr>
-                                    <tr><th>LensModel</th><td>{photoInfo.exif ? photoInfo.exif.lens_model : ""}</td></tr>
-                                    <tr><th>LensMake</th><td>{photoInfo.exif ? photoInfo.exif.lens_make : ""}</td></tr>
-                                    <tr><th>Make</th><td>{photoInfo.exif ? photoInfo.exif.make : ""}</td></tr>
-                                    <tr><th>Model</th><td>{photoInfo.exif ? photoInfo.exif.model : ""}</td></tr>
-                                    <tr><th>Date & Time</th><td>{photoInfo.exif ? photoInfo.exif.date_time : ""}</td></tr>
-                                    <tr><th>Focal Length</th><td>{photoInfo.exif ?
-                                        photoInfo.exif.focal_length == photoInfo.exif.focal_length_in35mm_film
-                                            ? photoInfo.exif.focal_length
-                                            : photoInfo.exif.focal_length + "(" + photoInfo.exif.focal_length_in35mm_film + ")" : ""}
-                                    </td></tr>
-                                    <tr><th>Digital Zoom Ratio</th><td>{photoInfo.exif ? photoInfo.exif.digital_zoom_ratio : ""}</td></tr>
-                                    <tr><th>Exposure Mode</th><td>{photoInfo.exif ? photoInfo.exif.exposure_mode : ""}</td></tr>
-                                    <tr><th>WhiteBalance Mode</th><td>{photoInfo.exif ? photoInfo.exif.white_balance_mode : ""}</td></tr>
-                                    <tr><th>Orientation</th><td>{photoInfo.exif ? photoInfo.exif.orientation : ""}</td></tr>
-                                </tbody>
-                            </table>
-                            <div>
-                                Stars:
-                                <span className="star">
-                                    {
-                                        [0, 1, 2, 3, 4].map((v, i) => {
-                                            return <a key={i} href="#" value={v} onClick={() => { toggleStar(v) }}>{props.star[i] ? "★" : "☆"}</a>
-                                        })
-                                    }
-                                </span>
+        );
+    };
+
+    return (
+        <>
+            {renderCropOverlay()}
+            <div className="editor-tab">
+                <div className="photo-info-editor">
+                    <div className="editor-controls">
+                        <div className="editor-control">
+                            <div className="control-row">
+                                <label>Rotation (deg):</label>
+                                <input type="range" min="0" max="360" value={editorStyles.rotate}
+                                       className="editor-slider" onChange={(e) => updateStyle('rotate', e.target.value)} />
+                                <input type="number" min="0" max="360" value={editorStyles.rotate}
+                                       className="value-input" onChange={(e) => updateStyle('rotate', e.target.value)} />
+                                <button className="reset-btn" onClick={() => resetSingleControl('rotate')} title="Reset rotation">↻</button>
                             </div>
-                            <div className="comment">
-                                Comment:<br />
-                                <textarea
-                                    onChange={(e) => setComment(e.target.value)}
-                                    value={comment}>
-                                </textarea>
-                                <button onClick={() => saveComment()}>SAVE</button>
+                            <div className="rotation-shortcuts">
+                                <button className="shortcut-btn" onClick={() => rotateBy(-90)} title="Turn left 90°">↶ 90°</button>
+                                <button className="shortcut-btn" onClick={() => rotateBy(90)} title="Turn right 90°">↷ 90°</button>
                             </div>
                         </div>
-                    )}
-                    {activeTab === "editor" && (
-                        <div className="editor-tab">
-                            <div className="photo-info-editor">
-                                <div className="editor-controls">
-                                    <div className="editor-control">
-                                        <div className="control-row">
-                                            <label>Rotation (deg):</label>
-                                            <input type="range" min="0" max="360" value={editorStyles.rotate}
-                                                   id="rotate-slider" onChange={(e) => updateStyle('rotate', e.target.value)} />
-                                            <input type="number" min="0" max="360" value={editorStyles.rotate}
-                                                   id="rotate-input" className="value-input"
-                                                   onChange={(e) => updateStyle('rotate', e.target.value)} />
-                                            <span id="rotate-value">{editorStyles.rotate}</span>
-                                            <button className="reset-btn" onClick={() => resetSingleControl('rotate')} title="Reset rotation">↻</button>
-                                        </div>
-                                        <div className="rotation-shortcuts">
-                                            <button className="shortcut-btn" onClick={() => rotateBy(-90)} title="Turn left 90°">↶ 90°</button>
-                                            <button className="shortcut-btn" onClick={() => rotateBy(90)} title="Turn right 90°">↷ 90°</button>
-                                        </div>
-                                    </div>
-                                    <div className="editor-control">
-                                        <div className="control-row">
-                                            <label>Brightness:</label>
-                                            <input type="range" min="0" max="200" value={editorStyles.brightness}
-                                                   id="brightness-slider" onChange={(e) => updateStyle('brightness', e.target.value)} />
-                                            <input type="number" min="0" max="200" value={editorStyles.brightness}
-                                                   id="brightness-input" className="value-input"
-                                                   onChange={(e) => updateStyle('brightness', e.target.value)} />
-                                            <span id="brightness-value">{editorStyles.brightness}</span>
-                                            <button className="reset-btn" onClick={() => resetSingleControl('brightness')} title="Reset brightness">↻</button>
-                                        </div>
-                                    </div>
-                                    <div className="editor-control">
-                                        <div className="control-row">
-                                            <label>Contrast:</label>
-                                            <input type="range" min="0" max="200" value={editorStyles.contrast}
-                                                   id="contrast-slider" onChange={(e) => updateStyle('contrast', e.target.value)} />
-                                            <input type="number" min="0" max="200" value={editorStyles.contrast}
-                                                   id="contrast-input" className="value-input"
-                                                   onChange={(e) => updateStyle('contrast', e.target.value)} />
-                                            <span id="contrast-value">{editorStyles.contrast}</span>
-                                            <button className="reset-btn" onClick={() => resetSingleControl('contrast')} title="Reset contrast">↻</button>
-                                        </div>
-                                    </div>
-                                    <div className="editor-control">
-                                        <div className="control-row">
-                                            <label>Saturation:</label>
-                                            <input type="range" min="0" max="200" value={editorStyles.saturation}
-                                                   id="saturation-slider" onChange={(e) => updateStyle('saturation', e.target.value)} />
-                                            <input type="number" min="0" max="200" value={editorStyles.saturation}
-                                                   id="saturation-input" className="value-input"
-                                                   onChange={(e) => updateStyle('saturation', e.target.value)} />
-                                            <span id="saturation-value">{editorStyles.saturation}</span>
-                                            <button className="reset-btn" onClick={() => resetSingleControl('saturation')} title="Reset saturation">↻</button>
-                                        </div>
-                                    </div>
-                                    <div className="editor-control">
-                                        <div className="control-row">
-                                            <label>Hue (deg):</label>
-                                            <input type="range" min="0" max="360" value={editorStyles.hue}
-                                                   id="hue-slider" onChange={(e) => updateStyle('hue', e.target.value)} />
-                                            <input type="number" min="0" max="360" value={editorStyles.hue}
-                                                   id="hue-input" className="value-input"
-                                                   onChange={(e) => updateStyle('hue', e.target.value)} />
-                                            <span id="hue-value">{editorStyles.hue}</span>
-                                            <button className="reset-btn" onClick={() => resetSingleControl('hue')} title="Reset hue">↻</button>
-                                        </div>
-                                    </div>
-                                    <div className="editor-control">
-                                        <div className="control-row">
-                                            <label>Scale:</label>
-                                            <input type="range" min="50" max="200" value={editorStyles.scale}
-                                                   id="scale-slider" onChange={(e) => updateStyle('scale', e.target.value)} />
-                                            <input type="number" min="50" max="200" value={editorStyles.scale}
-                                                   id="scale-input" className="value-input"
-                                                   onChange={(e) => updateStyle('scale', e.target.value)} />
-                                            <span id="scale-value">{editorStyles.scale}</span>
-                                            <button className="reset-btn" onClick={() => resetSingleControl('scale')} title="Reset scale">↻</button>
-                                        </div>
-                                    </div>
-                                    <div className="editor-control crop-control">
-                                        <div className="control-row">
-                                            <label>Crop:</label>
-                                            {!cropMode ? (
-                                                <button className="action-btn" onClick={enterCropMode}>Crop</button>
-                                            ) : (
-                                                <div className="crop-buttons">
-                                                    <button className="action-btn" onClick={applyCrop}>Done</button>
-                                                    <button className="action-btn" onClick={exitCropMode}>Cancel</button>
-                                                </div>
-                                            )}
-                                        </div>
-                                        {cropMode && (
-                                            <div className="crop-presets">
-                                                <label>Presets:</label>
-                                                <div className="preset-buttons">
-                                                    {cropPresets.map((preset, index) => (
-                                                        <button
-                                                            key={index}
-                                                            className="preset-btn"
-                                                            onClick={() => setCropPreset(preset)}
-                                                            title={`Set crop to ${preset.name}`}
-                                                        >
-                                                            {preset.name}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="editor-buttons">
-                                    <button className="action-btn" onClick={() => applyStyle()}>Apply</button>
-                                    <button className="action-btn" onClick={() => saveAsCopy()}>Save As Copy</button>
-                                    <button className="action-btn" onClick={() => resetStyle()}>Reset</button>
-                                    <button className="action-btn" onClick={() => downloadStyled()}>Download</button>
-                                </div>
-                                <div className="css-preview">
-                                    <label>CSS Preview:</label>
-                                    <textarea id="css-preview-text" rows="4" readOnly></textarea>
-                                </div>
+                        <div className="editor-control">
+                            <div className="control-row">
+                                <label>Brightness:</label>
+                                <input type="range" min="0" max="200" value={editorStyles.brightness}
+                                       className="editor-slider" onChange={(e) => updateStyle('brightness', e.target.value)} />
+                                <input type="number" min="0" max="200" value={editorStyles.brightness}
+                                       className="value-input" onChange={(e) => updateStyle('brightness', e.target.value)} />
+                                <button className="reset-btn" onClick={() => resetSingleControl('brightness')} title="Reset brightness">↻</button>
                             </div>
                         </div>
-                    )}
+                        <div className="editor-control">
+                            <div className="control-row">
+                                <label>Contrast:</label>
+                                <input type="range" min="0" max="200" value={editorStyles.contrast}
+                                       className="editor-slider" onChange={(e) => updateStyle('contrast', e.target.value)} />
+                                <input type="number" min="0" max="200" value={editorStyles.contrast}
+                                       className="value-input" onChange={(e) => updateStyle('contrast', e.target.value)} />
+                                <button className="reset-btn" onClick={() => resetSingleControl('contrast')} title="Reset contrast">↻</button>
+                            </div>
+                        </div>
+                        <div className="editor-control">
+                            <div className="control-row">
+                                <label>Saturation:</label>
+                                <input type="range" min="0" max="200" value={editorStyles.saturation}
+                                       className="editor-slider" onChange={(e) => updateStyle('saturation', e.target.value)} />
+                                <input type="number" min="0" max="200" value={editorStyles.saturation}
+                                       className="value-input" onChange={(e) => updateStyle('saturation', e.target.value)} />
+                                <button className="reset-btn" onClick={() => resetSingleControl('saturation')} title="Reset saturation">↻</button>
+                            </div>
+                        </div>
+                        <div className="editor-control">
+                            <div className="control-row">
+                                <label>Hue (deg):</label>
+                                <input type="range" min="0" max="360" value={editorStyles.hue}
+                                       className="editor-slider" onChange={(e) => updateStyle('hue', e.target.value)} />
+                                <input type="number" min="0" max="360" value={editorStyles.hue}
+                                       className="value-input" onChange={(e) => updateStyle('hue', e.target.value)} />
+                                <button className="reset-btn" onClick={() => resetSingleControl('hue')} title="Reset hue">↻</button>
+                            </div>
+                        </div>
+                        <div className="editor-control">
+                            <div className="control-row">
+                                <label>Scale:</label>
+                                <input type="range" min="50" max="200" value={editorStyles.scale}
+                                       className="editor-slider" onChange={(e) => updateStyle('scale', e.target.value)} />
+                                <input type="number" min="50" max="200" value={editorStyles.scale}
+                                       className="value-input" onChange={(e) => updateStyle('scale', e.target.value)} />
+                                <button className="reset-btn" onClick={() => resetSingleControl('scale')} title="Reset scale">↻</button>
+                            </div>
+                        </div>
+                        <div className="editor-control crop-control">
+                            <div className="control-row">
+                                <label>Crop:</label>
+                                {!cropMode ? (
+                                    <button className="action-btn" onClick={enterCropMode}>Crop</button>
+                                ) : (
+                                    <div className="crop-buttons">
+                                        <button className="action-btn" onClick={applyCrop}>Done</button>
+                                        <button className="action-btn" onClick={exitCropMode}>Cancel</button>
+                                    </div>
+                                )}
+                            </div>
+                            {cropMode && (
+                                <div className="crop-presets">
+                                    <label>Presets:</label>
+                                    <div className="preset-buttons">
+                                        {cropPresets.map((preset, index) => (
+                                            <button
+                                                key={index}
+                                                className="preset-btn"
+                                                onClick={() => setCropPreset(preset)}
+                                                title={`Set crop to ${preset.name}`}
+                                            >
+                                                {preset.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="editor-buttons">
+                        <button className="action-btn" onClick={() => applyStyle()}>Apply</button>
+                        <button className="action-btn" onClick={() => saveAsCopy()}>Save As Copy</button>
+                        <button className="action-btn" onClick={() => resetStyle()}>Reset</button>
+                        <button className="action-btn" onClick={() => downloadStyled()}>Download</button>
+                    </div>
+                    <div className="css-preview">
+                        <label>CSS Preview:</label>
+                        <textarea id="css-preview-text" rows="4" readOnly className="css-preview-textarea"></textarea>
+                    </div>
                 </div>
-            )}
-        </>);
+            </div>
+        </>
+    );
 }
 
-export default PhotoInfo;
+export default PhotoEditor;

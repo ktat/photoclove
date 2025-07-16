@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import PhotosListMini from "./PhotosList/PhotosListMini.jsx";
-import PhotoInfo from "./PhotosList/PhotoInfo.jsx";
+import PhotoOption from "./PhotosList/PhotoOption.jsx";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import PhotoLoading from "./PhotosList/PhotoLoading.jsx";
 import DirectoryMenu from "./PhotosList/DirectoryMenu.jsx";
@@ -583,7 +583,7 @@ function PhotosList(props) {
         }
         <div className={(showSideMenu || !currentPhotoPath) ? "rightMenu" : "rightMenu-close"}>
             <div style={{ display: (props.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
-                <PhotoInfo
+                <PhotoOption
                     setShowSideMenu={setShowSideMenu}
                     showSideMenu={showSideMenu}
                     currentPhotoPath={currentPhotoPath}

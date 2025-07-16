@@ -1363,6 +1363,8 @@ a.run-app {
 .info-tab,
 .editor-tab {
   width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 /* Editor-specific styles within tab */
@@ -1855,6 +1857,9 @@ a.run-app {
     font-family: monospace;
     font-size: 12px;
     resize: vertical;
+    box-sizing: border-box;
+    overflow-x: auto;
+    word-wrap: break-word;
 }
 
 /* Enhanced Editor Controls */
@@ -1866,7 +1871,7 @@ a.run-app {
 }
 
 .editor-tab .control-row input[type="range"] {
-    width: 110px;
+    width: 90px;
     flex: none;
 }
 
