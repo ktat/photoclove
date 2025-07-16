@@ -428,6 +428,7 @@ function PhotoInfo(props) {
                 const originalStyle = {
                     transform: mainImage.style.transform || '',
                     filter: mainImage.style.filter || '',
+                    clipPath: mainImage.style.clipPath || '',
                     cssText: mainImage.style.cssText || ''
                 };
                 // Use callback to ensure immediate update
@@ -487,6 +488,7 @@ function PhotoInfo(props) {
                         const originalStyle = {
                             transform: img.style.transform || '',
                             filter: img.style.filter || '',
+                            clipPath: img.style.clipPath || '',
                             cssText: img.style.cssText || ''
                         };
                         setOriginalStyles(prev => new Map(prev.set(key, originalStyle)));
@@ -774,9 +776,11 @@ function PhotoInfo(props) {
             if (originalStyle) {
                 mainImage.style.transform = originalStyle.transform;
                 mainImage.style.filter = originalStyle.filter;
+                mainImage.style.clipPath = originalStyle.clipPath || '';
             } else {
                 mainImage.style.transform = '';
                 mainImage.style.filter = '';
+                mainImage.style.clipPath = '';
             }
         }
         
@@ -789,9 +793,11 @@ function PhotoInfo(props) {
                 if (originalStyle) {
                     img.style.transform = originalStyle.transform;
                     img.style.filter = originalStyle.filter;
+                    img.style.clipPath = originalStyle.clipPath || '';
                 } else {
                     img.style.transform = '';
                     img.style.filter = '';
+                    img.style.clipPath = '';
                 }
             });
         };
