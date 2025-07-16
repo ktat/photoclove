@@ -6,7 +6,15 @@ import PickFolderSingle from "../FolderPicker.jsx";
 
 
 function Preferences(props) {
-    const [config, setConfig] = useState({ export_from: [] });
+    const [config, setConfig] = useState({ 
+        export_from: [],
+        copy_parallel: '',
+        thumbnail_parallel: '',
+        thumbnail_compression_quality: '',
+        thumbnail_ratio: '',
+        thumbnail_ignore_file_size: '',
+        use_count: 0
+    });
     const [additionalExportFrom, setAdditionalExportFrom] = useState(0);
     const [configLoaded, setConfigLoaded] = useState(false);
     const [useCount, setUseCount] = useState(-1);
@@ -127,7 +135,7 @@ function Preferences(props) {
                         }
                     } />
                 <div className="row1"></div><div className="row1">CompressQuality: </div><div className="row4">
-                    <select value={config.thumbnail_compression_quality} onChange={(e) => { config.thumbnail_compression_quality = parseFloat(e.currentTarget.value); setNewConfig(config) }}>
+                    <select value={config.thumbnail_compression_quality || ''} onChange={(e) => { config.thumbnail_compression_quality = parseFloat(e.currentTarget.value); setNewConfig(config) }}>
                         {[1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50].map((v, i) => {
                             return (
                                 <option key={i} value={v / 100}>{v}%</option>
@@ -136,7 +144,7 @@ function Preferences(props) {
                     </select>
                 </div>
                 <div className="row1"></div><div className="row1">MinimizeRatio: </div><div className="row4">
-                    <select value={config.thumbnail_ratio} onChange={(e) => { config.thumbnail_ratio = parseFloat(e.currentTarget.value); setNewConfig(config) }}>
+                    <select value={config.thumbnail_ratio || ''} onChange={(e) => { config.thumbnail_ratio = parseFloat(e.currentTarget.value); setNewConfig(config) }}>
                         {[1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50].map((v, i) => {
                             return (
                                 <option key={i} value={v / 100}>{v}%</option>
@@ -145,7 +153,7 @@ function Preferences(props) {
                     </select>
                 </div>
                 <div className="row1"></div><div className="row1">IgnoreFileSize: </div><div className="row4">
-                    <select value={config.thumbnail_ignore_file_size} onChange={(e) => { config.thumbnail_ignore_file_size = parseFloat(e.currentTarget.value); setNewConfig(config) }}>
+                    <select value={config.thumbnail_ignore_file_size || ''} onChange={(e) => { config.thumbnail_ignore_file_size = parseFloat(e.currentTarget.value); setNewConfig(config) }}>
                         {[0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((v, i) => {
                             return (
                                 <option key={i} value={1024 * 1024 * v}>{v}MB</option>
@@ -154,8 +162,8 @@ function Preferences(props) {
                     </select>
                 </div>
                 <div className="row0">Num of Parallel:</div>
-                <div className="row1"></div><div className="row1">Import: </div><div className="row4"><input value={config.copy_parallel} type="number" step="1" onChange={(e) => { config.copy_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
-                <div className="row1"></div><div className="row1">Thumbnail: </div><div className="row4"><input value={config.thumbnail_parallel} type="number" step="1" onChange={(e) => { config.thumbnail_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
+                <div className="row1"></div><div className="row1">Import: </div><div className="row4"><input value={config.copy_parallel || ''} type="number" step="1" onChange={(e) => { config.copy_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
+                <div className="row1"></div><div className="row1">Thumbnail: </div><div className="row4"><input value={config.thumbnail_parallel || ''} type="number" step="1" onChange={(e) => { config.thumbnail_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
                 <div className="row2"></div>
                 <div className="row0">
                     <input type="checkbox" id="preference-check" value="1" onChange={(e) => { config.use_count = e.target.checked ? 0 : useCount; setNewConfig(config) }} />

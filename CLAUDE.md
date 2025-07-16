@@ -8,7 +8,7 @@ Before starting task, create branch from current branch.
 And `*.md` file which you did move the file to `improvement/done` directory.
 At last commit your changes to the branch.
 
-If `improvement/*.md` are left, repeat this step.
+If `improvement/*.md` are left, repeat this step and clear context if "keep context" is not written at the last line of `*.md` file.
 
 When all tasks are finished, do "Update Document WorkFlow" written in the next section.
 

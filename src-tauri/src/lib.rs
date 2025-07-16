@@ -787,14 +787,15 @@ async fn open_file_in_default_app(file_path: &str) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn save_styled_copy(
-    photo_path: &str,
+async fn save_styled_copy_from_frontend(
+    original_photo_path: &str,
     css_style: &str,
+    image_data: &str,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
     use std::path::Path;
     use sha2::{Sha256, Digest};
-    use image::ImageFormat;
+    use std::fs;
     
     // 1. Generate SHA256 hash of normalized CSS
     let normalized_css = normalize_css_style(css_style);
@@ -804,18 +805,15 @@ async fn save_styled_copy(
     let short_hash = &css_hash[..12]; // Use first 12 chars
     
     // 2. Parse original photo path
-    let original_path = Path::new(photo_path);
+    let original_path = Path::new(original_photo_path);
     let parent_dir = original_path.parent()
         .ok_or_else(|| "Cannot get parent directory".to_string())?;
     let original_name = original_path.file_stem()
         .ok_or_else(|| "Cannot get file name".to_string())?
         .to_string_lossy();
-    let extension = original_path.extension()
-        .and_then(|ext| ext.to_str())
-        .unwrap_or("jpg");
     
     // 3. Create new filename with hash
-    let new_filename = format!("{}-{}.{}", original_name, short_hash, extension);
+    let new_filename = format!("{}-{}.jpg", original_name, short_hash);
     let new_path = parent_dir.join(&new_filename);
     let new_path_str = new_path.to_string_lossy().to_string();
     
@@ -824,32 +822,28 @@ async fn save_styled_copy(
         return Ok(new_path_str);
     }
     
-    // 5. Load and process the original image
-    let original_image = image::open(original_path)
-        .map_err(|e| format!("Failed to load image: {}", e))?;
+    // 5. Decode base64 image data and save
+    use base64::{Engine as _, engine::general_purpose};
+    let image_bytes = general_purpose::STANDARD.decode(image_data)
+        .map_err(|e| format!("Failed to decode image data: {}", e))?;
     
-    // 6. Apply CSS styles to the image
-    let styled_image = apply_css_to_image(original_image, css_style)
-        .map_err(|e| format!("Failed to apply styles: {}", e))?;
+    fs::write(&new_path, image_bytes)
+        .map_err(|e| format!("Failed to write image file: {}", e))?;
     
-    // 7. Save the styled image
-    styled_image.save_with_format(&new_path, ImageFormat::Jpeg)
-        .map_err(|e| format!("Failed to save styled image: {}", e))?;
-    
-    // 8. Create Photo object and add to database
+    // 6. Create Photo object and add to database
     let new_file = file::File::new(new_path_str.clone());
     let mut new_photo = photo::Photo::new(new_file, Some(state.config.clone()));
     new_photo.load_exif();
     
-    // 9. Set initial metadata (copy from original photo if exists)
+    // 7. Set initial metadata (copy from original photo if exists)
     let meta_db = &state.meta_db;
-    let original_photo = photo::Photo::new(file::File::new(photo_path.to_string()), None);
+    let original_photo = photo::Photo::new(file::File::new(original_photo_path.to_string()), None);
     let original_meta = meta_db.get_photo_meta(original_photo);
     
     // Extract date for thumbnail generation before consuming new_photo
     let photo_dir_date = new_photo.get_imported_dir_date(state.config.import_to.clone());
     
-    // 10. Record the new photo in database
+    // 8. Record the new photo in database
     match meta_db.record_photos_meta_data(vec![new_photo]) {
         Ok(_) => {
             // Copy star rating and comment from original
@@ -867,7 +861,7 @@ async fn save_styled_copy(
         }
     }
     
-    // 11. Generate thumbnail using existing thumbnail infrastructure
+    // 9. Generate thumbnail using existing thumbnail infrastructure
     let config = state.config.clone();
     let import_path = std::path::PathBuf::from(&config.import_to);
     let thumbnail_path = std::path::PathBuf::from(&config.thumbnail_store);
@@ -925,203 +919,6 @@ fn normalize_css_style(css: &str) -> String {
     normalized
 }
 
-fn apply_css_to_image(image: image::DynamicImage, css_style: &str) -> Result<image::DynamicImage, String> {
-    // Parse CSS style to extract values
-    let mut rotate = 0f32;
-    let mut brightness = 1.0f32;
-    let mut contrast = 1.0f32;
-    let mut saturation = 1.0f32;
-    let mut hue_rotate = 0f32;
-    let mut scale = 1.0f32;
-    
-    // Parse transform property
-    if let Some(transform_match) = regex::Regex::new(r"transform:\s*([^;]+)")
-        .unwrap()
-        .captures(css_style) {
-        let transform_value = transform_match.get(1).unwrap().as_str();
-        
-        // Parse rotation
-        if let Some(rotate_match) = regex::Regex::new(r"rotate\((-?\d+(?:\.\d+)?)deg\)")
-            .unwrap()
-            .captures(transform_value) {
-            rotate = rotate_match.get(1).unwrap().as_str().parse().unwrap_or(0.0);
-        }
-        
-        // Parse scale
-        if let Some(scale_match) = regex::Regex::new(r"scale\((\d+(?:\.\d+)?)\)")
-            .unwrap()
-            .captures(transform_value) {
-            scale = scale_match.get(1).unwrap().as_str().parse().unwrap_or(1.0);
-        }
-    }
-    
-    // Parse filter property
-    if let Some(filter_match) = regex::Regex::new(r"filter:\s*([^;]+)")
-        .unwrap()
-        .captures(css_style) {
-        let filter_value = filter_match.get(1).unwrap().as_str();
-        
-        // Parse brightness
-        if let Some(brightness_match) = regex::Regex::new(r"brightness\((\d+(?:\.\d+)?)%\)")
-            .unwrap()
-            .captures(filter_value) {
-            brightness = brightness_match.get(1).unwrap().as_str().parse::<f32>().unwrap_or(100.0) / 100.0;
-        }
-        
-        // Parse contrast
-        if let Some(contrast_match) = regex::Regex::new(r"contrast\((\d+(?:\.\d+)?)%\)")
-            .unwrap()
-            .captures(filter_value) {
-            contrast = contrast_match.get(1).unwrap().as_str().parse::<f32>().unwrap_or(100.0) / 100.0;
-        }
-        
-        // Parse saturation
-        if let Some(saturation_match) = regex::Regex::new(r"saturate\((\d+(?:\.\d+)?)%\)")
-            .unwrap()
-            .captures(filter_value) {
-            saturation = saturation_match.get(1).unwrap().as_str().parse::<f32>().unwrap_or(100.0) / 100.0;
-        }
-        
-        // Parse hue rotation
-        if let Some(hue_match) = regex::Regex::new(r"hue-rotate\((-?\d+(?:\.\d+)?)deg\)")
-            .unwrap()
-            .captures(filter_value) {
-            hue_rotate = hue_match.get(1).unwrap().as_str().parse().unwrap_or(0.0);
-        }
-    }
-    
-    let mut result_image = image;
-    
-    // Apply scaling first
-    if scale != 1.0 {
-        let new_width = (result_image.width() as f32 * scale) as u32;
-        let new_height = (result_image.height() as f32 * scale) as u32;
-        result_image = result_image.resize(new_width, new_height, image::imageops::FilterType::Lanczos3);
-    }
-    
-    // Apply rotation
-    if rotate != 0.0 {
-        let rotate_90s = ((rotate / 90.0).round() as i32) % 4;
-        for _ in 0..rotate_90s.abs() {
-            result_image = if rotate_90s > 0 {
-                result_image.rotate90()
-            } else {
-                result_image.rotate270()
-            };
-        }
-    }
-    
-    // Apply color adjustments
-    if brightness != 1.0 || contrast != 1.0 || saturation != 1.0 || hue_rotate != 0.0 {
-        result_image = apply_color_adjustments(result_image, brightness, contrast, saturation, hue_rotate)?;
-    }
-    
-    Ok(result_image)
-}
-
-fn apply_color_adjustments(
-    image: image::DynamicImage,
-    brightness: f32,
-    contrast: f32,
-    saturation: f32,
-    hue_rotate: f32,
-) -> Result<image::DynamicImage, String> {
-    use image::Rgba;
-    
-    let mut rgba_image = image.to_rgba8();
-    let (width, height) = rgba_image.dimensions();
-    
-    for y in 0..height {
-        for x in 0..width {
-            let pixel = rgba_image.get_pixel_mut(x, y);
-            let Rgba([r, g, b, a]) = *pixel;
-            
-            let mut rf = r as f32 / 255.0;
-            let mut gf = g as f32 / 255.0;
-            let mut bf = b as f32 / 255.0;
-            
-            // Apply brightness
-            if brightness != 1.0 {
-                rf *= brightness;
-                gf *= brightness;
-                bf *= brightness;
-            }
-            
-            // Apply contrast
-            if contrast != 1.0 {
-                rf = ((rf - 0.5) * contrast + 0.5).max(0.0).min(1.0);
-                gf = ((gf - 0.5) * contrast + 0.5).max(0.0).min(1.0);
-                bf = ((bf - 0.5) * contrast + 0.5).max(0.0).min(1.0);
-            }
-            
-            // Apply saturation and hue rotation (simplified)
-            if saturation != 1.0 || hue_rotate != 0.0 {
-                // Convert to HSV for saturation and hue adjustments
-                let (h, s, v) = rgb_to_hsv(rf, gf, bf);
-                let new_h = (h + hue_rotate / 360.0) % 1.0;
-                let new_s = (s * saturation).max(0.0).min(1.0);
-                let (new_r, new_g, new_b) = hsv_to_rgb(new_h, new_s, v);
-                rf = new_r;
-                gf = new_g;
-                bf = new_b;
-            }
-            
-            // Clamp and convert back to u8
-            let new_r = (rf * 255.0).max(0.0).min(255.0) as u8;
-            let new_g = (gf * 255.0).max(0.0).min(255.0) as u8;
-            let new_b = (bf * 255.0).max(0.0).min(255.0) as u8;
-            
-            *pixel = Rgba([new_r, new_g, new_b, a]);
-        }
-    }
-    
-    Ok(image::DynamicImage::ImageRgba8(rgba_image))
-}
-
-fn rgb_to_hsv(r: f32, g: f32, b: f32) -> (f32, f32, f32) {
-    let max = r.max(g.max(b));
-    let min = r.min(g.min(b));
-    let delta = max - min;
-    
-    let v = max;
-    let s = if max == 0.0 { 0.0 } else { delta / max };
-    
-    let h = if delta == 0.0 {
-        0.0
-    } else if max == r {
-        ((g - b) / delta) / 6.0
-    } else if max == g {
-        (2.0 + (b - r) / delta) / 6.0
-    } else {
-        (4.0 + (r - g) / delta) / 6.0
-    };
-    
-    let h = if h < 0.0 { h + 1.0 } else { h };
-    
-    (h, s, v)
-}
-
-fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (f32, f32, f32) {
-    let c = v * s;
-    let x = c * (1.0 - ((h * 6.0) % 2.0 - 1.0).abs());
-    let m = v - c;
-    
-    let (r_prime, g_prime, b_prime) = if h < 1.0 / 6.0 {
-        (c, x, 0.0)
-    } else if h < 2.0 / 6.0 {
-        (x, c, 0.0)
-    } else if h < 3.0 / 6.0 {
-        (0.0, c, x)
-    } else if h < 4.0 / 6.0 {
-        (0.0, x, c)
-    } else if h < 5.0 / 6.0 {
-        (x, 0.0, c)
-    } else {
-        (c, 0.0, x)
-    };
-    
-    (r_prime + m, g_prime + m, b_prime + m)
-}
 
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -1263,7 +1060,7 @@ pub fn run() {
             get_css_style,
             get_download_dir,
             open_file_in_default_app,
-            save_styled_copy,
+            save_styled_copy_from_frontend,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

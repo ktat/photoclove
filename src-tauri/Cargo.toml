@@ -46,6 +46,7 @@ uuid = { version = "1.0", features = ["v1", "v4"] }
 sha2 = "0.10.9"
 image = "0.24"
 tokio = { version = "1.0", features = ["full"] }
+base64 = "0.21"
 # tauri-plugin-shell = "2"
 # turbojpeg-sys = {version = "0.2.3", features = ["bindgen"] }
 # turbojpeg = {version = "0.5", features = ["image"] }

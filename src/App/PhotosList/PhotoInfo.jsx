@@ -506,19 +506,191 @@ function PhotoInfo(props) {
         try {
             props.addFooterMessage('editor', 'Creating styled copy...', false, 2000);
             
-            const newPhotoPath = await invoke('save_styled_copy', {
-                photoPath: props.currentPhotoPath,
-                cssStyle: css
-            });
-            
-            // Extract filename from path for display
-            const newFilename = newPhotoPath.split('/').pop();
-            props.addFooterMessage('editor', `Styled copy created: ${newFilename}`, false, 5000);
-            
-            // Optionally refresh the photo list to show the new image
-            if (props.onPhotosRefresh) {
-                props.onPhotosRefresh();
+            // Use the same canvas logic as downloadStyled() to create the image
+            const mainImage = document.querySelector('#photoImgTag');
+            if (!mainImage) {
+                props.addFooterMessage('editor', 'Photo not found', false, 3000);
+                return;
             }
+            
+            // Create a canvas to render the styled image
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size to match image, but limit to reasonable size to prevent memory issues
+            const maxSize = 4096; // Max 4K resolution
+            let width = mainImage.naturalWidth || mainImage.width;
+            let height = mainImage.naturalHeight || mainImage.height;
+            
+            if (width > maxSize || height > maxSize) {
+                const scale = Math.min(maxSize / width, maxSize / height);
+                width = Math.floor(width * scale);
+                height = Math.floor(height * scale);
+                console.log(`Resizing image from ${mainImage.naturalWidth}x${mainImage.naturalHeight} to ${width}x${height}`);
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Create a new image with applied styles
+            const tempImg = new Image();
+            tempImg.crossOrigin = 'anonymous';
+            
+            tempImg.onload = async function() {
+                // Parse and apply transforms from editor styles (same as downloadStyled)
+                const { rotate, brightness, contrast, saturation, hue, scale } = editorStyles;
+                
+                // First, draw the image to a temporary canvas to apply filters
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = tempImg.width;
+                tempCanvas.height = tempImg.height;
+                
+                // Draw the original image
+                tempCtx.drawImage(tempImg, 0, 0);
+                
+                // Apply filters by manipulating image data if needed
+                if (brightness !== 100 || contrast !== 100 || saturation !== 100 || hue !== 0) {
+                    const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                    const data = imageData.data;
+                    
+                    // Apply brightness, contrast, saturation, and hue adjustments
+                    for (let i = 0; i < data.length; i += 4) {
+                        let r = data[i];
+                        let g = data[i + 1];
+                        let b = data[i + 2];
+                        
+                        // Apply brightness (simple multiplication)
+                        if (brightness !== 100) {
+                            const brightnessMultiplier = brightness / 100;
+                            r = Math.min(255, r * brightnessMultiplier);
+                            g = Math.min(255, g * brightnessMultiplier);
+                            b = Math.min(255, b * brightnessMultiplier);
+                        }
+                        
+                        // Apply contrast (using formula: (pixel - 128) * contrast + 128)
+                        if (contrast !== 100) {
+                            const contrastMultiplier = contrast / 100;
+                            r = Math.min(255, Math.max(0, (r - 128) * contrastMultiplier + 128));
+                            g = Math.min(255, Math.max(0, (g - 128) * contrastMultiplier + 128));
+                            b = Math.min(255, Math.max(0, (b - 128) * contrastMultiplier + 128));
+                        }
+                        
+                        // Apply saturation (convert to HSL, adjust saturation, convert back)
+                        if (saturation !== 100) {
+                            const saturationMultiplier = saturation / 100;
+                            const max = Math.max(r, g, b);
+                            const min = Math.min(r, g, b);
+                            const delta = max - min;
+                            
+                            if (delta !== 0) {
+                                const avg = (max + min) / 2;
+                                const adjustedDelta = delta * saturationMultiplier;
+                                const factor = adjustedDelta / delta;
+                                
+                                r = Math.min(255, Math.max(0, avg + (r - avg) * factor));
+                                g = Math.min(255, Math.max(0, avg + (g - avg) * factor));
+                                b = Math.min(255, Math.max(0, avg + (b - avg) * factor));
+                            }
+                        }
+                        
+                        // Apply hue rotation (simplified RGB hue shift)
+                        if (hue !== 0) {
+                            const hueRadians = (hue * Math.PI) / 180;
+                            const cosHue = Math.cos(hueRadians);
+                            const sinHue = Math.sin(hueRadians);
+                            
+                            const newR = r * (cosHue + (1 - cosHue) / 3) + g * ((1 - cosHue) / 3 - sinHue * Math.sqrt(1/3)) + b * ((1 - cosHue) / 3 + sinHue * Math.sqrt(1/3));
+                            const newG = r * ((1 - cosHue) / 3 + sinHue * Math.sqrt(1/3)) + g * (cosHue + (1 - cosHue) / 3) + b * ((1 - cosHue) / 3 - sinHue * Math.sqrt(1/3));
+                            const newB = r * ((1 - cosHue) / 3 - sinHue * Math.sqrt(1/3)) + g * ((1 - cosHue) / 3 + sinHue * Math.sqrt(1/3)) + b * (cosHue + (1 - cosHue) / 3);
+                            
+                            r = Math.min(255, Math.max(0, newR));
+                            g = Math.min(255, Math.max(0, newG));
+                            b = Math.min(255, Math.max(0, newB));
+                        }
+                        
+                        data[i] = r;
+                        data[i + 1] = g;
+                        data[i + 2] = b;
+                    }
+                    
+                    tempCtx.putImageData(imageData, 0, 0);
+                }
+                
+                // Now apply transforms (rotation, scale) to the final canvas
+                ctx.save();
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                
+                if (rotate !== 0) {
+                    ctx.rotate((rotate * Math.PI) / 180);
+                }
+                
+                if (scale !== 100) {
+                    const scaleValue = scale / 100;
+                    ctx.scale(scaleValue, scaleValue);
+                }
+                
+                // Draw the filtered image centered
+                ctx.drawImage(tempCanvas, -tempCanvas.width / 2, -tempCanvas.height / 2);
+                ctx.restore();
+                
+                // Convert canvas to blob and send to backend
+                canvas.toBlob(async function(blob) {
+                    try {
+                        // Use FileReader for more reliable base64 conversion
+                        const reader = new FileReader();
+                        reader.onload = async function(e) {
+                            try {
+                                const base64Data = e.target.result.split(',')[1]; // Remove data:image/jpeg;base64, prefix
+                                
+                                // Send to backend to save as copy
+                                const newPhotoPath = await invoke('save_styled_copy_from_frontend', {
+                                    originalPhotoPath: props.currentPhotoPath,
+                                    cssStyle: css,
+                                    imageData: base64Data
+                                });
+                                
+                                // Extract filename from path for display
+                                const newFilename = newPhotoPath.split('/').pop();
+                                props.addFooterMessage('editor', `Styled copy created: ${newFilename}`, false, 5000);
+                                
+                                // Refresh photo list to show the new image
+                                if (props.onPhotosRefresh) {
+                                    props.onPhotosRefresh();
+                                }
+                                
+                                // Since we don't have onDatesRefresh prop, trigger a manual reload
+                                // by emitting an event that the main app can listen to
+                                if (window.dispatchEvent) {
+                                    window.dispatchEvent(new CustomEvent('refreshDates'));
+                                }
+                                
+                            } catch (error) {
+                                console.error('Failed to save styled copy:', error);
+                                props.addFooterMessage('editor', `Failed to create styled copy: ${error}`, false, 5000);
+                            }
+                        };
+                        
+                        reader.onerror = function() {
+                            props.addFooterMessage('editor', 'Failed to process image data', false, 3000);
+                        };
+                        
+                        // Convert blob to base64 using FileReader
+                        reader.readAsDataURL(blob);
+                        
+                    } catch (error) {
+                        console.error('Failed to save styled copy:', error);
+                        props.addFooterMessage('editor', `Failed to create styled copy: ${error}`, false, 5000);
+                    }
+                }, 'image/jpeg', 0.95);
+            };
+            
+            tempImg.onerror = function() {
+                props.addFooterMessage('editor', 'Failed to load image for processing', false, 3000);
+            };
+            
+            // Load the original image
+            tempImg.src = mainImage.src;
             
         } catch (error) {
             console.error('Failed to save styled copy:', error);

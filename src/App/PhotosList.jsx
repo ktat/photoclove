@@ -33,6 +33,7 @@ function PhotosList(props) {
     const [hasCommentFilter, setHasCommentFilter] = useState(false);
     const [extensionFilter, setExtensionFilter] = useState("all");
     const [debugMessage, setDebugMessage] = useState("");
+    const [currentPhotoLoadingController, setCurrentPhotoLoadingController] = useState(null);
 
     // Function to parse CSS style string and convert to style object
     const parseCssStyle = (cssString) => {
@@ -58,6 +59,13 @@ function PhotosList(props) {
             const json = JSON.parse(e);
             setThumbnailStore(json.thumbnail_store);
         });
+        
+        // Cleanup function to cancel any pending photo loading on component unmount
+        return () => {
+            if (currentPhotoLoadingController) {
+                currentPhotoLoadingController.abort();
+            }
+        };
     }, [])
 
     useEffect(() => {
@@ -68,6 +76,12 @@ function PhotosList(props) {
     useEffect((e) => {
         setShowSideMenu(false);
         if (props.currentDate != "" && !props.showPhotoDisplay) {
+            // Cancel current photo loading if in progress
+            if (currentPhotoLoadingController) {
+                currentPhotoLoadingController.abort();
+                setCurrentPhotoLoadingController(null);
+            }
+            
             delete props.datePage[props.currentDate];
             photos.photos = [];
             setPhotosList({ "photos": [] });
@@ -209,11 +223,27 @@ function PhotosList(props) {
         props.setShowPhotoDisplay(false);
         if (props.currentPhotoPath !== "") setCurrentPhotoPath("");
         console.log("photos-list-close-photod-display -- getPhotos")
+        
+        // Cancel any existing photo loading before starting new request
+        if (currentPhotoLoadingController) {
+            currentPhotoLoadingController.abort();
+            setCurrentPhotoLoadingController(null);
+        }
+        
         const fetchPhotos = async () => getPhotos();
         fetchPhotos().catch(console.error)
     }
 
     async function getPhotos(e, isForward) {
+        // Cancel any existing photo loading request
+        if (currentPhotoLoadingController) {
+            currentPhotoLoadingController.abort();
+        }
+        
+        // Create new AbortController for this request
+        const controller = new AbortController();
+        setCurrentPhotoLoadingController(controller);
+        
         setPhotoLoading(true);
         setPhotosList({ "photos": [] });
         let sort = sortOfPhotos;
@@ -225,6 +255,8 @@ function PhotosList(props) {
             date = props.currentDate;
         }
         if (!date || date == "") {
+            setPhotoLoading(false);
+            setCurrentPhotoLoadingController(null);
             return;
         }
         let page = props.datePage[date];
@@ -233,17 +265,25 @@ function PhotosList(props) {
             page = 1;
         }
         page = parseInt(page);
-        await invoke("get_photos_with_filter", {
-            dateStr: date,
-            sortValue: parseInt(sort),
-            page: page,
-            num: parseInt(num),
-            offset: 0,
-            star: parseInt(starFilter, 10),
-            hasComment: hasCommentFilter,
-            extension: extensionFilter
-        }).then((r) => {
-            let data = JSON.parse(r);
+        
+        try {
+            const result = await invoke("get_photos_with_filter", {
+                dateStr: date,
+                sortValue: parseInt(sort),
+                page: page,
+                num: parseInt(num),
+                offset: 0,
+                star: parseInt(starFilter, 10),
+                hasComment: hasCommentFilter,
+                extension: extensionFilter
+            });
+            
+            // Check if this request was cancelled
+            if (controller.signal.aborted) {
+                return;
+            }
+            
+            let data = JSON.parse(result);
             let l = data.photos;
             let tags = [];
             if (l.length > 0) {
@@ -254,11 +294,18 @@ function PhotosList(props) {
             props.datePage[date] = page;
             props.setDatePage(props.datePage);
             setPhotoLoading(false);
+            setCurrentPhotoLoadingController(null);
             setTimeout(() => { setScrollLock(false) }, 200);
-        }).catch(e => {
+        } catch (error) {
+            // Check if this was a cancellation (not an actual error)
+            if (controller.signal.aborted) {
+                return;
+            }
             console.log("in PhotosList.jsx");
-            console.log(e);
-        });
+            console.log(error);
+            setPhotoLoading(false);
+            setCurrentPhotoLoadingController(null);
+        }
     };
 
     function nextPhotosList(e, isForward) {
