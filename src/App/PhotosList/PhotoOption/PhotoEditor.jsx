@@ -1093,16 +1093,16 @@ function PhotoEditor(props) {
         );
     };
 
-    // Render photo-specific crop overlay directly on the image
+    // Render photo-specific crop overlay directly on the photo container
     const renderPhotoOverlay = () => {
         if (!cropMode) return null;
 
-        const img = document.querySelector('#photoImgTag');
-        if (!img || !img.parentElement) return null;
+        const photoContainer = document.querySelector('#photo');
+        if (!photoContainer) return null;
 
-        // Ensure parent is positioned relatively
-        if (window.getComputedStyle(img.parentElement).position === 'static') {
-            img.parentElement.style.position = 'relative';
+        // Ensure photo container is positioned relatively
+        if (window.getComputedStyle(photoContainer).position === 'static') {
+            photoContainer.style.position = 'relative';
         }
 
         return ReactDOM.createPortal(
@@ -1170,7 +1170,7 @@ function PhotoEditor(props) {
                     </div>
                 </div>
             </>,
-            img.parentElement
+            photoContainer
         );
     };
 
