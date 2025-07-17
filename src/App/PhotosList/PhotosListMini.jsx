@@ -491,7 +491,7 @@ function PhotosListMini(props) {
             // Find the date directory and the UUID directory after it
             const datePattern = /^\d{4}-\d{2}-\d{2}$/;
             for (let i = 0; i < pathParts.length - 1; i++) {
-                if (datePattern.test(pathParts[i]) && pathParts[i + 2]) {
+                if (datePattern.test(pathParts[i]) && pathParts[i + 2] !== undefined) {
                     uuid = pathParts[i + 1];
                     break;
                 }
