@@ -1098,7 +1098,60 @@ function PhotoEditor(props) {
         if (!cropMode) return null;
 
         const photoContainer = document.querySelector('#photo');
-        if (!photoContainer) return null;
+        console.log('Photo container found:', photoContainer);
+        
+        if (!photoContainer) {
+            console.error('Photo container #photo not found');
+            // Fallback to image parent
+            const img = document.querySelector('#photoImgTag');
+            console.log('Fallback to image:', img);
+            if (img && img.parentElement) {
+                console.log('Using image parent as container');
+                const container = img.parentElement;
+                if (window.getComputedStyle(container).position === 'static') {
+                    container.style.position = 'relative';
+                }
+                return ReactDOM.createPortal(
+                    <>
+                        <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            backgroundColor: 'rgba(0, 255, 0, 0.5)', // Green for debugging
+                            border: '3px solid red',
+                            pointerEvents: 'auto',
+                            cursor: 'crosshair',
+                            zIndex: 10000
+                        }}
+                        onMouseDown={handleImageMouseDown}
+                        onMouseMove={handleImageMouseMove}
+                        onMouseUp={handleImageMouseUp}
+                        >
+                            <div style={{
+                                position: 'absolute',
+                                top: '10px',
+                                left: '10px',
+                                color: 'white',
+                                fontSize: '14px',
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                padding: '8px 12px',
+                                borderRadius: '6px',
+                                pointerEvents: 'none'
+                            }}>
+                                FALLBACK: Image Parent Overlay
+                            </div>
+                        </div>
+                    </>,
+                    container
+                );
+            }
+            return null;
+        }
+
+        console.log('Photo container bounds:', photoContainer.getBoundingClientRect());
+        console.log('Photo container style:', window.getComputedStyle(photoContainer));
 
         // Ensure photo container is positioned relatively
         if (window.getComputedStyle(photoContainer).position === 'static') {
@@ -1114,7 +1167,8 @@ function PhotoEditor(props) {
                     left: 0,
                     width: '100%',
                     height: '100%',
-                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                    backgroundColor: 'rgba(255, 0, 255, 0.5)', // Magenta for debugging
+                    border: '3px solid yellow',
                     pointerEvents: 'auto',
                     cursor: 'crosshair',
                     zIndex: 10000
@@ -1123,6 +1177,19 @@ function PhotoEditor(props) {
                 onMouseMove={handleImageMouseMove}
                 onMouseUp={handleImageMouseUp}
                 >
+                    <div style={{
+                        position: 'absolute',
+                        top: '10px',
+                        left: '10px',
+                        color: 'white',
+                        fontSize: '14px',
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        pointerEvents: 'none'
+                    }}>
+                        PHOTO CONTAINER OVERLAY
+                    </div>
                     {/* Crop selection rectangle */}
                     <div
                         id="crop-selection"
