@@ -5,6 +5,7 @@ import { open } from "@tauri-apps/plugin-shell";
 import { listen } from "@tauri-apps/api/event";
 import { ask, message, confirm } from '@tauri-apps/plugin-dialog';
 import "./App.css";
+import "./components/search.css";
 import PhotosList from "./App/PhotosList.jsx"
 import DateList from "./App/DateList.jsx"
 import Importer from "./App/Importer.jsx"
@@ -12,6 +13,7 @@ import Preferences from "./App/Preferences.jsx"
 import JobQueue from "./App/JobQueue.jsx"
 import Welcome from "./Welcome.jsx"
 import Home from "./App/Home.jsx"
+import SearchPage from "./App/SearchPage.jsx"
 import loginGoogle from "./App/Login.jsx"
 import Footer from "./App/Footer.jsx"
 import WelcomeImage from "./WelcomeImage.jsx";
@@ -30,6 +32,7 @@ function App() {
     showPreferences,
     showJobQueue,
     showLogin,
+    showSearchPage,
     footerMessages,
     welcomeImage,
     setWelcomeImage,
@@ -204,7 +207,7 @@ function App() {
   }
 
 
-  if (!showPreferences && !showImporter && useCount <= 2) {
+  if (!showPreferences && !showImporter && !showSearchPage && useCount <= 2) {
     return (
       <>
         <Welcome
@@ -218,6 +221,18 @@ function App() {
       </>
     );
   }
+  
+  // Show search page
+  if (showSearchPage) {
+    return (
+      <>
+        <SearchPage />
+        <Footer />
+        <ErrorDisplay />
+      </>
+    );
+  }
+  
   return (
     <div className="container"
     // onKeyDown={(e) => { shortCutNavigation.onKeyDown(e) }}
@@ -267,7 +282,7 @@ function App() {
                 toggleJobQueue={toggleJobQueue}
               ></JobQueue>
             </div>
-            <div style={{ display: (!showImporter && !showLogin && !showPreferences && !showJobQueue && (!currentDate || !showPhotosList)) ? "block" : "none" }}>
+            <div style={{ display: (!showImporter && !showLogin && !showPreferences && !showJobQueue && !showSearchPage && (!currentDate || !showPhotosList)) ? "block" : "none" }}>
               <Home welcomeImage={welcomeImage} setWelcomeImage={setWelcomeImage} />
             </div>
           </>

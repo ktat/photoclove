@@ -4,6 +4,7 @@ use crate::value::{comment, date, file, star};
 use rusqlite::{params, Connection, Result};
 use std::collections::HashMap;
 use std::path;
+use regex;
 
 pub struct SQLite {
     db_path: String,
@@ -1520,6 +1521,103 @@ impl SQLite {
         match result {
             Ok(css_style) => css_style,
             Err(_) => None,
+        }
+    }
+
+    pub fn search_photos(&self, query: &str, search_type: &str, _filters: &str) -> Result<String, String> {
+        let conn = self.get_connection().map_err(|e| e.to_string())?;
+        
+        // Build search query based on search_type
+        let mut sql_query = String::from("SELECT * FROM photo_metadata WHERE 1=1");
+        let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
+        
+        // Add search condition based on search_type
+        match search_type {
+            "filename" => {
+                sql_query.push_str(" AND path LIKE ?");
+                params.push(Box::new(format!("%{}%", query)));
+            }
+            "comment" => {
+                sql_query.push_str(" AND comment LIKE ?");
+                params.push(Box::new(format!("%{}%", query)));
+            }
+            "camera" => {
+                sql_query.push_str(" AND (exif_make LIKE ? OR exif_model LIKE ?)");
+                params.push(Box::new(format!("%{}%", query)));
+                params.push(Box::new(format!("%{}%", query)));
+            }
+            "all" => {
+                sql_query.push_str(" AND (path LIKE ? OR comment LIKE ? OR exif_make LIKE ? OR exif_model LIKE ? OR exif_lens_model LIKE ?)");
+                let query_pattern = format!("%{}%", query);
+                params.push(Box::new(query_pattern.clone()));
+                params.push(Box::new(query_pattern.clone()));
+                params.push(Box::new(query_pattern.clone()));
+                params.push(Box::new(query_pattern.clone()));
+                params.push(Box::new(query_pattern));
+            }
+            _ => {
+                sql_query.push_str(" AND path LIKE ?");
+                params.push(Box::new(format!("%{}%", query)));
+            }
+        }
+        
+        // Execute query
+        let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+        let mut stmt = conn.prepare(&sql_query).map_err(|e| e.to_string())?;
+        let photo_iter = stmt.query_map(&param_refs[..], |row| {
+            let photo_path = row.get::<_, String>("path").unwrap_or_default();
+            
+            // Check if thumbnail exists (similar to Photo::set_has_thumbnail)
+            let has_thumbnail = self.check_thumbnail_exists(&photo_path);
+            
+            Ok(serde_json::json!({
+                "file": {
+                    "path": photo_path,
+                    "name": photo_path.split('/').last().unwrap_or("")
+                },
+                "has_thumbnail": has_thumbnail,
+                "css_style": "",
+                "search_relevance": 1.0,
+                "comment": row.get::<_, Option<String>>("comment").unwrap_or_default(),
+                "star_rating": row.get::<_, i32>("star").unwrap_or(0),
+                "camera_make": row.get::<_, Option<String>>("exif_make").unwrap_or_default(),
+                "camera_model": row.get::<_, Option<String>>("exif_model").unwrap_or_default(),
+                "lens_model": row.get::<_, Option<String>>("exif_lens_model").unwrap_or_default(),
+                "date_taken": row.get::<_, Option<String>>("exif_date_time_original").unwrap_or_default()
+            }))
+        }).map_err(|e| e.to_string())?;
+        
+        let mut results: Vec<serde_json::Value> = Vec::new();
+        for photo in photo_iter {
+            results.push(photo.map_err(|e| e.to_string())?);
+        }
+        
+        // Limit results to prevent overwhelming the UI
+        results.truncate(100);
+        
+        Ok(serde_json::to_string(&results).map_err(|e| e.to_string())?)
+    }
+    
+    fn check_thumbnail_exists(&self, photo_path: &str) -> bool {
+        // Get config to find thumbnail store path
+        let config = crate::entity::config::Config::new();
+        let import_path = config.import_to;
+        let thumbnail_store = config.thumbnail_store;
+        
+        // Replace import path with thumbnail store path
+        let thumbnail_path = photo_path.replace(&import_path, &thumbnail_store);
+        
+        // Handle JPG extension (convert to lowercase)
+        let ext_regex = regex::Regex::new(r"\.JPG$").unwrap();
+        let thumbnail_path_ext_changed = ext_regex.replace(&thumbnail_path, ".jpg").to_string();
+        
+        if thumbnail_path == thumbnail_path_ext_changed {
+            // Likely a movie file, check for .jpg thumbnail
+            let thumbnail_path_for_movie = format!("{}.jpg", thumbnail_path);
+            std::path::Path::new(&thumbnail_path_for_movie).exists()
+        } else {
+            // Regular image file
+            std::path::Path::new(&thumbnail_path_ext_changed).exists()
         }
     }
 }

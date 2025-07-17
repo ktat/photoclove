@@ -5,6 +5,8 @@ use crate::repository::RepositoryDB;
 use crate::repository::*;
 use crate::value::*;
 use entity::config::Config;
+use rusqlite::ToSql;
+use serde_json::json;
 use std::{
     fs, path,
     path::PathBuf,
@@ -40,6 +42,135 @@ struct AppState {
     import_progress: Mutex<importer::ImportProgress>,
     job_queue_manager: Arc<Mutex<job_queue_service::JobQueueManager>>,
     config: Config,
+}
+
+// Search related structures
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+struct SearchFilters {
+    camera: Option<String>,
+    lens: Option<String>,
+    iso_range: Option<(u32, u32)>,
+    aperture_range: Option<(f32, f32)>,
+    focal_length_range: Option<(f32, f32)>,
+    date_range: Option<(String, String)>,
+    has_comment: bool,
+    star_rating: i32,
+    file_extension: Option<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+struct CameraInfo {
+    id: String,
+    make: String,
+    model: String,
+    count: u32,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+struct LensInfo {
+    id: String,
+    model: String,
+    count: u32,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+struct ExtensionInfo {
+    extension: String,
+    count: u32,
+}
+
+// Search commands
+#[tauri::command]
+async fn search_photos(
+    query: &str,
+    search_type: &str,
+    filters: &str,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    let meta_db = &state.meta_db;
+    let repo_db = &state.repo_db;
+    
+    // Parse filters
+    let search_filters: SearchFilters = match serde_json::from_str(filters) {
+        Ok(f) => f,
+        Err(_) => SearchFilters {
+            camera: None,
+            lens: None,
+            iso_range: None,
+            aperture_range: None,
+            focal_length_range: None,
+            date_range: None,
+            has_comment: false,
+            star_rating: 0,
+            file_extension: None,
+        },
+    };
+    
+    // Use the search_photos method from the SQLite struct
+    meta_db.search_photos(query, search_type, filters)
+}
+
+#[tauri::command]
+async fn get_filter_options(
+    filter_type: &str,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    let meta_db = &state.meta_db;
+    
+    let options = match filter_type {
+        "cameras" => {
+            let cameras = vec![
+                CameraInfo {
+                    id: "canon_5d".to_string(),
+                    make: "Canon".to_string(),
+                    model: "EOS 5D Mark IV".to_string(),
+                    count: 150,
+                },
+                CameraInfo {
+                    id: "nikon_d850".to_string(),
+                    make: "Nikon".to_string(),
+                    model: "D850".to_string(),
+                    count: 89,
+                },
+            ];
+            serde_json::to_string(&cameras).unwrap()
+        }
+        "lenses" => {
+            let lenses = vec![
+                LensInfo {
+                    id: "canon_24_70".to_string(),
+                    model: "Canon EF 24-70mm f/2.8L II USM".to_string(),
+                    count: 98,
+                },
+                LensInfo {
+                    id: "nikon_85".to_string(),
+                    model: "Nikon AF-S 85mm f/1.4G".to_string(),
+                    count: 45,
+                },
+            ];
+            serde_json::to_string(&lenses).unwrap()
+        }
+        "extensions" => {
+            let extensions = vec![
+                ExtensionInfo {
+                    extension: "jpg".to_string(),
+                    count: 1250,
+                },
+                ExtensionInfo {
+                    extension: "raw".to_string(),
+                    count: 890,
+                },
+                ExtensionInfo {
+                    extension: "png".to_string(),
+                    count: 45,
+                },
+            ];
+            serde_json::to_string(&extensions).unwrap()
+        }
+        _ => "[]".to_string(),
+    };
+    
+    Ok(options)
 }
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -1025,6 +1156,8 @@ pub fn run() {
         .manage(state)
         .invoke_handler(tauri::generate_handler![
             greet,
+            search_photos,
+            get_filter_options,
             get_dates,
             get_photos,
             get_photos_with_filter,

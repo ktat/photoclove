@@ -8,6 +8,7 @@ function DirectoryMenu(props) {
 
     const [photoIndex, setPhotoIndex] = useState(-1);
     const [showBigPhoto, setShowBigPhoto] = useState(false);
+    
 
     useEffect(() => {
         let l = props.photoSelection.length;
@@ -117,6 +118,7 @@ function DirectoryMenu(props) {
             props.clearPhotoSelection()
         }
     }
+
 
 
     return (

@@ -18,6 +18,8 @@ export const UIProvider = ({ children }) => {
   const [showPreferences, setShowPreferences] = useState(false);
   const [showJobQueue, setShowJobQueue] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const [showSearchPage, setShowSearchPage] = useState(false);
+  const [searchInitialQuery, setSearchInitialQuery] = useState("");
   const [footerMessages, setFooterMessages] = useState({});
   const [welcomeImage, setWelcomeImage] = useState("");
   const [useCount, setUseCount] = useState(0);
@@ -62,12 +64,14 @@ export const UIProvider = ({ children }) => {
       setShowPreferences(false);
       setShowJobQueue(false);
       setShowLogin(false);
+      setShowSearchPage(false);
     } else {
       setShowImporter(false);
       setShowPreferences(false);
       setShowJobQueue(false);
       setShowLogin(false);
       setShowPhotosList(true);
+      setShowSearchPage(false);
     }
   }, []);
 
@@ -78,12 +82,14 @@ export const UIProvider = ({ children }) => {
       setShowPhotosList(false);
       setShowPreferences(false);
       setShowJobQueue(false);
+      setShowSearchPage(false);
     } else {
       setShowImporter(false);
       setShowPreferences(false);
       setShowJobQueue(false);
       setShowLogin(false);
       setShowPhotosList(false);
+      setShowSearchPage(false);
     }
   }, []);
 
@@ -94,12 +100,14 @@ export const UIProvider = ({ children }) => {
       setShowLogin(false);
       setShowJobQueue(false);
       setShowPreferences(true);
+      setShowSearchPage(false);
     } else {
       setShowImporter(false);
       setShowPreferences(false);
       setShowJobQueue(false);
       setShowLogin(false);
       setShowPhotosList(true);
+      setShowSearchPage(false);
     }
   }, []);
 
@@ -110,12 +118,34 @@ export const UIProvider = ({ children }) => {
       setShowLogin(false);
       setShowPreferences(false);
       setShowJobQueue(true);
+      setShowSearchPage(false);
     } else {
       setShowImporter(false);
       setShowPreferences(false);
       setShowJobQueue(false);
       setShowLogin(false);
       setShowPhotosList(true);
+      setShowSearchPage(false);
+    }
+  }, []);
+
+  const toggleSearchPage = useCallback((t, initialQuery = "") => {
+    if (t) {
+      setShowImporter(false);
+      setShowPhotosList(false);
+      setShowLogin(false);
+      setShowPreferences(false);
+      setShowJobQueue(false);
+      setShowSearchPage(true);
+      setSearchInitialQuery(initialQuery);
+    } else {
+      setShowImporter(false);
+      setShowPreferences(false);
+      setShowJobQueue(false);
+      setShowLogin(false);
+      setShowPhotosList(true);
+      setShowSearchPage(false);
+      setSearchInitialQuery("");
     }
   }, []);
 
@@ -126,6 +156,8 @@ export const UIProvider = ({ children }) => {
     showPreferences,
     showJobQueue,
     showLogin,
+    showSearchPage,
+    searchInitialQuery,
     footerMessages,
     welcomeImage,
     useCount,
@@ -135,6 +167,7 @@ export const UIProvider = ({ children }) => {
     toggleLogin,
     togglePreferences,
     toggleJobQueue,
+    toggleSearchPage,
     addFooterMessage,
     removeFooterMessage,
     setWelcomeImage,
