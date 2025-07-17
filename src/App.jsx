@@ -17,49 +17,47 @@ import Footer from "./App/Footer.jsx"
 import WelcomeImage from "./WelcomeImage.jsx";
 import ErrorDisplay from "./components/ErrorDisplay.jsx";
 import { useError } from "./context/ErrorContext.jsx";
+import { useUI } from "./context/UIContext.jsx";
+import { usePhoto } from "./context/PhotoContext.jsx";
+import { useDateNavigation } from "./hooks/useDateNavigation.js";
+import { useAppConfig } from "./hooks/useAppConfig.js";
 
 function App() {
   const { handleTauriError } = useError();
+  const {
+    showImporter,
+    showPhotosList,
+    showPreferences,
+    showJobQueue,
+    showLogin,
+    footerMessages,
+    welcomeImage,
+    setWelcomeImage,
+    toggleImporter,
+    togglePreferences,
+    toggleJobQueue,
+    addFooterMessage
+  } = useUI();
+  const {
+    currentDate,
+    updateCurrentDate,
+    resetPhotoState,
+    setCurrentDateNum
+  } = usePhoto();
+  const { getDates } = useDateNavigation();
+  const { useCount } = useAppConfig();
+  
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
-  const [useCount, setUseCount] = useState(0)
-
-  const [dateList, setDateList] = useState([]);
-  const [datePage, setDatePage] = useState({});
-  const [currentDate, setCurrentDate] = useState("");
-  const [showImporter, setShowImporter] = useState(false);
-  const [showPhotosList, setShowPhotosList] = useState(true);
-  const [showPreferences, setShowPreferences] = useState(false);
-  const [showJobQueue, setShowJobQueue] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
-  const [footerMessages, setFooterMessages] = useState({});
-  const [dateNum, setDateNum] = useState({});
-  const [showPhotoDisplay, setShowPhotoDisplay] = useState({});
-  const [hideLoading, setHideLoading] = useState(false);
-  const [welcomeImage, setWelcomeImage] = useState("");
 
   const [shortCutNavigation, setShortCutNavigation] = useState({
     onKeyDown: (e) => { console.log(e) },
     onKeyUp: (e) => { console.log(e) }
   });
 
-  function setCurrentDateNum(num) {
-    const newDateNum = {};
-    Object.keys(dateNum).map((k) => {
-      newDateNum[k] = dateNum[k];
-    });
-    newDateNum[currentDate.replace(/\//g, "-")] = num;
-    setDateNum(newDateNum)
-  }
   let in_db_creation = false;
 
   useEffect((e) => {
-    invoke("get_config", {},).then((e) => {
-      const json = JSON.parse(e);
-      setUseCount(json.use_count);
-    }).catch((error) => {
-      handleTauriError(error, "Getting configuration");
-    });
 
     let unlisten0, unlisten1, unlisten2, unlisten3, unlisten4;
 
@@ -117,10 +115,10 @@ function App() {
           if (e.payload === "load_dates") {
             getDates();
           } else if (e.payload === "HOME") {
-            setCurrentDate("");
-            setShowPhotosList(false);
-            setShowImporter(false);
-            setShowPreferences(false);
+            updateCurrentDate("");
+            resetPhotoState();
+            toggleImporter(false);
+            togglePreferences(false);
             setWelcomeImage(WelcomeImage());
           } else if (e.payload === "import") {
             toggleImporter(true);
@@ -186,133 +184,12 @@ function App() {
     };
   }, []);
 
-  function getDates() {
-    setHideLoading(false);
-    invoke("get_dates").then((r) => {
-      let l = JSON.parse(r);
-      setDateList(l);
-      let datesStr = "";
-      const newDateNum = {};
-      let n = 0;
-      const promises = [];
-      l.map((v, i) => {
-        n += 1;
-        datesStr += v.year
-        if (v.month < 10) {
-          datesStr += "-0" + v.month;
-        } else {
-          datesStr += "-" + v.month;
-        }
-        if (v.day < 10) {
-          datesStr += "-0" + v.day;
-        } else {
-          datesStr += "-" + v.day;
-        }
-        if (i !== l.length - 1 && n < 20) {
-          datesStr += ",";
-        }
-        if (n == 20 || i == l.length - 1) {
-          const reqDatesStr = datesStr;
-          n = 0;
-          datesStr = "";
-          const promise = new Promise((resolve, reject) => {
-            invoke("get_dates_num", { datesStr: reqDatesStr }).then((r) => {
-              console.log(r);
-              let l = JSON.parse(r);
-              return resolve(l);
-            }).catch((e) => { 
-              console.log(e);
-              handleTauriError(e, "Getting date numbers");
-              reject(e);
-            });
-          });
-          promises.push(promise);
-        }
-      });
-      Promise.all(promises).then((results) => {
-        results.map((result) => {
-          Object.keys(result).map((k) => {
-            newDateNum[k] = result[k];
-          })
-          setDateNum(newDateNum);
-          setHideLoading(true);
-        });
-      }).catch((error) => {
-        handleTauriError(error, "Processing date numbers");
-        setHideLoading(true);
-      });
-    }).catch((error) => {
-      handleTauriError(error, "Getting dates");
-      setHideLoading(true);
-    });
-  };
 
-  function addFooterMessage(k, v, withDialog, deleteAfter) {
-    const newMessages = {};
-    Object.keys(footerMessages).map((k, i) => {
-      newMessages[k] = footerMessages[k];
-    })
-    newMessages[k] = v;
-    if (withDialog) {
-      invoke("lock", { t: true }).then((e) => {
-        if (e) {
-          message(v).then((e) => {
-            invoke("lock", { t: false });
-          });
-        }
-      });
-    }
-    setFooterMessages(newMessages)
-    if (deleteAfter) {
-      setTimeout(() => { removeFooterMessage(k) }, deleteAfter);
-    }
-  }
-
-  function removeFooterMessage(targetKey, timeAfter) {
-    const newMessages = {};
-    if (!timeAfter) {
-      timeAfter = 0;
-    }
-    setTimeout(() => {
-      delete footerMessages[targetKey];
-      Object.keys(footerMessages).map((k, i) => {
-        newMessages[k] = footerMessages[k];
-      })
-      setFooterMessages(newMessages);
-    }, timeAfter);
-  }
-
-  function toggleImporter(t) {
-    if (t) {
-      setShowImporter(true);
-      setShowPhotosList(false);
-      setShowPreferences(false);
-      setShowJobQueue(false);
-      setShowLogin(false);
-    } else {
-      setShowImporter(false);
-      setShowPreferences(false);
-      setShowJobQueue(false);
-      setShowLogin(false);
-      setShowPhotosList(true);
-    }
-  }
 
   // login page is not used now.
   function toggleLogin(t) {
-    if (t) {
-      setShowLogin(true);
-      setShowImporter(false);
-      setShowPhotosList(false);
-      setShowPreferences(false);
-      setShowJobQueue(false);
-    } else {
-      setShowImporter(false);
-      setShowPreferences(false);
-      setShowJobQueue(false);
-      setShowLogin(false);
-      setShowPhotosList(false);
-    }
+    // This function is kept for backward compatibility but should be refactored
+    console.log("Login toggle called:", t);
   }
   /*
     HTML code for login page
@@ -320,38 +197,6 @@ function App() {
               <Login />
             </div>
   */
-
-  function togglePreferences(t) {
-    if (t) {
-      setShowImporter(false);
-      setShowPhotosList(false);
-      setShowLogin(false);
-      setShowJobQueue(false);
-      setShowPreferences(true);
-    } else {
-      setShowImporter(false);
-      setShowPreferences(false);
-      setShowJobQueue(false);
-      setShowLogin(false);
-      setShowPhotosList(true);
-    }
-  }
-
-  function toggleJobQueue(t) {
-    if (t) {
-      setShowImporter(false);
-      setShowPhotosList(false);
-      setShowLogin(false);
-      setShowPreferences(false);
-      setShowJobQueue(true);
-    } else {
-      setShowImporter(false);
-      setShowPreferences(false);
-      setShowJobQueue(false);
-      setShowLogin(false);
-      setShowPhotosList(true);
-    }
-  }
 
   async function greet() {
     // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -365,12 +210,11 @@ function App() {
         <Welcome
           welcomeImage={welcomeImage}
           setWelcomeImage={setWelcomeImage}
-          setUseCount={setUseCount}
           useCount={useCount}
           togglePreferences={togglePreferences}
           toggleImporter={toggleImporter}
         />
-        <Footer addFooterMessage={addFooterMessage} footerMessages={footerMessages} />
+        <Footer />
       </>
     );
   }
@@ -397,32 +241,13 @@ function App() {
           </div>
           <DateList
             getDates={getDates}
-            dateList={dateList}
-            setDateList={setDateList}
             toggleImporter={toggleImporter}
-            setCurrentDate={setCurrentDate}
-            datePage={datePage}
-            dateNum={dateNum}
-            setDateNum={setDateNum}
-            setShowPhotoDisplay={setShowPhotoDisplay}
-            hideLoading={hideLoading}
           />
         </div>
         {(currentDate && showPhotosList) ? <>
           <PhotosList
-            dateList={dateList}
-            setDateList={setDateList}
-            setShowPhotoDisplay={setShowPhotoDisplay}
-            showPhotoDisplay={showPhotoDisplay}
-            setCurrentDate={setCurrentDate}
-            currentDate={currentDate}
-            datePage={datePage}
-            setDatePage={setDatePage}
             shortCutNavigation={shortCutNavigation}
             addFooterMessage={addFooterMessage}
-            dateNum={dateNum}
-            setDateNum={setDateNum}
-            setCurrentDateNum={setCurrentDateNum}
           />
         </>
           :
@@ -430,22 +255,16 @@ function App() {
             <div style={{ width: "100%", display: showImporter ? "flex" : "none" }}>
               <Importer
                 getDates={getDates}
-                addFooterMessage={addFooterMessage}
-                removeFooterMessage={removeFooterMessage}
               />
             </div>
             <div style={{ display: showPreferences ? "block" : "none" }}>
               <Preferences
                 togglePreferences={togglePreferences}
-                addFooterMessage={addFooterMessage}
-                setShowPreferences={setShowPreferences}
               ></Preferences>
             </div>
             <div style={{ display: showJobQueue ? "block" : "none" }}>
               <JobQueue
                 toggleJobQueue={toggleJobQueue}
-                addFooterMessage={addFooterMessage}
-                setShowJobQueue={setShowJobQueue}
               ></JobQueue>
             </div>
             <div style={{ display: (!showImporter && !showLogin && !showPreferences && !showJobQueue && (!currentDate || !showPhotosList)) ? "block" : "none" }}>
@@ -454,7 +273,7 @@ function App() {
           </>
         }
       </div>
-      <Footer addFooterMessage={addFooterMessage} footerMessages={footerMessages} />
+      <Footer />
       <ErrorDisplay />
     </div >
   );

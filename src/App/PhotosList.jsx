@@ -9,8 +9,23 @@ import { ImgCacheContext, AllPhotosContext } from "./ImgCacheContext.jsx";
 import Scrollable from "../Scrollable.jsx";
 import fileUrl from "../PathUtil.jsx";
 import '../scrollable.css';
+import { usePhoto } from "../context/PhotoContext.jsx";
+import { useUI } from "../context/UIContext.jsx";
 
 function PhotosList(props) {
+    const {
+        dateList,
+        datePage,
+        updateDatePage,
+        currentDate,
+        updateCurrentDate,
+        dateNum,
+        updateDateNum,
+        showPhotoDisplay,
+        updateShowPhotoDisplay,
+        setCurrentDateNum
+    } = usePhoto();
+    const { addFooterMessage } = useUI();
     const [iconSize, setIconSize] = useState(100);
     const [numOfPhoto, setNumOfPhoto] = useState(20);
     const [currentPhotoPath, setCurrentPhotoPath] = useState("");
