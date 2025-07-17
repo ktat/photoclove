@@ -1093,7 +1093,7 @@ function PhotoEditor(props) {
         );
     };
 
-    // Render photo-specific crop overlay using fixed positioning with calculated bounds
+    // Render photo-specific crop overlay directly on the photo container
     const renderPhotoOverlay = () => {
         if (!cropMode) return null;
 
@@ -1102,77 +1102,80 @@ function PhotoEditor(props) {
         
         if (!photoContainer) {
             console.error('Photo container #photo not found');
+            // Fallback to image parent
+            const img = document.querySelector('#photoImgTag');
+            console.log('Fallback to image:', img);
+            if (img && img.parentElement) {
+                console.log('Using image parent as container');
+                const container = img.parentElement;
+                if (window.getComputedStyle(container).position === 'static') {
+                    container.style.position = 'relative';
+                }
+                return ReactDOM.createPortal(
+                    <>
+                        <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            backgroundColor: 'rgba(0, 255, 0, 0.5)', // Green for debugging
+                            border: '3px solid red',
+                            pointerEvents: 'auto',
+                            cursor: 'crosshair',
+                            zIndex: 10000
+                        }}
+                        onMouseDown={handleImageMouseDown}
+                        onMouseMove={handleImageMouseMove}
+                        onMouseUp={handleImageMouseUp}
+                        >
+                            <div style={{
+                                position: 'absolute',
+                                top: '10px',
+                                left: '10px',
+                                color: 'white',
+                                fontSize: '14px',
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                padding: '8px 12px',
+                                borderRadius: '6px',
+                                pointerEvents: 'none'
+                            }}>
+                                FALLBACK: Image Parent Overlay
+                            </div>
+                        </div>
+                    </>,
+                    container
+                );
+            }
             return null;
         }
 
-        const bounds = photoContainer.getBoundingClientRect();
-        console.log('Photo container bounds:', bounds);
+        console.log('Photo container bounds:', photoContainer.getBoundingClientRect());
+        console.log('Photo container style:', window.getComputedStyle(photoContainer));
 
-        return (
+        // Ensure photo container is positioned relatively
+        if (window.getComputedStyle(photoContainer).position === 'static') {
+            photoContainer.style.position = 'relative';
+        }
+
+        return ReactDOM.createPortal(
             <>
-                {/* Overlay positioned using fixed coordinates over the photo container */}
+                {/* Semi-transparent overlay over the photo */}
                 <div style={{
-                    position: 'fixed',
-                    left: `${bounds.left}px`,
-                    top: `${bounds.top}px`,
-                    width: `${bounds.width}px`,
-                    height: `${bounds.height}px`,
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
                     backgroundColor: 'rgba(255, 0, 255, 0.5)', // Magenta for debugging
                     border: '3px solid yellow',
                     pointerEvents: 'auto',
                     cursor: 'crosshair',
                     zIndex: 10000
                 }}
-                onMouseDown={(e) => {
-                    if (!cropMode) return;
-                    
-                    // Get position relative to this overlay element
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const x = ((e.clientX - rect.left) / rect.width) * 100;
-                    const y = ((e.clientY - rect.top) / rect.height) * 100;
-                    
-                    console.log('Calculated crop position:', { x, y });
-
-                    setIsDragging(true);
-                    setDragStart({ x, y });
-                    setDragMode('create');
-                    setCropSelection({ x, y, width: 0, height: 0 });
-                    
-                    e.preventDefault();
-                    e.stopPropagation();
-                }}
-                onMouseMove={(e) => {
-                    if (!cropMode || !isDragging) return;
-
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const x = ((e.clientX - rect.left) / rect.width) * 100;
-                    const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-                    if (dragMode === 'create') {
-                        const width = Math.abs(x - dragStart.x);
-                        const height = Math.abs(y - dragStart.y);
-                        const startX = Math.min(x, dragStart.x);
-                        const startY = Math.min(y, dragStart.y);
-
-                        setCropSelection({
-                            x: Math.max(0, Math.min(startX, 100)),
-                            y: Math.max(0, Math.min(startY, 100)),
-                            width: Math.max(0, Math.min(width, 100 - Math.max(0, startX))),
-                            height: Math.max(0, Math.min(height, 100 - Math.max(0, startY)))
-                        });
-                    }
-                    
-                    e.preventDefault();
-                    e.stopPropagation();
-                }}
-                onMouseUp={(e) => {
-                    if (!cropMode) return;
-                    console.log('Mouse up event in crop mode');
-                    setIsDragging(false);
-                    
-                    e.preventDefault();
-                    e.stopPropagation();
-                }}
+                onMouseDown={handleImageMouseDown}
+                onMouseMove={handleImageMouseMove}
+                onMouseUp={handleImageMouseUp}
                 >
                     <div style={{
                         position: 'absolute',
@@ -1185,9 +1188,8 @@ function PhotoEditor(props) {
                         borderRadius: '6px',
                         pointerEvents: 'none'
                     }}>
-                        FIXED POSITION OVERLAY
+                        PHOTO CONTAINER OVERLAY
                     </div>
-                    
                     {/* Crop selection rectangle */}
                     <div
                         id="crop-selection"
@@ -1221,19 +1223,21 @@ function PhotoEditor(props) {
                     {/* Instruction text */}
                     <div style={{
                         position: 'absolute',
-                        top: '50px',
+                        top: '10px',
                         left: '10px',
                         color: 'white',
                         fontSize: '14px',
                         backgroundColor: 'rgba(0, 0, 0, 0.8)',
                         padding: '8px 12px',
                         borderRadius: '6px',
-                        pointerEvents: 'none'
+                        pointerEvents: 'none',
+                        zIndex: 10001
                     }}>
                         Click and drag on the photo to select crop area
                     </div>
                 </div>
-            </>
+            </>,
+            photoContainer
         );
     };
 
