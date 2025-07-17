@@ -15,8 +15,11 @@ import Home from "./App/Home.jsx"
 import loginGoogle from "./App/Login.jsx"
 import Footer from "./App/Footer.jsx"
 import WelcomeImage from "./WelcomeImage.jsx";
+import ErrorDisplay from "./components/ErrorDisplay.jsx";
+import { useError } from "./context/ErrorContext.jsx";
 
 function App() {
+  const { handleTauriError } = useError();
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
   const [useCount, setUseCount] = useState(0)
@@ -54,6 +57,8 @@ function App() {
     invoke("get_config", {},).then((e) => {
       const json = JSON.parse(e);
       setUseCount(json.use_count);
+    }).catch((error) => {
+      handleTauriError(error, "Getting configuration");
     });
 
     let unlisten0, unlisten1, unlisten2, unlisten3, unlisten4;
@@ -215,7 +220,11 @@ function App() {
               console.log(r);
               let l = JSON.parse(r);
               return resolve(l);
-            }).catch((e) => { console.log(e) });
+            }).catch((e) => { 
+              console.log(e);
+              handleTauriError(e, "Getting date numbers");
+              reject(e);
+            });
           });
           promises.push(promise);
         }
@@ -228,7 +237,13 @@ function App() {
           setDateNum(newDateNum);
           setHideLoading(true);
         });
-      })
+      }).catch((error) => {
+        handleTauriError(error, "Processing date numbers");
+        setHideLoading(true);
+      });
+    }).catch((error) => {
+      handleTauriError(error, "Getting dates");
+      setHideLoading(true);
     });
   };
 
@@ -440,6 +455,7 @@ function App() {
         }
       </div>
       <Footer addFooterMessage={addFooterMessage} footerMessages={footerMessages} />
+      <ErrorDisplay />
     </div >
   );
 }
