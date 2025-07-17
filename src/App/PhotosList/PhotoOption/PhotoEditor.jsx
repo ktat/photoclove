@@ -1056,6 +1056,32 @@ function PhotoEditor(props) {
                 console.log('Element at image center:', elementAtCenter);
                 console.log('Is image at its own center?', elementAtCenter === img || elementAtCenter?.contains(img) || img.contains(elementAtCenter));
                 
+                // Check for container scrolling and positioning
+                let container = img.parentElement;
+                while (container) {
+                    const containerStyle = window.getComputedStyle(container);
+                    const containerRect = container.getBoundingClientRect();
+                    console.log(`Container ${container.tagName}.${container.className}:`, {
+                        element: container,
+                        bounds: containerRect,
+                        overflow: containerStyle.overflow,
+                        overflowX: containerStyle.overflowX,
+                        overflowY: containerStyle.overflowY,
+                        position: containerStyle.position,
+                        transform: containerStyle.transform,
+                        scrollLeft: container.scrollLeft,
+                        scrollTop: container.scrollTop
+                    });
+                    
+                    // Check if this container has scrolling that might affect positioning
+                    if (container.scrollLeft !== 0 || container.scrollTop !== 0) {
+                        console.log('Found scrolling container!', container);
+                    }
+                    
+                    container = container.parentElement;
+                    if (container === document.body) break;
+                }
+                
                 const bounds = {
                     left: rect.left,
                     top: rect.top, 
@@ -1070,6 +1096,35 @@ function PhotoEditor(props) {
                     'width': bounds.width + 'px',
                     'height': bounds.height + 'px'
                 });
+                
+                // Create a test overlay directly on the image element to verify positioning
+                const testOverlay = document.createElement('div');
+                testOverlay.id = 'test-crop-overlay';
+                testOverlay.style.cssText = `
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(255, 0, 255, 0.5);
+                    border: 3px solid yellow;
+                    pointer-events: none;
+                    z-index: 10001;
+                `;
+                testOverlay.innerHTML = '<div style="color: white; font-size: 14px; background: black; padding: 2px;">TEST OVERLAY</div>';
+                
+                // Remove any existing test overlay
+                const existingTestOverlay = document.getElementById('test-crop-overlay');
+                if (existingTestOverlay) {
+                    existingTestOverlay.remove();
+                }
+                
+                // Position the overlay relative to the image
+                img.parentElement.style.position = 'relative';
+                img.parentElement.appendChild(testOverlay);
+                
+                console.log('Added test overlay directly to image parent');
+                
                 setCropOverlayBounds(bounds);
                 
                 // Add global mouse event listeners for more reliable crop selection
@@ -1098,6 +1153,12 @@ function PhotoEditor(props) {
         setCropSelection({ x: 0, y: 0, width: 100, height: 100 });
         setIsDragging(false);
         
+        // Remove test overlay
+        const existingTestOverlay = document.getElementById('test-crop-overlay');
+        if (existingTestOverlay) {
+            existingTestOverlay.remove();
+        }
+        
         // Remove global mouse event listeners
         document.removeEventListener('mousemove', handleGlobalMouseMove);
         document.removeEventListener('mouseup', handleGlobalMouseUp);
@@ -1110,6 +1171,12 @@ function PhotoEditor(props) {
         }));
         setCropMode(false);
         setIsDragging(false);
+        
+        // Remove test overlay
+        const existingTestOverlay = document.getElementById('test-crop-overlay');
+        if (existingTestOverlay) {
+            existingTestOverlay.remove();
+        }
         
         // Remove global mouse event listeners
         document.removeEventListener('mousemove', handleGlobalMouseMove);
