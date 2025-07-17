@@ -1,267 +1,227 @@
-# PhotoClove
+# PhotoClove 🦀📸
 
-PhotoClove is a photo manager application written in Rust & JavaScript(React) with tauri.
+> A fast, modern photo management application built with Rust and React
 
-## Motivation
+PhotoClove is a desktop photo manager designed for speed and simplicity. Built with Tauri (Rust backend) and React (frontend), it provides lightning-fast photo importing, viewing, and basic editing capabilities while keeping your photos organized locally.
 
-Photo viewer/importer applications tends to be slow when you have a lot of photos.
-I try to use some free/paid applications, but they don't much my usecase and they all are very slow.
+## ✨ Key Features
 
-- I don't need a rich editor.
-- I require the features to import fastly and to view photos fastly.
+- **🚀 Lightning Fast**: Optimized for handling large photo collections with minimal lag
+- **📥 Smart Import**: Batch photo import with UUID-based organization to prevent conflicts
+- **🎨 Non-Destructive Editing**: CSS-based image transformations with real-time preview
+- **📅 Date Organization**: Automatic photo organization by date with calendar navigation
+- **⭐ Metadata Management**: Star ratings, comments, and searchable metadata
+- **🔍 Advanced Filtering**: Filter by date, rating, comments, and file type
+- **🎬 Video Support**: View and manage MP4/WebM videos with thumbnail generation
+- **☁️ Cloud Integration**: Upload to Google Photos with progress tracking
+- **🔄 Background Processing**: Asynchronous job queue for imports and thumbnail generation
+- **🖥️ Cross-Platform**: Works on Windows, macOS, and Linux
 
-So, I decided to create this by myself.
+## 🏗️ Architecture
 
-## Dependency
+PhotoClove uses a modern desktop architecture:
 
-### nodejs, pnpm
+- **Frontend**: React 18 with Vite for fast development and responsive UI
+- **Backend**: Rust with Tauri for native performance and system integration
+- **Database**: SQLite for fast metadata queries and search
+- **Storage**: Local filesystem with organized directory structure
 
-- nodejs v23.8.0
-- pnpm
+## 🚀 Quick Start
 
-### ffmpeg, gstreamer
+### Prerequisites
 
-On Ubuntu, install the following package to watch mp4 file and to create movie thumbnail.
+- **Node.js** v18+ and **pnpm**
+- **Rust** 1.84+ (for building)
+- **FFmpeg** and **GStreamer** (for video support)
 
+#### Ubuntu/Debian Setup
+```bash
+sudo apt install gstreamer1.0-plugins-bad ffmpeg librsvg2-dev libgstreamer1.0-dev
 ```
-sudo apt install gstreamer1.0-plugins-bad ffmpeg
-```
 
-## how to run
+### Development
 
-```sh
+```bash
+# Install dependencies
+pnpm install
+
+# Run in development mode
 pnpm tauri dev
 ```
 
-## how to build
+### Building
 
-### on Windows
-
-```sh
+```bash
+# Build for production
 pnpm tauri build
 ```
 
-### on WSL2 (Ubuntu 22.04)
+#### WSL2 Build (Ubuntu 22.04)
+```bash
+# Update WSL first
+wsl --update && wsl --shutdown
 
-#### Update WSL
-
-```sh
-wsl --update
-wsl --shutdown
-```
-
-#### install required packages
-
-```sh
+# Install build dependencies
 sudo apt install librsvg2-dev libgstreamer1.0-dev patchelf
-```
 
-#### Build app
-
-```sh
+# Build with clean environment
 rm -rf src-tauri/target
 env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
 ```
 
-## Recent Updates
+## 📖 Documentation
 
-### Enhanced CSS-Based Image Editor (v2.8)
-- **Non-Destructive Editing**: CSS-based image transformations with real-time preview
-- **Comprehensive Controls**: Rotation, brightness, contrast, saturation, hue rotation, and scaling
-- **Enhanced UI**: Optimized tabbed interface with individual reset buttons and inline label layout
-- **Rotation Shortcuts**: Quick 90-degree rotation buttons (left/right) positioned below rotation slider
-- **Smart Value Handling**: Rotation 360° automatically converts to 0° for consistency
-- **Robust Download Feature**: Export styled images with pixel-level filtering for accurate color transformations
-- **Advanced Image Processing**: Canvas-based rendering with manual pixel manipulation for brightness, contrast, saturation, and hue
-- **Cross-Browser Compatibility**: Reliable download functionality that works consistently across different browsers
-- **Configurable Downloads**: Download directory configurable through preferences
-- **Notification System**: System notifications and clickable footer messages for downloads
-- **Click-to-Open**: Downloaded files open automatically when notification is clicked
-- **Database Storage**: CSS styles stored in `css_style` column for persistent transformations
-- **Apply/Reset System**: Save transformations or reset to original state
-- **Optimized Layout**: Compact controls that fit properly within the right panel without scrollbars
+Comprehensive documentation is available in the [`docs/`](./docs/) directory:
 
-### EXIF Data Storage (v2.7)
-- **Complete EXIF Support**: All EXIF metadata fields stored in database for fast searching
-- **Camera Information**: Make, model, lens details stored for equipment tracking
-- **Technical Settings**: ISO, aperture, shutter speed, focal length, and exposure data
-- **Image Quality**: Resolution, orientation, and processing information
-- **Date Tracking**: Original capture date and modification timestamps
-- **Search Ready**: EXIF data immediately available for filtering and organization
+- **[Architecture Overview](./docs/architecture.md)** - System design and technology stack
+- **[Feature Sequences](./docs/feature-sequences.md)** - Frontend/backend interaction flows
+- **[Component Structure](./docs/component-structure.md)** - React component hierarchy and HTML structure
+- **[Source Tree](./docs/source-tree.md)** - Complete codebase organization guide
+- **[Feature Documentation Index](./docs/feature-documentation-index.md)** - Quick reference for finding relevant docs
 
-### Google Photos Integration (v2.7)
-- **Seamless Upload**: Direct upload to Google Photos with URL tracking
-- **Batch Operations**: Upload multiple selected photos simultaneously
-- **URL Storage**: Google Photos URLs stored in database for reference
-- **Authentication**: OAuth2 integration with token management
-- **Progress Tracking**: Real-time upload progress and status updates
-- **Error Handling**: Robust error recovery and user feedback
+### Additional Documentation
+- [Authentication](./docs/authentication.md) - OAuth flow for Google Photos integration
+- [Database Schema](./docs/database-schema.md) - SQLite structure and EXIF fields
+- [Job Queue System](./docs/job-queue-system.md) - Asynchronous background processing
+- [Image Editor](./docs/image-editor.md) - CSS-based photo editing features
 
-### Enhanced Database Schema (v2.7)
-- **Updated Timestamp**: Added `updated_at` column for tracking record modifications
-- **Migration System**: Automatic database migration with column existence checks
-- **Comprehensive Schema**: Full EXIF fields and integration columns
-- **Performance Optimized**: Proper indexing and query optimization
-- **Future-Proof**: Extensible schema design for new features
+## 🎯 Use Cases
 
-### Job Queue Management Interface (v2.7)
-- **Visual Management**: Dedicated job queue interface for monitoring background tasks
-- **Job Operations**: Retry failed jobs, delete completed jobs, and cleanup operations
-- **Status Tracking**: Real-time job status, progress, and error information
-- **Bulk Operations**: Cleanup completed jobs and manage job units
-- **User Control**: Full visibility and control over background processing
+PhotoClove is perfect for:
 
-### Asynchronous Job Queue System (v2.6)
-- **Background Processing**: Complete rewrite of import system using asynchronous job queue for non-blocking operations
-- **Job Types**: Support for Import, Thumbnail creation, and Database creation jobs with individual progress tracking
-- **Real-time Progress**: Live progress updates and status monitoring via event system
-- **Error Recovery**: Automatic recovery of interrupted jobs on application restart
-- **Concurrent Execution**: Configurable concurrent job processing for optimal performance
-- **Database Persistence**: Job status and progress persisted in SQLite database (`job_unit` and `job_queue` tables)
-- **Event-driven UI**: Frontend receives real-time updates via `job_completed`, `job_failed`, and progress events
-- **Breaking Change**: Import API now returns job unit ID immediately instead of blocking until completion
+- **Photographers** managing large collections of JPEG, PNG, and GIF images
+- **Content Creators** organizing photos and videos from multiple cameras/phones
+- **Families** importing and organizing photos from various devices
+- **Anyone** wanting fast, local photo management without cloud dependency
 
-### Database Schema Enhancement (v2.6)
-- **Created At Tracking**: Added `created_at` column to `photo_metadata` table for timestamp tracking
-- **Automatic Migration**: Seamless migration of existing databases with default timestamp values
-- **Job Queue Tables**: New database schema for job management and progress tracking
-- **Enhanced Metadata**: Better tracking of when photos were imported and processed
+## 🔧 Configuration
 
-### TSV Support Removed (v2.6)
-- **Breaking Change**: TSV file format support completely removed in favor of SQLite-only approach
-- **Migration Required**: Users must migrate to SQLite before upgrading (see migration documentation)
-- **Performance Benefits**: Simplified codebase and improved performance with single database backend
-- **UI Cleanup**: Removed TSV migration interface from application menu
+On first run, configure these essential settings:
 
-### UUID-Based Import Directory Structure (v2.5)
-- **Conflict Prevention**: Implemented UUID-based subdirectory structure to prevent filename conflicts when importing from different SD cards
-- **Automatic UUID Management**: Creates `.photoclove-uuid` files in source directories to track unique source identifiers
-- **Hierarchical Storage**: Photos are now imported to `YYYY-MM-DD/UUID/` directory structure (e.g., `2025-01-15/abc123-def456-789/photo.jpg`)
-- **Flat Display**: Photos from both date directories and UUID subdirectories are displayed together in a unified view
-- **Recursive Photo Discovery**: Updated photo scanning to recursively find files in UUID subdirectories
-- **Backward Compatibility**: Existing photos in date directories continue to work alongside new UUID-based imports
-- **Enhanced Import Logic**: Improved directory creation and file organization during import process
+1. **Import To**: Where organized photos will be stored
+2. **Export From**: Source directories to import from
+3. **Thumbnail Store**: Cache location for fast preview generation
+4. **Parallel Processing**: Number of concurrent operations for imports
 
-### Database Deletion on Trash (v2.4)
-- **Automatic Cleanup**: Photos moved to trash are now automatically removed from the database
-- **Data Integrity**: Prevents orphaned database entries when photos are deleted from the filesystem
-- **Metadata Synchronization**: Ensures metadata consistency between filesystem and database state
+## 📂 File Organization
 
-### SQLite Database Improvements (v2.4)
-- **Enhanced initialization**: Fixed SQLite database initialization for edge cases where database files exist without schemas
-- **Robust table detection**: Improved table existence checking using `sqlite_master` query instead of `PRAGMA table_info`
-- **Directory handling**: Automatic creation of parent directories for database files to prevent path errors
-- **Fallback improvements**: Complete index creation in fallback initialization paths for better reliability
-- **Edge case handling**: Better support for corrupted or incomplete database files
+PhotoClove organizes photos using a date-based structure with UUID conflict prevention:
 
-### Import Page & Photo Date Improvements (v2.3)
-- **Import page layout**: Reduced excessive spacing between selection buttons and photo grid for better visual flow
-- **Smart photo dating**: When EXIF data is missing or cannot be parsed, the application now uses file creation/modification datetime instead of fallback default dates
-- **Better date accuracy**: Photos without EXIF data now display meaningful dates based on file system timestamps rather than placeholder values like "0000/00/00" or "1970/01/01"
+```
+import_to/
+├── 2024-12-25/
+│   ├── abc123-def456/     # UUID from source SD card/device
+│   │   ├── IMG_001.jpg
+│   │   └── IMG_002.mp4
+│   └── xyz789-uvw012/     # Different source device
+│       ├── IMG_001.jpg    # Same name, different device - no conflict
+│       └── IMG_003.jpg
+└── 2024-12-26/
+    └── ...
+```
 
-### UI Layout Improvements (v2.2)
-- **Grid layout**: Replaced flex layout with CSS Grid for photo list display, providing better responsive design
-- **Auto-responsive columns**: Grid automatically adjusts column count based on available space (200px minimum width, 150px on mobile)
-- **Improved spacing**: Consistent 10px gap between photo items with better padding
-- **Animated scroll indicators**: Replaced image-based scroll indicators with animated text ("⬆ scroll to load more ⬆" / "⬇ scroll to load more ⬇")
-- **Enhanced scroll behavior**: Fixed scroll limits to prevent scrolling beyond load indicators, ensuring proper scroll-to-load functionality
-- **Dynamic dummy items**: Smart grid filler items that adjust based on photo count to maintain consistent scroll experience
-- **Visual feedback**: Bounce animations provide clear indication of scroll-to-load areas
+## 🎨 Photo Editing
 
-### Photo Display Improvements (v2.1)
-- **Responsive photo sizing**: Fixed photo display sizing issues for resizable app windows
-- **Dynamic expansion**: Images now properly expand when app window is resized larger
-- **Improved first load**: Fixed bug where images appeared as small icons on first photo selection from thumbnails
-- **Better margins**: Added proper spacing around photos (20px sides, 40px bottom) for better visual presentation
-- **Enhanced navigation**: Preserved photo dimensions during photo navigation to prevent sizing loss
-- **CSS-based approach**: Replaced complex JavaScript calculations with responsive CSS for more reliable sizing
+- **Non-Destructive**: All edits are CSS-based transformations
+- **Real-Time Preview**: See changes instantly
+- **Save Options**: Save styles to database or export new image file
+- **Transform Controls**: Brightness, contrast, saturation, hue, rotation, scaling
 
-### Extension Filter Enhancements
-- **Grouped filtering**: Organized extension filters into Image and Movie categories with group checkboxes
-- **Better UI**: Improved checkbox layout with proper labeling and hierarchical structure
-- **Combined extensions**: JPEG files now handled as single filter for both .jpg and .jpeg extensions
+## 🔍 Search & Filtering
 
-### SQLite Database Migration (v2.0+)
-- **Performance improvements**: Migrated from TSV files to SQLite database for better performance
-- **Automatic migration**: Seamless upgrade from old TSV format to new SQLite schema
-- **Optimized queries**: GROUP BY aggregation for efficient photo counting
-- **Better date handling**: Proper SQLite date functions for reliable comparisons
-- **Access via File menu**: TSV to SQLite migration available in File → "Migrate TSV to SQLite"
-- **Enhanced initialization**: Fixed database initialization for edge cases with schema-less databases
-- **Robust error handling**: Better support for corrupted or incomplete database files
+- **Date Range**: Navigate by calendar dates
+- **Star Ratings**: 1-5 star rating system
+- **Comments**: Searchable text annotations
+- **File Types**: Filter by extension (JPG, MP4, etc.)
+- **Metadata**: Search by EXIF data (coming soon)
 
-### Photo Navigation Fixes
-- **Timing improvements**: Fixed photo navigation timing issues for better user experience
-- **Button state management**: Corrected next/previous button disable logic
-- **Smoother transitions**: Enhanced photo loading and transition animations
+## 🔄 Background Processing
 
-## Featurs to be ipmlemented
+PhotoClove uses an advanced job queue system for:
 
-Just a plan, currentrly a few features are only implemented.
+- **Photo Import**: Copy files to organized structure
+- **Thumbnail Generation**: Create preview images
+- **Database Updates**: Index new photos and metadata
+- **Cloud Uploads**: Upload to Google Photos (optional)
 
-- [x] Fast photo viewer
-  - [x] Fast when using NFS
-  - [x] Allow photos over network drive(NFS/SMB mount on Linux. assign Network drive on Windows)
-- [x] Fast importer
-  - [ ] only check duplication for the files which has same name prefix and different size.
-  - [ ] import files created after last import file timestamp in directories.
-  - [x] different SD card and same file name (UUID-based directory structure)
-  - [x] filter import targets by date
-  - [x] importing in background (asynchronous job queue system)
-  - [x] Thumbnail creation
-     - [x] Thumbnail creation in background (asynchronous job processing)
-  - [x] Real-time progress tracking and event notifications
-  - [x] Error recovery and job resumption
-- [x] Provide very simple editor
-  - [x] rotation (with shortcuts and smart value handling)
-  - [x] brightness, contrast, saturation, hue adjustment
-  - [x] scaling
-  - [x] real-time preview
-  - [x] download styled images
-  - [ ] crop
-- [ ] Additional photo data
-  - [x] Star
-  - [x] Comment/Note
-  - [ ] Tag
-  - [ ] Album(low priority)
-- [ ] Search/Filter
-  - [x] Star
-  - [x] Comment/Note
-  - [x] File extension (jpg, mp4 etc.) with UI filter
-  - [ ] Camera
-  - [ ] Tag
-- [ ] Upload to cloud services
-  - [x] Google Photos (works. but in progress)
-  - [ ] Amazon Photos
-- [x] Preferences editor(low priority)
-  - [x] directories(import from)
-  - [x] directory(import to)
-  - [x] download directory(styled images)
-  - [x] num of parralel when copying photos
-  - [x] thumbnail settings
-  - [ ] directory date format(currentry, yyyy-mm-dd only)
-- [x] Welcome tutorial
-- [x] Playing movies(mp4, webm) ... not good, but works
-- [ ] Slide Show(low priority)
-- [ ] i18n(low priority)
-- [ ] trashbox management
-- [ ] redo/undo
-- [ ] Show photos imported recently
-- [ ] Crop photo and search with Google
+Monitor progress in the Job Queue interface (File → Job Queue).
 
-## Recent Improvements
+## 🤝 Contributing
 
-### Data Storage Migration (SQLite)
+We welcome contributions! Here's how to get started:
 
-The application has been migrated from TSV file storage to SQLite database for improved performance and data integrity:
+1. **Fork** the repository
+2. **Create** a feature branch: `git checkout -b feature/amazing-feature`
+3. **Commit** your changes: `git commit -m 'Add amazing feature'`
+4. **Push** to the branch: `git push origin feature/amazing-feature`
+5. **Open** a Pull Request
 
-- **Better Performance**: SQLite provides faster queries and data access compared to reading/writing multiple TSV files
-- **Data Integrity**: ACID compliance ensures photo metadata consistency
-- **Scalability**: Better handling of large photo collections with efficient indexing
-- **Concurrent Access**: Improved support for multiple operations on photo metadata
+### Development Workflow
 
-### Enhanced User Interface
+PhotoClove uses a structured development workflow with the `improvement/` directory for task management. See [`CLAUDE.md`](./CLAUDE.md) for AI-assisted development guidelines.
 
-- **Extension Filter**: Added a comprehensive extension filter system with grouped checkboxes for Image and Movie categories, allowing users to filter photos by file extensions (e.g., jpg,png,mp4)
-- **Photo Display**: Implemented responsive photo sizing that automatically adapts to window resizing and provides consistent image display across different screen sizes
-- **Improved Navigation**: Enhanced photo navigation with better timing and state management for smoother user experience
+## 📋 Roadmap
+
+### Current Focus
+- [ ] **Crop Tool**: Complete the photo cropping functionality
+- [ ] **Tag System**: Add taggable labels for better organization
+- [ ] **Advanced Search**: EXIF-based filtering and search
+- [ ] **Album Support**: Group photos into custom collections
+
+### Future Plans
+- [ ] **Cloud Storage**: Amazon Photos integration
+- [ ] **Slide Show**: Full-screen photo presentation mode
+- [ ] **Internationalization**: Multi-language support
+- [ ] **Advanced Editing**: More sophisticated photo editing tools
+
+See [`CHANGES.md`](./CHANGES.md) for detailed version history and recent updates.
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Photos not displaying?**
+- Check that the import directory is accessible
+- Verify thumbnail generation completed (Job Queue)
+- Ensure file permissions allow read access
+
+**Import not working?**
+- Verify source directories are configured in Preferences
+- Check that target directory has write permissions
+- Monitor Job Queue for error messages
+
+**Performance issues?**
+- Increase thumbnail parallel processing in Preferences
+- Ensure SSD storage for import and thumbnail directories
+- Check that no antivirus is scanning photo directories
+
+### Getting Help
+
+1. Check the [documentation](./docs/) for detailed guides
+2. Search [existing issues](https://github.com/ktat/photoclove/issues)
+3. Create a [new issue](https://github.com/ktat/photoclove/issues/new) with:
+   - Operating system and version
+   - PhotoClove version
+   - Detailed steps to reproduce
+   - Error messages or logs
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **Tauri Team** for the excellent desktop framework
+- **React Team** for the robust UI library
+- **Rust Community** for the amazing ecosystem
+- **Contributors** who help make PhotoClove better
+
+---
+
+<div align="center">
+
+**[⬆ Back to Top](#photoclove-)**
+
+Made with ❤️ by [ktat](https://github.com/ktat) and [contributors](https://github.com/ktat/photoclove/contributors)
+
+</div>
