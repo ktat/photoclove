@@ -26,6 +26,22 @@ function PhotosList(props) {
         setCurrentDateNum
     } = usePhoto();
     const { addFooterMessage } = useUI();
+    
+    // Create props compatibility layer for gradual migration
+    const compatProps = {
+        dateList: dateList || [],
+        datePage: datePage || {},
+        currentDate: currentDate || "",
+        dateNum: dateNum || {},
+        showPhotoDisplay: showPhotoDisplay || {},
+        setDatePage: updateDatePage,
+        setCurrentDate: updateCurrentDate,
+        setShowPhotoDisplay: updateShowPhotoDisplay,
+        setDateNum: updateDateNum,
+        setCurrentDateNum: setCurrentDateNum,
+        addFooterMessage: addFooterMessage,
+        ...props
+    };
     const [iconSize, setIconSize] = useState(100);
     const [numOfPhoto, setNumOfPhoto] = useState(20);
     const [currentPhotoPath, setCurrentPhotoPath] = useState("");
@@ -90,35 +106,35 @@ function PhotosList(props) {
 
     useEffect((e) => {
         setShowSideMenu(false);
-        if (props.currentDate != "" && !props.showPhotoDisplay) {
+        if (compatProps.currentDate != "" && !compatProps.showPhotoDisplay[compatProps.currentDate]) {
             // Cancel current photo loading if in progress
             if (currentPhotoLoadingController) {
                 currentPhotoLoadingController.abort();
                 setCurrentPhotoLoadingController(null);
             }
             
-            delete props.datePage[props.currentDate];
+            delete compatProps.datePage[compatProps.currentDate];
             photos.photos = [];
             setPhotosList({ "photos": [] });
-            props.setDatePage({});
+            compatProps.setDatePage({});
             const fetchPhotos = async () => getPhotos(undefined, true);;
             setCurrentPhotoIndex(0)
             fetchPhotos().catch(console.error);
             setPhotosListMiniReread(!photosListMiniReread);
             setPhotosListMiniAllPhotos([]);
         }
-    }, [numOfPhoto, props.currentDate, sortOfPhotos, starFilter, hasCommentFilter, extensionFilter]);
+    }, [numOfPhoto, compatProps.currentDate, sortOfPhotos, starFilter, hasCommentFilter, extensionFilter]);
 
     useEffect(e => {
         setPhotosListMiniAllPhotos([]);
         setPhotosListMiniCurrentIndex(0);
         setCurrentPhotoPath(undefined);
-    }, [props.currentDate])
+    }, [compatProps.currentDate])
 
     function displayPhoto(f, i) {
         setCurrentPhotoPath(f);
         setCurrentPhotoIndex(i)
-        props.setShowPhotoDisplay(true);
+        compatProps.setShowPhotoDisplay(true);
     }
 
     function addSelection(t, f) {
@@ -426,11 +442,11 @@ function PhotosList(props) {
                 </div>
                 <div className={(props.showSideMenu || !currentPhotoPath) ? "centerDisplay" : "centerDisplayMax"} id="photoList"
                     style={{ display: (!photoLoading && (!props.showPhotoDisplay || !currentPhotoPath)) ? "block" : "none" }}
-                    data-date={props.currentDate} data-page={props.datePage[props.currentDate]}>
+                    data-date={compatProps.currentDate} data-page={compatProps.datePage[compatProps.currentDate]}>
                     <div>
                         {photos.photos.length > 0 ?
                             <div className="photo-list-header">
-                                <div className="photo-page-info">{props.currentDate} page:{props.datePage[props.currentDate]}</div>
+                                <div className="photo-page-info">{compatProps.currentDate} page:{compatProps.datePage[compatProps.currentDate]}</div>
                                 <div className="navigation">
                                     {photos.has_prev && (<span><a href="#" onClick={(e) => nextPhotosList(e, false)}>&lt;&lt; Prev&nbsp;</a></span>)}
                                     {photos.has_next && (<span><a href="#" onClick={(e) => nextPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
