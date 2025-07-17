@@ -959,15 +959,44 @@ function PhotoEditor(props) {
         
         // Calculate image bounds with more robust detection
         const calculateBounds = () => {
-            const img = document.querySelector('#photoImgTag');
-            console.log('Looking for image element #photoImgTag');
+            // Try multiple selectors to find the actual photo image
+            const selectors = [
+                '#photoImgTag',  // Main photo image
+                '#photo img',    // Image inside photo container
+                '.photo-display img', // Image in photo display
+                '#photos-display-wrapper img'  // Image in photo display wrapper
+            ];
             
-            if (img && img.offsetWidth > 0 && img.offsetHeight > 0) {
+            let img = null;
+            let selectorUsed = '';
+            
+            for (const selector of selectors) {
+                const element = document.querySelector(selector);
+                console.log(`Trying selector "${selector}":`, element);
+                
+                if (element && element.offsetWidth > 0 && element.offsetHeight > 0 && 
+                    element.tagName === 'IMG' && element.src && 
+                    // Make sure it's not in the editor area
+                    !element.closest('.editor-tab') && 
+                    !element.closest('.tab-content') &&
+                    // Make sure it's visible and actually displaying the current photo
+                    element.src.includes(props.currentPhotoPath?.split('/').pop() || '')) {
+                    img = element;
+                    selectorUsed = selector;
+                    break;
+                }
+            }
+            
+            console.log('Final selected image element:', img);
+            console.log('Selector used:', selectorUsed);
+            
+            if (img) {
                 const rect = img.getBoundingClientRect();
-                console.log('Image element found:', img);
                 console.log('Image bounds:', rect);
                 console.log('Image computed style:', window.getComputedStyle(img));
+                console.log('Image src:', img.src);
                 console.log('Image parent element:', img.parentElement);
+                console.log('Image natural dimensions:', img.naturalWidth, 'x', img.naturalHeight);
                 
                 const bounds = {
                     left: rect.left,
@@ -985,7 +1014,17 @@ function PhotoEditor(props) {
                 
                 return true;
             } else {
-                console.error('Photo image element not found or not visible for crop mode', img);
+                console.error('Photo image element not found or not visible for crop mode');
+                console.log('Available img elements:', Array.from(document.querySelectorAll('img')).map(img => ({
+                    element: img,
+                    src: img.src,
+                    id: img.id,
+                    class: img.className,
+                    parent: img.parentElement?.tagName,
+                    parentClass: img.parentElement?.className,
+                    visible: img.offsetWidth > 0 && img.offsetHeight > 0,
+                    bounds: img.getBoundingClientRect()
+                })));
                 return false;
             }
         };
