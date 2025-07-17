@@ -21,6 +21,7 @@ function PhotosList(props) {
         updateCurrentDate,
         dateNum,
         updateDateNum,
+        updateDateList,
         showPhotoDisplay,
         updateShowPhotoDisplay,
         setCurrentDateNum
@@ -38,6 +39,7 @@ function PhotosList(props) {
         setCurrentDate: updateCurrentDate,
         setShowPhotoDisplay: updateShowPhotoDisplay,
         setDateNum: updateDateNum,
+        setDateList: updateDateList,
         setCurrentDateNum: setCurrentDateNum,
         addFooterMessage: addFooterMessage,
         ...props
@@ -210,14 +212,14 @@ function PhotosList(props) {
             if (d) {
                 const date = d
                 const date_with_slash = d.replace(/-/g, "/");
-                if (props.dateNum[date] > 0) {
-                    props.dateNum[date] -= 1;
-                    props.setDateNum(props.dateNum);
-                    props.setDateList(props.dateList.concat());
+                if (compatProps.dateNum[date] > 0) {
+                    compatProps.dateNum[date] -= 1;
+                    compatProps.setDateNum(compatProps.dateNum);
+                    compatProps.setDateList(compatProps.dateList.concat());
                 }
 
                 // exists photo before the deleted photo
-                if (date_with_slash === props.currentDate) {
+                if (date_with_slash === compatProps.currentDate) {
                     const allPhotos = photosListMiniAllPhotos
                     if (allPhotos.length > 0) {
                         allPhotos.splice(currentPhotoIndex, 1);
@@ -251,7 +253,7 @@ function PhotosList(props) {
 
     function closePhotoDisplay() {
         setShowSideMenu(false);
-        props.setShowPhotoDisplay(false);
+        compatProps.setShowPhotoDisplay(false);
         if (props.currentPhotoPath !== "") setCurrentPhotoPath("");
         console.log("photos-list-close-photod-display -- getPhotos")
         
@@ -267,7 +269,7 @@ function PhotosList(props) {
 
     function closeRightColumn() {
         setShowSideMenu(false);
-        props.setShowPhotoDisplay(false);
+        compatProps.setShowPhotoDisplay(false);
     }
 
     async function getPhotos(e, isForward) {
@@ -288,15 +290,15 @@ function PhotosList(props) {
         if (e && e.currentTarget && e.currentTarget.getAttribute && e.currentTarget.getAttribute("data-date")) {
             date = e.currentTarget.getAttribute("data-date");
         } else {
-            date = props.currentDate;
+            date = compatProps.currentDate;
         }
         if (!date || date == "") {
             setPhotoLoading(false);
             setCurrentPhotoLoadingController(null);
             return;
         }
-        let page = props.datePage[date];
-        props.setCurrentDate(date)
+        let page = compatProps.datePage[date];
+        compatProps.setCurrentDate(date)
         if (!page || page == "NaN") {
             page = 1;
         }
@@ -327,8 +329,8 @@ function PhotosList(props) {
             } else {
                 page -= 1;
             }
-            props.datePage[date] = page;
-            props.setDatePage(props.datePage);
+            compatProps.datePage[date] = page;
+            compatProps.setDatePage(compatProps.datePage);
             setPhotoLoading(false);
             setCurrentPhotoLoadingController(null);
             setTimeout(() => { setScrollLock(false) }, 200);
@@ -360,8 +362,8 @@ function PhotosList(props) {
         } else {
             page += 1;
         }
-        props.datePage[date] = page;
-        props.setDatePage(props.datePage);
+        compatProps.datePage[date] = page;
+        compatProps.setDatePage(compatProps.datePage);
         const fetchPhotos = async () => getPhotos(e, isForward)
         fetchPhotos().catch(console.error);
     }
@@ -369,7 +371,7 @@ function PhotosList(props) {
     let beforeScrollTop = -1;
     let isScrollBottom = 0;
     function photosScroll(e) {
-        if (scrollLock || props.currentDate === "") {
+        if (scrollLock || compatProps.currentDate === "") {
             return;
         }
 
@@ -403,7 +405,7 @@ function PhotosList(props) {
             </div>
             :
             <>
-                <div id="photos-display-wrapper" style={{ display: (!photoLoading && props.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
+                <div id="photos-display-wrapper" style={{ display: (!photoLoading && compatProps.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
                     <AllPhotosContext.Provider value={{ photosListMiniAllPhotos, setPhotosListMiniAllPhotos }}>
                         <ImgCacheContext.Provider value={{ imgCacheMap, setImgCacheMap }}>
                             <div className="photo-display">
@@ -414,14 +416,14 @@ function PhotosList(props) {
                                     isSelected={isSelected}
 
                                     setShortCutNavigation={props.setShortCutNavigation}
-                                    setShowPhotoDisplay={props.setShowPhotoDisplay}
+                                    setShowPhotoDisplay={compatProps.setShowPhotoDisplay}
                                     shortCutNavigation={props.shortCutNavigation}
                                     getPhotos={getPhotos}
                                     currentPhotoPath={currentPhotoPath}
                                     setCurrentPhotoPath={setCurrentPhotoPath}
                                     sortOfPhotos={sortOfPhotos}
-                                    currentDate={props.currentDate}
-                                    datePage={props.datePage}
+                                    currentDate={compatProps.currentDate}
+                                    datePage={compatProps.datePage}
                                     num={numOfPhoto}
                                     currentPhotoIndex={currentPhotoIndex}
                                     setCurrentPhotoIndex={setCurrentPhotoIndex}
@@ -441,7 +443,7 @@ function PhotosList(props) {
                     </AllPhotosContext.Provider>
                 </div>
                 <div className={(props.showSideMenu || !currentPhotoPath) ? "centerDisplay" : "centerDisplayMax"} id="photoList"
-                    style={{ display: (!photoLoading && (!props.showPhotoDisplay || !currentPhotoPath)) ? "block" : "none" }}
+                    style={{ display: (!photoLoading && (!compatProps.showPhotoDisplay || !currentPhotoPath)) ? "block" : "none" }}
                     data-date={compatProps.currentDate} data-page={compatProps.datePage[compatProps.currentDate]}>
                     <div>
                         {photos.photos.length > 0 ?
@@ -487,7 +489,7 @@ function PhotosList(props) {
                             : <>No Photo Found!</>
                         }
                         <Scrollable f={photosScroll} className="photos" hasNext={photos.has_next} hasPrev={photos.has_prev} >
-                            {photos.has_prev && props.datePage[props.currentDate] > 1 && 
+                            {photos.has_prev && compatProps.datePage[compatProps.currentDate] > 1 && 
                                 <div className="scroll-indicator" style={{ textAlign: "center", minHeight: "80px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                     <div className="scroll-indicator-text up">⬆ scroll to load more ⬆</div>
                                 </div>
@@ -513,16 +515,16 @@ function PhotosList(props) {
                                     if (uuid) {
                                         // Build thumbnail path with UUID directory
                                         if (l.file.name.match(/(mp4|webm)$/i)) {
-                                            thumbnailSrc = thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + uuid + '/' + l.file.name + ".jpg";
+                                            thumbnailSrc = thumbnailStore + '/' + compatProps.currentDate.replace(/\//g, '-') + '/' + uuid + '/' + l.file.name + ".jpg";
                                         } else {
-                                            thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + uuid + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
+                                            thumbnailSrc = (thumbnailStore + '/' + compatProps.currentDate.replace(/\//g, '-') + '/' + uuid + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
                                         }
                                     } else {
                                         // Fallback to old behavior if UUID cannot be extracted
                                         if (l.file.name.match(/(mp4|webm)$/i)) {
-                                            thumbnailSrc = thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + l.file.name + ".jpg";
+                                            thumbnailSrc = thumbnailStore + '/' + compatProps.currentDate.replace(/\//g, '-') + '/' + l.file.name + ".jpg";
                                         } else {
-                                            thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
+                                            thumbnailSrc = (thumbnailStore + '/' + compatProps.currentDate.replace(/\//g, '-') + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
                                         }
                                     }
                                     photosListImgSrc[l.file.path] = convertFileSrc(thumbnailSrc);
@@ -535,7 +537,7 @@ function PhotosList(props) {
                                             <div style={{ flexShrink: 0 }}>
                                                 <a href="#" onClick={() => {
                                                     setShowSideMenu(false);
-                                                    displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto)
+                                                    displayPhoto(l.file.path, i + (compatProps.datePage[compatProps.currentDate] - 1) * numOfPhoto)
                                                 }}>
                                                     {!l.has_thumbnail && l.file.path.match(/\.(mp4|webm)$/i)
                                                         ? <div className="photo-list-movie" style={{ minWidth: (iconSize - 20) + 'px', marginTop: (iconSize / 7) + "px" }}>
@@ -591,7 +593,7 @@ function PhotosList(props) {
                                                 />
                                                 <label className={"cneckbox-photo checkbox hover"} htmlFor={"photo-checkbox-" + i}></label>
                                                 <a href="#" onClick={() => {
-                                                    displayPhoto(l.file.path, i + (props.datePage[props.currentDate] - 1) * numOfPhoto)
+                                                    displayPhoto(l.file.path, i + (compatProps.datePage[compatProps.currentDate] - 1) * numOfPhoto)
                                                     setShowSideMenu(true);
                                                 }
                                                 } >(&#8505;)</a>
@@ -618,33 +620,33 @@ function PhotosList(props) {
             </>
         }
         <div className={(showSideMenu || !currentPhotoPath) ? "rightMenu" : "rightMenu-close"}>
-            <div style={{ display: (props.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
+            <div style={{ display: (compatProps.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
                 <PhotoOption
                     setShowSideMenu={setShowSideMenu}
                     showSideMenu={showSideMenu}
                     currentPhotoPath={currentPhotoPath}
                     closePhotoDisplay={closePhotoDisplay}
                     path={currentPhotoPath}
-                    addFooterMessage={props.addFooterMessage}
+                    addFooterMessage={compatProps.addFooterMessage}
                     imgCacheMap={imgCacheMap}
                     setStar={setStar}
                     star={star}
                     onPhotosRefresh={getPhotos}
                 />
             </div>
-            <div style={{ display: (!props.showPhotoDisplay || !currentPhotoPath) ? "block" : "none" }}>
+            <div style={{ display: (!compatProps.showPhotoDisplay || !currentPhotoPath) ? "block" : "none" }}>
                 <DirectoryMenu
-                    addFooterMessage={props.addFooterMessage}
+                    addFooterMessage={compatProps.addFooterMessage}
                     tabClass={tabClass}
                     setTabClass={setTabClass}
                     changeTab={changeTab}
-                    currentDate={props.currentDate}
+                    currentDate={compatProps.currentDate}
                     closeRightColumn={closeRightColumn}
                     photoSelection={photoSelection}
                     clearPhotoSelection={clearPhotoSelection}
                     selectAllPhotoToSelection={selectAllPhotoToSelection}
-                    dateNum={props.dateNum}
-                    setCurrentDateNum={props.setCurrentDateNum}
+                    dateNum={compatProps.dateNum}
+                    setCurrentDateNum={compatProps.setCurrentDateNum}
                     moveToTrashCan={moveToTrashCan}
                     setStarFilter={setStarFilter}
                     setHasCommentFilter={setHasCommentFilter}
