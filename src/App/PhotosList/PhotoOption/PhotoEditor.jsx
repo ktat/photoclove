@@ -957,39 +957,6 @@ function PhotoEditor(props) {
         setCropMode(true);
         setCropSelection({ x: 0, y: 0, width: 100, height: 100 });
         console.log('Entering crop mode');
-        
-        // Direct DOM manipulation approach as fallback
-        setTimeout(() => {
-            const img = document.querySelector('#photoImgTag');
-            if (img) {
-                // Create overlay div directly
-                let overlay = document.getElementById('direct-crop-overlay');
-                if (!overlay) {
-                    overlay = document.createElement('div');
-                    overlay.id = 'direct-crop-overlay';
-                    overlay.style.cssText = `
-                        position: absolute;
-                        top: 0;
-                        left: 0;
-                        width: 100%;
-                        height: 100%;
-                        background-color: rgba(0, 255, 255, 0.5);
-                        border: 3px solid orange;
-                        pointer-events: auto;
-                        cursor: crosshair;
-                        z-index: 10000;
-                    `;
-                    overlay.innerHTML = '<div style="position: absolute; top: 10px; left: 10px; color: white; background: black; padding: 5px;">DIRECT DOM OVERLAY</div>';
-                    
-                    // Ensure parent is positioned
-                    if (img.parentElement) {
-                        img.parentElement.style.position = 'relative';
-                        img.parentElement.appendChild(overlay);
-                        console.log('Added direct DOM overlay to image parent');
-                    }
-                }
-            }
-        }, 100);
     }
 
     function exitCropMode() {
@@ -997,13 +964,6 @@ function PhotoEditor(props) {
         setCropSelection({ x: 0, y: 0, width: 100, height: 100 });
         setIsDragging(false);
         console.log('Exiting crop mode');
-        
-        // Remove direct DOM overlay
-        const overlay = document.getElementById('direct-crop-overlay');
-        if (overlay) {
-            overlay.remove();
-            console.log('Removed direct DOM overlay');
-        }
     }
 
     function applyCrop() {
@@ -1138,60 +1098,7 @@ function PhotoEditor(props) {
         if (!cropMode) return null;
 
         const photoContainer = document.querySelector('#photo');
-        console.log('Photo container found:', photoContainer);
-        
-        if (!photoContainer) {
-            console.error('Photo container #photo not found');
-            // Fallback to image parent
-            const img = document.querySelector('#photoImgTag');
-            console.log('Fallback to image:', img);
-            if (img && img.parentElement) {
-                console.log('Using image parent as container');
-                const container = img.parentElement;
-                if (window.getComputedStyle(container).position === 'static') {
-                    container.style.position = 'relative';
-                }
-                return ReactDOM.createPortal(
-                    <>
-                        <div style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: '100%',
-                            backgroundColor: 'rgba(0, 255, 0, 0.5)', // Green for debugging
-                            border: '3px solid red',
-                            pointerEvents: 'auto',
-                            cursor: 'crosshair',
-                            zIndex: 10000
-                        }}
-                        onMouseDown={handleImageMouseDown}
-                        onMouseMove={handleImageMouseMove}
-                        onMouseUp={handleImageMouseUp}
-                        >
-                            <div style={{
-                                position: 'absolute',
-                                top: '10px',
-                                left: '10px',
-                                color: 'white',
-                                fontSize: '14px',
-                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                padding: '8px 12px',
-                                borderRadius: '6px',
-                                pointerEvents: 'none'
-                            }}>
-                                FALLBACK: Image Parent Overlay
-                            </div>
-                        </div>
-                    </>,
-                    container
-                );
-            }
-            return null;
-        }
-
-        console.log('Photo container bounds:', photoContainer.getBoundingClientRect());
-        console.log('Photo container style:', window.getComputedStyle(photoContainer));
+        if (!photoContainer) return null;
 
         // Ensure photo container is positioned relatively
         if (window.getComputedStyle(photoContainer).position === 'static') {
@@ -1207,8 +1114,8 @@ function PhotoEditor(props) {
                     left: 0,
                     width: '100%',
                     height: '100%',
-                    backgroundColor: 'rgba(255, 0, 255, 0.5)', // Magenta for debugging
-                    border: '3px solid yellow',
+                    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Semi-transparent dark
+                    border: 'none',
                     pointerEvents: 'auto',
                     cursor: 'crosshair',
                     zIndex: 10000
@@ -1228,7 +1135,7 @@ function PhotoEditor(props) {
                         borderRadius: '6px',
                         pointerEvents: 'none'
                     }}>
-                        PHOTO CONTAINER OVERLAY
+                        Click and drag to crop
                     </div>
                     {/* Crop selection rectangle */}
                     <div
