@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 import { openUrl } from '@tauri-apps/plugin-opener';
@@ -98,12 +99,11 @@ function PhotoEditor(props) {
         }
     }, [props.currentPhotoPath])
 
-    // Cleanup effect to remove event listeners when component unmounts
+    // Cleanup effect to reset crop mode when component unmounts
     useEffect(() => {
         return () => {
-            // Remove global mouse event listeners on cleanup
-            document.removeEventListener('mousemove', handleGlobalMouseMove);
-            document.removeEventListener('mouseup', handleGlobalMouseUp);
+            setCropMode(false);
+            setIsDragging(false);
         };
     }, [])
 
@@ -956,212 +956,14 @@ function PhotoEditor(props) {
     function enterCropMode() {
         setCropMode(true);
         setCropSelection({ x: 0, y: 0, width: 100, height: 100 });
-        
-        // Calculate image bounds with more robust detection
-        const calculateBounds = () => {
-            console.log('Current photo path:', props.currentPhotoPath);
-            
-            // First, let's see what elements exist
-            console.log('All img elements on page:', Array.from(document.querySelectorAll('img')).map(img => ({
-                element: img,
-                src: img.src,
-                id: img.id,
-                class: img.className,
-                parent: img.parentElement?.tagName,
-                parentClass: img.parentElement?.className,
-                visible: img.offsetWidth > 0 && img.offsetHeight > 0,
-                bounds: img.getBoundingClientRect(),
-                inEditorTab: !!img.closest('.editor-tab'),
-                inTabContent: !!img.closest('.tab-content')
-            })));
-            
-            // Try multiple selectors to find the actual photo image
-            const selectors = [
-                '#photoImgTag',  // Main photo image
-                '#photo img',    // Image inside photo container
-                '.photo-display img', // Image in photo display
-                '#photos-display-wrapper img',  // Image in photo display wrapper
-                'img' // Any image as fallback
-            ];
-            
-            let img = null;
-            let selectorUsed = '';
-            
-            for (const selector of selectors) {
-                const elements = document.querySelectorAll(selector);
-                console.log(`Trying selector "${selector}":`, elements);
-                
-                for (const element of elements) {
-                    console.log(`  Checking element:`, {
-                        element,
-                        src: element.src,
-                        visible: element.offsetWidth > 0 && element.offsetHeight > 0,
-                        isImg: element.tagName === 'IMG',
-                        hasSrc: !!element.src,
-                        inEditor: !!element.closest('.editor-tab'),
-                        inTab: !!element.closest('.tab-content'),
-                        matchesPath: element.src.includes(props.currentPhotoPath?.split('/').pop() || '')
-                    });
-                    
-                    if (element && element.offsetWidth > 0 && element.offsetHeight > 0 && 
-                        element.tagName === 'IMG' && element.src) {
-                        
-                        // For debugging, let's use the first visible image we find
-                        if (!img) {
-                            img = element;
-                            selectorUsed = selector;
-                            console.log('Selected image (first visible):', img);
-                        }
-                        
-                        // But prefer images that aren't in editor area and match current photo
-                        if (!element.closest('.editor-tab') && 
-                            !element.closest('.tab-content') &&
-                            element.src.includes(props.currentPhotoPath?.split('/').pop() || '')) {
-                            img = element;
-                            selectorUsed = selector;
-                            console.log('Selected image (matching criteria):', img);
-                            break;
-                        }
-                    }
-                }
-                
-                if (img && selectorUsed === selector && 
-                    !img.closest('.editor-tab') && 
-                    img.src.includes(props.currentPhotoPath?.split('/').pop() || '')) {
-                    break; // Found a good match, stop looking
-                }
-            }
-            
-            console.log('Final selected image element:', img);
-            console.log('Selector used:', selectorUsed);
-            
-            if (img) {
-                const rect = img.getBoundingClientRect();
-                console.log('=== DETAILED BOUNDS ANALYSIS ===');
-                console.log('Image element:', img);
-                console.log('Image bounds:', rect);
-                console.log('Window scroll:', { x: window.scrollX, y: window.scrollY });
-                console.log('Image computed style:', window.getComputedStyle(img));
-                console.log('Image src:', img.src);
-                console.log('Image parent element:', img.parentElement);
-                console.log('Image parent bounds:', img.parentElement?.getBoundingClientRect());
-                console.log('Image natural dimensions:', img.naturalWidth, 'x', img.naturalHeight);
-                console.log('Image display dimensions:', img.width, 'x', img.height);
-                console.log('Image offset dimensions:', img.offsetWidth, 'x', img.offsetHeight);
-                
-                // Let's also check if the image is actually visible where we think it is
-                const centerX = rect.left + rect.width / 2;
-                const centerY = rect.top + rect.height / 2;
-                const elementAtCenter = document.elementFromPoint(centerX, centerY);
-                console.log('Element at image center:', elementAtCenter);
-                console.log('Is image at its own center?', elementAtCenter === img || elementAtCenter?.contains(img) || img.contains(elementAtCenter));
-                
-                // Check for container scrolling and positioning
-                let container = img.parentElement;
-                while (container) {
-                    const containerStyle = window.getComputedStyle(container);
-                    const containerRect = container.getBoundingClientRect();
-                    console.log(`Container ${container.tagName}.${container.className}:`, {
-                        element: container,
-                        bounds: containerRect,
-                        overflow: containerStyle.overflow,
-                        overflowX: containerStyle.overflowX,
-                        overflowY: containerStyle.overflowY,
-                        position: containerStyle.position,
-                        transform: containerStyle.transform,
-                        scrollLeft: container.scrollLeft,
-                        scrollTop: container.scrollTop
-                    });
-                    
-                    // Check if this container has scrolling that might affect positioning
-                    if (container.scrollLeft !== 0 || container.scrollTop !== 0) {
-                        console.log('Found scrolling container!', container);
-                    }
-                    
-                    container = container.parentElement;
-                    if (container === document.body) break;
-                }
-                
-                const bounds = {
-                    left: rect.left,
-                    top: rect.top, 
-                    width: rect.width,
-                    height: rect.height
-                };
-                
-                console.log('Setting crop overlay bounds:', bounds);
-                console.log('This should create overlay at:', {
-                    'left': bounds.left + 'px',
-                    'top': bounds.top + 'px', 
-                    'width': bounds.width + 'px',
-                    'height': bounds.height + 'px'
-                });
-                
-                // Create a test overlay directly on the image element to verify positioning
-                const testOverlay = document.createElement('div');
-                testOverlay.id = 'test-crop-overlay';
-                testOverlay.style.cssText = `
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background-color: rgba(255, 0, 255, 0.5);
-                    border: 3px solid yellow;
-                    pointer-events: none;
-                    z-index: 10001;
-                `;
-                testOverlay.innerHTML = '<div style="color: white; font-size: 14px; background: black; padding: 2px;">TEST OVERLAY</div>';
-                
-                // Remove any existing test overlay
-                const existingTestOverlay = document.getElementById('test-crop-overlay');
-                if (existingTestOverlay) {
-                    existingTestOverlay.remove();
-                }
-                
-                // Position the overlay relative to the image
-                img.parentElement.style.position = 'relative';
-                img.parentElement.appendChild(testOverlay);
-                
-                console.log('Added test overlay directly to image parent');
-                
-                setCropOverlayBounds(bounds);
-                
-                // Add global mouse event listeners for more reliable crop selection
-                document.addEventListener('mousemove', handleGlobalMouseMove);
-                document.addEventListener('mouseup', handleGlobalMouseUp);
-                
-                return true;
-            } else {
-                console.error('Photo image element not found or not visible for crop mode');
-                return false;
-            }
-        };
-        
-        // Try immediately, then with increasing delays if not found
-        if (!calculateBounds()) {
-            setTimeout(() => {
-                if (!calculateBounds()) {
-                    setTimeout(calculateBounds, 500);
-                }
-            }, 100);
-        }
+        console.log('Entering crop mode');
     }
 
     function exitCropMode() {
         setCropMode(false);
         setCropSelection({ x: 0, y: 0, width: 100, height: 100 });
         setIsDragging(false);
-        
-        // Remove test overlay
-        const existingTestOverlay = document.getElementById('test-crop-overlay');
-        if (existingTestOverlay) {
-            existingTestOverlay.remove();
-        }
-        
-        // Remove global mouse event listeners
-        document.removeEventListener('mousemove', handleGlobalMouseMove);
-        document.removeEventListener('mouseup', handleGlobalMouseUp);
+        console.log('Exiting crop mode');
     }
 
     function applyCrop() {
@@ -1171,16 +973,6 @@ function PhotoEditor(props) {
         }));
         setCropMode(false);
         setIsDragging(false);
-        
-        // Remove test overlay
-        const existingTestOverlay = document.getElementById('test-crop-overlay');
-        if (existingTestOverlay) {
-            existingTestOverlay.remove();
-        }
-        
-        // Remove global mouse event listeners
-        document.removeEventListener('mousemove', handleGlobalMouseMove);
-        document.removeEventListener('mouseup', handleGlobalMouseUp);
         
         // Apply the crop immediately
         const newStyles = {
@@ -1221,11 +1013,11 @@ function PhotoEditor(props) {
         if (!cropMode) return;
         
         console.log('Mouse down event in crop mode');
-        console.log('cropOverlayBounds:', cropOverlayBounds);
-        console.log('Mouse position:', { clientX: e.clientX, clientY: e.clientY });
-
-        const x = ((e.clientX - cropOverlayBounds.left) / cropOverlayBounds.width) * 100;
-        const y = ((e.clientY - cropOverlayBounds.top) / cropOverlayBounds.height) * 100;
+        
+        // Get position relative to the overlay element (which covers the image)
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
         
         console.log('Calculated crop position:', { x, y });
 
@@ -1242,8 +1034,10 @@ function PhotoEditor(props) {
     function handleImageMouseMove(e) {
         if (!cropMode || !isDragging) return;
 
-        const x = ((e.clientX - cropOverlayBounds.left) / cropOverlayBounds.width) * 100;
-        const y = ((e.clientY - cropOverlayBounds.top) / cropOverlayBounds.height) * 100;
+        // Get position relative to the overlay element
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
 
         if (dragMode === 'create') {
             const width = Math.abs(x - dragStart.x);
@@ -1274,177 +1068,116 @@ function PhotoEditor(props) {
         e.stopPropagation();
     }
 
-    // Global mouse event handlers for more reliable crop selection
-    function handleGlobalMouseMove(e) {
-        if (!cropMode || !isDragging) return;
-        
-        const x = ((e.clientX - cropOverlayBounds.left) / cropOverlayBounds.width) * 100;
-        const y = ((e.clientY - cropOverlayBounds.top) / cropOverlayBounds.height) * 100;
-
-        if (dragMode === 'create') {
-            const width = Math.abs(x - dragStart.x);
-            const height = Math.abs(y - dragStart.y);
-            const startX = Math.min(x, dragStart.x);
-            const startY = Math.min(y, dragStart.y);
-
-            setCropSelection({
-                x: Math.max(0, Math.min(startX, 100)),
-                y: Math.max(0, Math.min(startY, 100)),
-                width: Math.max(0, Math.min(width, 100 - Math.max(0, startX))),
-                height: Math.max(0, Math.min(height, 100 - Math.max(0, startY)))
-            });
-        }
-    }
-
-    function handleGlobalMouseUp(e) {
-        if (!cropMode) return;
-        console.log('Global mouse up event in crop mode');
-        setIsDragging(false);
-    }
 
     // Render crop overlay
     const renderCropOverlay = () => {
         if (!cropMode) return null;
 
         return (
-            <div 
-                id="crop-overlay"
-                style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    zIndex: 9999,
-                    pointerEvents: 'none'
-                }}
-            >
-                {/* Full screen dark overlay with cutout for photo area */}
-                <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                    pointerEvents: 'none'
-                }} />
-                
-                {/* Lighter overlay specifically over the photo area */}
-                <div style={{
-                    position: 'fixed',
-                    left: `${cropOverlayBounds.left}px`,
-                    top: `${cropOverlayBounds.top}px`,
-                    width: `${cropOverlayBounds.width}px`,
-                    height: `${cropOverlayBounds.height}px`,
-                    backgroundColor: 'rgba(0, 255, 0, 0.3)', // Green to distinguish from dark overlay
-                    pointerEvents: 'none',
-                    border: '3px solid red',
-                    zIndex: 10000
-                }}>
-                    <div style={{
-                        position: 'absolute',
-                        top: '5px',
-                        left: '5px',
-                        color: 'white',
-                        fontSize: '12px',
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: '2px 4px',
-                        borderRadius: '2px',
-                        fontFamily: 'monospace'
-                    }}>
-                        PHOTO OVERLAY
-                    </div>
-                </div>
-                
-                {/* Debug info showing calculated bounds */}
-                <div style={{
-                    position: 'fixed',
-                    top: '10px',
-                    right: '10px',
-                    color: 'white',
-                    fontSize: '12px',
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    pointerEvents: 'none',
-                    zIndex: 10001,
-                    fontFamily: 'monospace'
-                }}>
-                    Crop Bounds:<br/>
-                    left: {Math.round(cropOverlayBounds.left)}<br/>
-                    top: {Math.round(cropOverlayBounds.top)}<br/>
-                    width: {Math.round(cropOverlayBounds.width)}<br/>
-                    height: {Math.round(cropOverlayBounds.height)}
-                </div>
-                
-                {/* Interactive area only over the image */}
-                <div
-                    id="crop-interactive-area"
+            <>
+                {/* Full screen dark overlay */}
+                <div 
+                    id="crop-overlay-background"
                     style={{
-                        position: 'absolute',
-                        left: `${cropOverlayBounds.left}px`,
-                        top: `${cropOverlayBounds.top}px`,
-                        width: `${cropOverlayBounds.width}px`,
-                        height: `${cropOverlayBounds.height}px`,
-                        pointerEvents: 'auto',
-                        cursor: 'crosshair'
-                    }}
-                    onMouseDown={handleImageMouseDown}
-                />
-                
-                {/* Crop selection rectangle positioned over the image */}
-                <div
-                    id="crop-selection"
-                    style={{
-                        position: 'absolute',
-                        border: '2px dashed #ffffff',
-                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                        pointerEvents: 'none',
-                        // Position relative to the image bounds
-                        left: `${cropOverlayBounds.left + (cropSelection.x * cropOverlayBounds.width / 100)}px`,
-                        top: `${cropOverlayBounds.top + (cropSelection.y * cropOverlayBounds.height / 100)}px`,
-                        width: `${cropSelection.width * cropOverlayBounds.width / 100}px`,
-                        height: `${cropSelection.height * cropOverlayBounds.height / 100}px`
-                    }}
-                >
-                    <div style={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        color: 'white',
-                        fontSize: '12px',
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
                         backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        whiteSpace: 'nowrap'
-                    }}>
-                        {Math.round(cropSelection.width)}% × {Math.round(cropSelection.height)}%
-                    </div>
-                </div>
-                
+                        zIndex: 9999,
+                        pointerEvents: 'none'
+                    }}
+                />
+            </>
+        );
+    };
+
+    // Render photo-specific crop overlay directly on the image
+    const renderPhotoOverlay = () => {
+        if (!cropMode) return null;
+
+        const img = document.querySelector('#photoImgTag');
+        if (!img || !img.parentElement) return null;
+
+        // Ensure parent is positioned relatively
+        if (window.getComputedStyle(img.parentElement).position === 'static') {
+            img.parentElement.style.position = 'relative';
+        }
+
+        return ReactDOM.createPortal(
+            <>
+                {/* Semi-transparent overlay over the photo */}
                 <div style={{
                     position: 'absolute',
-                    top: `${cropOverlayBounds.top + 10}px`,
-                    left: `${cropOverlayBounds.left + 10}px`,
-                    color: 'white',
-                    fontSize: '14px',
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    pointerEvents: 'none',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                    pointerEvents: 'auto',
+                    cursor: 'crosshair',
                     zIndex: 10000
-                }}>
-                    Click and drag on the photo to select crop area
+                }}
+                onMouseDown={handleImageMouseDown}
+                onMouseMove={handleImageMouseMove}
+                onMouseUp={handleImageMouseUp}
+                >
+                    {/* Crop selection rectangle */}
+                    <div
+                        id="crop-selection"
+                        style={{
+                            position: 'absolute',
+                            border: '2px dashed #ffffff',
+                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                            pointerEvents: 'none',
+                            left: `${cropSelection.x}%`,
+                            top: `${cropSelection.y}%`,
+                            width: `${cropSelection.width}%`,
+                            height: `${cropSelection.height}%`
+                        }}
+                    >
+                        <div style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            color: 'white',
+                            fontSize: '12px',
+                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            whiteSpace: 'nowrap'
+                        }}>
+                            {Math.round(cropSelection.width)}% × {Math.round(cropSelection.height)}%
+                        </div>
+                    </div>
+
+                    {/* Instruction text */}
+                    <div style={{
+                        position: 'absolute',
+                        top: '10px',
+                        left: '10px',
+                        color: 'white',
+                        fontSize: '14px',
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        pointerEvents: 'none',
+                        zIndex: 10001
+                    }}>
+                        Click and drag on the photo to select crop area
+                    </div>
                 </div>
-            </div>
+            </>,
+            img.parentElement
         );
     };
 
     return (
         <>
             {renderCropOverlay()}
+            {renderPhotoOverlay()}
             <div className="editor-tab">
                 <div className="photo-info-editor">
                     <div className="editor-controls">
