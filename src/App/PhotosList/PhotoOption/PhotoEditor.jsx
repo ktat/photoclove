@@ -959,31 +959,76 @@ function PhotoEditor(props) {
         
         // Calculate image bounds with more robust detection
         const calculateBounds = () => {
+            console.log('Current photo path:', props.currentPhotoPath);
+            
+            // First, let's see what elements exist
+            console.log('All img elements on page:', Array.from(document.querySelectorAll('img')).map(img => ({
+                element: img,
+                src: img.src,
+                id: img.id,
+                class: img.className,
+                parent: img.parentElement?.tagName,
+                parentClass: img.parentElement?.className,
+                visible: img.offsetWidth > 0 && img.offsetHeight > 0,
+                bounds: img.getBoundingClientRect(),
+                inEditorTab: !!img.closest('.editor-tab'),
+                inTabContent: !!img.closest('.tab-content')
+            })));
+            
             // Try multiple selectors to find the actual photo image
             const selectors = [
                 '#photoImgTag',  // Main photo image
                 '#photo img',    // Image inside photo container
                 '.photo-display img', // Image in photo display
-                '#photos-display-wrapper img'  // Image in photo display wrapper
+                '#photos-display-wrapper img',  // Image in photo display wrapper
+                'img' // Any image as fallback
             ];
             
             let img = null;
             let selectorUsed = '';
             
             for (const selector of selectors) {
-                const element = document.querySelector(selector);
-                console.log(`Trying selector "${selector}":`, element);
+                const elements = document.querySelectorAll(selector);
+                console.log(`Trying selector "${selector}":`, elements);
                 
-                if (element && element.offsetWidth > 0 && element.offsetHeight > 0 && 
-                    element.tagName === 'IMG' && element.src && 
-                    // Make sure it's not in the editor area
-                    !element.closest('.editor-tab') && 
-                    !element.closest('.tab-content') &&
-                    // Make sure it's visible and actually displaying the current photo
-                    element.src.includes(props.currentPhotoPath?.split('/').pop() || '')) {
-                    img = element;
-                    selectorUsed = selector;
-                    break;
+                for (const element of elements) {
+                    console.log(`  Checking element:`, {
+                        element,
+                        src: element.src,
+                        visible: element.offsetWidth > 0 && element.offsetHeight > 0,
+                        isImg: element.tagName === 'IMG',
+                        hasSrc: !!element.src,
+                        inEditor: !!element.closest('.editor-tab'),
+                        inTab: !!element.closest('.tab-content'),
+                        matchesPath: element.src.includes(props.currentPhotoPath?.split('/').pop() || '')
+                    });
+                    
+                    if (element && element.offsetWidth > 0 && element.offsetHeight > 0 && 
+                        element.tagName === 'IMG' && element.src) {
+                        
+                        // For debugging, let's use the first visible image we find
+                        if (!img) {
+                            img = element;
+                            selectorUsed = selector;
+                            console.log('Selected image (first visible):', img);
+                        }
+                        
+                        // But prefer images that aren't in editor area and match current photo
+                        if (!element.closest('.editor-tab') && 
+                            !element.closest('.tab-content') &&
+                            element.src.includes(props.currentPhotoPath?.split('/').pop() || '')) {
+                            img = element;
+                            selectorUsed = selector;
+                            console.log('Selected image (matching criteria):', img);
+                            break;
+                        }
+                    }
+                }
+                
+                if (img && selectorUsed === selector && 
+                    !img.closest('.editor-tab') && 
+                    img.src.includes(props.currentPhotoPath?.split('/').pop() || '')) {
+                    break; // Found a good match, stop looking
                 }
             }
             
@@ -1015,16 +1060,6 @@ function PhotoEditor(props) {
                 return true;
             } else {
                 console.error('Photo image element not found or not visible for crop mode');
-                console.log('Available img elements:', Array.from(document.querySelectorAll('img')).map(img => ({
-                    element: img,
-                    src: img.src,
-                    id: img.id,
-                    class: img.className,
-                    parent: img.parentElement?.tagName,
-                    parentClass: img.parentElement?.className,
-                    visible: img.offsetWidth > 0 && img.offsetHeight > 0,
-                    bounds: img.getBoundingClientRect()
-                })));
                 return false;
             }
         };
