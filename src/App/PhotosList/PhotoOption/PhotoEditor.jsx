@@ -1037,11 +1037,24 @@ function PhotoEditor(props) {
             
             if (img) {
                 const rect = img.getBoundingClientRect();
+                console.log('=== DETAILED BOUNDS ANALYSIS ===');
+                console.log('Image element:', img);
                 console.log('Image bounds:', rect);
+                console.log('Window scroll:', { x: window.scrollX, y: window.scrollY });
                 console.log('Image computed style:', window.getComputedStyle(img));
                 console.log('Image src:', img.src);
                 console.log('Image parent element:', img.parentElement);
+                console.log('Image parent bounds:', img.parentElement?.getBoundingClientRect());
                 console.log('Image natural dimensions:', img.naturalWidth, 'x', img.naturalHeight);
+                console.log('Image display dimensions:', img.width, 'x', img.height);
+                console.log('Image offset dimensions:', img.offsetWidth, 'x', img.offsetHeight);
+                
+                // Let's also check if the image is actually visible where we think it is
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const elementAtCenter = document.elementFromPoint(centerX, centerY);
+                console.log('Element at image center:', elementAtCenter);
+                console.log('Is image at its own center?', elementAtCenter === img || elementAtCenter?.contains(img) || img.contains(elementAtCenter));
                 
                 const bounds = {
                     left: rect.left,
@@ -1051,6 +1064,12 @@ function PhotoEditor(props) {
                 };
                 
                 console.log('Setting crop overlay bounds:', bounds);
+                console.log('This should create overlay at:', {
+                    'left': bounds.left + 'px',
+                    'top': bounds.top + 'px', 
+                    'width': bounds.width + 'px',
+                    'height': bounds.height + 'px'
+                });
                 setCropOverlayBounds(bounds);
                 
                 // Add global mouse event listeners for more reliable crop selection
@@ -1246,15 +1265,30 @@ function PhotoEditor(props) {
                 
                 {/* Lighter overlay specifically over the photo area */}
                 <div style={{
-                    position: 'absolute',
+                    position: 'fixed',
                     left: `${cropOverlayBounds.left}px`,
                     top: `${cropOverlayBounds.top}px`,
                     width: `${cropOverlayBounds.width}px`,
                     height: `${cropOverlayBounds.height}px`,
-                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                    backgroundColor: 'rgba(0, 255, 0, 0.3)', // Green to distinguish from dark overlay
                     pointerEvents: 'none',
-                    border: '2px solid red' // Debug border to see where the overlay is
-                }} />
+                    border: '3px solid red',
+                    zIndex: 10000
+                }}>
+                    <div style={{
+                        position: 'absolute',
+                        top: '5px',
+                        left: '5px',
+                        color: 'white',
+                        fontSize: '12px',
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: '2px 4px',
+                        borderRadius: '2px',
+                        fontFamily: 'monospace'
+                    }}>
+                        PHOTO OVERLAY
+                    </div>
+                </div>
                 
                 {/* Debug info showing calculated bounds */}
                 <div style={{
