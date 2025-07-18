@@ -4,7 +4,8 @@ If I say "do improvement", do the following.
 
 Read files under `improvement/*.md` order by file name as int.
 And then do the task in the file.
-Before starting task, create branch from current branch.
+Before starting task, create branch from current branch and read the docs/feature-documentation-index.md.
+You can understand what part is related to your task from the document.
 And `*.md` file which you did move the file to `improvement/done` directory.
 At last commit your changes to the branch if my permission is got.
 
@@ -17,6 +18,8 @@ If I say "update docs", do the following.
 Read "docs/.current-docs-sha" and get commit sha hash.
 Check difference from it to latest, update document under docs and README\*.md.
 After finishing document update, commit your changes and update "docs/.current-docs-sha" with latest commit sha hash and then commit "docs/.current-docs-sha" at last.
+
+Note that: You carefully check whether the update of docs/feature-documentation-index.md is required or not.
 
 # Compile check
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useUI } from "../context/UIContext.jsx";
 import SearchBar from "../components/SearchBar";
 import AdvancedFilters from "../components/AdvancedFilters";
-import SearchResults from "../components/SearchResults";
+import PhotosList from "./PhotosList.jsx";
 import SavedSearches from "../components/SavedSearches";
 import { useSearch } from "../hooks/useSearch";
 import "./SearchPage.css";
@@ -27,10 +27,10 @@ function SearchPage() {
     // Initialize search with initial query if provided
     useEffect(() => {
         if (searchInitialQuery) {
-            performSearch(searchInitialQuery, "filename", {});
+            performSearch(searchInitialQuery, "all", {});
             setCurrentSearchParams({
                 query: searchInitialQuery,
-                searchType: "filename",
+                searchType: "all",
                 filters: {}
             });
         }
@@ -91,15 +91,23 @@ function SearchPage() {
                                     <p>Searching...</p>
                                 </div>
                             ) : searchResults && searchResults.length > 0 ? (
-                                <SearchResults
+                                <PhotosList
+                                    searchMode={true}
                                     searchResults={searchResults}
                                     searchQuery={searchQuery}
-                                    onPhotoSelect={handlePhotoSelect}
                                     onClearSearch={handleSearchClear}
+                                    fetchConfig={{
+                                        fetch_method: "search",
+                                        value: searchQuery,
+                                        title: `Search: "${searchQuery}"`
+                                    }}
                                 />
                             ) : (
                                 <div className="search-no-results">
                                     <p>No photos found matching your search criteria.</p>
+                                    <button onClick={handleSearchClear} className="clear-search-btn">
+                                        Clear Search
+                                    </button>
                                 </div>
                             )}
                         </div>

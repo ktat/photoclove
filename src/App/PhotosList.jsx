@@ -30,11 +30,16 @@ function PhotosList(props) {
     } = usePhoto();
     const { addFooterMessage } = useUI();
     
+    // Check if we're in search mode
+    const isSearchMode = props.searchMode || false;
+    const searchResults = props.searchResults || [];
+    const searchQuery = props.searchQuery || "";
+    
     // fetchConfig from props or generate from currentDate
     const fetchConfig = props.fetchConfig || {
-        fetch_method: "date",
-        value: currentDate,
-        title: currentDate
+        fetch_method: isSearchMode ? "search" : "date",
+        value: isSearchMode ? searchQuery : currentDate,
+        title: isSearchMode ? `Search: "${searchQuery}"` : currentDate
     };
     
     // Create props compatibility layer for gradual migration
@@ -429,18 +434,24 @@ function PhotosList(props) {
                     break;
                     
                 case "search":
-                    // Fall back to date-based search for now
-                    console.warn("[LOAD_ALL] Search API not implemented, falling back to date-based");
-                    result = await invoke("get_photos_with_filter", {
-                        dateStr: config.value || compatProps.currentDate,
-                        sortValue: parseInt(sortOfPhotos),
-                        page: 1,
-                        num: Math.min(9999, config?.max_photos_per_fetch || 1000), // Limit based on config for performance
-                        offset: 0,
-                        star: -1,
-                        hasComment: false,
-                        extension: "all"
-                    });
+                    // Use search results passed from props if available
+                    if (isSearchMode && searchResults.length > 0) {
+                        console.log("[LOAD_ALL] Using search results from props");
+                        result = JSON.stringify({ photos: searchResults });
+                    } else {
+                        // Fall back to date-based search for now
+                        console.warn("[LOAD_ALL] No search results provided, falling back to date-based");
+                        result = await invoke("get_photos_with_filter", {
+                            dateStr: config.value || compatProps.currentDate,
+                            sortValue: parseInt(sortOfPhotos),
+                            page: 1,
+                            num: Math.min(9999, config?.max_photos_per_fetch || 1000), // Limit based on config for performance
+                            offset: 0,
+                            star: -1,
+                            hasComment: false,
+                            extension: "all"
+                        });
+                    }
                     break;
                     
                 case "tag":
@@ -676,6 +687,11 @@ function PhotosList(props) {
                                     setCurrentIndex={setPhotosListMiniCurrentIndex}
                                     setShowSideMenu={setShowSideMenu}
                                     showSideMenu={showSideMenu}
+                                    
+                                    // Search mode props
+                                    searchMode={isSearchMode}
+                                    searchQuery={searchQuery}
+                                    onClearSearch={props.onClearSearch}
                                 />
                             </div>
                         </ImgCacheContext.Provider>
@@ -687,11 +703,26 @@ function PhotosList(props) {
                     <div>
                         {photos.photos.length > 0 ?
                             <div className="photo-list-header">
-                                <div className="photo-page-info">{fetchConfig.title} page:{compatProps.datePage[compatProps.currentDate] || 1}</div>
-                                <div className="navigation">
-                                    {photos.has_prev && (<span><a href="#" onClick={(e) => nextPhotosList(e, false)}>&lt;&lt; Prev&nbsp;</a></span>)}
-                                    {photos.has_next && (<span><a href="#" onClick={(e) => nextPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
+                                <div className="photo-page-info">
+                                    {isSearchMode ? (
+                                        <span className="search-results-info">
+                                            {photos.photos.length} photo{photos.photos.length !== 1 ? 's' : ''} found for "{searchQuery}"
+                                            {props.onClearSearch && (
+                                                <button onClick={props.onClearSearch} className="clear-search-btn" style={{ marginLeft: "10px", fontSize: "12px" }}>
+                                                    Clear Search
+                                                </button>
+                                            )}
+                                        </span>
+                                    ) : (
+                                        <span>{fetchConfig.title} page:{compatProps.datePage[compatProps.currentDate] || 1}</span>
+                                    )}
                                 </div>
+                                {!isSearchMode && (
+                                    <div className="navigation">
+                                        {photos.has_prev && (<span><a href="#" onClick={(e) => nextPhotosList(e, false)}>&lt;&lt; Prev&nbsp;</a></span>)}
+                                        {photos.has_next && (<span><a href="#" onClick={(e) => nextPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
+                                    </div>
+                                )}
                                 <div className="photo-operation">
                                     Icon:<select name="icon_size" defaultValue={iconSize} onChange={(e) => setIconSize(e.target.value)}>
                                         <option value={50}>small</option>
@@ -890,6 +921,12 @@ function PhotosList(props) {
                     currentPhotoPath={currentPhotoPath}
                     closePhotoDisplay={closePhotoDisplay}
                     path={currentPhotoPath}
+                    
+                    // Search mode props
+                    searchMode={isSearchMode}
+                    searchQuery={searchQuery}
+                    searchResultsCount={photos.photos.length}
+                    onClearSearch={props.onClearSearch}
                     addFooterMessage={compatProps.addFooterMessage}
                     imgCacheMap={imgCacheMap}
                     setStar={setStarWithUpdate}

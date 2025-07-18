@@ -13,6 +13,11 @@ function PhotosListMini(props) {
     // Context
     const { imgCacheMap, setImgCacheMap } = useContext(ImgCacheContext);
     const { photosListMiniAllPhotos, setPhotosListMiniAllPhotos } = useContext(AllPhotosContext);
+    
+    // Search mode props
+    const isSearchMode = props.searchMode || false;
+    const searchQuery = props.searchQuery || "";
+    const onClearSearch = props.onClearSearch;
 
     // State from original implementation - simplified
     const [showPhotosIndex, setShowPhotosIndex] = useState([]);
@@ -459,6 +464,18 @@ function PhotosListMini(props) {
                     onClick={handleClick}
                 >
                     <a href="#" id="dummy-for-focus">{/* Dummy */}</a>
+                    {isSearchMode && (
+                        <div className="search-info" style={{ marginBottom: "10px", padding: "5px", backgroundColor: "#333", border: "1px solid #555", borderRadius: "3px" }}>
+                            <div style={{ fontSize: "12px", color: "#ccc" }}>Search Results</div>
+                            <div style={{ fontSize: "14px", color: "#fff" }}>Query: "{searchQuery}"</div>
+                            <div style={{ fontSize: "12px", color: "#ccc" }}>Photo {props.currentIndex + 1} of {photosListMiniAllPhotos.length}</div>
+                            {onClearSearch && (
+                                <button onClick={onClearSearch} style={{ marginTop: "5px", fontSize: "11px", padding: "2px 6px" }}>
+                                    Clear Search
+                                </button>
+                            )}
+                        </div>
+                    )}
                     {props.currentIndex > 0 ? 
                         <><a href="#" onClick={() => lockNavigate(prevPhoto)}>&lt;&lt; prev</a>&nbsp;&nbsp;|| </> : 
                         <>&lt;&lt; <s>prev</s>&nbsp;&nbsp;|| </>
