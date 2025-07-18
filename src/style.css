@@ -1289,7 +1289,7 @@ div.tab {
   display: none;
   padding: 10px;
   padding-right: 0px;
-  padding-left: 2px;
+  padding-left: 0px;
   border: none;
 }
 
@@ -1301,7 +1301,7 @@ div.tab-active {
   display: block;
   padding: 10px;
   padding-right: 0px;
-  padding-left: 2px;
+  padding-left: 0px;
   border: none;
 }
 
