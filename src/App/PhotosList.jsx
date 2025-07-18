@@ -782,11 +782,7 @@ function PhotosList(props) {
                         {photos.photos.length > 0 ?
                             <div className="photo-list-header">
                                 <div className="photo-page-info">
-                                    {isSearchMode ? (
-                                        <span className="search-results-info">
-                                            {photos.photos.length} photo{photos.photos.length !== 1 ? 's' : ''} found for "{searchQuery}"
-                                        </span>
-                                    ) : (
+                                    {!isSearchMode && (
                                         <span>{fetchConfig.title} page:{compatProps.datePage[compatProps.currentDate] || 1}</span>
                                     )}
                                 </div>
