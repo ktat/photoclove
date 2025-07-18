@@ -14,6 +14,7 @@ import { useUI } from "../context/UIContext.jsx";
 import { useSearch } from "../hooks/useSearch.js";
 import BaseThumbnailGrid from "../components/BaseThumbnailGrid.jsx";
 import { PhotoDataAdapter } from "../utils/PhotoDataAdapter.js";
+import SearchTools from "../components/SearchTools.jsx";
 
 function PhotosList(props) {
     const {
@@ -34,15 +35,55 @@ function PhotosList(props) {
     // Use search hook when in search mode
     const { searchResults, searchQuery, isSearching, performSearch, clearSearch: clearSearchHook } = useSearch();
     
+    // Search state for the PhotosList component
+    const [searchFilters, setSearchFilters] = useState({});
+    const [currentSearchParams, setCurrentSearchParams] = useState(null);
+    
     // Custom clear search function that also navigates back to home
     const clearSearch = useCallback(() => {
         clearSearchHook();
+        setCurrentSearchParams(null);
         // Navigate back to home by toggling search page off
         toggleSearchPage(false);
     }, [clearSearchHook, toggleSearchPage]);
     
+    // Search handlers
+    const handleSearch = useCallback(async (query, type, filters) => {
+        const params = { query, searchType: type, filters };
+        setCurrentSearchParams(params);
+        await performSearch(query, type, filters);
+    }, [performSearch]);
+
+    const handleSearchClear = useCallback(() => {
+        clearSearch();
+    }, [clearSearch]);
+
+    const handleSavedSearchSelect = useCallback((searchParams) => {
+        setCurrentSearchParams(searchParams);
+        performSearch(searchParams.query, searchParams.searchType, searchParams.filters);
+    }, [performSearch]);
+
+    const handleFiltersChange = useCallback((newFilters) => {
+        setSearchFilters(newFilters);
+        // If there's an active search, re-run it with new filters
+        if (currentSearchParams) {
+            performSearch(currentSearchParams.query, currentSearchParams.searchType, newFilters);
+        }
+    }, [currentSearchParams, performSearch]);
+    
     // Check if we're in search mode
     const isSearchMode = props.searchMode || false;
+    
+    // Initialize search parameters when in search mode
+    useEffect(() => {
+        if (isSearchMode && searchQuery && !currentSearchParams) {
+            setCurrentSearchParams({
+                query: searchQuery,
+                searchType: "all",
+                filters: searchFilters
+            });
+        }
+    }, [isSearchMode, searchQuery, currentSearchParams, searchFilters]);
     
     // fetchConfig from props or generate from currentDate
     const fetchConfig = props.fetchConfig || {
@@ -1052,7 +1093,18 @@ function PhotosList(props) {
                         
                         // Search mode props
                         searchMode={isSearchMode}
-                        searchTools={props.searchTools}
+                        searchTools={isSearchMode ? (
+                            <SearchTools
+                                onSearch={handleSearch}
+                                onClear={handleSearchClear}
+                                searchResults={searchResults}
+                                initialQuery={searchQuery}
+                                onFiltersChange={handleFiltersChange}
+                                initialFilters={searchFilters}
+                                onSearchSelect={handleSavedSearchSelect}
+                                currentSearch={currentSearchParams}
+                            />
+                        ) : null}
                     />
                 </div>
             </div>
