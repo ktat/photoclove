@@ -416,6 +416,7 @@ button:hover {
   padding-left: 20px;
   border: none;
   background-color: #1f1f1f;
+  position: relative;
 }
 
 .closePhotoInfo {

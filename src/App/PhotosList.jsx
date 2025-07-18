@@ -927,7 +927,10 @@ function PhotosList(props) {
                 </div>
             </>
         }
-        <div className={(showSideMenu || !currentPhotoPath) ? "rightMenu" : "rightMenu-close"}>
+        <div className={(showSideMenu || !currentPhotoPath) ? "rightMenu" : "rightMenu-close"} style={{ backgroundColor: "blue", border: "2px solid yellow" }}>
+            <div style={{ color: "white", padding: "10px" }}>
+                DEBUG: showSideMenu={showSideMenu ? "true" : "false"}, currentPhotoPath={currentPhotoPath ? "exists" : "null"}, isSearchMode={isSearchMode ? "true" : "false"}
+            </div>
             <div style={{ display: (compatProps.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
                 <PhotoOption
                     setShowSideMenu={setShowSideMenu}
