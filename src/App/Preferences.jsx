@@ -13,6 +13,7 @@ function Preferences(props) {
         thumbnail_compression_quality: '',
         thumbnail_ratio: '',
         thumbnail_ignore_file_size: '',
+        max_photos_per_fetch: '',
         use_count: 0
     });
     const [additionalExportFrom, setAdditionalExportFrom] = useState(0);
@@ -45,6 +46,7 @@ function Preferences(props) {
         config.thumbnail_parallel = parseInt(config.thumbnail_parallel);
         config.thumbnail_compression_quality = parseFloat(config.thumbnail_compression_quality);
         config.thumbnail_minimize_rate = parseFloat(config.thumbnail_minimize_rate);
+        config.max_photos_per_fetch = parseInt(config.max_photos_per_fetch);
         let isFirstView = false;
         if (config.use_count == 0) {
             isFirstView = true;
@@ -164,6 +166,8 @@ function Preferences(props) {
                 <div className="row0">Num of Parallel:</div>
                 <div className="row1"></div><div className="row1">Import: </div><div className="row4"><input value={config.copy_parallel || ''} type="number" step="1" onChange={(e) => { config.copy_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
                 <div className="row1"></div><div className="row1">Thumbnail: </div><div className="row4"><input value={config.thumbnail_parallel || ''} type="number" step="1" onChange={(e) => { config.thumbnail_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
+                <div className="row0">Performance:</div>
+                <div className="row1"></div><div className="row1">Max Photos Per Fetch: </div><div className="row4"><input value={config.max_photos_per_fetch || ''} type="number" step="100" min="100" onChange={(e) => { config.max_photos_per_fetch = e.currentTarget.value; setNewConfig(config); }} /></div>
                 <div className="row2"></div>
                 <div className="row0">
                     <input type="checkbox" id="preference-check" value="1" onChange={(e) => { config.use_count = e.target.checked ? 0 : useCount; setNewConfig(config) }} />

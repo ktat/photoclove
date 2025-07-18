@@ -50,7 +50,7 @@ function PhotoInfo(props) {
     function getStarRate(star) {
         let starIndex = 0;
         for (let i = 0; i < 5; i++) {
-            if (props.star[i]) {
+            if (star[i]) {
                 starIndex = i + 1;
             } else {
                 break;
@@ -60,35 +60,37 @@ function PhotoInfo(props) {
     }
 
     function toggleStar(i) {
-        const newStar = []
-        const currentStarRate = getCurrentStarRate()
-        if (i === 0 && currentStarRate === 0) {
-            newStar[0] = true;
-        } else if (!props.star[i] || (props.star[i] && props.star[i + 1])) {
+        const newStar = [false, false, false, false, false];
+        const currentStarRate = getCurrentStarRate();
+        
+        // If clicking on an empty star or a star that's not the last filled one
+        if (!props.star[i] || (i < 4 && props.star[i + 1])) {
+            // Fill all stars up to and including the clicked one
             for (let j = 0; j <= i; j++) {
                 newStar[j] = true;
             }
-            if (i < 4) {
-                for (let j = i + 1; j < 5; j++) {
-                    newStar[j] = false;
-                }
+        } else if (props.star[i] && (i === 4 || !props.star[i + 1])) {
+            // If clicking on the last filled star, toggle it off
+            for (let j = 0; j < i; j++) {
+                newStar[j] = true;
             }
-        } else {
-            if (i < 4) {
-                for (let j = i + 1; j < 5; j++) {
-                    newStar[j] = false;
-                }
-            }
+            // newStar[i] remains false
         }
+        
         const newStarRate = getStarRate(newStar);
-        if (currentStarRate !== newStarRate) {
-            invoke("save_star", { pathStr: props.currentPhotoPath, starNum: newStarRate });
-            props.setStar(newStar);
-        }
+        console.log(`Star clicked: index ${i}, current rate: ${currentStarRate}, new rate: ${newStarRate}`);
+        
+        invoke("save_star", { pathStr: props.currentPhotoPath, starNum: newStarRate });
+        props.setStar(newStar);
     }
 
     function saveComment() {
         invoke("save_comment", { pathStr: props.currentPhotoPath, commentStr: comment });
+        
+        // Notify parent component about comment update
+        if (props.onCommentUpdate) {
+            props.onCommentUpdate(props.currentPhotoPath, comment && comment.trim() !== "");
+        }
     }
 
     return (
@@ -132,7 +134,7 @@ function PhotoInfo(props) {
                 <span className="star">
                     {
                         [0, 1, 2, 3, 4].map((v, i) => {
-                            return <a key={i} href="#" value={v} onClick={() => { toggleStar(v) }}>{props.star[i] ? "★" : "☆"}</a>
+                            return <a key={i} href="#" value={v} onClick={(e) => { e.preventDefault(); toggleStar(v) }}>{props.star[i] ? "★" : "☆"}</a>
                         })
                     }
                 </span>

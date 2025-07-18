@@ -1,0 +1,31 @@
+# Photoclove Configuration Example
+# Copy this file to ~/.photoclove.yml and adjust settings as needed
+
+repository:
+  store: ""
+  option: {}
+
+# Directory paths (adjust these to your preferred locations)
+import_to: ~/.photoclove/import/
+export_from:
+  - /
+trash_path: ~/.photoclove/trash/
+data_path: ~/.photoclove/data/
+thumbnail_store: ~/.photoclove/thumbnail/
+download_dir: ~/Downloads
+
+# Thumbnail generation settings
+thumbnail_ratio: 0.05
+thumbnail_compression_quality: 0.5
+thumbnail_ignore_file_size: 1048576  # 1MB in bytes
+
+# Performance settings
+copy_parallel: 2
+thumbnail_parallel: 1
+use_count: 0
+
+# Photo fetch limit for performance optimization
+# Adjust this based on your system's memory and performance needs
+# Higher values allow more photos to be loaded at once but use more memory
+# Lower values reduce memory usage but may require more frequent API calls
+max_photos_per_fetch: 1000

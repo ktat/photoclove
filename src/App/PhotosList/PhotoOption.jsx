@@ -59,6 +59,7 @@ function PhotoOption(props) {
                             star={props.star}
                             setStar={props.setStar}
                             addFooterMessage={props.addFooterMessage}
+                            onCommentUpdate={props.onCommentUpdate}
                         />
                     )}
                     {activeTab === "editor" && (

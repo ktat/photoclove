@@ -18,6 +18,10 @@ fn default_download_dir() -> String {
         .to_string()
 }
 
+fn default_max_photos_per_fetch() -> u32 {
+    1000
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub repository: RepositoryConfig,
@@ -34,6 +38,8 @@ pub struct Config {
     pub use_count: i32,
     #[serde(default = "default_download_dir")]
     pub download_dir: String,
+    #[serde(default = "default_max_photos_per_fetch")]
+    pub max_photos_per_fetch: u32,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryConfig {
@@ -58,6 +64,7 @@ impl Config {
         self.thumbnail_ignore_file_size = config.thumbnail_ignore_file_size;
         self.use_count = config.use_count;
         self.download_dir = config.download_dir;
+        self.max_photos_per_fetch = config.max_photos_per_fetch;
     }
 
     pub fn config_path() -> String {
@@ -136,6 +143,7 @@ impl Config {
                 .unwrap_or_else(|| home.join("Downloads"))
                 .display()
                 .to_string(),
+            max_photos_per_fetch: 1000,
         }
     }
 

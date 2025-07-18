@@ -134,8 +134,15 @@ impl RepositoryDB for Directory {
                     eprintln!("no meta info: {:?}", &f);
                     meta.date_time = f.created_datetime();
                     eprintln!("use instead: {}", meta.date_time);
+                    // No metadata available, use defaults
+                    p.set_star(0);
+                    p.set_comment("".to_string());
                 } else {
-                    meta.date_time = result.unwrap().photo_time();
+                    let photo_meta = result.unwrap();
+                    meta.date_time = photo_meta.photo_time();
+                    // Set star and comment from metadata
+                    p.set_star(photo_meta.star.star());
+                    p.set_comment(photo_meta.comment.comment());
                 }
                 p.embed_exif(meta);
                 photos.photos.push(p)
@@ -175,6 +182,9 @@ impl RepositoryDB for Directory {
                 p.embed_exif(meta);
                 // Set CSS style from metadata
                 p.set_css_style(photo_meta.photo().css_style.clone());
+                // Set star and comment from metadata
+                p.set_star(photo_meta.star.star());
+                p.set_comment(photo_meta.comment.comment());
                 photos.photos.push(p)
             }
         }

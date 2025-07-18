@@ -96,6 +96,36 @@ PhotoClove is perfect for:
 
 ## 🔧 Configuration
 
+PhotoClove uses a YAML configuration file located at `~/.photoclove.yml`. On first run, it will create this file with default settings.
+
+### Configuration Options
+
+Copy the example configuration file and adjust settings as needed:
+
+```bash
+cp photoclove.yml.example ~/.photoclove.yml
+```
+
+Key configuration options include:
+
+#### Directory Paths
+- `import_to`: Where imported photos are stored (default: `~/.photoclove/import/`)
+- `export_from`: Source directories for importing (default: `["/"]`)
+- `trash_path`: Directory for deleted photos (default: `~/.photoclove/trash/`)
+- `thumbnail_store`: Thumbnail cache location (default: `~/.photoclove/thumbnail/`)
+
+#### Performance Settings
+- `max_photos_per_fetch`: Maximum number of photos to load at once (default: `1000`)
+  - Higher values: More photos loaded simultaneously, better for large collections
+  - Lower values: Reduced memory usage, better for resource-constrained systems
+- `copy_parallel`: Number of parallel file operations (default: `2`)
+- `thumbnail_parallel`: Number of parallel thumbnail generations (default: `1`)
+
+#### Thumbnail Generation  
+- `thumbnail_ratio`: Size ratio for thumbnails (default: `0.05`)
+- `thumbnail_compression_quality`: JPEG compression quality (default: `0.5`)
+- `thumbnail_ignore_file_size`: Skip thumbnails for files smaller than this size in bytes (default: `1048576` = 1MB)
+
 On first run, configure these essential settings:
 
 1. **Import To**: Where organized photos will be stored

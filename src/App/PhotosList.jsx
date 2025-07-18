@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import PhotosListMini from "./PhotosList/PhotosListMini.jsx";
 import PhotoOption from "./PhotosList/PhotoOption.jsx";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
@@ -29,6 +29,13 @@ function PhotosList(props) {
         setCurrentDateNum
     } = usePhoto();
     const { addFooterMessage } = useUI();
+    
+    // fetchConfig from props or generate from currentDate
+    const fetchConfig = props.fetchConfig || {
+        fetch_method: "date",
+        value: currentDate,
+        title: currentDate
+    };
     
     // Create props compatibility layer for gradual migration
     const compatProps = {
@@ -65,10 +72,107 @@ function PhotosList(props) {
     const [showSideMenu, setShowSideMenu] = useState(false);
     const [star, setStar] = useState([false, false, false, false, false]);
     const [starFilter, setStarFilter] = useState(0);
+    
+    // Create enhanced setStar function that updates photosListMiniAllPhotos
+    const setStarWithUpdate = (newStar) => {
+        setStar(newStar);
+        
+        // Calculate star value from array
+        let starValue = 0;
+        for (let i = 0; i < 5; i++) {
+            if (newStar[i]) {
+                starValue = i + 1;
+            } else {
+                break;
+            }
+        }
+        
+        // Update the star value in photosListMiniAllPhotos
+        const updatedPhotos = photosListMiniAllPhotos.map(photo => {
+            if (photo.file.path === currentPhotoPath) {
+                return { ...photo, star: starValue };
+            }
+            return photo;
+        });
+        setPhotosListMiniAllPhotos(updatedPhotos);
+        
+        // Also update allPhotosForCurrentFetch to trigger re-filtering
+        const updatedAllPhotos = allPhotosForCurrentFetch.map(photo => {
+            if (photo.file.path === currentPhotoPath) {
+                return { ...photo, star: starValue };
+            }
+            return photo;
+        });
+        setAllPhotosForCurrentFetch(updatedAllPhotos);
+    };
+    
+    // Create function to update comment in photo lists
+    const updatePhotoComment = (photoPath, hasComment) => {
+        // Update photosListMiniAllPhotos
+        const updatedPhotos = photosListMiniAllPhotos.map(photo => {
+            if (photo.file.path === photoPath) {
+                return { ...photo, comment: hasComment ? "has comment" : null };
+            }
+            return photo;
+        });
+        setPhotosListMiniAllPhotos(updatedPhotos);
+        
+        // Also update allPhotosForCurrentFetch to trigger re-filtering
+        const updatedAllPhotos = allPhotosForCurrentFetch.map(photo => {
+            if (photo.file.path === photoPath) {
+                return { ...photo, comment: hasComment ? "has comment" : null };
+            }
+            return photo;
+        });
+        setAllPhotosForCurrentFetch(updatedAllPhotos);
+    };
     const [hasCommentFilter, setHasCommentFilter] = useState(false);
     const [extensionFilter, setExtensionFilter] = useState("all");
     const [debugMessage, setDebugMessage] = useState("");
     const [currentPhotoLoadingController, setCurrentPhotoLoadingController] = useState(null);
+    
+    // Store all photos for current fetch config (unfiltered)
+    const [allPhotosForCurrentFetch, setAllPhotosForCurrentFetch] = useState([]);
+    
+    // Store configuration for photo fetch limits
+    const [config, setConfig] = useState(null);
+    
+    // Frontend filtering function
+    const applyFrontendFilters = useCallback((photos) => {
+        console.log(`[FILTER] Applying filters - star: ${starFilter}, hasComment: ${hasCommentFilter}, extension: ${extensionFilter}`);
+        console.log(`[FILTER] Input photos count: ${photos.length}`);
+        
+        const filtered = photos.filter(photo => {
+            // Apply star filter
+            if (starFilter > 0 && (!photo.star || photo.star < starFilter)) {
+                return false;
+            }
+            
+            // Apply comment filter
+            if (hasCommentFilter && (!photo.comment || photo.comment.trim() === "")) {
+                return false;
+            }
+            
+            // Apply extension filter
+            if (extensionFilter !== "all") {
+                const extension = photo.file.name.split('.').pop().toLowerCase();
+                const allowedExtensions = extensionFilter.split(',').map(ext => ext.trim().toLowerCase());
+                if (!allowedExtensions.includes(extension)) {
+                    return false;
+                }
+            }
+            
+            return true;
+        });
+        
+        console.log(`[FILTER] Filtered photos count: ${filtered.length}`);
+        return filtered;
+    }, [starFilter, hasCommentFilter, extensionFilter]);
+    
+    // Memoize filtered photos to avoid recalculating on every render
+    const filteredPhotos = useMemo(() => {
+        return applyFrontendFilters(allPhotosForCurrentFetch);
+    }, [allPhotosForCurrentFetch, applyFrontendFilters]);
 
     // Function to parse CSS style string and convert to style object
     const parseCssStyle = (cssString) => {
@@ -93,6 +197,7 @@ function PhotosList(props) {
         invoke("get_config", {},).then((e) => {
             const json = JSON.parse(e);
             setThumbnailStore(json.thumbnail_store);
+            setConfig(json); // Store the full config including max_photos_per_fetch
         });
         
         // Cleanup function to cancel any pending photo loading on component unmount
@@ -106,48 +211,74 @@ function PhotosList(props) {
     useEffect(() => {
         // Set CSS custom property for grid column sizing based on icon size
         document.documentElement.style.setProperty('--photo-grid-size', `${iconSize + 41}px`);
-    }, [iconSize])
-
-    useEffect((e) => {
-        setShowSideMenu(false);
-        if (compatProps.currentDate != "" && !compatProps.showPhotoDisplay[compatProps.currentDate]) {
-            // Cancel current photo loading if in progress
+        
+        // Cleanup function
+        return () => {
+            // Cancel any pending requests when component unmounts
             if (currentPhotoLoadingController) {
                 currentPhotoLoadingController.abort();
-                setCurrentPhotoLoadingController(null);
             }
-            
-            delete compatProps.datePage[compatProps.currentDate];
-            photos.photos = [];
-            setPhotosList({ "photos": [] });
-            compatProps.setDatePage({});
-            const fetchPhotos = async () => getPhotos(undefined, true);;
-            setCurrentPhotoIndex(0)
-            fetchPhotos().catch(console.error);
-            setPhotosListMiniReread(!photosListMiniReread);
-            setPhotosListMiniAllPhotos([]);
-        }
-    }, [numOfPhoto, compatProps.currentDate, sortOfPhotos, starFilter, hasCommentFilter, extensionFilter]);
+        };
+    }, [iconSize])
 
-    useEffect(e => {
-        setPhotosListMiniAllPhotos([]);
+    // Load photos when fetchConfig changes
+    useEffect(() => {
+        console.log(`[FETCH_CONFIG_CHANGE] New fetchConfig:`, fetchConfig);
+        
+        // Skip if already loading to prevent race conditions
+        if (photoLoading) {
+            console.log(`[FETCH_CONFIG_CHANGE] Already loading, skipping`);
+            return;
+        }
+        
+        setShowSideMenu(false);
+        
+        // Cancel current photo loading if in progress
+        if (currentPhotoLoadingController) {
+            currentPhotoLoadingController.abort();
+            setCurrentPhotoLoadingController(null);
+        }
+        
+        // Reset state
+        photos.photos = [];
+        setPhotosList({ "photos": [] });
+        setCurrentPhotoIndex(0);
         setPhotosListMiniCurrentIndex(0);
         setCurrentPhotoPath(undefined);
-    }, [compatProps.currentDate])
+        
+        // Load all photos based on fetch config
+        loadAllPhotosBasedOnFetchConfig(fetchConfig);
+        
+    }, [fetchConfig.fetch_method, fetchConfig.value]);
+
+    // Apply filters when filter settings change (no API call, just frontend filtering)
+    useEffect(() => {
+        if (filteredPhotos.length > 0 || allPhotosForCurrentFetch.length > 0) {
+            console.log(`[FILTER_CHANGE] Applying frontend filters: ${filteredPhotos.length} photos after filtering`);
+            setPhotosListMiniAllPhotos(filteredPhotos);
+            
+            // Also update current page view
+            const pageStart = (compatProps.datePage[compatProps.currentDate] - 1) * numOfPhoto || 0;
+            const pageEnd = pageStart + numOfPhoto;
+            const pagePhotos = filteredPhotos.slice(pageStart, pageEnd);
+            setPhotosList({ photos: pagePhotos, has_next: pageEnd < filteredPhotos.length, has_prev: pageStart > 0 });
+        }
+    }, [filteredPhotos, numOfPhoto, compatProps.datePage, compatProps.currentDate])
 
     function displayPhoto(f, i) {
         setCurrentPhotoPath(f);
         setCurrentPhotoIndex(i);
         
-        // Always ensure photos are set for PhotosListMini
-        if (photos.photos && photos.photos.length > 0) {
-            setPhotosListMiniAllPhotos(photos.photos);
+        // Find the global index in the all photos array
+        const globalIndex = photosListMiniAllPhotos.findIndex(photo => photo.file.path === f);
+        if (globalIndex !== -1) {
+            console.log(`[DISPLAY_PHOTO] Found photo at global index: ${globalIndex} (total photos: ${photosListMiniAllPhotos.length})`);
+            setPhotosListMiniCurrentIndex(globalIndex);
+        } else {
+            console.log(`[DISPLAY_PHOTO] Photo not found in all photos array, using page-relative index: ${i}`);
+            // Fallback: use the provided index if photo not found in all photos
+            setPhotosListMiniCurrentIndex(i);
         }
-        
-        // Calculate the index within the current page's photos
-        const pageStartIndex = (compatProps.datePage[compatProps.currentDate] - 1) * numOfPhoto;
-        const localIndex = i - pageStartIndex;
-        setPhotosListMiniCurrentIndex(localIndex);
         
         // Force a re-read to ensure thumbnails are properly initialized
         setPhotosListMiniReread(!photosListMiniReread);
@@ -267,6 +398,129 @@ function PhotosList(props) {
         });
     }
 
+    async function loadAllPhotosBasedOnFetchConfig(config) {
+        if (!config) return;
+        
+        // Some fetch methods don't require a value (e.g., favorites)
+        if (config.fetch_method !== "favorites" && !config.value) return;
+        
+        console.log(`[LOAD_ALL] Loading all photos with config:`, config);
+        
+        // Show loading indicator
+        setPhotoLoading(true);
+        
+        try {
+            let result;
+            
+            switch (config.fetch_method) {
+                case "date":
+                    // Note: We need to pass filter values that won't exclude any photos
+                    // but will still cause the backend to include metadata
+                    result = await invoke("get_photos_with_filter", {
+                        dateStr: config.value,
+                        sortValue: parseInt(sortOfPhotos),
+                        page: 1,
+                        num: Math.min(9999, config?.max_photos_per_fetch || 1000), // Limit based on config for performance
+                        offset: 0,
+                        star: -1, // -1 means no star filter but include star data
+                        hasComment: false,
+                        extension: "all"
+                    });
+                    break;
+                    
+                case "search":
+                    // Fall back to date-based search for now
+                    console.warn("[LOAD_ALL] Search API not implemented, falling back to date-based");
+                    result = await invoke("get_photos_with_filter", {
+                        dateStr: config.value || compatProps.currentDate,
+                        sortValue: parseInt(sortOfPhotos),
+                        page: 1,
+                        num: Math.min(9999, config?.max_photos_per_fetch || 1000), // Limit based on config for performance
+                        offset: 0,
+                        star: -1,
+                        hasComment: false,
+                        extension: "all"
+                    });
+                    break;
+                    
+                case "tag":
+                    // Fall back to date-based search for now
+                    console.warn("[LOAD_ALL] Tag API not implemented, falling back to date-based");
+                    result = await invoke("get_photos_with_filter", {
+                        dateStr: config.value || compatProps.currentDate,
+                        sortValue: parseInt(sortOfPhotos),
+                        page: 1,
+                        num: Math.min(9999, config?.max_photos_per_fetch || 1000), // Limit based on config for performance
+                        offset: 0,
+                        star: -1,
+                        hasComment: false,
+                        extension: "all"
+                    });
+                    break;
+                    
+                case "favorites":
+                    // Fall back to date-based search for now
+                    console.warn("[LOAD_ALL] Favorites API not implemented, falling back to date-based");
+                    result = await invoke("get_photos_with_filter", {
+                        dateStr: compatProps.currentDate,
+                        sortValue: parseInt(sortOfPhotos),
+                        page: 1,
+                        num: Math.min(9999, config?.max_photos_per_fetch || 1000), // Limit based on config for performance
+                        offset: 0,
+                        star: -1,
+                        hasComment: false,
+                        extension: "all"
+                    });
+                    break;
+                    
+                default:
+                    console.error("[LOAD_ALL] Unknown fetch method:", config.fetch_method);
+                    return;
+            }
+            
+            const data = JSON.parse(result);
+            console.log(`[LOAD_ALL] Loaded ${data.photos.length} photos`);
+            
+            // Debug: Check if metadata is included
+            if (data.photos.length > 0) {
+                console.log(`[LOAD_ALL] Sample photo data:`, data.photos[0]);
+                console.log(`[LOAD_ALL] Available properties:`, Object.keys(data.photos[0]));
+                
+                // Check different possible metadata locations
+                if (data.photos[0].meta) {
+                    console.log(`[LOAD_ALL] Meta object:`, data.photos[0].meta);
+                }
+                if (data.photos[0].metadata) {
+                    console.log(`[LOAD_ALL] Metadata object:`, data.photos[0].metadata);
+                }
+            }
+            
+            // Store all photos unfiltered
+            setAllPhotosForCurrentFetch(data.photos);
+            
+            // Don't apply filters here - let the memoized filteredPhotos handle it
+            // This ensures consistency between all components
+            
+            // Hide loading indicator
+            setPhotoLoading(false);
+            
+        } catch (error) {
+            console.error("[LOAD_ALL] Failed to load photos:", error);
+            console.error("[LOAD_ALL] Config was:", config);
+            
+            // Reset to safe state
+            setAllPhotosForCurrentFetch([]);
+            setPhotosListMiniAllPhotos([]);
+            setPhotosList({ photos: [], has_next: false, has_prev: false });
+            
+            // Hide loading indicator on error
+            setPhotoLoading(false);
+            
+            // Show user-friendly error message
+            compatProps.addFooterMessage && compatProps.addFooterMessage(`Failed to load photos: ${error.message || error}`);
+        }
+    }
+
     function closePhotoDisplay() {
         setShowSideMenu(false);
         compatProps.setShowPhotoDisplay(false);
@@ -289,77 +543,45 @@ function PhotosList(props) {
     }
 
     async function getPhotos(e, isForward) {
-        // Cancel any existing photo loading request
-        if (currentPhotoLoadingController) {
-            currentPhotoLoadingController.abort();
-        }
-        
-        // Create new AbortController for this request
-        const controller = new AbortController();
-        setCurrentPhotoLoadingController(controller);
-        
-        setPhotoLoading(true);
-        setPhotosList({ "photos": [] });
-        let sort = sortOfPhotos;
-        let num = numOfPhoto;
-        let date;
-        if (e && e.currentTarget && e.currentTarget.getAttribute && e.currentTarget.getAttribute("data-date")) {
-            date = e.currentTarget.getAttribute("data-date");
-        } else {
-            date = compatProps.currentDate;
-        }
-        if (!date || date == "") {
+        // For paginated display, use memoized filtered data
+        if (filteredPhotos.length === 0) {
             setPhotoLoading(false);
-            setCurrentPhotoLoadingController(null);
             return;
         }
-        let page = compatProps.datePage[date];
-        compatProps.setCurrentDate(date)
+        
+        setPhotoLoading(true);
+        
+        let date = compatProps.currentDate;
+        let page = compatProps.datePage[date] || 1;
+        
         if (!page || page == "NaN") {
             page = 1;
         }
         page = parseInt(page);
         
-        try {
-            const result = await invoke("get_photos_with_filter", {
-                dateStr: date,
-                sortValue: parseInt(sort),
-                page: page,
-                num: parseInt(num),
-                offset: 0,
-                star: parseInt(starFilter, 10),
-                hasComment: hasCommentFilter,
-                extension: extensionFilter
+        // Calculate page boundaries
+        const pageStart = (page - 1) * numOfPhoto;
+        const pageEnd = pageStart + parseInt(numOfPhoto);
+        
+        // Get photos for current page from filtered data
+        const pagePhotos = filteredPhotos.slice(pageStart, pageEnd);
+        
+        if (pagePhotos.length > 0) {
+            setPhotosList({
+                photos: pagePhotos,
+                has_next: pageEnd < filteredPhotos.length,
+                has_prev: pageStart > 0
             });
-            
-            // Check if this request was cancelled
-            if (controller.signal.aborted) {
-                return;
-            }
-            
-            let data = JSON.parse(result);
-            let l = data.photos;
-            let tags = [];
-            if (l.length > 0) {
-                setPhotosList(data);
-            } else {
-                page -= 1;
-            }
+        } else {
+            // If no photos on this page, go back one page
+            page -= 1;
             compatProps.datePage[date] = page;
-            compatProps.setDatePage(compatProps.datePage);
-            setPhotoLoading(false);
-            setCurrentPhotoLoadingController(null);
-            setTimeout(() => { setScrollLock(false) }, 200);
-        } catch (error) {
-            // Check if this was a cancellation (not an actual error)
-            if (controller.signal.aborted) {
-                return;
-            }
-            console.log("in PhotosList.jsx");
-            console.log(error);
-            setPhotoLoading(false);
-            setCurrentPhotoLoadingController(null);
         }
+        
+        compatProps.datePage[date] = page;
+        compatProps.setDatePage(compatProps.datePage);
+        setPhotoLoading(false);
+        setTimeout(() => { setScrollLock(false) }, 200);
     };
 
     function nextPhotosList(e, isForward) {
@@ -443,10 +665,11 @@ function PhotosList(props) {
                                     num={numOfPhoto}
                                     currentPhotoIndex={currentPhotoIndex}
                                     setCurrentPhotoIndex={setCurrentPhotoIndex}
-                                    setStar={setStar}
+                                    setStar={setStarWithUpdate}
                                     hasCommentFilter={hasCommentFilter}
                                     starFilter={starFilter}
                                     extensionFilter={extensionFilter}
+                                    hasNext={photos.has_next}
 
                                     reread={photosListMiniReread}
                                     currentIndex={photosListMiniCurrentIndex}
@@ -464,7 +687,7 @@ function PhotosList(props) {
                     <div>
                         {photos.photos.length > 0 ?
                             <div className="photo-list-header">
-                                <div className="photo-page-info">{compatProps.currentDate} page:{compatProps.datePage[compatProps.currentDate]}</div>
+                                <div className="photo-page-info">{fetchConfig.title} page:{compatProps.datePage[compatProps.currentDate] || 1}</div>
                                 <div className="navigation">
                                     {photos.has_prev && (<span><a href="#" onClick={(e) => nextPhotosList(e, false)}>&lt;&lt; Prev&nbsp;</a></span>)}
                                     {photos.has_next && (<span><a href="#" onClick={(e) => nextPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
@@ -549,7 +772,7 @@ function PhotosList(props) {
                                 }
                                 return (
                                     <>
-                                        <div key={i} className={"row pict-" + iconSize} style={{ flex: "0 0 " + ((iconSize / 1) + 41) + "px", textAlign: "center", verticalAlign: "middle" }} >
+                                        <div key={i} className={"row pict-" + iconSize} style={{ flex: "0 0 " + ((iconSize / 1) + 41) + "px", textAlign: "center", verticalAlign: "middle", position: "relative" }} >
                                             <div style={{ flexShrink: 0 }}>
                                                 <a href="#" onClick={() => {
                                                     setShowSideMenu(false);
@@ -600,6 +823,30 @@ function PhotosList(props) {
                                                         </div>
                                                     }
                                                 </a>
+                                                
+                                                {/* Metadata overlay - stars and comments */}
+                                                {(l.star > 0 || l.comment) && (
+                                                    <div style={{
+                                                        position: "absolute",
+                                                        bottom: "25px",
+                                                        right: "42px",
+                                                        backgroundColor: "rgba(0, 0, 0, 0.5)",
+                                                        color: "white",
+                                                        padding: "1px 3px",
+                                                        borderRadius: "3px",
+                                                        fontSize: "10px",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: "2px"
+                                                    }}>
+                                                        {l.star > 0 && (
+                                                            <span>⭐{l.star}</span>
+                                                        )}
+                                                        {l.comment && (
+                                                            <span>💬</span>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="photo-list-menu">
                                                 <input type="checkbox"
@@ -607,7 +854,7 @@ function PhotosList(props) {
                                                     checked={photoSelectionDict[l.file.path] ? "checked" : ""}
                                                     onChange={(e) => addSelection(e.target.checked, l.file.path)}
                                                 />
-                                                <label className={"cneckbox-photo checkbox hover"} htmlFor={"photo-checkbox-" + i}></label>
+                                                <label className={"checkbox-photo checkbox hover"} htmlFor={"photo-checkbox-" + i}></label>
                                                 <a href="#" onClick={() => {
                                                     displayPhoto(l.file.path, i + (compatProps.datePage[compatProps.currentDate] - 1) * numOfPhoto)
                                                     setShowSideMenu(true);
@@ -645,9 +892,10 @@ function PhotosList(props) {
                     path={currentPhotoPath}
                     addFooterMessage={compatProps.addFooterMessage}
                     imgCacheMap={imgCacheMap}
-                    setStar={setStar}
+                    setStar={setStarWithUpdate}
                     star={star}
                     onPhotosRefresh={getPhotos}
+                    onCommentUpdate={updatePhotoComment}
                 />
             </div>
             <div style={{ display: (!compatProps.showPhotoDisplay || !currentPhotoPath) ? "block" : "none" }}>

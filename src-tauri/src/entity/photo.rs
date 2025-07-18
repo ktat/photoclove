@@ -16,6 +16,8 @@ pub struct Photo {
     thumbnail_store: String,
     has_config: bool,
     pub css_style: Option<String>,
+    pub star: Option<i32>,
+    pub comment: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -50,6 +52,8 @@ impl Photo {
             thumbnail_store: thumbnail_store,
             has_config: has_config,
             css_style: None,
+            star: None,
+            comment: None,
         }
     }
 
@@ -127,6 +131,14 @@ impl Photo {
 
     pub fn set_css_style(&mut self, css_style: Option<String>) {
         self.css_style = css_style;
+    }
+
+    pub fn set_star(&mut self, star: i32) {
+        self.star = Some(star);
+    }
+
+    pub fn set_comment(&mut self, comment: String) {
+        self.comment = Some(comment);
     }
 
     pub fn is_meta_empty(&self) -> bool {

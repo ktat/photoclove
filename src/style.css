@@ -923,6 +923,11 @@ ul.list-of-selected li {
   margin: 0;
 }
 
+.photo-list-menu label.checkbox:before {
+  left: 7px;
+  margin-top: -6px;
+}
+
 .imageInSelectedPhotos {
   flex: 1;
   max-width: 100%;

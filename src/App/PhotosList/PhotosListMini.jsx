@@ -14,13 +14,13 @@ function PhotosListMini(props) {
     const { imgCacheMap, setImgCacheMap } = useContext(ImgCacheContext);
     const { photosListMiniAllPhotos, setPhotosListMiniAllPhotos } = useContext(AllPhotosContext);
 
-    // State from original implementation
+    // State from original implementation - simplified
     const [showPhotosIndex, setShowPhotosIndex] = useState([]);
-    const [hasNext, setHasNext] = useState(false);
     const [borderStyle, setBorderStyle] = useState([]);
     const [currentPhotoSize, setCurrentPhotoSize] = useState([]);
     const [photoZoomReady, setPhotoZoomReady] = useState(false);
     const [photoZoom, setPhotoZoom] = useState("auto");
+    const [isLoadingPhotos, setIsLoadingPhotos] = useState(false);
     const [imgStyle, setImgStyle] = useState({
         transition: 'opacity 0.1s',
         opacity: 0.5,
@@ -72,61 +72,63 @@ function PhotosListMini(props) {
         });
     }, [])
 
-    useEffect((e) => {
-        const page = props.datePage[props.currentDate];
-        let currentPhotoIndex = props.currentPhotoIndex;
-        let l = photosListMiniAllPhotos.length;
-        if (l === 0 || (hasNext && l - currentPhotoIndex < NUM_OF_PHOTO_LIST) || l < currentPhotoIndex) {
-            getPhotos();
-        } else {
-            adjustCurrentIndex(photosListMiniAllPhotos);
-        }
-    }, [props.currentPhotoIndex, props.reread]);
-
-    // Adjust thumbnail display when photos are loaded or currentIndex changes
+    // Handle date changes - clear thumbnail cache and reset state
     useEffect(() => {
-        if (photosListMiniAllPhotos.length > 0) {
-            adjustCurrentIndex(photosListMiniAllPhotos);
+        console.log(`[DATE_CHANGE] Date changed to: ${props.currentDate}`);
+        // Clear cached thumbnail sources when date changes
+        setPhotosListImgSrc({});
+    }, [props.currentDate]);
+
+    useEffect(() => {
+        const currentPhotoIndex = props.currentIndex; // Use the corrected global index
+        const loadedCount = photosListMiniAllPhotos.length;
+        
+        console.log(`[INIT] UseEffect - PhotoIndex: ${currentPhotoIndex}, Loaded: ${loadedCount}, Date: ${props.currentDate}`);
+        
+        if (loadedCount > 0 && currentPhotoIndex >= 0) {
+            console.log(`[INIT] Using existing photos data (${loadedCount} photos) for adjustment`);
+            adjustCurrentIndex();
+        } else {
+            console.log(`[INIT] No photos data available yet or invalid index`);
         }
-    }, [photosListMiniAllPhotos.length, props.currentIndex]);
+    }, [props.currentIndex, props.reread, photosListMiniAllPhotos.length, props.currentDate]);
+
+    // Note: Removed redundant useEffect to prevent conflicts
+    // Thumbnail display adjustment is now handled in the main useEffect above
+
+    // Note: hasNext is no longer needed since we load all photos at once
 
     function backwardPhotos() {
         const totalPhotos = photosListMiniAllPhotos.length;
-        const { showPrev } = getButtonVisibility(totalPhotos, props.currentPhotoIndex);
+        const { showPrev, startIndex } = calculateSimpleThumbnailDisplay(photosListMiniAllPhotos, props.currentIndex);
         if (!showPrev) return;
         
-        // Shift window backward by recalculating with algorithm
-        const { startIndex } = calculateDisplayWindow(totalPhotos, props.currentPhotoIndex);
+        // Shift window backward by recalculating with simple logic
         const newSelectedIndex = Math.max(0, startIndex - 1);
         
         // Navigate to a photo that would shift the window
         if (photosListMiniAllPhotos[newSelectedIndex]) {
-            props.setCurrentPhotoIndex(newSelectedIndex);
+            props.setCurrentIndex(newSelectedIndex);
             props.setCurrentPhotoPath(photosListMiniAllPhotos[newSelectedIndex].file.path);
-            updateThumbnailDisplay(newSelectedIndex);
             setImageCache(newSelectedIndex, -1);
+            // adjustCurrentIndex will be called by useEffect when props.currentIndex changes
         }
     }
 
     function forwardPhotos() {
         const totalPhotos = photosListMiniAllPhotos.length;
-        const { showNext } = getButtonVisibility(totalPhotos, props.currentPhotoIndex);
-        if (!showNext && !hasNext) return;
+        const { showNext, endIndex } = calculateSimpleThumbnailDisplay(photosListMiniAllPhotos, props.currentIndex);
+        if (!showNext) return;
         
-        if (hasNext && (photosListMiniAllPhotos.length - props.currentPhotoIndex) <= NUM_OF_PHOTO_LIST) {
-            getPhotos();
-        }
-        
-        // Shift window forward by recalculating with algorithm
-        const { endIndex } = calculateDisplayWindow(totalPhotos, props.currentPhotoIndex);
+        // Shift window forward by recalculating with simple logic
         const newSelectedIndex = Math.min(totalPhotos - 1, endIndex + 1);
         
         // Navigate to a photo that would shift the window
         if (photosListMiniAllPhotos[newSelectedIndex]) {
-            props.setCurrentPhotoIndex(newSelectedIndex);
+            props.setCurrentIndex(newSelectedIndex);
             props.setCurrentPhotoPath(photosListMiniAllPhotos[newSelectedIndex].file.path);
-            updateThumbnailDisplay(newSelectedIndex);
             setImageCache(newSelectedIndex, 1);
+            // adjustCurrentIndex will be called by useEffect when props.currentIndex changes
         }
     }
 
@@ -167,114 +169,160 @@ function PhotosListMini(props) {
 
     function _movePhotos(index) {
         props.setCurrentIndex(index);
-        const totalPhotos = photosListMiniAllPhotos.length;
-        const { startIndex, endIndex, borderPosition } = calculateDisplayWindow(totalPhotos, props.currentPhotoIndex);
+        
+        // Use the new simple thumbnail display logic
+        const { startIndex, endIndex, borderPosition } = calculateSimpleThumbnailDisplay(photosListMiniAllPhotos, index);
+        
+        console.log(`[_MOVE_PHOTOS] Moving to index ${index}, calculated range: ${startIndex}-${endIndex}, border: ${borderPosition}`);
         
         const photosIndex = [];
-        for (let i = startIndex; i <= endIndex; i++) {
+        for (let i = startIndex; i <= endIndex && i < photosListMiniAllPhotos.length; i++) {
             if (photosListMiniAllPhotos[i]) {
                 photosIndex.push(i);
             }
         }
         
+        // Update both at the same time to ensure consistency
         setShowPhotosIndex(photosIndex);
-        resetSelectedBorder(borderPosition);
-    }
-
-    async function getPhotos() {
-        if (!props.currentDate || !props.datePage) return;
         
-        try {
-            const page = props.datePage[props.currentDate];
-            const result = await invoke("get_photos", {
-                dateStr: props.currentDate,
-                page: page,
-                sort: props.sortOfPhotos || 0,
-                starFilter: props.starFilter || 0,
-                hasCommentFilter: props.hasCommentFilter || false,
-                extensionFilter: props.extensionFilter || "all"
-            });
-            
-            const photos = JSON.parse(result);
-            if (photos.photos && Array.isArray(photos.photos)) {
-                // Append new photos to existing ones (for pagination)
-                const newPhotos = [...photosListMiniAllPhotos, ...photos.photos];
-                setPhotosListMiniAllPhotos(newPhotos);
-                setHasNext(photos.has_next || false);
-                return photos.photos;
-            }
-        } catch (error) {
-            console.error("Failed to load photos:", error);
-        }
-        return [];
-    }
-
-    // Display Window Algorithm implementation
-    function calculateDisplayWindow(totalPhotos, selectedIndex, maxDisplay = NUM_OF_PHOTO_LIST) {
-        if (totalPhotos <= maxDisplay) {
-            return {
-                startIndex: 0,
-                endIndex: totalPhotos - 1,
-                borderPosition: selectedIndex
-            };
-        }
-        
-        let startIndex = Math.max(0, selectedIndex - Math.floor(maxDisplay / 2));
-        let endIndex = Math.min(totalPhotos - 1, startIndex + maxDisplay - 1);
-        
-        // Adjust if we're near the end
-        if (endIndex - startIndex + 1 < maxDisplay && endIndex === totalPhotos - 1) {
-            startIndex = Math.max(0, endIndex - maxDisplay + 1);
-        }
-        
-        return {
-            startIndex: startIndex,
-            endIndex: endIndex,
-            borderPosition: selectedIndex - startIndex
-        };
-    }
-
-    // Button visibility detection
-    function getButtonVisibility(totalPhotos, selectedIndex) {
-        if (totalPhotos <= NUM_OF_PHOTO_LIST) {
-            return { showPrev: false, showNext: false };
-        }
-        
-        const { startIndex, endIndex } = calculateDisplayWindow(totalPhotos, selectedIndex);
-        
-        return {
-            showPrev: startIndex > 0,
-            showNext: endIndex < totalPhotos - 1
-        };
-    }
-
-    function adjustCurrentIndex(allPhotos) {
-        const totalPhotos = allPhotos.length;
-        const { startIndex, endIndex, borderPosition } = calculateDisplayWindow(totalPhotos, props.currentPhotoIndex);
-        
-        const photosIndex = [];
-        for (let i = startIndex; i <= endIndex; i++) {
-            if (allPhotos[i]) {
-                photosIndex.push(i);
-            }
-        }
-        
-        setShowPhotosIndex(photosIndex);
-        resetSelectedBorder(borderPosition);
-    }
-
-    function resetSelectedBorder(selectedIndex) {
+        // Create border styles based on the new photosIndex length and borderPosition
         const newBorderStyle = [];
-        // Create border styles for the actual number of displayed photos
-        for (let i = 0; i < showPhotosIndex.length; i++) {
-            if (i === selectedIndex) {
+        for (let i = 0; i < photosIndex.length; i++) {
+            if (i === borderPosition) {
                 newBorderStyle[i] = '3px solid #4a9eff';
             } else {
                 newBorderStyle[i] = '1px solid #444';
             }
         }
         setBorderStyle(newBorderStyle);
+        
+        console.log(`[_MOVE_PHOTOS] Set photosIndex:`, photosIndex, `borderPosition: ${borderPosition}`);
     }
+
+    // Note: loadAllPhotosMetadata function removed - PhotosList should provide all photos data
+
+    // Simple Thumbnail Display Logic - based on user's specification
+    function calculateSimpleThumbnailDisplay(allPhotos, selectedIndex) {
+        const totalPhotos = allPhotos.length;
+        const t = selectedIndex; // 0-indexed全体位置
+        
+        console.log(`[SIMPLE_CALC] Input - totalPhotos: ${totalPhotos}, selectedIndex: ${t}`);
+        
+        // Handle edge case: no photos or invalid index
+        if (totalPhotos === 0 || t < 0 || t >= totalPhotos) {
+            console.warn(`[SIMPLE_CALC] Invalid input - totalPhotos: ${totalPhotos}, selectedIndex: ${t}`);
+            return {
+                startIndex: 0,
+                endIndex: 0,
+                borderPosition: 0,
+                showPrev: false,
+                showNext: false
+            };
+        }
+        
+        // Handle case where total photos <= 9
+        if (totalPhotos <= NUM_OF_PHOTO_LIST) {
+            const result = {
+                startIndex: 0,
+                endIndex: totalPhotos - 1,
+                borderPosition: t,
+                showPrev: false,
+                showNext: false
+            };
+            console.log(`[SIMPLE_CALC] Small set (${totalPhotos} photos):`, result);
+            return result;
+        }
+        
+        let result;
+        
+        if (t < 5) {
+            // 最初の5枚以内：1-9番目表示
+            result = {
+                startIndex: 0,
+                endIndex: 8, // Always show first 9 photos
+                borderPosition: t, // 1-5番目位置に表示
+                showPrev: false,
+                showNext: true
+            };
+            console.log(`[SIMPLE_CALC] First 5 case (t=${t}):`, result);
+        } else if (t > totalPhotos - 5) {
+            // 最後の5枚以内：末尾9枚表示
+            result = {
+                startIndex: totalPhotos - 9,
+                endIndex: totalPhotos - 1,
+                borderPosition: t - (totalPhotos - 9), // 5-9番目位置に表示
+                showPrev: true,
+                showNext: false
+            };
+            console.log(`[SIMPLE_CALC] Last 5 case (t=${t}, totalPhotos=${totalPhotos}):`, result);
+        } else {
+            // 中央：選択写真を5番目（index 4）に配置
+            result = {
+                startIndex: t - 4,
+                endIndex: t + 4,
+                borderPosition: 4, // 常に5番目位置
+                showPrev: true,
+                showNext: true
+            };
+            console.log(`[SIMPLE_CALC] Center case (t=${t}):`, result);
+        }
+        
+        console.log(`[SIMPLE_CALC] Final result - Will show indices ${result.startIndex} to ${result.endIndex} (${result.endIndex - result.startIndex + 1} photos)`);
+        console.log(`[SIMPLE_CALC] Selected photo ${t} will be at position ${result.borderPosition + 1} (1-indexed)`);
+        console.log(`[SIMPLE_CALC] Buttons - showPrev: ${result.showPrev}, showNext: ${result.showNext}`);
+        
+        return result;
+    }
+
+    function adjustCurrentIndex() {
+        const totalPhotos = photosListMiniAllPhotos.length;
+        const selectedIndex = props.currentIndex;
+        
+        console.log(`[ADJUST] Photos: ${totalPhotos}, Selected: ${selectedIndex}`);
+        
+        if (totalPhotos === 0 || selectedIndex === undefined || selectedIndex === null || selectedIndex < 0 || selectedIndex >= totalPhotos) {
+            console.warn(`[ADJUST] Invalid state - totalPhotos: ${totalPhotos}, selectedIndex: ${selectedIndex}`);
+            // Reset to safe state
+            setShowPhotosIndex([]);
+            setBorderStyle([]);
+            return;
+        }
+        
+        
+        // Use the new simple thumbnail display logic
+        const { startIndex, endIndex, borderPosition, showPrev, showNext } = calculateSimpleThumbnailDisplay(photosListMiniAllPhotos, selectedIndex);
+        
+        console.log(`[ADJUST] Simple Logic Result - Range: ${startIndex}-${endIndex}, Border: ${borderPosition}`);
+        console.log(`[ADJUST] Button visibility - showPrev: ${showPrev}, showNext: ${showNext}`);
+        
+        const photosIndex = [];
+        for (let i = startIndex; i <= endIndex && i < totalPhotos; i++) {
+            if (photosListMiniAllPhotos[i]) {
+                photosIndex.push(i);
+            }
+        }
+        
+        console.log(`[ADJUST] PhotosIndex array:`, photosIndex);
+        console.log(`[ADJUST] BorderPosition should be: ${borderPosition} (selected photo at position ${borderPosition + 1})`);
+        
+        // Update both at the same time to ensure consistency
+        setShowPhotosIndex(photosIndex);
+        
+        // Create border styles based on the new photosIndex length and borderPosition
+        const newBorderStyle = [];
+        for (let i = 0; i < photosIndex.length; i++) {
+            if (i === borderPosition) {
+                newBorderStyle[i] = '3px solid #4a9eff';
+            } else {
+                newBorderStyle[i] = '1px solid #444';
+            }
+        }
+        setBorderStyle(newBorderStyle);
+        
+        console.log(`[ADJUST] Border styles created for ${photosIndex.length} photos, selected at position ${borderPosition}`);
+    }
+
+    // Note: resetSelectedBorder function removed - border styles are now created directly in adjustCurrentIndex
 
     function SetImgStyle(style, w, h) {
         setImgStyle(prevStyle => ({ ...prevStyle, ...style }));
@@ -324,64 +372,31 @@ function PhotosListMini(props) {
         }, 100);
     };
 
-    async function nextPhoto() {
-        const nextIndex = props.currentPhotoIndex + 1;
+    function nextPhoto() {
+        const nextIndex = props.currentIndex + 1;
+        
+        console.log(`[NAVIGATION] NextPhoto - Index: ${nextIndex}, Total: ${photosListMiniAllPhotos.length}`);
+        
         if (nextIndex < photosListMiniAllPhotos.length) {
-            // Check if we need to load more photos
-            if (hasNext && (photosListMiniAllPhotos.length - nextIndex) <= NUM_OF_PHOTO_LIST) {
-                getPhotos();
-            }
             _nextOrPrevPhoto(nextIndex);
             setImageCache(nextIndex, 1);
-            
-            // Update thumbnail display using algorithm
-            updateThumbnailDisplay(nextIndex);
-        } else if (hasNext) {
-            const updatedPhotos = await getPhotos();
-            if (updatedPhotos && updatedPhotos.length > 0) {
-                _nextOrPrevPhoto(nextIndex);
-                setImageCache(nextIndex, 1);
-                updateThumbnailDisplay(nextIndex);
-            }
+            // adjustCurrentIndex will be called by useEffect when props.currentIndex changes
         }
     }
 
     function prevPhoto() {
-        const prevIndex = props.currentPhotoIndex - 1;
+        const prevIndex = props.currentIndex - 1;
+        
+        console.log(`[NAVIGATION] PrevPhoto - Index: ${prevIndex}`);
+        
         if (prevIndex >= 0) {
             _nextOrPrevPhoto(prevIndex);
             setImageCache(prevIndex, -1);
-            
-            // Update thumbnail display using algorithm
-            updateThumbnailDisplay(prevIndex);
+            // adjustCurrentIndex will be called by useEffect when props.currentIndex changes
         }
     }
     
-    function updateThumbnailDisplay(selectedIndex) {
-        const totalPhotos = photosListMiniAllPhotos.length;
-        const buttonVisibility = getButtonVisibility(totalPhotos, selectedIndex);
-        const { startIndex, endIndex, borderPosition } = calculateDisplayWindow(totalPhotos, selectedIndex);
-        
-        // Check if we're in Dynamic mode (buttons visible) or Fixed mode
-        const isDynamicMode = buttonVisibility.showPrev || buttonVisibility.showNext;
-        
-        if (isDynamicMode) {
-            // Dynamic mode: recalculate window
-            const photosIndex = [];
-            for (let i = startIndex; i <= endIndex; i++) {
-                if (photosListMiniAllPhotos[i]) {
-                    photosIndex.push(i);
-                }
-            }
-            setShowPhotosIndex(photosIndex);
-            resetSelectedBorder(borderPosition);
-        } else {
-            // Fixed mode: only update border position
-            const currentStart = showPhotosIndex.length > 0 ? showPhotosIndex[0] : 0;
-            const relativeBorder = selectedIndex - currentStart;
-            resetSelectedBorder(relativeBorder);
-        }
-    }
+    // Note: updateThumbnailDisplay function removed - using adjustCurrentIndex for all thumbnail updates
 
     function _nextOrPrevPhoto(index) {
         const currentW = currentPhotoSize[0];
@@ -395,7 +410,7 @@ function PhotosListMini(props) {
         if (photosListMiniAllPhotos[index]) {
             props.setCurrentPhotoPath(photosListMiniAllPhotos[index].file.path);
             props.datePage[props.currentDate] = Math.trunc((index) / props.num) + 1;
-            props.setCurrentPhotoIndex(index);
+            props.setCurrentIndex(index);
         }
     }
 
@@ -444,12 +459,12 @@ function PhotosListMini(props) {
                     onClick={handleClick}
                 >
                     <a href="#" id="dummy-for-focus">{/* Dummy */}</a>
-                    {props.currentPhotoIndex > 0 ? 
+                    {props.currentIndex > 0 ? 
                         <><a href="#" onClick={() => lockNavigate(prevPhoto)}>&lt;&lt; prev</a>&nbsp;&nbsp;|| </> : 
                         <>&lt;&lt; <s>prev</s>&nbsp;&nbsp;|| </>
                     }
                     <a href="#" onClick={() => props.closePhotoDisplay()}>close</a>
-                    {(props.currentPhotoIndex < (photosListMiniAllPhotos.length - 1)) || hasNext ?
+                    {props.currentIndex < (photosListMiniAllPhotos.length - 1) ?
                         <> ||&nbsp;&nbsp;<a href="#" onClick={() => lockNavigate(nextPhoto)}>next &gt;&gt;</a><br /><br /></>
                         : <> ||&nbsp;&nbsp;<s>next</s> &gt;&gt;<br /><br /></>
                     }
@@ -463,22 +478,35 @@ function PhotosListMini(props) {
                         currentPhotoPath={props.currentPhotoPath}
                         currentPhotoSize={currentPhotoSize}
                         imgCacheMap={imgCacheMap}
-                        thumbnailSrc={getThumbnailSrc(photosListMiniAllPhotos[props.currentPhotoIndex])}
+                        thumbnailSrc={getThumbnailSrc(photosListMiniAllPhotos[props.currentIndex])}
                         photosListMiniClosed={photosListMiniClosed}
                         selectedInfoHidden={selectedInfoHidden}
                         unselectedInfoHidden={unselectedInfoHidden}
                         selectedContent={selectedContent}
                         unselectedContent={unselectedContent}
-                        currentPhotoCssStyle={photosListMiniAllPhotos[props.currentPhotoIndex]?.css_style}
+                        currentPhotoCssStyle={photosListMiniAllPhotos[props.currentIndex]?.css_style}
                     />
                 </div>
                 
                 <div id="photos-list-mini" className={photosListMiniClosed ? "photosListMiniClosed" : "photosListMini"}>
                     <div className="row1">
-                        <a style={{ display: getButtonVisibility(photosListMiniAllPhotos.length, props.currentPhotoIndex).showPrev ? "" : "none" }} onClick={() => { backwardPhotos() }}>◁</a>
+                        <a style={{ display: calculateSimpleThumbnailDisplay(photosListMiniAllPhotos, props.currentIndex).showPrev ? "" : "none" }} onClick={() => { backwardPhotos() }}>◁</a>
                     </div>
                     {showPhotosIndex.map((vIndex, i) => {
+                        // Strict validation to prevent rendering invalid photos
+                        if (typeof vIndex !== 'number' || vIndex < 0 || vIndex >= photosListMiniAllPhotos.length) {
+                            console.warn(`[THUMBNAIL] Invalid vIndex: ${vIndex} (array length: ${photosListMiniAllPhotos.length})`);
+                            return null;
+                        }
+                        
                         let v = photosListMiniAllPhotos[vIndex];
+                        
+                        // Skip if photo doesn't exist at this index
+                        if (!v || !v.file || !v.file.path) {
+                            console.warn(`[THUMBNAIL] Photo at index ${vIndex} is undefined or missing file property`);
+                            return null; // Don't render anything for missing photos
+                        }
+                        
                         const clientHeight = document.querySelector('#photos-list-mini')?.clientHeight - 20 || 80;
                         const thumbnailSrc = getThumbnailSrc(v);
                         
@@ -488,19 +516,14 @@ function PhotosListMini(props) {
                             photosListImgSrc[v.file.path] = convertFileSrc(v.file.path);
                         }
                         
-                        return <div className="row2" key={i}>
+                        return <div className="row2" key={`${vIndex}-${v.file.path}`} style={{ position: "relative" }}>
                             <a onClick={(e) => {
-                                props.setCurrentPhotoIndex(vIndex);
+                                props.setCurrentIndex(vIndex);
                                 props.setCurrentPhotoPath(v.file.path);
                                 props.datePage[props.currentDate] = Math.trunc((vIndex) / props.num) + 1;
                                 setImageCache(vIndex, 0);
                                 
-                                // Update thumbnail display based on new selection
-                                updateThumbnailDisplay(vIndex);
-                                
-                                if (hasNext && photosListMiniAllPhotos.length < vIndex + NUM_OF_PHOTO_LIST) {
-                                    getPhotos()
-                                }
+                                // adjustCurrentIndex will be called by useEffect when props.currentIndex changes
                             }}>
                                 {!v.has_thumbnail && v.file.path.match(/\.(mp4|webm)$/i)
                                     ? <div className="photo-list-movie" style={{ border: borderStyle[i], maxHeight: clientHeight + "px" }}>
@@ -519,10 +542,35 @@ function PhotosListMini(props) {
                                     </>
                                 }
                             </a>
+                            
+                            {/* Metadata overlay - stars and comments */}
+                            {(v.star > 0 || v.comment) && (
+                                <div style={{
+                                    position: "absolute",
+                                    top: "28px",
+                                    left: "2px",
+                                    backgroundColor: "rgba(0, 0, 0, 0.5)",
+                                    color: "white",
+                                    padding: "2px 4px",
+                                    borderRadius: "3px",
+                                    fontSize: "11px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "2px",
+                                    pointerEvents: "none"
+                                }}>
+                                    {v.star > 0 && (
+                                        <span>⭐{v.star}</span>
+                                    )}
+                                    {v.comment && (
+                                        <span>💬</span>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     })}
                     <div className="row1">
-                        <a style={{ display: getButtonVisibility(photosListMiniAllPhotos.length, props.currentPhotoIndex).showNext ? "" : "none" }} onClick={() => { forwardPhotos() }}>▷</a>
+                        <a style={{ display: calculateSimpleThumbnailDisplay(photosListMiniAllPhotos, props.currentIndex).showNext ? "" : "none" }} onClick={() => { forwardPhotos() }}>▷</a>
                     </div>
                 </div >
                 
