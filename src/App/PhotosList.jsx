@@ -1092,9 +1092,6 @@ function PhotosList(props) {
 
         {showSideMenu && (
             <div className="rightMenu">
-                <div style={{ display: "none" }}>
-                    {/* PhotoOption content is now handled within the PhotoOption component */}
-                </div>
                 <div style={{ display: (!compatProps.showPhotoDisplay || !currentPhotoPath) ? "block" : "none" }}>
                     <DirectoryMenu
                         addFooterMessage={compatProps.addFooterMessage}
