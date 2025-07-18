@@ -151,6 +151,14 @@ function PhotosList(props) {
             props.onRightMenuToggle(showSideMenu);
         }
     }, [showSideMenu, props.onRightMenuToggle]);
+    
+    // Close side menu when transitioning from search mode to non-search mode
+    useEffect(() => {
+        if (!isSearchMode && showSideMenu) {
+            // Only close if we were previously in search mode
+            setShowSideMenu(false);
+        }
+    }, [isSearchMode]);
     const [star, setStar] = useState([false, false, false, false, false]);
     const [starFilter, setStarFilter] = useState(0);
     
@@ -786,11 +794,12 @@ function PhotosList(props) {
                     data-date={isSearchMode ? "search_results" : compatProps.currentDate} 
                     data-page={isSearchMode ? (compatProps.datePage["search_results"] || 1) : (compatProps.datePage[compatProps.currentDate] || 1)}>
                     <div>
+                        {photos.photos.length == 0 && isSearchMode && <div style={{float: "left", marginBottom: "10px"}}><a className="back-to-home" onClick={(e) => { e.preventDefault(); clearSearch(); }} href="#">Back to HOME</a></div>}
                         {photos.photos.length > 0 ?
                             <div className="photo-list-header">
                                 <div className="photo-page-info">
                                     {isSearchMode ? (
-                                        <span>{fetchConfig.title} page:{compatProps.datePage["search_results"] || 1}</span>
+                                        <><a className="back-to-home" href="#" onClick={(e)=>{ e.preventDefault(); clearSearch(); }}>Back to HOME</a> <span style={{marginLeft: "10px"}}>{fetchConfig.title} page:{compatProps.datePage["search_results"] || 1}</span></>
                                     ) : (
                                         <span>{fetchConfig.title} page:{compatProps.datePage[compatProps.currentDate] || 1}</span>
                                     )}
@@ -832,7 +841,7 @@ function PhotosList(props) {
                                     </select>
                                 </div>
                             </div>
-                            : <>No Photo Found!</>
+                            : <>{isSearchMode ? "No Search Result" : "No Photo Found!"}</>
                         }
                         <Scrollable f={photosScroll} className="photos" hasNext={photos.has_next} hasPrev={photos.has_prev} >
                             {photos.has_prev && compatProps.datePage[compatProps.currentDate] > 1 && 

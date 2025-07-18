@@ -202,7 +202,7 @@ img.splash {
 }
 
 .inner-container.menu-open {
-  width: calc(100% - 320px);
+  width: 100%;
 }
 
 .inner-container.menu-closed {
@@ -1309,6 +1309,41 @@ div.tab-active {
   height: calc(100vh - 100px);
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+/* Back to HOME button styles */
+.back-to-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #4a9eff 0%, #3a8eef 100%);
+  color: white;
+  text-decoration: none;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(74, 158, 255, 0.3);
+}
+
+.back-to-home:hover {
+  background: linear-gradient(135deg, #3a8eef 0%, #2a7edf 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(74, 158, 255, 0.4);
+  color: white;
+}
+
+.back-to-home:active {
+  transform: translateY(0px);
+  box-shadow: 0 2px 4px rgba(74, 158, 255, 0.3);
+}
+
+.back-to-home::before {
+  content: "🏠";
+  font-size: 14px;
 }
 
 div#tab-selection img {
