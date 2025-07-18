@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useUI } from "../context/UIContext.jsx";
-import SearchBar from "../components/SearchBar";
-import AdvancedFilters from "../components/AdvancedFilters";
+import SearchTools from "../components/SearchTools";
 import PhotosList from "./PhotosList.jsx";
-import SavedSearches from "../components/SavedSearches";
 import { useSearch } from "../hooks/useSearch";
 import "./SearchPage.css";
 import "./SearchPageOverrides.css";
@@ -21,7 +19,6 @@ function SearchPage() {
     
     const [searchFilters, setSearchFilters] = useState({});
     const [currentSearchParams, setCurrentSearchParams] = useState(null);
-    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
     const [selectedPhoto, setSelectedPhoto] = useState(null);
 
     // Initialize search with initial query if provided
@@ -102,35 +99,16 @@ function SearchPage() {
                                         title: `Search: "${searchQuery}"`
                                     }}
                                     searchTools={
-                                        <div className="search-tools">
-                                            <SearchBar 
-                                                onSearch={handleSearch}
-                                                onClear={handleSearchClear}
-                                                searchResults={searchResults}
-                                                initialQuery={searchInitialQuery}
-                                            />
-                                            
-                                            <div className="search-filters-toggle">
-                                                <button 
-                                                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                                                    className="toggle-advanced-filters"
-                                                >
-                                                    {showAdvancedFilters ? 'Hide' : 'Show'} Advanced Filters
-                                                </button>
-                                            </div>
-                                            
-                                            {showAdvancedFilters && (
-                                                <AdvancedFilters 
-                                                    onFiltersChange={handleFiltersChange}
-                                                    initialFilters={searchFilters}
-                                                />
-                                            )}
-                                            
-                                            <SavedSearches 
-                                                onSearchSelect={handleSavedSearchSelect}
-                                                currentSearch={currentSearchParams}
-                                            />
-                                        </div>
+                                        <SearchTools
+                                            onSearch={handleSearch}
+                                            onClear={handleSearchClear}
+                                            searchResults={searchResults}
+                                            initialQuery={searchInitialQuery}
+                                            onFiltersChange={handleFiltersChange}
+                                            initialFilters={searchFilters}
+                                            onSearchSelect={handleSavedSearchSelect}
+                                            currentSearch={currentSearchParams}
+                                        />
                                     }
                                 />
                             ) : (
