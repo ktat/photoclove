@@ -93,6 +93,14 @@ function PhotoOption(props) {
                                         <strong>Results:</strong> {props.searchResultsCount || 0} photo{(props.searchResultsCount || 0) !== 1 ? 's' : ''}
                                     </div>
                                 </div>
+                                
+                                {/* Search Tools - passed from parent */}
+                                {props.searchTools && (
+                                    <div className="search-tools-section">
+                                        {props.searchTools}
+                                    </div>
+                                )}
+                                
                                 <div className="search-actions">
                                     {props.onClearSearch && (
                                         <button 

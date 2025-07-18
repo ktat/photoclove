@@ -939,6 +939,7 @@ function PhotosList(props) {
                     searchQuery={searchQuery}
                     searchResultsCount={photos.photos.length}
                     onClearSearch={props.onClearSearch}
+                    searchTools={props.searchTools}
                     addFooterMessage={compatProps.addFooterMessage}
                     imgCacheMap={imgCacheMap}
                     setStar={setStarWithUpdate}

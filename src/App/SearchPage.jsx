@@ -101,6 +101,37 @@ function SearchPage() {
                                         value: searchQuery,
                                         title: `Search: "${searchQuery}"`
                                     }}
+                                    searchTools={
+                                        <div className="search-tools">
+                                            <SearchBar 
+                                                onSearch={handleSearch}
+                                                onClear={handleSearchClear}
+                                                searchResults={searchResults}
+                                                initialQuery={searchInitialQuery}
+                                            />
+                                            
+                                            <div className="search-filters-toggle">
+                                                <button 
+                                                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                                                    className="toggle-advanced-filters"
+                                                >
+                                                    {showAdvancedFilters ? 'Hide' : 'Show'} Advanced Filters
+                                                </button>
+                                            </div>
+                                            
+                                            {showAdvancedFilters && (
+                                                <AdvancedFilters 
+                                                    onFiltersChange={handleFiltersChange}
+                                                    initialFilters={searchFilters}
+                                                />
+                                            )}
+                                            
+                                            <SavedSearches 
+                                                onSearchSelect={handleSavedSearchSelect}
+                                                currentSearch={currentSearchParams}
+                                            />
+                                        </div>
+                                    }
                                 />
                             ) : (
                                 <div className="search-no-results">
@@ -114,42 +145,9 @@ function SearchPage() {
                     ) : (
                         <div className="search-welcome">
                             <h2>Search Your Photos</h2>
-                            <p>Use the search tools on the right to find photos by filename, metadata, or EXIF data.</p>
+                            <p>Use the search bar above or the search tools in the right panel to find photos by filename, metadata, or EXIF data.</p>
                         </div>
                     )}
-                </div>
-
-                {/* Right Column - Search Tools */}
-                <div className="search-page-right">
-                    <div className="search-tools">
-                        <SearchBar 
-                            onSearch={handleSearch}
-                            onClear={handleSearchClear}
-                            searchResults={searchResults}
-                            initialQuery={searchInitialQuery}
-                        />
-                        
-                        <div className="search-filters-toggle">
-                            <button 
-                                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                                className="toggle-advanced-filters"
-                            >
-                                {showAdvancedFilters ? 'Hide' : 'Show'} Advanced Filters
-                            </button>
-                        </div>
-                        
-                        {showAdvancedFilters && (
-                            <AdvancedFilters 
-                                onFiltersChange={handleFiltersChange}
-                                initialFilters={searchFilters}
-                            />
-                        )}
-                        
-                        <SavedSearches 
-                            onSearchSelect={handleSavedSearchSelect}
-                            currentSearch={currentSearchParams}
-                        />
-                    </div>
                 </div>
             </div>
         </div>
