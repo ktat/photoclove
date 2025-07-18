@@ -57,7 +57,7 @@ function PhotoOption(props) {
                     backgroundColor: '#1f1f1f',
                     paddingLeft: '20px',
                     paddingTop: '10px',
-                    zIndex: 1000
+                    zIndex: 1001
                 }}>
                     {activeTab === "info" && (
                         <PhotoInfo 
