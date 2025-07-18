@@ -11,6 +11,7 @@ import fileUrl from "../PathUtil.jsx";
 import '../scrollable.css';
 import { usePhoto } from "../context/PhotoContext.jsx";
 import { useUI } from "../context/UIContext.jsx";
+import { useSearch } from "../hooks/useSearch.js";
 import BaseThumbnailGrid from "../components/BaseThumbnailGrid.jsx";
 import { PhotoDataAdapter } from "../utils/PhotoDataAdapter.js";
 
@@ -28,12 +29,20 @@ function PhotosList(props) {
         updateShowPhotoDisplay,
         setCurrentDateNum
     } = usePhoto();
-    const { addFooterMessage } = useUI();
+    const { addFooterMessage, toggleSearchPage } = useUI();
+    
+    // Use search hook when in search mode
+    const { searchResults, searchQuery, isSearching, performSearch, clearSearch: clearSearchHook } = useSearch();
+    
+    // Custom clear search function that also navigates back to home
+    const clearSearch = useCallback(() => {
+        clearSearchHook();
+        // Navigate back to home by toggling search page off
+        toggleSearchPage(false);
+    }, [clearSearchHook, toggleSearchPage]);
     
     // Check if we're in search mode
     const isSearchMode = props.searchMode || false;
-    const searchResults = props.searchResults || [];
-    const searchQuery = props.searchQuery || "";
     
     // fetchConfig from props or generate from currentDate
     const fetchConfig = props.fetchConfig || {
@@ -74,7 +83,7 @@ function PhotosList(props) {
     const [photosListMiniReread, setPhotosListMiniReread] = useState(false);
     const [photosListImgSrc, setPhotosListImgSrc] = useState({});
     const [imgCacheMap, setImgCacheMap] = useState({});
-    const [showSideMenu, setShowSideMenu] = useState(true);
+    const [showSideMenu, setShowSideMenu] = useState(isSearchMode);
     
     // Notify parent when menu state changes
     useEffect(() => {
@@ -243,7 +252,7 @@ function PhotosList(props) {
             return;
         }
         
-        setShowSideMenu(false);
+        setShowSideMenu(isSearchMode);
         
         // Cancel current photo loading if in progress
         if (currentPhotoLoadingController) {
@@ -443,13 +452,13 @@ function PhotosList(props) {
                     break;
                     
                 case "search":
-                    // Use search results passed from props if available
+                    // Use search results from the hook if available
                     if (isSearchMode && searchResults.length > 0) {
-                        console.log("[LOAD_ALL] Using search results from props");
+                        console.log("[LOAD_ALL] Using search results from hook");
                         result = JSON.stringify({ photos: searchResults });
                     } else {
                         // Fall back to date-based search for now
-                        console.warn("[LOAD_ALL] No search results provided, falling back to date-based");
+                        console.warn("[LOAD_ALL] No search results available, falling back to date-based");
                         result = await invoke("get_photos_with_filter", {
                             dateStr: config.value || compatProps.currentDate,
                             sortValue: parseInt(sortOfPhotos),
@@ -700,7 +709,7 @@ function PhotosList(props) {
                                     // Search mode props
                                     searchMode={isSearchMode}
                                     searchQuery={searchQuery}
-                                    onClearSearch={props.onClearSearch}
+                                    onClearSearch={clearSearch}
                                 />
                             </div>
                         </ImgCacheContext.Provider>
@@ -714,14 +723,21 @@ function PhotosList(props) {
                             <div className="photo-list-header">
                                 <div className="photo-page-info">
                                     {isSearchMode ? (
-                                        <span className="search-results-info">
-                                            {photos.photos.length} photo{photos.photos.length !== 1 ? 's' : ''} found for "{searchQuery}"
-                                            {props.onClearSearch && (
-                                                <button onClick={props.onClearSearch} className="clear-search-btn" style={{ marginLeft: "10px", fontSize: "12px" }}>
+                                        <div className="search-results-header">
+                                            <button 
+                                                className="back-to-home-button" 
+                                                onClick={() => toggleSearchPage(false)}
+                                                style={{ marginRight: "10px", fontSize: "12px" }}
+                                            >
+                                                ← Back to Home
+                                            </button>
+                                            <span className="search-results-info">
+                                                {photos.photos.length} photo{photos.photos.length !== 1 ? 's' : ''} found for "{searchQuery}"
+                                                <button onClick={clearSearch} className="clear-search-btn" style={{ marginLeft: "10px", fontSize: "12px" }}>
                                                     Clear Search
                                                 </button>
-                                            )}
-                                        </span>
+                                            </span>
+                                        </div>
                                     ) : (
                                         <span>{fetchConfig.title} page:{compatProps.datePage[compatProps.currentDate] || 1}</span>
                                     )}
@@ -1003,7 +1019,7 @@ function PhotosList(props) {
                         searchMode={isSearchMode}
                         searchQuery={searchQuery}
                         searchResultsCount={photos.photos.length}
-                        onClearSearch={props.onClearSearch}
+                        onClearSearch={clearSearch}
                         searchTools={props.searchTools}
                         addFooterMessage={compatProps.addFooterMessage}
                         imgCacheMap={imgCacheMap}

@@ -13,7 +13,7 @@ import Preferences from "./App/Preferences.jsx"
 import JobQueue from "./App/JobQueue.jsx"
 import Welcome from "./Welcome.jsx"
 import Home from "./App/Home.jsx"
-import SearchPage from "./App/SearchPage.jsx"
+// import SearchPage from "./App/SearchPage.jsx" // Now using PhotosList directly for search
 import loginGoogle from "./App/Login.jsx"
 import Footer from "./App/Footer.jsx"
 import WelcomeImage from "./WelcomeImage.jsx";
@@ -223,11 +223,40 @@ function App() {
     );
   }
   
-  // Show search page
+  // Show search page - now using PhotosList directly
   if (showSearchPage) {
     return (
       <>
-        <SearchPage />
+        <div className="container">
+          <div className={`inner-container ${rightMenuOpen ? 'menu-open' : 'menu-closed'}`}>
+            <div id="leftMenu" className="leftMenu">
+              <a href="#" onClick={() => toggleImporter(true)}>&#10145;import</a>
+              <div className="row">
+                <div style={{ display: "none" }}>
+                  <input
+                    id="greet-input"
+                    onChange={(e) => setName(e.currentTarget.value)}
+                    placeholder="Enter a name..."
+                  />
+                  <button type="button" onClick={() => greet()}>
+                    Search
+                  </button>
+                  <p>{greetMsg}</p>
+                </div>
+              </div>
+              <DateList
+                getDates={getDates}
+                toggleImporter={toggleImporter}
+              />
+            </div>
+            <PhotosList
+              shortCutNavigation={shortCutNavigation}
+              addFooterMessage={addFooterMessage}
+              onRightMenuToggle={setRightMenuOpen}
+              searchMode={true}
+            />
+          </div>
+        </div>
         <Footer />
         <ErrorDisplay />
       </>
