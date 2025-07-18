@@ -74,7 +74,14 @@ function PhotosList(props) {
     const [photosListMiniReread, setPhotosListMiniReread] = useState(false);
     const [photosListImgSrc, setPhotosListImgSrc] = useState({});
     const [imgCacheMap, setImgCacheMap] = useState({});
-    const [showSideMenu, setShowSideMenu] = useState(false);
+    const [showSideMenu, setShowSideMenu] = useState(true);
+    
+    // Notify parent when menu state changes
+    useEffect(() => {
+        if (props.onRightMenuToggle) {
+            props.onRightMenuToggle(showSideMenu);
+        }
+    }, [showSideMenu, props.onRightMenuToggle]);
     const [star, setStar] = useState([false, false, false, false, false]);
     const [starFilter, setStarFilter] = useState(0);
     
@@ -927,58 +934,113 @@ function PhotosList(props) {
                 </div>
             </>
         }
-        <div className={(showSideMenu || !currentPhotoPath) ? "rightMenu" : "rightMenu-close"} style={{ backgroundColor: "blue", border: "2px solid yellow" }}>
-            <div style={{ color: "white", padding: "10px" }}>
-                DEBUG: showSideMenu={showSideMenu ? "true" : "false"}, currentPhotoPath={currentPhotoPath ? "exists" : "null"}, isSearchMode={isSearchMode ? "true" : "false"}
-            </div>
-            <div style={{ display: (compatProps.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
-                <PhotoOption
-                    setShowSideMenu={setShowSideMenu}
-                    showSideMenu={showSideMenu}
-                    currentPhotoPath={currentPhotoPath}
-                    closePhotoDisplay={closePhotoDisplay}
-                    path={currentPhotoPath}
-                    
-                    // Search mode props
-                    searchMode={isSearchMode}
-                    searchQuery={searchQuery}
-                    searchResultsCount={photos.photos.length}
-                    onClearSearch={props.onClearSearch}
-                    searchTools={props.searchTools}
-                    addFooterMessage={compatProps.addFooterMessage}
-                    imgCacheMap={imgCacheMap}
-                    setStar={setStarWithUpdate}
-                    star={star}
-                    onPhotosRefresh={getPhotos}
-                    onCommentUpdate={updatePhotoComment}
-                />
-            </div>
-            <div style={{ display: (!compatProps.showPhotoDisplay || !currentPhotoPath || isSearchMode) ? "block" : "none" }}>
-                <DirectoryMenu
-                    addFooterMessage={compatProps.addFooterMessage}
-                    tabClass={tabClass}
-                    setTabClass={setTabClass}
-                    changeTab={changeTab}
-                    currentDate={compatProps.currentDate}
-                    closeRightColumn={closeRightColumn}
-                    photoSelection={photoSelection}
-                    clearPhotoSelection={clearPhotoSelection}
-                    selectAllPhotoToSelection={selectAllPhotoToSelection}
-                    dateNum={compatProps.dateNum}
-                    setCurrentDateNum={compatProps.setCurrentDateNum}
-                    moveToTrashCan={moveToTrashCan}
-                    setStarFilter={setStarFilter}
-                    setHasCommentFilter={setHasCommentFilter}
-                    starFilter={starFilter}
-                    setExtensionFilter={setExtensionFilter}
-                    extensionFilter={extensionFilter}
-                    
-                    // Search mode props
-                    searchMode={isSearchMode}
-                    searchTools={props.searchTools}
-                />
-            </div>
+        {/* Tabs positioned independently */}
+        <div className={`directory-vertical-tabs ${showSideMenu ? 'menu-open' : 'menu-closed'}`}>
+            {isSearchMode && (
+                <button 
+                    className={tabClass['search'] ? "directory-vertical-tab-button active" : "directory-vertical-tab-button"}
+                    onClick={(e) => {
+                        changeTab(e, "#tab-search");
+                        setShowSideMenu(true);
+                    }}
+                    title="Search Tools"
+                >
+                    <span className="directory-vertical-text">Search</span>
+                </button>
+            )}
+            <button 
+                className={tabClass['filter'] ? "directory-vertical-tab-button active" : "directory-vertical-tab-button"}
+                onClick={(e) => {
+                    changeTab(e, "#tab-filter");
+                    setShowSideMenu(true);
+                }}
+                title="Filter Photos"
+            >
+                <span className="directory-vertical-text">Filter</span>
+            </button>
+            <button 
+                className={tabClass['selection'] ? "directory-vertical-tab-button active" : "directory-vertical-tab-button"}
+                onClick={(e) => {
+                    changeTab(e, "#tab-selection");
+                    setShowSideMenu(true);
+                }}
+                title="Photo Selection"
+            >
+                <span className="directory-vertical-text">Selection</span>
+            </button>
+            {!isSearchMode && (
+                <button 
+                    className={tabClass['maintenance'] ? "directory-vertical-tab-button active" : "directory-vertical-tab-button"}
+                    onClick={(e) => {
+                        changeTab(e, "#tab-maintenance");
+                        setShowSideMenu(true);
+                    }}
+                    title="Maintenance Tools"
+                >
+                    <span className="directory-vertical-text">Maintenance</span>
+                </button>
+            )}
+            <button 
+                className="directory-vertical-tab-button directory-close-tab"
+                onClick={closeRightColumn}
+                title="Close Panel"
+            >
+                ×
+            </button>
         </div>
+
+        {showSideMenu && (
+            <div className="rightMenu">
+                <div style={{ display: (compatProps.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
+                    <PhotoOption
+                        setShowSideMenu={setShowSideMenu}
+                        showSideMenu={showSideMenu}
+                        currentPhotoPath={currentPhotoPath}
+                        closePhotoDisplay={closePhotoDisplay}
+                        path={currentPhotoPath}
+                        
+                        // Search mode props
+                        searchMode={isSearchMode}
+                        searchQuery={searchQuery}
+                        searchResultsCount={photos.photos.length}
+                        onClearSearch={props.onClearSearch}
+                        searchTools={props.searchTools}
+                        addFooterMessage={compatProps.addFooterMessage}
+                        imgCacheMap={imgCacheMap}
+                        setStar={setStarWithUpdate}
+                        star={star}
+                        onPhotosRefresh={getPhotos}
+                        onCommentUpdate={updatePhotoComment}
+                    />
+                </div>
+                <div style={{ display: (!compatProps.showPhotoDisplay || !currentPhotoPath || isSearchMode) ? "block" : "none" }}>
+                    <DirectoryMenu
+                        addFooterMessage={compatProps.addFooterMessage}
+                        tabClass={tabClass}
+                        setTabClass={setTabClass}
+                        changeTab={changeTab}
+                        currentDate={compatProps.currentDate}
+                        closeRightColumn={closeRightColumn}
+                        photoSelection={photoSelection}
+                        clearPhotoSelection={clearPhotoSelection}
+                        selectAllPhotoToSelection={selectAllPhotoToSelection}
+                        dateNum={compatProps.dateNum}
+                        setCurrentDateNum={compatProps.setCurrentDateNum}
+                        moveToTrashCan={moveToTrashCan}
+                        setStarFilter={setStarFilter}
+                        setHasCommentFilter={setHasCommentFilter}
+                        starFilter={starFilter}
+                        setExtensionFilter={setExtensionFilter}
+                        extensionFilter={extensionFilter}
+                        setShowSideMenu={setShowSideMenu}
+                        
+                        // Search mode props
+                        searchMode={isSearchMode}
+                        searchTools={props.searchTools}
+                    />
+                </div>
+            </div>
+        )}
     </>
 }
 

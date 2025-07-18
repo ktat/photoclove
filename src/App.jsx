@@ -52,6 +52,7 @@ function App() {
   
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
+  const [rightMenuOpen, setRightMenuOpen] = useState(true);
 
   const [shortCutNavigation, setShortCutNavigation] = useState({
     onKeyDown: (e) => { console.log(e) },
@@ -238,7 +239,7 @@ function App() {
     // onKeyDown={(e) => { shortCutNavigation.onKeyDown(e) }}
     // onKeyUp={(e) => { shortCutNavigation.onKeyUp(e) }}
     >
-      <div className="inner-container">
+      <div className={`inner-container ${rightMenuOpen ? 'menu-open' : 'menu-closed'}`}>
         <div id="leftMenu" className="leftMenu">
           <a href="#" onClick={() => toggleImporter(true)}>&#10145;import</a>
           <div className="row">
@@ -263,6 +264,7 @@ function App() {
           <PhotosList
             shortCutNavigation={shortCutNavigation}
             addFooterMessage={addFooterMessage}
+            onRightMenuToggle={setRightMenuOpen}
           />
         </>
           :

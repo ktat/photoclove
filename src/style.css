@@ -198,6 +198,15 @@ img.splash {
   text-align: center;
   width: 100%;
   height: calc(100vh - 30px);
+  transition: width 0.3s ease;
+}
+
+.inner-container.menu-open {
+  width: calc(100% - 320px);
+}
+
+.inner-container.menu-closed {
+  width: 100%;
 }
 
 footer {
@@ -287,7 +296,6 @@ button:hover {
   min-width: 230px;
   border: none;
   background-color: #1f1f1f;
-  order: 1;
   flex-shrink: 0;
 }
 
@@ -421,7 +429,7 @@ button:hover {
   position: fixed;
   right: 0;
   top: 0;
-  height: 100vh;
+  height: calc(100vh - 25px);
   z-index: 1000;
 }
 
@@ -430,13 +438,8 @@ button:hover {
 }
 
 .rightMenu-close {
-  flex: 0 0 1%;
-  height: calc(100vh - 30px);
-  min-width: 40px;
-  padding-left: 8px;
-  padding-right: 2px;
-
-  border: none;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
 }
 
 .rightMenu p {
@@ -497,9 +500,16 @@ button:hover {
 .photoLoadingOn,
 .centerDisplay {
   min-width: calc(var(--vw) - 560px);
+  max-width: calc(100vw - 320px - 230px);
   min-height: calc(100vh - 30px);
   text-align: center;
   overflow: hidden;
+  transition: max-width 0.3s ease;
+}
+
+.inner-container.menu-closed .centerDisplay,
+.inner-container.menu-closed .photoLoadingOn {
+  max-width: calc(100vw - 230px);
 }
 
 
@@ -572,18 +582,23 @@ button:hover {
 
 /* Directory vertical tabs */
 .directory-vertical-tabs {
-    position: absolute;
-    right: -40px;
+    position: fixed;
+    right: 0px;
     top: 50%;
     transform: translateY(-50%);
     display: flex;
     flex-direction: column;
     gap: 5px;
     z-index: 1001;
-    background-color: red;
-    padding: 10px;
-    border: 3px solid lime;
-    transition: right 0.15s ease;
+    transition: right 0.3s ease;
+}
+
+.directory-vertical-tabs.menu-open {
+    right: 320px;
+}
+
+.directory-vertical-tabs.menu-closed {
+    right: 0px;
 }
 
 .directory-vertical-tab-button:nth-child(2),

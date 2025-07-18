@@ -123,50 +123,6 @@ function DirectoryMenu(props) {
 
     return (
         <div id="directory-maintenance">
-            <div style={{ backgroundColor: "red", padding: "10px", margin: "10px", color: "white" }}>
-                DEBUG: DirectoryMenu rendered. SearchMode: {props.searchMode ? "true" : "false"}
-            </div>
-            <div className="directory-vertical-tabs">
-                {props.searchMode && (
-                    <button 
-                        className={props.tabClass['search'] ? "directory-vertical-tab-button active" : "directory-vertical-tab-button"}
-                        onClick={(e) => props.changeTab(e, "#tab-search")}
-                        title="Search Tools"
-                    >
-                        <span className="directory-vertical-text">Search</span>
-                    </button>
-                )}
-                <button 
-                    className={props.tabClass['filter'] ? "directory-vertical-tab-button active" : "directory-vertical-tab-button"}
-                    onClick={(e) => props.changeTab(e, "#tab-filter")}
-                    title="Filter Photos"
-                >
-                    <span className="directory-vertical-text">Filter</span>
-                </button>
-                <button 
-                    className={props.tabClass['selection'] ? "directory-vertical-tab-button active" : "directory-vertical-tab-button"}
-                    onClick={(e) => props.changeTab(e, "#tab-selection")}
-                    title="Photo Selection"
-                >
-                    <span className="directory-vertical-text">Selection</span>
-                </button>
-                {!props.searchMode && (
-                    <button 
-                        className={props.tabClass['maintenance'] ? "directory-vertical-tab-button active" : "directory-vertical-tab-button"}
-                        onClick={(e) => props.changeTab(e, "#tab-maintenance")}
-                        title="Maintenance Tools"
-                    >
-                        <span className="directory-vertical-text">Maintenance</span>
-                    </button>
-                )}
-                <button 
-                    className="directory-vertical-tab-button directory-close-tab"
-                    onClick={props.closeRightColumn}
-                    title="Close Panel"
-                >
-                    ×
-                </button>
-            </div>
             {props.searchMode && (
                 <div id="tab-search" className={props.tabClass['search'] ? "tab-active" : "tab"}>
                     <div className="search-tools-container">
