@@ -903,7 +903,6 @@ function PhotosList(props) {
                                         <div key={i} className={"row pict-" + iconSize} style={{ flex: "0 0 " + ((iconSize / 1) + 41) + "px", textAlign: "center", verticalAlign: "middle", position: "relative" }} >
                                             <div style={{ flexShrink: 0 }}>
                                                 <a href="#" onClick={() => {
-                                                    setShowSideMenu(false);
                                                     displayPhoto(l.file.path, i + (compatProps.datePage[compatProps.currentDate] - 1) * numOfPhoto)
                                                 }}>
                                                     {!l.has_thumbnail && l.file.path.match(/\.(mp4|webm)$/i)
