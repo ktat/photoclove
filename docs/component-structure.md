@@ -10,12 +10,21 @@ App (root)
 │   ├── WelcomeImage
 │   └── Tutorial steps
 ├── Home (main dashboard)
-│   └── WelcomeImage
-├── PhotosList (main photo view)
+│   ├── WelcomeImage
+│   └── Home Search Box
+├── PhotosList (main photo view & search results)
 │   ├── PhotosListMini (full-screen viewer)
 │   │   └── PhotoDisplay
 │   ├── PhotoLoading
-│   └── DirectoryMenu
+│   ├── DirectoryMenu (with search tools tab)
+│   │   ├── SearchTools (search tab content)
+│   │   │   ├── SearchBar
+│   │   │   ├── AdvancedFilters
+│   │   │   └── SavedSearches
+│   │   ├── Filter Tab
+│   │   ├── Maintenance Tab
+│   │   └── Selection Tab
+│   └── Back to HOME Button (in search mode)
 ├── PhotoOption (photo metadata panel)
 │   ├── PhotoEditor (image editing)
 │   └── PhotoInfo (metadata display)
@@ -90,6 +99,16 @@ App (root)
 <div id="home-container">
   <div>
     <pre style="..."><!-- ASCII art message --></pre>
+    
+    <!-- Search Box -->
+    <div class="home-search-container">
+      <div class="home-search-bar">
+        <input type="text" placeholder="Search photos..." class="home-search-input" />
+        <button class="home-search-button">Search</button>
+        <button class="home-advanced-search-button">Advanced Search</button>
+      </div>
+    </div>
+    
     <div class="splash-container">
       <img class="splash" src="..." width="100%" />
     </div>
@@ -121,12 +140,23 @@ App (root)
 ```html
 <div id="photoList" 
      class="centerDisplay" | "centerDisplayMax"
-     data-date="{YYYY/MM/DD}" 
+     data-date="{YYYY/MM/DD}" | "search_results"
      data-page="{N}">
+  
+  <!-- Back to HOME button (search mode only) -->
+  <div style="float: left; margin-bottom: 10px" class="search-mode-only">
+    <a href="#" class="back-to-home">Back to HOME</a>
+  </div>
   
   <!-- Header with navigation and controls -->
   <div class="photo-list-header">
-    <div class="photo-page-info">{date} page:{N}</div>
+    <div class="photo-page-info">
+      <!-- Search mode: Back to HOME + page info -->
+      <a href="#" class="back-to-home">Back to HOME</a>
+      <span style="margin-left: 10px">Search: "query" page:{N}</span>
+      <!-- Date mode: date + page info -->
+      <span>{date} page:{N}</span>
+    </div>
     <div class="navigation">
       <a href="#">&lt;&lt; Prev</a>
       <a href="#">Next &gt;&gt;</a>
@@ -430,15 +460,113 @@ App (root)
 
 ```html
 <div class="rightMenu">
-  <!-- Tab navigation -->
-  <div class="tab-menu">
-    <a href="#tab-filter" class="tab-link active">Filter</a>
-    <a href="#tab-maintenance" class="tab-link">Maintenance</a>
-    <a href="#tab-selection" class="tab-link">Selection</a>
+  <!-- Vertical tabs -->
+  <div class="directory-vertical-tabs">
+    <button class="directory-vertical-tab-button active" title="Search Tools">
+      <span class="directory-vertical-text">Search</span>
+    </button>
+    <button class="directory-vertical-tab-button" title="Filter Photos">
+      <span class="directory-vertical-text">Filter</span>
+    </button>
+    <button class="directory-vertical-tab-button" title="Photo Selection">
+      <span class="directory-vertical-text">Selection</span>
+    </button>
+    <button class="directory-vertical-tab-button" title="Maintenance Tools">
+      <span class="directory-vertical-text">Maintenance</span>
+    </button>
+    <button class="directory-vertical-tab-button directory-close-tab" title="Close Panel">
+      ×
+    </button>
+  </div>
+  
+  <!-- Search tab (search mode only) -->
+  <div id="tab-search" class="tab-active">
+    <div class="search-tools">
+      <!-- Search Bar -->
+      <div class="search-bar">
+        <input type="text" placeholder="Search photos..." class="search-input" />
+        <button class="search-button">🔍</button>
+        <button class="clear-button">✕</button>
+        <button class="advanced-toggle">⚙️</button>
+      </div>
+      
+      <!-- Advanced Filters Toggle -->
+      <div class="search-filters-toggle">
+        <button class="toggle-advanced-filters">Show Advanced Filters</button>
+      </div>
+      
+      <!-- Advanced Filters (when visible) -->
+      <div class="advanced-filters">
+        <div class="filters-header">
+          <h3>Advanced Filters</h3>
+          <button class="clear-filters-button">Clear All</button>
+        </div>
+        
+        <!-- Camera Equipment -->
+        <div class="filter-section">
+          <h4>Camera Equipment</h4>
+          <select>Camera options</select>
+          <select>Lens options</select>
+        </div>
+        
+        <!-- Technical Settings -->
+        <div class="filter-section">
+          <h4>Technical Settings</h4>
+          <div class="range-inputs">ISO range</div>
+          <div class="range-inputs">Aperture range</div>
+          <div class="range-inputs">Focal length range</div>
+        </div>
+        
+        <!-- Date Range -->
+        <div class="filter-section">
+          <h4>Date Range</h4>
+          <input type="date" />
+          <input type="date" />
+        </div>
+        
+        <!-- Other Filters -->
+        <div class="filter-section">
+          <h4>Other Filters</h4>
+          <select>File extension</select>
+          <select>Star rating</select>
+          <input type="checkbox" />Has Comments
+        </div>
+      </div>
+      
+      <!-- Saved Searches -->
+      <div class="saved-searches">
+        <div class="saved-searches-header">
+          <h3>Saved Searches</h3>
+          <div class="header-actions">
+            <button class="save-button">💾</button>
+            <button class="export-button">📤</button>
+            <button class="import-button">📥</button>
+          </div>
+        </div>
+        
+        <!-- Search items -->
+        <div class="searches-list">
+          <div class="search-item">
+            <div class="search-info">
+              <div class="search-name">My Search</div>
+              <div class="search-details">
+                <span class="search-query">"vacation"</span>
+                <span class="search-type">in all</span>
+              </div>
+            </div>
+            <div class="search-actions">
+              <button>✏️</button>
+              <button>📝</button>
+              <button>🗑️</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
   
   <!-- Filter tab -->
-  <div id="tab-filter" class="tab-content active">
+  <div id="tab-filter" class="tab">
     <!-- Star filter -->
     <div class="filter-section">
       <h4>Star Rating</h4>
@@ -457,13 +585,13 @@ App (root)
   </div>
   
   <!-- Maintenance tab -->
-  <div id="tab-maintenance" class="tab-content">
+  <div id="tab-maintenance" class="tab">
     <button onClick="createThumbnails">Create Thumbnails</button>
     <button onClick="createDatabase">Create Database</button>
   </div>
   
   <!-- Selection tab -->
-  <div id="tab-selection" class="tab-content">
+  <div id="tab-selection" class="tab">
     <div class="selection-info">{count} photos selected</div>
     <button onClick="clearSelection">Clear Selection</button>
     <button onClick="selectAll">Select All</button>
@@ -555,6 +683,13 @@ App (root)
 - `.preferences-input` - Settings form layout
 - `.tab-content` - Tab panel content
 - `.scroll-indicator` - Loading indicators
+- `.search-tools` - Search tools container
+- `.search-bar` - Search input container
+- `.advanced-filters` - Advanced search filters
+- `.saved-searches` - Saved searches container
+- `.back-to-home` - Back to HOME button (search mode)
+- `.directory-vertical-tabs` - Vertical tab navigation
+- `.home-search-container` - Home page search box
 
 ### State Classes
 - `.selected` / `.notSelected` - Selection state

@@ -115,57 +115,17 @@ async fn get_filter_options(
     filter_type: &str,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
-    let meta_db = &state.meta_db;
+    let sqlite_db = repository::meta_db::sqlite::SQLite::new(state.config.import_to.clone());
     
     let options = match filter_type {
         "cameras" => {
-            let cameras = vec![
-                CameraInfo {
-                    id: "canon_5d".to_string(),
-                    make: "Canon".to_string(),
-                    model: "EOS 5D Mark IV".to_string(),
-                    count: 150,
-                },
-                CameraInfo {
-                    id: "nikon_d850".to_string(),
-                    make: "Nikon".to_string(),
-                    model: "D850".to_string(),
-                    count: 89,
-                },
-            ];
-            serde_json::to_string(&cameras).unwrap()
+            sqlite_db.get_camera_options().unwrap_or_else(|_| "[]".to_string())
         }
         "lenses" => {
-            let lenses = vec![
-                LensInfo {
-                    id: "canon_24_70".to_string(),
-                    model: "Canon EF 24-70mm f/2.8L II USM".to_string(),
-                    count: 98,
-                },
-                LensInfo {
-                    id: "nikon_85".to_string(),
-                    model: "Nikon AF-S 85mm f/1.4G".to_string(),
-                    count: 45,
-                },
-            ];
-            serde_json::to_string(&lenses).unwrap()
+            sqlite_db.get_lens_options().unwrap_or_else(|_| "[]".to_string())
         }
         "extensions" => {
-            let extensions = vec![
-                ExtensionInfo {
-                    extension: "jpg".to_string(),
-                    count: 1250,
-                },
-                ExtensionInfo {
-                    extension: "raw".to_string(),
-                    count: 890,
-                },
-                ExtensionInfo {
-                    extension: "png".to_string(),
-                    count: 45,
-                },
-            ];
-            serde_json::to_string(&extensions).unwrap()
+            sqlite_db.get_extension_options().unwrap_or_else(|_| "[]".to_string())
         }
         _ => "[]".to_string(),
     };

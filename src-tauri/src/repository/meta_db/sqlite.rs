@@ -694,6 +694,196 @@ impl SQLite {
         println!("SQLite::has_metadata() - Returning false (no metadata)");
         false
     }
+    
+    fn add_advanced_filters(&self, sql_query: &mut String, params: &mut Vec<Box<dyn rusqlite::ToSql>>, filter_params: &serde_json::Value) -> Result<(), String> {
+        // Date range filter
+        if let Some(start_date) = filter_params.get("start_date").and_then(|v| v.as_str()) {
+            if !start_date.is_empty() {
+                sql_query.push_str(" AND (exif_date_time_original >= ? OR exif_date_time >= ?)");
+                params.push(Box::new(start_date.to_string()));
+                params.push(Box::new(start_date.to_string()));
+            }
+        }
+        
+        if let Some(end_date) = filter_params.get("end_date").and_then(|v| v.as_str()) {
+            if !end_date.is_empty() {
+                sql_query.push_str(" AND (exif_date_time_original <= ? OR exif_date_time <= ?)");
+                params.push(Box::new(end_date.to_string()));
+                params.push(Box::new(end_date.to_string()));
+            }
+        }
+        
+        // Star rating filter
+        if let Some(min_rating) = filter_params.get("min_rating").and_then(|v| v.as_i64()) {
+            sql_query.push_str(" AND star >= ?");
+            params.push(Box::new(min_rating));
+        }
+        
+        // Camera filter
+        if let Some(camera) = filter_params.get("camera").and_then(|v| v.as_str()) {
+            if !camera.is_empty() && camera != "all" {
+                sql_query.push_str(" AND (exif_make LIKE ? OR exif_model LIKE ?)");
+                params.push(Box::new(format!("%{}%", camera)));
+                params.push(Box::new(format!("%{}%", camera)));
+            }
+        }
+        
+        // Lens filter
+        if let Some(lens) = filter_params.get("lens").and_then(|v| v.as_str()) {
+            if !lens.is_empty() && lens != "all" {
+                sql_query.push_str(" AND exif_lens_model LIKE ?");
+                params.push(Box::new(format!("%{}%", lens)));
+            }
+        }
+        
+        // ISO range filter
+        if let Some(iso_min) = filter_params.get("iso_min").and_then(|v| v.as_i64()) {
+            sql_query.push_str(" AND CAST(exif_iso AS INTEGER) >= ?");
+            params.push(Box::new(iso_min));
+        }
+        
+        if let Some(iso_max) = filter_params.get("iso_max").and_then(|v| v.as_i64()) {
+            sql_query.push_str(" AND CAST(exif_iso AS INTEGER) <= ?");
+            params.push(Box::new(iso_max));
+        }
+        
+        // Aperture range filter
+        if let Some(aperture_min) = filter_params.get("aperture_min").and_then(|v| v.as_f64()) {
+            sql_query.push_str(" AND CAST(exif_fnumber AS REAL) >= ?");
+            params.push(Box::new(aperture_min));
+        }
+        
+        if let Some(aperture_max) = filter_params.get("aperture_max").and_then(|v| v.as_f64()) {
+            sql_query.push_str(" AND CAST(exif_fnumber AS REAL) <= ?");
+            params.push(Box::new(aperture_max));
+        }
+        
+        // Focal length range filter
+        if let Some(focal_min) = filter_params.get("focal_length_min").and_then(|v| v.as_f64()) {
+            sql_query.push_str(" AND CAST(exif_focal_length AS REAL) >= ?");
+            params.push(Box::new(focal_min));
+        }
+        
+        if let Some(focal_max) = filter_params.get("focal_length_max").and_then(|v| v.as_f64()) {
+            sql_query.push_str(" AND CAST(exif_focal_length AS REAL) <= ?");
+            params.push(Box::new(focal_max));
+        }
+        
+        // File extension filter
+        if let Some(extension) = filter_params.get("extension").and_then(|v| v.as_str()) {
+            if !extension.is_empty() && extension != "all" {
+                sql_query.push_str(" AND path LIKE ?");
+                params.push(Box::new(format!("%.{}", extension)));
+            }
+        }
+        
+        // Has comments filter
+        if let Some(has_comments) = filter_params.get("has_comments").and_then(|v| v.as_bool()) {
+            if has_comments {
+                sql_query.push_str(" AND comment IS NOT NULL AND comment != ''");
+            }
+        }
+        
+        Ok(())
+    }
+    
+    pub fn get_camera_options(&self) -> Result<String, String> {
+        let conn = self.get_connection().map_err(|e| e.to_string())?;
+        
+        let mut stmt = conn.prepare("
+            SELECT 
+                exif_make, 
+                exif_model, 
+                COUNT(*) as count 
+            FROM photo_metadata 
+            WHERE exif_make IS NOT NULL AND exif_model IS NOT NULL 
+            GROUP BY exif_make, exif_model 
+            ORDER BY count DESC
+        ").map_err(|e| e.to_string())?;
+        
+        let camera_iter = stmt.query_map([], |row| {
+            let make: String = row.get("exif_make")?;
+            let model: String = row.get("exif_model")?;
+            let count: i64 = row.get("count")?;
+            
+            Ok(serde_json::json!({
+                "id": format!("{}_{}", make.replace(" ", "_").to_lowercase(), model.replace(" ", "_").to_lowercase()),
+                "make": make,
+                "model": model,
+                "count": count
+            }))
+        }).map_err(|e| e.to_string())?;
+        
+        let mut cameras: Vec<serde_json::Value> = Vec::new();
+        for camera in camera_iter {
+            cameras.push(camera.map_err(|e| e.to_string())?);
+        }
+        
+        serde_json::to_string(&cameras).map_err(|e| e.to_string())
+    }
+    
+    pub fn get_lens_options(&self) -> Result<String, String> {
+        let conn = self.get_connection().map_err(|e| e.to_string())?;
+        
+        let mut stmt = conn.prepare("
+            SELECT 
+                exif_lens_model, 
+                COUNT(*) as count 
+            FROM photo_metadata 
+            WHERE exif_lens_model IS NOT NULL AND exif_lens_model != '' 
+            GROUP BY exif_lens_model 
+            ORDER BY count DESC
+        ").map_err(|e| e.to_string())?;
+        
+        let lens_iter = stmt.query_map([], |row| {
+            let model: String = row.get("exif_lens_model")?;
+            let count: i64 = row.get("count")?;
+            
+            Ok(serde_json::json!({
+                "id": model.replace(" ", "_").to_lowercase(),
+                "model": model,
+                "count": count
+            }))
+        }).map_err(|e| e.to_string())?;
+        
+        let mut lenses: Vec<serde_json::Value> = Vec::new();
+        for lens in lens_iter {
+            lenses.push(lens.map_err(|e| e.to_string())?);
+        }
+        
+        serde_json::to_string(&lenses).map_err(|e| e.to_string())
+    }
+    
+    pub fn get_extension_options(&self) -> Result<String, String> {
+        let conn = self.get_connection().map_err(|e| e.to_string())?;
+        
+        let mut stmt = conn.prepare("
+            SELECT 
+                LOWER(SUBSTR(path, INSTR(path, '.') + 1)) as extension, 
+                COUNT(*) as count 
+            FROM photo_metadata 
+            WHERE INSTR(path, '.') > 0 
+            GROUP BY extension 
+            ORDER BY count DESC
+        ").map_err(|e| e.to_string())?;
+        
+        let extension_iter = stmt.query_map([], |row| {
+            let extension: String = row.get("extension")?;
+            let count: i64 = row.get("count")?;
+            
+            Ok(serde_json::json!({
+                "extension": extension,
+                "count": count
+            }))
+        }).map_err(|e| e.to_string())?;
+        
+        let mut extensions: Vec<serde_json::Value> = Vec::new();
+        for extension in extension_iter {
+            extensions.push(extension.map_err(|e| e.to_string())?);
+        }
+        
+        serde_json::to_string(&extensions).map_err(|e| e.to_string())
+    }
 }
 
 impl MetaInfoDB for SQLite {
@@ -1524,8 +1714,11 @@ impl SQLite {
         }
     }
 
-    pub fn search_photos(&self, query: &str, search_type: &str, _filters: &str) -> Result<String, String> {
+    pub fn search_photos(&self, query: &str, search_type: &str, filters: &str) -> Result<String, String> {
         let conn = self.get_connection().map_err(|e| e.to_string())?;
+        
+        // Parse filters JSON
+        let filter_params: serde_json::Value = serde_json::from_str(filters).unwrap_or(serde_json::json!({}));
         
         // Build search query based on search_type
         let mut sql_query = String::from("SELECT * FROM photo_metadata WHERE 1=1");
@@ -1546,9 +1739,38 @@ impl SQLite {
                 params.push(Box::new(format!("%{}%", query)));
                 params.push(Box::new(format!("%{}%", query)));
             }
-            "all" => {
-                sql_query.push_str(" AND (path LIKE ? OR comment LIKE ? OR exif_make LIKE ? OR exif_model LIKE ? OR exif_lens_model LIKE ?)");
+            "settings" => {
+                sql_query.push_str(" AND (exif_iso LIKE ? OR exif_fnumber LIKE ? OR exif_focal_length LIKE ? OR exif_shutter_speed_value LIKE ?)");
                 let query_pattern = format!("%{}%", query);
+                params.push(Box::new(query_pattern.clone()));
+                params.push(Box::new(query_pattern.clone()));
+                params.push(Box::new(query_pattern.clone()));
+                params.push(Box::new(query_pattern));
+            }
+            "date" => {
+                sql_query.push_str(" AND (exif_date_time_original LIKE ? OR exif_date_time LIKE ? OR photo_date LIKE ?)");
+                let query_pattern = format!("%{}%", query);
+                params.push(Box::new(query_pattern.clone()));
+                params.push(Box::new(query_pattern.clone()));
+                params.push(Box::new(query_pattern));
+            }
+            "exif" => {
+                sql_query.push_str(" AND (exif_make LIKE ? OR exif_model LIKE ? OR exif_lens_model LIKE ? OR exif_iso LIKE ? OR exif_fnumber LIKE ? OR exif_focal_length LIKE ? OR exif_shutter_speed_value LIKE ?)");
+                let query_pattern = format!("%{}%", query);
+                params.push(Box::new(query_pattern.clone()));
+                params.push(Box::new(query_pattern.clone()));
+                params.push(Box::new(query_pattern.clone()));
+                params.push(Box::new(query_pattern.clone()));
+                params.push(Box::new(query_pattern.clone()));
+                params.push(Box::new(query_pattern.clone()));
+                params.push(Box::new(query_pattern));
+            }
+            "all" => {
+                sql_query.push_str(" AND (path LIKE ? OR comment LIKE ? OR exif_make LIKE ? OR exif_model LIKE ? OR exif_lens_model LIKE ? OR exif_iso LIKE ? OR exif_fnumber LIKE ? OR exif_focal_length LIKE ?)");
+                let query_pattern = format!("%{}%", query);
+                params.push(Box::new(query_pattern.clone()));
+                params.push(Box::new(query_pattern.clone()));
+                params.push(Box::new(query_pattern.clone()));
                 params.push(Box::new(query_pattern.clone()));
                 params.push(Box::new(query_pattern.clone()));
                 params.push(Box::new(query_pattern.clone()));
@@ -1560,6 +1782,9 @@ impl SQLite {
                 params.push(Box::new(format!("%{}%", query)));
             }
         }
+        
+        // Add advanced filters
+        self.add_advanced_filters(&mut sql_query, &mut params, &filter_params)?;
         
         // Execute query
         let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
