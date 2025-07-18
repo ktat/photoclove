@@ -552,10 +552,6 @@ button:hover {
   min-width: 330px;
 }
 
-#directory-maintenance {
-  position: relative;
-}
-
 #directory-maintenance ul,
 .sleectedPhotos ul {
   text-align: left;
@@ -563,8 +559,8 @@ button:hover {
 
 /* Directory vertical tabs */
 .directory-vertical-tabs {
-    position: absolute;
-    right: -40px;
+    position: fixed;
+    right: 320px;
     top: 50%;
     transform: translateY(-50%);
     display: flex;

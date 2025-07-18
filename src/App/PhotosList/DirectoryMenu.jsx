@@ -123,6 +123,9 @@ function DirectoryMenu(props) {
 
     return (
         <div id="directory-maintenance">
+            <div style={{ backgroundColor: "red", padding: "10px", margin: "10px", color: "white" }}>
+                DEBUG: DirectoryMenu rendered. SearchMode: {props.searchMode ? "true" : "false"}
+            </div>
             <div className="directory-vertical-tabs">
                 {props.searchMode && (
                     <button 
