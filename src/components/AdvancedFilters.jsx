@@ -92,9 +92,11 @@ const AdvancedFilters = ({ onFiltersChange, initialFilters = {} }) => {
     <div className="advanced-filters">
       <div className="filters-header">
         <h3>Advanced Filters</h3>
-        <button onClick={clearFilters} className="clear-filters-button">
-          Clear All
-        </button>
+        <div className="filter-actions">
+          <button onClick={clearFilters} className="clear-filters-button">
+            Clear All
+          </button>
+        </div>
       </div>
 
       <div className="filter-sections">

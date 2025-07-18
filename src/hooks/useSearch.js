@@ -40,7 +40,28 @@ export const useSearch = () => {
   }, []);
 
   const performSearch = useCallback(async (query, type = 'all', filters = {}) => {
-    if (!query.trim()) {
+    console.log('=== PERFORMSEARCH CALLED ===');
+    console.log('Query:', query);
+    console.log('Type:', type);
+    console.log('Filters:', filters);
+    
+    // Check if we have any active filters
+    const hasActiveFilters = Object.keys(filters).some(key => {
+      const value = filters[key];
+      if (typeof value === 'boolean') return value;
+      if (typeof value === 'number') return value > 0;
+      if (typeof value === 'string') return value.length > 0;
+      if (typeof value === 'object' && value !== null) {
+        return Object.values(value).some(v => v && v.toString().length > 0);
+      }
+      return false;
+    });
+
+    console.log('Has active filters:', hasActiveFilters);
+
+    // If no query and no filters, clear results
+    if (!query.trim() && !hasActiveFilters) {
+      console.log('No query and no filters, clearing results');
       setSearchResults([]);
       setSearchQuery('');
       return;

@@ -27,6 +27,12 @@ const SearchTools = ({
         onSearch(query, searchType, currentFilters);
     };
 
+    // Apply filters even without search query
+    const applyFilters = () => {
+        // Use empty query to search with filters only
+        onSearch('', 'all', currentFilters);
+    };
+
     return (
         <div className="search-tools">
             <SearchBar 
@@ -43,6 +49,15 @@ const SearchTools = ({
                 >
                     {showAdvancedFilters ? 'Hide' : 'Show'} Advanced Filters
                 </button>
+                {showAdvancedFilters && (
+                    <button 
+                        onClick={applyFilters}
+                        className="apply-filters-button"
+                        title="Search with current filters"
+                    >
+                        Apply Filters
+                    </button>
+                )}
             </div>
             
             {showAdvancedFilters && (

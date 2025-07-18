@@ -1730,7 +1730,11 @@ impl SQLite {
     }
 
     pub fn search_photos(&self, query: &str, search_type: &str, filters: &str) -> Result<String, String> {
-        println!("search_photos called with query: {}, search_type: {}, filters: {}", query, search_type, filters);
+        println!("=== BACKEND SEARCH_PHOTOS CALLED ===");
+        println!("Query: '{}'", query);
+        println!("Search Type: '{}'", search_type);
+        println!("Filters JSON: '{}'", filters);
+        println!("=====================================");
         
         let conn = self.get_connection().map_err(|e| e.to_string())?;
         
@@ -1742,8 +1746,9 @@ impl SQLite {
         let mut sql_query = String::from("SELECT * FROM photo_metadata WHERE 1=1");
         let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
         
-        // Add search condition based on search_type
-        match search_type {
+        // Add search condition based on search_type (only if query is not empty)
+        if !query.is_empty() {
+            match search_type {
             "filename" => {
                 sql_query.push_str(" AND path LIKE ?");
                 params.push(Box::new(format!("%{}%", query)));
@@ -1798,6 +1803,7 @@ impl SQLite {
             _ => {
                 sql_query.push_str(" AND path LIKE ?");
                 params.push(Box::new(format!("%{}%", query)));
+            }
             }
         }
         
