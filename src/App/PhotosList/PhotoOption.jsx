@@ -3,9 +3,7 @@ import PhotoInfo from "./PhotoOption/PhotoInfo.jsx";
 import PhotoEditor from "./PhotoOption/PhotoEditor.jsx";
 
 function PhotoOption(props) {
-    // Set default active tab based on search mode
-    const defaultTab = props.searchMode ? "search" : "info";
-    const [activeTab, setActiveTab] = useState(defaultTab);
+    const [activeTab, setActiveTab] = useState("info");
 
     const handleTabClick = (tab) => {
         setActiveTab(tab);
@@ -25,15 +23,6 @@ function PhotoOption(props) {
         <>
             {/* Vertical tabs replacing the toggle */}
             <div className={`vertical-tabs ${props.showSideMenu ? 'menu-open' : 'menu-closed'}`}>
-                {props.searchMode && (
-                    <button 
-                        className={activeTab === "search" ? "vertical-tab-button active" : "vertical-tab-button"}
-                        onClick={() => handleTabClick("search")}
-                        title="Search Tools"
-                    >
-                        <span className="vertical-text">Search</span>
-                    </button>
-                )}
                 <button 
                     className={activeTab === "info" ? "vertical-tab-button active" : "vertical-tab-button"}
                     onClick={() => handleTabClick("info")}
@@ -80,48 +69,6 @@ function PhotoOption(props) {
                             addFooterMessage={props.addFooterMessage}
                             onPhotosRefresh={props.onPhotosRefresh}
                         />
-                    )}
-                    {activeTab === "search" && props.searchMode && (
-                        <div className="search-tools-tab">
-                            <div className="search-tools-content">
-                                <h3>Search Tools</h3>
-                                <div className="search-info">
-                                    <div className="search-query-info">
-                                        <strong>Query:</strong> "{props.searchQuery}"
-                                    </div>
-                                    <div className="search-results-info">
-                                        <strong>Results:</strong> {props.searchResultsCount || 0} photo{(props.searchResultsCount || 0) !== 1 ? 's' : ''}
-                                    </div>
-                                </div>
-                                
-                                {/* Search Tools - passed from parent */}
-                                {props.searchTools && (
-                                    <div className="search-tools-section">
-                                        {props.searchTools}
-                                    </div>
-                                )}
-                                
-                                <div className="search-actions">
-                                    {props.onClearSearch && (
-                                        <button 
-                                            onClick={props.onClearSearch} 
-                                            className="clear-search-button"
-                                            style={{ 
-                                                marginTop: "10px", 
-                                                padding: "8px 16px", 
-                                                backgroundColor: "#ff4444",
-                                                color: "white",
-                                                border: "none",
-                                                borderRadius: "4px",
-                                                cursor: "pointer"
-                                            }}
-                                        >
-                                            Clear Search
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
                     )}
                 </div>
             )}

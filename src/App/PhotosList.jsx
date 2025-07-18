@@ -967,6 +967,10 @@ function PhotosList(props) {
                     starFilter={starFilter}
                     setExtensionFilter={setExtensionFilter}
                     extensionFilter={extensionFilter}
+                    
+                    // Search mode props
+                    searchMode={isSearchMode}
+                    searchTools={props.searchTools}
                 />
             </div>
         </div>
