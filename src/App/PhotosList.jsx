@@ -1010,8 +1010,9 @@ function PhotosList(props) {
                 </div>
             </>
         }
-        {/* Tabs positioned independently */}
-        <div className={`directory-vertical-tabs ${showSideMenu ? 'menu-open' : 'menu-closed'}`}>
+        {/* Tabs positioned independently - only show when NOT in photo display mode */}
+        {(!compatProps.showPhotoDisplay || !currentPhotoPath) && (
+            <div className={`directory-vertical-tabs ${showSideMenu ? 'menu-open' : 'menu-closed'}`}>
             {isSearchMode && (
                 <button 
                     className={tabClass['search'] ? "directory-vertical-tab-button active" : "directory-vertical-tab-button"}
@@ -1064,6 +1065,7 @@ function PhotosList(props) {
                 ×
             </button>
         </div>
+        )}
 
         {showSideMenu && (
             <div className="rightMenu">
@@ -1089,7 +1091,7 @@ function PhotosList(props) {
                         onCommentUpdate={updatePhotoComment}
                     />
                 </div>
-                <div style={{ display: (!compatProps.showPhotoDisplay || !currentPhotoPath || isSearchMode) ? "block" : "none" }}>
+                <div style={{ display: (!compatProps.showPhotoDisplay || !currentPhotoPath) ? "block" : "none" }}>
                     <DirectoryMenu
                         addFooterMessage={compatProps.addFooterMessage}
                         tabClass={tabClass}
