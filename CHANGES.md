@@ -2,6 +2,44 @@
 
 This document tracks all notable changes to PhotoClove across versions.
 
+## Version 2.9 - Search Functionality & Display Window Algorithm
+
+### 🔍 Advanced Search Interface
+- **Comprehensive Search**: Complete search interface with advanced filters and search history
+- **Saved Searches**: Save and manage frequently used search queries
+- **Search History**: Track and revisit previous search queries
+- **Advanced Filters**: Filter by date range, rating, comments, and file type
+- **Real-time Results**: Instant search results as you type
+- **Search Context**: Dedicated search page with optimized layout
+
+### 🖼️ Display Window Algorithm
+- **Efficient Thumbnail Loading**: Implement Display Window Algorithm for optimal thumbnail display
+- **Performance Optimization**: Load only visible thumbnails to improve performance
+- **Smooth Scrolling**: Enhanced scroll experience with proper thumbnail loading
+- **Memory Management**: Reduced memory usage for large photo collections
+- **Responsive Display**: Thumbnails adapt to different screen sizes and orientations
+
+### 🎨 Enhanced Photo Editing
+- **Crop Tool Completion**: Fully functional crop tool with proper overlay targeting
+- **CSS Style Persistence**: Improved CSS style loading and synchronization
+- **Editor UI Improvements**: Better controlled React components for editor controls
+- **Visual Feedback**: Enhanced crop overlay with proper photo targeting
+- **Reset Functionality**: Individual reset buttons for all editor controls
+
+### 🏗️ Component Architecture Improvements
+- **Component Separation**: Split PhotoOption and PhotoEditor for better organization
+- **Context Integration**: PhotoContext and UIContext for better state management
+- **Error Boundaries**: Comprehensive error handling with global error boundaries
+- **Compatibility Layer**: PhotosList compatibility layer to maintain backward compatibility
+- **Props Migration**: Migrate components from props to context-based architecture
+
+### 🎯 UI/UX Enhancements
+- **Vertical Tabs**: Convert DirectoryMenu to vertical tabs with close functionality
+- **Improved Layout**: Better padding and visual balance across components
+- **Right Column Design**: Enhanced right column layout with improved visual hierarchy
+- **Date Loading**: Fix race conditions in date loading for consistent state
+- **Promise Handling**: Improved Promise handling for Tauri event listeners
+
 ## Version 2.8 - Enhanced CSS-Based Image Editor
 
 ### 🎨 Advanced Photo Editing

@@ -11,7 +11,7 @@ PhotoClove is a desktop photo manager designed for speed and simplicity. Built w
 - **🎨 Non-Destructive Editing**: CSS-based image transformations with real-time preview
 - **📅 Date Organization**: Automatic photo organization by date with calendar navigation
 - **⭐ Metadata Management**: Star ratings, comments, and searchable metadata
-- **🔍 Advanced Filtering**: Filter by date, rating, comments, and file type
+- **🔍 Advanced Search**: Comprehensive search interface with filters, saved searches, and search history
 - **🎬 Video Support**: View and manage MP4/WebM videos with thumbnail generation
 - **☁️ Cloud Integration**: Upload to Google Photos with progress tracking
 - **🔄 Background Processing**: Asynchronous job queue for imports and thumbnail generation
@@ -159,10 +159,14 @@ import_to/
 
 ## 🔍 Search & Filtering
 
-- **Date Range**: Navigate by calendar dates
+- **Advanced Search Interface**: Dedicated search page with comprehensive filtering options
+- **Saved Searches**: Save and manage frequently used search queries
+- **Search History**: Track and revisit previous search queries
+- **Date Range**: Navigate by calendar dates with flexible date filtering
 - **Star Ratings**: 1-5 star rating system
 - **Comments**: Searchable text annotations
 - **File Types**: Filter by extension (JPG, MP4, etc.)
+- **Real-time Results**: Instant search results as you type
 - **Metadata**: Search by EXIF data (coming soon)
 
 ## 🔄 Background Processing
@@ -193,7 +197,9 @@ PhotoClove uses a structured development workflow with the `improvement/` direct
 ## 📋 Roadmap
 
 ### Current Focus
-- [ ] **Crop Tool**: Complete the photo cropping functionality
+- [x] **Search Functionality**: Complete search interface with advanced filters
+- [x] **Thumbnail Display**: Implement Display Window Algorithm for efficient thumbnail loading
+- [x] **Crop Tool**: Complete the photo cropping functionality
 - [ ] **Tag System**: Add taggable labels for better organization
 - [ ] **Advanced Search**: EXIF-based filtering and search
 - [ ] **Album Support**: Group photos into custom collections
