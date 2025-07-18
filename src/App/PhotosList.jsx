@@ -342,9 +342,10 @@ function PhotosList(props) {
     }
 
     const [tabClass, setTabClass] = useState({
-        'tab-filter': true,
+        'tab-filter': !isSearchMode,
         'tab-maintenance': false,
         'tab-selection': false,
+        'search': isSearchMode,
     });
 
     function changeTab(e, t) {
@@ -353,6 +354,7 @@ function PhotosList(props) {
             'filter': false,
             'maintenance': false,
             'selection': false,
+            'search': false,
         };
         c[t.replace(/^.*#tab-/, '')] = true;
         setTabClass(c);
