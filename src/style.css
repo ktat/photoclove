@@ -1288,6 +1288,7 @@ li.tab a:hover {
 div.tab {
   display: none;
   padding: 10px;
+  padding-right: 5px;
   border: none;
 }
 
@@ -1298,6 +1299,7 @@ div.tab.active {
 div.tab-active {
   display: block;
   padding: 10px;
+  padding-right: 5px;
   border: none;
 }
 
