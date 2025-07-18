@@ -782,19 +782,31 @@ function PhotosList(props) {
                                         }
                                     }
                                     
-                                    if (uuid) {
+                                    // Extract date from photo path for thumbnail generation
+                                    let photoDate = compatProps.currentDate;
+                                    if (isSearchMode || !photoDate) {
+                                        // Extract date from the photo's path
+                                        for (let j = 0; j < pathParts.length; j++) {
+                                            if (datePattern.test(pathParts[j])) {
+                                                photoDate = pathParts[j];
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (uuid && photoDate) {
                                         // Build thumbnail path with UUID directory
                                         if (l.file.name.match(/(mp4|webm)$/i)) {
-                                            thumbnailSrc = thumbnailStore + '/' + compatProps.currentDate.replace(/\//g, '-') + '/' + uuid + '/' + l.file.name + ".jpg";
+                                            thumbnailSrc = thumbnailStore + '/' + photoDate.replace(/\//g, '-') + '/' + uuid + '/' + l.file.name + ".jpg";
                                         } else {
-                                            thumbnailSrc = (thumbnailStore + '/' + compatProps.currentDate.replace(/\//g, '-') + '/' + uuid + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
+                                            thumbnailSrc = (thumbnailStore + '/' + photoDate.replace(/\//g, '-') + '/' + uuid + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
                                         }
-                                    } else {
+                                    } else if (photoDate) {
                                         // Fallback to old behavior if UUID cannot be extracted
                                         if (l.file.name.match(/(mp4|webm)$/i)) {
-                                            thumbnailSrc = thumbnailStore + '/' + compatProps.currentDate.replace(/\//g, '-') + '/' + l.file.name + ".jpg";
+                                            thumbnailSrc = thumbnailStore + '/' + photoDate.replace(/\//g, '-') + '/' + l.file.name + ".jpg";
                                         } else {
-                                            thumbnailSrc = (thumbnailStore + '/' + compatProps.currentDate.replace(/\//g, '-') + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
+                                            thumbnailSrc = (thumbnailStore + '/' + photoDate.replace(/\//g, '-') + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
                                         }
                                     }
                                     photosListImgSrc[l.file.path] = convertFileSrc(thumbnailSrc);

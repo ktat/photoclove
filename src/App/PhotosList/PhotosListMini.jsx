@@ -351,17 +351,29 @@ function PhotosListMini(props) {
             }
         }
         
-        if (uuid) {
-            if (photo.file.name.match(/(mp4|webm)$/i)) {
-                thumbnailSrc = thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + uuid + '/' + photo.file.name + ".jpg";
-            } else {
-                thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + uuid + '/' + photo.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
+        // Extract date from photo path for thumbnail generation
+        let photoDate = props.currentDate;
+        if (isSearchMode || !photoDate) {
+            // Extract date from the photo's path
+            for (let i = 0; i < pathParts.length; i++) {
+                if (datePattern.test(pathParts[i])) {
+                    photoDate = pathParts[i];
+                    break;
+                }
             }
-        } else {
+        }
+        
+        if (uuid && photoDate) {
             if (photo.file.name.match(/(mp4|webm)$/i)) {
-                thumbnailSrc = thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + photo.file.name + ".jpg";
+                thumbnailSrc = thumbnailStore + '/' + photoDate.replace(/\//g, '-') + '/' + uuid + '/' + photo.file.name + ".jpg";
             } else {
-                thumbnailSrc = (thumbnailStore + '/' + props.currentDate.replace(/\//g, '-') + '/' + photo.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
+                thumbnailSrc = (thumbnailStore + '/' + photoDate.replace(/\//g, '-') + '/' + uuid + '/' + photo.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
+            }
+        } else if (photoDate) {
+            if (photo.file.name.match(/(mp4|webm)$/i)) {
+                thumbnailSrc = thumbnailStore + '/' + photoDate.replace(/\//g, '-') + '/' + photo.file.name + ".jpg";
+            } else {
+                thumbnailSrc = (thumbnailStore + '/' + photoDate.replace(/\//g, '-') + '/' + photo.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
             }
         }
         return thumbnailSrc;
