@@ -418,9 +418,11 @@ button:hover {
   padding-left: 20px;
   border: none;
   background-color: #1f1f1f;
-  position: relative;
-  order: 3;
-  flex-shrink: 0;
+  position: fixed;
+  right: 0;
+  top: 0;
+  height: 100vh;
+  z-index: 1000;
 }
 
 .closePhotoInfo {
