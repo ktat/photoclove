@@ -287,6 +287,8 @@ button:hover {
   min-width: 230px;
   border: none;
   background-color: #1f1f1f;
+  order: 1;
+  flex-shrink: 0;
 }
 
 @media screen and (max-width: 1000px) {
@@ -417,6 +419,8 @@ button:hover {
   border: none;
   background-color: #1f1f1f;
   position: relative;
+  order: 3;
+  flex-shrink: 0;
 }
 
 .closePhotoInfo {
@@ -476,6 +480,7 @@ button:hover {
 .importDisplay,
 .preferences {
   flex: 1;
+  order: 2;
 }
 
 .centerDisplay,
