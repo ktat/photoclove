@@ -783,21 +783,9 @@ function PhotosList(props) {
                             <div className="photo-list-header">
                                 <div className="photo-page-info">
                                     {isSearchMode ? (
-                                        <div className="search-results-header">
-                                            <button 
-                                                className="back-to-home-button" 
-                                                onClick={() => toggleSearchPage(false)}
-                                                style={{ marginRight: "10px", fontSize: "12px" }}
-                                            >
-                                                ← Back to Home
-                                            </button>
-                                            <span className="search-results-info">
-                                                {photos.photos.length} photo{photos.photos.length !== 1 ? 's' : ''} found for "{searchQuery}"
-                                                <button onClick={clearSearch} className="clear-search-btn" style={{ marginLeft: "10px", fontSize: "12px" }}>
-                                                    Clear Search
-                                                </button>
-                                            </span>
-                                        </div>
+                                        <span className="search-results-info">
+                                            {photos.photos.length} photo{photos.photos.length !== 1 ? 's' : ''} found for "{searchQuery}"
+                                        </span>
                                     ) : (
                                         <span>{fetchConfig.title} page:{compatProps.datePage[compatProps.currentDate] || 1}</span>
                                     )}
