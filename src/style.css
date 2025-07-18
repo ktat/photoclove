@@ -1291,6 +1291,9 @@ div.tab {
   padding-right: 10px;
   padding-left: 0px;
   border: none;
+  height: calc(100vh - 100px);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 div.tab.active {
@@ -1303,6 +1306,9 @@ div.tab-active {
   padding-right: 10px;
   padding-left: 0px;
   border: none;
+  height: calc(100vh - 100px);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 div#tab-selection img {

@@ -1,23 +1,27 @@
 /* Search Bar Styles */
 .search-bar {
   margin-bottom: 20px;
+  max-width: 100%;
 }
 
 .search-input-container {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 3px;
   margin-bottom: 10px;
+  width: 100%;
 }
 
 .search-input {
-  width: 125px;
-  padding: 8px;
+  flex: 1;
+  padding: 6px;
   border: 1px solid #444;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 12px;
   background: #2a2a2a;
   color: #e0e0e0;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .search-input::placeholder {
@@ -25,13 +29,14 @@
 }
 
 .search-button, .clear-button, .advanced-toggle {
-  padding: 8px 12px;
+  padding: 6px 8px;
   border: 1px solid #444;
   border-radius: 4px;
   background: #2a2a2a;
   color: #e0e0e0;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 12px;
+  flex-shrink: 0;
 }
 
 .search-button:hover, .clear-button:hover, .advanced-toggle:hover {
@@ -374,9 +379,12 @@
   margin-bottom: 20px;
   border: 1px solid #444;
   border-radius: 4px;
-  padding: 15px;
+  padding: 12px;
   background: #2a2a2a;
   color: #e0e0e0;
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .saved-searches-header {
@@ -388,23 +396,23 @@
 
 .saved-searches-header h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 14px;
   color: #e0e0e0;
 }
 
 .header-actions {
   display: flex;
-  gap: 5px;
+  gap: 3px;
 }
 
 .save-button, .export-button, .import-button {
-  padding: 5px 8px;
+  padding: 4px 6px;
   border: 1px solid #444;
   border-radius: 4px;
   background: #3a3a3a;
   color: #e0e0e0;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   text-decoration: none;
 }
 
@@ -553,22 +561,35 @@
   padding: 10px;
   background: #1a1a1a;
   color: #e0e0e0;
-  min-height: 100%;
+  height: 100%;
+  max-width: 280px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.search-tools {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 5px;
 }
 
 .search-filters-toggle {
-  margin-bottom: 15px;
+  margin-bottom: 5px;
 }
 
 .toggle-advanced-filters {
   width: 100%;
-  padding: 8px;
+  padding: 6px;
   border: 1px solid #444;
   border-radius: 4px;
   background: #2a2a2a;
   color: #e0e0e0;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  max-width: 100%;
 }
 
 .toggle-advanced-filters:hover {

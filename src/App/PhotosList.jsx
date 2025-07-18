@@ -640,7 +640,7 @@ function PhotosList(props) {
         
         setPhotoLoading(true);
         
-        let date = compatProps.currentDate;
+        let date = isSearchMode ? "search_results" : compatProps.currentDate;
         let page = compatProps.datePage[date] || 1;
         
         if (!page || page == "NaN") {
@@ -677,6 +677,12 @@ function PhotosList(props) {
         let target = document.getElementById("photoList");
         let page = target.getAttribute("data-page");
         let date = target.getAttribute("data-date");
+        
+        // For search mode, use a special key for pagination
+        if (isSearchMode) {
+            date = "search_results";
+        }
+        
         if (!page || page == "NaN") {
             page = 0;
         }
@@ -698,7 +704,7 @@ function PhotosList(props) {
     let beforeScrollTop = -1;
     let isScrollBottom = 0;
     function photosScroll(e) {
-        if (scrollLock || compatProps.currentDate === "") {
+        if (scrollLock || (!isSearchMode && compatProps.currentDate === "")) {
             return;
         }
 
@@ -777,21 +783,22 @@ function PhotosList(props) {
                 </div>
                 <div className={(props.showSideMenu || !currentPhotoPath) ? "centerDisplay" : "centerDisplayMax"} id="photoList"
                     style={{ display: (!photoLoading && (!compatProps.showPhotoDisplay || !currentPhotoPath)) ? "block" : "none" }}
-                    data-date={compatProps.currentDate} data-page={compatProps.datePage[compatProps.currentDate]}>
+                    data-date={isSearchMode ? "search_results" : compatProps.currentDate} 
+                    data-page={isSearchMode ? (compatProps.datePage["search_results"] || 1) : (compatProps.datePage[compatProps.currentDate] || 1)}>
                     <div>
                         {photos.photos.length > 0 ?
                             <div className="photo-list-header">
                                 <div className="photo-page-info">
-                                    {!isSearchMode && (
+                                    {isSearchMode ? (
+                                        <span>{fetchConfig.title} page:{compatProps.datePage["search_results"] || 1}</span>
+                                    ) : (
                                         <span>{fetchConfig.title} page:{compatProps.datePage[compatProps.currentDate] || 1}</span>
                                     )}
                                 </div>
-                                {!isSearchMode && (
-                                    <div className="navigation">
-                                        {photos.has_prev && (<span><a href="#" onClick={(e) => nextPhotosList(e, false)}>&lt;&lt; Prev&nbsp;</a></span>)}
-                                        {photos.has_next && (<span><a href="#" onClick={(e) => nextPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
-                                    </div>
-                                )}
+                                <div className="navigation">
+                                    {photos.has_prev && (<span><a href="#" onClick={(e) => nextPhotosList(e, false)}>&lt;&lt; Prev&nbsp;</a></span>)}
+                                    {photos.has_next && (<span><a href="#" onClick={(e) => nextPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
+                                </div>
                                 <div className="photo-operation">
                                     Icon:<select name="icon_size" defaultValue={iconSize} onChange={(e) => setIconSize(e.target.value)}>
                                         <option value={50}>small</option>
@@ -1040,13 +1047,15 @@ function PhotosList(props) {
                     <span className="directory-vertical-text">Maintenance</span>
                 </button>
             )}
-            <button 
-                className="directory-vertical-tab-button directory-close-tab"
-                onClick={closeRightColumn}
-                title="Close Panel"
-            >
-                ×
-            </button>
+            {showSideMenu && (
+                <button 
+                    className="directory-vertical-tab-button directory-close-tab"
+                    onClick={closeRightColumn}
+                    title="Close Panel"
+                >
+                    ×
+                </button>
+            )}
         </div>
         )}
 

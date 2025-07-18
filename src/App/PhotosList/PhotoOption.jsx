@@ -37,13 +37,15 @@ function PhotoOption(props) {
                 >
                     <span className="vertical-text">Editor</span>
                 </button>
-                <button 
-                    className="vertical-tab-button close-tab"
-                    onClick={handleCloseTab}
-                    title="Close Panel"
-                >
-                    ×
-                </button>
+                {props.showSideMenu && (
+                    <button 
+                        className="vertical-tab-button close-tab"
+                        onClick={handleCloseTab}
+                        title="Close Panel"
+                    >
+                        ×
+                    </button>
+                )}
             </div>
             
             {/* Content area */}
