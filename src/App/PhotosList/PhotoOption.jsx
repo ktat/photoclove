@@ -48,7 +48,17 @@ function PhotoOption(props) {
             
             {/* Content area */}
             {props.currentPhotoPath && props.showSideMenu && (
-                <div className="tab-content">
+                <div className="tab-content" style={{
+                    position: 'fixed',
+                    right: '0px',
+                    top: '0px',
+                    width: '320px',
+                    height: 'calc(100vh - 25px)',
+                    backgroundColor: '#1f1f1f',
+                    paddingLeft: '20px',
+                    paddingTop: '10px',
+                    zIndex: 1000
+                }}>
                     {activeTab === "info" && (
                         <PhotoInfo 
                             currentPhotoPath={props.currentPhotoPath}
