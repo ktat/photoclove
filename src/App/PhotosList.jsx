@@ -30,7 +30,7 @@ function PhotosList(props) {
         updateShowPhotoDisplay,
         setCurrentDateNum
     } = usePhoto();
-    const { addFooterMessage, toggleSearchPage } = useUI();
+    const { addFooterMessage, toggleSearchPage, searchInitialQuery } = useUI();
     
     // Use search hook when in search mode
     const { searchResults, searchQuery, isSearching, performSearch, clearSearch: clearSearchHook } = useSearch();
@@ -84,6 +84,25 @@ function PhotosList(props) {
             });
         }
     }, [isSearchMode, searchQuery, currentSearchParams, searchFilters]);
+    
+    // Perform initial search when component mounts with searchInitialQuery
+    useEffect(() => {
+        if (isSearchMode && searchInitialQuery && !currentSearchParams) {
+            handleSearch(searchInitialQuery, "all", {});
+        }
+    }, [isSearchMode, searchInitialQuery, currentSearchParams, handleSearch]);
+    
+    // Trigger photo loading when search results are available
+    useEffect(() => {
+        if (isSearchMode && searchResults.length > 0) {
+            console.log("[SEARCH_RESULTS] Search results available, loading photos");
+            loadAllPhotosBasedOnFetchConfig({
+                fetch_method: "search",
+                value: searchQuery,
+                title: `Search: "${searchQuery}"`
+            });
+        }
+    }, [isSearchMode, searchResults, searchQuery]);
     
     // fetchConfig from props or generate from currentDate
     const fetchConfig = props.fetchConfig || {
