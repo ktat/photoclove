@@ -1264,6 +1264,12 @@ div.tab.active {
   display: block;
 }
 
+div.tab-active {
+  display: block;
+  padding: 20px;
+  border: 1px solid #ccc;
+}
+
 div#tab-selection img {
   padding: 10px;
 }

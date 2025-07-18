@@ -167,13 +167,7 @@ function DirectoryMenu(props) {
             {props.searchMode && (
                 <div id="tab-search" className={props.tabClass['search'] ? "tab-active" : "tab"}>
                     <div className="search-tools-container">
-                        {props.searchTools ? props.searchTools : (
-                            <div style={{ padding: "10px", color: "white" }}>
-                                <p>Debug: Search tools not available</p>
-                                <p>searchMode: {props.searchMode ? "true" : "false"}</p>
-                                <p>searchTools: {props.searchTools ? "available" : "not available"}</p>
-                            </div>
-                        )}
+                        {props.searchTools}
                     </div>
                 </div>
             )}
