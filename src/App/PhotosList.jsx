@@ -1066,29 +1066,34 @@ function PhotosList(props) {
         </div>
         )}
 
+        {/* PhotoOption tabs - always visible in photo display mode */}
+        {(compatProps.showPhotoDisplay && currentPhotoPath) && (
+            <PhotoOption
+                setShowSideMenu={setShowSideMenu}
+                showSideMenu={showSideMenu}
+                currentPhotoPath={currentPhotoPath}
+                closePhotoDisplay={closePhotoDisplay}
+                path={currentPhotoPath}
+                
+                // Search mode props
+                searchMode={isSearchMode}
+                searchQuery={searchQuery}
+                searchResultsCount={photos.photos.length}
+                onClearSearch={clearSearch}
+                searchTools={props.searchTools}
+                addFooterMessage={compatProps.addFooterMessage}
+                imgCacheMap={imgCacheMap}
+                setStar={setStarWithUpdate}
+                star={star}
+                onPhotosRefresh={getPhotos}
+                onCommentUpdate={updatePhotoComment}
+            />
+        )}
+
         {showSideMenu && (
             <div className="rightMenu">
-                <div style={{ display: (compatProps.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
-                    <PhotoOption
-                        setShowSideMenu={setShowSideMenu}
-                        showSideMenu={showSideMenu}
-                        currentPhotoPath={currentPhotoPath}
-                        closePhotoDisplay={closePhotoDisplay}
-                        path={currentPhotoPath}
-                        
-                        // Search mode props
-                        searchMode={isSearchMode}
-                        searchQuery={searchQuery}
-                        searchResultsCount={photos.photos.length}
-                        onClearSearch={clearSearch}
-                        searchTools={props.searchTools}
-                        addFooterMessage={compatProps.addFooterMessage}
-                        imgCacheMap={imgCacheMap}
-                        setStar={setStarWithUpdate}
-                        star={star}
-                        onPhotosRefresh={getPhotos}
-                        onCommentUpdate={updatePhotoComment}
-                    />
+                <div style={{ display: "none" }}>
+                    {/* PhotoOption content is now handled within the PhotoOption component */}
                 </div>
                 <div style={{ display: (!compatProps.showPhotoDisplay || !currentPhotoPath) ? "block" : "none" }}>
                     <DirectoryMenu
