@@ -950,7 +950,7 @@ function PhotosList(props) {
                     onCommentUpdate={updatePhotoComment}
                 />
             </div>
-            <div style={{ display: (!compatProps.showPhotoDisplay || !currentPhotoPath) ? "block" : "none" }}>
+            <div style={{ display: (!compatProps.showPhotoDisplay || !currentPhotoPath || isSearchMode) ? "block" : "none" }}>
                 <DirectoryMenu
                     addFooterMessage={compatProps.addFooterMessage}
                     tabClass={tabClass}
