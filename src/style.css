@@ -1287,8 +1287,8 @@ li.tab a:hover {
 
 div.tab {
   display: none;
-  padding: 20px;
-  border: 1px solid #ccc;
+  padding: 10px;
+  border: none;
 }
 
 div.tab.active {
@@ -1297,8 +1297,8 @@ div.tab.active {
 
 div.tab-active {
   display: block;
-  padding: 20px;
-  border: 1px solid #ccc;
+  padding: 10px;
+  border: none;
 }
 
 div#tab-selection img {
