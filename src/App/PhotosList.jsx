@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import PhotosListMini from "./PhotosList/PhotosListMini.jsx";
 import PhotoOption from "./PhotosList/PhotoOption.jsx";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
@@ -11,6 +11,8 @@ import fileUrl from "../PathUtil.jsx";
 import '../scrollable.css';
 import { usePhoto } from "../context/PhotoContext.jsx";
 import { useUI } from "../context/UIContext.jsx";
+import BaseThumbnailGrid from "../components/BaseThumbnailGrid.jsx";
+import { PhotoDataAdapter } from "../utils/PhotoDataAdapter.js";
 
 function PhotosList(props) {
     const {
@@ -135,7 +137,21 @@ function PhotosList(props) {
 
     function displayPhoto(f, i) {
         setCurrentPhotoPath(f);
-        setCurrentPhotoIndex(i)
+        setCurrentPhotoIndex(i);
+        
+        // Always ensure photos are set for PhotosListMini
+        if (photos.photos && photos.photos.length > 0) {
+            setPhotosListMiniAllPhotos(photos.photos);
+        }
+        
+        // Calculate the index within the current page's photos
+        const pageStartIndex = (compatProps.datePage[compatProps.currentDate] - 1) * numOfPhoto;
+        const localIndex = i - pageStartIndex;
+        setPhotosListMiniCurrentIndex(localIndex);
+        
+        // Force a re-read to ensure thumbnails are properly initialized
+        setPhotosListMiniReread(!photosListMiniReread);
+        
         compatProps.setShowPhotoDisplay(true);
     }
 
