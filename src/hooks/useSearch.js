@@ -51,10 +51,31 @@ export const useSearch = () => {
     setSearchType(type);
 
     try {
+      // Transform nested filter structure to flat structure expected by backend
+      const transformedFilters = {
+        camera: filters.camera || '',
+        lens: filters.lens || '',
+        iso_min: filters.isoRange?.min || '',
+        iso_max: filters.isoRange?.max || '',
+        aperture_min: filters.apertureRange?.min || '',
+        aperture_max: filters.apertureRange?.max || '',
+        shutter_speed_min: filters.shutterSpeedRange?.min || '',
+        shutter_speed_max: filters.shutterSpeedRange?.max || '',
+        focal_length_min: filters.focalLengthRange?.min || '',
+        focal_length_max: filters.focalLengthRange?.max || '',
+        start_date: filters.dateRange?.start || '',
+        end_date: filters.dateRange?.end || '',
+        has_comments: filters.hasComment || false,
+        min_rating: filters.starRating || 0,
+        extension: filters.fileExtension || ''
+      };
+      
+      console.log('Search params:', { query: query.trim(), searchType: type, filters: transformedFilters });
+      
       const result = await invoke('search_photos', {
         query: query.trim(),
         searchType: type,
-        filters: JSON.stringify(filters)
+        filters: JSON.stringify(transformedFilters)
       });
 
       const searchData = JSON.parse(result);

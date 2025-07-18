@@ -14,11 +14,23 @@ const SearchTools = ({
     currentSearch
 }) => {
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+    const [currentFilters, setCurrentFilters] = useState(initialFilters || {});
+
+    // Handle filter changes
+    const handleFiltersChange = (newFilters) => {
+        setCurrentFilters(newFilters);
+        onFiltersChange(newFilters);
+    };
+
+    // Enhanced search that includes filters
+    const handleSearch = (query, searchType) => {
+        onSearch(query, searchType, currentFilters);
+    };
 
     return (
         <div className="search-tools">
             <SearchBar 
-                onSearch={onSearch}
+                onSearch={handleSearch}
                 onClear={onClear}
                 searchResults={searchResults}
                 initialQuery={initialQuery}
@@ -35,8 +47,8 @@ const SearchTools = ({
             
             {showAdvancedFilters && (
                 <AdvancedFilters 
-                    onFiltersChange={onFiltersChange}
-                    initialFilters={initialFilters}
+                    onFiltersChange={handleFiltersChange}
+                    initialFilters={currentFilters}
                 />
             )}
             

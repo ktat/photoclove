@@ -50,6 +50,7 @@ function PhotosList(props) {
     // Search handlers
     const handleSearch = useCallback(async (query, type, filters) => {
         const params = { query, searchType: type, filters };
+        console.log('handleSearch setting currentSearchParams:', params);
         setCurrentSearchParams(params);
         await performSearch(query, type, filters);
     }, [performSearch]);
@@ -64,10 +65,15 @@ function PhotosList(props) {
     }, [performSearch]);
 
     const handleFiltersChange = useCallback((newFilters) => {
+        console.log('handleFiltersChange called with:', newFilters);
+        console.log('currentSearchParams:', currentSearchParams);
         setSearchFilters(newFilters);
         // If there's an active search, re-run it with new filters
         if (currentSearchParams) {
+            console.log('Re-running search with new filters');
             performSearch(currentSearchParams.query, currentSearchParams.searchType, newFilters);
+        } else {
+            console.log('No active search to re-run');
         }
     }, [currentSearchParams, performSearch]);
     

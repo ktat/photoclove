@@ -22,13 +22,9 @@ const SearchBar = ({ onSearch, onClear, searchResults, initialQuery = '' }) => {
 
     setIsSearching(true);
     try {
-      const filters = {
-        search_type: searchType,
-        query: query.trim()
-      };
-
-      // Call onSearch with parameters so the parent can handle the actual search
-      onSearch(query.trim(), searchType, filters);
+      // Call onSearch with just query and searchType
+      // Filters are handled separately by AdvancedFilters component
+      onSearch(query.trim(), searchType);
     } catch (error) {
       console.error('Search failed:', error);
     } finally {

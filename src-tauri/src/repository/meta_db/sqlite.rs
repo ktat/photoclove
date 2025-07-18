@@ -769,6 +769,21 @@ impl SQLite {
             params.push(Box::new(focal_max));
         }
         
+        // Shutter speed range filter
+        if let Some(shutter_min) = filter_params.get("shutter_speed_min").and_then(|v| v.as_str()) {
+            if !shutter_min.is_empty() {
+                sql_query.push_str(" AND exif_shutter_speed_value >= ?");
+                params.push(Box::new(shutter_min.to_string()));
+            }
+        }
+        
+        if let Some(shutter_max) = filter_params.get("shutter_speed_max").and_then(|v| v.as_str()) {
+            if !shutter_max.is_empty() {
+                sql_query.push_str(" AND exif_shutter_speed_value <= ?");
+                params.push(Box::new(shutter_max.to_string()));
+            }
+        }
+        
         // File extension filter
         if let Some(extension) = filter_params.get("extension").and_then(|v| v.as_str()) {
             if !extension.is_empty() && extension != "all" {
@@ -1715,10 +1730,13 @@ impl SQLite {
     }
 
     pub fn search_photos(&self, query: &str, search_type: &str, filters: &str) -> Result<String, String> {
+        println!("search_photos called with query: {}, search_type: {}, filters: {}", query, search_type, filters);
+        
         let conn = self.get_connection().map_err(|e| e.to_string())?;
         
         // Parse filters JSON
         let filter_params: serde_json::Value = serde_json::from_str(filters).unwrap_or(serde_json::json!({}));
+        println!("Parsed filter params: {:?}", filter_params);
         
         // Build search query based on search_type
         let mut sql_query = String::from("SELECT * FROM photo_metadata WHERE 1=1");
@@ -1785,6 +1803,9 @@ impl SQLite {
         
         // Add advanced filters
         self.add_advanced_filters(&mut sql_query, &mut params, &filter_params)?;
+        
+        println!("Final SQL query: {}", sql_query);
+        println!("Number of parameters: {}", params.len());
         
         // Execute query
         let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();

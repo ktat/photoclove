@@ -53,6 +53,7 @@ const AdvancedFilters = ({ onFiltersChange, initialFilters = {} }) => {
   const updateFilter = (key, value) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
+    console.log('Filter updated:', key, value, 'All filters:', newFilters);
     onFiltersChange(newFilters);
   };
 
@@ -62,6 +63,7 @@ const AdvancedFilters = ({ onFiltersChange, initialFilters = {} }) => {
       [key]: { ...filters[key], [subKey]: value }
     };
     setFilters(newFilters);
+    console.log('Range filter updated:', key, subKey, value, 'All filters:', newFilters);
     onFiltersChange(newFilters);
   };
 
