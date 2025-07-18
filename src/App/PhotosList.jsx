@@ -342,9 +342,9 @@ function PhotosList(props) {
     }
 
     const [tabClass, setTabClass] = useState({
-        'tab-filter': !isSearchMode,
-        'tab-maintenance': false,
-        'tab-selection': false,
+        'filter': !isSearchMode,
+        'maintenance': false,
+        'selection': false,
         'search': isSearchMode,
     });
 
