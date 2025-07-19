@@ -18,6 +18,7 @@ import loginGoogle from "./App/Login.jsx"
 import Footer from "./App/Footer.jsx"
 import WelcomeImage from "./WelcomeImage.jsx";
 import ErrorDisplay from "./components/ErrorDisplay.jsx";
+import LogViewer from "./App/LogViewer.jsx";
 import { useError } from "./context/ErrorContext.jsx";
 import { useUI } from "./context/UIContext.jsx";
 import { usePhoto } from "./context/PhotoContext.jsx";
@@ -53,6 +54,7 @@ function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
   const [rightMenuOpen, setRightMenuOpen] = useState(true);
+  const [showLogViewer, setShowLogViewer] = useState(false);
 
   const [shortCutNavigation, setShortCutNavigation] = useState({
     onKeyDown: (e) => { console.log(e) },
@@ -60,6 +62,19 @@ function App() {
   });
 
   let in_db_creation = false;
+
+  // Add keyboard shortcut for LogViewer (Ctrl+Shift+L)
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.ctrlKey && event.shiftKey && event.key === 'L') {
+        event.preventDefault();
+        setShowLogViewer(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect((e) => {
 
@@ -321,6 +336,9 @@ function App() {
       </div>
       <Footer />
       <ErrorDisplay />
+      {showLogViewer && (
+        <LogViewer onClose={() => setShowLogViewer(false)} />
+      )}
     </div >
   );
 }

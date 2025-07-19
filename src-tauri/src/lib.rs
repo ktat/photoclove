@@ -1,4 +1,4 @@
-use crate::domain_service::{file_service, photo_service, job_queue_service};
+use crate::domain_service::{file_service, photo_service, job_queue_service, logging_service};
 use crate::entity::importer;
 use crate::entity::*;
 use crate::repository::RepositoryDB;
@@ -41,6 +41,7 @@ struct AppState {
     meta_db: repository::MetaDB,
     import_progress: Mutex<importer::ImportProgress>,
     job_queue_manager: Arc<Mutex<job_queue_service::JobQueueManager>>,
+    logging_service: Arc<logging_service::LoggingService>,
     config: Config,
 }
 
@@ -89,25 +90,76 @@ async fn search_photos(
 ) -> Result<String, String> {
     let meta_db = &state.meta_db;
     let repo_db = &state.repo_db;
+    let logging_service = &state.logging_service;
+    
+    // Generate correlation ID for this search request
+    let correlation_id = logging_service.generate_correlation_id();
+    let start_time = std::time::Instant::now();
+    
+    log::info!(
+        target: "search",
+        "search_request; correlation_id={}; query={}; search_type={}; filters={}",
+        correlation_id, query, search_type, filters
+    );
     
     // Parse filters
     let search_filters: SearchFilters = match serde_json::from_str(filters) {
-        Ok(f) => f,
-        Err(_) => SearchFilters {
-            camera: None,
-            lens: None,
-            iso_range: None,
-            aperture_range: None,
-            focal_length_range: None,
-            date_range: None,
-            has_comment: false,
-            star_rating: 0,
-            file_extension: None,
+        Ok(f) => {
+            log::debug!(
+                target: "search",
+                "filters_parsed; correlation_id={}; parsed_successfully=true",
+                correlation_id
+            );
+            f
+        },
+        Err(e) => {
+            log::warn!(
+                target: "search",
+                "filters_parse_failed; correlation_id={}; error={}; using_defaults=true",
+                correlation_id, e
+            );
+            SearchFilters {
+                camera: None,
+                lens: None,
+                iso_range: None,
+                aperture_range: None,
+                focal_length_range: None,
+                date_range: None,
+                has_comment: false,
+                star_rating: 0,
+                file_extension: None,
+            }
         },
     };
     
     // Use the search_photos method from the SQLite struct
-    meta_db.search_photos(query, search_type, filters)
+    let result = meta_db.search_photos(query, search_type, filters);
+    let duration = start_time.elapsed();
+    
+    match &result {
+        Ok(response) => {
+            // Try to parse the response to count results
+            let result_count = match serde_json::from_str::<Vec<serde_json::Value>>(response) {
+                Ok(data) => data.len(),
+                Err(_) => 0,
+            };
+            
+            log::info!(
+                target: "search",
+                "search_response; correlation_id={}; result_count={}; duration_ms={}; success=true",
+                correlation_id, result_count, duration.as_millis()
+            );
+        }
+        Err(error) => {
+            log::error!(
+                target: "search",
+                "search_response; correlation_id={}; duration_ms={}; success=false; error={}",
+                correlation_id, duration.as_millis(), error
+            );
+        }
+    }
+    
+    result
 }
 
 #[tauri::command]
@@ -1010,7 +1062,26 @@ fn normalize_css_style(css: &str) -> String {
     normalized
 }
 
+// Logging commands
+#[tauri::command]
+async fn get_logs(
+    log_type: String,
+    lines: Option<usize>,
+    since: Option<String>,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    let logging_service = &state.logging_service;
+    logging_service.get_logs(&log_type, lines, since.as_deref())
+}
 
+#[tauri::command]
+async fn submit_frontend_logs(
+    logs: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    let logging_service = &state.logging_service;
+    logging_service.submit_frontend_logs(&logs)
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -1034,11 +1105,25 @@ pub fn run() {
     eprintln!("Job queue database initialized successfully");
     let job_queue_manager = job_queue_service::JobQueueManager::new(sqlite_db, c.copy_parallel as usize);
     
+    // Initialize logging service
+    let logging_service = logging_service::LoggingService::new()
+        .expect("Failed to initialize logging service");
+    
+    // Setup backend logging to file
+    if let Err(e) = logging_service.setup_backend_logging() {
+        eprintln!("Warning: Failed to setup backend logging: {}", e);
+        // Continue without file logging
+        env_logger::Builder::from_default_env()
+            .filter_level(log::LevelFilter::Debug)
+            .init();
+    }
+
     let state = AppState {
         repo_db: repository::RepoDB::new(c.import_to.to_string()),
         meta_db: repository::MetaDB::new(c.import_to.to_string()),
         import_progress: Mutex::new(ip),
         job_queue_manager: Arc::new(Mutex::new(job_queue_manager)),
+        logging_service: Arc::new(logging_service),
         config: c,
     };
 
@@ -1154,6 +1239,8 @@ pub fn run() {
             get_download_dir,
             open_file_in_default_app,
             save_styled_copy_from_frontend,
+            get_logs,
+            submit_frontend_logs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

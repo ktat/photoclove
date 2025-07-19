@@ -1730,17 +1730,24 @@ impl SQLite {
     }
 
     pub fn search_photos(&self, query: &str, search_type: &str, filters: &str) -> Result<String, String> {
-        println!("=== BACKEND SEARCH_PHOTOS CALLED ===");
-        println!("Query: '{}'", query);
-        println!("Search Type: '{}'", search_type);
-        println!("Filters JSON: '{}'", filters);
-        println!("=====================================");
+        let start_time = std::time::Instant::now();
+        
+        log::debug!(
+            target: "database",
+            "search_photos_start; query={}; search_type={}; filters={}",
+            query, search_type, filters
+        );
         
         let conn = self.get_connection().map_err(|e| e.to_string())?;
         
         // Parse filters JSON
         let filter_params: serde_json::Value = serde_json::from_str(filters).unwrap_or(serde_json::json!({}));
-        println!("Parsed filter params: {:?}", filter_params);
+        
+        log::debug!(
+            target: "database",
+            "filters_parsed; filter_count={}",
+            filter_params.as_object().map_or(0, |obj| obj.len())
+        );
         
         // Build search query based on search_type
         let mut sql_query = String::from("SELECT * FROM photo_metadata WHERE 1=1");
@@ -1810,8 +1817,11 @@ impl SQLite {
         // Add advanced filters
         self.add_advanced_filters(&mut sql_query, &mut params, &filter_params)?;
         
-        println!("Final SQL query: {}", sql_query);
-        println!("Number of parameters: {}", params.len());
+        log::debug!(
+            target: "database",
+            "sql_query_prepared; query_length={}; param_count={}",
+            sql_query.len(), params.len()
+        );
         
         // Execute query
         let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
@@ -1845,7 +1855,19 @@ impl SQLite {
         }
         
         // Limit results to prevent overwhelming the UI
+        let original_count = results.len();
         results.truncate(100);
+        let final_count = results.len();
+        
+        let duration = start_time.elapsed();
+        
+        log::info!(
+            target: "database",
+            "search_photos_complete; result_count={}; truncated={}; duration_ms={}",
+            final_count, 
+            original_count > 100,
+            duration.as_millis()
+        );
         
         Ok(serde_json::to_string(&results).map_err(|e| e.to_string())?)
     }

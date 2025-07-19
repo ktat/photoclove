@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { message, confirm } from "@tauri-apps/plugin-dialog";
 import { emit } from "@tauri-apps/api/event";
-import { localForage } from "../../storage/forage"
+import { localForage } from "../../storage/forage";
+import { logger } from "../../services/LoggerService.js";
 
 function DirectoryMenu(props) {
 
@@ -142,12 +143,26 @@ function DirectoryMenu(props) {
                     <li>
                         Stars:
                         {[0, 1, 2, 3, 4, 5].map((v, i) => {
-                            return <span key={i} onClick={() => props.setStarFilter(v)}>{props.starFilter >= v ? " ★" + i : " ☆" + i}</span>
+                            return <span key={i} onClick={() => {
+                                logger.debug('DirectoryMenu', 'filter_changed', 'User changed star filter', {
+                                    filterType: 'starFilter',
+                                    newValue: v,
+                                    previousValue: props.starFilter
+                                });
+                                props.setStarFilter(v);
+                            }}>{props.starFilter >= v ? " ★" + i : " ☆" + i}</span>
                         })}
                     </li>
                     <li>
                         <input type="checkbox" value="1" id="filter-has-comment-check"
-                            onChange={(e) => { props.setHasCommentFilter(e.target.checked); }}
+                            onChange={(e) => { 
+                                logger.debug('DirectoryMenu', 'filter_changed', 'User changed comment filter', {
+                                    filterType: 'hasCommentFilter',
+                                    newValue: e.target.checked,
+                                    previousValue: props.hasCommentFilter
+                                });
+                                props.setHasCommentFilter(e.target.checked); 
+                            }}
                         />
                         <label className="checkbox checkbox-normal" htmlFor="filter-has-comment-check">Has comment</label>
                     </li>

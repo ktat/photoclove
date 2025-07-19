@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { logger } from '../services/LoggerService.js';
 
 export const useSearch = () => {
   const [searchResults, setSearchResults] = useState([]);
@@ -15,7 +16,9 @@ export const useSearch = () => {
       try {
         setSearchHistory(JSON.parse(savedHistory));
       } catch (error) {
-        console.error('Failed to load search history:', error);
+        logger.error('useSearch', 'history_load_failed', 'Failed to load search history from localStorage', {
+          error: error.message
+        });
       }
     }
   }, []);
@@ -40,10 +43,12 @@ export const useSearch = () => {
   }, []);
 
   const performSearch = useCallback(async (query, type = 'all', filters = {}) => {
-    console.log('=== PERFORMSEARCH CALLED ===');
-    console.log('Query:', query);
-    console.log('Type:', type);
-    console.log('Filters:', filters);
+    const correlationId = logger.generateCorrelationId();
+    const startTime = performance.now();
+    
+    logger.debug('useSearch', 'search_initiated', 'Search function called', {
+      query, type, filters, correlationId
+    });
     
     // Check if we have any active filters
     const hasActiveFilters = Object.keys(filters).some(key => {
@@ -57,11 +62,17 @@ export const useSearch = () => {
       return false;
     });
 
-    console.log('Has active filters:', hasActiveFilters);
+    logger.debug('useSearch', 'filter_analysis', 'Analyzed filter state', {
+      hasActiveFilters, 
+      filterCount: Object.keys(filters).length,
+      correlationId
+    });
 
     // If no query and no filters, clear results
     if (!query.trim() && !hasActiveFilters) {
-      console.log('No query and no filters, clearing results');
+      logger.info('useSearch', 'search_cleared', 'No query or filters, clearing results', {
+        correlationId
+      });
       setSearchResults([]);
       setSearchQuery('');
       return;
@@ -91,15 +102,34 @@ export const useSearch = () => {
         extension: filters.fileExtension || ''
       };
       
-      console.log('Search params:', { query: query.trim(), searchType: type, filters: transformedFilters });
+      logger.debug('useSearch', 'filter_transformed', 'Filters transformed for backend', {
+        originalFilters: filters,
+        transformedFilters,
+        correlationId
+      });
+      
+      logger.info('useSearch', 'tauri_invoke_start', 'Calling search_photos command', {
+        query: query.trim(), 
+        searchType: type, 
+        filterCount: Object.keys(transformedFilters).filter(key => transformedFilters[key]).length,
+        correlationId
+      });
       
       const result = await invoke('search_photos', {
         query: query.trim(),
         searchType: type,
         filters: JSON.stringify(transformedFilters)
       });
-
+      
+      const endTime = performance.now();
       const searchData = JSON.parse(result);
+
+      logger.info('useSearch', 'search_completed', 'Search completed successfully', {
+        resultCount: searchData.length,
+        duration_ms: Math.round(endTime - startTime),
+        correlationId
+      });
+
       setSearchResults(searchData);
       
       // Save to history
@@ -107,7 +137,15 @@ export const useSearch = () => {
       
       return searchData;
     } catch (error) {
-      console.error('Search failed:', error);
+      const endTime = performance.now();
+      
+      logger.error('useSearch', 'search_failed', 'Search operation failed', {
+        error: error.message,
+        errorType: typeof error,
+        duration_ms: Math.round(endTime - startTime),
+        correlationId
+      });
+      
       setSearchResults([]);
       throw error;
     } finally {

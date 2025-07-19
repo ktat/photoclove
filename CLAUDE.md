@@ -18,6 +18,8 @@ At last commit your changes to the branch if my permission is got.
 
 If `improvement/*.md` are left, repeat this step and clear context if "keep context" is not written at the last line of `*.md` file.
 
+ultra think
+
 # Update Document WorkFlow
 
 If I say "update docs", do the following.
