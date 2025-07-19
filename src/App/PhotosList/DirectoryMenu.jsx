@@ -73,7 +73,7 @@ function DirectoryMenu(props) {
                     lockThumbnail = true;
                     invoke("create_thumbnails_in_date", { dateStr: props.currentDate }).then((r) => {
                         lockThumbnail = false;
-                        console.log(r);
+                        // console.log(r);
                     })
                 }
             });
@@ -98,13 +98,13 @@ function DirectoryMenu(props) {
                         props.clearPhotoSelection()
                         lockUpload = false;
                         let data = JSON.parse(r);
-                        console.log("1 === ", data);
+                        // console.log("1 === ", data);
                     }).catch(e => {
-                        console.log("2 === ", e);
+                        // console.log("2 === ", e);
                     });
                 }
                 ).catch((e) => {
-                    console.log(e);
+                    // console.log(e);
                 })
             }
         }

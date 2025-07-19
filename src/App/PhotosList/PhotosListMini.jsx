@@ -79,7 +79,7 @@ function PhotosListMini(props) {
 
     // Handle date changes - clear thumbnail cache and reset state
     useEffect(() => {
-        console.log(`[DATE_CHANGE] Date changed to: ${props.currentDate}`);
+        // console.log(`[DATE_CHANGE] Date changed to: ${props.currentDate}`);
         // Clear cached thumbnail sources when date changes
         setPhotosListImgSrc({});
     }, [props.currentDate]);
@@ -88,13 +88,13 @@ function PhotosListMini(props) {
         const currentPhotoIndex = props.currentIndex; // Use the corrected global index
         const loadedCount = photosListMiniAllPhotos.length;
         
-        console.log(`[INIT] UseEffect - PhotoIndex: ${currentPhotoIndex}, Loaded: ${loadedCount}, Date: ${props.currentDate}`);
+        // console.log(`[INIT] UseEffect - PhotoIndex: ${currentPhotoIndex}, Loaded: ${loadedCount}, Date: ${props.currentDate}`);
         
         if (loadedCount > 0 && currentPhotoIndex >= 0) {
-            console.log(`[INIT] Using existing photos data (${loadedCount} photos) for adjustment`);
+            // console.log(`[INIT] Using existing photos data (${loadedCount} photos) for adjustment`);
             adjustCurrentIndex();
         } else {
-            console.log(`[INIT] No photos data available yet or invalid index`);
+            // console.log(`[INIT] No photos data available yet or invalid index`);
         }
     }, [props.currentIndex, props.reread, photosListMiniAllPhotos.length, props.currentDate]);
 
@@ -178,7 +178,7 @@ function PhotosListMini(props) {
         // Use the new simple thumbnail display logic
         const { startIndex, endIndex, borderPosition } = calculateSimpleThumbnailDisplay(photosListMiniAllPhotos, index);
         
-        console.log(`[_MOVE_PHOTOS] Moving to index ${index}, calculated range: ${startIndex}-${endIndex}, border: ${borderPosition}`);
+        // console.log(`[_MOVE_PHOTOS] Moving to index ${index}, calculated range: ${startIndex}-${endIndex}, border: ${borderPosition}`);
         
         const photosIndex = [];
         for (let i = startIndex; i <= endIndex && i < photosListMiniAllPhotos.length; i++) {
@@ -201,7 +201,7 @@ function PhotosListMini(props) {
         }
         setBorderStyle(newBorderStyle);
         
-        console.log(`[_MOVE_PHOTOS] Set photosIndex:`, photosIndex, `borderPosition: ${borderPosition}`);
+        // console.log(`[_MOVE_PHOTOS] Set photosIndex:`, photosIndex, `borderPosition: ${borderPosition}`);
     }
 
     // Note: loadAllPhotosMetadata function removed - PhotosList should provide all photos data
@@ -211,7 +211,7 @@ function PhotosListMini(props) {
         const totalPhotos = allPhotos.length;
         const t = selectedIndex; // 0-indexed全体位置
         
-        console.log(`[SIMPLE_CALC] Input - totalPhotos: ${totalPhotos}, selectedIndex: ${t}`);
+        // console.log(`[SIMPLE_CALC] Input - totalPhotos: ${totalPhotos}, selectedIndex: ${t}`);
         
         // Handle edge case: no photos or invalid index
         if (totalPhotos === 0 || t < 0 || t >= totalPhotos) {
@@ -234,7 +234,7 @@ function PhotosListMini(props) {
                 showPrev: false,
                 showNext: false
             };
-            console.log(`[SIMPLE_CALC] Small set (${totalPhotos} photos):`, result);
+            // console.log(`[SIMPLE_CALC] Small set (${totalPhotos} photos):`, result);
             return result;
         }
         
@@ -249,7 +249,7 @@ function PhotosListMini(props) {
                 showPrev: false,
                 showNext: true
             };
-            console.log(`[SIMPLE_CALC] First 5 case (t=${t}):`, result);
+            // console.log(`[SIMPLE_CALC] First 5 case (t=${t}):`, result);
         } else if (t > totalPhotos - 5) {
             // 最後の5枚以内：末尾9枚表示
             result = {
@@ -259,7 +259,7 @@ function PhotosListMini(props) {
                 showPrev: true,
                 showNext: false
             };
-            console.log(`[SIMPLE_CALC] Last 5 case (t=${t}, totalPhotos=${totalPhotos}):`, result);
+            // console.log(`[SIMPLE_CALC] Last 5 case (t=${t}, totalPhotos=${totalPhotos}):`, result);
         } else {
             // 中央：選択写真を5番目（index 4）に配置
             result = {
@@ -269,12 +269,12 @@ function PhotosListMini(props) {
                 showPrev: true,
                 showNext: true
             };
-            console.log(`[SIMPLE_CALC] Center case (t=${t}):`, result);
+            // console.log(`[SIMPLE_CALC] Center case (t=${t}):`, result);
         }
         
-        console.log(`[SIMPLE_CALC] Final result - Will show indices ${result.startIndex} to ${result.endIndex} (${result.endIndex - result.startIndex + 1} photos)`);
-        console.log(`[SIMPLE_CALC] Selected photo ${t} will be at position ${result.borderPosition + 1} (1-indexed)`);
-        console.log(`[SIMPLE_CALC] Buttons - showPrev: ${result.showPrev}, showNext: ${result.showNext}`);
+        // console.log(`[SIMPLE_CALC] Final result - Will show indices ${result.startIndex} to ${result.endIndex} (${result.endIndex - result.startIndex + 1} photos)`);
+        // console.log(`[SIMPLE_CALC] Selected photo ${t} will be at position ${result.borderPosition + 1} (1-indexed)`);
+        // console.log(`[SIMPLE_CALC] Buttons - showPrev: ${result.showPrev}, showNext: ${result.showNext}`);
         
         return result;
     }
@@ -283,7 +283,7 @@ function PhotosListMini(props) {
         const totalPhotos = photosListMiniAllPhotos.length;
         const selectedIndex = props.currentIndex;
         
-        console.log(`[ADJUST] Photos: ${totalPhotos}, Selected: ${selectedIndex}`);
+        // console.log(`[ADJUST] Photos: ${totalPhotos}, Selected: ${selectedIndex}`);
         
         if (totalPhotos === 0 || selectedIndex === undefined || selectedIndex === null || selectedIndex < 0 || selectedIndex >= totalPhotos) {
             console.warn(`[ADJUST] Invalid state - totalPhotos: ${totalPhotos}, selectedIndex: ${selectedIndex}`);
@@ -297,8 +297,8 @@ function PhotosListMini(props) {
         // Use the new simple thumbnail display logic
         const { startIndex, endIndex, borderPosition, showPrev, showNext } = calculateSimpleThumbnailDisplay(photosListMiniAllPhotos, selectedIndex);
         
-        console.log(`[ADJUST] Simple Logic Result - Range: ${startIndex}-${endIndex}, Border: ${borderPosition}`);
-        console.log(`[ADJUST] Button visibility - showPrev: ${showPrev}, showNext: ${showNext}`);
+        // console.log(`[ADJUST] Simple Logic Result - Range: ${startIndex}-${endIndex}, Border: ${borderPosition}`);
+        // console.log(`[ADJUST] Button visibility - showPrev: ${showPrev}, showNext: ${showNext}`);
         
         const photosIndex = [];
         for (let i = startIndex; i <= endIndex && i < totalPhotos; i++) {
@@ -307,8 +307,8 @@ function PhotosListMini(props) {
             }
         }
         
-        console.log(`[ADJUST] PhotosIndex array:`, photosIndex);
-        console.log(`[ADJUST] BorderPosition should be: ${borderPosition} (selected photo at position ${borderPosition + 1})`);
+        // console.log(`[ADJUST] PhotosIndex array:`, photosIndex);
+        // console.log(`[ADJUST] BorderPosition should be: ${borderPosition} (selected photo at position ${borderPosition + 1})`);
         
         // Update both at the same time to ensure consistency
         setShowPhotosIndex(photosIndex);
@@ -324,7 +324,7 @@ function PhotosListMini(props) {
         }
         setBorderStyle(newBorderStyle);
         
-        console.log(`[ADJUST] Border styles created for ${photosIndex.length} photos, selected at position ${borderPosition}`);
+        // console.log(`[ADJUST] Border styles created for ${photosIndex.length} photos, selected at position ${borderPosition}`);
     }
 
     // Note: resetSelectedBorder function removed - border styles are now created directly in adjustCurrentIndex
@@ -392,7 +392,7 @@ function PhotosListMini(props) {
     function nextPhoto() {
         const nextIndex = props.currentIndex + 1;
         
-        console.log(`[NAVIGATION] NextPhoto - Index: ${nextIndex}, Total: ${photosListMiniAllPhotos.length}`);
+        // console.log(`[NAVIGATION] NextPhoto - Index: ${nextIndex}, Total: ${photosListMiniAllPhotos.length}`);
         
         if (nextIndex < photosListMiniAllPhotos.length) {
             _nextOrPrevPhoto(nextIndex);
@@ -404,7 +404,7 @@ function PhotosListMini(props) {
     function prevPhoto() {
         const prevIndex = props.currentIndex - 1;
         
-        console.log(`[NAVIGATION] PrevPhoto - Index: ${prevIndex}`);
+        // console.log(`[NAVIGATION] PrevPhoto - Index: ${prevIndex}`);
         
         if (prevIndex >= 0) {
             _nextOrPrevPhoto(prevIndex);

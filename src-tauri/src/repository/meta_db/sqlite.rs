@@ -1965,33 +1965,51 @@ impl SQLite {
             }
         }
         
-        // Add ORDER BY clause
+        // Add ORDER BY clause with primary and secondary sort fields
         let order_direction = if sort_order.to_lowercase() == "asc" { "ASC" } else { "DESC" };
+        let secondary_direction = "DESC"; // Default secondary sort direction
+        
         match sort_field {
             "exif_date_time_original" => {
-                sql_query.push_str(&format!(" ORDER BY exif_date_time_original {}", order_direction));
+                sql_query.push_str(&format!(" ORDER BY exif_date_time_original {}, photo_date {}, path {}", 
+                    order_direction, secondary_direction, secondary_direction));
             }
             "photo_date" => {
-                sql_query.push_str(&format!(" ORDER BY photo_date {}", order_direction));
+                sql_query.push_str(&format!(" ORDER BY photo_date {}, exif_date_time_original {}, path {}", 
+                    order_direction, secondary_direction, secondary_direction));
             }
             "path" => {
-                sql_query.push_str(&format!(" ORDER BY path {}", order_direction));
+                sql_query.push_str(&format!(" ORDER BY path {}, exif_date_time_original {}, photo_date {}", 
+                    order_direction, secondary_direction, secondary_direction));
             }
             "star" => {
                 // For star rating, we need to handle NULLs - put them at the end for DESC, beginning for ASC
                 let null_handling = if sort_order.to_lowercase() == "desc" { "NULLS LAST" } else { "NULLS FIRST" };
-                sql_query.push_str(&format!(" ORDER BY star {} {}", order_direction, null_handling));
+                sql_query.push_str(&format!(" ORDER BY star {} {}, exif_date_time_original {}, photo_date {}, path {}", 
+                    order_direction, null_handling, secondary_direction, secondary_direction, secondary_direction));
             }
             _ => {
-                // Default fallback to exif_date_time_original
-                sql_query.push_str(&format!(" ORDER BY exif_date_time_original {}", order_direction));
+                // Default fallback to exif_date_time_original with secondary sorts
+                sql_query.push_str(&format!(" ORDER BY exif_date_time_original {}, photo_date {}, path {}", 
+                    order_direction, secondary_direction, secondary_direction));
             }
         }
         
+        // Add LIMIT clause
+        sql_query.push_str(&format!(" LIMIT {}", max_photos_per_fetch));
+        
         log::debug!(
             target: "database",
-            "sql_query_prepared; query_length={}; param_count={}; sort_field={}; sort_order={}",
-            sql_query.len(), params.len(), sort_field, sort_order
+            "sql_query_final; query_length={}; param_count={}; sort_field={}; sort_order={}; limit={}",
+            sql_query.len(), params.len(), sort_field, sort_order, max_photos_per_fetch
+        );
+        
+        // Log the complete SQL with ORDER BY and LIMIT
+        log::debug!(
+            target: "database",
+            "sql_with_params_complete; query={}; params=[{}]",
+            sql_query,
+            param_strings.join(", ")
         );
         
         // Execute query
@@ -2025,19 +2043,15 @@ impl SQLite {
             results.push(photo.map_err(|e| e.to_string())?);
         }
         
-        // Limit results to prevent overwhelming the UI
-        let original_count = results.len();
-        results.truncate(max_photos_per_fetch as usize);
+        // Results are already limited by SQL LIMIT clause
         let final_count = results.len();
-        
         let duration = start_time.elapsed();
         
         log::info!(
             target: "database",
-            "search_photos_complete; result_count={}; original_count={}; truncated={}; duration_ms={}",
+            "search_photos_complete; result_count={}; limit={}; duration_ms={}",
             final_count, 
-            original_count,
-            original_count > max_photos_per_fetch as usize,
+            max_photos_per_fetch,
             duration.as_millis()
         );
         

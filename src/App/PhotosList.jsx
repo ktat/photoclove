@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import PhotosListMini from "./PhotosList/PhotosListMini.jsx";
 import PhotoOption from "./PhotosList/PhotoOption.jsx";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
@@ -84,6 +84,7 @@ function PhotosList(props) {
     const [photos, setPhotosList] = useState({ "photos": [] });
     const [scrollLock, setScrollLock] = useState(false);
     const [sortOfPhotos, setSort] = useState(0);
+    const sortInitialized = useRef(false);
     const [photoLoading, setPhotoLoading] = useState(false);
     const [photoSelection, setPhotoSelection] = useState([]);
     const [photoSelectionDict, setPhotoSelectionDict] = useState({});
@@ -138,14 +139,20 @@ function PhotosList(props) {
         });
         setCurrentSearchParams(params);
         
-        // Map sortOfPhotos to backend sort field names
-        const sortFieldMap = {
-            0: 'exif_date_time_original',  // photo time
-            1: 'exif_date_time_original',  // time
-            2: 'path'  // name
+        // Map sortOfPhotos to backend sort field names with order
+        const sortConfig = {
+            0: { field: 'exif_date_time_original', order: 'desc' },  // Shot Time (desc)
+            1: { field: 'exif_date_time_original', order: 'asc' },   // Shot Time (asc)
+            2: { field: 'photo_date', order: 'desc' },               // Added Time (desc)
+            3: { field: 'photo_date', order: 'asc' },                // Added Time (asc)
+            4: { field: 'star', order: 'desc' },                     // Star Rating (desc)
+            5: { field: 'star', order: 'asc' },                      // Star Rating (asc)
+            6: { field: 'path', order: 'desc' },                     // File Name (desc)
+            7: { field: 'path', order: 'asc' }                       // File Name (asc)
         };
-        const sortField = sortFieldMap[sortOfPhotos] || 'exif_date_time_original';
-        const sortOrder = 'desc'; // Default to descending order
+        const config = sortConfig[sortOfPhotos] || sortConfig[0];
+        const sortField = config.field;
+        const sortOrder = config.order;
         
         await performSearch(query, type, filters, sortField, sortOrder);
     }, [performSearch, sortOfPhotos]);
@@ -162,24 +169,68 @@ function PhotosList(props) {
             setSearchFilters(searchParams.filters);
         }
         
-        // Map sortOfPhotos to backend sort field names
-        const sortFieldMap = {
-            0: 'exif_date_time_original',  // photo time
-            1: 'exif_date_time_original',  // time
-            2: 'path'  // name
+        // Map sortOfPhotos to backend sort field names with order
+        const sortConfig = {
+            0: { field: 'exif_date_time_original', order: 'desc' },  // Shot Time (desc)
+            1: { field: 'exif_date_time_original', order: 'asc' },   // Shot Time (asc)
+            2: { field: 'photo_date', order: 'desc' },               // Added Time (desc)
+            3: { field: 'photo_date', order: 'asc' },                // Added Time (asc)
+            4: { field: 'star', order: 'desc' },                     // Star Rating (desc)
+            5: { field: 'star', order: 'asc' },                      // Star Rating (asc)
+            6: { field: 'path', order: 'desc' },                     // File Name (desc)
+            7: { field: 'path', order: 'asc' }                       // File Name (asc)
         };
-        const sortField = sortFieldMap[sortOfPhotos] || 'exif_date_time_original';
-        const sortOrder = 'desc'; // Default to descending order
+        const config = sortConfig[sortOfPhotos] || sortConfig[0];
+        const sortField = config.field;
+        const sortOrder = config.order;
         
         performSearch(searchParams.query, searchParams.searchType, searchParams.filters, sortField, sortOrder);
     }, [performSearch, sortOfPhotos]);
 
+    // Re-execute search when sort changes (only if we have active search)
+    useEffect(() => {
+        // Skip initial render to avoid infinite loop
+        if (!sortInitialized.current) {
+            sortInitialized.current = true;
+            return;
+        }
+        
+        // Only re-execute if we're in search mode, have search params, and there are search results
+        if (isSearchMode && currentSearchParams && searchResults.length > 0) {
+            logger.info('PhotosList', 'sort_changed_reexecute', 'Re-executing search due to sort change', {
+                sortOfPhotos,
+                currentSearchParams
+            });
+            
+            // Call performSearch directly to avoid dependency cycle
+            const sortConfig = {
+                0: { field: 'exif_date_time_original', order: 'desc' },
+                1: { field: 'exif_date_time_original', order: 'asc' },
+                2: { field: 'photo_date', order: 'desc' },
+                3: { field: 'photo_date', order: 'asc' },
+                4: { field: 'star', order: 'desc' },
+                5: { field: 'star', order: 'asc' },
+                6: { field: 'path', order: 'desc' },
+                7: { field: 'path', order: 'asc' }
+            };
+            const config = sortConfig[sortOfPhotos] || sortConfig[0];
+            
+            performSearch(
+                currentSearchParams.query, 
+                currentSearchParams.searchType, 
+                currentSearchParams.filters,
+                config.field,
+                config.order
+            );
+        }
+    }, [sortOfPhotos, isSearchMode, currentSearchParams, performSearch]);
+
     const handleFiltersChange = useCallback((newFilters) => {
-        console.log('handleFiltersChange called with:', newFilters);
+        // console.log('handleFiltersChange called with:', newFilters);
         setSearchFilters(newFilters);
         
         // Manual execution only - auto search removed per improvement #46
-        console.log('Filters updated. User needs to manually execute search.');
+        // console.log('Filters updated. User needs to manually execute search.');
     }, []); // Removed dependencies for manual execution only
     
     // Notify parent when menu state changes
@@ -265,8 +316,8 @@ function PhotosList(props) {
     
     // Frontend filtering function
     const applyFrontendFilters = useCallback((photos) => {
-        console.log(`[FILTER] Applying filters - star: ${starFilter}, hasComment: ${hasCommentFilter}, extension: ${extensionFilter}`);
-        console.log(`[FILTER] Input photos count: ${photos.length}`);
+        // console.log(`[FILTER] Applying filters - star: ${starFilter}, hasComment: ${hasCommentFilter}, extension: ${extensionFilter}`);
+        // console.log(`[FILTER] Input photos count: ${photos.length}`);
         
         const filtered = photos.filter(photo => {
             // Apply star filter
@@ -291,7 +342,7 @@ function PhotosList(props) {
             return true;
         });
         
-        console.log(`[FILTER] Filtered photos count: ${filtered.length}`);
+        // console.log(`[FILTER] Filtered photos count: ${filtered.length}`);
         return filtered;
     }, [starFilter, hasCommentFilter, extensionFilter]);
     
@@ -351,11 +402,11 @@ function PhotosList(props) {
 
     // Load photos when fetchConfig changes
     useEffect(() => {
-        console.log(`[FETCH_CONFIG_CHANGE] New fetchConfig:`, fetchConfig);
+        // console.log(`[FETCH_CONFIG_CHANGE] New fetchConfig:`, fetchConfig);
         
         // Skip if already loading to prevent race conditions
         if (photoLoading) {
-            console.log(`[FETCH_CONFIG_CHANGE] Already loading, skipping`);
+            // console.log(`[FETCH_CONFIG_CHANGE] Already loading, skipping`);
             return;
         }
         
@@ -392,7 +443,7 @@ function PhotosList(props) {
     // Apply filters when filter settings change (no API call, just frontend filtering)
     useEffect(() => {
         if (filteredPhotos.length > 0 || allPhotosForCurrentFetch.length > 0) {
-            console.log(`[FILTER_CHANGE] Applying frontend filters: ${filteredPhotos.length} photos after filtering`);
+            // console.log(`[FILTER_CHANGE] Applying frontend filters: ${filteredPhotos.length} photos after filtering`);
             setPhotosListMiniAllPhotos(filteredPhotos);
             
             // Also update current page view
@@ -410,10 +461,10 @@ function PhotosList(props) {
         // Find the global index in the all photos array
         const globalIndex = photosListMiniAllPhotos.findIndex(photo => photo.file.path === f);
         if (globalIndex !== -1) {
-            console.log(`[DISPLAY_PHOTO] Found photo at global index: ${globalIndex} (total photos: ${photosListMiniAllPhotos.length})`);
+            // console.log(`[DISPLAY_PHOTO] Found photo at global index: ${globalIndex} (total photos: ${photosListMiniAllPhotos.length})`);
             setPhotosListMiniCurrentIndex(globalIndex);
         } else {
-            console.log(`[DISPLAY_PHOTO] Photo not found in all photos array, using page-relative index: ${i}`);
+            // console.log(`[DISPLAY_PHOTO] Photo not found in all photos array, using page-relative index: ${i}`);
             // Fallback: use the provided index if photo not found in all photos
             setPhotosListMiniCurrentIndex(i);
         }
@@ -494,7 +545,7 @@ function PhotosList(props) {
     }
 
     function moveToTrashCan(f) {
-        console.log("delete file: " + f)
+        // console.log("delete file: " + f)
         invoke("move_to_trash", { pathStr: f, sortValue: parseInt(sortOfPhotos) }).then((d) => {
             if (d) {
                 const date = d
@@ -515,7 +566,7 @@ function PhotosList(props) {
                         // last photo
                         if (currentPhotoIndex >= allPhotos.length) {
                             const ci = currentPhotoIndex - 1;
-                            console.log("last photo!")
+                            // console.log("last photo!")
                             if (photosListMiniAllPhotos[ci]) {
                                 setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
                                 setCurrentPhotoPath(photosListMiniAllPhotos[ci].file.path);
@@ -525,7 +576,7 @@ function PhotosList(props) {
                         // not last photo
                         else {
                             const ci = currentPhotoIndex;
-                            console.log("Not last photo!")
+                            // console.log("Not last photo!")
                             setPhotosListMiniReread(!photosListMiniReread);
                             setCurrentPhotoPath(photosListMiniAllPhotos[ci].file.path);
                         }
@@ -641,19 +692,19 @@ function PhotosList(props) {
             }
             
             const data = JSON.parse(result);
-            console.log(`[LOAD_ALL] Loaded ${data.photos.length} photos`);
+            // console.log(`[LOAD_ALL] Loaded ${data.photos.length} photos`);
             
             // Debug: Check if metadata is included
             if (data.photos.length > 0) {
-                console.log(`[LOAD_ALL] Sample photo data:`, data.photos[0]);
-                console.log(`[LOAD_ALL] Available properties:`, Object.keys(data.photos[0]));
+                // console.log(`[LOAD_ALL] Sample photo data:`, data.photos[0]);
+                // console.log(`[LOAD_ALL] Available properties:`, Object.keys(data.photos[0]));
                 
                 // Check different possible metadata locations
                 if (data.photos[0].meta) {
-                    console.log(`[LOAD_ALL] Meta object:`, data.photos[0].meta);
+                    // console.log(`[LOAD_ALL] Meta object:`, data.photos[0].meta);
                 }
                 if (data.photos[0].metadata) {
-                    console.log(`[LOAD_ALL] Metadata object:`, data.photos[0].metadata);
+                    // console.log(`[LOAD_ALL] Metadata object:`, data.photos[0].metadata);
                 }
             }
             
@@ -724,7 +775,7 @@ function PhotosList(props) {
         setShowSideMenu(false);
         compatProps.setShowPhotoDisplay(false);
         if (props.currentPhotoPath !== "") setCurrentPhotoPath("");
-        console.log("photos-list-close-photod-display -- getPhotos")
+        // console.log("photos-list-close-photod-display -- getPhotos")
         
         // Cancel any existing photo loading before starting new request
         if (currentPhotoLoadingController) {
@@ -917,10 +968,15 @@ function PhotosList(props) {
                                         <option value={200}>large</option>
                                         <option value={300}>huge</option>
                                     </select>
-                                    Sort:<select name="sort" defaultValue={sortOfPhotos} onChange={(e) => setSort(e.target.value)}>
-                                        <option value={0}>photo time</option>
-                                        <option value={1}>time</option>
-                                        <option value={2}>name</option>
+                                    Sort:<select name="sort" value={sortOfPhotos} onChange={(e) => setSort(parseInt(e.target.value))}>
+                                        <option value={0}>Shot Time (desc)</option>
+                                        <option value={1}>Shot Time (asc)</option>
+                                        <option value={2}>Added Time (desc)</option>
+                                        <option value={3}>Added Time (asc)</option>
+                                        <option value={4}>Star Rating (desc)</option>
+                                        <option value={5}>Star Rating (asc)</option>
+                                        <option value={6}>File Name (desc)</option>
+                                        <option value={7}>File Name (asc)</option>
                                     </select>
                                     Num:<select name="num" defaultValue={numOfPhoto} onChange={(e) => setNumOfPhoto(e.target.value)}>
                                         <option value={10}>10</option>

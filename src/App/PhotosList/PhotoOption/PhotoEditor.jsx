@@ -41,11 +41,11 @@ function PhotoEditor(props) {
             // Load saved CSS style for this photo
             invoke("get_css_style", { photoPath: props.currentPhotoPath })
                 .then((savedCssStyle) => {
-                    console.log('=== CSS LOADING DEBUG ===');
-                    console.log('Photo path:', props.currentPhotoPath);
-                    console.log('Raw saved CSS style:', savedCssStyle);
-                    console.log('CSS style length:', savedCssStyle ? savedCssStyle.length : 0);
-                    console.log('CSS style trimmed:', savedCssStyle ? savedCssStyle.trim() : 'null');
+                    // console.log('=== CSS LOADING DEBUG ===');
+                    // console.log('Photo path:', props.currentPhotoPath);
+                    // console.log('Raw saved CSS style:', savedCssStyle);
+                    // console.log('CSS style length:', savedCssStyle ? savedCssStyle.length : 0);
+                    // console.log('CSS style trimmed:', savedCssStyle ? savedCssStyle.trim() : 'null');
                     
                     if (savedCssStyle && savedCssStyle.trim() !== '') {
                         // Parse the saved CSS and update editor values
@@ -54,11 +54,11 @@ function PhotoEditor(props) {
                         
                         // Update UI elements with saved values
                         setTimeout(() => {
-                            console.log('Updating UI elements with saved values');
+                            // console.log('Updating UI elements with saved values');
                             updateUIElementsWithValues(editorValues, savedCssStyle);
                             
                             // Note: Don't apply temp styles here - PhotoDisplay will apply saved CSS via props
-                            console.log('Saved styles will be applied by PhotoDisplay via props');
+                            // console.log('Saved styles will be applied by PhotoDisplay via props');
                         }, 200);
                     } else {
                         // No saved CSS, use default values
@@ -112,11 +112,11 @@ function PhotoEditor(props) {
         if (props.currentPhotoPath) {
             // Ensure CSS preview is populated
             setTimeout(() => {
-                console.log('=== EDITOR OPEN DEBUG ===');
-                console.log('Current editorStyles:', editorStyles);
+                // console.log('=== EDITOR OPEN DEBUG ===');
+                // console.log('Current editorStyles:', editorStyles);
                 
                 const css = generateCSSFromValues(editorStyles);
-                console.log('Generated CSS from editorStyles:', css);
+                // console.log('Generated CSS from editorStyles:', css);
                 
                 const previewTextarea = document.getElementById('css-preview-text');
                 if (previewTextarea) {
