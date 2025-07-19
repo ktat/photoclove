@@ -313,8 +313,8 @@ function PhotosList(props) {
     
     // All state declarations moved to top of component
     
-    // Frontend filtering function
-    const applyFrontendFilters = useCallback((photos) => {
+    // Frontend filtering function - defined as regular function to avoid temporal dead zone
+    const applyFrontendFilters = (photos) => {
         // console.log(`[FILTER] Applying filters - star: ${starFilter}, hasComment: ${hasCommentFilter}, extension: ${extensionFilter}`);
         // console.log(`[FILTER] Input photos count: ${photos.length}`);
         
@@ -343,12 +343,12 @@ function PhotosList(props) {
         
         // console.log(`[FILTER] Filtered photos count: ${filtered.length}`);
         return filtered;
-    }, [starFilter, hasCommentFilter, extensionFilter]);
+    };
     
     // Memoize filtered photos to avoid recalculating on every render
     const filteredPhotos = useMemo(() => {
         return applyFrontendFilters(allPhotosForCurrentFetch);
-    }, [allPhotosForCurrentFetch, applyFrontendFilters]);
+    }, [allPhotosForCurrentFetch, starFilter, hasCommentFilter, extensionFilter]);
     
     // Displayed photos for infinite scroll
     const displayedPhotos = useMemo(() => {
