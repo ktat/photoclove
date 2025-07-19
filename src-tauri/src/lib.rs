@@ -1162,6 +1162,35 @@ async fn submit_frontend_logs(
     logging_service.submit_frontend_logs(&logs)
 }
 
+#[tauri::command]
+async fn set_logging_enabled(
+    enabled: bool,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    let mut config = state.config.clone();
+    config.logging_enabled = enabled;
+    
+    if config.save() {
+        log::info!(target: "config", "logging_enabled updated; enabled={}", enabled);
+        Ok(())
+    } else {
+        log::error!(target: "config", "failed to save logging_enabled config; enabled={}", enabled);
+        Err("Failed to save logging configuration".to_string())
+    }
+}
+
+#[tauri::command]
+async fn get_logging_status(
+    state: tauri::State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    // Always read the current saved configuration to get the latest state
+    let config = Config::new();
+    Ok(serde_json::json!({
+        "enabled": config.logging_enabled,
+        "level": config.logging_level
+    }))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use crate::repository::*;
@@ -1188,12 +1217,24 @@ pub fn run() {
     let logging_service = logging_service::LoggingService::new()
         .expect("Failed to initialize logging service");
     
-    // Setup backend logging to file
-    if let Err(e) = logging_service.setup_backend_logging() {
-        eprintln!("Warning: Failed to setup backend logging: {}", e);
-        // Continue without file logging
+    // Clean up log files if logging is disabled
+    if let Err(e) = logging_service.cleanup_log_files_if_disabled(c.logging_enabled) {
+        eprintln!("Warning: Failed to cleanup log files: {}", e);
+    }
+    
+    // Setup backend logging to file only if logging is enabled
+    if c.logging_enabled {
+        if let Err(e) = logging_service.setup_backend_logging() {
+            eprintln!("Warning: Failed to setup backend logging: {}", e);
+            // Continue without file logging
+            env_logger::Builder::from_default_env()
+                .filter_level(log::LevelFilter::Debug)
+                .init();
+        }
+    } else {
+        // When logging is disabled, setup minimal console logging for critical messages only
         env_logger::Builder::from_default_env()
-            .filter_level(log::LevelFilter::Debug)
+            .filter_level(log::LevelFilter::Error)
             .init();
     }
 
@@ -1324,6 +1365,8 @@ pub fn run() {
             save_styled_copy_from_frontend,
             get_logs,
             submit_frontend_logs,
+            set_logging_enabled,
+            get_logging_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

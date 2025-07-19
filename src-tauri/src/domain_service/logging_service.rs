@@ -200,6 +200,64 @@ impl LoggingService {
 
         Ok(())
     }
+
+    pub fn cleanup_log_files_if_disabled(&self, logging_enabled: bool) -> Result<(), String> {
+        if logging_enabled {
+            return Ok(()); // Don't clean if logging is enabled
+        }
+
+        info!(
+            target: "logging",
+            "cleanup_log_files_requested; logging_enabled={}",
+            logging_enabled
+        );
+
+        // Remove all log files in the log directory
+        match std::fs::read_dir(&self.log_directory) {
+            Ok(entries) => {
+                for entry in entries {
+                    if let Ok(entry) = entry {
+                        let path = entry.path();
+                        if path.is_file() && 
+                           path.extension().map_or(false, |ext| ext == "log") {
+                            match std::fs::remove_file(&path) {
+                                Ok(()) => {
+                                    info!(
+                                        target: "logging",
+                                        "log_file_removed; file={}",
+                                        path.display()
+                                    );
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        target: "logging",
+                                        "failed_to_remove_log_file; file={}; error={}",
+                                        path.display(),
+                                        e
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                warn!(
+                    target: "logging",
+                    "failed_to_read_log_directory; directory={}; error={}",
+                    self.log_directory.display(),
+                    e
+                );
+            }
+        }
+
+        // Also clear in-memory frontend logs
+        if let Ok(mut logs) = self.frontend_logs.lock() {
+            logs.clear();
+        }
+
+        Ok(())
+    }
 }
 
 impl Default for LoggingService {

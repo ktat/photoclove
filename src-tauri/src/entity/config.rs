@@ -22,6 +22,18 @@ fn default_max_photos_per_fetch() -> u32 {
     1000
 }
 
+fn default_logging_enabled() -> bool {
+    cfg!(debug_assertions) // true in dev, false in production
+}
+
+fn default_logging_level() -> String {
+    if cfg!(debug_assertions) {
+        "debug".to_string()
+    } else {
+        "info".to_string()
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub repository: RepositoryConfig,
@@ -40,6 +52,10 @@ pub struct Config {
     pub download_dir: String,
     #[serde(default = "default_max_photos_per_fetch")]
     pub max_photos_per_fetch: u32,
+    #[serde(default = "default_logging_enabled")]
+    pub logging_enabled: bool,
+    #[serde(default = "default_logging_level")]
+    pub logging_level: String,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryConfig {
@@ -65,6 +81,8 @@ impl Config {
         self.use_count = config.use_count;
         self.download_dir = config.download_dir;
         self.max_photos_per_fetch = config.max_photos_per_fetch;
+        self.logging_enabled = config.logging_enabled;
+        self.logging_level = config.logging_level;
     }
 
     pub fn config_path() -> String {
@@ -144,6 +162,8 @@ impl Config {
                 .display()
                 .to_string(),
             max_photos_per_fetch: 1000,
+            logging_enabled: default_logging_enabled(),
+            logging_level: default_logging_level(),
         }
     }
 
