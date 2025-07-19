@@ -251,7 +251,20 @@ function App() {
         <div className="container">
           <div className={`inner-container ${rightMenuOpen ? 'menu-open' : 'menu-closed'}`}>
             <div id="leftMenu" className="leftMenu">
-              <a href="#" onClick={() => toggleImporter(true)}>&#10145;import</a>
+              <div className="navigation-icons">
+                <a href="#" onClick={() => {
+                  updateCurrentDate("");
+                  resetPhotoState();
+                  toggleImporter(false);
+                  togglePreferences(false);
+                  setWelcomeImage(WelcomeImage());
+                }} title="HOME">🏠</a>
+                <a href="#" onClick={() => {
+                  // Search functionality - currently using PhotosList with search mode
+                  console.log("Search icon clicked");
+                }} title="Search">🔍</a>
+                <a href="#" onClick={() => toggleImporter(true)} title="Import">📥</a>
+              </div>
               <div className="row">
                 <div style={{ display: "none" }}>
                   <input
@@ -295,7 +308,20 @@ function App() {
     >
       <div className={`inner-container ${rightMenuOpen ? 'menu-open' : 'menu-closed'}`}>
         <div id="leftMenu" className="leftMenu">
-          <a href="#" onClick={() => toggleImporter(true)}>&#10145;import</a>
+          <div className="navigation-icons">
+            <a href="#" onClick={() => {
+              updateCurrentDate("");
+              resetPhotoState();
+              toggleImporter(false);
+              togglePreferences(false);
+              setWelcomeImage(WelcomeImage());
+            }} title="HOME">🏠</a>
+            <a href="#" onClick={() => {
+              // Search functionality - currently using PhotosList with search mode
+              console.log("Search icon clicked");
+            }} title="Search">🔍</a>
+            <a href="#" onClick={() => toggleImporter(true)} title="Import">📥</a>
+          </div>
           <div className="row">
             <div style={{ display: "none" }}>
               <input
