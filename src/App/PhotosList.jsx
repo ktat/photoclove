@@ -132,6 +132,38 @@ function PhotosList(props) {
     const [filterOptions, setFilterOptions] = useState(null);
     const [isFilterOptionsLoading, setIsFilterOptionsLoading] = useState(false);
     
+    // Frontend filtering function - defined early to avoid temporal dead zone
+    const applyFrontendFilters = (photos) => {
+        // console.log(`[FILTER] Applying filters - star: ${starFilter}, hasComment: ${hasCommentFilter}, extension: ${extensionFilter}`);
+        // console.log(`[FILTER] Input photos count: ${photos.length}`);
+        
+        const filtered = photos.filter(photo => {
+            // Apply star filter
+            if (starFilter > 0 && (!photo.star || photo.star < starFilter)) {
+                return false;
+            }
+            
+            // Apply comment filter
+            if (hasCommentFilter && (!photo.comment || photo.comment.trim() === "")) {
+                return false;
+            }
+            
+            // Apply extension filter
+            if (extensionFilter !== "all") {
+                const extension = photo.file.name.split('.').pop().toLowerCase();
+                const allowedExtensions = extensionFilter.split(',').map(ext => ext.trim().toLowerCase());
+                if (!allowedExtensions.includes(extension)) {
+                    return false;
+                }
+            }
+            
+            return true;
+        });
+        
+        // console.log(`[FILTER] Filtered photos count: ${filtered.length}`);
+        return filtered;
+    };
+    
     // Filter options caching function
     const loadFilterOptions = useCallback(async () => {
         if (filterOptions || isFilterOptionsLoading) return filterOptions;
@@ -312,38 +344,6 @@ function PhotosList(props) {
     // State declarations moved to top of component
     
     // All state declarations moved to top of component
-    
-    // Frontend filtering function - defined as regular function to avoid temporal dead zone
-    const applyFrontendFilters = (photos) => {
-        // console.log(`[FILTER] Applying filters - star: ${starFilter}, hasComment: ${hasCommentFilter}, extension: ${extensionFilter}`);
-        // console.log(`[FILTER] Input photos count: ${photos.length}`);
-        
-        const filtered = photos.filter(photo => {
-            // Apply star filter
-            if (starFilter > 0 && (!photo.star || photo.star < starFilter)) {
-                return false;
-            }
-            
-            // Apply comment filter
-            if (hasCommentFilter && (!photo.comment || photo.comment.trim() === "")) {
-                return false;
-            }
-            
-            // Apply extension filter
-            if (extensionFilter !== "all") {
-                const extension = photo.file.name.split('.').pop().toLowerCase();
-                const allowedExtensions = extensionFilter.split(',').map(ext => ext.trim().toLowerCase());
-                if (!allowedExtensions.includes(extension)) {
-                    return false;
-                }
-            }
-            
-            return true;
-        });
-        
-        // console.log(`[FILTER] Filtered photos count: ${filtered.length}`);
-        return filtered;
-    };
     
     // Memoize filtered photos to avoid recalculating on every render
     const filteredPhotos = useMemo(() => {
