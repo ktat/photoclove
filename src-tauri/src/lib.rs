@@ -1149,6 +1149,7 @@ pub fn run() {
                 .build()?;
 
             let help_submenu = SubmenuBuilder::new(app, "?")
+                .text("show_log", "Show log")
                 .text("github", "GitHub")
                 .text("about", "About")
                 .build()?;
@@ -1167,6 +1168,8 @@ pub fn run() {
                     app.exit(0)
                 } else if e.id == "home" {
                     app.emit("click_menu", "HOME").unwrap();
+                } else if e.id == "show_log" {
+                    app.emit("click_menu_static", "show_log").unwrap();
                 } else if e.id == "about" {
                     app.emit("click_menu_static", "about").unwrap();
                 } else if e.id == "github" {
