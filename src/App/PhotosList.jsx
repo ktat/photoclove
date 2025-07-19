@@ -899,9 +899,9 @@ function PhotosList(props) {
                             <div className="photo-list-header">
                                 <div className="photo-page-info">
                                     {isSearchMode ? (
-                                        <><a className="back-to-home" href="#" onClick={(e)=>{ e.preventDefault(); clearSearch(); }}>Back to HOME</a> <span style={{marginLeft: "10px"}}>{fetchConfig.title} page:{compatProps.datePage["search_results"] || 1}</span></>
+                                        <><a className="back-to-home" href="#" onClick={(e)=>{ e.preventDefault(); clearSearch(); }}>Back to HOME</a> <span style={{marginLeft: "10px"}}>{fetchConfig?.title || 'Search Results'} page:{compatProps.datePage["search_results"] || 1}</span></>
                                     ) : (
-                                        <span>{fetchConfig.title} page:{compatProps.datePage[compatProps.currentDate] || 1}</span>
+                                        <span>{fetchConfig?.title || 'Photos'} page:{compatProps.datePage[compatProps.currentDate] || 1}</span>
                                     )}
                                 </div>
                                 <div className="navigation">
