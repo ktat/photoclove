@@ -136,11 +136,24 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
   };
 
   const formatFilterValue = (key, value) => {
-    if (!value) return '';
-    if (key.includes('date')) return new Date(value).toLocaleDateString();
+    if (!value && value !== 0) return '';
+    
+    // Handle date formatting
+    if (key.includes('date') || key.includes('Date')) {
+      try {
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return value; // Return original if invalid date
+        return date.toLocaleDateString();
+      } catch {
+        return value;
+      }
+    }
+    
     if (key === 'star') return '⭐'.repeat(value);
     if (key === 'hasComment') return value ? 'Yes' : 'No';
-    if (key.includes('Range') && typeof value === 'object') {
+    
+    // Handle range objects
+    if (key.includes('Range') && typeof value === 'object' && value !== null) {
       const min = value.min || '';
       const max = value.max || '';
       if (min && max) return `${min} - ${max}`;
@@ -148,6 +161,7 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
       if (max) return `≤ ${max}`;
       return '';
     }
+    
     return value;
   };
 

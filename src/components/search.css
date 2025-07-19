@@ -550,10 +550,10 @@
 }
 
 .toggle-conditions {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 8px;
+  padding: 6px 12px;
   border: 1px solid #444;
   border-radius: 4px;
   background: #2a2a2a;
@@ -561,8 +561,8 @@
   cursor: pointer;
   font-size: 12px;
   transition: background-color 0.2s ease;
-  width: 100%;
   text-align: left;
+  width: auto;
 }
 
 .toggle-conditions:hover {
@@ -572,8 +572,11 @@
 
 .toggle-arrow {
   transition: transform 0.2s ease;
-  font-size: 10px;
+  font-size: 12px;
   color: #999;
+  display: inline-block;
+  width: 12px;
+  text-align: center;
 }
 
 .toggle-arrow.expanded {
@@ -598,12 +601,14 @@
   border: 1px solid #333;
   border-radius: 4px;
   overflow: hidden;
+  margin-top: 4px;
 }
 
 .conditions-table td {
-  padding: 6px 10px;
+  padding: 8px 12px;
   border-bottom: 1px solid #333;
-  font-size: 11px;
+  font-size: 12px;
+  vertical-align: top;
 }
 
 .conditions-table tr:last-child td {
@@ -613,14 +618,16 @@
 .condition-label {
   font-weight: 500;
   color: #ccc;
-  width: 30%;
+  width: 35%;
   background: #252525;
+  white-space: nowrap;
 }
 
 .condition-value {
   color: #4da6ff;
   font-family: monospace;
   background: #1a1a1a;
+  word-break: break-word;
 }
 
 /* Mobile responsive */
