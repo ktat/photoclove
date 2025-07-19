@@ -41,6 +41,7 @@ function App() {
     toggleImporter,
     togglePreferences,
     toggleJobQueue,
+    toggleSearchPage,
     addFooterMessage
   } = useUI();
   const {
@@ -260,8 +261,7 @@ function App() {
                   setWelcomeImage(WelcomeImage());
                 }} title="HOME">🏠</a>
                 <a href="#" onClick={() => {
-                  // Search functionality - currently using PhotosList with search mode
-                  console.log("Search icon clicked");
+                  toggleSearchPage(true, "", true);
                 }} title="Search">🔍</a>
                 <a href="#" onClick={() => toggleImporter(true)} title="Import">📥</a>
               </div>
@@ -317,8 +317,7 @@ function App() {
               setWelcomeImage(WelcomeImage());
             }} title="HOME">🏠</a>
             <a href="#" onClick={() => {
-              // Search functionality - currently using PhotosList with search mode
-              console.log("Search icon clicked");
+              toggleSearchPage(true, "", true);
             }} title="Search">🔍</a>
             <a href="#" onClick={() => toggleImporter(true)} title="Import">📥</a>
           </div>
