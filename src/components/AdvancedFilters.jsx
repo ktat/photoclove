@@ -22,6 +22,23 @@ const AdvancedFilters = ({
     ...initialFilters
   });
 
+  // Update filters when initialFilters change
+  useEffect(() => {
+    setFilters({
+      camera: '',
+      lens: '',
+      isoRange: { min: '', max: '' },
+      apertureRange: { min: '', max: '' },
+      shutterSpeedRange: { min: '', max: '' },
+      focalLengthRange: { min: '', max: '' },
+      dateRange: { start: '', end: '' },
+      hasComment: false,
+      starRating: 0,
+      fileExtension: '',
+      ...initialFilters
+    });
+  }, [initialFilters]);
+  
   // Component mount effect to request filter options if not loaded
   useEffect(() => {
     if (!filterOptions && !isLoading && onLoadFilterOptions) {
@@ -32,17 +49,24 @@ const AdvancedFilters = ({
   const updateFilter = (key, value) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
-    console.log('Filter updated:', key, value, 'All filters:', newFilters);
+    console.log('AdvancedFilters - Filter updated:', {
+      key, 
+      oldValue: filters[key], 
+      newValue: value, 
+      allFilters: newFilters
+    });
     onFiltersChange(newFilters);
   };
 
   const updateRangeFilter = (key, subKey, value) => {
+    // Convert empty string to empty string (not 0) for proper backend handling
+    const processedValue = value === '' ? '' : value;
     const newFilters = {
       ...filters,
-      [key]: { ...filters[key], [subKey]: value }
+      [key]: { ...filters[key], [subKey]: processedValue }
     };
     setFilters(newFilters);
-    console.log('Range filter updated:', key, subKey, value, 'All filters:', newFilters);
+    console.log('Range filter updated:', key, subKey, value, '=>', processedValue, 'All filters:', newFilters);
     onFiltersChange(newFilters);
   };
 
@@ -231,7 +255,12 @@ const AdvancedFilters = ({
             <label>Star Rating:</label>
             <select 
               value={filters.starRating} 
-              onChange={(e) => updateFilter('starRating', parseInt(e.target.value))}
+              onChange={(e) => {
+                const value = parseInt(e.target.value, 10);
+                const starValue = isNaN(value) ? 0 : value;
+                console.log('Star rating changed:', e.target.value, '=>', starValue);
+                updateFilter('starRating', starValue);
+              }}
             >
               <option value={0}>All Ratings</option>
               <option value={1}>1 Star+</option>

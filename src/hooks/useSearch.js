@@ -148,13 +148,18 @@ export const useSearch = () => {
         start_date: filters.dateRange?.start || '',
         end_date: filters.dateRange?.end || '',
         has_comments: filters.hasComment || false,
-        min_rating: filters.starRating || 0,
+        min_rating: filters.starRating > 0 ? filters.starRating : '',
         extension: filters.fileExtension || ''
       };
       
       logger.debug('useSearch', 'filter_transformed', 'Filters transformed for backend', {
         originalFilters: filters,
         transformedFilters,
+        starRatingHandling: {
+          original: filters.starRating,
+          transformed: filters.starRating > 0 ? filters.starRating : '',
+          condition: filters.starRating > 0 ? 'included' : 'excluded'
+        },
         correlationId
       });
       

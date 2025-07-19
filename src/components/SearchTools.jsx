@@ -43,6 +43,10 @@ const SearchTools = ({
 
     // Handle filter changes
     const handleFiltersChange = (newFilters) => {
+        console.log('SearchTools - Filters changed:', {
+            oldFilters: currentFilters,
+            newFilters: newFilters
+        });
         setCurrentFilters(newFilters);
         onFiltersChange(newFilters);
     };
