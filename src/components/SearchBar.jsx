@@ -15,14 +15,11 @@ const SearchBar = ({ onSearch, onClear, searchResults, initialQuery = '' }) => {
   }, [initialQuery]);
 
   const handleSearch = async () => {
-    if (!query.trim()) {
-      onClear();
-      return;
-    }
-
+    // Allow empty query - filters might still be active
+    // Empty query with filters is a valid search scenario
     setIsSearching(true);
     try {
-      // Call onSearch with just query and searchType
+      // Call onSearch with query (can be empty) and searchType
       // Filters are handled separately by AdvancedFilters component
       onSearch(query.trim(), searchType);
     } catch (error) {
