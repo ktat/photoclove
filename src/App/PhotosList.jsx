@@ -12,8 +12,6 @@ import '../scrollable.css';
 import { usePhoto } from "../context/PhotoContext.jsx";
 import { useUI } from "../context/UIContext.jsx";
 import { useSearch } from "../hooks/useSearch.js";
-import BaseThumbnailGrid from "../components/BaseThumbnailGrid.jsx";
-import { PhotoDataAdapter } from "../utils/PhotoDataAdapter.js";
 import SearchTools from "../components/SearchTools.jsx";
 import { logger } from "../services/LoggerService.js";
 

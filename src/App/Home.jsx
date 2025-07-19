@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useUI } from "../context/UIContext.jsx";
 import "./Home.css";
 

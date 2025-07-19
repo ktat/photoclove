@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { register } from '@tauri-apps/plugin-global-shortcut';
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-shell";
 import { listen } from "@tauri-apps/api/event";
-import { ask, message, confirm } from '@tauri-apps/plugin-dialog';
+import { ask, message } from '@tauri-apps/plugin-dialog';
 import "./App.css";
 import "./components/search.css";
 import PhotosList from "./App/PhotosList.jsx"
