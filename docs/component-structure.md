@@ -690,6 +690,15 @@ App (root)
 - `.back-to-home` - Back to HOME button (search mode)
 - `.directory-vertical-tabs` - Vertical tab navigation
 - `.home-search-container` - Home page search box
+- `.log-viewer-overlay` - LogViewer modal overlay
+- `.log-viewer` - LogViewer main container
+- `.log-viewer-header` - LogViewer header with actions
+- `.log-viewer-stats` - LogViewer statistics display
+- `.log-viewer-filters` - LogViewer filter controls
+- `.log-viewer-content` - LogViewer log entries container
+- `.log-header` - LogViewer column headers
+- `.log-entries` - LogViewer log entries wrapper
+- `.log-entry` - Individual log entry row
 
 ### State Classes
 - `.selected` / `.notSelected` - Selection state
@@ -703,5 +712,100 @@ App (root)
 - `.progress-bar` / `.progress-fill` - Progress indicators
 - `.file-path` - File path display
 - `.error-message` - Error text styling
+
+### Debug Log Viewer
+
+```html
+<div class="log-viewer-overlay">
+  <div class="log-viewer">
+    <!-- Header with actions -->
+    <div class="log-viewer-header">
+      <h2>Debug Logs</h2>
+      <div class="log-viewer-actions">
+        <button onClick="exportLogs">Export Logs</button>
+        <button onClick="clearFrontendLogs">Clear Frontend Logs</button>
+        <button onClick="loadLogs">Refresh</button>
+        <button onClick="onClose">Close</button>
+      </div>
+    </div>
+
+    <!-- Statistics display -->
+    <div class="log-viewer-stats">
+      <span>Frontend Logs: {stats.totalLogs}</span>
+      <span>Session: {stats.sessionId}</span>
+      <span>Raw Frontend: {logs.length}</span>
+      <span>Backend Lines: {backendLines}</span>
+      <span>Total Displayed: {filteredLogs.length}</span>
+    </div>
+
+    <!-- Filter controls -->
+    <div class="log-viewer-filters">
+      <label>Level:
+        <select value={filters.level}>
+          <option value="all">All</option>
+          <option value="DEBUG">Debug</option>
+          <option value="INFO">Info</option>
+          <option value="WARN">Warning</option>
+          <option value="ERROR">Error</option>
+        </select>
+      </label>
+      <label>Component:
+        <select value={filters.component}>
+          <option value="all">All</option>
+          <!-- Dynamic component options -->
+        </select>
+      </label>
+      <label>Source:
+        <select value={filters.source}>
+          <option value="all">All</option>
+          <option value="frontend">Frontend Only</option>
+          <option value="backend">Backend Only</option>
+        </select>
+      </label>
+      <label>Since:
+        <select value={filters.since}>
+          <option value="5m">Last 5 minutes</option>
+          <option value="1h">Last hour</option>
+          <option value="24h">Last 24 hours</option>
+          <option value="all">All time</option>
+        </select>
+      </label>
+    </div>
+
+    <!-- Log entries display -->
+    <div class="log-viewer-content">
+      <!-- Column headers -->
+      <div class="log-header">
+        <span class="log-header-time">Time</span>
+        <span class="log-header-level">Level</span>
+        <span class="log-header-component">Component</span>
+        <span class="log-header-event">Event</span>
+        <span class="log-header-message">Message</span>
+        <span class="log-header-correlation">Correlation ID</span>
+      </div>
+      
+      <!-- Log entries -->
+      <div class="log-entries">
+        <div class="log-entry log-{level}">
+          <span class="log-timestamp">{time}</span>
+          <span class="log-level">{level}</span>
+          <span class="log-component">{component}</span>
+          <span class="log-event">{event}</span>
+          <span class="log-message">{message}</span>
+          <span class="log-correlation">{correlationId}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+**Key Features:**
+- **Global Accessibility**: Available from any page via Help menu → "Show log" or `Ctrl+Shift+L`
+- **Structured Logging**: Frontend and backend logs with correlation tracking
+- **Real-time Updates**: Automatically refreshes every 5 seconds
+- **Advanced Filtering**: By level, component, source, and time range
+- **Export Functionality**: Download logs as JSON for external analysis
+- **Cross-boundary Correlation**: Links frontend actions with backend operations
 
 This structure provides a comprehensive view of the application's component hierarchy and DOM structure, making it easier to understand the codebase organization and implement features or modifications.

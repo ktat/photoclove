@@ -46,6 +46,14 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **Components**: [Preferences Screen](component-structure.md#preferences-screen)
 - **Related Files**: `src/App/Preferences.jsx`, `src/FolderPicker.jsx`, `src-tauri/src/entity/config.rs`
 
+### 🐛 Debug Logging & Log Viewer
+**When you need to understand**: Application debugging, log viewing, correlation tracking
+- **Architecture**: [Data Flow → Cross-Component Communication](architecture.md#cross-component-communication)
+- **Components**: [Debug Log Viewer](component-structure.md#debug-log-viewer)
+- **Access Methods**: Help menu → "Show log", Keyboard shortcut `Ctrl+Shift+L`
+- **Features**: Frontend/backend log correlation, structured logging, real-time viewing, export functionality
+- **Related Files**: `src/App/LogViewer.jsx`, `src/services/LoggerService.js`, `src-tauri/src/domain_service/logging_service.rs`
+
 ### 🔄 Background Job Processing
 **When you need to understand**: Async operations, job queues, progress tracking
 - **Architecture**: [Performance Optimizations](architecture.md#4-performance-optimizations) → Job Queue
