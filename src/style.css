@@ -2725,6 +2725,18 @@ a.run-app {
     color: #333;
 }
 
+/* Date input wrapper styles */
+.date-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.date-input-wrapper input[type="date"] {
+    width: 100%;
+    padding-right: 30px; /* Space for clear button */
+}
+
 .search-input-container {
     display: flex;
     gap: 5px;

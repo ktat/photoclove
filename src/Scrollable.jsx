@@ -14,10 +14,8 @@ export default function Scrollable({ hasNext, hasPrev = false, children, classNa
 
     // スクロール位置から影の有無を計算
     const updateShadow = () => {
-        console.log('updateShadow');
         const el = box.current;
         if (!el) return;
-        console.log('updateShadow 2');
         setShadow({
             top: (el.scrollTop > 0) || hasPrev,
             bottom: (el.scrollTop + el.clientHeight < el.scrollHeight) || hasNext,
@@ -45,7 +43,6 @@ export default function Scrollable({ hasNext, hasPrev = false, children, classNa
             {shadow.bottom && <div className="fade fade-bottom" />}
             {shadow.left && <div className="fade fade-left" />}
             {shadow.right && <div className="fade fade-right" />}
-            {console.log(shadow)}
             {/* 実際にスクロールする要素 */}
             <div className="scroll-box" onWheel={f} ref={box}>
                 {children}

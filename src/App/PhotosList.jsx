@@ -15,6 +15,7 @@ import { useSearch } from "../hooks/useSearch.js";
 import BaseThumbnailGrid from "../components/BaseThumbnailGrid.jsx";
 import { PhotoDataAdapter } from "../utils/PhotoDataAdapter.js";
 import SearchTools from "../components/SearchTools.jsx";
+import { logger } from "../services/LoggerService.js";
 
 function PhotosList(props) {
     const {
@@ -548,12 +549,19 @@ function PhotosList(props) {
                     
                 case "search":
                     // Use search results from the hook if available
+                    logger.debug('PhotosList', 'search_mode_debug', 'Search mode debug information', {
+                        isSearchMode,
+                        searchResultsLength: searchResults.length,
+                        searchResults: searchResults.slice(0, 3), // Log first 3 results for debugging
+                        propsSearchMode: props.searchMode
+                    });
+                    
                     if (isSearchMode && searchResults.length > 0) {
-                        console.log("[LOAD_ALL] Using search results from hook");
+                        logger.info('PhotosList', 'using_search_results', 'Using search results from hook');
                         result = JSON.stringify({ photos: searchResults });
                     } else {
                         // Fall back to date-based search for now
-                        console.warn("[LOAD_ALL] No search results available, falling back to date-based");
+                        logger.warn('PhotosList', 'search_fallback', 'No search results available, falling back to date-based');
                         result = await invoke("get_photos_with_filter", {
                             dateStr: config.value || compatProps.currentDate,
                             sortValue: parseInt(sortOfPhotos),

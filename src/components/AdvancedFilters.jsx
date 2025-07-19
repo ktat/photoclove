@@ -215,20 +215,52 @@ const AdvancedFilters = ({
           
           <div className="filter-group">
             <label>From:</label>
-            <input
-              type="date"
-              value={filters.dateRange.start}
-              onChange={(e) => updateRangeFilter('dateRange', 'start', e.target.value)}
-            />
+            <div className="date-input-wrapper">
+              <input
+                type="date"
+                value={filters.dateRange.start}
+                onChange={(e) => {
+                  updateRangeFilter('dateRange', 'start', e.target.value);
+                  // Close calendar after date selection
+                  setTimeout(() => e.target.blur(), 100);
+                }}
+              />
+              {filters.dateRange.start && (
+                <button 
+                  onClick={() => updateRangeFilter('dateRange', 'start', '')}
+                  className="input-clear-button"
+                  title="Clear start date"
+                  type="button"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="filter-group">
             <label>To:</label>
-            <input
-              type="date"
-              value={filters.dateRange.end}
-              onChange={(e) => updateRangeFilter('dateRange', 'end', e.target.value)}
-            />
+            <div className="date-input-wrapper">
+              <input
+                type="date"
+                value={filters.dateRange.end}
+                onChange={(e) => {
+                  updateRangeFilter('dateRange', 'end', e.target.value);
+                  // Close calendar after date selection
+                  setTimeout(() => e.target.blur(), 100);
+                }}
+              />
+              {filters.dateRange.end && (
+                <button 
+                  onClick={() => updateRangeFilter('dateRange', 'end', '')}
+                  className="input-clear-button"
+                  title="Clear end date"
+                  type="button"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

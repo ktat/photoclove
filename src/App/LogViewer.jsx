@@ -5,12 +5,29 @@ import { logger } from '../services/LoggerService.js';
 const LogViewer = ({ onClose }) => {
   const [logs, setLogs] = useState([]);
   const [backendLogs, setBackendLogs] = useState('');
-  const [filters, setFilters] = useState({
-    level: 'all',
-    component: 'all',
-    since: '1h',
-    source: 'all' // 'frontend', 'backend', 'all'
-  });
+  // Load previous filter state from localStorage
+  const loadFilters = () => {
+    try {
+      const saved = localStorage.getItem('logviewer_filters');
+      return saved ? JSON.parse(saved) : {
+        level: 'all',
+        component: 'all',
+        since: '1h',
+        source: 'all',
+        keyword: '' // Add keyword filter
+      };
+    } catch {
+      return {
+        level: 'all',
+        component: 'all',
+        since: '1h',
+        source: 'all',
+        keyword: ''
+      };
+    }
+  };
+  
+  const [filters, setFilters] = useState(loadFilters);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -41,24 +58,14 @@ const LogViewer = ({ onClose }) => {
 
   // Load logs on mount and periodically
   useEffect(() => {
-    // Generate test logs to ensure we have some data
-    logger.debug('LogViewer', 'component_opened', 'LogViewer component opened');
-    logger.info('LogViewer', 'initialization', 'LogViewer initialized successfully');
-    logger.warn('LogViewer', 'test_warning', 'This is a test warning message');
-    logger.error('LogViewer', 'test_error', 'This is a test error message');
-    
-    // Generate logs from different components
-    logger.info('SearchSystem', 'test_search', 'Test log from search system');
-    logger.debug('PhotoManager', 'test_photo', 'Test log from photo manager');
-    
     loadLogs();
     const interval = setInterval(loadLogs, 5000); // Refresh every 5 seconds
     return () => clearInterval(interval);
   }, []); // Empty dependency - only run on mount
   
-  // Log filter changes separately
+  // Save filter changes to localStorage
   useEffect(() => {
-    logger.info('LogViewer', 'filter_change', 'Filter configuration changed', filters);
+    localStorage.setItem('logviewer_filters', JSON.stringify(filters));
   }, [filters]);
 
   const exportLogs = () => {
@@ -134,6 +141,18 @@ const LogViewer = ({ onClose }) => {
       const filteredFrontendLogs = logs.filter(log => {
         if (filters.level !== 'all' && log.level.toUpperCase() !== filters.level.toUpperCase()) return false;
         if (filters.component !== 'all' && log.component !== filters.component) return false;
+        
+        // Keyword filter
+        if (filters.keyword && filters.keyword.trim()) {
+          const keyword = filters.keyword.toLowerCase();
+          const searchText = (
+            (log.message || '') + ' ' +
+            (log.event || '') + ' ' +
+            (log.component || '') + ' ' +
+            JSON.stringify(log.data || {})
+          ).toLowerCase();
+          if (!searchText.includes(keyword)) return false;
+        }
         
         // Handle 'since' filter
         if (filters.since !== 'all') {
@@ -216,6 +235,17 @@ const LogViewer = ({ onClose }) => {
         if (filters.level !== 'all' && log.level && log.level.toUpperCase() !== filters.level.toUpperCase()) {
           return false;
         }
+        
+        // Keyword filter for backend logs
+        if (filters.keyword && filters.keyword.trim()) {
+          const keyword = filters.keyword.toLowerCase();
+          const searchText = (
+            (log.message || '') + ' ' +
+            (log.component || '')
+          ).toLowerCase();
+          if (!searchText.includes(keyword)) return false;
+        }
+        
         return true;
       });
       
@@ -322,6 +352,17 @@ const LogViewer = ({ onClose }) => {
               <option value="24h">Last 24 hours</option>
               <option value="all">All time</option>
             </select>
+          </label>
+          
+          <label>
+            Keyword:
+            <input
+              type="text"
+              placeholder="Search logs..."
+              value={filters.keyword}
+              onChange={(e) => setFilters(prev => ({ ...prev, keyword: e.target.value }))}
+              style={{ width: '200px' }}
+            />
           </label>
         </div>
 

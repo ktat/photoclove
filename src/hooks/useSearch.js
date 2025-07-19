@@ -107,7 +107,8 @@ export const useSearch = () => {
       if (typeof value === 'number') return value > 0;
       if (typeof value === 'string') return value.length > 0;
       if (typeof value === 'object' && value !== null) {
-        return Object.values(value).some(v => v && v.toString().length > 0);
+        // Check nested objects like dateRange, isoRange, etc.
+        return Object.values(value).some(v => v && v.toString().trim().length > 0);
       }
       return false;
     });
@@ -115,6 +116,20 @@ export const useSearch = () => {
     logger.debug('useSearch', 'filter_analysis', 'Analyzed filter state', {
       hasActiveFilters, 
       filterCount: Object.keys(filters).length,
+      filtersDetailed: Object.entries(filters).map(([key, value]) => ({
+        key,
+        value,
+        type: typeof value,
+        isActive: (() => {
+          if (typeof value === 'boolean') return value;
+          if (typeof value === 'number') return value > 0;
+          if (typeof value === 'string') return value.length > 0;
+          if (typeof value === 'object' && value !== null) {
+            return Object.values(value).some(v => v && v.toString().trim().length > 0);
+          }
+          return false;
+        })()
+      })),
       correlationId
     });
 
