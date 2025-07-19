@@ -116,6 +116,18 @@ function PhotosList(props) {
     const [displayedPhotoCount, setDisplayedPhotoCount] = useState(50);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     
+    // Store all photos for current fetch config (unfiltered)
+    const [allPhotosForCurrentFetch, setAllPhotosForCurrentFetch] = useState([]);
+    
+    // Store configuration for photo fetch limits
+    const [config, setConfig] = useState(null);
+    const [star, setStar] = useState([false, false, false, false, false]);
+    const [starFilter, setStarFilter] = useState(0);
+    const [hasCommentFilter, setHasCommentFilter] = useState(false);
+    const [extensionFilter, setExtensionFilter] = useState("all");
+    const [debugMessage, setDebugMessage] = useState("");
+    const [currentPhotoLoadingController, setCurrentPhotoLoadingController] = useState(null);
+    
     // Filter options caching state
     const [filterOptions, setFilterOptions] = useState(null);
     const [isFilterOptionsLoading, setIsFilterOptionsLoading] = useState(false);
@@ -255,7 +267,7 @@ function PhotosList(props) {
     
     // Infinite scroll handlers
     const loadMorePhotos = useCallback(() => {
-        if (isLoadingMore || displayedPhotoCount >= filteredPhotos.length) {
+        if (isLoadingMore) {
             return;
         }
         
@@ -263,12 +275,15 @@ function PhotosList(props) {
         
         // Async batch addition to prevent UI blocking
         setTimeout(() => {
-            setDisplayedPhotoCount(prev => 
-                Math.min(prev + 50, filteredPhotos.length)
-            );
+            setDisplayedPhotoCount(prev => {
+                // Access current filtered photos length via the state updater function
+                const currentFilteredPhotos = applyFrontendFilters(allPhotosForCurrentFetch);
+                const newCount = Math.min(prev + 50, currentFilteredPhotos.length);
+                return newCount >= currentFilteredPhotos.length ? currentFilteredPhotos.length : newCount;
+            });
             setIsLoadingMore(false);
         }, 100);
-    }, [isLoadingMore, displayedPhotoCount, filteredPhotos.length]);
+    }, [isLoadingMore, applyFrontendFilters, allPhotosForCurrentFetch]);
     
     const handleInfiniteScroll = useCallback((e) => {
         const scrollContainer = e.target;
@@ -294,9 +309,55 @@ function PhotosList(props) {
             setShowSideMenu(false);
         }
     }, [isSearchMode]);
-    const [star, setStar] = useState([false, false, false, false, false]);
-    const [starFilter, setStarFilter] = useState(0);
+    // State declarations moved to top of component
     
+    // All state declarations moved to top of component
+    
+    // Frontend filtering function
+    const applyFrontendFilters = useCallback((photos) => {
+        // console.log(`[FILTER] Applying filters - star: ${starFilter}, hasComment: ${hasCommentFilter}, extension: ${extensionFilter}`);
+        // console.log(`[FILTER] Input photos count: ${photos.length}`);
+        
+        const filtered = photos.filter(photo => {
+            // Apply star filter
+            if (starFilter > 0 && (!photo.star || photo.star < starFilter)) {
+                return false;
+            }
+            
+            // Apply comment filter
+            if (hasCommentFilter && (!photo.comment || photo.comment.trim() === "")) {
+                return false;
+            }
+            
+            // Apply extension filter
+            if (extensionFilter !== "all") {
+                const extension = photo.file.name.split('.').pop().toLowerCase();
+                const allowedExtensions = extensionFilter.split(',').map(ext => ext.trim().toLowerCase());
+                if (!allowedExtensions.includes(extension)) {
+                    return false;
+                }
+            }
+            
+            return true;
+        });
+        
+        // console.log(`[FILTER] Filtered photos count: ${filtered.length}`);
+        return filtered;
+    }, [starFilter, hasCommentFilter, extensionFilter]);
+    
+    // Memoize filtered photos to avoid recalculating on every render
+    const filteredPhotos = useMemo(() => {
+        return applyFrontendFilters(allPhotosForCurrentFetch);
+    }, [allPhotosForCurrentFetch, applyFrontendFilters]);
+    
+    // Displayed photos for infinite scroll
+    const displayedPhotos = useMemo(() => {
+        if (infiniteScrollEnabled) {
+            return filteredPhotos.slice(0, displayedPhotoCount);
+        }
+        return filteredPhotos; // Infinite scroll disabled shows all
+    }, [filteredPhotos, displayedPhotoCount, infiniteScrollEnabled]);
+
     // Create enhanced setStar function that updates photosListMiniAllPhotos
     const setStarWithUpdate = (newStar) => {
         setStar(newStar);
@@ -350,61 +411,6 @@ function PhotosList(props) {
         });
         setAllPhotosForCurrentFetch(updatedAllPhotos);
     };
-    const [hasCommentFilter, setHasCommentFilter] = useState(false);
-    const [extensionFilter, setExtensionFilter] = useState("all");
-    const [debugMessage, setDebugMessage] = useState("");
-    const [currentPhotoLoadingController, setCurrentPhotoLoadingController] = useState(null);
-    
-    // Store all photos for current fetch config (unfiltered)
-    const [allPhotosForCurrentFetch, setAllPhotosForCurrentFetch] = useState([]);
-    
-    // Store configuration for photo fetch limits
-    const [config, setConfig] = useState(null);
-    
-    // Frontend filtering function
-    const applyFrontendFilters = useCallback((photos) => {
-        // console.log(`[FILTER] Applying filters - star: ${starFilter}, hasComment: ${hasCommentFilter}, extension: ${extensionFilter}`);
-        // console.log(`[FILTER] Input photos count: ${photos.length}`);
-        
-        const filtered = photos.filter(photo => {
-            // Apply star filter
-            if (starFilter > 0 && (!photo.star || photo.star < starFilter)) {
-                return false;
-            }
-            
-            // Apply comment filter
-            if (hasCommentFilter && (!photo.comment || photo.comment.trim() === "")) {
-                return false;
-            }
-            
-            // Apply extension filter
-            if (extensionFilter !== "all") {
-                const extension = photo.file.name.split('.').pop().toLowerCase();
-                const allowedExtensions = extensionFilter.split(',').map(ext => ext.trim().toLowerCase());
-                if (!allowedExtensions.includes(extension)) {
-                    return false;
-                }
-            }
-            
-            return true;
-        });
-        
-        // console.log(`[FILTER] Filtered photos count: ${filtered.length}`);
-        return filtered;
-    }, [starFilter, hasCommentFilter, extensionFilter]);
-    
-    // Memoize filtered photos to avoid recalculating on every render
-    const filteredPhotos = useMemo(() => {
-        return applyFrontendFilters(allPhotosForCurrentFetch);
-    }, [allPhotosForCurrentFetch, applyFrontendFilters]);
-    
-    // Displayed photos for infinite scroll
-    const displayedPhotos = useMemo(() => {
-        if (infiniteScrollEnabled) {
-            return filteredPhotos.slice(0, displayedPhotoCount);
-        }
-        return filteredPhotos; // Infinite scroll disabled shows all
-    }, [filteredPhotos, displayedPhotoCount, infiniteScrollEnabled]);
 
     // Function to parse CSS style string and convert to style object
     const parseCssStyle = (cssString) => {
