@@ -311,6 +311,7 @@ function PhotosList(props) {
                 // Access current filtered photos length via the state updater function
                 const currentFilteredPhotos = applyFrontendFilters(allPhotosForCurrentFetch);
                 const newCount = Math.min(prev + 50, currentFilteredPhotos.length);
+                console.log(`[INFINITE_SCROLL] Loading more: prev=${prev}, filtered=${currentFilteredPhotos.length}, newCount=${newCount}`);
                 return newCount >= currentFilteredPhotos.length ? currentFilteredPhotos.length : newCount;
             });
             setIsLoadingMore(false);
@@ -353,7 +354,9 @@ function PhotosList(props) {
     // Displayed photos for infinite scroll
     const displayedPhotos = useMemo(() => {
         if (infiniteScrollEnabled) {
-            return filteredPhotos.slice(0, displayedPhotoCount);
+            const result = filteredPhotos.slice(0, displayedPhotoCount);
+            console.log(`[DISPLAYED_PHOTOS] Slice: filtered=${filteredPhotos.length}, displayCount=${displayedPhotoCount}, result=${result.length}`);
+            return result;
         }
         return filteredPhotos; // Infinite scroll disabled shows all
     }, [filteredPhotos, displayedPhotoCount, infiniteScrollEnabled]);
@@ -520,12 +523,15 @@ function PhotosList(props) {
             if (infiniteScrollEnabled) {
                 setDisplayedPhotoCount(Math.min(50, filteredPhotos.length));
             }
-            
-            // Update photos list for backward compatibility
-            const displayPhotos = infiniteScrollEnabled ? displayedPhotos : filteredPhotos;
-            setPhotosList({ photos: displayPhotos, has_next: false, has_prev: false });
         }
-    }, [filteredPhotos, infiniteScrollEnabled, displayedPhotos])
+    }, [filteredPhotos, infiniteScrollEnabled, allPhotosForCurrentFetch]);
+    
+    // Update photos list when displayedPhotos changes (for infinite scroll)
+    useEffect(() => {
+        if (displayedPhotos.length > 0) {
+            setPhotosList({ photos: displayedPhotos, has_next: false, has_prev: false });
+        }
+    }, [displayedPhotos]);
 
     function displayPhoto(f, i) {
         setCurrentPhotoPath(f);
@@ -998,12 +1004,12 @@ function PhotosList(props) {
                             <div className="photo-list-header">
                                 <div className="photo-page-info">
                                     {isSearchMode ? (
-                                        <><a className="back-to-home" href="#" onClick={(e)=>{ e.preventDefault(); clearSearch(); }}>Back to HOME</a> <span style={{marginLeft: "10px"}}>{fetchConfig?.title || 'Search Results'} ({filteredPhotos.length}枚)</span></>
+                                        <><a className="back-to-home" href="#" onClick={(e)=>{ e.preventDefault(); clearSearch(); }}>Back to HOME</a> <span style={{marginLeft: "10px"}}>{fetchConfig?.title || 'Search Results'} ({filteredPhotos.length} photos)</span></>
                                     ) : (
-                                        <span>{fetchConfig?.title || 'Photos'} ({filteredPhotos.length}枚)</span>
+                                        <span>{fetchConfig?.title || 'Photos'} ({filteredPhotos.length} photos)</span>
                                     )}
                                     {infiniteScrollEnabled && displayedPhotoCount < filteredPhotos.length && (
-                                        <span style={{marginLeft: "10px", fontSize: "12px", color: "#666"}}> - 表示中: {displayedPhotoCount}枚</span>
+                                        <span style={{marginLeft: "10px", fontSize: "12px", color: "#666"}}> - Showing: {displayedPhotoCount} photos</span>
                                     )}
                                 </div>
                                 {/* Removed navigation - replaced by infinite scroll */}
@@ -1199,9 +1205,9 @@ function PhotosList(props) {
                                 <div className="infinite-scroll-trigger" 
                                      style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', gridColumn: '1 / -1' }}>
                                     {isLoadingMore ? (
-                                        <div className="loading-spinner">読み込み中...</div>
+                                        <div className="loading-spinner">Loading...</div>
                                     ) : (
-                                        <div>スクロールして続きを読み込み</div>
+                                        <div>Scroll to load more</div>
                                     )}
                                 </div>
                             )}
@@ -1210,7 +1216,7 @@ function PhotosList(props) {
                             {displayedPhotoCount >= filteredPhotos.length && filteredPhotos.length > 0 && (
                                 <div className="infinite-scroll-complete"
                                      style={{ textAlign: 'center', padding: '20px', width: '100%', gridColumn: '1 / -1', color: '#666' }}>
-                                    全ての写真を表示しました ({filteredPhotos.length}枚)
+                                    All photos displayed ({filteredPhotos.length} photos)
                                 </div>
                             )}
                         </Scrollable>
