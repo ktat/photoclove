@@ -72,11 +72,7 @@ impl LoggingService {
         // Write to file
         self.write_frontend_logs_to_file(&frontend_logs)?;
 
-        info!(
-            target: "logging",
-            "frontend_logs_received; count={}",
-            frontend_logs.len()
-        );
+        // Note: Removed frontend_logs_received log to reduce noise
 
         Ok(())
     }

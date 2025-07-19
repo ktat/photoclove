@@ -723,10 +723,11 @@ impl SQLite {
     }
     
     fn add_advanced_filters(&self, sql_query: &mut String, params: &mut Vec<Box<dyn rusqlite::ToSql>>, filter_params: &serde_json::Value) -> Result<(), String> {
-        // Date range filter
+        // Date range filter - check exif_date_time_original, exif_date_time, and photo_date
         if let Some(start_date) = filter_params.get("start_date").and_then(|v| v.as_str()) {
             if !start_date.is_empty() {
-                sql_query.push_str(" AND (exif_date_time_original >= ? OR exif_date_time >= ?)");
+                sql_query.push_str(" AND (exif_date_time_original >= ? OR exif_date_time >= ? OR photo_date >= ?)");
+                params.push(Box::new(start_date.to_string()));
                 params.push(Box::new(start_date.to_string()));
                 params.push(Box::new(start_date.to_string()));
             }
@@ -734,7 +735,8 @@ impl SQLite {
         
         if let Some(end_date) = filter_params.get("end_date").and_then(|v| v.as_str()) {
             if !end_date.is_empty() {
-                sql_query.push_str(" AND (exif_date_time_original <= ? OR exif_date_time <= ?)");
+                sql_query.push_str(" AND (exif_date_time_original <= ? OR exif_date_time <= ? OR photo_date <= ?)");
+                params.push(Box::new(end_date.to_string()));
                 params.push(Box::new(end_date.to_string()));
                 params.push(Box::new(end_date.to_string()));
             }
@@ -1844,6 +1846,48 @@ impl SQLite {
         // Add advanced filters
         self.add_advanced_filters(&mut sql_query, &mut params, &filter_params)?;
         
+        // Debug: Log the final SQL query with parameter information
+        let param_strings: Vec<String> = params.iter().enumerate().map(|(i, param)| {
+            match param.to_sql() {
+                Ok(rusqlite::types::ToSqlOutput::Owned(value)) => {
+                    format!("${}: {:?}", i+1, value)
+                },
+                Ok(rusqlite::types::ToSqlOutput::Borrowed(value)) => {
+                    format!("${}: {:?}", i+1, value)
+                },
+                Ok(_) => format!("${}: <unknown>", i+1),
+                Err(_) => format!("${}: <error>", i+1)
+            }
+        }).collect();
+        
+        log::debug!(
+            target: "database",
+            "sql_with_params; query={}; params=[{}]",
+            sql_query,
+            param_strings.join(", ")
+        );
+        
+        // Debug: Sample database date ranges to help troubleshooting
+        if filter_params.get("start_date").is_some() || filter_params.get("end_date").is_some() {
+            if let Ok(mut sample_stmt) = conn.prepare("SELECT MIN(exif_date_time_original) as min_date, MAX(exif_date_time_original) as max_date, COUNT(*) as total_photos FROM photo_metadata WHERE exif_date_time_original IS NOT NULL AND exif_date_time_original != ''") {
+                if let Ok(sample_row) = sample_stmt.query_row([], |row| {
+                    Ok((
+                        row.get::<_, Option<String>>("min_date").unwrap_or_default(),
+                        row.get::<_, Option<String>>("max_date").unwrap_or_default(),
+                        row.get::<_, i64>("total_photos").unwrap_or(0)
+                    ))
+                }) {
+                    log::debug!(
+                        target: "database",
+                        "database_date_range; min_date={}; max_date={}; total_photos_with_dates={}",
+                        sample_row.0.unwrap_or_else(|| "None".to_string()),
+                        sample_row.1.unwrap_or_else(|| "None".to_string()),
+                        sample_row.2
+                    );
+                }
+            }
+        }
+        
         // Add ORDER BY clause
         let order_direction = if sort_order.to_lowercase() == "asc" { "ASC" } else { "DESC" };
         match sort_field {
@@ -1913,8 +1957,9 @@ impl SQLite {
         
         log::info!(
             target: "database",
-            "search_photos_complete; result_count={}; truncated={}; duration_ms={}",
+            "search_photos_complete; result_count={}; original_count={}; truncated={}; duration_ms={}",
             final_count, 
+            original_count,
             original_count > 100,
             duration.as_millis()
         );
