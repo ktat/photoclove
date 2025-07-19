@@ -136,33 +136,65 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
   };
 
   const formatFilterValue = (key, value) => {
-    if (!value && value !== 0) return '';
+    if (!value && value !== 0 && value !== false) return '';
     
-    // Handle date formatting
+    // CRITICAL: Check if value is an object first to prevent React rendering errors
+    if (typeof value === 'object' && value !== null) {
+      // Handle dateRange with start/end properties (most common case)
+      if (value.start !== undefined || value.end !== undefined) {
+        const formatDate = (dateValue) => {
+          if (!dateValue) return '';
+          try {
+            // Handle date strings or date objects
+            const date = new Date(dateValue);
+            if (isNaN(date.getTime())) return String(dateValue);
+            return date.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+          } catch {
+            return String(dateValue);
+          }
+        };
+        
+        const start = formatDate(value.start);
+        const end = formatDate(value.end);
+        if (start && end) return `${start} → ${end}`;
+        if (start) return `From: ${start}`;
+        if (end) return `Until: ${end}`;
+        return '';
+      }
+      // Handle other ranges with min/max properties
+      if (value.min !== undefined || value.max !== undefined) {
+        const min = value.min || '';
+        const max = value.max || '';
+        if (min && max) return `${min} – ${max}`;
+        if (min) return `≥ ${min}`;
+        if (max) return `≤ ${max}`;
+        return '';
+      }
+      // Fallback for any other object - convert to readable format
+      return `[Object: ${Object.keys(value).join(', ')}]`;
+    }
+    
+    // Handle date formatting (for string dates)
     if (key.includes('date') || key.includes('Date')) {
       try {
         const date = new Date(value);
-        if (isNaN(date.getTime())) return value; // Return original if invalid date
-        return date.toLocaleDateString();
+        if (isNaN(date.getTime())) return String(value);
+        return date.toLocaleDateString('en-CA'); // YYYY-MM-DD format
       } catch {
-        return value;
+        return String(value);
       }
     }
     
-    if (key === 'star') return '⭐'.repeat(value);
-    if (key === 'hasComment') return value ? 'Yes' : 'No';
-    
-    // Handle range objects
-    if (key.includes('Range') && typeof value === 'object' && value !== null) {
-      const min = value.min || '';
-      const max = value.max || '';
-      if (min && max) return `${min} - ${max}`;
-      if (min) return `≥ ${min}`;
-      if (max) return `≤ ${max}`;
-      return '';
+    // Handle special value types
+    if (key === 'star' || key === 'starRating') {
+      const stars = parseInt(value) || 0;
+      return stars > 0 ? '★'.repeat(stars) + ` (${stars} star${stars !== 1 ? 's' : ''})` : 'Any rating';
     }
+    if (key === 'hasComment') return value ? 'Yes' : 'No';
+    if (key === 'fileExtension') return value.toUpperCase();
     
-    return value;
+    // Ensure we always return a string
+    return String(value);
   };
 
   // Get active filters for display
@@ -327,8 +359,6 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
                   <div className="search-header" onClick={() => handleSearchSelect(search)}>
                     <div className="search-name">{search.name}</div>
                     <div className="search-dates">
-                      <span>Created: {formatDate(search.createdAt)}</span>
-                      <span className="date-separator">•</span>
                       <span>Last used: {formatDate(search.lastUsed)}</span>
                     </div>
                   </div>
@@ -360,22 +390,20 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
                         id={`conditions-${search.id}`}
                         className={`conditions-panel ${expandedSearches.has(search.id) ? 'expanded' : ''}`}
                       >
-                        <table className="conditions-table">
-                          <tbody>
-                            {getActiveFilters(search).map((filter, index) => (
-                              <tr key={index}>
-                                <td className="condition-label">{filter.label}</td>
-                                <td className="condition-value">{filter.value}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                        <div className="conditions-list">
+                          {getActiveFilters(search).map((filter, index) => (
+                            <div key={index} className="condition-item">
+                              <div className="condition-label">{filter.label}</div>
+                              <div className="condition-value">{filter.value}</div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
                 
-                <div className="search-actions">
+                <div className="search-actions" style={{ float: 'right' }}>
                   <button 
                     onClick={() => setSearchToEdit(search)}
                     title="Update with current search"
