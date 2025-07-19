@@ -32,12 +32,13 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **Components**: [Photo Editor Panel](component-structure.md#photo-editor-panel)
 - **Related Files**: `src/App/PhotosList/PhotoOption/PhotoEditor.jsx`, `src-tauri/src/lib.rs` (save_styled_copy_from_frontend)
 
-### 📅 Date-Based Organization
-**When you need to understand**: Calendar navigation, date filtering, photo organization by date
+### 📅 Date-Based Organization & Recent Photos
+**When you need to understand**: Calendar navigation, date filtering, photo organization by date, recent photos access
 - **Architecture**: [Data Storage Strategy](architecture.md#2-data-storage-strategy) → Filesystem Organization
-- **Sequences**: [Date List Loading](feature-sequences.md#1-date-list-loading)
+- **Sequences**: [Date List Loading](feature-sequences.md#1-date-list-loading), [Recent Photos Navigation](feature-sequences.md#recent-photos-navigation)
 - **Components**: [Left Menu and Date List](component-structure.md#left-menu-and-date-list)
-- **Related Files**: `src/App/DateList.jsx`, `src-tauri/src/value/date.rs`
+- **Features**: Calendar-based navigation, Recent Photos quick access (60 most recent), optimized database queries
+- **Related Files**: `src/App/DateList.jsx`, `src-tauri/src/value/date.rs`, `src/context/PhotoContext.jsx`
 
 ### ⚙️ Configuration Management
 **When you need to understand**: App settings, preferences, directory configuration
@@ -67,12 +68,14 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **Sequences**: [Database Management](feature-sequences.md#database-management)
 - **Related Files**: `src-tauri/src/repository/meta_db/sqlite.rs`, `src-tauri/src/entity/photo_meta.rs`
 
-### 🔍 Search & Filtering
-**When you need to understand**: Photo filtering, star ratings, comments, file type filters
-- **Architecture**: [Key Features → Photo Organization](architecture.md#3-photo-organization)
-- **Sequences**: [Photo Grid Display](feature-sequences.md#2-photo-grid-display)
-- **Components**: [Directory Menu](component-structure.md#directory-menu-when-no-photo-selected)
-- **Related Files**: `src/App/PhotosList/DirectoryMenu.jsx`, `src-tauri/src/lib.rs` (get_photos_with_filter)
+### 🔍 Advanced Search & Filtering
+**When you need to understand**: Advanced search interface, EXIF filters, saved searches, search history, recent photos
+- **Architecture**: [Key Features → Advanced Search System](architecture.md#6-advanced-search-system)
+- **Sequences**: [Advanced Search Feature](feature-sequences.md#advanced-search-feature)
+- **Components**: [Search Tools](component-structure.md#search-tools), [Directory Menu](component-structure.md#directory-menu-when-no-photo-selected)
+- **Features**: EXIF-based filtering, saved searches with import/export, search history, database optimization
+- **Access Methods**: Search icon in home page, Search tab in PhotosList, Keyboard shortcut navigation
+- **Related Files**: `src/components/SearchTools.jsx`, `src/components/SearchBar.jsx`, `src/components/AdvancedFilters.jsx`, `src/components/SavedSearches.jsx`, `src/hooks/useSearch.js`, `src-tauri/src/lib.rs` (search commands)
 
 ## Quick Reference by Technology
 
@@ -198,12 +201,20 @@ This reverse index helps you quickly find the relevant documentation when workin
 | Photo Grid Display | `src/App/PhotosList.jsx` |
 | Full Screen Photo Viewer | `src/App/PhotosList/PhotosListMini.jsx` |
 | Photo Editor | `src/App/PhotosList/PhotoOption/PhotoEditor.jsx` |
+| Search Tools Container | `src/components/SearchTools.jsx` |
+| Search Input Bar | `src/components/SearchBar.jsx` |
+| Advanced Filters | `src/components/AdvancedFilters.jsx` |
+| Saved Searches | `src/components/SavedSearches.jsx` |
+| Search Hook | `src/hooks/useSearch.js` |
+| Debug Log Viewer | `src/App/LogViewer.jsx` |
+| Logger Service | `src/services/LoggerService.js` |
 | Import Interface | `src/App/Importer.jsx` |
 | Preferences Panel | `src/App/Preferences.jsx` |
 | Job Queue Monitor | `src/App/JobQueue.jsx` |
-| Date Calendar | `src/App/DateList.jsx` |
+| Date Calendar & Recent Photos | `src/App/DateList.jsx` |
 | Tauri Commands | `src-tauri/src/lib.rs` |
 | Job Queue Service | `src-tauri/src/domain_service/job_queue_service.rs` |
+| Logging Service | `src-tauri/src/domain_service/logging_service.rs` |
 | Photo Processing | `src-tauri/src/domain_service/photo_service.rs` |
 | Database Operations | `src-tauri/src/repository/meta_db/sqlite.rs` |
 | Configuration Entity | `src-tauri/src/entity/config.rs` |
