@@ -431,38 +431,109 @@ function PhotosListMini(props) {
         }
     }
 
-    // Keyboard navigation
-    const photoNavigation = (e) => {
-        switch (e.key) {
-            case 'ArrowRight':
-                e.preventDefault();
-                lockNavigate(nextPhoto);
-                break;
-            case 'ArrowLeft':
-                e.preventDefault();
-                lockNavigate(prevPhoto);
-                break;
-            case 'ArrowUp':
-            case 'ArrowDown':
-                e.preventDefault();
-                setPhotosListMiniClosed(!photosListMiniClosed);
-                break;
-            case '?':
-                e.preventDefault();
-                setShowHelp(!showHelp);
-                break;
-            case 'Escape':
-                e.preventDefault();
-                setShowHelp(false);
-                break;
-            default:
-                break;
+    // Restored keyboard functions from main branch
+    function photoNavigationUp(e) {
+        if (e.ctrlKey) {
+            setPhotoZoomReady(false);
+            window.removeEventListener('wheel', preventScroll, { passive: false });
         }
-    };
+    }
 
-    const photoNavigationUp = (e) => {
-        // Handle key up events if needed
-    };
+    function changeStar(isIncrease, additionalMessage) {
+        invoke("get_photo_info", { pathStr: props.currentPhotoPath }).then((r) => {
+            let data = JSON.parse(r);
+            let star = 0;
+            let curStar = 0;
+            if (data.meta) {
+                curStar = data.meta.star.data || 0;
+                if (isIncrease) {
+                    if (curStar < 5) {
+                        star = curStar + 1;
+                    } else {
+                        star = 5;
+                    }
+                } else if (!isIncrease && curStar > 0) {
+                    star = curStar - 1;
+                }
+            }
+            let stars = ["☆", "☆", "☆", "☆", "☆"];
+            let newStar = [false, false, false, false, false];
+            for (let i = 0; i < star; i++) {
+                stars[i] = "★";
+                newStar[i] = true;
+            }
+            props.setStar(newStar);
+            let c = "Star: " + stars.join("")
+            if (additionalMessage && additionalMessage !== "") {
+                c = additionalMessage + "<br />" + c;
+            }
+            setSelectedContent(c);
+            setTimeout(() => {
+                setSelectedInfoHidden(true);
+            }, 700)
+            setSelectedInfoHidden(false);
+            invoke("save_star", { pathStr: props.currentPhotoPath, starNum: star });
+        });
+    }
+
+    function togglePhotoSelected() {
+        const t = props.toggleSelection(props.currentPhotoPath);
+        setTimeout(() => {
+            if (t) {
+                setSelectedInfoHidden(true);
+            } else {
+                setUnselectedInfoHidden(true);
+            }
+        }, 700)
+        if (t) {
+            setSelectedContent("Photo is selected")
+            setSelectedInfoHidden(false);
+        } else {
+            setUnselectedContent("Photo is unselected")
+            setUnselectedInfoHidden(false);
+        }
+    }
+
+    // Keyboard navigation - restored from main branch
+    function photoNavigation(e) {
+        let f = props.currentPhotoPath;
+        if (e.keyCode === 39) { // right arrow
+            nextPhoto();
+        } else if (e.keyCode === 37) { // left arrow
+            prevPhoto();
+        } else if (e.keyCode === 38) { // up arrow ... open mini list
+            setPhotosListMiniClosed(false);
+        } else if (e.keyCode === 40) { // down arrow ... close mini list
+            setPhotosListMiniClosed(true);
+        } else if (e.keyCode === 67) { // c ... choose as selected
+            togglePhotoSelected();
+        } else if (e.keyCode === 83) { // s ... increase star
+            changeStar(true);
+        } else if (e.keyCode === 68) { // d ... declease star
+            changeStar(false);
+        } else if (e.keyCode === 73) { // i ... toggle show photo info
+            props.setShowSideMenu(!props.showSideMenu);
+        } else if (e.keyCode === 70) { // f ... c & s
+            let additionalMessage = "Photo is selected";
+            if (props.isSelected(f)) {
+                additionalMessage = "Photo is already selected";
+            } else {
+                props.toggleSelection(props.currentPhotoPath);
+            }
+            changeStar(true, additionalMessage);
+        } else if (e.keyCode === 191) { // ? ... show help
+            setShowHelp(!showHelp);
+        } else if (e.keyCode === 46) { // Del
+            props.moveToTrashCan(f)
+        } else if (photoZoomReady && e.keyCode === 48) { // ctrl+0
+            setPhotoZoom("auto");
+            SetImgStyle({ opacity: '100%' });
+            document.querySelector("#dummy-for-focus").focus();
+        } else if (!photoZoomReady && e.ctrlKey) {
+            setPhotoZoomReady(true);
+            window.addEventListener('wheel', preventScroll, { passive: false });
+        }
+    }
 
     return (
         <>

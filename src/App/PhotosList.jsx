@@ -874,10 +874,13 @@ function PhotosList(props) {
             isSearchMode,
             searchResultsLength: searchResults.length,
             searchQuery,
-            condition: isSearchMode && searchResults.length > 0
+            condition: isSearchMode && searchResults.length > 0,
+            fetchMethod: fetchConfig?.fetch_method
         });
         
-        if (isSearchMode && searchResults.length > 0) {
+        // Only load search results if we're in search mode AND the fetchConfig is also for search
+        // This prevents search results from overriding date-based loading when user switches from search to date
+        if (isSearchMode && searchResults.length > 0 && fetchConfig?.fetch_method === "search") {
             logger.info('PhotosList', 'search_results_loading', 'Search results available, loading photos');
             loadAllPhotosBasedOnFetchConfig({
                 fetch_method: "search",
@@ -885,7 +888,7 @@ function PhotosList(props) {
                 title: `Search: "${searchQuery}"`
             });
         }
-    }, [isSearchMode, searchResults, searchQuery]);
+    }, [isSearchMode, searchResults, searchQuery, fetchConfig?.fetch_method]);
 
     function closePhotoDisplay() {
         setShowSideMenu(false);
@@ -994,6 +997,7 @@ function PhotosList(props) {
                                     setCurrentIndex={setPhotosListMiniCurrentIndex}
                                     setShowSideMenu={setShowSideMenu}
                                     showSideMenu={showSideMenu}
+                                    centerDisplayClass={showSideMenu ? "centerDisplay" : "centerDisplayMax"}
                                     
                                     // Search mode props
                                     searchMode={isSearchMode}

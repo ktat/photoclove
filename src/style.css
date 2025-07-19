@@ -350,11 +350,11 @@ button:hover {
   }
 
   #photos-list-mini {
-    width: calc(1var(--vw) - 60px);
+    width: calc(var(--vw) - 60px);
   }
 
   .photoDisplay {
-    width: calc(1var(--vw) - 60px);
+    width: calc(var(--vw) - 60px);
   }
 
   /*
