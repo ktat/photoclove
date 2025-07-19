@@ -161,26 +161,11 @@ function PhotosList(props) {
 
     const handleFiltersChange = useCallback((newFilters) => {
         console.log('handleFiltersChange called with:', newFilters);
-        console.log('currentSearchParams:', currentSearchParams);
         setSearchFilters(newFilters);
-        // If there's an active search, re-run it with new filters
-        if (currentSearchParams) {
-            console.log('Re-running search with new filters');
-            
-            // Map sortOfPhotos to backend sort field names
-            const sortFieldMap = {
-                0: 'exif_date_time_original',  // photo time
-                1: 'exif_date_time_original',  // time
-                2: 'path'  // name
-            };
-            const sortField = sortFieldMap[sortOfPhotos] || 'exif_date_time_original';
-            const sortOrder = 'desc'; // Default to descending order
-            
-            performSearch(currentSearchParams.query, currentSearchParams.searchType, newFilters, sortField, sortOrder);
-        } else {
-            console.log('No active search to re-run');
-        }
-    }, [currentSearchParams, performSearch, sortOfPhotos]);
+        
+        // Manual execution only - auto search removed per improvement #46
+        console.log('Filters updated. User needs to manually execute search.');
+    }, []); // Removed dependencies for manual execution only
     
     // Notify parent when menu state changes
     useEffect(() => {
