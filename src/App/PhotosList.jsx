@@ -50,13 +50,16 @@ function PhotosList(props) {
     
     // Check if we're in search mode
     const isSearchMode = props.searchMode || false;
+    const isAdvancedSearchMode = props.isAdvancedSearchMode || false;
     
     // fetchConfig from props or generate from currentDate
-    const fetchConfig = props.fetchConfig || {
-        fetch_method: isSearchMode ? "search" : "date",
-        value: isSearchMode ? searchQuery : currentDate,
-        title: isSearchMode ? `Search: "${searchQuery}"` : currentDate
-    };
+    // For Advanced Search mode, don't set initial fetchConfig to prevent auto-loading
+    const fetchConfig = props.fetchConfig || 
+        (isAdvancedSearchMode ? null : {
+            fetch_method: isSearchMode ? "search" : "date",
+            value: isSearchMode ? searchQuery : currentDate,
+            title: isSearchMode ? `Search: "${searchQuery}"` : currentDate
+        });
     
     // Create props compatibility layer for gradual migration
     const compatProps = {
@@ -369,10 +372,20 @@ function PhotosList(props) {
         setPhotosListMiniCurrentIndex(0);
         setCurrentPhotoPath(undefined);
         
-        // Load all photos based on fetch config
-        loadAllPhotosBasedOnFetchConfig(fetchConfig);
+        // Load all photos based on fetch config (skip if fetchConfig is null for Advanced Search mode)
+        if (fetchConfig) {
+            loadAllPhotosBasedOnFetchConfig(fetchConfig);
+        }
         
-    }, [fetchConfig.fetch_method, fetchConfig.value]);
+    }, [fetchConfig?.fetch_method, fetchConfig?.value]);
+
+    // Load filter options for Advanced Search mode
+    useEffect(() => {
+        if (isAdvancedSearchMode && !filterOptions && !isFilterOptionsLoading) {
+            logger.info('PhotosList', 'advanced_search_init', 'Loading filter options for Advanced Search mode');
+            loadFilterOptions();
+        }
+    }, [isAdvancedSearchMode, filterOptions, isFilterOptionsLoading, loadFilterOptions]);
 
     // Apply filters when filter settings change (no API call, just frontend filtering)
     useEffect(() => {
@@ -1217,6 +1230,7 @@ function PhotosList(props) {
                                 filterOptions={filterOptions}
                                 onLoadFilterOptions={loadFilterOptions}
                                 isFilterOptionsLoading={isFilterOptionsLoading}
+                                isAdvancedSearchMode={isAdvancedSearchMode}
                             />
                         ) : null}
                     />
