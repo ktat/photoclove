@@ -676,21 +676,21 @@ function PhotosList(props) {
         });
     }
 
-    async function loadAllPhotosBasedOnFetchConfig(config) {
+    async function loadAllPhotosBasedOnFetchConfig(fetchConfig) {
         logger.info('PhotosList', 'load_photos_config', 'loadAllPhotosBasedOnFetchConfig called', {
-            config,
-            hasConfig: !!config
+            config: fetchConfig,
+            hasConfig: !!fetchConfig
         });
-        if (!config) return;
+        if (!fetchConfig) return;
         
         // Some fetch methods don't require a value (e.g., favorites, search with filters only, recent)
-        if (config.fetch_method !== "favorites" && config.fetch_method !== "search" && config.fetch_method !== "recent" && !config.value) return;
+        if (fetchConfig.fetch_method !== "favorites" && fetchConfig.fetch_method !== "search" && fetchConfig.fetch_method !== "recent" && !fetchConfig.value) return;
         
         logger.info('PhotosList', 'load_all_start', 'Loading all photos', { 
             config, 
             isSearchMode, 
             searchResultsLength: searchResults.length,
-            fetchMethod: config?.fetch_method
+            fetchMethod: fetchConfig?.fetch_method
         });
         
         // Show loading indicator
@@ -700,14 +700,14 @@ function PhotosList(props) {
             let result;
             
             logger.debug('PhotosList', 'load_all_switch', 'About to switch on fetch_method', { 
-                fetch_method: config.fetch_method 
+                fetch_method: fetchConfig.fetch_method 
             });
-            switch (config.fetch_method) {
+            switch (fetchConfig.fetch_method) {
                 case "date":
                     // Note: We need to pass filter values that won't exclude any photos
                     // but will still cause the backend to include metadata
                     result = await invoke("get_photos_with_filter", {
-                        dateStr: config.value,
+                        dateStr: fetchConfig.value,
                         sortValue: parseInt(sortOfPhotos),
                         page: 1,
                         num: Math.min(9999, config?.max_photos_per_fetch || 1000), // Limit based on config for performance
@@ -734,7 +734,7 @@ function PhotosList(props) {
                         // Fall back to date-based search for now
                         logger.warn('PhotosList', 'search_fallback', 'No search results available, falling back to date-based');
                         result = await invoke("get_photos_with_filter", {
-                            dateStr: config.value || compatProps.currentDate,
+                            dateStr: fetchConfig.value || compatProps.currentDate,
                             sortValue: parseInt(sortOfPhotos),
                             page: 1,
                             num: Math.min(9999, config?.max_photos_per_fetch || 1000), // Limit based on config for performance
@@ -750,7 +750,7 @@ function PhotosList(props) {
                     // Fall back to date-based search for now
                     console.warn("[LOAD_ALL] Tag API not implemented, falling back to date-based");
                     result = await invoke("get_photos_with_filter", {
-                        dateStr: config.value || compatProps.currentDate,
+                        dateStr: fetchConfig.value || compatProps.currentDate,
                         sortValue: parseInt(sortOfPhotos),
                         page: 1,
                         num: Math.min(9999, config?.max_photos_per_fetch || 1000), // Limit based on config for performance
@@ -789,7 +789,7 @@ function PhotosList(props) {
                     
                 default:
                     logger.error('PhotosList', 'load_all_unknown', 'Unknown fetch method', {
-                        fetchMethod: config.fetch_method
+                        fetchMethod: fetchConfig.fetch_method
                     });
                     return;
             }
@@ -1044,17 +1044,6 @@ function PhotosList(props) {
                                         <option value={7}>File Name (asc)</option>
                                     </select>
                                     {/* Num selector removed - not needed with infinite scroll */}
-                                    Ext:<select name="extension_filter" value={extensionFilter} onChange={(e) => setExtensionFilter(e.target.value)}>
-                                        <option value="all">all</option>
-                                        <option value="jpeg">jpeg</option>
-                                        <option value="jpg">jpg</option>
-                                        <option value="mp4">mp4</option>
-                                        <option value="gif">gif</option>
-                                        <option value="png">png</option>
-                                        <option value="webm">webm</option>
-                                        <option value="bmp">bmp</option>
-                                        <option value="tiff">tiff</option>
-                                    </select>
                                 </div>
                             </div>
                             : <>{isSearchMode ? "No Search Result" : "No Photo Found!"}</>

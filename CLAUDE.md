@@ -12,6 +12,7 @@ Before starting task, do current steps
     - How do you implement the task? 
     - Which source code you will change
 4. review document using another claude agent
+5. rename the `$num.md` to `$num-summary.md`. 
 
 When you finished task, `*.md` file which you did should be moved to `improvement/done` directory.
 At last commit your changes to the branch if my permission is got.

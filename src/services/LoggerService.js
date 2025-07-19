@@ -8,6 +8,7 @@ class LoggerService {
     this.correlationCounter = 0;
     this.autoFlushInterval = 30000; // 30 seconds
     this.autoFlushEnabled = true;
+    this.isEnabled = process.env.NODE_ENV === 'development'; // default to dev mode
     
     // Start auto-flush timer
     this.startAutoFlush();
@@ -24,7 +25,23 @@ class LoggerService {
     return `frontend_corr_${this.sessionId}_${++this.correlationCounter}`;
   }
 
+  setEnabled(enabled) {
+    this.isEnabled = enabled;
+    if (!enabled) {
+      // Clear logs when disabled for privacy
+      this.logs = [];
+    }
+  }
+
+  getEnabled() {
+    return this.isEnabled;
+  }
+
   log(level, component, event, message, data = {}) {
+    if (!this.isEnabled) {
+      return null; // Skip logging when disabled
+    }
+
     const logEntry = {
       timestamp: new Date().toISOString(),
       sessionId: this.sessionId,
@@ -71,7 +88,7 @@ class LoggerService {
   }
 
   async flushToBackend() {
-    if (this.logs.length === 0) return;
+    if (!this.isEnabled || this.logs.length === 0) return;
     
     try {
       // Convert camelCase logs to snake_case for backend
@@ -170,6 +187,18 @@ class LoggerService {
     });
 
     return stats;
+  }
+
+  // Initialize logging state from backend configuration
+  async initializeFromConfig() {
+    try {
+      const status = await invoke('get_logging_status');
+      this.setEnabled(status.enabled);
+      return status;
+    } catch (error) {
+      console.warn('Failed to get logging status from backend, using default:', error);
+      return { enabled: this.isEnabled, level: 'info' };
+    }
   }
 
   // Export logs as JSON

@@ -23,6 +23,7 @@ import { useUI } from "./context/UIContext.jsx";
 import { usePhoto } from "./context/PhotoContext.jsx";
 import { useDateNavigation } from "./hooks/useDateNavigation.js";
 import { useAppConfig } from "./hooks/useAppConfig.js";
+import { logger } from "./services/LoggerService.js";
 
 function App() {
   const { handleTauriError } = useError();
@@ -64,6 +65,19 @@ function App() {
   });
 
   let in_db_creation = false;
+
+  // Initialize logger from config on app start
+  useEffect(() => {
+    const initializeLogging = async () => {
+      try {
+        await logger.initializeFromConfig();
+        logger.info('App', 'initialization', 'Logger initialized from config');
+      } catch (error) {
+        console.warn('Failed to initialize logger from config:', error);
+      }
+    };
+    initializeLogging();
+  }, []);
 
   // Add keyboard shortcut for LogViewer (Ctrl+Shift+L)
   useEffect(() => {

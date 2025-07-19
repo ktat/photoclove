@@ -30,6 +30,8 @@ const LogViewer = ({ onClose }) => {
   const [filters, setFilters] = useState(loadFilters);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [loggingEnabled, setLoggingEnabled] = useState(logger.getEnabled());
+  const [loggingStatus, setLoggingStatus] = useState({ enabled: false, level: 'info' });
 
   const loadLogs = async () => {
     setIsLoading(true);
@@ -68,6 +70,44 @@ const LogViewer = ({ onClose }) => {
     localStorage.setItem('logviewer_filters', JSON.stringify(filters));
   }, [filters]);
 
+  // Load logging status on mount
+  useEffect(() => {
+    const loadLoggingStatus = async () => {
+      try {
+        const status = await invoke('get_logging_status');
+        setLoggingStatus(status);
+        setLoggingEnabled(status.enabled);
+      } catch (error) {
+        console.warn('Failed to load logging status:', error);
+      }
+    };
+    loadLoggingStatus();
+  }, []);
+
+  const toggleLogging = async () => {
+    try {
+      const newEnabled = !loggingEnabled;
+      await invoke('set_logging_enabled', { enabled: newEnabled });
+      
+      // Update local state
+      setLoggingEnabled(newEnabled);
+      setLoggingStatus(prev => ({ ...prev, enabled: newEnabled }));
+      
+      // Update logger service
+      logger.setEnabled(newEnabled);
+      
+      // Log the change (if enabled)
+      if (newEnabled) {
+        logger.info('LogViewer', 'logging_toggled', 'Logging enabled via LogViewer toggle');
+      }
+      
+      // Refresh logs after toggling
+      await loadLogs();
+    } catch (error) {
+      setError(`Failed to toggle logging: ${error.message}`);
+    }
+  };
+
   const exportLogs = () => {
     try {
       const allLogs = {
@@ -96,6 +136,10 @@ const LogViewer = ({ onClose }) => {
   const clearFrontendLogs = () => {
     logger.clear();
     setLogs([]);
+  };
+
+  const clearKeywordFilter = () => {
+    setFilters(prev => ({ ...prev, keyword: '' }));
   };
 
   const renderLogEntry = (log, index, isBackend = false) => {
@@ -298,7 +342,21 @@ const LogViewer = ({ onClose }) => {
     <div className="log-viewer-overlay">
       <div className="log-viewer">
         <div className="log-viewer-header">
-          <h2>Debug Logs</h2>
+          <div className="log-viewer-title-section">
+            <h2>Debug Logs</h2>
+            <div className="logging-status">
+              <span className={`logging-badge ${loggingEnabled ? 'enabled' : 'disabled'}`}>
+                Logging: {loggingEnabled ? 'Enabled' : 'Disabled'}
+              </span>
+              <button 
+                className={`logging-toggle ${loggingEnabled ? 'enabled' : 'disabled'}`}
+                onClick={toggleLogging}
+                title={`${loggingEnabled ? 'Disable' : 'Enable'} logging`}
+              >
+                {loggingEnabled ? '🟢 ON' : '🔴 OFF'}
+              </button>
+            </div>
+          </div>
           <div className="log-viewer-actions">
             <button onClick={exportLogs} disabled={isLoading}>Export Logs</button>
             <button onClick={clearFrontendLogs}>Clear Frontend Logs</button>
@@ -389,19 +447,38 @@ const LogViewer = ({ onClose }) => {
           
           <label>
             Keyword:
-            <input
-              type="text"
-              placeholder="Search logs..."
-              value={filters.keyword}
-              onChange={(e) => setFilters(prev => ({ ...prev, keyword: e.target.value }))}
-              style={{ width: '200px' }}
-            />
+            <div className="keyword-filter-container">
+              <input
+                type="text"
+                placeholder="Search logs..."
+                value={filters.keyword}
+                onChange={(e) => setFilters(prev => ({ ...prev, keyword: e.target.value }))}
+                style={{ width: '200px' }}
+              />
+              {filters.keyword && (
+                <button 
+                  className="clear-keyword-button"
+                  onClick={clearKeywordFilter}
+                  title="Clear keyword filter"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </label>
         </div>
 
         <div className="log-viewer-content">
+          {!loggingEnabled && (
+            <div className="log-viewer-warning">
+              <strong>Logging is currently disabled.</strong> 
+              Enable logging using the toggle above or in Preferences to start collecting logs.
+            </div>
+          )}
           {filteredLogs.length === 0 ? (
-            <div className="log-empty">No logs match the current filters.</div>
+            <div className="log-empty">
+              {loggingEnabled ? 'No logs match the current filters.' : 'No logs available. Logging is disabled.'}
+            </div>
           ) : (
             <>
               <div className="log-header">

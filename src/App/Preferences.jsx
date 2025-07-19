@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { ask, message, confirm } from '@tauri-apps/plugin-dialog';
 import { relaunch } from "@tauri-apps/plugin-process";
 import PickFolderSingle from "../FolderPicker.jsx";
+import { logger } from "../services/LoggerService.js";
 
 
 function Preferences(props) {
@@ -14,7 +15,9 @@ function Preferences(props) {
         thumbnail_ratio: '',
         thumbnail_ignore_file_size: '',
         max_photos_per_fetch: '',
-        use_count: 0
+        use_count: 0,
+        logging_enabled: false,
+        logging_level: 'info'
     });
     const [additionalExportFrom, setAdditionalExportFrom] = useState(0);
     const [configLoaded, setConfigLoaded] = useState(false);
@@ -53,14 +56,24 @@ function Preferences(props) {
             config.use_count = 1;
         }
         config.use_count = parseInt(config.use_count);
-        invoke("save_config", { config: config }).then((e) => {
+        
+        // Save config and sync logging state
+        Promise.all([
+            invoke("save_config", { config: config }),
+            invoke("set_logging_enabled", { enabled: config.logging_enabled })
+        ]).then(() => {
+            // Update frontend logger state
+            logger.setEnabled(config.logging_enabled);
+            
             if (isFirstView) {
                 props.togglePreferences(false);
             } else {
                 setConfigLoaded(!configLoaded);
             }
-
-        })
+        }).catch((error) => {
+            console.error("Failed to save configuration:", error);
+            message("Failed to save configuration. Please try again.");
+        });
         message("Changes are not reflected until restart application.").then((t) => {
             props.addFooterMessage("restartRequired", "Preference changes are not reflected until restart app.");
         });
@@ -168,6 +181,38 @@ function Preferences(props) {
                 <div className="row1"></div><div className="row1">Thumbnail: </div><div className="row4"><input value={config.thumbnail_parallel || ''} type="number" step="1" onChange={(e) => { config.thumbnail_parallel = e.currentTarget.value; setNewConfig(config); }} /></div>
                 <div className="row0">Performance:</div>
                 <div className="row1"></div><div className="row1">Max Photos Per Fetch: </div><div className="row4"><input value={config.max_photos_per_fetch || ''} type="number" step="100" min="100" onChange={(e) => { config.max_photos_per_fetch = e.currentTarget.value; setNewConfig(config); }} /></div>
+                <div className="row2"></div>
+                <div className="row0">Logging:</div>
+                <div className="row1"></div>
+                <div className="row0">
+                    <input 
+                        type="checkbox" 
+                        id="logging-enabled-check" 
+                        checked={config.logging_enabled || false}
+                        onChange={(e) => { 
+                            config.logging_enabled = e.target.checked; 
+                            setNewConfig(config);
+                        }} 
+                    />
+                    <label className="checkbox checkbox-normal" htmlFor="logging-enabled-check">
+                        Enable debug logging
+                    </label>
+                </div>
+                <div className="row1"></div><div className="row1">Log Level: </div><div className="row4">
+                    <select 
+                        value={config.logging_level || 'info'} 
+                        onChange={(e) => { 
+                            config.logging_level = e.currentTarget.value; 
+                            setNewConfig(config);
+                        }}
+                        disabled={!config.logging_enabled}
+                    >
+                        <option value="debug">Debug</option>
+                        <option value="info">Info</option>
+                        <option value="warn">Warning</option>
+                        <option value="error">Error</option>
+                    </select>
+                </div>
                 <div className="row2"></div>
                 <div className="row0">
                     <input type="checkbox" id="preference-check" value="1" onChange={(e) => { config.use_count = e.target.checked ? 0 : useCount; setNewConfig(config) }} />
