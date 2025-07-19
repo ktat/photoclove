@@ -101,7 +101,7 @@ const AdvancedFilters = ({
   return (
     <div className="advanced-filters">
       <div className="filters-header">
-        <h3>Advanced Filters</h3>
+        <h3>Search Options</h3>
         <div className="filter-actions">
           <button onClick={clearFilters} className="clear-filters-button">
             Clear All

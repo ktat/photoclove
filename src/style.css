@@ -2650,7 +2650,7 @@ a.run-app {
 /* Manual search button styles (improvement #46) */
 .manual-search-button {
     background-color: #007acc;
-    color: white;
+    color: #ffffff;
     font-weight: bold;
     padding: 10px 20px;
     border: none;
@@ -2658,17 +2658,18 @@ a.run-app {
     cursor: pointer;
     font-size: 14px;
     margin-top: 10px;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, color 0.2s;
 }
 
 .manual-search-button:hover:not(:disabled) {
     background-color: #005a99;
+    color: #ffffff;
 }
 
 .manual-search-button:disabled {
-    background-color: #ccc;
+    background-color: #555;
     cursor: not-allowed;
-    color: #666;
+    color: #cccccc;
 }
 
 .manual-search-controls {
@@ -2685,12 +2686,92 @@ a.run-app {
     font-style: italic;
 }
 
-.advanced-filters-section {
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 15px;
-    margin-top: 10px;
-    background-color: #f9f9f9;
+/* Advanced Filters Component Styles */
+.advanced-filters {
+    background: transparent;
+    color: inherit;
+}
+
+.filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.filters-header h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.clear-filters-button {
+    background: #555;
+    color: #fff;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: background-color 0.2s;
+}
+
+.clear-filters-button:hover {
+    background: #666;
+}
+
+.filter-sections {
+    display: block;
+    width: 100%;
+}
+
+.filter-section {
+    margin-bottom: 15px;
+}
+
+.filter-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.filter-group {
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.filter-group label {
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.filter-group select,
+.filter-group input {
+    padding: 4px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.range-inputs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.range-inputs input {
+    flex: 1;
+    min-width: 0;
+}
+
+.range-inputs span {
+    font-weight: bold;
+    flex-shrink: 0;
+    font-size: 11px;
 }
 
 /* Search input with inline clear button */
@@ -2771,4 +2852,30 @@ a.run-app {
 .log-data-content pre {
     margin: 0;
     padding-right: 40px; /* Space for copy button */
+}
+
+/* LogViewer message copy button styles */
+.log-message {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.copy-message-button {
+    background: rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+    cursor: pointer;
+    padding: 2px 4px;
+    font-size: 10px;
+    opacity: 0.5;
+    transition: opacity 0.2s, background-color 0.2s;
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+
+.copy-message-button:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.2);
 }

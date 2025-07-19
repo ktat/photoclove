@@ -20,6 +20,7 @@ export const UIProvider = ({ children }) => {
   const [showLogin, setShowLogin] = useState(false);
   const [showSearchPage, setShowSearchPage] = useState(false);
   const [searchInitialQuery, setSearchInitialQuery] = useState("");
+  const [isAdvancedSearchMode, setIsAdvancedSearchMode] = useState(false);
   const [footerMessages, setFooterMessages] = useState({});
   const [welcomeImage, setWelcomeImage] = useState("");
   const [useCount, setUseCount] = useState(0);
@@ -129,7 +130,7 @@ export const UIProvider = ({ children }) => {
     }
   }, []);
 
-  const toggleSearchPage = useCallback((t, initialQuery = "") => {
+  const toggleSearchPage = useCallback((t, initialQuery = "", isAdvanced = false) => {
     if (t) {
       setShowImporter(false);
       setShowPhotosList(false);
@@ -138,6 +139,7 @@ export const UIProvider = ({ children }) => {
       setShowJobQueue(false);
       setShowSearchPage(true);
       setSearchInitialQuery(initialQuery);
+      setIsAdvancedSearchMode(isAdvanced);
     } else {
       setShowImporter(false);
       setShowPreferences(false);
@@ -146,6 +148,7 @@ export const UIProvider = ({ children }) => {
       setShowPhotosList(true);
       setShowSearchPage(false);
       setSearchInitialQuery("");
+      setIsAdvancedSearchMode(false);
     }
   }, []);
 
@@ -158,6 +161,7 @@ export const UIProvider = ({ children }) => {
     showLogin,
     showSearchPage,
     searchInitialQuery,
+    isAdvancedSearchMode,
     footerMessages,
     welcomeImage,
     useCount,

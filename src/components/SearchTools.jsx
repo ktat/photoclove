@@ -15,9 +15,10 @@ const SearchTools = ({
     currentSearch,
     filterOptions,
     onLoadFilterOptions,
-    isFilterOptionsLoading
+    isFilterOptionsLoading,
+    isAdvancedSearchMode
 }) => {
-    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(isAdvancedSearchMode || false);
     const [currentFilters, setCurrentFilters] = useState(initialFilters || {});
     const [searchQuery, setSearchQuery] = useState(initialQuery || '');
     
@@ -41,6 +42,13 @@ const SearchTools = ({
             }
         }
     }, [initialFilters]);
+
+    // Open advanced filters automatically for Advanced Search mode
+    useEffect(() => {
+        if (isAdvancedSearchMode) {
+            setShowAdvancedFilters(true);
+        }
+    }, [isAdvancedSearchMode]);
 
     // Handle filter changes
     const handleFiltersChange = (newFilters) => {
@@ -95,7 +103,7 @@ const SearchTools = ({
                     onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                     className="toggle-advanced-filters"
                 >
-                    {showAdvancedFilters ? 'Hide' : 'Show'} Advanced Filters
+                    {showAdvancedFilters ? 'Hide' : 'Show'} Search Options
                 </button>
             </div>
             
@@ -108,20 +116,21 @@ const SearchTools = ({
                         onLoadFilterOptions={onLoadFilterOptions}
                         isLoading={isFilterOptionsLoading}
                     />
-                    <div className="manual-search-controls">
-                        <button 
-                            onClick={applyFilters}
-                            className="search-button manual-search-button"
-                            disabled={!hasActiveFilters && !searchQuery.trim()}
-                        >
-                            🔍 Execute Search
-                        </button>
-                        <p className="manual-search-hint">
-                            Click "Execute Search" to apply your filter changes
-                        </p>
-                    </div>
                 </div>
             )}
+            
+            <div className="manual-search-controls">
+                <button 
+                    onClick={applyFilters}
+                    className="search-button manual-search-button"
+                    disabled={!hasActiveFilters && !searchQuery.trim()}
+                >
+                    🔍 Execute Search
+                </button>
+                <p className="manual-search-hint">
+                    Click "Execute Search" to apply your filter changes
+                </p>
+            </div>
             
             <SavedSearches 
                 onSearchSelect={onSearchSelect}

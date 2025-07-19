@@ -16,7 +16,7 @@ function Home(props) {
     };
 
     const handleAdvancedSearch = () => {
-        toggleSearchPage(true);
+        toggleSearchPage(true, "", true); // isAdvanced = true
     };
 
     const handleKeyPress = (e) => {

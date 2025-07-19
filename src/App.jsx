@@ -34,6 +34,7 @@ function App() {
     showJobQueue,
     showLogin,
     showSearchPage,
+    isAdvancedSearchMode,
     footerMessages,
     welcomeImage,
     setWelcomeImage,
@@ -274,6 +275,7 @@ function App() {
               addFooterMessage={addFooterMessage}
               onRightMenuToggle={setRightMenuOpen}
               searchMode={true}
+              isAdvancedSearchMode={isAdvancedSearchMode}
             />
           </div>
         </div>

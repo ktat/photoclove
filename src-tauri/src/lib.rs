@@ -166,8 +166,17 @@ async fn search_photos(
         correlation_id, sort_field, sort_order
     );
 
+    // Get max_photos_per_fetch from config
+    let max_photos_per_fetch = state.config.max_photos_per_fetch;
+    
+    log::debug!(
+        target: "search",
+        "max_photos_config; correlation_id={}; max_photos_per_fetch={}",
+        correlation_id, max_photos_per_fetch
+    );
+
     // Use the search_photos method from the SQLite struct
-    let result = meta_db.search_photos(query, search_type, filters, &sort_field, &sort_order);
+    let result = meta_db.search_photos(query, search_type, filters, &sort_field, &sort_order, max_photos_per_fetch);
     let duration = start_time.elapsed();
     
     match &result {

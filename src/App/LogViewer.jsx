@@ -107,7 +107,18 @@ const LogViewer = ({ onClose }) => {
           <span className="log-level">{log.level || 'INFO'}</span>
           <span className="log-component">{log.component || '-'}</span>
           <span className="log-event">-</span>
-          <span className="log-message">{log.message}</span>
+          <span className="log-message">
+            {log.message}
+            <button 
+              className="copy-message-button" 
+              onClick={() => {
+                navigator.clipboard.writeText(log.message);
+              }}
+              title="Copy message to clipboard"
+            >
+              📋
+            </button>
+          </span>
           <span className="log-correlation">-</span>
         </div>
       );
@@ -119,7 +130,18 @@ const LogViewer = ({ onClose }) => {
         <span className="log-level">{log.level}</span>
         <span className="log-component">{log.component}</span>
         <span className="log-event">{log.event}</span>
-        <span className="log-message">{log.message}</span>
+        <span className="log-message">
+          {log.message}
+          <button 
+            className="copy-message-button" 
+            onClick={() => {
+              navigator.clipboard.writeText(log.message);
+            }}
+            title="Copy message to clipboard"
+          >
+            📋
+          </button>
+        </span>
         {log.correlationId && (
           <span className="log-correlation" title="Correlation ID">{log.correlationId}</span>
         )}

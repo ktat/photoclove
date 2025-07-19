@@ -1774,7 +1774,7 @@ impl SQLite {
         }
     }
 
-    pub fn search_photos(&self, query: &str, search_type: &str, filters: &str, sort_field: &str, sort_order: &str) -> Result<String, String> {
+    pub fn search_photos(&self, query: &str, search_type: &str, filters: &str, sort_field: &str, sort_order: &str, max_photos_per_fetch: u32) -> Result<String, String> {
         let start_time = std::time::Instant::now();
         
         log::debug!(
@@ -1894,11 +1894,54 @@ impl SQLite {
             }
         }).collect();
         
+        // Create SQL with embedded parameters for better readability
+        let mut embedded_sql = sql_query.clone();
+        for (i, param) in params.iter().enumerate() {
+            let placeholder = "?";
+            let replacement = match param.to_sql() {
+                Ok(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(ref text))) => {
+                    format!("'{}'", text.replace("'", "''")) // Escape single quotes
+                },
+                Ok(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Integer(int))) => {
+                    int.to_string()
+                },
+                Ok(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Real(real))) => {
+                    real.to_string()
+                },
+                Ok(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Null)) => {
+                    "NULL".to_string()
+                },
+                Ok(rusqlite::types::ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Text(text))) => {
+                    format!("'{}'", String::from_utf8_lossy(text).replace("'", "''"))
+                },
+                Ok(rusqlite::types::ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Integer(int))) => {
+                    int.to_string()
+                },
+                Ok(rusqlite::types::ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Real(real))) => {
+                    real.to_string()
+                },
+                Ok(rusqlite::types::ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Null)) => {
+                    "NULL".to_string()
+                },
+                _ => "?".to_string()
+            };
+            // Replace the first occurrence of ? with the parameter value
+            if let Some(pos) = embedded_sql.find(placeholder) {
+                embedded_sql.replace_range(pos..pos+1, &replacement);
+            }
+        }
+        
         log::debug!(
             target: "database",
             "sql_with_params; query={}; params=[{}]",
             sql_query,
             param_strings.join(", ")
+        );
+        
+        log::debug!(
+            target: "database", 
+            "sql_embedded; query={}",
+            embedded_sql
         );
         
         // Debug: Sample database date ranges to help troubleshooting
@@ -1984,7 +2027,7 @@ impl SQLite {
         
         // Limit results to prevent overwhelming the UI
         let original_count = results.len();
-        results.truncate(100);
+        results.truncate(max_photos_per_fetch as usize);
         let final_count = results.len();
         
         let duration = start_time.elapsed();
@@ -1994,7 +2037,7 @@ impl SQLite {
             "search_photos_complete; result_count={}; original_count={}; truncated={}; duration_ms={}",
             final_count, 
             original_count,
-            original_count > 100,
+            original_count > max_photos_per_fetch as usize,
             duration.as_millis()
         );
         
