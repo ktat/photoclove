@@ -1043,14 +1043,7 @@ function PhotosList(props) {
                                         <option value={6}>File Name (desc)</option>
                                         <option value={7}>File Name (asc)</option>
                                     </select>
-                                    Num:<select name="num" defaultValue={numOfPhoto} onChange={(e) => setNumOfPhoto(e.target.value)}>
-                                        <option value={10}>10</option>
-                                        <option value={20}>20</option>
-                                        <option value={30}>30</option>
-                                        <option value={40}>40</option>
-                                        <option value={50}>50</option>
-                                        <option value={60}>60</option>
-                                    </select>
+                                    {/* Num selector removed - not needed with infinite scroll */}
                                     Ext:<select name="extension_filter" value={extensionFilter} onChange={(e) => setExtensionFilter(e.target.value)}>
                                         <option value="all">all</option>
                                         <option value="jpeg">jpeg</option>
