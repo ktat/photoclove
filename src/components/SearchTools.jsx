@@ -66,15 +66,6 @@ const SearchTools = ({
                 >
                     {showAdvancedFilters ? 'Hide' : 'Show'} Advanced Filters
                 </button>
-                {showAdvancedFilters && (
-                    <button 
-                        onClick={applyFilters}
-                        className="apply-filters-button"
-                        title="Search with current filters"
-                    >
-                        Apply Filters
-                    </button>
-                )}
             </div>
             
             {showAdvancedFilters && (
