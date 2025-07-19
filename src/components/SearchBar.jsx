@@ -45,14 +45,26 @@ const SearchBar = ({ onSearch, onClear, searchResults, initialQuery = '' }) => {
   return (
     <div className="search-bar">
       <div className="search-input-container">
-        <input
-          type="text"
-          placeholder="Search photos..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className="search-input"
-        />
+        <div className="search-input-wrapper">
+          <input
+            type="text"
+            placeholder="Search photos..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="search-input"
+          />
+          {query && (
+            <button 
+              onClick={() => setQuery('')}
+              className="input-clear-button"
+              title="Clear query"
+              type="button"
+            >
+              ✕
+            </button>
+          )}
+        </div>
         <button 
           onClick={handleSearch} 
           disabled={isSearching}
@@ -60,13 +72,6 @@ const SearchBar = ({ onSearch, onClear, searchResults, initialQuery = '' }) => {
           title="Search"
         >
           {isSearching ? '⏳' : '🔍'}
-        </button>
-        <button 
-          onClick={handleClear}
-          className="clear-button"
-          title="Clear search"
-        >
-          ✕
         </button>
         <button 
           onClick={() => setShowAdvanced(!showAdvanced)}
