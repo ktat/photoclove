@@ -227,6 +227,97 @@ impl RepositoryDB for Directory {
         photos
     }
 
+    async fn get_recent_photos(
+        &self,
+        meta_data: &photo_meta::PhotoMetas,
+        page: u32,
+        _sort: Sort,
+        num: u32,
+        offset: usize,
+        star: i32,
+        hasComment: bool,
+        extension: &str,
+        opt_conf: Option<config::Config>,
+    ) -> photo::Photos {
+        let mut photos = photo::Photos::new();
+        let mut conf: config::Config = config::Config::template();
+        let has_opt = opt_conf.is_some();
+        if has_opt {
+            conf = opt_conf.unwrap();
+        }
+        
+        // Parse extension filter
+        let extension_filters: Vec<&str> = if extension == "all" || extension.is_empty() {
+            vec![]
+        } else {
+            extension.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect()
+        };
+
+        // Use metadata to get all photos (recent photos are already sorted by DB query)
+        for f in meta_data.keys() {
+            let md = meta_data.get(f).unwrap();
+            if star > 0 && md.star.star() < star {
+                continue;
+            }
+            if hasComment && md.comment.comment().len() == 0 {
+                continue;
+            }
+            
+            // Apply extension filter
+            if !extension_filters.is_empty() {
+                let file_extension = f.split('.').last().unwrap_or("").to_lowercase();
+                if !extension_filters.iter().any(|&ext| ext.to_lowercase() == file_extension) {
+                    continue;
+                }
+            }
+            let file_result = file::File::new_if_exists(f.to_string());
+            if file_result.is_none() {
+                continue;
+            }
+            let file = file_result.unwrap();
+            let mut p: photo::Photo;
+            if has_opt {
+                p = photo::Photo::new(file, Option::Some(conf.clone()));
+                p.set_has_thumbnail();
+            } else {
+                p = photo::Photo::new(file, Option::None);
+            }
+            let mut meta = exif::ExifData::empty();
+            let photo_meta = meta_data.get(f).unwrap();
+            meta.date_time = photo_meta.photo_time();
+            p.embed_exif(meta);
+            p.set_css_style(photo_meta.photo().css_style.clone());
+            p.set_star(photo_meta.star.star());
+            p.set_comment(photo_meta.comment.comment());
+            photos.photos.push(p)
+        }
+
+        // Photos are already sorted by database query (created_at DESC)
+        // No additional sorting needed
+
+        // Apply pagination
+        let mut start_index = (num * (page - 1)) as usize;
+        start_index = start_index + offset;
+        let mut end_index = start_index + (num as usize);
+
+        if photos.photos.len() > 0 {
+            photos.has_next = true;
+
+            if photos.photos.len() <= end_index {
+                end_index = photos.photos.len();
+                photos.has_next = false;
+            }
+            if start_index >= photos.photos.len() {
+                start_index = photos.photos.len() - 1;
+            }
+            photos.photos = photos.photos[start_index..end_index].to_vec();
+            if start_index > 0 {
+                photos.has_prev = true;
+            }
+        }
+        photos
+    }
+
     async fn get_next_photo_in_date(
         &self,
         meta_data: &photo_meta::PhotoMetas,

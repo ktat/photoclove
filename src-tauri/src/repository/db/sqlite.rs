@@ -84,6 +84,21 @@ impl RepositoryDB for SQLite {
         // SQLite implementation not fully implemented yet
         Option::None
     }
+    async fn get_recent_photos(
+        &self,
+        meta_data: &photo_meta::PhotoMetas,
+        page: u32,
+        sort: Sort,
+        num: u32,
+        offset: usize,
+        star: i32,
+        hasComment: bool,
+        extension: &str,
+        opt_conf: Option<config::Config>,
+    ) -> photo::Photos {
+        // SQLite implementation not fully implemented yet, return empty
+        photo::Photos::new()
+    }
     fn record_photos(&self, photos: Vec<photo::Photo>) -> Result<bool, &str> {
         return Ok(true);
     }

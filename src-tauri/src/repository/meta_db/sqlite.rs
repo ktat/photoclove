@@ -1369,6 +1369,50 @@ impl MetaInfoDB for SQLite {
         );
         dates_num
     }
+
+    fn get_recent_photos_metadata(&self, limit: u32) -> Result<photo_meta::PhotoMetas, String> {
+        let conn = self
+            .get_connection()
+            .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+        let mut stmt = conn
+            .prepare("SELECT * FROM photo_metadata ORDER BY created_at DESC LIMIT ?")
+            .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+        let rows = stmt
+            .query_map([limit], |row| {
+                let path: String = row.get("path")?;
+                let photo_date: String = row.get("photo_date")?;
+                let star: i32 = row.get("star")?;
+                let comment: String = row.get("comment")?;
+                
+                // Create photo object with the date
+                let mut photo = crate::entity::photo::Photo::new(
+                    crate::value::file::File::new(path.clone()),
+                    None
+                );
+                photo.set_time(photo_date);
+                
+                // Create photo_meta object  
+                let mut photo_meta = photo_meta::PhotoMeta::new(photo);
+                
+                // Set metadata fields
+                photo_meta.star = star::Star::new(star);
+                photo_meta.comment = comment::Comment::new(&comment);
+                
+                Ok((path, photo_meta))
+            })
+            .map_err(|e| format!("Failed to execute query: {}", e))?;
+
+        let mut photo_metas = photo_meta::PhotoMetas::new();
+        for row in rows {
+            if let Ok((path, meta)) = row {
+                photo_metas.insert(&path, meta);
+            }
+        }
+
+        Ok(photo_metas)
+    }
     
 }
 

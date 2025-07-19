@@ -29,8 +29,15 @@ function PhotosList(props) {
         updateDateList,
         showPhotoDisplay,
         updateShowPhotoDisplay,
-        setCurrentDateNum
+        setCurrentDateNum,
+        recentPhotosMode
     } = usePhoto();
+    
+    logger.debug('PhotosList', 'component_render', 'PhotosList rendering', {
+        recentPhotosMode,
+        currentDate,
+        propsCount: Object.keys(props).length
+    });
     const { addFooterMessage, toggleSearchPage, searchInitialQuery } = useUI();
     
     // Use search hook when in search mode
@@ -56,10 +63,20 @@ function PhotosList(props) {
     // For Advanced Search mode, don't set initial fetchConfig to prevent auto-loading
     const fetchConfig = props.fetchConfig || 
         (isAdvancedSearchMode ? null : {
-            fetch_method: isSearchMode ? "search" : "date",
-            value: isSearchMode ? searchQuery : currentDate,
-            title: isSearchMode ? `Search: "${searchQuery}"` : currentDate
+            fetch_method: recentPhotosMode ? "recent" : (isSearchMode ? "search" : "date"),
+            value: recentPhotosMode ? "recent" : (isSearchMode ? searchQuery : currentDate),
+            title: recentPhotosMode ? "Recent Photos (60 most recent)" : (isSearchMode ? `Search: "${searchQuery}"` : currentDate),
+            max_photos_per_fetch: recentPhotosMode ? 60 : undefined
         });
+
+    // Debug logging
+    logger.debug('PhotosList', 'fetchConfig_generation', 'FetchConfig debug', {
+        recentPhotosMode,
+        isSearchMode,
+        currentDate,
+        fetchConfig,
+        propsMode: props.recentMode
+    });
     
     // Create props compatibility layer for gradual migration
     const compatProps = {
@@ -426,11 +443,21 @@ function PhotosList(props) {
         setCurrentPhotoPath(undefined);
         
         // Load all photos based on fetch config (skip if fetchConfig is null for Advanced Search mode)
+        logger.debug('PhotosList', 'useEffect_trigger', 'UseEffect triggered - loading photos', {
+            fetchConfig,
+            recentPhotosMode,
+            willLoad: !!fetchConfig,
+            fetchMethod: fetchConfig?.fetch_method,
+            fetchValue: fetchConfig?.value
+        });
         if (fetchConfig) {
+            logger.debug('PhotosList', 'useEffect_load', 'Calling loadAllPhotosBasedOnFetchConfig');
             loadAllPhotosBasedOnFetchConfig(fetchConfig);
+        } else {
+            logger.debug('PhotosList', 'useEffect_skip', 'Not loading photos - fetchConfig is null/undefined');
         }
         
-    }, [fetchConfig?.fetch_method, fetchConfig?.value]);
+    }, [fetchConfig?.fetch_method, fetchConfig?.value, recentPhotosMode]);
 
     // Load filter options for Advanced Search mode
     useEffect(() => {
@@ -596,8 +623,8 @@ function PhotosList(props) {
         });
         if (!config) return;
         
-        // Some fetch methods don't require a value (e.g., favorites, search with filters only)
-        if (config.fetch_method !== "favorites" && config.fetch_method !== "search" && !config.value) return;
+        // Some fetch methods don't require a value (e.g., favorites, search with filters only, recent)
+        if (config.fetch_method !== "favorites" && config.fetch_method !== "search" && config.fetch_method !== "recent" && !config.value) return;
         
         logger.info('PhotosList', 'load_all_start', 'Loading all photos', { 
             config, 
@@ -612,6 +639,9 @@ function PhotosList(props) {
         try {
             let result;
             
+            logger.debug('PhotosList', 'load_all_switch', 'About to switch on fetch_method', { 
+                fetch_method: config.fetch_method 
+            });
             switch (config.fetch_method) {
                 case "date":
                     // Note: We need to pass filter values that won't exclude any photos
@@ -686,13 +716,31 @@ function PhotosList(props) {
                     });
                     break;
                     
+                case "recent":
+                    const recentParams = {
+                        limit: Math.min(60, config?.max_photos_per_fetch || 60),
+                        sortValue: parseInt(sortOfPhotos),
+                        star: -1,
+                        hasComment: false,
+                        extension: "all"
+                    };
+                    result = await invoke("get_recent_photos", recentParams);
+                    break;
+                    
                 default:
-                    console.error("[LOAD_ALL] Unknown fetch method:", config.fetch_method);
+                    logger.error('PhotosList', 'load_all_unknown', 'Unknown fetch method', {
+                        fetchMethod: config.fetch_method
+                    });
                     return;
             }
             
             const data = JSON.parse(result);
-            // console.log(`[LOAD_ALL] Loaded ${data.photos.length} photos`);
+            logger.info('PhotosList', 'load_all_parsed', 'Photos loaded and parsed', {
+                photoCount: data.photos.length,
+                fetchMethod: config.fetch_method,
+                hasNext: data.has_next,
+                hasPrev: data.has_prev
+            });
             
             // Debug: Check if metadata is included
             if (data.photos.length > 0) {

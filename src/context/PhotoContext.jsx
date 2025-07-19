@@ -17,6 +17,7 @@ export const PhotoProvider = ({ children }) => {
   const [dateNum, setDateNum] = useState({});
   const [showPhotoDisplay, setShowPhotoDisplay] = useState({});
   const [hideLoading, setHideLoading] = useState(false);
+  const [recentPhotosMode, setRecentPhotosMode] = useState(false);
   
   const setCurrentDateNum = useCallback((num) => {
     setDateNum(prevDateNum => {
@@ -46,6 +47,16 @@ export const PhotoProvider = ({ children }) => {
       setCurrentDate("");
       setShowPhotoDisplay({});
       setDatePage({});
+      setRecentPhotosMode(false);
+    }, []),
+
+    updateRecentPhotosMode: useCallback((mode) => {
+      setRecentPhotosMode(mode);
+      if (mode) {
+        setCurrentDate("");
+        setShowPhotoDisplay({});
+        setDatePage({});
+      }
     }, [])
   };
 
@@ -57,6 +68,7 @@ export const PhotoProvider = ({ children }) => {
     dateNum,
     showPhotoDisplay,
     hideLoading,
+    recentPhotosMode,
     // Actions
     ...photoActions
   };

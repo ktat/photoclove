@@ -48,7 +48,8 @@ function App() {
     currentDate,
     updateCurrentDate,
     resetPhotoState,
-    setCurrentDateNum
+    setCurrentDateNum,
+    recentPhotosMode
   } = usePhoto();
   const { getDates } = useDateNavigation();
   const { useCount } = useAppConfig();
@@ -339,7 +340,7 @@ function App() {
             toggleImporter={toggleImporter}
           />
         </div>
-        {(currentDate && showPhotosList) ? <>
+        {((currentDate || recentPhotosMode) && showPhotosList) ? <>
           <PhotosList
             shortCutNavigation={shortCutNavigation}
             addFooterMessage={addFooterMessage}
@@ -363,7 +364,7 @@ function App() {
                 toggleJobQueue={toggleJobQueue}
               ></JobQueue>
             </div>
-            <div style={{ display: (!showImporter && !showLogin && !showPreferences && !showJobQueue && !showSearchPage && (!currentDate || !showPhotosList)) ? "block" : "none" }}>
+            <div style={{ display: (!showImporter && !showLogin && !showPreferences && !showJobQueue && !showSearchPage && ((!currentDate && !recentPhotosMode) || !showPhotosList)) ? "block" : "none" }}>
               <Home welcomeImage={welcomeImage} setWelcomeImage={setWelcomeImage} />
             </div>
           </>

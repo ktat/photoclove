@@ -75,6 +75,18 @@ pub(crate) trait RepositoryDB {
         extension: &str,
         conifg: Option<config::Config>,
     ) -> photo::Photos;
+    async fn get_recent_photos(
+        &self,
+        meta_data: &photo_meta::PhotoMetas,
+        page: u32,
+        sort: Sort,
+        num: u32,
+        offset: usize,
+        star: i32,
+        hasComment: bool,
+        extension: &str,
+        conifg: Option<config::Config>,
+    ) -> photo::Photos;
     async fn move_photos_to_exif_date(&self, date: date::Date) -> date::Dates;
     fn get_photo_count_per_dates(&self, dates: date::Dates, meta_data: DatesNum) -> DatesNum;
     fn get_photo_count_in_date(&self, date: date::Date) -> i32;
@@ -106,4 +118,5 @@ pub(crate) trait MetaInfoDB {
     fn delete_photo(&self, photo: &photo::Photo);
     fn update_photo_path(&self, old_path: &str, new_path: &str) -> Result<bool, &str>;
     fn get_photo_count_per_dates(&self, dates: date::Dates) -> DatesNum;
+    fn get_recent_photos_metadata(&self, limit: u32) -> Result<photo_meta::PhotoMetas, String>;
 }

@@ -35,3 +35,26 @@ Note that: You carefully check whether the update of docs/feature-documentation-
 If I say `compile check`, do the follwoing.
 
 You should check `cd src-tauri/src/` and `cargo check` when you change `*.rs` files.
+
+# Logging Rules
+
+When implementing logging in the codebase:
+
+## Frontend Logging
+- Use the structured `logger` service from `src/services/LoggerService.js`
+- Import: `import { logger } from '../services/LoggerService.js';`
+- Pattern: `logger.level('ComponentName', 'event_name', 'Description', { data })`
+- Example: `logger.info('PhotosList', 'search_triggered', 'User initiated search', { query, filters })`
+- Avoid direct `console.log/warn/error` calls - use the structured logger instead
+
+## Backend Logging  
+- Use Rust's `log` macros with structured format in semicolon-separated key=value pairs
+- Pattern: `log::level!(target: "component", "event; key1={}; key2={}", value1, value2)`
+- Always include `correlation_id` when available for request tracing
+- Example: `log::info!(target: "search", "search_request; correlation_id={}; query={}", correlation_id, query)`
+
+## LogViewer Integration
+- All logs are automatically collected and viewable in LogViewer.jsx
+- Frontend logs: stored in memory via LoggerService
+- Backend logs: written to daily files and retrieved via `get_logs` command
+- Use structured logging to enable proper filtering and search in LogViewer

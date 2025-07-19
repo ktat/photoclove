@@ -422,6 +422,42 @@ async fn get_photos_with_filter(
 }
 
 #[tauri::command]
+async fn get_recent_photos(
+    limit: Option<u32>,
+    sort_value: i32,
+    star: i32,
+    has_comment: bool,
+    extension: &str,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, ()> {
+    let repo_db = &state.repo_db;
+    let meta_db = &state.meta_db;
+    let limit = limit.unwrap_or(60);
+    
+    // Get recent photos metadata directly from database using SQL
+    let meta_data = match meta_db.get_recent_photos_metadata(limit) {
+        Ok(data) => data,
+        Err(_e) => return Err(()),
+    };
+    
+    let photos = repo_db
+        .get_recent_photos(
+            &meta_data,
+            1, // page
+            repository::sort_from_int(sort_value),
+            limit,
+            0, // offset
+            star,
+            has_comment,
+            extension,
+            Option::Some(state.config.clone()),
+        )
+        .await;
+    
+    Ok(photos.to_json())
+}
+
+#[tauri::command]
 async fn get_next_photo(
     path: &str,
     date_str: &str,
@@ -1252,6 +1288,7 @@ pub fn run() {
             get_dates,
             get_photos,
             get_photos_with_filter,
+            get_recent_photos,
             get_photo_info,
             get_next_photo,
             get_prev_photo,
