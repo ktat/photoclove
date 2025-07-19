@@ -74,12 +74,27 @@ class LoggerService {
     if (this.logs.length === 0) return;
     
     try {
+      // Convert camelCase logs to snake_case for backend
+      const backendLogs = this.logs.map(log => ({
+        timestamp: log.timestamp,
+        session_id: log.sessionId,
+        level: log.level,
+        component: log.component,
+        event: log.event,
+        message: log.message,
+        data: log.data,
+        correlation_id: log.correlationId
+      }));
+
       await invoke('submit_frontend_logs', {
-        logs: JSON.stringify(this.logs)
+        logs: JSON.stringify(backendLogs)
       });
       
-      // Clear logs after successful submission
-      this.logs = [];
+      // Don't clear logs - keep them for UI display
+      // Only trim if we're approaching the max limit
+      if (this.logs.length > this.maxLogs * 0.8) {
+        this.logs = this.logs.slice(-Math.floor(this.maxLogs * 0.6));
+      }
       
       if (process.env.NODE_ENV === 'development') {
         console.debug('Successfully flushed logs to backend');

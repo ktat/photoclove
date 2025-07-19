@@ -84,7 +84,9 @@ function App() {
       unlisten0 = await listen("click_menu_static", (e) => {
       invoke("lock", { t: true }).then((le) => {
         if (le) {
-          if (e.payload === "about") {
+          if (e.payload === "show_log") {
+            setShowLogViewer(true);
+          } else if (e.payload === "about") {
             message("PhotoClove is an application to manage photos.\n (c)ktat");
           } else if (e.payload === "github") {
             open("https://github.com/ktat/photoclove/");
@@ -234,6 +236,9 @@ function App() {
           toggleImporter={toggleImporter}
         />
         <Footer />
+        {showLogViewer && (
+          <LogViewer onClose={() => setShowLogViewer(false)} />
+        )}
       </>
     );
   }
@@ -274,6 +279,9 @@ function App() {
         </div>
         <Footer />
         <ErrorDisplay />
+        {showLogViewer && (
+          <LogViewer onClose={() => setShowLogViewer(false)} />
+        )}
       </>
     );
   }

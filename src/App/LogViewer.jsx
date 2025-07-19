@@ -19,14 +19,14 @@ const LogViewer = ({ onClose }) => {
     setError(null);
     
     try {
-      // Get frontend logs
-      const frontendLogs = logger.getLogs(filters);
+      // Get ALL frontend logs - don't filter here
+      const frontendLogs = logger.getLogs();
       
-      // Get backend logs
+      // Get backend logs only
       const backendLogsResult = await invoke('get_logs', {
-        logType: 'all',
+        logType: 'backend',
         lines: 1000,
-        since: filters.since
+        since: 'all' // Get all backend logs too
       });
 
       setLogs(frontendLogs);
@@ -39,10 +39,26 @@ const LogViewer = ({ onClose }) => {
     }
   };
 
+  // Load logs on mount and periodically
   useEffect(() => {
+    // Generate test logs to ensure we have some data
+    logger.debug('LogViewer', 'component_opened', 'LogViewer component opened');
+    logger.info('LogViewer', 'initialization', 'LogViewer initialized successfully');
+    logger.warn('LogViewer', 'test_warning', 'This is a test warning message');
+    logger.error('LogViewer', 'test_error', 'This is a test error message');
+    
+    // Generate logs from different components
+    logger.info('SearchSystem', 'test_search', 'Test log from search system');
+    logger.debug('PhotoManager', 'test_photo', 'Test log from photo manager');
+    
     loadLogs();
     const interval = setInterval(loadLogs, 5000); // Refresh every 5 seconds
     return () => clearInterval(interval);
+  }, []); // Empty dependency - only run on mount
+  
+  // Log filter changes separately
+  useEffect(() => {
+    logger.info('LogViewer', 'filter_change', 'Filter configuration changed', filters);
   }, [filters]);
 
   const exportLogs = () => {
@@ -77,11 +93,15 @@ const LogViewer = ({ onClose }) => {
 
   const renderLogEntry = (log, index, isBackend = false) => {
     if (isBackend) {
+      // Backend logs are now properly structured
       return (
-        <div key={`backend-${index}`} className="log-entry log-backend">
-          <span className="log-timestamp">{new Date().toISOString()}</span>
-          <span className="log-level">BACKEND</span>
-          <span className="log-message">{log}</span>
+        <div key={`backend-${index}`} className={`log-entry log-${(log.level || 'info').toLowerCase()}`}>
+          <span className="log-timestamp">{new Date(log.timestamp).toLocaleTimeString()}</span>
+          <span className="log-level">{log.level || 'INFO'}</span>
+          <span className="log-component">{log.component || '-'}</span>
+          <span className="log-event">-</span>
+          <span className="log-message">{log.message}</span>
+          <span className="log-correlation">-</span>
         </div>
       );
     }
@@ -112,8 +132,32 @@ const LogViewer = ({ onClose }) => {
     // Add frontend logs
     if (filters.source === 'all' || filters.source === 'frontend') {
       const filteredFrontendLogs = logs.filter(log => {
-        if (filters.level !== 'all' && log.level !== filters.level) return false;
+        if (filters.level !== 'all' && log.level.toUpperCase() !== filters.level.toUpperCase()) return false;
         if (filters.component !== 'all' && log.component !== filters.component) return false;
+        
+        // Handle 'since' filter
+        if (filters.since !== 'all') {
+          const logTime = new Date(log.timestamp);
+          const now = new Date();
+          let cutoffTime;
+          
+          switch(filters.since) {
+            case '5m':
+              cutoffTime = new Date(now.getTime() - 5 * 60 * 1000);
+              break;
+            case '1h':
+              cutoffTime = new Date(now.getTime() - 60 * 60 * 1000);
+              break;
+            case '24h':
+              cutoffTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+              break;
+            default:
+              cutoffTime = new Date(0); // Beginning of time
+          }
+          
+          if (logTime < cutoffTime) return false;
+        }
+        
         return true;
       });
       
@@ -123,7 +167,59 @@ const LogViewer = ({ onClose }) => {
     // Add backend logs
     if (filters.source === 'all' || filters.source === 'backend') {
       const backendLogLines = backendLogs.split('\n').filter(line => line.trim());
-      combinedLogs = [...combinedLogs, ...backendLogLines.map(line => ({ message: line, source: 'backend', timestamp: new Date().toISOString() }))];
+      
+      // Parse backend logs to extract structured information
+      const parsedBackendLogs = [];
+      let currentLog = null;
+      
+      for (const line of backendLogLines) {
+        // Try to parse standard log format: YYYY-MM-DD HH:MM:SS.mmm [LEVEL] target - message
+        const standardMatch = line.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d{3})\s*\[(\w+)\]\s*([^\s]+)\s*-\s*(.+)$/);
+        
+        if (standardMatch) {
+          // This is a new log entry
+          if (currentLog) {
+            parsedBackendLogs.push(currentLog);
+          }
+          currentLog = {
+            timestamp: standardMatch[1].replace(' ', 'T') + 'Z',
+            level: standardMatch[2],
+            component: standardMatch[3],
+            message: standardMatch[4],
+            source: 'backend'
+          };
+        } else if (currentLog && line.trim()) {
+          // This is a continuation of the previous log (e.g., stack trace or multi-line output)
+          currentLog.message += '\n' + line;
+        } else if (line.trim()) {
+          // Unrecognized format - create a standalone log entry
+          if (currentLog) {
+            parsedBackendLogs.push(currentLog);
+            currentLog = null;
+          }
+          parsedBackendLogs.push({
+            message: line,
+            source: 'backend',
+            timestamp: new Date().toISOString(),
+            level: 'INFO'
+          });
+        }
+      }
+      
+      // Don't forget the last log
+      if (currentLog) {
+        parsedBackendLogs.push(currentLog);
+      }
+      
+      // Apply level filter to backend logs if we could parse them
+      const filteredBackendLogs = parsedBackendLogs.filter(log => {
+        if (filters.level !== 'all' && log.level && log.level.toUpperCase() !== filters.level.toUpperCase()) {
+          return false;
+        }
+        return true;
+      });
+      
+      combinedLogs = [...combinedLogs, ...filteredBackendLogs];
     }
 
     // Sort by timestamp
@@ -159,6 +255,8 @@ const LogViewer = ({ onClose }) => {
         <div className="log-viewer-stats">
           <span>Frontend Logs: {stats.totalLogs}</span>
           <span>Session: {stats.sessionId}</span>
+          <span>Raw Frontend: {logs.length}</span>
+          <span>Backend Lines: {backendLogs.split('\n').filter(line => line.trim()).length}</span>
           <span>Total Displayed: {filteredLogs.length}</span>
         </div>
 
@@ -184,11 +282,20 @@ const LogViewer = ({ onClose }) => {
               onChange={(e) => setFilters(prev => ({ ...prev, component: e.target.value }))}
             >
               <option value="all">All</option>
-              {Object.keys(stats.componentCounts || {}).map(component => (
-                <option key={component} value={component}>
-                  {component} ({stats.componentCounts[component]})
-                </option>
-              ))}
+              {Object.keys(stats.componentCounts || {}).length > 0 ? 
+                Object.keys(stats.componentCounts).map(component => (
+                  <option key={component} value={component}>
+                    {component} ({stats.componentCounts[component]})
+                  </option>
+                )) :
+                logs.length > 0 ? 
+                  [...new Set(logs.map(log => log.component))].map(component => (
+                    <option key={component} value={component}>
+                      {component}
+                    </option>
+                  )) :
+                  <option value="" disabled>No logs available</option>
+              }
             </select>
           </label>
 
@@ -222,221 +329,27 @@ const LogViewer = ({ onClose }) => {
           {filteredLogs.length === 0 ? (
             <div className="log-empty">No logs match the current filters.</div>
           ) : (
-            filteredLogs.map((log, index) => 
-              log.source === 'backend' 
-                ? renderLogEntry(log.message, index, true)
-                : renderLogEntry(log, index, false)
-            )
+            <>
+              <div className="log-header">
+                <span className="log-header-time">Time</span>
+                <span className="log-header-level">Level</span>
+                <span className="log-header-component">Component</span>
+                <span className="log-header-event">Event</span>
+                <span className="log-header-message">Message</span>
+                <span className="log-header-correlation">Correlation ID</span>
+              </div>
+              <div className="log-entries">
+                {filteredLogs.map((log, index) => 
+                  log.source === 'backend' 
+                    ? renderLogEntry(log, index, true)
+                    : renderLogEntry(log, index, false)
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>
 
-      <style jsx>{`
-        .log-viewer-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.8);
-          z-index: 10000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .log-viewer {
-          background: white;
-          border-radius: 8px;
-          width: 95vw;
-          height: 90vh;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-        }
-
-        .log-viewer-header {
-          padding: 1rem;
-          border-bottom: 1px solid #ddd;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .log-viewer-header h2 {
-          margin: 0;
-        }
-
-        .log-viewer-actions {
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        .log-viewer-actions button {
-          padding: 0.5rem 1rem;
-          border: 1px solid #ddd;
-          background: white;
-          border-radius: 4px;
-          cursor: pointer;
-        }
-
-        .log-viewer-actions button:hover {
-          background: #f5f5f5;
-        }
-
-        .log-viewer-actions button:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .log-viewer-error {
-          padding: 1rem;
-          background: #fee;
-          border-left: 4px solid #f00;
-          color: #c00;
-        }
-
-        .log-viewer-stats {
-          padding: 0.5rem 1rem;
-          background: #f8f9fa;
-          border-bottom: 1px solid #ddd;
-          font-size: 0.875rem;
-          color: #666;
-          display: flex;
-          gap: 1rem;
-        }
-
-        .log-viewer-filters {
-          padding: 1rem;
-          border-bottom: 1px solid #ddd;
-          display: flex;
-          gap: 1rem;
-          flex-wrap: wrap;
-        }
-
-        .log-viewer-filters label {
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
-          font-size: 0.875rem;
-        }
-
-        .log-viewer-filters select {
-          padding: 0.25rem 0.5rem;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-        }
-
-        .log-viewer-content {
-          flex: 1;
-          overflow-y: auto;
-          padding: 1rem;
-          font-family: 'Courier New', monospace;
-          font-size: 0.8rem;
-        }
-
-        .log-entry {
-          display: grid;
-          grid-template-columns: 100px 60px 120px 120px 1fr 120px;
-          gap: 0.5rem;
-          padding: 0.25rem;
-          border-bottom: 1px solid #eee;
-          align-items: start;
-        }
-
-        .log-entry.log-backend {
-          grid-template-columns: 100px 80px 1fr;
-        }
-
-        .log-entry.log-debug {
-          background: #f8f9fa;
-        }
-
-        .log-entry.log-info {
-          background: #e7f3ff;
-        }
-
-        .log-entry.log-warn {
-          background: #fff3cd;
-        }
-
-        .log-entry.log-error {
-          background: #f8d7da;
-        }
-
-        .log-timestamp {
-          font-size: 0.7rem;
-          color: #666;
-        }
-
-        .log-level {
-          font-weight: bold;
-          font-size: 0.7rem;
-        }
-
-        .log-level.DEBUG {
-          color: #6c757d;
-        }
-
-        .log-level.INFO {
-          color: #0d6efd;
-        }
-
-        .log-level.WARN {
-          color: #fd7e14;
-        }
-
-        .log-level.ERROR {
-          color: #dc3545;
-        }
-
-        .log-component {
-          font-weight: bold;
-          color: #495057;
-          font-size: 0.75rem;
-        }
-
-        .log-event {
-          color: #6f42c1;
-          font-size: 0.75rem;
-        }
-
-        .log-message {
-          color: #212529;
-        }
-
-        .log-correlation {
-          font-size: 0.7rem;
-          color: #6c757d;
-          font-family: monospace;
-        }
-
-        .log-data {
-          grid-column: 1 / -1;
-          margin-top: 0.25rem;
-        }
-
-        .log-data summary {
-          cursor: pointer;
-          color: #0d6efd;
-          font-size: 0.75rem;
-        }
-
-        .log-data pre {
-          background: #f8f9fa;
-          padding: 0.5rem;
-          border-radius: 4px;
-          margin: 0.25rem 0 0 0;
-          font-size: 0.7rem;
-          overflow-x: auto;
-        }
-
-        .log-empty {
-          text-align: center;
-          color: #6c757d;
-          padding: 2rem;
-        }
-      `}</style>
     </div>
   );
 };
