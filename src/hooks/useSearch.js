@@ -162,8 +162,8 @@ export const useSearch = () => {
         focal_length_max: filters.focalLengthRange?.max || '',
         start_date: filters.dateRange?.start || '',
         end_date: filters.dateRange?.end || '',
-        has_comments: filters.hasComment || false,
-        min_rating: filters.starRating > 0 ? filters.starRating : '',
+        has_comment: filters.hasComment || false,
+        star_rating: filters.starRating > 0 ? filters.starRating : 0,
         extension: filters.fileExtension || ''
       };
       

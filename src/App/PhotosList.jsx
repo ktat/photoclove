@@ -880,7 +880,7 @@ function PhotosList(props) {
         
         // Only load search results if we're in search mode AND the fetchConfig is also for search
         // This prevents search results from overriding date-based loading when user switches from search to date
-        if (isSearchMode && searchResults.length > 0 && fetchConfig?.fetch_method === "search") {
+        if (isSearchMode && searchResults.length > 0) {
             logger.info('PhotosList', 'search_results_loading', 'Search results available, loading photos');
             loadAllPhotosBasedOnFetchConfig({
                 fetch_method: "search",
