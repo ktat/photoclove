@@ -748,20 +748,19 @@ impl SQLite {
             params.push(Box::new(min_rating));
         }
         
-        // Camera filter
+        // Camera filter - match the same ID format used in options generation
         if let Some(camera) = filter_params.get("camera").and_then(|v| v.as_str()) {
             if !camera.is_empty() && camera != "all" {
-                sql_query.push_str(" AND (exif_make LIKE ? OR exif_model LIKE ?)");
-                params.push(Box::new(format!("%{}%", camera)));
-                params.push(Box::new(format!("%{}%", camera)));
+                sql_query.push_str(" AND LOWER(REPLACE(exif_make, ' ', '_') || '_' || REPLACE(exif_model, ' ', '_')) = ?");
+                params.push(Box::new(camera.to_string()));
             }
         }
         
-        // Lens filter
+        // Lens filter - match the same ID format used in options generation
         if let Some(lens) = filter_params.get("lens").and_then(|v| v.as_str()) {
             if !lens.is_empty() && lens != "all" {
-                sql_query.push_str(" AND exif_lens_model LIKE ?");
-                params.push(Box::new(format!("%{}%", lens)));
+                sql_query.push_str(" AND LOWER(REPLACE(exif_lens_model, ' ', '_')) = ?");
+                params.push(Box::new(lens.to_string()));
             }
         }
         
@@ -850,8 +849,17 @@ impl SQLite {
             let model: String = row.get("exif_model")?;
             let count: i64 = row.get("count")?;
             
+            let id = format!("{}_{}", make.replace(" ", "_").to_lowercase(), model.replace(" ", "_").to_lowercase());
+            
+            // Debug: Log each camera option generation
+            log::debug!(
+                target: "database",
+                "camera_option_created; make={}; model={}; id={}; count={}",
+                make, model, id, count
+            );
+            
             Ok(serde_json::json!({
-                "id": format!("{}_{}", make.replace(" ", "_").to_lowercase(), model.replace(" ", "_").to_lowercase()),
+                "id": id,
                 "make": make,
                 "model": model,
                 "count": count
@@ -862,6 +870,14 @@ impl SQLite {
         for camera in camera_iter {
             cameras.push(camera.map_err(|e| e.to_string())?);
         }
+        
+        // Debug: Log camera options for troubleshooting
+        log::debug!(
+            target: "database",
+            "camera_options_generated; camera_count={}; sample_cameras=[{}]",
+            cameras.len(),
+            cameras.iter().take(3).map(|c| format!("{:?}", c)).collect::<Vec<_>>().join(", ")
+        );
         
         serde_json::to_string(&cameras).map_err(|e| e.to_string())
     }
@@ -1849,11 +1865,29 @@ impl SQLite {
         // Debug: Log the final SQL query with parameter information
         let param_strings: Vec<String> = params.iter().enumerate().map(|(i, param)| {
             match param.to_sql() {
-                Ok(rusqlite::types::ToSqlOutput::Owned(value)) => {
-                    format!("${}: {:?}", i+1, value)
+                Ok(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(text))) => {
+                    format!("${}: '{}'", i+1, text)
                 },
-                Ok(rusqlite::types::ToSqlOutput::Borrowed(value)) => {
-                    format!("${}: {:?}", i+1, value)
+                Ok(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Integer(int))) => {
+                    format!("${}: {}", i+1, int)
+                },
+                Ok(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Real(real))) => {
+                    format!("${}: {}", i+1, real)
+                },
+                Ok(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Null)) => {
+                    format!("${}: NULL", i+1)
+                },
+                Ok(rusqlite::types::ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Text(text))) => {
+                    format!("${}: '{}'", i+1, String::from_utf8_lossy(text))
+                },
+                Ok(rusqlite::types::ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Integer(int))) => {
+                    format!("${}: {}", i+1, int)
+                },
+                Ok(rusqlite::types::ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Real(real))) => {
+                    format!("${}: {}", i+1, real)
+                },
+                Ok(rusqlite::types::ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Null)) => {
+                    format!("${}: NULL", i+1)
                 },
                 Ok(_) => format!("${}: <unknown>", i+1),
                 Err(_) => format!("${}: <error>", i+1)

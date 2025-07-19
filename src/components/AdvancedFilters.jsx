@@ -118,7 +118,14 @@ const AdvancedFilters = ({
             <label>Camera:</label>
             <select 
               value={filters.camera} 
-              onChange={(e) => updateFilter('camera', e.target.value)}
+              onChange={(e) => {
+                console.log('Camera filter changed:', {
+                  selectedValue: e.target.value,
+                  availableCameras: availableOptions.cameras?.slice(0, 3), // Log first 3 for debugging
+                  totalCameras: availableOptions.cameras?.length
+                });
+                updateFilter('camera', e.target.value);
+              }}
             >
               <option value="">All Cameras</option>
               {availableOptions.cameras.map(camera => (

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SearchBar from './SearchBar';
 import AdvancedFilters from './AdvancedFilters';
 import SavedSearches from './SavedSearches';
+import { logger } from '../services/LoggerService.js';
 
 const SearchTools = ({ 
     onSearch, 
@@ -60,6 +61,11 @@ const SearchTools = ({
     // Apply filters even without search query
     const applyFilters = () => {
         // Use empty query to search with filters only
+        logger.info('SearchTools', 'apply_filters', 'Executing filter-only search', {
+            currentFilters,
+            hasActiveFilters,
+            filterCount: Object.keys(currentFilters).length
+        });
         onSearch('', 'all', currentFilters);
     };
     

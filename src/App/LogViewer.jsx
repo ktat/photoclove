@@ -126,7 +126,18 @@ const LogViewer = ({ onClose }) => {
         {Object.keys(log.data).length > 0 && (
           <details className="log-data">
             <summary>Data</summary>
-            <pre>{JSON.stringify(log.data, null, 2)}</pre>
+            <div className="log-data-content">
+              <button 
+                className="copy-data-button" 
+                onClick={() => {
+                  navigator.clipboard.writeText(JSON.stringify(log.data, null, 2));
+                }}
+                title="Copy data to clipboard"
+              >
+                📋
+              </button>
+              <pre>{JSON.stringify(log.data, null, 2)}</pre>
+            </div>
           </details>
         )}
       </div>

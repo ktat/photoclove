@@ -126,7 +126,13 @@ function PhotosList(props) {
     // Search handlers (defined after state to ensure sortOfPhotos is available)
     const handleSearch = useCallback(async (query, type, filters) => {
         const params = { query, searchType: type, filters };
-        console.log('handleSearch setting currentSearchParams:', params);
+        logger.info('PhotosList', 'handle_search', 'Search triggered from UI', {
+            query, 
+            type, 
+            filters,
+            isSearchMode,
+            searchResultsLength: searchResults.length
+        });
         setCurrentSearchParams(params);
         
         // Map sortOfPhotos to backend sort field names
@@ -518,12 +524,21 @@ function PhotosList(props) {
     }
 
     async function loadAllPhotosBasedOnFetchConfig(config) {
+        logger.info('PhotosList', 'load_photos_config', 'loadAllPhotosBasedOnFetchConfig called', {
+            config,
+            hasConfig: !!config
+        });
         if (!config) return;
         
-        // Some fetch methods don't require a value (e.g., favorites)
-        if (config.fetch_method !== "favorites" && !config.value) return;
+        // Some fetch methods don't require a value (e.g., favorites, search with filters only)
+        if (config.fetch_method !== "favorites" && config.fetch_method !== "search" && !config.value) return;
         
-        console.log(`[LOAD_ALL] Loading all photos with config:`, config);
+        logger.info('PhotosList', 'load_all_start', 'Loading all photos', { 
+            config, 
+            isSearchMode, 
+            searchResultsLength: searchResults.length,
+            fetchMethod: config?.fetch_method
+        });
         
         // Show loading indicator
         setPhotoLoading(true);
@@ -673,8 +688,15 @@ function PhotosList(props) {
     
     // Trigger photo loading when search results are available (moved after function definitions)
     useEffect(() => {
+        logger.debug('PhotosList', 'search_results_effect', 'Search results effect triggered', {
+            isSearchMode,
+            searchResultsLength: searchResults.length,
+            searchQuery,
+            condition: isSearchMode && searchResults.length > 0
+        });
+        
         if (isSearchMode && searchResults.length > 0) {
-            console.log("[SEARCH_RESULTS] Search results available, loading photos");
+            logger.info('PhotosList', 'search_results_loading', 'Search results available, loading photos');
             loadAllPhotosBasedOnFetchConfig({
                 fetch_method: "search",
                 value: searchQuery,
