@@ -5,6 +5,7 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [searchName, setSearchName] = useState('');
   const [searchToEdit, setSearchToEdit] = useState(null);
+  const [expandedSearches, setExpandedSearches] = useState(new Set());
 
   // Load saved searches from localStorage
   useEffect(() => {
@@ -106,6 +107,79 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString();
+  };
+
+  // Toggle expanded state for search conditions
+  const toggleExpanded = (searchId) => {
+    const newExpanded = new Set(expandedSearches);
+    if (newExpanded.has(searchId)) {
+      newExpanded.delete(searchId);
+    } else {
+      newExpanded.add(searchId);
+    }
+    setExpandedSearches(newExpanded);
+  };
+
+  // Filter display logic
+  const filterDisplayMap = {
+    star: 'Star Rating',
+    dateFrom: 'From Date',
+    dateTo: 'To Date',
+    camera: 'Camera',
+    lens: 'Lens',
+    isoRange: 'ISO Range',
+    apertureRange: 'Aperture Range',
+    shutterSpeedRange: 'Shutter Speed Range',
+    focalLengthRange: 'Focal Length Range',
+    fileExtension: 'File Type',
+    hasComment: 'Has Comment'
+  };
+
+  const formatFilterValue = (key, value) => {
+    if (!value) return '';
+    if (key.includes('date')) return new Date(value).toLocaleDateString();
+    if (key === 'star') return '⭐'.repeat(value);
+    if (key === 'hasComment') return value ? 'Yes' : 'No';
+    if (key.includes('Range') && typeof value === 'object') {
+      const min = value.min || '';
+      const max = value.max || '';
+      if (min && max) return `${min} - ${max}`;
+      if (min) return `≥ ${min}`;
+      if (max) return `≤ ${max}`;
+      return '';
+    }
+    return value;
+  };
+
+  // Get active filters for display
+  const getActiveFilters = (search) => {
+    const filters = [];
+    
+    // Add query and search type
+    if (search.query) {
+      filters.push({ key: 'query', label: 'Query', value: search.query });
+    }
+    if (search.searchType && search.searchType !== 'all') {
+      filters.push({ key: 'searchType', label: 'Search In', value: search.searchType });
+    }
+    
+    // Add other filters
+    if (search.filters) {
+      Object.entries(search.filters).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== '' && value !== false) {
+          const formattedValue = formatFilterValue(key, value);
+          if (formattedValue) {
+            filters.push({
+              key,
+              label: filterDisplayMap[key] || key,
+              value: formattedValue
+            });
+          }
+        }
+      });
+    }
+    
+    return filters;
   };
 
   const exportSearches = () => {
@@ -235,20 +309,56 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
             .sort((a, b) => new Date(b.lastUsed) - new Date(a.lastUsed))
             .map((search) => (
               <div key={search.id} className="search-item">
-                <div className="search-info" onClick={() => handleSearchSelect(search)}>
-                  <div className="search-name">{search.name}</div>
-                  <div className="search-details">
-                    <span className="search-query">"{search.query}"</span>
-                    <span className="search-type">in {search.searchType}</span>
+                <div className="search-info">
+                  <div className="search-header" onClick={() => handleSearchSelect(search)}>
+                    <div className="search-name">{search.name}</div>
+                    <div className="search-dates">
+                      <span>Created: {formatDate(search.createdAt)}</span>
+                      <span className="date-separator">•</span>
+                      <span>Last used: {formatDate(search.lastUsed)}</span>
+                    </div>
                   </div>
-                  <div className="search-meta">
-                    <span className="created-date">
-                      Created: {formatDate(search.createdAt)}
-                    </span>
-                    <span className="last-used">
-                      Last used: {formatDate(search.lastUsed)}
-                    </span>
-                  </div>
+                  
+                  {getActiveFilters(search).length > 0 && (
+                    <div className="search-conditions-wrapper">
+                      <button
+                        className="toggle-conditions"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleExpanded(search.id);
+                        }}
+                        aria-expanded={expandedSearches.has(search.id)}
+                        aria-controls={`conditions-${search.id}`}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            toggleExpanded(search.id);
+                          }
+                        }}
+                      >
+                        <span className={`toggle-arrow ${expandedSearches.has(search.id) ? 'expanded' : ''}`}>
+                          ▷
+                        </span>
+                        Search Conditions
+                      </button>
+                      
+                      <div 
+                        id={`conditions-${search.id}`}
+                        className={`conditions-panel ${expandedSearches.has(search.id) ? 'expanded' : ''}`}
+                      >
+                        <table className="conditions-table">
+                          <tbody>
+                            {getActiveFilters(search).map((filter, index) => (
+                              <tr key={index}>
+                                <td className="condition-label">{filter.label}</td>
+                                <td className="condition-value">{filter.value}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="search-actions">
