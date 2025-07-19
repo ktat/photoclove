@@ -336,7 +336,9 @@ function PhotosList(props) {
 
     useEffect(() => {
         // Set CSS custom property for grid column sizing based on icon size
-        document.documentElement.style.setProperty('--photo-grid-size', `${iconSize + 41}px`);
+        // Use a more appropriate calculation for grid sizing
+        const gridSize = Math.max(120, parseInt(iconSize) + 41);
+        document.documentElement.style.setProperty('--photo-grid-size', `${gridSize}px`);
         
         // Cleanup function
         return () => {
@@ -909,7 +911,7 @@ function PhotosList(props) {
                                     {photos.has_next && (<span><a href="#" onClick={(e) => nextPhotosList(e, true)}>&nbsp;Next &gt;&gt;</a></span>)}
                                 </div>
                                 <div className="photo-operation">
-                                    Icon:<select name="icon_size" defaultValue={iconSize} onChange={(e) => setIconSize(e.target.value)}>
+                                    Icon:<select name="icon_size" value={iconSize} onChange={(e) => setIconSize(parseInt(e.target.value))}>
                                         <option value={50}>small</option>
                                         <option value={100}>normal</option>
                                         <option value={200}>large</option>
