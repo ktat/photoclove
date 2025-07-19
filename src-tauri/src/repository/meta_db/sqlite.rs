@@ -421,6 +421,33 @@ impl SQLite {
                 "CREATE INDEX IF NOT EXISTS idx_photo_date ON photo_metadata(photo_date)",
                 [],
             )?;
+            
+            // EXIF撮影日時インデックス（ソート最適化）
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_exif_date_time_original ON photo_metadata(exif_date_time_original)",
+                [],
+            )?;
+            
+            log::info!("Database index idx_exif_date_time_original created successfully");
+            
+            // 星評価インデックス（フィルター・ソート最適化）
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_star ON photo_metadata(star)",
+                [],
+            )?;
+            
+            log::info!("Database index idx_star created successfully");
+            
+            // 複合インデックス（高速検索最適化）
+            // 検索頻度が高い組み合わせ: 撮影日時 + 星評価 + 追加日時
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_search_composite ON photo_metadata(exif_date_time_original, star, photo_date)",
+                [],
+            )?;
+            
+            log::info!("Database index idx_search_composite created successfully");
+            
+            log::info!("All database indexes for search optimization created successfully");
         }
         
         // Create job queue tables
