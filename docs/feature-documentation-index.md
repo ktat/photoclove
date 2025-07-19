@@ -19,10 +19,11 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **Related Files**: `src/App/Importer.jsx`, `src/App/Importer/SelectedPhotoInfo.jsx`, `src-tauri/src/domain_service/job_queue_service.rs`
 
 ### 🖼️ Photo Viewing & Grid Display
-**When you need to understand**: Photo galleries, thumbnails, pagination, filtering
+**When you need to understand**: Photo galleries, thumbnails, infinite scroll, filtering
 - **Architecture**: [Key Features → Photo Viewing & Management](architecture.md#2-photo-viewing--management)
 - **Sequences**: [Photo Viewing Feature](feature-sequences.md#photo-viewing-feature)
 - **Components**: [Photo Grid View](component-structure.md#photo-grid-view), [Full-Screen Photo Display](component-structure.md#full-screen-photo-display)
+- **Features**: Infinite scroll pagination, batch loading (50 photos), configuration limit detection, smooth browsing experience
 - **Related Files**: `src/App/PhotosList.jsx`, `src/App/PhotosList/PhotosListMini.jsx`, `src/App/PhotosList/PhotoDisplay.jsx`
 
 ### 🎨 Photo Editing & Transformations

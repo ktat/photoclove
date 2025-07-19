@@ -10,6 +10,7 @@ PhotoClove is a desktop photo manager designed for speed and simplicity. Built w
 - **📥 Smart Import**: Batch photo import with UUID-based organization to prevent conflicts
 - **🎨 Non-Destructive Editing**: CSS-based image transformations with real-time preview
 - **📅 Date Organization**: Automatic photo organization by date with calendar navigation and Recent Photos access
+- **🎯 Infinite Scroll**: Smooth photo browsing with batch loading and configuration limit detection
 - **⭐ Metadata Management**: Star ratings, comments, and searchable metadata
 - **🔍 Advanced Search**: Comprehensive search interface with EXIF filters, saved searches, search history, and database optimization
 - **🔍 Debug Logging**: Real-time log viewer with frontend/backend correlation for troubleshooting

@@ -137,6 +137,8 @@ App (root)
 
 ### Photo Grid View
 
+**Updated for Infinite Scroll Implementation**
+
 ```html
 <div id="photoList" 
      class="centerDisplay" | "centerDisplayMax"
@@ -148,33 +150,31 @@ App (root)
     <a href="#" class="back-to-home">Back to HOME</a>
   </div>
   
-  <!-- Header with navigation and controls -->
+  <!-- Header with photo count and controls -->
   <div class="photo-list-header">
     <div class="photo-page-info">
-      <!-- Search mode: Back to HOME + page info -->
+      <!-- Search mode: Back to HOME + photo count -->
       <a href="#" class="back-to-home">Back to HOME</a>
-      <span style="margin-left: 10px">Search: "query" page:{N}</span>
-      <!-- Date mode: date + page info -->
-      <span>{date} page:{N}</span>
+      <span style="margin-left: 10px">Search: "query" (X photos)</span>
+      <!-- Date mode: date + photo count -->
+      <span>{date} (X photos)</span>
+      <!-- Infinite scroll status -->
+      <span style="margin-left: 10px; font-size: 12px; color: #666"> - Showing: X photos</span>
+      <!-- Configuration limit warning -->
+      <span style="margin-left: 10px; font-size: 11px; color: #f60; font-weight: bold"> (Limited by config)</span>
     </div>
-    <div class="navigation">
-      <a href="#">&lt;&lt; Prev</a>
-      <a href="#">Next &gt;&gt;</a>
-    </div>
+    <!-- Navigation controls removed in infinite scroll -->
     <div class="photo-operation">
       <select name="icon_size">Icon size options</select>
       <select name="sort">Sort options</select>
-      <select name="num">Items per page</select>
+      <!-- Num selector removed - not needed with infinite scroll -->
       <select name="extension_filter">File type filter</select>
     </div>
   </div>
   
-  <!-- Scrollable photo grid -->
+  <!-- Infinite scroll photo grid -->
   <div class="scroll-box photos">
-    <!-- Scroll indicators -->
-    <div class="scroll-indicator">
-      <div class="scroll-indicator-text up">⬆ scroll to load more ⬆</div>
-    </div>
+    <!-- No scroll indicators with infinite scroll -->
     
     <!-- Photo items -->
     <div class="row pict-{size}" style="flex: 0 0 {size}px">
@@ -195,9 +195,28 @@ App (root)
     
     <!-- Dummy grid items for scroll effect -->
     <div class="dummy-grid-item" style="height: {size}px"></div>
+  </div>
+  
+  <!-- Infinite scroll footer -->
+  <div class="infinite-scroll-footer">
+    <!-- Loading state -->
+    <div class="infinite-scroll-loading" style="display: {isLoadingMore ? 'block' : 'none'}">
+      <div class="loading-indicator">Loading...</div>
+    </div>
     
-    <div class="scroll-indicator">
-      <div class="scroll-indicator-text down">⬇ scroll to load more ⬇</div>
+    <!-- Load more prompt -->
+    <div class="infinite-scroll-prompt" style="display: {canLoadMore ? 'block' : 'none'}">
+      <div class="scroll-prompt">Scroll to load more</div>
+    </div>
+    
+    <!-- All photos loaded message -->
+    <div class="infinite-scroll-complete" style="display: {allPhotosLoaded ? 'block' : 'none'}">
+      <div class="complete-message">All photos displayed</div>
+    </div>
+    
+    <!-- Configuration limit warning -->
+    <div class="infinite-scroll-limit" style="display: {isLimitedByConfig ? 'block' : 'none'}">
+      <div class="limit-warning">More photos available, but limited by configuration (limit: {configLimit})</div>
     </div>
   </div>
   
@@ -699,6 +718,11 @@ App (root)
 - `.log-header` - LogViewer column headers
 - `.log-entries` - LogViewer log entries wrapper
 - `.log-entry` - Individual log entry row
+- `.infinite-scroll-footer` - Infinite scroll status container
+- `.infinite-scroll-loading` - Loading indicator for infinite scroll
+- `.infinite-scroll-prompt` - Load more prompt for infinite scroll
+- `.infinite-scroll-complete` - All photos loaded message
+- `.infinite-scroll-limit` - Configuration limit warning
 
 ### State Classes
 - `.selected` / `.notSelected` - Selection state
