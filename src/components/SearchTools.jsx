@@ -11,7 +11,10 @@ const SearchTools = ({
     onFiltersChange,
     initialFilters,
     onSearchSelect,
-    currentSearch
+    currentSearch,
+    filterOptions,
+    onLoadFilterOptions,
+    isFilterOptionsLoading
 }) => {
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
     const [currentFilters, setCurrentFilters] = useState(initialFilters || {});
@@ -64,6 +67,9 @@ const SearchTools = ({
                 <AdvancedFilters 
                     onFiltersChange={handleFiltersChange}
                     initialFilters={currentFilters}
+                    filterOptions={filterOptions}
+                    onLoadFilterOptions={onLoadFilterOptions}
+                    isLoading={isFilterOptionsLoading}
                 />
             )}
             

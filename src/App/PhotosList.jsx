@@ -91,6 +91,37 @@ function PhotosList(props) {
     const [imgCacheMap, setImgCacheMap] = useState({});
     const [showSideMenu, setShowSideMenu] = useState(isSearchMode);
     
+    // Filter options caching state
+    const [filterOptions, setFilterOptions] = useState(null);
+    const [isFilterOptionsLoading, setIsFilterOptionsLoading] = useState(false);
+    
+    // Filter options caching function
+    const loadFilterOptions = useCallback(async () => {
+        if (filterOptions || isFilterOptionsLoading) return filterOptions;
+        
+        setIsFilterOptionsLoading(true);
+        try {
+            const [cameras, lenses, extensions] = await Promise.all([
+                invoke('get_filter_options', { filterType: 'cameras' }),
+                invoke('get_filter_options', { filterType: 'lenses' }),
+                invoke('get_filter_options', { filterType: 'extensions' })
+            ]);
+
+            const options = {
+                cameras: JSON.parse(cameras),
+                lenses: JSON.parse(lenses),
+                extensions: JSON.parse(extensions)
+            };
+            setFilterOptions(options);
+            return options;
+        } catch (error) {
+            console.error('Failed to load filter options:', error);
+            return null;
+        } finally {
+            setIsFilterOptionsLoading(false);
+        }
+    }, [filterOptions, isFilterOptionsLoading]);
+    
     // Search handlers (defined after state to ensure sortOfPhotos is available)
     const handleSearch = useCallback(async (query, type, filters) => {
         const params = { query, searchType: type, filters };
@@ -1163,6 +1194,9 @@ function PhotosList(props) {
                                 initialFilters={searchFilters}
                                 onSearchSelect={handleSavedSearchSelect}
                                 currentSearch={currentSearchParams}
+                                filterOptions={filterOptions}
+                                onLoadFilterOptions={loadFilterOptions}
+                                isFilterOptionsLoading={isFilterOptionsLoading}
                             />
                         ) : null}
                     />

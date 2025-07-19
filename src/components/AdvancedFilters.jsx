@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 
-const AdvancedFilters = ({ onFiltersChange, initialFilters = {} }) => {
+const AdvancedFilters = ({ 
+  onFiltersChange, 
+  initialFilters = {}, 
+  filterOptions, 
+  onLoadFilterOptions, 
+  isLoading 
+}) => {
   const [filters, setFilters] = useState({
     camera: '',
     lens: '',
@@ -16,39 +22,12 @@ const AdvancedFilters = ({ onFiltersChange, initialFilters = {} }) => {
     ...initialFilters
   });
 
-  const [filterOptions, setFilterOptions] = useState({
-    cameras: [],
-    lenses: [],
-    extensions: []
-  });
-
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Load filter options from backend
+  // Component mount effect to request filter options if not loaded
   useEffect(() => {
-    const loadFilterOptions = async () => {
-      setIsLoading(true);
-      try {
-        const [cameras, lenses, extensions] = await Promise.all([
-          invoke('get_filter_options', { filterType: 'cameras' }),
-          invoke('get_filter_options', { filterType: 'lenses' }),
-          invoke('get_filter_options', { filterType: 'extensions' })
-        ]);
-
-        setFilterOptions({
-          cameras: JSON.parse(cameras),
-          lenses: JSON.parse(lenses),
-          extensions: JSON.parse(extensions)
-        });
-      } catch (error) {
-        console.error('Failed to load filter options:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadFilterOptions();
-  }, []);
+    if (!filterOptions && !isLoading && onLoadFilterOptions) {
+      onLoadFilterOptions();
+    }
+  }, [filterOptions, onLoadFilterOptions, isLoading]);
 
   const updateFilter = (key, value) => {
     const newFilters = { ...filters, [key]: value };
@@ -84,9 +63,16 @@ const AdvancedFilters = ({ onFiltersChange, initialFilters = {} }) => {
     onFiltersChange(clearedFilters);
   };
 
-  if (isLoading) {
+  if (!filterOptions && isLoading) {
     return <div className="advanced-filters loading">Loading filter options...</div>;
   }
+  
+  // Fallback to empty arrays if filterOptions is not available
+  const availableOptions = filterOptions || {
+    cameras: [],
+    lenses: [],
+    extensions: []
+  };
 
   return (
     <div className="advanced-filters">
@@ -111,7 +97,7 @@ const AdvancedFilters = ({ onFiltersChange, initialFilters = {} }) => {
               onChange={(e) => updateFilter('camera', e.target.value)}
             >
               <option value="">All Cameras</option>
-              {filterOptions.cameras.map(camera => (
+              {availableOptions.cameras.map(camera => (
                 <option key={camera.id} value={camera.id}>
                   {camera.make} {camera.model} ({camera.count} photos)
                 </option>
@@ -126,7 +112,7 @@ const AdvancedFilters = ({ onFiltersChange, initialFilters = {} }) => {
               onChange={(e) => updateFilter('lens', e.target.value)}
             >
               <option value="">All Lenses</option>
-              {filterOptions.lenses.map(lens => (
+              {availableOptions.lenses.map(lens => (
                 <option key={lens.id} value={lens.id}>
                   {lens.model} ({lens.count} photos)
                 </option>
@@ -233,7 +219,7 @@ const AdvancedFilters = ({ onFiltersChange, initialFilters = {} }) => {
               onChange={(e) => updateFilter('fileExtension', e.target.value)}
             >
               <option value="">All Types</option>
-              {filterOptions.extensions.map(ext => (
+              {availableOptions.extensions.map(ext => (
                 <option key={ext.extension} value={ext.extension}>
                   {ext.extension.toUpperCase()} ({ext.count} photos)
                 </option>
