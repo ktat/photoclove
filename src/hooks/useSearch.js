@@ -42,12 +42,12 @@ export const useSearch = () => {
     });
   }, []);
 
-  const performSearch = useCallback(async (query, type = 'all', filters = {}) => {
+  const performSearch = useCallback(async (query, type = 'all', filters = {}, sortField = 'exif_date_time_original', sortOrder = 'desc') => {
     const correlationId = logger.generateCorrelationId();
     const startTime = performance.now();
     
     logger.debug('useSearch', 'search_initiated', 'Search function called', {
-      query, type, filters, correlationId
+      query, type, filters, sortField, sortOrder, correlationId
     });
     
     // Check if we have any active filters
@@ -118,7 +118,9 @@ export const useSearch = () => {
       const result = await invoke('search_photos', {
         query: query.trim(),
         searchType: type,
-        filters: JSON.stringify(transformedFilters)
+        filters: JSON.stringify(transformedFilters),
+        sortField,
+        sortOrder
       });
       
       const endTime = performance.now();

@@ -47,68 +47,8 @@ function PhotosList(props) {
         toggleSearchPage(false);
     }, [clearSearchHook, toggleSearchPage]);
     
-    // Search handlers
-    const handleSearch = useCallback(async (query, type, filters) => {
-        const params = { query, searchType: type, filters };
-        console.log('handleSearch setting currentSearchParams:', params);
-        setCurrentSearchParams(params);
-        await performSearch(query, type, filters);
-    }, [performSearch]);
-
-    const handleSearchClear = useCallback(() => {
-        clearSearch();
-    }, [clearSearch]);
-
-    const handleSavedSearchSelect = useCallback((searchParams) => {
-        setCurrentSearchParams(searchParams);
-        performSearch(searchParams.query, searchParams.searchType, searchParams.filters);
-    }, [performSearch]);
-
-    const handleFiltersChange = useCallback((newFilters) => {
-        console.log('handleFiltersChange called with:', newFilters);
-        console.log('currentSearchParams:', currentSearchParams);
-        setSearchFilters(newFilters);
-        // If there's an active search, re-run it with new filters
-        if (currentSearchParams) {
-            console.log('Re-running search with new filters');
-            performSearch(currentSearchParams.query, currentSearchParams.searchType, newFilters);
-        } else {
-            console.log('No active search to re-run');
-        }
-    }, [currentSearchParams, performSearch]);
-    
     // Check if we're in search mode
     const isSearchMode = props.searchMode || false;
-    
-    // Initialize search parameters when in search mode
-    useEffect(() => {
-        if (isSearchMode && searchQuery && !currentSearchParams) {
-            setCurrentSearchParams({
-                query: searchQuery,
-                searchType: "all",
-                filters: searchFilters
-            });
-        }
-    }, [isSearchMode, searchQuery, currentSearchParams, searchFilters]);
-    
-    // Perform initial search when component mounts with searchInitialQuery
-    useEffect(() => {
-        if (isSearchMode && searchInitialQuery && !currentSearchParams) {
-            handleSearch(searchInitialQuery, "all", {});
-        }
-    }, [isSearchMode, searchInitialQuery, currentSearchParams, handleSearch]);
-    
-    // Trigger photo loading when search results are available
-    useEffect(() => {
-        if (isSearchMode && searchResults.length > 0) {
-            console.log("[SEARCH_RESULTS] Search results available, loading photos");
-            loadAllPhotosBasedOnFetchConfig({
-                fetch_method: "search",
-                value: searchQuery,
-                title: `Search: "${searchQuery}"`
-            });
-        }
-    }, [isSearchMode, searchResults, searchQuery]);
     
     // fetchConfig from props or generate from currentDate
     const fetchConfig = props.fetchConfig || {
@@ -150,6 +90,66 @@ function PhotosList(props) {
     const [photosListImgSrc, setPhotosListImgSrc] = useState({});
     const [imgCacheMap, setImgCacheMap] = useState({});
     const [showSideMenu, setShowSideMenu] = useState(isSearchMode);
+    
+    // Search handlers (defined after state to ensure sortOfPhotos is available)
+    const handleSearch = useCallback(async (query, type, filters) => {
+        const params = { query, searchType: type, filters };
+        console.log('handleSearch setting currentSearchParams:', params);
+        setCurrentSearchParams(params);
+        
+        // Map sortOfPhotos to backend sort field names
+        const sortFieldMap = {
+            0: 'exif_date_time_original',  // photo time
+            1: 'exif_date_time_original',  // time
+            2: 'path'  // name
+        };
+        const sortField = sortFieldMap[sortOfPhotos] || 'exif_date_time_original';
+        const sortOrder = 'desc'; // Default to descending order
+        
+        await performSearch(query, type, filters, sortField, sortOrder);
+    }, [performSearch, sortOfPhotos]);
+
+    const handleSearchClear = useCallback(() => {
+        clearSearch();
+    }, [clearSearch]);
+
+    const handleSavedSearchSelect = useCallback((searchParams) => {
+        setCurrentSearchParams(searchParams);
+        
+        // Map sortOfPhotos to backend sort field names
+        const sortFieldMap = {
+            0: 'exif_date_time_original',  // photo time
+            1: 'exif_date_time_original',  // time
+            2: 'path'  // name
+        };
+        const sortField = sortFieldMap[sortOfPhotos] || 'exif_date_time_original';
+        const sortOrder = 'desc'; // Default to descending order
+        
+        performSearch(searchParams.query, searchParams.searchType, searchParams.filters, sortField, sortOrder);
+    }, [performSearch, sortOfPhotos]);
+
+    const handleFiltersChange = useCallback((newFilters) => {
+        console.log('handleFiltersChange called with:', newFilters);
+        console.log('currentSearchParams:', currentSearchParams);
+        setSearchFilters(newFilters);
+        // If there's an active search, re-run it with new filters
+        if (currentSearchParams) {
+            console.log('Re-running search with new filters');
+            
+            // Map sortOfPhotos to backend sort field names
+            const sortFieldMap = {
+                0: 'exif_date_time_original',  // photo time
+                1: 'exif_date_time_original',  // time
+                2: 'path'  // name
+            };
+            const sortField = sortFieldMap[sortOfPhotos] || 'exif_date_time_original';
+            const sortOrder = 'desc'; // Default to descending order
+            
+            performSearch(currentSearchParams.query, currentSearchParams.searchType, newFilters, sortField, sortOrder);
+        } else {
+            console.log('No active search to re-run');
+        }
+    }, [currentSearchParams, performSearch, sortOfPhotos]);
     
     // Notify parent when menu state changes
     useEffect(() => {
@@ -623,6 +623,36 @@ function PhotosList(props) {
             compatProps.addFooterMessage && compatProps.addFooterMessage(`Failed to load photos: ${error.message || error}`);
         }
     }
+
+    // Initialize search parameters when in search mode (moved after function definitions)
+    useEffect(() => {
+        if (isSearchMode && searchQuery && !currentSearchParams) {
+            setCurrentSearchParams({
+                query: searchQuery,
+                searchType: "all",
+                filters: searchFilters
+            });
+        }
+    }, [isSearchMode, searchQuery, currentSearchParams, searchFilters]);
+    
+    // Perform initial search when component mounts with searchInitialQuery (moved after function definitions)
+    useEffect(() => {
+        if (isSearchMode && searchInitialQuery && !currentSearchParams) {
+            handleSearch(searchInitialQuery, "all", {});
+        }
+    }, [isSearchMode, searchInitialQuery, currentSearchParams, handleSearch]);
+    
+    // Trigger photo loading when search results are available (moved after function definitions)
+    useEffect(() => {
+        if (isSearchMode && searchResults.length > 0) {
+            console.log("[SEARCH_RESULTS] Search results available, loading photos");
+            loadAllPhotosBasedOnFetchConfig({
+                fetch_method: "search",
+                value: searchQuery,
+                title: `Search: "${searchQuery}"`
+            });
+        }
+    }, [isSearchMode, searchResults, searchQuery]);
 
     function closePhotoDisplay() {
         setShowSideMenu(false);

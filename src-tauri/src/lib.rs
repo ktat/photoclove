@@ -86,6 +86,8 @@ async fn search_photos(
     query: &str,
     search_type: &str,
     filters: &str,
+    sort_field: Option<String>,
+    sort_order: Option<String>,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
     let meta_db = &state.meta_db;
@@ -132,8 +134,40 @@ async fn search_photos(
         },
     };
     
+    // Validate and set default sort parameters
+    let sort_field = sort_field.unwrap_or_else(|| "exif_date_time_original".to_string());
+    let sort_order = sort_order.unwrap_or_else(|| "desc".to_string());
+    
+    // Validate sort parameters for security
+    let valid_sort_fields = vec!["exif_date_time_original", "photo_date", "path", "star"];
+    let valid_sort_orders = vec!["asc", "desc"];
+    
+    if !valid_sort_fields.contains(&sort_field.as_str()) {
+        log::warn!(
+            target: "search",
+            "invalid_sort_field; correlation_id={}; sort_field={}; using_default=exif_date_time_original",
+            correlation_id, sort_field
+        );
+        return Err("Invalid sort field".to_string());
+    }
+    
+    if !valid_sort_orders.contains(&sort_order.as_str()) {
+        log::warn!(
+            target: "search",
+            "invalid_sort_order; correlation_id={}; sort_order={}; using_default=desc",
+            correlation_id, sort_order
+        );
+        return Err("Invalid sort order".to_string());
+    }
+    
+    log::debug!(
+        target: "search",
+        "sort_params; correlation_id={}; sort_field={}; sort_order={}",
+        correlation_id, sort_field, sort_order
+    );
+
     // Use the search_photos method from the SQLite struct
-    let result = meta_db.search_photos(query, search_type, filters);
+    let result = meta_db.search_photos(query, search_type, filters, &sort_field, &sort_order);
     let duration = start_time.elapsed();
     
     match &result {

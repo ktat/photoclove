@@ -1729,13 +1729,13 @@ impl SQLite {
         }
     }
 
-    pub fn search_photos(&self, query: &str, search_type: &str, filters: &str) -> Result<String, String> {
+    pub fn search_photos(&self, query: &str, search_type: &str, filters: &str, sort_field: &str, sort_order: &str) -> Result<String, String> {
         let start_time = std::time::Instant::now();
         
         log::debug!(
             target: "database",
-            "search_photos_start; query={}; search_type={}; filters={}",
-            query, search_type, filters
+            "search_photos_start; query={}; search_type={}; filters={}; sort_field={}; sort_order={}",
+            query, search_type, filters, sort_field, sort_order
         );
         
         let conn = self.get_connection().map_err(|e| e.to_string())?;
@@ -1817,10 +1817,33 @@ impl SQLite {
         // Add advanced filters
         self.add_advanced_filters(&mut sql_query, &mut params, &filter_params)?;
         
+        // Add ORDER BY clause
+        let order_direction = if sort_order.to_lowercase() == "asc" { "ASC" } else { "DESC" };
+        match sort_field {
+            "exif_date_time_original" => {
+                sql_query.push_str(&format!(" ORDER BY exif_date_time_original {}", order_direction));
+            }
+            "photo_date" => {
+                sql_query.push_str(&format!(" ORDER BY photo_date {}", order_direction));
+            }
+            "path" => {
+                sql_query.push_str(&format!(" ORDER BY path {}", order_direction));
+            }
+            "star" => {
+                // For star rating, we need to handle NULLs - put them at the end for DESC, beginning for ASC
+                let null_handling = if sort_order.to_lowercase() == "desc" { "NULLS LAST" } else { "NULLS FIRST" };
+                sql_query.push_str(&format!(" ORDER BY star {} {}", order_direction, null_handling));
+            }
+            _ => {
+                // Default fallback to exif_date_time_original
+                sql_query.push_str(&format!(" ORDER BY exif_date_time_original {}", order_direction));
+            }
+        }
+        
         log::debug!(
             target: "database",
-            "sql_query_prepared; query_length={}; param_count={}",
-            sql_query.len(), params.len()
+            "sql_query_prepared; query_length={}; param_count={}; sort_field={}; sort_order={}",
+            sql_query.len(), params.len(), sort_field, sort_order
         );
         
         // Execute query
