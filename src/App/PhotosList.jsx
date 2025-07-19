@@ -121,6 +121,8 @@ function PhotosList(props) {
     
     // Store configuration for photo fetch limits
     const [config, setConfig] = useState(null);
+    const [isLimitedByConfig, setIsLimitedByConfig] = useState(false);
+    const [configLimit, setConfigLimit] = useState(null);
     const [star, setStar] = useState([false, false, false, false, false]);
     const [starFilter, setStarFilter] = useState(0);
     const [hasCommentFilter, setHasCommentFilter] = useState(false);
@@ -814,6 +816,12 @@ function PhotosList(props) {
                 }
             }
             
+            // Check if we hit the configuration limit
+            const effectiveLimit = config?.max_photos_per_fetch || 1000;
+            const isLimited = data.photos.length >= effectiveLimit && (data.has_next || data.photos.length === effectiveLimit);
+            setIsLimitedByConfig(isLimited);
+            setConfigLimit(effectiveLimit);
+            
             // Store all photos unfiltered
             setAllPhotosForCurrentFetch(data.photos);
             
@@ -831,6 +839,8 @@ function PhotosList(props) {
             setAllPhotosForCurrentFetch([]);
             setPhotosListMiniAllPhotos([]);
             setPhotosList({ photos: [], has_next: false, has_prev: false });
+            setIsLimitedByConfig(false);
+            setConfigLimit(null);
             
             // Hide loading indicator on error
             setPhotoLoading(false);
@@ -1010,6 +1020,9 @@ function PhotosList(props) {
                                     )}
                                     {infiniteScrollEnabled && displayedPhotoCount < filteredPhotos.length && (
                                         <span style={{marginLeft: "10px", fontSize: "12px", color: "#666"}}> - Showing: {displayedPhotoCount} photos</span>
+                                    )}
+                                    {isLimitedByConfig && (
+                                        <span style={{marginLeft: "10px", fontSize: "11px", color: "#f60", fontWeight: "bold"}}> (Limited by config)</span>
                                     )}
                                 </div>
                                 {/* Removed navigation - replaced by infinite scroll */}
@@ -1216,7 +1229,16 @@ function PhotosList(props) {
                             {displayedPhotoCount >= filteredPhotos.length && filteredPhotos.length > 0 && (
                                 <div className="infinite-scroll-complete"
                                      style={{ textAlign: 'center', padding: '20px', width: '100%', gridColumn: '1 / -1', color: '#666' }}>
-                                    All photos displayed ({filteredPhotos.length} photos)
+                                    {isLimitedByConfig ? (
+                                        <div>
+                                            <div>Showing {filteredPhotos.length} photos (limited by configuration)</div>
+                                            <div style={{ fontSize: '12px', marginTop: '5px', color: '#999' }}>
+                                                Display limit: {configLimit} photos. There may be more photos available.
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div>All photos displayed ({filteredPhotos.length} photos)</div>
+                                    )}
                                 </div>
                             )}
                         </Scrollable>
