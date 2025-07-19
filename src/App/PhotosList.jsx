@@ -147,6 +147,11 @@ function PhotosList(props) {
     const handleSavedSearchSelect = useCallback((searchParams) => {
         setCurrentSearchParams(searchParams);
         
+        // Update search filters state to reflect in UI
+        if (searchParams.filters) {
+            setSearchFilters(searchParams.filters);
+        }
+        
         // Map sortOfPhotos to backend sort field names
         const sortFieldMap = {
             0: 'exif_date_time_original',  // photo time

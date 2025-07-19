@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SearchBar from './SearchBar';
 import AdvancedFilters from './AdvancedFilters';
 import SavedSearches from './SavedSearches';
@@ -19,6 +19,27 @@ const SearchTools = ({
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
     const [currentFilters, setCurrentFilters] = useState(initialFilters || {});
     const [searchQuery, setSearchQuery] = useState(initialQuery || '');
+    
+    // Update filters when initialFilters change (e.g., from saved search)
+    useEffect(() => {
+        if (initialFilters) {
+            setCurrentFilters(initialFilters);
+            // Show advanced filters if there are active filters
+            const hasFilters = Object.keys(initialFilters).some(key => {
+                const value = initialFilters[key];
+                if (typeof value === 'boolean') return value;
+                if (typeof value === 'number') return value > 0;
+                if (typeof value === 'string') return value.length > 0;
+                if (typeof value === 'object' && value !== null) {
+                    return Object.values(value).some(v => v && v.toString().length > 0);
+                }
+                return false;
+            });
+            if (hasFilters) {
+                setShowAdvancedFilters(true);
+            }
+        }
+    }, [initialFilters]);
 
     // Handle filter changes
     const handleFiltersChange = (newFilters) => {
