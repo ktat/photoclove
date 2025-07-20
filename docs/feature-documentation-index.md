@@ -5,11 +5,12 @@ This reverse index helps you quickly find the relevant documentation when workin
 ## Quick Reference by Feature
 
 ### 🏠 Application Startup & Navigation
-**When you need to understand**: App initialization, routing, menu system
+**When you need to understand**: App initialization, routing, menu system, startup state management
 - **Architecture**: [System Architecture](architecture.md#system-architecture) → Frontend Architecture → Application Shell
 - **Sequences**: [Application Startup Sequence](feature-sequences.md#application-startup-sequence)
 - **Components**: [Main Application Container](component-structure.md#main-application-container), [Left Menu](component-structure.md#left-menu-and-date-list)
-- **Related Files**: `src/App.jsx`, `src/main.jsx`, `src-tauri/src/lib.rs`
+- **Startup Behavior**: Welcome screen for first-time users (useCount ≤ 2), Home component for returning users, proper state management prevents "No Photo Found!" at startup
+- **Related Files**: `src/App.jsx`, `src/context/UIContext.jsx`, `src/main.jsx`, `src-tauri/src/lib.rs`
 
 ### 📸 Photo Import System
 **When you need to understand**: File importing, directory scanning, batch processing
@@ -38,8 +39,9 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **Architecture**: [Data Storage Strategy](architecture.md#2-data-storage-strategy) → Filesystem Organization
 - **Sequences**: [Date List Loading](feature-sequences.md#1-date-list-loading), [Recent Photos Navigation](feature-sequences.md#recent-photos-navigation)
 - **Components**: [Left Menu and Date List](component-structure.md#left-menu-and-date-list)
-- **Features**: Calendar-based navigation, Recent Photos quick access (60 most recent), optimized database queries
-- **Related Files**: `src/App/DateList.jsx`, `src-tauri/src/value/date.rs`, `src/context/PhotoContext.jsx`
+- **Performance**: Optimized with pre-computed date_summary table for ~10x faster date list loading, smart rebuild logic, graceful fallback to GROUP BY queries
+- **Features**: Calendar-based navigation, Recent Photos quick access (60 most recent), optimized database queries, date_summary table caching
+- **Related Files**: `src/App/DateList.jsx`, `src-tauri/src/repository/meta_db/sqlite.rs`, `src-tauri/src/value/date.rs`, `src/context/PhotoContext.jsx`
 
 ### ⚙️ Configuration Management
 **When you need to understand**: App settings, preferences, directory configuration
@@ -64,9 +66,11 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **Related Files**: `src/App/JobQueue.jsx`, `src-tauri/src/domain_service/job_queue_service.rs`, `src-tauri/src/entity/job_queue.rs`
 
 ### 🗄️ Database Operations
-**When you need to understand**: SQLite operations, metadata storage, database creation
+**When you need to understand**: SQLite operations, metadata storage, database creation, performance optimizations
 - **Architecture**: [Data Storage Strategy](architecture.md#2-data-storage-strategy) → SQLite Database Schema
 - **Sequences**: [Database Management](feature-sequences.md#database-management)
+- **Performance Features**: date_summary table for pre-computed photo counts, smart rebuild logic, graceful fallback mechanisms
+- **Optimization**: Date queries optimized with dedicated summary table, ~10x performance improvement for large libraries
 - **Related Files**: `src-tauri/src/repository/meta_db/sqlite.rs`, `src-tauri/src/entity/photo_meta.rs`
 
 ### 📝 Logging & Debugging System
@@ -128,10 +132,11 @@ This reverse index helps you quickly find the relevant documentation when workin
 
 ### Troubleshooting Display Issues
 1. **Check component visibility conditions** in parent components (App.jsx)
-2. **Verify state management** Context values and prop passing
+2. **Verify state management** Context values and prop passing, especially UIContext initial states
 3. **Review useEffect dependencies** for data loading triggers
-4. **Follow bug investigation guide** in `CLAUDE.md` for systematic debugging
-5. **Use LogViewer** (Ctrl+Shift+L) to inspect frontend state and backend responses
+4. **Common startup issues**: Ensure UIContext showPhotosList starts as false to prevent "No Photo Found!" at startup
+5. **Follow bug investigation guide** in `CLAUDE.md` for systematic debugging
+6. **Use LogViewer** (Ctrl+Shift+L) to inspect frontend state and backend responses
 
 ### Adding a New Photo Transformation
 1. **Frontend**: Add control in [Photo Editor Panel](component-structure.md#photo-editor-panel)
@@ -174,6 +179,8 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **Sequences**: [Photo Viewing Feature](feature-sequences.md#photo-viewing-feature)
 
 **Recent Bug Fixes**:
+- **Startup State Issue** (Fixed: Changed UIContext showPhotosList initial state from true to false, prevents "No Photo Found!" at startup, properly shows Welcome/Home screen)
+- **Date List Performance** (Fixed: Implemented date_summary table optimization with smart rebuild logic for ~10x faster date loading)
 - **Thumbnail List Not Updating After Deletion** (Fixed: DEL key deletion now properly removes photos from thumbnail list in all viewing modes)
 - **Date Dependencies in Multi-Mode Views** (Fixed: Recent Photos and Search modes now work independently of currentDate, with proper pagination and thumbnail generation)
 
