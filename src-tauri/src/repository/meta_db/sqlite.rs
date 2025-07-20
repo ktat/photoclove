@@ -620,89 +620,43 @@ impl SQLite {
 
         log::debug!(target: "date_summary", "get_available_dates; connection=successful");
 
-        // Check if date_summary table exists and has data
-        let table_exists = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='date_summary'")
-            .and_then(|mut stmt| stmt.query_row([], |_| Ok(true)))
-            .unwrap_or(false);
-            
-        if table_exists {
-            let summary_count = conn.query_row(
-                "SELECT COUNT(*) FROM date_summary", 
-                [], 
-                |row| row.get::<_, i32>(0)
-            ).unwrap_or(0);
-            
-            if summary_count > 0 {
-                log::info!(target: "date_summary", "get_available_dates; using_optimized_table=true");
-                
-                // Use optimized query from date_summary table
-                let mut stmt = conn
-                    .prepare("SELECT date FROM date_summary ORDER BY date")
-                    .map_err(|e| {
-                        log::error!(target: "date_summary", "get_available_dates; prepare_failed; error={}", e);
-                        format!("Failed to prepare optimized statement: {}", e)
-                    })?;
+        // Try to get dates directly from date_summary table
+        let mut stmt = match conn.prepare("SELECT date, photo_count FROM date_summary ORDER BY date") {
+            Ok(stmt) => stmt,
+            Err(_) => {
+                // Table doesn't exist, fall back to GROUP BY
+                log::debug!(target: "date_summary", "get_available_dates; table_missing; fallback=group_by");
+                return self.fallback_get_available_dates(&conn);
+            }
+        };
 
-                let rows = stmt
-                    .query_map([], |row| {
-                        let date_str: String = row.get(0)?;
-                        Ok(date_str)
-                    })
-                    .map_err(|e| {
-                        log::error!(target: "date_summary", "get_available_dates; execute_optimized_failed; error={}", e);
-                        format!("Failed to execute optimized query: {}", e)
-                    })?;
+        let rows = match stmt.query_map([], |row| {
+            let date_str: String = row.get(0)?;
+            Ok(date_str)
+        }) {
+            Ok(rows) => rows,
+            Err(_) => {
+                // Query failed, fall back to GROUP BY
+                log::debug!(target: "date_summary", "get_available_dates; query_failed; fallback=group_by");
+                return self.fallback_get_available_dates(&conn);
+            }
+        };
 
-                return self.process_date_rows(rows);
+        // Check if we got any results
+        let dates: Result<Vec<String>, _> = rows.collect();
+        match dates {
+            Ok(date_strings) if !date_strings.is_empty() => {
+                log::info!(target: "date_summary", "get_available_dates; using_optimized_table=true; count={}", date_strings.len());
+                // Convert strings back to MappedRows format for process_date_rows
+                let simulated_rows = date_strings.into_iter().map(|s| Ok(s));
+                return self.process_date_rows_from_iter(simulated_rows);
+            }
+            _ => {
+                // No data or error, fall back to GROUP BY
+                log::debug!(target: "date_summary", "get_available_dates; no_data; fallback=group_by");
+                self.fallback_get_available_dates(&conn)
             }
         }
-
-        // Fallback to original GROUP BY query
-        println!("SQLite::get_available_dates() - Using fallback GROUP BY query");
-
-        // First check how many records we have
-        let count_result = conn.query_row("SELECT COUNT(*) FROM photo_metadata", [], |row| {
-            let count: i64 = row.get(0)?;
-            Ok(count)
-        });
-
-        match count_result {
-            Ok(count) => println!(
-                "SQLite::get_available_dates() - Found {} total records",
-                count
-            ),
-            Err(e) => println!(
-                "SQLite::get_available_dates() - Error counting records: {}",
-                e
-            ),
-        }
-
-        let mut stmt = conn
-            .prepare("SELECT DISTINCT date(photo_date) FROM photo_metadata ORDER BY photo_date")
-            .map_err(|e| {
-                println!(
-                    "SQLite::get_available_dates() - Failed to prepare fallback statement: {}",
-                    e
-                );
-                format!("Failed to prepare fallback statement: {}", e)
-            })?;
-
-        println!("SQLite::get_available_dates() - Fallback query prepared successfully");
-
-        let rows = stmt
-            .query_map([], |row| {
-                let date_str: String = row.get(0)?;
-                Ok(date_str)
-            })
-            .map_err(|e| {
-                println!(
-                    "SQLite::get_available_dates() - Failed to execute fallback query: {}",
-                    e
-                );
-                format!("Failed to execute fallback query: {}", e)
-            })?;
-
-        self.process_date_rows(rows)
     }
 
     fn process_date_rows(&self, rows: rusqlite::MappedRows<impl FnMut(&rusqlite::Row) -> rusqlite::Result<String>>) -> Result<Vec<date::Date>, String> {
@@ -814,6 +768,77 @@ impl SQLite {
             "SQLite::process_date_rows() - Returning {} dates",
             dates.len()
         );
+        Ok(dates)
+    }
+
+    fn fallback_get_available_dates(&self, conn: &rusqlite::Connection) -> Result<Vec<date::Date>, String> {
+        log::info!(target: "date_summary", "fallback_get_available_dates; using_group_by=true");
+
+        let mut stmt = conn
+            .prepare("SELECT DISTINCT date(photo_date) FROM photo_metadata ORDER BY photo_date")
+            .map_err(|e| {
+                log::error!(target: "date_summary", "fallback_get_available_dates; prepare_failed; error={}", e);
+                format!("Failed to prepare fallback statement: {}", e)
+            })?;
+
+        let rows = stmt
+            .query_map([], |row| {
+                let date_str: String = row.get(0)?;
+                Ok(date_str)
+            })
+            .map_err(|e| {
+                log::error!(target: "date_summary", "fallback_get_available_dates; execute_failed; error={}", e);
+                format!("Failed to execute fallback query: {}", e)
+            })?;
+
+        self.process_date_rows(rows)
+    }
+
+    fn process_date_rows_from_iter<I>(&self, rows: I) -> Result<Vec<date::Date>, String>
+    where
+        I: Iterator<Item = Result<String, rusqlite::Error>>,
+    {
+        log::debug!(target: "date_summary", "process_date_rows_from_iter; start=true");
+
+        let mut dates = Vec::new();
+        let mut row_count = 0;
+        let mut parsed_count = 0;
+
+        for row in rows {
+            row_count += 1;
+            let date_str = row.map_err(|e| {
+                log::error!(target: "date_summary", "process_date_rows_from_iter; parse_failed; row={}; error={}", row_count, e);
+                format!("Failed to parse row: {}", e)
+            })?;
+
+            // Parse date string in "yyyy-mm-dd" format
+            let parts: Vec<&str> = date_str.split('-').collect();
+            if parts.len() == 3 {
+                if let (Ok(year), Ok(month), Ok(day)) = (
+                    parts[0].parse::<i32>(),
+                    parts[1].parse::<u32>(),
+                    parts[2].parse::<u32>(),
+                ) {
+                    if let Some(date) = date::Date::new(year, month, day) {
+                        dates.push(date);
+                        parsed_count += 1;
+                    }
+                }
+            }
+        }
+
+        log::info!(target: "date_summary", "process_date_rows_from_iter; processed={}; parsed={}", row_count, parsed_count);
+
+        // Remove duplicates and sort
+        dates.sort_by(|a, b| {
+            a.year
+                .cmp(&b.year)
+                .then(a.month.cmp(&b.month))
+                .then(a.day.cmp(&b.day))
+        });
+        dates.dedup_by(|a, b| a.year == b.year && a.month == b.month && a.day == b.day);
+
+        log::info!(target: "date_summary", "process_date_rows_from_iter; final_count={}", dates.len());
         Ok(dates)
     }
 
