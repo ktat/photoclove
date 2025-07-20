@@ -59,13 +59,17 @@ function PhotosList(props) {
     
     // fetchConfig from props or generate from currentDate
     // For Advanced Search mode, don't set initial fetchConfig to prevent auto-loading
-    const fetchConfig = props.fetchConfig || 
-        (isAdvancedSearchMode ? null : {
+    const fetchConfig = useMemo(() => {
+        if (props.fetchConfig) return props.fetchConfig;
+        if (isAdvancedSearchMode) return null;
+        
+        return {
             fetch_method: recentPhotosMode ? "recent" : (isSearchMode ? "search" : "date"),
             value: recentPhotosMode ? "recent" : (isSearchMode ? searchQuery : currentDate),
             title: recentPhotosMode ? "Recent Photos (60 most recent)" : (isSearchMode ? `Search: "${searchQuery}"` : currentDate),
             max_photos_per_fetch: recentPhotosMode ? 60 : undefined
-        });
+        };
+    }, [props.fetchConfig, isAdvancedSearchMode, recentPhotosMode, isSearchMode, searchQuery, currentDate]);
 
     // Debug logging
     logger.debug('PhotosList', 'fetchConfig_generation', 'FetchConfig debug', {
@@ -505,7 +509,7 @@ function PhotosList(props) {
             logger.debug('PhotosList', 'useEffect_skip', 'Not loading photos - fetchConfig is null/undefined');
         }
         
-    }, [fetchConfig?.fetch_method, fetchConfig?.value, recentPhotosMode]);
+    }, [fetchConfig]);
 
     // Load filter options for Advanced Search mode
     useEffect(() => {

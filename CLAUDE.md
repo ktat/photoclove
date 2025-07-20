@@ -59,3 +59,169 @@ When implementing logging in the codebase:
 - Frontend logs: stored in memory via LoggerService
 - Backend logs: written to daily files and retrieved via `get_logs` command
 - Use structured logging to enable proper filtering and search in LogViewer
+
+# Bug Investigation
+
+## Log Files Location
+
+Log files are under the following directory for bug investigation:
+
+- ~/.local/share/photoclove/logs/
+
+## Bug Investigation Methodology
+
+Based on lessons learned, follow this systematic approach to avoid trial-and-error fixes:
+
+### 1. Problem Documentation
+- **Exact symptoms**: Record precise behavior, not assumptions
+- **Reproduction steps**: Document exact steps to reproduce the issue
+- **Environment state**: Note initial conditions (first launch, after restart, etc.)
+- **Expected vs actual behavior**: Clear comparison
+
+### 2. Data Flow Analysis
+Follow the complete data flow systematically:
+```
+User Action → State Update → Component Props → Data Processing → UI Display
+```
+
+**For display issues, check in order:**
+1. **UI State**: Component visibility conditions, props, context values
+2. **Data Fetching**: API calls, backend responses, error handling
+3. **State Management**: useEffect dependencies, state update timing
+4. **Rendering Logic**: Component display conditions, conditional rendering
+
+### 3. Log-Driven Investigation
+- **Backend logs**: Check `~/.local/share/photoclove/logs/photoclove-*.log` for API responses
+- **Frontend logs**: Check `~/.local/share/photoclove/logs/photoclove-frontend-*.log` for UI state
+- **Correlation analysis**: Match backend success with frontend display issues
+
+### 4. Component Architecture Review
+**For React components, verify:**
+- Display/hide conditions (`display: "none"`, conditional rendering)
+- Props flow from parent to child components
+- State management (Context, useState, useEffect)
+- Event handlers and state update calls
+
+### 5. Hypothesis Formation
+- Base hypotheses on log data and component analysis, not assumptions
+- Test one specific hypothesis at a time
+- Use minimal test cases to validate hypotheses
+
+### 6. Targeted Fix
+- Address the root cause identified through investigation
+- Make the minimal necessary change
+- Avoid shotgun debugging (multiple simultaneous changes)
+
+## Common Issue Patterns
+
+### Display Issues
+1. **Check component visibility conditions first**
+   - Conditional rendering logic
+   - CSS display properties
+   - Parent component state
+2. **Verify data flow**
+   - Props passing
+   - State updates
+   - useEffect dependencies
+
+### Timing Issues
+1. **State update timing**
+   - useEffect dependency arrays
+   - Async operation completion
+   - Component lifecycle timing
+2. **Data synchronization**
+   - Backend response timing
+   - Frontend state update delays
+
+### State Management Issues
+1. **Context state**
+   - Initial values vs runtime values
+   - State update functions
+   - Provider scope
+2. **Local state**
+   - useState initial values
+   - State update batching
+   - useEffect cleanup
+
+## Investigation Tools
+
+- `grep` for searching logs and codebase patterns
+- Browser DevTools for frontend state inspection
+- Backend logs for API response verification
+- Component props debugging with logging statements
+
+## Adding Effective Debug Logging
+
+When existing logs are insufficient, add targeted logging strategically:
+
+### Frontend Logging Strategy
+```javascript
+// State transition logging
+logger.debug('ComponentName', 'state_change', 'State updated', {
+  before: previousState,
+  after: newState,
+  trigger: 'user_action_name'
+});
+
+// Conditional rendering decisions
+logger.debug('ComponentName', 'render_decision', 'Component visibility check', {
+  condition: conditionValue,
+  willRender: !!conditionValue,
+  props: relevantProps
+});
+
+// Event handler execution
+logger.debug('ComponentName', 'event_handler', 'User interaction', {
+  event: 'click',
+  target: 'button_name',
+  currentState: state
+});
+```
+
+### Backend Logging Strategy
+```rust
+// Request processing
+log::info!(target: "component", "request_start; correlation_id={}; action={}", correlation_id, action);
+
+// Data validation and transformation
+log::debug!(target: "component", "data_validation; correlation_id={}; input={}; valid={}", 
+           correlation_id, input, is_valid);
+
+// Response preparation
+log::info!(target: "component", "response_ready; correlation_id={}; result_count={}; success={}", 
+          correlation_id, results.len(), success);
+```
+
+### Logging Placement Guidelines
+
+**Add logs at these critical points:**
+1. **State boundaries**: Before/after state changes
+2. **Conditional branches**: Document which path was taken and why
+3. **Async operations**: Start, completion, and error states
+4. **Component lifecycle**: Mount, unmount, prop changes
+5. **User interactions**: Click handlers, form submissions
+6. **Data transformations**: Input validation, format conversion
+
+### Temporary Debug Logging
+
+For investigation purposes, add temporary detailed logging:
+
+```javascript
+// Temporary: Debug state flow issue
+console.group('🐛 DEBUG: State Flow Investigation');
+console.log('Current State:', { currentDate, recentPhotosMode, showPhotosList });
+console.log('Props:', props);
+console.log('Computed Values:', { fetchConfig, willRender });
+console.groupEnd();
+```
+
+**Remove temporary logs** after issue resolution to avoid log pollution.
+
+### Log Analysis Tips
+
+- **Use correlation IDs** to trace requests across frontend/backend
+- **Filter by component** to focus on specific areas
+- **Search for error patterns** using grep with log levels
+- **Timeline analysis** to identify timing issues
+
+Remember: **Investigate first, hypothesize second, fix last**. Add logs strategically to fill knowledge gaps, not scatter them randomly.

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Scrollable from "../Scrollable.jsx";
 import '../scrollable.css';
 import { usePhoto } from "../context/PhotoContext.jsx";
+import { useUI } from "../context/UIContext.jsx";
 import { logger } from "../services/LoggerService.js";
 
 const unlisten = {};
@@ -17,6 +18,8 @@ function DateList(props) {
         recentPhotosMode,
         updateRecentPhotosMode
     } = usePhoto();
+    
+    const { toggleSearchPage } = useUI();
     
     const [selectedStyle, setSelectedStyle] = useState({});
 
@@ -56,6 +59,8 @@ function DateList(props) {
                                    updateRecentPhotosMode(true);
                                    updateShowPhotoDisplay({});
                                    props.toggleImporter(false);
+                                   // Clear search mode and show PhotosList
+                                   toggleSearchPage(false);
                                }}>
                                 Recent Photos
                             </a>
@@ -71,6 +76,8 @@ function DateList(props) {
                                     updateCurrentDate(date);
                                     updateShowPhotoDisplay({});
                                     props.toggleImporter(false);
+                                    // Clear search mode and show PhotosList
+                                    toggleSearchPage(false);
                                 }
                                 } data-date={date} data-page={datePage[date]}>
                                     {date}

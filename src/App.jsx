@@ -295,13 +295,14 @@ function App() {
               <DateList
                 getDates={getDates}
                 toggleImporter={toggleImporter}
+                toggleSearchPage={toggleSearchPage}
               />
             </div>
             <PhotosList
               shortCutNavigation={shortCutNavigation}
               addFooterMessage={addFooterMessage}
               onRightMenuToggle={setRightMenuOpen}
-              searchMode={true}
+              searchMode={showSearchPage}
               isAdvancedSearchMode={isAdvancedSearchMode}
             />
           </div>
@@ -351,9 +352,10 @@ function App() {
           <DateList
             getDates={getDates}
             toggleImporter={toggleImporter}
+            toggleSearchPage={toggleSearchPage}
           />
         </div>
-        {((currentDate || recentPhotosMode) && showPhotosList) ? <>
+        {showPhotosList ? <>
           <PhotosList
             shortCutNavigation={shortCutNavigation}
             addFooterMessage={addFooterMessage}
