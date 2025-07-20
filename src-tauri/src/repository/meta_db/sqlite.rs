@@ -620,8 +620,8 @@ impl SQLite {
 
         log::debug!(target: "date_summary", "get_available_dates; connection=successful");
 
-        // Try to get dates directly from date_summary table
-        let mut stmt = match conn.prepare("SELECT date, photo_count FROM date_summary ORDER BY date") {
+        // Try to get dates directly from date_summary table using COUNT query as suggested
+        let mut stmt = match conn.prepare("SELECT date, COUNT(*) FROM date_summary GROUP BY date ORDER BY date") {
             Ok(stmt) => stmt,
             Err(_) => {
                 // Table doesn't exist, fall back to GROUP BY
