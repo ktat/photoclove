@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import { logger } from '../services/LoggerService.js';
 import './TagInput.css';
 

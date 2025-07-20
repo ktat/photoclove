@@ -39,6 +39,10 @@ function PhotosList(props) {
     });
     const { addFooterMessage, toggleSearchPage, searchInitialQuery } = useUI();
     
+    // Check if we're in search mode - moved before state declarations
+    const isSearchMode = props.searchMode || false;
+    const isAdvancedSearchMode = props.isAdvancedSearchMode || false;
+    
     // Use search hook when in search mode
     const { searchResults, searchQuery, isSearching, performSearch, clearSearch: clearSearchHook } = useSearch();
     
@@ -53,10 +57,6 @@ function PhotosList(props) {
         // Navigate back to home by toggling search page off
         toggleSearchPage(false);
     }, [clearSearchHook, toggleSearchPage]);
-    
-    // Check if we're in search mode
-    const isSearchMode = props.searchMode || false;
-    const isAdvancedSearchMode = props.isAdvancedSearchMode || false;
     
     // fetchConfig from props or generate from currentDate
     // For Advanced Search mode, don't set initial fetchConfig to prevent auto-loading
@@ -284,6 +284,60 @@ function PhotosList(props) {
         }
     }, [photoTags]);
 
+    // Memoize filtered photos to avoid recalculating on every render
+    const filteredPhotos = useMemo(() => {
+        logger.debug('PhotosList', 'filtering_photos', 'Applying frontend filters', {
+            allPhotosCount: allPhotosForCurrentFetch.length,
+            starFilter,
+            hasCommentFilter,
+            extensionFilter
+        });
+        const result = applyFrontendFilters(allPhotosForCurrentFetch);
+        logger.debug('PhotosList', 'filtered_result', 'Frontend filter result', {
+            originalCount: allPhotosForCurrentFetch.length,
+            filteredCount: result.length
+        });
+        return result;
+    }, [allPhotosForCurrentFetch, starFilter, hasCommentFilter, extensionFilter]);
+
+    // Displayed photos for infinite scroll
+    const displayedPhotos = useMemo(() => {
+        logger.debug('PhotosList', 'display_photos', 'Calculating displayed photos', {
+            filteredCount: filteredPhotos.length,
+            displayedPhotoCount,
+            infiniteScrollEnabled
+        });
+        if (infiniteScrollEnabled) {
+            const result = filteredPhotos.slice(0, displayedPhotoCount);
+            logger.debug('PhotosList', 'displayed_result', 'Displayed photos result', {
+                filtered: filteredPhotos.length,
+                displayCount: displayedPhotoCount,
+                result: result.length
+            });
+            console.log(`[DISPLAYED_PHOTOS] Slice: filtered=${filteredPhotos.length}, displayCount=${displayedPhotoCount}, result=${result.length}`);
+            return result;
+        }
+        logger.debug('PhotosList', 'displayed_all', 'Showing all filtered photos (infinite scroll disabled)', {
+            count: filteredPhotos.length
+        });
+        return filteredPhotos; // Infinite scroll disabled shows all
+    }, [filteredPhotos, displayedPhotoCount, infiniteScrollEnabled]);
+
+    // Notify parent when menu state changes
+    useEffect(() => {
+        if (props.onRightMenuToggle) {
+            props.onRightMenuToggle(showSideMenu);
+        }
+    }, [showSideMenu, props.onRightMenuToggle]);
+    
+    // Close side menu when transitioning from search mode to non-search mode
+    useEffect(() => {
+        if (!isSearchMode && showSideMenu) {
+            // Only close if we were previously in search mode
+            setShowSideMenu(false);
+        }
+    }, [isSearchMode]);
+
     // Re-execute search when sort changes (only if we have active search)
     useEffect(() => {
         // Skip initial render to avoid infinite loop
@@ -387,61 +441,6 @@ function PhotosList(props) {
     }, [loadMorePhotos]);
     
     // Notify parent when menu state changes
-    useEffect(() => {
-        if (props.onRightMenuToggle) {
-            props.onRightMenuToggle(showSideMenu);
-        }
-    }, [showSideMenu, props.onRightMenuToggle]);
-    
-    // Close side menu when transitioning from search mode to non-search mode
-    useEffect(() => {
-        if (!isSearchMode && showSideMenu) {
-            // Only close if we were previously in search mode
-            setShowSideMenu(false);
-        }
-    }, [isSearchMode]);
-    // State declarations moved to top of component
-    
-    // All state declarations moved to top of component
-    
-    // Memoize filtered photos to avoid recalculating on every render
-    const filteredPhotos = useMemo(() => {
-        logger.debug('PhotosList', 'filtering_photos', 'Applying frontend filters', {
-            allPhotosCount: allPhotosForCurrentFetch.length,
-            starFilter,
-            hasCommentFilter,
-            extensionFilter
-        });
-        const result = applyFrontendFilters(allPhotosForCurrentFetch);
-        logger.debug('PhotosList', 'filtered_result', 'Frontend filter result', {
-            originalCount: allPhotosForCurrentFetch.length,
-            filteredCount: result.length
-        });
-        return result;
-    }, [allPhotosForCurrentFetch, starFilter, hasCommentFilter, extensionFilter]);
-    
-    // Displayed photos for infinite scroll
-    const displayedPhotos = useMemo(() => {
-        logger.debug('PhotosList', 'display_photos', 'Calculating displayed photos', {
-            filteredCount: filteredPhotos.length,
-            displayedPhotoCount,
-            infiniteScrollEnabled
-        });
-        if (infiniteScrollEnabled) {
-            const result = filteredPhotos.slice(0, displayedPhotoCount);
-            logger.debug('PhotosList', 'displayed_result', 'Displayed photos result', {
-                filtered: filteredPhotos.length,
-                displayCount: displayedPhotoCount,
-                result: result.length
-            });
-            console.log(`[DISPLAYED_PHOTOS] Slice: filtered=${filteredPhotos.length}, displayCount=${displayedPhotoCount}, result=${result.length}`);
-            return result;
-        }
-        logger.debug('PhotosList', 'displayed_all', 'Showing all filtered photos (infinite scroll disabled)', {
-            count: filteredPhotos.length
-        });
-        return filteredPhotos; // Infinite scroll disabled shows all
-    }, [filteredPhotos, displayedPhotoCount, infiniteScrollEnabled]);
 
     // Create enhanced setStar function that updates photosListMiniAllPhotos
     const setStarWithUpdate = (newStar) => {

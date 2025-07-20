@@ -164,7 +164,8 @@ export const useSearch = () => {
         end_date: filters.dateRange?.end || '',
         has_comment: filters.hasComment || false,
         star_rating: filters.starRating > 0 ? filters.starRating : 0,
-        extension: filters.fileExtension || ''
+        extension: filters.fileExtension || '',
+        tag_ids: filters.selectedTags?.map(tag => tag.id) || []
       };
       
       logger.debug('useSearch', 'filter_transformed', 'Filters transformed for backend', {
