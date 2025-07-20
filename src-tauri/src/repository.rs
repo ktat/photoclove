@@ -119,4 +119,13 @@ pub(crate) trait MetaInfoDB {
     fn update_photo_path(&self, old_path: &str, new_path: &str) -> Result<bool, &str>;
     fn get_photo_count_per_dates(&self, dates: date::Dates) -> DatesNum;
     fn get_recent_photos_metadata(&self, limit: u32) -> Result<photo_meta::PhotoMetas, String>;
+    
+    // Tag management methods
+    fn get_all_tags(&self) -> Result<Vec<(i32, String, Option<String>)>, String>;
+    fn create_tag(&self, name: &str, color: Option<&str>) -> Result<i32, String>;
+    fn delete_tag(&self, tag_id: i32) -> Result<bool, String>;
+    fn add_tag_to_photo(&self, photo_path: &str, tag_id: i32) -> Result<(), String>;
+    fn remove_tag_from_photo(&self, photo_path: &str, tag_id: i32) -> Result<bool, String>;
+    fn get_tags_for_photo(&self, photo_path: &str) -> Result<Vec<(i32, String, Option<String>)>, String>;
+    fn get_photos_with_tags(&self, tag_ids: &[i32]) -> Result<Vec<String>, String>;
 }

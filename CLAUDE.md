@@ -11,7 +11,7 @@ Before starting task, do current steps
 3. rename the `$num.md` to `$num-summary.md`.
 
 When you finished task, `*.md` file which you did should be moved to `improvement/done` directory.
-At last commit your changes to the branch if my permission is got.
+At last commit your changes to the branch.
 
 If `improvement/*.md` are left, repeat this step and clear context if "keep context" is not written at the last line of `*.md` file.
 

@@ -83,12 +83,26 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **Bug Investigation**: Systematic debugging approach documented in `CLAUDE.md`
 - **Related Files**: `src/App/LogViewer.jsx`, `src/services/LoggerService.js`, `src-tauri/src/domain_service/logging_service.rs`, `CLAUDE.md`
 
+### 🏷️ Tag System
+**When you need to understand**: Photo tagging, categorization, tag management, tag-based search
+- **Database**: [Tag Tables](database-schema.md#tag-tables) - tags and photo_tags tables with many-to-many relationship
+- **Backend**: Tag management commands in `src-tauri/src/lib.rs` (get_all_tags, create_tag, add_tag_to_photo, etc.)
+- **Components**: 
+  - TagChip: Display individual tags with optional color and remove functionality
+  - TagInput: Create new tags with color picker
+  - TagSelector: Multi-select interface for assigning tags to photos
+  - TagManager: Bulk tag management in Preferences
+  - PhotoTags: Tag editing panel in photo details
+- **Features**: Color-coded tags, tag creation, assignment/removal, tag-based filtering, search integration
+- **UI Integration**: Tags tab in photo details panel, tag filters in advanced search, tag display on photo thumbnails
+- **Related Files**: `src/components/Tag*.jsx`, `src/App/PhotosList/PhotoOption/PhotoTags.jsx`, `src/App/Preferences.jsx`
+
 ### 🔍 Advanced Search & Filtering
-**When you need to understand**: Advanced search interface, EXIF filters, saved searches, search history, recent photos
+**When you need to understand**: Advanced search interface, EXIF filters, saved searches, search history, recent photos, tag filtering
 - **Architecture**: [Key Features → Advanced Search System](architecture.md#6-advanced-search-system)
 - **Sequences**: [Advanced Search Feature](feature-sequences.md#advanced-search-feature)
 - **Components**: [Search Tools](component-structure.md#search-tools), [Directory Menu](component-structure.md#directory-menu-when-no-photo-selected)
-- **Features**: EXIF-based filtering, saved searches with import/export, search history, database optimization
+- **Features**: EXIF-based filtering, tag-based filtering, saved searches with import/export, search history, database optimization
 - **Access Methods**: Search icon in home page, Search tab in PhotosList, Keyboard shortcut navigation
 - **Important**: Filter structure consistency between frontend and backend (has_comment vs has_comments, star_rating vs min_rating)
 - **Bug Fix (2025-07-20)**: Fixed first-click photo loading bug where null reference in logging prevented photo display
@@ -233,6 +247,8 @@ This reverse index helps you quickly find the relevant documentation when workin
 | Photo Grid Display | `src/App/PhotosList.jsx` |
 | Full Screen Photo Viewer | `src/App/PhotosList/PhotosListMini.jsx` |
 | Photo Editor | `src/App/PhotosList/PhotoOption/PhotoEditor.jsx` |
+| Photo Tags Panel | `src/App/PhotosList/PhotoOption/PhotoTags.jsx` |
+| Tag Components | `src/components/Tag*.jsx` |
 | Search Tools Container | `src/components/SearchTools.jsx` |
 | Search Input Bar | `src/components/SearchBar.jsx` |
 | Advanced Filters | `src/components/AdvancedFilters.jsx` |

@@ -48,7 +48,23 @@ impl SQLite {
             created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
             updated_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
         );
-        CREATE INDEX IF NOT EXISTS idx_date_summary_date ON date_summary(date)"
+        CREATE TABLE tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            color TEXT,
+            created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
+        );
+        CREATE TABLE photo_tags (
+            photo_path TEXT,
+            tag_id INTEGER,
+            created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
+            PRIMARY KEY (photo_path, tag_id),
+            FOREIGN KEY (photo_path) REFERENCES photo_metadata(path) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_date_summary_date ON date_summary(date);
+        CREATE INDEX IF NOT EXISTS idx_photo_tags_photo_path ON photo_tags(photo_path);
+        CREATE INDEX IF NOT EXISTS idx_photo_tags_tag_id ON photo_tags(tag_id)"
     }
 
     pub fn new(path: String) -> SQLite {
@@ -74,6 +90,16 @@ impl SQLite {
                     } else if statement.contains("CREATE TABLE date_summary") {
                         let _ = conn.execute(
                             &format!("CREATE TABLE IF NOT EXISTS {}", statement.replace("CREATE TABLE date_summary", "date_summary")),
+                            [],
+                        );
+                    } else if statement.contains("CREATE TABLE tags") {
+                        let _ = conn.execute(
+                            &format!("CREATE TABLE IF NOT EXISTS {}", statement.replace("CREATE TABLE tags", "tags")),
+                            [],
+                        );
+                    } else if statement.contains("CREATE TABLE photo_tags") {
+                        let _ = conn.execute(
+                            &format!("CREATE TABLE IF NOT EXISTS {}", statement.replace("CREATE TABLE photo_tags", "photo_tags")),
                             [],
                         );
                     } else if statement.contains("CREATE INDEX") {
@@ -441,6 +467,66 @@ impl SQLite {
                 )?;
                 
                 println!("CSS style column migration completed");
+            }
+            
+            // Check if tag tables exist and create them if they don't
+            let tags_table_exists = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='tags'")
+                .and_then(|mut stmt| {
+                    stmt.query_row([], |row| {
+                        let _name: String = row.get(0)?;
+                        Ok(true)
+                    })
+                })
+                .unwrap_or(false);
+                
+            let photo_tags_table_exists = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='photo_tags'")
+                .and_then(|mut stmt| {
+                    stmt.query_row([], |row| {
+                        let _name: String = row.get(0)?;
+                        Ok(true)
+                    })
+                })
+                .unwrap_or(false);
+                
+            if !tags_table_exists || !photo_tags_table_exists {
+                println!("Creating tag tables");
+                
+                // Create tags table
+                conn.execute(
+                    "CREATE TABLE IF NOT EXISTS tags (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL UNIQUE,
+                        color TEXT,
+                        created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
+                    )",
+                    [],
+                )?;
+                
+                // Create photo_tags table
+                conn.execute(
+                    "CREATE TABLE IF NOT EXISTS photo_tags (
+                        photo_path TEXT,
+                        tag_id INTEGER,
+                        created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
+                        PRIMARY KEY (photo_path, tag_id),
+                        FOREIGN KEY (photo_path) REFERENCES photo_metadata(path) ON DELETE CASCADE,
+                        FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+                    )",
+                    [],
+                )?;
+                
+                // Create indexes for tag tables
+                conn.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_photo_tags_photo_path ON photo_tags(photo_path)",
+                    [],
+                )?;
+                
+                conn.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_photo_tags_tag_id ON photo_tags(tag_id)",
+                    [],
+                )?;
+                
+                println!("Tag tables migration completed");
             }
         } else {
             // Create new table with full schema including EXIF columns
@@ -1620,6 +1706,34 @@ impl MetaInfoDB for SQLite {
         Ok(photo_metas)
     }
     
+    // Tag management trait implementations
+    fn get_all_tags(&self) -> Result<Vec<(i32, String, Option<String>)>, String> {
+        SQLite::get_all_tags(self)
+    }
+
+    fn create_tag(&self, name: &str, color: Option<&str>) -> Result<i32, String> {
+        SQLite::create_tag(self, name, color)
+    }
+
+    fn delete_tag(&self, tag_id: i32) -> Result<bool, String> {
+        SQLite::delete_tag(self, tag_id)
+    }
+
+    fn add_tag_to_photo(&self, photo_path: &str, tag_id: i32) -> Result<(), String> {
+        SQLite::add_tag_to_photo(self, photo_path, tag_id)
+    }
+
+    fn remove_tag_from_photo(&self, photo_path: &str, tag_id: i32) -> Result<bool, String> {
+        SQLite::remove_tag_from_photo(self, photo_path, tag_id)
+    }
+
+    fn get_tags_for_photo(&self, photo_path: &str) -> Result<Vec<(i32, String, Option<String>)>, String> {
+        SQLite::get_tags_for_photo(self, photo_path)
+    }
+
+    fn get_photos_with_tags(&self, tag_ids: &[i32]) -> Result<Vec<String>, String> {
+        SQLite::get_photos_with_tags(self, tag_ids)
+    }
 }
 
 impl SQLite {
@@ -2431,5 +2545,135 @@ impl SQLite {
         
         tx.commit().map_err(|e| format!("Commit failed: {}", e))?;
         Ok(())
+    }
+
+    // Tag management functions
+    pub fn get_all_tags(&self) -> Result<Vec<(i32, String, Option<String>)>, String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let mut stmt = conn.prepare("SELECT id, name, color FROM tags ORDER BY name")
+            .map_err(|e| format!("Failed to prepare query: {}", e))?;
+        
+        let tags = stmt.query_map([], |row| {
+            let id: i32 = row.get(0)?;
+            let name: String = row.get(1)?;
+            let color: Option<String> = row.get(2)?;
+            Ok((id, name, color))
+        }).map_err(|e| format!("Failed to query tags: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect tags: {}", e))?;
+        
+        Ok(tags)
+    }
+
+    pub fn create_tag(&self, name: &str, color: Option<&str>) -> Result<i32, String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        
+        conn.execute(
+            "INSERT INTO tags (name, color, created_at) VALUES (?1, ?2, ?3)",
+            params![name, color, now],
+        ).map_err(|e| format!("Failed to create tag: {}", e))?;
+        
+        let tag_id = conn.last_insert_rowid() as i32;
+        Ok(tag_id)
+    }
+
+    pub fn delete_tag(&self, tag_id: i32) -> Result<bool, String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let rows_affected = conn.execute(
+            "DELETE FROM tags WHERE id = ?1",
+            params![tag_id],
+        ).map_err(|e| format!("Failed to delete tag: {}", e))?;
+        
+        Ok(rows_affected > 0)
+    }
+
+    pub fn add_tag_to_photo(&self, photo_path: &str, tag_id: i32) -> Result<(), String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        
+        conn.execute(
+            "INSERT OR IGNORE INTO photo_tags (photo_path, tag_id, created_at) VALUES (?1, ?2, ?3)",
+            params![photo_path, tag_id, now],
+        ).map_err(|e| format!("Failed to add tag to photo: {}", e))?;
+        
+        Ok(())
+    }
+
+    pub fn remove_tag_from_photo(&self, photo_path: &str, tag_id: i32) -> Result<bool, String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let rows_affected = conn.execute(
+            "DELETE FROM photo_tags WHERE photo_path = ?1 AND tag_id = ?2",
+            params![photo_path, tag_id],
+        ).map_err(|e| format!("Failed to remove tag from photo: {}", e))?;
+        
+        Ok(rows_affected > 0)
+    }
+
+    pub fn get_tags_for_photo(&self, photo_path: &str) -> Result<Vec<(i32, String, Option<String>)>, String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let mut stmt = conn.prepare(
+            "SELECT t.id, t.name, t.color FROM tags t 
+             JOIN photo_tags pt ON t.id = pt.tag_id 
+             WHERE pt.photo_path = ?1 
+             ORDER BY t.name"
+        ).map_err(|e| format!("Failed to prepare query: {}", e))?;
+        
+        let tags = stmt.query_map(params![photo_path], |row| {
+            let id: i32 = row.get(0)?;
+            let name: String = row.get(1)?;
+            let color: Option<String> = row.get(2)?;
+            Ok((id, name, color))
+        }).map_err(|e| format!("Failed to query tags for photo: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect tags: {}", e))?;
+        
+        Ok(tags)
+    }
+
+    pub fn get_photos_with_tags(&self, tag_ids: &[i32]) -> Result<Vec<String>, String> {
+        if tag_ids.is_empty() {
+            return Ok(vec![]);
+        }
+        
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let placeholders = tag_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+        let query = format!(
+            "SELECT DISTINCT pt.photo_path FROM photo_tags pt 
+             WHERE pt.tag_id IN ({}) 
+             GROUP BY pt.photo_path 
+             HAVING COUNT(DISTINCT pt.tag_id) = ?",
+            placeholders
+        );
+        
+        let mut stmt = conn.prepare(&query)
+            .map_err(|e| format!("Failed to prepare query: {}", e))?;
+        
+        let mut params: Vec<&dyn rusqlite::ToSql> = tag_ids.iter().map(|id| id as &dyn rusqlite::ToSql).collect();
+        let tag_count = tag_ids.len() as i32;
+        params.push(&tag_count);
+        
+        let photos = stmt.query_map(params.as_slice(), |row| {
+            let path: String = row.get(0)?;
+            Ok(path)
+        }).map_err(|e| format!("Failed to query photos with tags: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect photos: {}", e))?;
+        
+        Ok(photos)
     }
 }

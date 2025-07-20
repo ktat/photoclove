@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import TagChip from './TagChip.jsx';
 
 const AdvancedFilters = ({ 
   onFiltersChange, 
@@ -19,8 +20,11 @@ const AdvancedFilters = ({
     hasComment: false,
     starRating: 0,
     fileExtension: '',
+    selectedTags: [],
     ...initialFilters
   });
+
+  const [availableTags, setAvailableTags] = useState([]);
 
   // Update filters when initialFilters change
   useEffect(() => {
@@ -35,9 +39,25 @@ const AdvancedFilters = ({
       hasComment: false,
       starRating: 0,
       fileExtension: '',
+      selectedTags: [],
       ...initialFilters
     });
   }, [initialFilters]);
+
+  // Load available tags
+  useEffect(() => {
+    const loadTags = async () => {
+      try {
+        const tags = await invoke('get_all_tags');
+        const formattedTags = tags.map(([id, name, color]) => ({ id, name, color }));
+        setAvailableTags(formattedTags);
+      } catch (error) {
+        console.error('Failed to load tags for filter:', error);
+      }
+    };
+
+    loadTags();
+  }, []);
   
   // Component mount effect to request filter options if not loaded
   useEffect(() => {
@@ -81,10 +101,20 @@ const AdvancedFilters = ({
       dateRange: { start: '', end: '' },
       hasComment: false,
       starRating: 0,
-      fileExtension: ''
+      fileExtension: '',
+      selectedTags: []
     };
     setFilters(clearedFilters);
     onFiltersChange(clearedFilters);
+  };
+
+  const handleTagToggle = (tag) => {
+    const isSelected = filters.selectedTags.some(t => t.id === tag.id);
+    const newSelectedTags = isSelected 
+      ? filters.selectedTags.filter(t => t.id !== tag.id)
+      : [...filters.selectedTags, tag];
+    
+    updateFilter('selectedTags', newSelectedTags);
   };
 
   if (!filterOptions && isLoading) {
@@ -268,6 +298,59 @@ const AdvancedFilters = ({
                 </button>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Tags Filter */}
+        <div className="filter-section">
+          <h4>Tags</h4>
+          
+          <div className="filter-group">
+            <label>Filter by Tags:</label>
+            {availableTags.length > 0 ? (
+              <div className="tag-filter-container">
+                <div className="available-tags">
+                  <div className="tag-filter-label">Available Tags:</div>
+                  <div className="tag-filter-list">
+                    {availableTags.map(tag => {
+                      const isSelected = filters.selectedTags.some(t => t.id === tag.id);
+                      return (
+                        <TagChip
+                          key={tag.id}
+                          tag={tag}
+                          onClick={() => handleTagToggle(tag)}
+                          style={{
+                            opacity: isSelected ? 1 : 0.6,
+                            border: isSelected ? '2px solid #3b82f6' : '1px solid #d1d5db',
+                            cursor: 'pointer'
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                {filters.selectedTags.length > 0 && (
+                  <div className="selected-tags">
+                    <div className="tag-filter-label">Selected Tags ({filters.selectedTags.length}):</div>
+                    <div className="tag-filter-list">
+                      {filters.selectedTags.map(tag => (
+                        <TagChip
+                          key={tag.id}
+                          tag={tag}
+                          isRemovable={true}
+                          onRemove={() => handleTagToggle(tag)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="no-tags-message">
+                No tags available. Create tags in Preferences to use tag filtering.
+              </div>
+            )}
           </div>
         </div>
 

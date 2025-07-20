@@ -4,6 +4,7 @@ import { ask, message, confirm } from '@tauri-apps/plugin-dialog';
 import { relaunch } from "@tauri-apps/plugin-process";
 import PickFolderSingle from "../FolderPicker.jsx";
 import { logger } from "../services/LoggerService.js";
+import TagManager from "../components/TagManager.jsx";
 
 
 function Preferences(props) {
@@ -214,6 +215,14 @@ function Preferences(props) {
                     </select>
                 </div>
                 <div className="row2"></div>
+                
+                {/* Tag Management Section */}
+                <div className="row0">Tag Management:</div>
+                <div className="row0" style={{ gridColumn: '1 / -1', marginTop: '16px' }}>
+                    <TagManager />
+                </div>
+                <div className="row2"></div>
+                
                 <div className="row0">
                     <input type="checkbox" id="preference-check" value="1" onChange={(e) => { config.use_count = e.target.checked ? 0 : useCount; setNewConfig(config) }} />
                     <label className="checkbox checkbox-normal" htmlFor="preference-check">Show Welcome tutorial again?</label>

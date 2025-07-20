@@ -1191,6 +1191,147 @@ async fn get_logging_status(
     }))
 }
 
+// Tag management commands
+#[tauri::command]
+async fn get_all_tags(state: tauri::State<'_, AppState>) -> Result<Vec<(i32, String, Option<String>)>, String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+    
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "tags", "get_all_tags_request; correlation_id={}", correlation_id);
+    
+    match meta_db.get_all_tags() {
+        Ok(tags) => {
+            log::info!(target: "tags", "get_all_tags_success; correlation_id={}; count={}", correlation_id, tags.len());
+            Ok(tags)
+        }
+        Err(e) => {
+            log::error!(target: "tags", "get_all_tags_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
+#[tauri::command]
+async fn create_tag(name: String, color: Option<String>, state: tauri::State<'_, AppState>) -> Result<i32, String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+    
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "tags", "create_tag_request; correlation_id={}; name={}", correlation_id, name);
+    
+    match meta_db.create_tag(&name, color.as_deref()) {
+        Ok(tag_id) => {
+            log::info!(target: "tags", "create_tag_success; correlation_id={}; tag_id={}", correlation_id, tag_id);
+            Ok(tag_id)
+        }
+        Err(e) => {
+            log::error!(target: "tags", "create_tag_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
+#[tauri::command]
+async fn delete_tag(tag_id: i32, state: tauri::State<'_, AppState>) -> Result<bool, String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+    
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "tags", "delete_tag_request; correlation_id={}; tag_id={}", correlation_id, tag_id);
+    
+    match meta_db.delete_tag(tag_id) {
+        Ok(deleted) => {
+            log::info!(target: "tags", "delete_tag_success; correlation_id={}; deleted={}", correlation_id, deleted);
+            Ok(deleted)
+        }
+        Err(e) => {
+            log::error!(target: "tags", "delete_tag_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
+#[tauri::command]
+async fn add_tag_to_photo(photo_path: String, tag_id: i32, state: tauri::State<'_, AppState>) -> Result<(), String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+    
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "tags", "add_tag_to_photo_request; correlation_id={}; photo_path={}; tag_id={}", correlation_id, photo_path, tag_id);
+    
+    match meta_db.add_tag_to_photo(&photo_path, tag_id) {
+        Ok(()) => {
+            log::info!(target: "tags", "add_tag_to_photo_success; correlation_id={}", correlation_id);
+            Ok(())
+        }
+        Err(e) => {
+            log::error!(target: "tags", "add_tag_to_photo_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
+#[tauri::command]
+async fn remove_tag_from_photo(photo_path: String, tag_id: i32, state: tauri::State<'_, AppState>) -> Result<bool, String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+    
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "tags", "remove_tag_from_photo_request; correlation_id={}; photo_path={}; tag_id={}", correlation_id, photo_path, tag_id);
+    
+    match meta_db.remove_tag_from_photo(&photo_path, tag_id) {
+        Ok(removed) => {
+            log::info!(target: "tags", "remove_tag_from_photo_success; correlation_id={}; removed={}", correlation_id, removed);
+            Ok(removed)
+        }
+        Err(e) => {
+            log::error!(target: "tags", "remove_tag_from_photo_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
+#[tauri::command]
+async fn get_tags_for_photo(photo_path: String, state: tauri::State<'_, AppState>) -> Result<Vec<(i32, String, Option<String>)>, String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+    
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "tags", "get_tags_for_photo_request; correlation_id={}; photo_path={}", correlation_id, photo_path);
+    
+    match meta_db.get_tags_for_photo(&photo_path) {
+        Ok(tags) => {
+            log::info!(target: "tags", "get_tags_for_photo_success; correlation_id={}; count={}", correlation_id, tags.len());
+            Ok(tags)
+        }
+        Err(e) => {
+            log::error!(target: "tags", "get_tags_for_photo_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
+#[tauri::command]
+async fn search_photos_by_tags(tag_ids: Vec<i32>, state: tauri::State<'_, AppState>) -> Result<Vec<String>, String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+    
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "tags", "search_photos_by_tags_request; correlation_id={}; tag_ids={:?}", correlation_id, tag_ids);
+    
+    match meta_db.get_photos_with_tags(&tag_ids) {
+        Ok(photos) => {
+            log::info!(target: "tags", "search_photos_by_tags_success; correlation_id={}; count={}", correlation_id, photos.len());
+            Ok(photos)
+        }
+        Err(e) => {
+            log::error!(target: "tags", "search_photos_by_tags_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use crate::repository::*;
@@ -1367,6 +1508,13 @@ pub fn run() {
             submit_frontend_logs,
             set_logging_enabled,
             get_logging_status,
+            get_all_tags,
+            create_tag,
+            delete_tag,
+            add_tag_to_photo,
+            remove_tag_from_photo,
+            get_tags_for_photo,
+            search_photos_by_tags,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

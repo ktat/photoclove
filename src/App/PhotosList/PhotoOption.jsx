@@ -1,6 +1,7 @@
 import { useState } from "react";
 import PhotoInfo from "./PhotoOption/PhotoInfo.jsx";
 import PhotoEditor from "./PhotoOption/PhotoEditor.jsx";
+import PhotoTags from "./PhotoOption/PhotoTags.jsx";
 
 function PhotoOption(props) {
     const [activeTab, setActiveTab] = useState("info");
@@ -36,6 +37,13 @@ function PhotoOption(props) {
                     title="Photo Editor"
                 >
                     <span className="vertical-text">Editor</span>
+                </button>
+                <button 
+                    className={activeTab === "tags" ? "vertical-tab-button active" : "vertical-tab-button"}
+                    onClick={() => handleTabClick("tags")}
+                    title="Photo Tags"
+                >
+                    <span className="vertical-text">Tags</span>
                 </button>
                 {props.showSideMenu && (
                     <button 
@@ -78,6 +86,13 @@ function PhotoOption(props) {
                             showSideMenu={props.showSideMenu}
                             addFooterMessage={props.addFooterMessage}
                             onPhotosRefresh={props.onPhotosRefresh}
+                        />
+                    )}
+                    {activeTab === "tags" && (
+                        <PhotoTags 
+                            currentPhotoPath={props.currentPhotoPath}
+                            showSideMenu={props.showSideMenu}
+                            addFooterMessage={props.addFooterMessage}
                         />
                     )}
                 </div>

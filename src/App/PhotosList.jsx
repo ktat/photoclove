@@ -13,6 +13,7 @@ import { usePhoto } from "../context/PhotoContext.jsx";
 import { useUI } from "../context/UIContext.jsx";
 import { useSearch } from "../hooks/useSearch.js";
 import SearchTools from "../components/SearchTools.jsx";
+import TagChip from "../components/TagChip.jsx";
 import { logger } from "../services/LoggerService.js";
 
 function PhotosList(props) {
@@ -113,6 +114,7 @@ function PhotosList(props) {
     const [photosListMiniReread, setPhotosListMiniReread] = useState(false);
     const [photosListImgSrc, setPhotosListImgSrc] = useState({});
     const [imgCacheMap, setImgCacheMap] = useState({});
+    const [photoTags, setPhotoTags] = useState({}); // Cache for photo tags: { photoPath: [tags] }
     const [showSideMenu, setShowSideMenu] = useState(isSearchMode);
     
     // Infinite scroll state
@@ -257,6 +259,31 @@ function PhotosList(props) {
         performSearch(searchParams.query, searchParams.searchType, searchParams.filters, sortField, sortOrder);
     }, [performSearch, sortOfPhotos]);
 
+    // Function to load tags for a photo
+    const loadPhotoTags = useCallback(async (photoPath) => {
+        if (photoTags[photoPath]) {
+            return photoTags[photoPath]; // Return cached tags
+        }
+        
+        try {
+            const tags = await invoke('get_tags_for_photo', { photoPath });
+            const formattedTags = tags.map(([id, name, color]) => ({ id, name, color }));
+            
+            setPhotoTags(prev => ({
+                ...prev,
+                [photoPath]: formattedTags
+            }));
+            
+            return formattedTags;
+        } catch (error) {
+            logger.error('PhotosList', 'load_photo_tags_error', 'Failed to load photo tags', {
+                photoPath,
+                error: error.toString()
+            });
+            return [];
+        }
+    }, [photoTags]);
+
     // Re-execute search when sort changes (only if we have active search)
     useEffect(() => {
         // Skip initial render to avoid infinite loop
@@ -294,6 +321,31 @@ function PhotosList(props) {
             );
         }
     }, [sortOfPhotos, isSearchMode, currentSearchParams, performSearch]);
+
+    // Load tags for displayed photos
+    useEffect(() => {
+        const loadTagsForPhotos = async () => {
+            if (!filteredPhotos || filteredPhotos.length === 0) return;
+            
+            const visiblePhotos = filteredPhotos.slice(0, displayedPhotoCount);
+            const photosNeedingTags = visiblePhotos.filter(photo => !photoTags[photo.file.path]);
+            
+            if (photosNeedingTags.length === 0) return;
+            
+            try {
+                const tagPromises = photosNeedingTags.map(photo => 
+                    loadPhotoTags(photo.file.path)
+                );
+                await Promise.all(tagPromises);
+            } catch (error) {
+                logger.error('PhotosList', 'load_tags_batch_error', 'Failed to load tags for photos', {
+                    error: error.toString()
+                });
+            }
+        };
+
+        loadTagsForPhotos();
+    }, [filteredPhotos, displayedPhotoCount, loadPhotoTags]);
 
     const handleFiltersChange = useCallback((newFilters) => {
         // console.log('handleFiltersChange called with:', newFilters);
@@ -1253,6 +1305,44 @@ function PhotosList(props) {
                                                         )}
                                                         {l.comment && (
                                                             <span>💬</span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Tags overlay */}
+                                                {photoTags[l.file.path] && photoTags[l.file.path].length > 0 && (
+                                                    <div style={{
+                                                        position: "absolute",
+                                                        bottom: "4px",
+                                                        left: "4px",
+                                                        right: "4px",
+                                                        display: "flex",
+                                                        flexWrap: "wrap",
+                                                        gap: "2px",
+                                                        maxHeight: "40px",
+                                                        overflow: "hidden"
+                                                    }}>
+                                                        {photoTags[l.file.path].slice(0, 3).map(tag => (
+                                                            <TagChip
+                                                                key={tag.id}
+                                                                tag={tag}
+                                                                style={{
+                                                                    fontSize: "8px",
+                                                                    padding: "1px 4px",
+                                                                    maxWidth: "60px"
+                                                                }}
+                                                            />
+                                                        ))}
+                                                        {photoTags[l.file.path].length > 3 && (
+                                                            <span style={{
+                                                                fontSize: "8px",
+                                                                backgroundColor: "rgba(0, 0, 0, 0.5)",
+                                                                color: "white",
+                                                                padding: "1px 4px",
+                                                                borderRadius: "8px"
+                                                            }}>
+                                                                +{photoTags[l.file.path].length - 3}
+                                                            </span>
                                                         )}
                                                     </div>
                                                 )}

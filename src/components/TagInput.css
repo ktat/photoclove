@@ -1,0 +1,128 @@
+.tag-input-container {
+    position: relative;
+    margin-bottom: 16px;
+}
+
+.tag-input-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tag-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 4px;
+    background: white;
+    transition: border-color 0.2s ease;
+}
+
+.tag-input-wrapper:focus-within {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.tag-input-field {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 6px 8px;
+    font-size: 14px;
+    background: transparent;
+}
+
+.tag-input-field::placeholder {
+    color: #9ca3af;
+}
+
+.tag-input-field:disabled {
+    color: #6b7280;
+}
+
+.tag-color-button {
+    width: 24px;
+    height: 24px;
+    border: 2px solid white;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    position: relative;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.tag-color-button:hover {
+    transform: scale(1.1);
+}
+
+.tag-color-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.tag-color-indicator {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+}
+
+.tag-create-button {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background: #f9fafb;
+    color: #374151;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.tag-create-button:hover:not(:disabled) {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.tag-create-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.tag-color-picker {
+    display: flex;
+    gap: 6px;
+    padding: 8px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    flex-wrap: wrap;
+}
+
+.tag-color-option {
+    width: 24px;
+    height: 24px;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tag-color-option:hover {
+    transform: scale(1.1);
+    border-color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tag-color-option.selected {
+    border-color: white;
+    box-shadow: 0 0 0 2px #3b82f6;
+}

@@ -63,6 +63,25 @@ The database schema automatically migrates when new columns are added. Migration
 
 See [Job Queue System Documentation](job-queue-system.md) for job queue related tables.
 
+## Tag Tables
+
+PhotoClove includes a comprehensive tagging system for organizing and categorizing photos.
+
+### Tags Table
+- `id` (INTEGER PRIMARY KEY AUTOINCREMENT): Unique tag identifier
+- `name` (TEXT NOT NULL UNIQUE): Tag name (e.g., "vacation", "family")
+- `color` (TEXT): Optional hex color code for visual organization
+- `created_at` (TEXT NOT NULL): Timestamp when tag was created
+
+### Photo Tags Table (Many-to-Many Relationship)
+- `photo_path` (TEXT): Foreign key to photo_metadata.path
+- `tag_id` (INTEGER): Foreign key to tags.id
+- `created_at` (TEXT NOT NULL): Timestamp when tag was assigned
+- Primary key: (photo_path, tag_id)
+- Cascading deletes: When photo or tag is deleted, associations are automatically removed
+
 ## Indexes
 
 - `idx_photo_date`: Index on photo_date column for fast date-based queries
+- `idx_photo_tags_photo_path`: Index on photo_tags.photo_path for fast tag lookups by photo
+- `idx_photo_tags_tag_id`: Index on photo_tags.tag_id for fast photo lookups by tag
