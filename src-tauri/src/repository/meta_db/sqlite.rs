@@ -620,9 +620,19 @@ impl SQLite {
 
         log::debug!(target: "date_summary", "get_available_dates; connection=successful");
 
-        // Check if date_summary table exists and is current
-        if let Ok(is_current) = self.check_date_summary_currency() {
-            if is_current {
+        // Check if date_summary table exists and has data
+        let table_exists = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='date_summary'")
+            .and_then(|mut stmt| stmt.query_row([], |_| Ok(true)))
+            .unwrap_or(false);
+            
+        if table_exists {
+            let summary_count = conn.query_row(
+                "SELECT COUNT(*) FROM date_summary", 
+                [], 
+                |row| row.get::<_, i32>(0)
+            ).unwrap_or(0);
+            
+            if summary_count > 0 {
                 log::info!(target: "date_summary", "get_available_dates; using_optimized_table=true");
                 
                 // Use optimized query from date_summary table
@@ -644,31 +654,6 @@ impl SQLite {
                     })?;
 
                 return self.process_date_rows(rows);
-            } else {
-                log::info!(target: "date_summary", "get_available_dates; status=outdated; action=rebuilding");
-                if let Err(e) = self.rebuild_date_summary() {
-                    log::warn!(target: "date_summary", "get_available_dates; rebuild_failed; error={}; fallback=group_by", e);
-                } else {
-                    // Try optimized query again after rebuild
-                    let mut stmt = conn
-                        .prepare("SELECT date FROM date_summary ORDER BY date")
-                        .map_err(|e| {
-                            log::error!(target: "date_summary", "get_available_dates; prepare_after_rebuild_failed; error={}", e);
-                            format!("Failed to prepare statement after rebuild: {}", e)
-                        })?;
-
-                    let rows = stmt
-                        .query_map([], |row| {
-                            let date_str: String = row.get(0)?;
-                            Ok(date_str)
-                        })
-                        .map_err(|e| {
-                            println!("SQLite::get_available_dates() - Failed to execute query after rebuild: {}", e);
-                            format!("Failed to execute query after rebuild: {}", e)
-                        })?;
-
-                    return self.process_date_rows(rows);
-                }
             }
         }
 
@@ -1439,9 +1424,19 @@ impl MetaInfoDB for SQLite {
             }
         };
 
-        // Check if date_summary table is current and use it for optimization
-        if let Ok(is_current) = self.check_date_summary_currency() {
-            if is_current {
+        // Check if date_summary table exists and has data
+        let table_exists = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='date_summary'")
+            .and_then(|mut stmt| stmt.query_row([], |_| Ok(true)))
+            .unwrap_or(false);
+            
+        if table_exists {
+            let summary_count = conn.query_row(
+                "SELECT COUNT(*) FROM date_summary", 
+                [], 
+                |row| row.get::<_, i32>(0)
+            ).unwrap_or(0);
+            
+            if summary_count > 0 {
                 println!("SQLite::get_photo_count_per_dates() - Using optimized date_summary table");
                 
                 // Use optimized queries from date_summary table
@@ -1469,37 +1464,6 @@ impl MetaInfoDB for SQLite {
                     dates_num.to_json()
                 );
                 return dates_num;
-            } else {
-                println!("SQLite::get_photo_count_per_dates() - date_summary outdated, rebuilding");
-                if let Err(e) = self.rebuild_date_summary() {
-                    println!("SQLite::get_photo_count_per_dates() - Failed to rebuild, using fallback: {}", e);
-                } else {
-                    // Try optimized query again after rebuild
-                    for date in dates.dates {
-                        let date_string = date.to_string();
-                        
-                        let count = conn.query_row(
-                            "SELECT photo_count FROM date_summary WHERE date = ?1",
-                            params![date_string],
-                            |row| {
-                                let count: i32 = row.get(0)?;
-                                Ok(count)
-                            }
-                        ).unwrap_or(0);
-                        
-                        println!(
-                            "SQLite::get_photo_count_per_dates() - Post-rebuild query: date '{}' has {} photos",
-                            date_string, count
-                        );
-                        dates_num.data.insert(date_string, count);
-                    }
-                    
-                    println!(
-                        "SQLite::get_photo_count_per_dates() - Post-rebuild result: {}",
-                        dates_num.to_json()
-                    );
-                    return dates_num;
-                }
             }
         }
 
