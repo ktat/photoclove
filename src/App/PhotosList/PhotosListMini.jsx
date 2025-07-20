@@ -18,6 +18,7 @@ function PhotosListMini(props) {
     const isSearchMode = props.searchMode || false;
     const searchQuery = props.searchQuery || "";
     const onClearSearch = props.onClearSearch;
+    const recentPhotosMode = props.recentPhotosMode || false;
 
     // State from original implementation - simplified
     const [showPhotosIndex, setShowPhotosIndex] = useState([]);
@@ -43,6 +44,11 @@ function PhotosListMini(props) {
     const [showHelp, setShowHelp] = useState(false);
 
     const navigateLock = useRef(false);
+
+    // Helper function to get the correct date key for pagination
+    const getDateKey = () => {
+        return recentPhotosMode ? "recent" : (isSearchMode ? "search_results" : props.currentDate);
+    };
 
     // Function to parse CSS style string and convert to style object
     const parseCssStyle = (cssString) => {
@@ -351,15 +357,13 @@ function PhotosListMini(props) {
             }
         }
         
-        // Extract date from photo path for thumbnail generation
-        let photoDate = props.currentDate;
-        if (isSearchMode || !photoDate) {
-            // Extract date from the photo's path
-            for (let i = 0; i < pathParts.length; i++) {
-                if (datePattern.test(pathParts[i])) {
-                    photoDate = pathParts[i];
-                    break;
-                }
+        // Always extract date from photo path for thumbnail generation
+        let photoDate = null;
+        // Extract date from the photo's path
+        for (let i = 0; i < pathParts.length; i++) {
+            if (datePattern.test(pathParts[i])) {
+                photoDate = pathParts[i];
+                break;
             }
         }
         
@@ -426,7 +430,7 @@ function PhotosListMini(props) {
         setPhotoZoom("auto");
         if (photosListMiniAllPhotos[index]) {
             props.setCurrentPhotoPath(photosListMiniAllPhotos[index].file.path);
-            props.datePage[props.currentDate] = Math.trunc((index) / props.num) + 1;
+            props.datePage[getDateKey()] = Math.trunc((index) / props.num) + 1;
             props.setCurrentIndex(index);
         }
     }
@@ -608,7 +612,7 @@ function PhotosListMini(props) {
                             <a onClick={(e) => {
                                 props.setCurrentIndex(vIndex);
                                 props.setCurrentPhotoPath(v.file.path);
-                                props.datePage[props.currentDate] = Math.trunc((vIndex) / props.num) + 1;
+                                props.datePage[getDateKey()] = Math.trunc((vIndex) / props.num) + 1;
                                 setImageCache(vIndex, 0);
                                 
                                 // adjustCurrentIndex will be called by useEffect when props.currentIndex changes

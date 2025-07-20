@@ -925,7 +925,7 @@ function PhotosList(props) {
         
         setPhotoLoading(true);
         
-        let date = isSearchMode ? "search_results" : compatProps.currentDate;
+        let date = recentPhotosMode ? "recent" : (isSearchMode ? "search_results" : compatProps.currentDate);
         let page = compatProps.datePage[date] || 1;
         
         if (!page || page == "NaN") {
@@ -1008,6 +1008,7 @@ function PhotosList(props) {
                                     searchMode={isSearchMode}
                                     searchQuery={searchQuery}
                                     onClearSearch={clearSearch}
+                                    recentPhotosMode={recentPhotosMode}
                                 />
                             </div>
                         </ImgCacheContext.Provider>
@@ -1015,8 +1016,8 @@ function PhotosList(props) {
                 </div>
                 <div className={(props.showSideMenu || !currentPhotoPath) ? "centerDisplay" : "centerDisplayMax"} id="photoList"
                     style={{ display: (!photoLoading && (!compatProps.showPhotoDisplay || !currentPhotoPath)) ? "block" : "none" }}
-                    data-date={isSearchMode ? "search_results" : compatProps.currentDate} 
-                    data-page={isSearchMode ? (compatProps.datePage["search_results"] || 1) : (compatProps.datePage[compatProps.currentDate] || 1)}>
+                    data-date={recentPhotosMode ? "recent" : (isSearchMode ? "search_results" : compatProps.currentDate)} 
+                    data-page={recentPhotosMode ? (compatProps.datePage["recent"] || 1) : (isSearchMode ? (compatProps.datePage["search_results"] || 1) : (compatProps.datePage[compatProps.currentDate] || 1))}>
                     <div>
                         {displayedPhotos.length == 0 && isSearchMode && <div style={{float: "left", marginBottom: "10px"}}><a className="back-to-home" onClick={(e) => { e.preventDefault(); clearSearch(); }} href="#">Back to HOME</a></div>}
                         {displayedPhotos.length > 0 ?
@@ -1077,15 +1078,13 @@ function PhotosList(props) {
                                         }
                                     }
                                     
-                                    // Extract date from photo path for thumbnail generation
-                                    let photoDate = compatProps.currentDate;
-                                    if (isSearchMode || !photoDate) {
-                                        // Extract date from the photo's path
-                                        for (let j = 0; j < pathParts.length; j++) {
-                                            if (datePattern.test(pathParts[j])) {
-                                                photoDate = pathParts[j];
-                                                break;
-                                            }
+                                    // Always extract date from photo path for thumbnail generation
+                                    let photoDate = null;
+                                    // Extract date from the photo's path
+                                    for (let j = 0; j < pathParts.length; j++) {
+                                        if (datePattern.test(pathParts[j])) {
+                                            photoDate = pathParts[j];
+                                            break;
                                         }
                                     }
                                     
