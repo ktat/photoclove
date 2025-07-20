@@ -8,18 +8,12 @@ Before starting task, do current steps
 
 1. create branch `improvement-#-summary` (ex. `improvement-10-improve-ui`) from current branch
 2. read the docs/feature-documentation-index.md. and read related document and source code.
-3.  re-write the md file to include the following:
-    - How do you implement the task? 
-    - Which source code you will change
-4. review document using another claude agent
-5. rename the `$num.md` to `$num-summary.md`. 
+3. rename the `$num.md` to `$num-summary.md`.
 
 When you finished task, `*.md` file which you did should be moved to `improvement/done` directory.
 At last commit your changes to the branch if my permission is got.
 
 If `improvement/*.md` are left, repeat this step and clear context if "keep context" is not written at the last line of `*.md` file.
-
-ultra think
 
 # Update Document WorkFlow
 
@@ -48,7 +42,7 @@ When implementing logging in the codebase:
 - Example: `logger.info('PhotosList', 'search_triggered', 'User initiated search', { query, filters })`
 - Avoid direct `console.log/warn/error` calls - use the structured logger instead
 
-## Backend Logging  
+## Backend Logging
 - Use Rust's `log` macros with structured format in semicolon-separated key=value pairs
 - Pattern: `log::level!(target: "component", "event; key1={}; key2={}", value1, value2)`
 - Always include `correlation_id` when available for request tracing
@@ -184,11 +178,11 @@ logger.debug('ComponentName', 'event_handler', 'User interaction', {
 log::info!(target: "component", "request_start; correlation_id={}; action={}", correlation_id, action);
 
 // Data validation and transformation
-log::debug!(target: "component", "data_validation; correlation_id={}; input={}; valid={}", 
+log::debug!(target: "component", "data_validation; correlation_id={}; input={}; valid={}",
            correlation_id, input, is_valid);
 
 // Response preparation
-log::info!(target: "component", "response_ready; correlation_id={}; result_count={}; success={}", 
+log::info!(target: "component", "response_ready; correlation_id={}; result_count={}; success={}",
           correlation_id, results.len(), success);
 ```
 
@@ -239,3 +233,14 @@ When working on features:
 1. Check `docs/terms.doc` for the correct term and file location
 2. Use the documented patterns (e.g., `toggle*()` for UI state, `use*()` for hooks)
 3. Follow the source code structure shown in the mappings
+
+# Improvement Discussion
+
+When I say `dicussion`, create new `imporvement/$number.md` file.
+`$number` is determined from the file under improvement/done/.
+
+I suggest to you new feature. do discussion about it.
+
+- carefuly consider about the influence of the new feature to exiting futures.
+- How do you implement the task?
+- Which source code you will change
