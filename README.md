@@ -227,13 +227,19 @@ PhotoClove uses a structured development workflow with the `improvement/` direct
 
 ## 📋 Roadmap
 
-### Current Focus
+### Recently Completed ✅
+- [x] **Advanced Search System**: Complete search interface with EXIF-based filtering, saved searches, and search history
+- [x] **Logging & Debug System**: Real-time LogViewer with configurable logging levels and systematic debugging approach
+- [x] **Infinite Scroll**: Smooth photo browsing with batch loading and configuration limit detection
 - [x] **Search Functionality**: Complete search interface with advanced filters
 - [x] **Thumbnail Display**: Implement Display Window Algorithm for efficient thumbnail loading
 - [x] **Crop Tool**: Complete the photo cropping functionality
+
+### Current Focus
 - [ ] **Tag System**: Add taggable labels for better organization
-- [ ] **Advanced Search**: EXIF-based filtering and search
 - [ ] **Album Support**: Group photos into custom collections
+- [ ] **Enhanced Error Handling**: Improve user feedback for failed operations
+- [ ] **Performance Optimization**: Further optimize large collection handling
 
 ### Future Plans
 - [ ] **Cloud Storage**: Amazon Photos integration
@@ -251,16 +257,24 @@ See [`CHANGES.md`](./CHANGES.md) for detailed version history and recent updates
 - Check that the import directory is accessible
 - Verify thumbnail generation completed (Job Queue)
 - Ensure file permissions allow read access
+- Use LogViewer (Ctrl+Shift+L) to inspect application logs
 
 **Import not working?**
 - Verify source directories are configured in Preferences
 - Check that target directory has write permissions
 - Monitor Job Queue for error messages
+- Enable debug logging in Preferences for detailed information
+
+**Search not working?**
+- Check LogViewer for search-related errors
+- Ensure search index is properly built
+- Verify advanced search filters are correctly configured
 
 **Performance issues?**
 - Increase thumbnail parallel processing in Preferences
 - Ensure SSD storage for import and thumbnail directories
 - Check that no antivirus is scanning photo directories
+- Adjust max_photos_per_fetch in configuration for optimal performance
 
 ### Getting Help
 
