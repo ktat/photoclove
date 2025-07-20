@@ -647,20 +647,21 @@ function PhotosList(props) {
                     compatProps.setDateList(compatProps.dateList.concat());
                 }
 
-                // exists photo before the deleted photo
-                if (date_with_slash === compatProps.currentDate) {
+                // Always update thumbnail list when photo is deleted from current view
+                if (photosListMiniAllPhotos.length > 0) {
                     const allPhotos = photosListMiniAllPhotos
-                    if (allPhotos.length > 0) {
-                        allPhotos.splice(currentPhotoIndex, 1);
-                        setPhotosListMiniAllPhotos(allPhotos);
+                    // Create a new array instead of mutating the existing one to trigger React state update
+                    const newAllPhotos = [...allPhotos];
+                    newAllPhotos.splice(currentPhotoIndex, 1);
+                    setPhotosListMiniAllPhotos(newAllPhotos);
                         // no photos are remaining after the deleted photo
                         // last photo
-                        if (currentPhotoIndex >= allPhotos.length) {
+                        if (currentPhotoIndex >= newAllPhotos.length) {
                             const ci = currentPhotoIndex - 1;
                             // console.log("last photo!")
-                            if (photosListMiniAllPhotos[ci]) {
+                            if (newAllPhotos[ci]) {
                                 setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
-                                setCurrentPhotoPath(photosListMiniAllPhotos[ci].file.path);
+                                setCurrentPhotoPath(newAllPhotos[ci].file.path);
                                 setCurrentPhotoIndex(ci);
                             }
                         }
@@ -669,10 +670,10 @@ function PhotosList(props) {
                             const ci = currentPhotoIndex;
                             // console.log("Not last photo!")
                             setPhotosListMiniReread(!photosListMiniReread);
-                            setCurrentPhotoPath(photosListMiniAllPhotos[ci].file.path);
+                            setCurrentPhotoPath(newAllPhotos[ci].file.path);
                         }
                     }
-                    if (allPhotos.length == 0) {
+                    if (newAllPhotos.length == 0) {
                         closePhotoDisplay();
                     }
                 }
