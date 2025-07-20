@@ -152,6 +152,15 @@ export const UIProvider = ({ children }) => {
     }
   }, []);
 
+  const toggleHome = useCallback(() => {
+    setShowImporter(false);
+    setShowPhotosList(false);
+    setShowLogin(false);
+    setShowPreferences(false);
+    setShowJobQueue(false);
+    setShowSearchPage(false);
+  }, []);
+
   const value = {
     // State
     showImporter,
@@ -172,6 +181,7 @@ export const UIProvider = ({ children }) => {
     togglePreferences,
     toggleJobQueue,
     toggleSearchPage,
+    toggleHome,
     addFooterMessage,
     removeFooterMessage,
     setWelcomeImage,

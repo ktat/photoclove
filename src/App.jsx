@@ -42,6 +42,7 @@ function App() {
     togglePreferences,
     toggleJobQueue,
     toggleSearchPage,
+    toggleHome,
     addFooterMessage
   } = useUI();
   const {
@@ -154,8 +155,7 @@ function App() {
           } else if (e.payload === "HOME") {
             updateCurrentDate("");
             resetPhotoState();
-            toggleImporter(false);
-            togglePreferences(false);
+            toggleHome();
             setWelcomeImage(WelcomeImage());
           } else if (e.payload === "import") {
             toggleImporter(true);
@@ -270,8 +270,7 @@ function App() {
                 <a href="#" onClick={() => {
                   updateCurrentDate("");
                   resetPhotoState();
-                  toggleImporter(false);
-                  togglePreferences(false);
+                  toggleHome();
                   setWelcomeImage(WelcomeImage());
                 }} title="HOME">🏠</a>
                 <a href="#" onClick={() => {
@@ -327,8 +326,7 @@ function App() {
             <a href="#" onClick={() => {
               updateCurrentDate("");
               resetPhotoState();
-              toggleImporter(false);
-              togglePreferences(false);
+              toggleHome();
               setWelcomeImage(WelcomeImage());
             }} title="HOME">🏠</a>
             <a href="#" onClick={() => {
