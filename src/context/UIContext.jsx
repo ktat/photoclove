@@ -14,7 +14,7 @@ export const useUI = () => {
 
 export const UIProvider = ({ children }) => {
   const [showImporter, setShowImporter] = useState(false);
-  const [showPhotosList, setShowPhotosList] = useState(true);
+  const [showPhotosList, setShowPhotosList] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   const [showJobQueue, setShowJobQueue] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
