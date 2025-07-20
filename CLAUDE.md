@@ -225,3 +225,17 @@ console.groupEnd();
 - **Timeline analysis** to identify timing issues
 
 Remember: **Investigate first, hypothesize second, fix last**. Add logs strategically to fill knowledge gaps, not scatter them randomly.
+
+# Terms & Source Code Reference
+
+For effective communication about PhotoClove features and implementation:
+
+- **Use terms document**: Refer to `docs/terms.doc` for standard terminology and source code mappings
+- **Find implementation quickly**: Use the Term → File mapping to locate where features are implemented
+- **Consistent naming**: Use the documented terms when discussing features, components, and concepts
+- **Example**: Instead of saying "photo grid component", use "PhotosList" and reference `src/App/PhotosList.jsx`
+
+When working on features:
+1. Check `docs/terms.doc` for the correct term and file location
+2. Use the documented patterns (e.g., `toggle*()` for UI state, `use*()` for hooks)
+3. Follow the source code structure shown in the mappings
