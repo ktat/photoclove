@@ -13,4 +13,3 @@
 run.sh
 rsync-ui.sh
 dev.sh
-.gitignore
