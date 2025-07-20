@@ -654,24 +654,23 @@ function PhotosList(props) {
                     const newAllPhotos = [...allPhotos];
                     newAllPhotos.splice(currentPhotoIndex, 1);
                     setPhotosListMiniAllPhotos(newAllPhotos);
-                        // no photos are remaining after the deleted photo
-                        // last photo
-                        if (currentPhotoIndex >= newAllPhotos.length) {
-                            const ci = currentPhotoIndex - 1;
-                            // console.log("last photo!")
-                            if (newAllPhotos[ci]) {
-                                setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
-                                setCurrentPhotoPath(newAllPhotos[ci].file.path);
-                                setCurrentPhotoIndex(ci);
-                            }
-                        }
-                        // not last photo
-                        else {
-                            const ci = currentPhotoIndex;
-                            // console.log("Not last photo!")
-                            setPhotosListMiniReread(!photosListMiniReread);
+                    // no photos are remaining after the deleted photo
+                    // last photo
+                    if (currentPhotoIndex >= newAllPhotos.length) {
+                        const ci = currentPhotoIndex - 1;
+                        // console.log("last photo!")
+                        if (newAllPhotos[ci]) {
+                            setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
                             setCurrentPhotoPath(newAllPhotos[ci].file.path);
+                            setCurrentPhotoIndex(ci);
                         }
+                    }
+                    // not last photo
+                    else {
+                        const ci = currentPhotoIndex;
+                        // console.log("Not last photo!")
+                        setPhotosListMiniReread(!photosListMiniReread);
+                        setCurrentPhotoPath(newAllPhotos[ci].file.path);
                     }
                     if (newAllPhotos.length == 0) {
                         closePhotoDisplay();
