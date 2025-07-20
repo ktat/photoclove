@@ -19,7 +19,7 @@ function DateList(props) {
         updateRecentPhotosMode
     } = usePhoto();
     
-    const { toggleSearchPage } = useUI();
+    const { toggleSearchPage, showPhotosListView } = useUI();
     
     const [selectedStyle, setSelectedStyle] = useState({});
 
@@ -59,8 +59,8 @@ function DateList(props) {
                                    updateRecentPhotosMode(true);
                                    updateShowPhotoDisplay({});
                                    props.toggleImporter(false);
-                                   // Clear search mode and show PhotosList
-                                   toggleSearchPage(false);
+                                   // Show PhotosList for Recent Photos
+                                   showPhotosListView();
                                }}>
                                 Recent Photos
                             </a>
@@ -76,8 +76,8 @@ function DateList(props) {
                                     updateCurrentDate(date);
                                     updateShowPhotoDisplay({});
                                     props.toggleImporter(false);
-                                    // Clear search mode and show PhotosList
-                                    toggleSearchPage(false);
+                                    // Show PhotosList for date navigation
+                                    showPhotosListView();
                                 }
                                 } data-date={date} data-page={datePage[date]}>
                                     {date}

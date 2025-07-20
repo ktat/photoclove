@@ -161,6 +161,15 @@ export const UIProvider = ({ children }) => {
     setShowSearchPage(false);
   }, []);
 
+  const showPhotosListView = useCallback(() => {
+    setShowImporter(false);
+    setShowPhotosList(true);
+    setShowLogin(false);
+    setShowPreferences(false);
+    setShowJobQueue(false);
+    setShowSearchPage(false);
+  }, []);
+
   const value = {
     // State
     showImporter,
@@ -182,6 +191,7 @@ export const UIProvider = ({ children }) => {
     toggleJobQueue,
     toggleSearchPage,
     toggleHome,
+    showPhotosListView,
     addFooterMessage,
     removeFooterMessage,
     setWelcomeImage,
