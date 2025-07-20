@@ -91,6 +91,7 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **Features**: EXIF-based filtering, saved searches with import/export, search history, database optimization
 - **Access Methods**: Search icon in home page, Search tab in PhotosList, Keyboard shortcut navigation
 - **Important**: Filter structure consistency between frontend and backend (has_comment vs has_comments, star_rating vs min_rating)
+- **Bug Fix (2025-07-20)**: Fixed first-click photo loading bug where null reference in logging prevented photo display
 - **Related Files**: `src/components/SearchTools.jsx`, `src/components/SearchBar.jsx`, `src/components/AdvancedFilters.jsx`, `src/components/SavedSearches.jsx`, `src/hooks/useSearch.js`, `src-tauri/src/lib.rs` (search commands)
 
 ## Quick Reference by Technology
@@ -179,6 +180,7 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **Sequences**: [Photo Viewing Feature](feature-sequences.md#photo-viewing-feature)
 
 **Recent Bug Fixes**:
+- **First-Click Photo Loading Bug** (Fixed 2025-07-20: Null reference error in PhotosList.jsx logging code prevented photo state updates on first date/Recent Photos click after startup. Fixed with optional chaining in logging code)
 - **Startup State Issue** (Fixed: Changed UIContext showPhotosList initial state from true to false, prevents "No Photo Found!" at startup, properly shows Welcome/Home screen)
 - **Date List Performance** (Fixed: Implemented date_summary table optimization with smart rebuild logic for ~10x faster date loading)
 - **Thumbnail List Not Updating After Deletion** (Fixed: DEL key deletion now properly removes photos from thumbnail list in all viewing modes)
