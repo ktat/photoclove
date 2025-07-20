@@ -833,3 +833,27 @@ App (root)
 - **Cross-boundary Correlation**: Links frontend actions with backend operations
 
 This structure provides a comprehensive view of the application's component hierarchy and DOM structure, making it easier to understand the codebase organization and implement features or modifications.
+
+## Recent Technical Improvements
+
+### PhotosList & PhotosListMini Component Fixes
+
+**Thumbnail Update Bug Fix (DEL Key Deletion)**:
+- **Issue**: Thumbnail list wasn't updating when photos were deleted using DEL key in Recent Photos, Search Results, or single photo viewing modes
+- **Root Cause**: Date restriction (`date_with_slash === compatProps.currentDate`) prevented thumbnail updates in multi-date viewing modes
+- **Solution**: Removed date restriction and fixed React state mutation by creating new arrays instead of mutating existing ones
+- **Files Modified**: `src/App/PhotosList.jsx:650-678`, state management in `moveToTrashCan` function
+
+**Date Dependencies Removal**:
+- **Issue**: Components were tightly coupled to `currentDate`, causing issues in Recent Photos and Search modes where photos span multiple dates
+- **Root Cause**: Pagination logic, thumbnail generation, and state management assumed single-date contexts
+- **Solution**: 
+  - Added mode-aware pagination keys: `recentPhotosMode ? "recent" : (isSearchMode ? "search_results" : currentDate)`
+  - Changed thumbnail generation to always extract dates from photo paths instead of using `currentDate` fallback
+  - Added `getDateKey()` helper function in PhotosListMini for consistent date key management
+- **Files Modified**: `src/App/PhotosList.jsx:928,1019-1020,1081-1088`, `src/App/PhotosList/PhotosListMini.jsx:21,48-50,355-362,429,611`
+
+**Benefits**:
+- **Improved Reliability**: Thumbnail updates work consistently across all viewing modes
+- **Better Architecture**: Components are now properly decoupled from date-specific assumptions
+- **Enhanced User Experience**: DEL key deletion now provides immediate visual feedback in all contexts

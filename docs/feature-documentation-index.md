@@ -173,6 +173,10 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **File Paths**: [Filesystem Organization](architecture.md#filesystem-organization)
 - **Sequences**: [Photo Viewing Feature](feature-sequences.md#photo-viewing-feature)
 
+**Recent Bug Fixes**:
+- **Thumbnail List Not Updating After Deletion** (Fixed: DEL key deletion now properly removes photos from thumbnail list in all viewing modes)
+- **Date Dependencies in Multi-Mode Views** (Fixed: Recent Photos and Search modes now work independently of currentDate, with proper pagination and thumbnail generation)
+
 ### Performance Issues
 **Optimization areas**:
 - **Lazy Loading**: [Performance Optimization Strategies](feature-sequences.md#performance-optimization-strategies)

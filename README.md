@@ -228,6 +228,8 @@ PhotoClove uses a structured development workflow with the `improvement/` direct
 ## 📋 Roadmap
 
 ### Recently Completed ✅
+- [x] **Bug Fixes**: Fixed thumbnail list not updating after DEL key deletion in Recent Photos and Search modes
+- [x] **Architecture Improvement**: Removed date dependencies from PhotosList components, improving reliability across viewing modes
 - [x] **Advanced Search System**: Complete search interface with EXIF-based filtering, saved searches, and search history
 - [x] **Logging & Debug System**: Real-time LogViewer with configurable logging levels and systematic debugging approach
 - [x] **Infinite Scroll**: Smooth photo browsing with batch loading and configuration limit detection
@@ -258,6 +260,7 @@ See [`CHANGES.md`](./CHANGES.md) for detailed version history and recent updates
 - Verify thumbnail generation completed (Job Queue)
 - Ensure file permissions allow read access
 - Use LogViewer (Ctrl+Shift+L) to inspect application logs
+- **Recent Fix**: Thumbnail lists now update properly after photo deletion across all viewing modes (Recent Photos, Search, Date view)
 
 **Import not working?**
 - Verify source directories are configured in Preferences
