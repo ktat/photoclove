@@ -69,6 +69,16 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **Sequences**: [Database Management](feature-sequences.md#database-management)
 - **Related Files**: `src-tauri/src/repository/meta_db/sqlite.rs`, `src-tauri/src/entity/photo_meta.rs`
 
+### 📝 Logging & Debugging System
+**When you need to understand**: Application logging, LogViewer, debug information, bug investigation
+- **Architecture**: Structured logging with frontend LoggerService and backend log macros
+- **Components**: LogViewer component (`src/App/LogViewer.jsx`), configurable logging in Preferences
+- **Features**: Toggle logging on/off, configurable log levels, structured logging format, daily log files
+- **Access**: Ctrl+Shift+L to open LogViewer, Preferences panel for logging settings
+- **Storage**: Frontend logs in memory, backend logs in `~/.local/share/photoclove/logs/`
+- **Bug Investigation**: Systematic debugging approach documented in `CLAUDE.md`
+- **Related Files**: `src/App/LogViewer.jsx`, `src/services/LoggerService.js`, `src-tauri/src/domain_service/logging_service.rs`, `CLAUDE.md`
+
 ### 🔍 Advanced Search & Filtering
 **When you need to understand**: Advanced search interface, EXIF filters, saved searches, search history, recent photos
 - **Architecture**: [Key Features → Advanced Search System](architecture.md#6-advanced-search-system)
@@ -76,6 +86,7 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **Components**: [Search Tools](component-structure.md#search-tools), [Directory Menu](component-structure.md#directory-menu-when-no-photo-selected)
 - **Features**: EXIF-based filtering, saved searches with import/export, search history, database optimization
 - **Access Methods**: Search icon in home page, Search tab in PhotosList, Keyboard shortcut navigation
+- **Important**: Filter structure consistency between frontend and backend (has_comment vs has_comments, star_rating vs min_rating)
 - **Related Files**: `src/components/SearchTools.jsx`, `src/components/SearchBar.jsx`, `src/components/AdvancedFilters.jsx`, `src/components/SavedSearches.jsx`, `src/hooks/useSearch.js`, `src-tauri/src/lib.rs` (search commands)
 
 ## Quick Reference by Technology
@@ -114,6 +125,13 @@ This reverse index helps you quickly find the relevant documentation when workin
 2. **Backend**: Extend `get_photos_with_filter` command in `src-tauri/src/lib.rs`
 3. **Database**: Add filter logic in `src-tauri/src/repository/db/directory.rs`
 4. **Reference**: [Search & Filtering](#-search--filtering)
+
+### Troubleshooting Display Issues
+1. **Check component visibility conditions** in parent components (App.jsx)
+2. **Verify state management** Context values and prop passing
+3. **Review useEffect dependencies** for data loading triggers
+4. **Follow bug investigation guide** in `CLAUDE.md` for systematic debugging
+5. **Use LogViewer** (Ctrl+Shift+L) to inspect frontend state and backend responses
 
 ### Adding a New Photo Transformation
 1. **Frontend**: Add control in [Photo Editor Panel](component-structure.md#photo-editor-panel)
