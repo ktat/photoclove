@@ -41,7 +41,14 @@ impl SQLite {
             exif_white_balance_mode TEXT,
             exif_orientation TEXT,
             css_style TEXT
-        )"
+        );
+        CREATE TABLE date_summary (
+            date TEXT PRIMARY KEY,
+            photo_count INTEGER NOT NULL,
+            created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
+            updated_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
+        );
+        CREATE INDEX IF NOT EXISTS idx_date_summary_date ON date_summary(date)"
     }
 
     pub fn new(path: String) -> SQLite {
@@ -53,17 +60,41 @@ impl SQLite {
             eprintln!("Falling back to basic table creation");
             // Try basic table creation as fallback
             if let Ok(conn) = sqlite.get_connection() {
-                let _ = conn.execute(
-                    &format!("CREATE TABLE IF NOT EXISTS {}", SQLite::get_full_schema().replace("CREATE TABLE photo_metadata", "photo_metadata")),
-                    [],
-                );
-                // Also create the index
+                // Execute the full schema (which now includes date_summary table)
+                let schema_statements = SQLite::get_full_schema()
+                    .split(';')
+                    .filter(|s| !s.trim().is_empty());
+                
+                for statement in schema_statements {
+                    if statement.contains("CREATE TABLE photo_metadata") {
+                        let _ = conn.execute(
+                            &format!("CREATE TABLE IF NOT EXISTS {}", statement.replace("CREATE TABLE photo_metadata", "photo_metadata")),
+                            [],
+                        );
+                    } else if statement.contains("CREATE TABLE date_summary") {
+                        let _ = conn.execute(
+                            &format!("CREATE TABLE IF NOT EXISTS {}", statement.replace("CREATE TABLE date_summary", "date_summary")),
+                            [],
+                        );
+                    } else if statement.contains("CREATE INDEX") {
+                        let _ = conn.execute(statement, []);
+                    }
+                }
+                
+                // Also create the photo_date index
                 let _ = conn.execute(
                     "CREATE INDEX IF NOT EXISTS idx_photo_date ON photo_metadata(photo_date)",
                     [],
                 );
             }
         }
+        
+        // Validate date_summary currency on startup
+        if let Err(_) = sqlite.check_date_summary_currency() {
+            log::info!(target: "date_summary", "startup_validation; status=failed; action=rebuilding");
+            let _ = sqlite.rebuild_date_summary();
+        }
+        
         sqlite
     }
 
@@ -450,6 +481,49 @@ impl SQLite {
             log::info!("All database indexes for search optimization created successfully");
         }
         
+        // Check if date_summary table exists, create if not
+        let date_summary_exists = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='date_summary'")
+            .and_then(|mut stmt| {
+                stmt.query_row([], |row| {
+                    let _name: String = row.get(0)?;
+                    Ok(true)
+                })
+            })
+            .unwrap_or(false);
+        
+        if !date_summary_exists {
+            log::info!(target: "date_summary", "table_creation; status=creating_table");
+            
+            // Create date_summary table
+            conn.execute(
+                "CREATE TABLE date_summary (
+                    date TEXT PRIMARY KEY,
+                    photo_count INTEGER NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
+                    updated_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
+                )",
+                [],
+            )?;
+            
+            // Create index
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_date_summary_date ON date_summary(date)",
+                [],
+            )?;
+            
+            // Populate from existing photo_metadata
+            let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+            conn.execute(
+                "INSERT INTO date_summary (date, photo_count, created_at, updated_at)
+                 SELECT date(photo_date) as date_only, COUNT(*) as count, ? as created_at, ? as updated_at
+                 FROM photo_metadata 
+                 GROUP BY date(photo_date)",
+                params![now, now],
+            )?;
+            
+            log::info!(target: "date_summary", "table_creation; status=completed");
+        }
+        
         // Create job queue tables
         conn.execute(
             "CREATE TABLE IF NOT EXISTS job_unit (
@@ -525,20 +599,81 @@ impl SQLite {
         let conn = self
             .get_connection()
             .map_err(|e| format!("Failed to connect to database: {}", e))?;
+        
+        // Clear both photo_metadata and date_summary
         conn.execute("DELETE FROM photo_metadata", [])
             .map_err(|e| format!("Failed to clear metadata: {}", e))?;
+        
+        conn.execute("DELETE FROM date_summary", [])
+            .map_err(|e| format!("Failed to clear date_summary: {}", e))?;
+        
         Ok(())
     }
 
     pub fn get_available_dates(&self) -> Result<Vec<date::Date>, String> {
-        println!("SQLite::get_available_dates() - Starting date extraction");
+        log::info!(target: "date_summary", "get_available_dates; start=optimized_extraction");
 
         let conn = self.get_connection().map_err(|e| {
-            println!("SQLite::get_available_dates() - Failed to connect: {}", e);
+            log::error!(target: "date_summary", "get_available_dates; connection_failed; error={}", e);
             format!("Failed to connect to database: {}", e)
         })?;
 
-        println!("SQLite::get_available_dates() - Database connection successful");
+        log::debug!(target: "date_summary", "get_available_dates; connection=successful");
+
+        // Check if date_summary table exists and is current
+        if let Ok(is_current) = self.check_date_summary_currency() {
+            if is_current {
+                log::info!(target: "date_summary", "get_available_dates; using_optimized_table=true");
+                
+                // Use optimized query from date_summary table
+                let mut stmt = conn
+                    .prepare("SELECT date FROM date_summary ORDER BY date")
+                    .map_err(|e| {
+                        log::error!(target: "date_summary", "get_available_dates; prepare_failed; error={}", e);
+                        format!("Failed to prepare optimized statement: {}", e)
+                    })?;
+
+                let rows = stmt
+                    .query_map([], |row| {
+                        let date_str: String = row.get(0)?;
+                        Ok(date_str)
+                    })
+                    .map_err(|e| {
+                        log::error!(target: "date_summary", "get_available_dates; execute_optimized_failed; error={}", e);
+                        format!("Failed to execute optimized query: {}", e)
+                    })?;
+
+                return self.process_date_rows(rows);
+            } else {
+                log::info!(target: "date_summary", "get_available_dates; status=outdated; action=rebuilding");
+                if let Err(e) = self.rebuild_date_summary() {
+                    log::warn!(target: "date_summary", "get_available_dates; rebuild_failed; error={}; fallback=group_by", e);
+                } else {
+                    // Try optimized query again after rebuild
+                    let mut stmt = conn
+                        .prepare("SELECT date FROM date_summary ORDER BY date")
+                        .map_err(|e| {
+                            log::error!(target: "date_summary", "get_available_dates; prepare_after_rebuild_failed; error={}", e);
+                            format!("Failed to prepare statement after rebuild: {}", e)
+                        })?;
+
+                    let rows = stmt
+                        .query_map([], |row| {
+                            let date_str: String = row.get(0)?;
+                            Ok(date_str)
+                        })
+                        .map_err(|e| {
+                            println!("SQLite::get_available_dates() - Failed to execute query after rebuild: {}", e);
+                            format!("Failed to execute query after rebuild: {}", e)
+                        })?;
+
+                    return self.process_date_rows(rows);
+                }
+            }
+        }
+
+        // Fallback to original GROUP BY query
+        println!("SQLite::get_available_dates() - Using fallback GROUP BY query");
 
         // First check how many records we have
         let count_result = conn.query_row("SELECT COUNT(*) FROM photo_metadata", [], |row| {
@@ -561,13 +696,13 @@ impl SQLite {
             .prepare("SELECT DISTINCT date(photo_date) FROM photo_metadata ORDER BY photo_date")
             .map_err(|e| {
                 println!(
-                    "SQLite::get_available_dates() - Failed to prepare statement: {}",
+                    "SQLite::get_available_dates() - Failed to prepare fallback statement: {}",
                     e
                 );
-                format!("Failed to prepare statement: {}", e)
+                format!("Failed to prepare fallback statement: {}", e)
             })?;
 
-        println!("SQLite::get_available_dates() - Query prepared successfully");
+        println!("SQLite::get_available_dates() - Fallback query prepared successfully");
 
         let rows = stmt
             .query_map([], |row| {
@@ -576,13 +711,17 @@ impl SQLite {
             })
             .map_err(|e| {
                 println!(
-                    "SQLite::get_available_dates() - Failed to execute query: {}",
+                    "SQLite::get_available_dates() - Failed to execute fallback query: {}",
                     e
                 );
-                format!("Failed to execute query: {}", e)
+                format!("Failed to execute fallback query: {}", e)
             })?;
 
-        println!("SQLite::get_available_dates() - Query executed successfully");
+        self.process_date_rows(rows)
+    }
+
+    fn process_date_rows(&self, rows: rusqlite::MappedRows<impl FnMut(&rusqlite::Row) -> rusqlite::Result<String>>) -> Result<Vec<date::Date>, String> {
+        println!("SQLite::process_date_rows() - Processing date rows");
 
         let mut dates = Vec::new();
         let mut row_count = 0;
@@ -592,7 +731,7 @@ impl SQLite {
             row_count += 1;
             let date_str = row.map_err(|e| {
                 println!(
-                    "SQLite::get_available_dates() - Failed to parse row {}: {}",
+                    "SQLite::process_date_rows() - Failed to parse row {}: {}",
                     row_count, e
                 );
                 format!("Failed to parse row: {}", e)
@@ -600,15 +739,15 @@ impl SQLite {
 
             if row_count <= 3 {
                 println!(
-                    "SQLite::get_available_dates() - Processing row {}: '{}'",
+                    "SQLite::process_date_rows() - Processing row {}: '{}'",
                     row_count, date_str
                 );
             }
 
-            // Parse date string in "yyyy-mm-dd" format (from date() function)
+            // Parse date string in "yyyy-mm-dd" format
             if row_count <= 3 {
                 println!(
-                    "SQLite::get_available_dates() - Processing date string: '{}'",
+                    "SQLite::process_date_rows() - Processing date string: '{}'",
                     date_str
                 );
             }
@@ -623,7 +762,7 @@ impl SQLite {
                 ) {
                     if row_count <= 3 {
                         println!(
-                            "SQLite::get_available_dates() - Parsed components: {}-{}-{}",
+                            "SQLite::process_date_rows() - Parsed components: {}-{}-{}",
                             year, month, day
                         );
                     }
@@ -633,22 +772,22 @@ impl SQLite {
                         parsed_count += 1;
 
                         if row_count <= 3 {
-                            println!("SQLite::get_available_dates() - Created date object: {}-{:02}-{:02}", year, month, day);
+                            println!("SQLite::process_date_rows() - Created date object: {}-{:02}-{:02}", year, month, day);
                         }
                     } else {
                         if row_count <= 3 {
-                            println!("SQLite::get_available_dates() - Failed to create date object for: {}-{}-{}", year, month, day);
+                            println!("SQLite::process_date_rows() - Failed to create date object for: {}-{}-{}", year, month, day);
                         }
                     }
                 } else {
                     if row_count <= 3 {
-                        println!("SQLite::get_available_dates() - Failed to parse date components from: {:?}", parts);
+                        println!("SQLite::process_date_rows() - Failed to parse date components from: {:?}", parts);
                     }
                 }
             } else {
                 if row_count <= 3 {
                     println!(
-                        "SQLite::get_available_dates() - Wrong number of date parts: {:?}",
+                        "SQLite::process_date_rows() - Wrong number of date parts: {:?}",
                         parts
                     );
                 }
@@ -656,7 +795,7 @@ impl SQLite {
         }
 
         println!(
-            "SQLite::get_available_dates() - Processed {} rows, parsed {} dates",
+            "SQLite::process_date_rows() - Processed {} rows, parsed {} dates",
             row_count, parsed_count
         );
 
@@ -671,14 +810,14 @@ impl SQLite {
         dates.dedup_by(|a, b| a.year == b.year && a.month == b.month && a.day == b.day);
 
         println!(
-            "SQLite::get_available_dates() - After deduplication: {} -> {} unique dates",
+            "SQLite::process_date_rows() - After deduplication: {} -> {} unique dates",
             original_count,
             dates.len()
         );
 
         for (i, date) in dates.iter().enumerate() {
             println!(
-                "SQLite::get_available_dates() - Final date {}: {}-{:02}-{:02}",
+                "SQLite::process_date_rows() - Final date {}: {}-{:02}-{:02}",
                 i + 1,
                 date.year,
                 date.month,
@@ -687,7 +826,7 @@ impl SQLite {
         }
 
         println!(
-            "SQLite::get_available_dates() - Returning {} dates",
+            "SQLite::process_date_rows() - Returning {} dates",
             dates.len()
         );
         Ok(dates)
@@ -1071,6 +1210,10 @@ impl MetaInfoDB for SQLite {
             eprintln!("Successfully inserted metadata for: {} (date: {})", photo.file.path, date);
         }
 
+        // Update date_summary for newly inserted photos
+        println!("SQLite::record_photos_meta_data() - Rebuilding date_summary after batch insert");
+        let _ = self.rebuild_date_summary();
+
         Ok(true)
     }
 
@@ -1248,10 +1391,17 @@ impl MetaInfoDB for SQLite {
             Err(_) => return,
         };
 
+        // Get the photo date before deletion for date_summary update
+        let existing_meta = self.get_photo_meta(photo.clone());
+        let photo_date = existing_meta.photo_time();
+
         let _ = conn.execute(
             "DELETE FROM photo_metadata WHERE path = ?1",
             params![photo.file.path],
         );
+
+        // Update date_summary after deletion
+        let _ = self.update_date_summary_for_photo(&photo_date, -1);
     }
 
     fn update_photo_path(&self, old_path: &str, new_path: &str) -> Result<bool, &str> {
@@ -1268,7 +1418,7 @@ impl MetaInfoDB for SQLite {
 
     fn get_photo_count_per_dates(&self, dates: date::Dates) -> DatesNum {
         println!(
-            "SQLite::get_photo_count_per_dates() - Getting counts for {} dates",
+            "SQLite::get_photo_count_per_dates() - Getting optimized counts for {} dates",
             dates.dates.len()
         );
         let mut dates_num = DatesNum {
@@ -1288,6 +1438,73 @@ impl MetaInfoDB for SQLite {
                 return dates_num;
             }
         };
+
+        // Check if date_summary table is current and use it for optimization
+        if let Ok(is_current) = self.check_date_summary_currency() {
+            if is_current {
+                println!("SQLite::get_photo_count_per_dates() - Using optimized date_summary table");
+                
+                // Use optimized queries from date_summary table
+                for date in dates.dates {
+                    let date_string = date.to_string();
+                    
+                    let count = conn.query_row(
+                        "SELECT photo_count FROM date_summary WHERE date = ?1",
+                        params![date_string],
+                        |row| {
+                            let count: i32 = row.get(0)?;
+                            Ok(count)
+                        }
+                    ).unwrap_or(0);
+                    
+                    println!(
+                        "SQLite::get_photo_count_per_dates() - Optimized query: date '{}' has {} photos",
+                        date_string, count
+                    );
+                    dates_num.data.insert(date_string, count);
+                }
+                
+                println!(
+                    "SQLite::get_photo_count_per_dates() - Optimized result: {}",
+                    dates_num.to_json()
+                );
+                return dates_num;
+            } else {
+                println!("SQLite::get_photo_count_per_dates() - date_summary outdated, rebuilding");
+                if let Err(e) = self.rebuild_date_summary() {
+                    println!("SQLite::get_photo_count_per_dates() - Failed to rebuild, using fallback: {}", e);
+                } else {
+                    // Try optimized query again after rebuild
+                    for date in dates.dates {
+                        let date_string = date.to_string();
+                        
+                        let count = conn.query_row(
+                            "SELECT photo_count FROM date_summary WHERE date = ?1",
+                            params![date_string],
+                            |row| {
+                                let count: i32 = row.get(0)?;
+                                Ok(count)
+                            }
+                        ).unwrap_or(0);
+                        
+                        println!(
+                            "SQLite::get_photo_count_per_dates() - Post-rebuild query: date '{}' has {} photos",
+                            date_string, count
+                        );
+                        dates_num.data.insert(date_string, count);
+                    }
+                    
+                    println!(
+                        "SQLite::get_photo_count_per_dates() - Post-rebuild result: {}",
+                        dates_num.to_json()
+                    );
+                    return dates_num;
+                }
+            }
+        }
+
+        // Fallback to original GROUP BY query
+        println!("SQLite::get_photo_count_per_dates() - Using fallback GROUP BY query");
 
         // First, let's see what date formats we actually have in the database
         if let Ok(mut debug_stmt) = conn.prepare("SELECT DISTINCT photo_date FROM photo_metadata LIMIT 5")
@@ -2123,5 +2340,107 @@ impl SQLite {
             // Regular image file
             std::path::Path::new(&thumbnail_path_ext_changed).exists()
         }
+    }
+    
+    // Date Summary Helper Functions
+    fn check_date_summary_currency(&self) -> Result<bool, String> {
+        let conn = self.get_connection().map_err(|e| format!("Connection failed: {}", e))?;
+        
+        // Check if summary table exists
+        let table_exists = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='date_summary'")
+            .and_then(|mut stmt| stmt.query_row([], |_| Ok(true)))
+            .unwrap_or(false);
+        
+        log::debug!(target: "date_summary", "currency_check; table_exists={}", table_exists);
+        
+        if !table_exists {
+            return Ok(false);
+        }
+        
+        // Check if date_summary has any rows
+        let summary_count = conn.query_row(
+            "SELECT COUNT(*) FROM date_summary", 
+            [], 
+            |row| row.get::<_, i32>(0)
+        ).unwrap_or(0);
+        
+        log::debug!(target: "date_summary", "row_count_check; summary_count={}", summary_count);
+        
+        if summary_count == 0 {
+            return Ok(false);
+        }
+        
+        // Compare last update timestamps
+        let summary_timestamp = conn.query_row(
+            "SELECT MAX(updated_at) FROM date_summary", 
+            [], 
+            |row| row.get::<_, String>(0)
+        ).unwrap_or_else(|_| "1970-01-01 00:00:00".to_string());
+        
+        let metadata_timestamp = conn.query_row(
+            "SELECT MAX(updated_at) FROM photo_metadata", 
+            [], 
+            |row| row.get::<_, String>(0)
+        ).unwrap_or_else(|_| "1970-01-01 00:00:00".to_string());
+        
+        log::debug!(target: "date_summary", "timestamp_comparison; summary_timestamp={}; metadata_timestamp={}", 
+                   summary_timestamp, metadata_timestamp);
+        
+        let is_current = summary_timestamp >= metadata_timestamp;
+        log::info!(target: "date_summary", "currency_result; is_current={}", is_current);
+        
+        Ok(is_current)
+    }
+    
+    fn rebuild_date_summary(&self) -> Result<(), String> {
+        let conn = self.get_connection().map_err(|e| format!("Connection failed: {}", e))?;
+        
+        // Clear existing summary
+        conn.execute("DELETE FROM date_summary", [])
+            .map_err(|e| format!("Failed to clear date_summary: {}", e))?;
+        
+        // Populate from photo_metadata using GROUP BY
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        conn.execute(
+            "INSERT INTO date_summary (date, photo_count, created_at, updated_at)
+             SELECT date(photo_date) as date_only, COUNT(*) as count, ? as created_at, ? as updated_at
+             FROM photo_metadata 
+             GROUP BY date(photo_date)",
+            params![now, now],
+        ).map_err(|e| format!("Failed to populate date_summary: {}", e))?;
+        
+        Ok(())
+    }
+    
+    fn update_date_summary_for_photo(&self, photo_date: &str, delta: i32) -> Result<(), String> {
+        let conn = self.get_connection().map_err(|e| format!("Connection failed: {}", e))?;
+        let tx = conn.unchecked_transaction().map_err(|e| format!("Transaction failed: {}", e))?;
+        
+        let date_str = if let Ok(parsed_date) = chrono::NaiveDateTime::parse_from_str(photo_date, "%Y-%m-%d %H:%M:%S") {
+            parsed_date.format("%Y-%m-%d").to_string()
+        } else if let Ok(parsed_date) = chrono::NaiveDate::parse_from_str(photo_date, "%Y-%m-%d") {
+            parsed_date.format("%Y-%m-%d").to_string()
+        } else {
+            // Fallback: extract date part if format is unexpected
+            photo_date.split(' ').next().unwrap_or(photo_date).to_string()
+        };
+        
+        // Update or insert date summary
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        tx.execute(
+            "INSERT OR REPLACE INTO date_summary (date, photo_count, updated_at, created_at) 
+             VALUES (?1, COALESCE((SELECT photo_count FROM date_summary WHERE date = ?1), 0) + ?2, ?3, 
+                     COALESCE((SELECT created_at FROM date_summary WHERE date = ?1), ?3))",
+            params![date_str, delta, now]
+        ).map_err(|e| format!("Summary update failed: {}", e))?;
+        
+        // Remove entries with zero or negative counts
+        tx.execute(
+            "DELETE FROM date_summary WHERE photo_count <= 0",
+            []
+        ).map_err(|e| format!("Failed to cleanup empty dates: {}", e))?;
+        
+        tx.commit().map_err(|e| format!("Commit failed: {}", e))?;
+        Ok(())
     }
 }
