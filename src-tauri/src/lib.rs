@@ -106,7 +106,8 @@ async fn search_photos(
     );
     
     // Parse filters
-    let search_filters: SearchFilters = match serde_json::from_str(filters) {
+    // this implementation is not used - filters are parsed again in the database layer
+    let _search_filters: SearchFilters = match serde_json::from_str(filters) {
         Ok(f) => {
             log::debug!(
                 target: "search",
