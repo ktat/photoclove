@@ -57,6 +57,7 @@ struct SearchFilters {
     has_comment: bool,
     star_rating: i32,
     file_extension: Option<String>,
+    tag_ids: Option<Vec<i32>>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
@@ -130,6 +131,7 @@ async fn search_photos(
                 has_comment: false,
                 star_rating: 0,
                 file_extension: None,
+                tag_ids: None,
             }
         },
     };

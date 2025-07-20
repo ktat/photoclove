@@ -1062,6 +1062,33 @@ impl SQLite {
             }
         }
         
+        // Tag filter - only include photos that have ALL selected tags
+        if let Some(tag_ids) = filter_params.get("tag_ids").and_then(|v| v.as_array()) {
+            if !tag_ids.is_empty() {
+                let tag_id_values: Vec<i64> = tag_ids.iter()
+                    .filter_map(|v| v.as_i64())
+                    .collect();
+                
+                if !tag_id_values.is_empty() {
+                    // Use subquery to find photos that have ALL the specified tags
+                    let placeholders: Vec<String> = tag_id_values.iter().map(|_| "?".to_string()).collect();
+                    let placeholders_str = placeholders.join(",");
+                    
+                    sql_query.push_str(&format!(
+                        " AND path IN (SELECT photo_path FROM photo_tags WHERE tag_id IN ({}) GROUP BY photo_path HAVING COUNT(DISTINCT tag_id) = ?)",
+                        placeholders_str
+                    ));
+                    
+                    // Add the tag IDs as parameters
+                    for tag_id in &tag_id_values {
+                        params.push(Box::new(*tag_id));
+                    }
+                    // Add the count of tags for the HAVING clause
+                    params.push(Box::new(tag_id_values.len() as i64));
+                }
+            }
+        }
+        
         Ok(())
     }
     
