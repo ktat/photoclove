@@ -162,12 +162,14 @@ export const UIProvider = ({ children }) => {
   }, []);
 
   const showPhotosListView = useCallback(() => {
+    console.log('🐛 UIContext showPhotosListView() called - setting showPhotosList to true');
     setShowImporter(false);
     setShowPhotosList(true);
     setShowLogin(false);
     setShowPreferences(false);
     setShowJobQueue(false);
     setShowSearchPage(false);
+    console.log('🐛 UIContext showPhotosListView() - all states set');
   }, []);
 
   const value = {

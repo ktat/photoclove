@@ -55,12 +55,15 @@ function DateList(props) {
                                }} 
                                onClick={(e) => {
                                    e.preventDefault();
+                                   logger.info('DateList', 'recent_photos_click', 'Recent Photos clicked - starting navigation');
                                    setSelectedStyle({});
                                    updateRecentPhotosMode(true);
                                    updateShowPhotoDisplay({});
                                    props.toggleImporter(false);
                                    // Show PhotosList for Recent Photos
+                                   logger.info('DateList', 'recent_photos_click', 'About to call showPhotosListView()');
                                    showPhotosListView();
+                                   logger.info('DateList', 'recent_photos_click', 'showPhotosListView() called');
                                }}>
                                 Recent Photos
                             </a>
@@ -71,13 +74,15 @@ function DateList(props) {
                                 <a href="#" style={{ color: selectedStyle["a-" + date] || "#646cff" }} onClick={(e) => {
                                     e.preventDefault();
                                     setSelectedStyle({ ["a-" + date]: "#ccc", ["li-" + date]: "square" }); //  outside url('...')
-                                    logger.debug('DateList', 'date_click', 'Date clicked', { date });
+                                    logger.info('DateList', 'date_click', 'Date clicked - starting navigation', { date });
                                     updateRecentPhotosMode(false);
                                     updateCurrentDate(date);
                                     updateShowPhotoDisplay({});
                                     props.toggleImporter(false);
                                     // Show PhotosList for date navigation
+                                    logger.info('DateList', 'date_click', 'About to call showPhotosListView()', { date });
                                     showPhotosListView();
+                                    logger.info('DateList', 'date_click', 'showPhotosListView() called', { date });
                                 }
                                 } data-date={date} data-page={datePage[date]}>
                                     {date}

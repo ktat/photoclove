@@ -354,16 +354,40 @@ function PhotosList(props) {
     
     // Memoize filtered photos to avoid recalculating on every render
     const filteredPhotos = useMemo(() => {
-        return applyFrontendFilters(allPhotosForCurrentFetch);
+        logger.debug('PhotosList', 'filtering_photos', 'Applying frontend filters', {
+            allPhotosCount: allPhotosForCurrentFetch.length,
+            starFilter,
+            hasCommentFilter,
+            extensionFilter
+        });
+        const result = applyFrontendFilters(allPhotosForCurrentFetch);
+        logger.debug('PhotosList', 'filtered_result', 'Frontend filter result', {
+            originalCount: allPhotosForCurrentFetch.length,
+            filteredCount: result.length
+        });
+        return result;
     }, [allPhotosForCurrentFetch, starFilter, hasCommentFilter, extensionFilter]);
     
     // Displayed photos for infinite scroll
     const displayedPhotos = useMemo(() => {
+        logger.debug('PhotosList', 'display_photos', 'Calculating displayed photos', {
+            filteredCount: filteredPhotos.length,
+            displayedPhotoCount,
+            infiniteScrollEnabled
+        });
         if (infiniteScrollEnabled) {
             const result = filteredPhotos.slice(0, displayedPhotoCount);
+            logger.debug('PhotosList', 'displayed_result', 'Displayed photos result', {
+                filtered: filteredPhotos.length,
+                displayCount: displayedPhotoCount,
+                result: result.length
+            });
             console.log(`[DISPLAYED_PHOTOS] Slice: filtered=${filteredPhotos.length}, displayCount=${displayedPhotoCount}, result=${result.length}`);
             return result;
         }
+        logger.debug('PhotosList', 'displayed_all', 'Showing all filtered photos (infinite scroll disabled)', {
+            count: filteredPhotos.length
+        });
         return filteredPhotos; // Infinite scroll disabled shows all
     }, [filteredPhotos, displayedPhotoCount, infiniteScrollEnabled]);
 
@@ -509,7 +533,7 @@ function PhotosList(props) {
             logger.debug('PhotosList', 'useEffect_skip', 'Not loading photos - fetchConfig is null/undefined');
         }
         
-    }, [fetchConfig]);
+    }, [fetchConfig?.fetch_method, fetchConfig?.value, fetchConfig?.max_photos_per_fetch]);
 
     // Load filter options for Advanced Search mode
     useEffect(() => {
@@ -687,6 +711,12 @@ function PhotosList(props) {
         });
         if (!fetchConfig) return;
         
+        // Prevent duplicate loading
+        if (photoLoading) {
+            logger.info('PhotosList', 'loading_already_in_progress', 'Photo loading already in progress, skipping');
+            return;
+        }
+        
         // Some fetch methods don't require a value (e.g., favorites, search with filters only, recent)
         if (fetchConfig.fetch_method !== "favorites" && fetchConfig.fetch_method !== "search" && fetchConfig.fetch_method !== "recent" && !fetchConfig.value) return;
         
@@ -710,6 +740,10 @@ function PhotosList(props) {
                 case "date":
                     // Note: We need to pass filter values that won't exclude any photos
                     // but will still cause the backend to include metadata
+                    logger.info('PhotosList', 'date_case_start', 'About to call get_photos_with_filter for date', {
+                        dateStr: fetchConfig.value,
+                        sortValue: parseInt(sortOfPhotos)
+                    });
                     result = await invoke("get_photos_with_filter", {
                         dateStr: fetchConfig.value,
                         sortValue: parseInt(sortOfPhotos),
@@ -719,6 +753,11 @@ function PhotosList(props) {
                         star: -1, // -1 means no star filter but include star data
                         hasComment: false,
                         extension: "all"
+                    });
+                    logger.info('PhotosList', 'date_case_result', 'get_photos_with_filter result', {
+                        resultType: typeof result,
+                        resultLength: result ? result.length : 'null',
+                        hasResult: !!result
                     });
                     break;
                     
@@ -788,7 +827,16 @@ function PhotosList(props) {
                         hasComment: false,
                         extension: "all"
                     };
+                    logger.info('PhotosList', 'recent_case_start', 'About to call get_recent_photos', {
+                        limit: recentParams.limit,
+                        sortValue: recentParams.sortValue
+                    });
                     result = await invoke("get_recent_photos", recentParams);
+                    logger.info('PhotosList', 'recent_case_result', 'get_recent_photos result', {
+                        resultType: typeof result,
+                        resultLength: result ? result.length : 'null',
+                        hasResult: !!result
+                    });
                     break;
                     
                 default:
@@ -798,10 +846,31 @@ function PhotosList(props) {
                     return;
             }
             
+            logger.info('PhotosList', 'about_to_parse', 'About to parse result', {
+                resultType: typeof result,
+                resultLength: result ? result.length : 'null',
+                hasResult: !!result
+            });
             const data = JSON.parse(result);
+            logger.info('PhotosList', 'parse_success', 'JSON parse successful', {
+                hasPhotos: !!(data && data.photos),
+                photoCount: data && data.photos ? data.photos.length : 'no photos key'
+            });
+            
+            // Validate data structure before proceeding
+            if (!data || !data.photos || !Array.isArray(data.photos)) {
+                logger.error('PhotosList', 'invalid_data_structure', 'Invalid data structure from backend', {
+                    hasData: !!data,
+                    hasPhotos: !!(data && data.photos),
+                    photosType: data && data.photos ? typeof data.photos : 'undefined',
+                    isArray: data && data.photos ? Array.isArray(data.photos) : false
+                });
+                return;
+            }
+            
             logger.info('PhotosList', 'load_all_parsed', 'Photos loaded and parsed', {
                 photoCount: data.photos.length,
-                fetchMethod: config.fetch_method,
+                fetchMethod: config?.fetch_method || fetchConfig?.fetch_method || 'unknown',
                 hasNext: data.has_next,
                 hasPrev: data.has_prev
             });
@@ -827,7 +896,12 @@ function PhotosList(props) {
             setConfigLimit(effectiveLimit);
             
             // Store all photos unfiltered
+            logger.info('PhotosList', 'setting_photos', 'Setting allPhotosForCurrentFetch', {
+                photoCount: data.photos.length,
+                firstPhotoPath: data.photos[0]?.file?.path || 'no photos'
+            });
             setAllPhotosForCurrentFetch(data.photos);
+            logger.info('PhotosList', 'photos_set', 'allPhotosForCurrentFetch state updated');
             
             // Don't apply filters here - let the memoized filteredPhotos handle it
             // This ensures consistency between all components

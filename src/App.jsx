@@ -353,7 +353,8 @@ function App() {
             toggleSearchPage={toggleSearchPage}
           />
         </div>
-        {showPhotosList ? <>
+        {(console.log('🐛 App.jsx render decision:', { showPhotosList, showImporter, showPreferences, showJobQueue, showSearchPage, currentDate, recentPhotosMode }), showPhotosList) ? <>
+          {console.log('🐛 App.jsx: Rendering PhotosList')}
           <PhotosList
             shortCutNavigation={shortCutNavigation}
             addFooterMessage={addFooterMessage}
@@ -361,7 +362,7 @@ function App() {
           />
         </>
           :
-          <>
+          <>{console.log('🐛 App.jsx: NOT rendering PhotosList - showing other components')}
             <div style={{ width: "100%", display: showImporter ? "flex" : "none" }}>
               <Importer
                 getDates={getDates}
@@ -377,7 +378,8 @@ function App() {
                 toggleJobQueue={toggleJobQueue}
               ></JobQueue>
             </div>
-            <div style={{ display: (!showImporter && !showLogin && !showPreferences && !showJobQueue && !showSearchPage && ((!currentDate && !recentPhotosMode) || !showPhotosList)) ? "block" : "none" }}>
+            <div style={{ display: (console.log('🐛 Home display condition:', { showImporter, showLogin, showPreferences, showJobQueue, showSearchPage, currentDate, recentPhotosMode, showPhotosList, willShowHome: (!showImporter && !showLogin && !showPreferences && !showJobQueue && !showSearchPage && ((!currentDate && !recentPhotosMode) || !showPhotosList)) }), (!showImporter && !showLogin && !showPreferences && !showJobQueue && !showSearchPage && ((!currentDate && !recentPhotosMode) || !showPhotosList))) ? "block" : "none" }}>
+              {console.log('🐛 App.jsx: Rendering Home component')}
               <Home welcomeImage={welcomeImage} setWelcomeImage={setWelcomeImage} />
             </div>
           </>
