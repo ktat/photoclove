@@ -17,9 +17,19 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
     try {
       logger.info('AlbumSelectorModal', 'load_albums_start', 'Loading albums for selection', { selectedPhotosCount });
       const albumList = await invoke('get_all_albums');
-      setAlbums(albumList);
-      setFilteredAlbums(albumList);
-      logger.info('AlbumSelectorModal', 'load_albums_complete', 'Albums loaded successfully', { albumCount: albumList.length });
+      
+      // Convert tuple format to object format: [id, name, description, cover_photo_path, photo_count]
+      const processedAlbums = albumList.map(album => ({
+        id: album[0],
+        name: album[1],
+        description: album[2],
+        coverPhoto: album[3] || null,
+        photo_count: album[4] || 0
+      }));
+      
+      setAlbums(processedAlbums);
+      setFilteredAlbums(processedAlbums);
+      logger.info('AlbumSelectorModal', 'load_albums_complete', 'Albums loaded successfully', { albumCount: processedAlbums.length });
     } catch (error) {
       logger.error('AlbumSelectorModal', 'load_albums_failed', 'Failed to load albums', { error: error.message });
       handleTauriError(error, 'Load albums');
