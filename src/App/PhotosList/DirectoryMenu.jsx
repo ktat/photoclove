@@ -4,11 +4,22 @@ import { message, confirm } from "@tauri-apps/plugin-dialog";
 import { emit } from "@tauri-apps/api/event";
 import { localForage } from "../../storage/forage";
 import { logger } from "../../services/LoggerService.js";
+import { useUI } from "../../context/UIContext.jsx";
+import { useError } from "../../context/ErrorContext.jsx";
+import AlbumCreationModal from "../../components/AlbumCreationModal.jsx";
+import AlbumSelectorModal from "../../components/AlbumSelectorModal.jsx";
 
 function DirectoryMenu(props) {
+    const { viewMode, currentAlbumId } = useUI();
+    const { handleTauriError } = useError();
 
     const [photoIndex, setPhotoIndex] = useState(-1);
     const [showBigPhoto, setShowBigPhoto] = useState(false);
+    const [showAlbumCreationModal, setShowAlbumCreationModal] = useState(false);
+    const [showAlbumSelectorModal, setShowAlbumSelectorModal] = useState(false);
+    
+    // Check if we're in album mode
+    const isAlbumMode = viewMode === 'album' && currentAlbumId;
     
 
     useEffect(() => {
@@ -28,6 +39,12 @@ function DirectoryMenu(props) {
             uploadToGooglePhotos()
         } else if (selected == "deleteFiles") {
             deleteFiles();
+        } else if (selected == "removeFromAlbum") {
+            removeFromCurrentAlbum();
+        } else if (selected == "createAlbum") {
+            showCreateAlbumModal();
+        } else if (selected == "addToAlbum") {
+            showAddToAlbumModal();
         }
         e.target.value = "";
     }
@@ -117,6 +134,148 @@ function DirectoryMenu(props) {
             });
             lockDelete = false;
             props.clearPhotoSelection()
+        }
+    }
+
+    // Album operation functions
+    async function removeFromCurrentAlbum() {
+        if (!currentAlbumId || props.photoSelection.length === 0) return;
+        
+        const count = props.photoSelection.length;
+        const confirmed = await confirm(
+            `Remove ${count} photo${count > 1 ? 's' : ''} from this album?\n\nPhotos will remain in your library.`,
+            "Remove from Album"
+        );
+        
+        if (confirmed) {
+            try {
+                logger.info('DirectoryMenu', 'remove_from_album_start', 'Removing photos from album', {
+                    albumId: currentAlbumId,
+                    photoCount: count
+                });
+                
+                for (const photoPath of props.photoSelection) {
+                    await invoke("remove_photo_from_album", {
+                        albumId: currentAlbumId,
+                        photoPath: photoPath
+                    });
+                }
+                
+                props.clearPhotoSelection();
+                props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} removed from album`);
+                props.onPhotosRefresh?.(); // Refresh the album view
+                
+                logger.info('DirectoryMenu', 'photos_removed_from_album', 'Photos removed from album successfully', {
+                    albumId: currentAlbumId,
+                    photoCount: count
+                });
+            } catch (error) {
+                logger.error('DirectoryMenu', 'remove_from_album_failed', 'Failed to remove photos from album', {
+                    albumId: currentAlbumId,
+                    photoCount: count,
+                    error: error.message
+                });
+                handleTauriError(error, 'Remove from album');
+            }
+        }
+    }
+
+    function showCreateAlbumModal() {
+        if (props.photoSelection.length === 0) {
+            props.addFooterMessage('Please select photos first');
+            return;
+        }
+        
+        logger.debug('DirectoryMenu', 'show_create_album_modal', 'Opening album creation modal', {
+            selectedPhotosCount: props.photoSelection.length
+        });
+        setShowAlbumCreationModal(true);
+    }
+
+    function showAddToAlbumModal() {
+        if (props.photoSelection.length === 0) {
+            props.addFooterMessage('Please select photos first');
+            return;
+        }
+        
+        logger.debug('DirectoryMenu', 'show_add_to_album_modal', 'Opening album selector modal', {
+            selectedPhotosCount: props.photoSelection.length
+        });
+        setShowAlbumSelectorModal(true);
+    }
+
+    async function createAlbumFromSelection(albumData) {
+        try {
+            logger.info('DirectoryMenu', 'create_album_start', 'Creating album from selection', {
+                albumName: albumData.name,
+                photoCount: props.photoSelection.length
+            });
+            
+            const albumId = await invoke("create_album", {
+                name: albumData.name,
+                description: albumData.description
+            });
+            
+            // Add all selected photos to the new album
+            for (const photoPath of props.photoSelection) {
+                await invoke("add_photo_to_album", {
+                    albumId: albumId,
+                    photoPath: photoPath
+                });
+            }
+            
+            const photoCount = props.photoSelection.length;
+            props.clearPhotoSelection();
+            props.addFooterMessage(`Album "${albumData.name}" created with ${photoCount} photos`);
+            
+            logger.info('DirectoryMenu', 'album_created_from_selection', 'Album created from selected photos', {
+                albumName: albumData.name,
+                albumId,
+                photoCount
+            });
+            
+            setShowAlbumCreationModal(false);
+        } catch (error) {
+            logger.error('DirectoryMenu', 'create_album_failed', 'Failed to create album from selection', {
+                albumName: albumData.name,
+                photoCount: props.photoSelection.length,
+                error: error.message
+            });
+            handleTauriError(error, 'Create album');
+        }
+    }
+
+    async function addPhotosToAlbum(albumId) {
+        try {
+            logger.info('DirectoryMenu', 'add_to_album_start', 'Adding photos to existing album', {
+                albumId,
+                photoCount: props.photoSelection.length
+            });
+            
+            for (const photoPath of props.photoSelection) {
+                await invoke("add_photo_to_album", {
+                    albumId: albumId,
+                    photoPath: photoPath
+                });
+            }
+            
+            const photoCount = props.photoSelection.length;
+            props.clearPhotoSelection();
+            props.addFooterMessage(`${photoCount} photo${photoCount > 1 ? 's' : ''} added to album`);
+            
+            logger.info('DirectoryMenu', 'photos_added_to_album', 'Photos added to album successfully', {
+                albumId,
+                photoCount
+            });
+            
+            setShowAlbumSelectorModal(false);
+        } catch (error) {
+            logger.error('DirectoryMenu', 'add_to_album_failed', 'Failed to add photos to album', {
+                albumId,
+                photoCount: props.photoSelection.length,
+                error: error.message
+            });
+            handleTauriError(error, 'Add to album');
         }
     }
 
@@ -308,9 +467,20 @@ function DirectoryMenu(props) {
                     <div>
                         <div className="operation">
                             <select onChange={(e) => doOperation(e)}>
-                                <option value="select">Select an Opertaion</option>
+                                <option value="select">Select an Operation</option>
+                                
+                                {/* Album-specific operations (only in album mode) */}
+                                {isAlbumMode && (
+                                    <option value="removeFromAlbum">Remove from Album</option>
+                                )}
+                                
+                                {/* Standard operations (all modes) */}
                                 <option value="uploadToGooglePhotos">Upload to Google Photos</option>
                                 <option value="deleteFiles">Delete files</option>
+                                
+                                {/* Album operations (all modes) */}
+                                <option value="createAlbum">Create Album</option>
+                                <option value="addToAlbum">Add to Existing Album</option>
                             </select>
                         </div>
                         <ul className="list-of-selected">
@@ -333,6 +503,22 @@ function DirectoryMenu(props) {
             >
                 <img src={convertFileSrc(props.photoSelection[photoIndex])} />
             </div>
+            
+            {/* Album Creation Modal */}
+            <AlbumCreationModal
+                isOpen={showAlbumCreationModal}
+                onClose={() => setShowAlbumCreationModal(false)}
+                onConfirm={createAlbumFromSelection}
+                selectedPhotosCount={props.photoSelection.length}
+            />
+            
+            {/* Album Selector Modal */}
+            <AlbumSelectorModal
+                isOpen={showAlbumSelectorModal}
+                onClose={() => setShowAlbumSelectorModal(false)}
+                onConfirm={addPhotosToAlbum}
+                selectedPhotosCount={props.photoSelection.length}
+            />
         </div >
     )
 }
