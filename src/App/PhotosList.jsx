@@ -160,8 +160,10 @@ function PhotosList(props) {
     const [isFilterOptionsLoading, setIsFilterOptionsLoading] = useState(false);
     
     // Album state
+    const [albumsList, setAlbumsList] = useState([]);
     const [filteredAlbums, setFilteredAlbums] = useState([]);
     const [albumSearchTerm, setAlbumSearchTerm] = useState('');
+    const [currentAlbumName, setCurrentAlbumName] = useState('');
     
     // Frontend filtering function - defined early to avoid temporal dead zone
     const applyFrontendFilters = (photos) => {
@@ -238,6 +240,7 @@ function PhotosList(props) {
             }));
             
             updateAlbumsList(processedAlbums);
+            setAlbumsList(processedAlbums);
             setFilteredAlbums(processedAlbums);
             
             logger.info('PhotosList', 'load_albums_complete', 'Albums loaded successfully', {
@@ -282,6 +285,7 @@ function PhotosList(props) {
         
         // Switch to album view mode
         openAlbum(album.id);
+        setCurrentAlbumName(album.name);
         
         // Load photos for this album
         loadAlbumPhotos(album.id);
@@ -318,8 +322,17 @@ function PhotosList(props) {
         if (isAlbumMode && currentAlbumId) {
             logger.info('PhotosList', 'album_mode', 'Album mode activated, loading album photos', { albumId: currentAlbumId });
             loadAlbumPhotos(currentAlbumId);
+            
+            // Set current album name if we have albums loaded
+            const currentAlbum = albumsList.find(album => album.id === currentAlbumId);
+            if (currentAlbum) {
+                setCurrentAlbumName(currentAlbum.name);
+            }
+        } else {
+            // Clear album name when not in album mode
+            setCurrentAlbumName('');
         }
-    }, [isAlbumMode, currentAlbumId, loadAlbumPhotos]);
+    }, [isAlbumMode, currentAlbumId, loadAlbumPhotos, albumsList]);
 
     // Search handlers (defined after state to ensure sortOfPhotos is available)
     const handleSearch = useCallback(async (query, type, filters) => {
