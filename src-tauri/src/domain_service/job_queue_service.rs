@@ -186,7 +186,7 @@ impl JobQueueManager {
         access_token: String,
         refresh_token: String,
         app_handle: tauri::AppHandle,
-    ) -> Result<Vec<String>, String> {
+    ) -> Result<String, String> {
         const GOOGLE_PHOTOS_BATCH_SIZE: usize = 50;
         
         log::info!(
@@ -196,28 +196,26 @@ impl JobQueueManager {
             GOOGLE_PHOTOS_BATCH_SIZE
         );
         
-        let mut job_unit_ids = Vec::new();
         let total_chunks = (photos.len() + GOOGLE_PHOTOS_BATCH_SIZE - 1) / GOOGLE_PHOTOS_BATCH_SIZE;
         
-        // Create separate job units for each chunk
+        // Create single job unit for all Google Photos upload jobs
+        let job_types = vec!["google_photos_upload".to_string()];
+        let job_unit = job_queue::JobUnit::new(job_types);
+        let job_unit_id = job_unit.id.clone();
+        
+        log::info!(
+            target: "google_photos", 
+            "create_job_unit; job_unit_id={}; total_chunks={}; total_photos={}", 
+            job_unit_id,
+            total_chunks,
+            photos.len()
+        );
+        
+        // Save job unit
+        self.db.create_job_unit(&job_unit)?;
+        
+        // Create multiple jobs within the single job unit
         for (chunk_index, chunk) in photos.chunks(GOOGLE_PHOTOS_BATCH_SIZE).enumerate() {
-            // Create job unit for this chunk
-            let job_types = vec!["google_photos_upload".to_string()];
-            let job_unit = job_queue::JobUnit::new(job_types);
-            let job_unit_id = job_unit.id.clone();
-            
-            log::info!(
-                target: "google_photos", 
-                "create_job_unit; job_unit_id={}; batch={}/{}; photos_in_batch={}", 
-                job_unit_id,
-                chunk_index + 1,
-                total_chunks,
-                chunk.len()
-            );
-            
-            // Save job unit
-            self.db.create_job_unit(&job_unit)?;
-            
             // Create Google Photos upload job data
             let job_data = job_queue::GooglePhotosUploadJob {
                 photo_paths: chunk.to_vec(),
@@ -232,7 +230,7 @@ impl JobQueueManager {
             let job_data_json = serde_json::to_string(&job_data)
                 .map_err(|e| format!("Failed to serialize job data: {}", e))?;
             
-            // Create the job with serialized data in target field
+            // Create the job with serialized data in target field (using same job_unit_id)
             let upload_job = job_queue::Job::new(
                 job_unit_id.clone(),
                 job_queue::JobType::GooglePhotosUpload,
@@ -245,14 +243,13 @@ impl JobQueueManager {
             
             log::info!(
                 target: "google_photos", 
-                "job_created; job_unit_id={}; job_id={}; batch={}/{}", 
+                "job_created; job_unit_id={}; job_id={}; batch={}/{}; photos_in_batch={}", 
                 job_unit_id,
                 job_id,
                 chunk_index + 1,
-                total_chunks
+                total_chunks,
+                chunk.len()
             );
-            
-            job_unit_ids.push(job_unit_id);
         }
         
         // Start processing
@@ -260,11 +257,12 @@ impl JobQueueManager {
         
         log::info!(
             target: "google_photos", 
-            "submit_complete; job_units_created={}", 
-            job_unit_ids.len()
+            "submit_complete; job_unit_id={}; jobs_created={}", 
+            job_unit_id,
+            total_chunks
         );
         
-        Ok(job_unit_ids)
+        Ok(job_unit_id)
     }
 
     pub fn submit_import_jobs(&self, files: Vec<String>, app_handle: tauri::AppHandle) -> Result<String, String> {

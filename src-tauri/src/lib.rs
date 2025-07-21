@@ -938,7 +938,7 @@ async fn upload_to_google_photos(
         error
     })?;
     
-    let job_unit_ids = job_queue_manager.submit_google_photos_upload_jobs(
+    let job_unit_id = job_queue_manager.submit_google_photos_upload_jobs(
         selected_files,
         access_token,
         refresh_token,
@@ -950,12 +950,12 @@ async fn upload_to_google_photos(
     
     log::info!(
         target: "google_photos", 
-        "upload_jobs_submitted; correlation_id={}; job_units_created={}", 
+        "upload_jobs_submitted; correlation_id={}; job_unit_id={}", 
         correlation_id, 
-        job_unit_ids.len()
+        job_unit_id
     );
     
-    Ok(job_unit_ids)
+    Ok(vec![job_unit_id])
 }
 
 #[tauri::command]
