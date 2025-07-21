@@ -2,9 +2,15 @@ import { useState } from "react";
 import PhotoInfo from "./PhotoOption/PhotoInfo.jsx";
 import PhotoEditor from "./PhotoOption/PhotoEditor.jsx";
 import PhotoTags from "./PhotoOption/PhotoTags.jsx";
+import AlbumTab from "./AlbumTab.jsx";
+import { useUI } from "../../context/UIContext.jsx";
 
 function PhotoOption(props) {
     const [activeTab, setActiveTab] = useState("info");
+    const { viewMode, currentAlbumId } = useUI();
+    
+    // Check if we're in album mode
+    const isAlbumMode = viewMode === 'album' && currentAlbumId;
 
     const handleTabClick = (tab) => {
         setActiveTab(tab);
@@ -45,6 +51,15 @@ function PhotoOption(props) {
                 >
                     <span className="vertical-text">Tags</span>
                 </button>
+                {isAlbumMode && (
+                    <button 
+                        className={activeTab === "album" ? "vertical-tab-button active" : "vertical-tab-button"}
+                        onClick={() => handleTabClick("album")}
+                        title="Album Management"
+                    >
+                        <span className="vertical-text">Album</span>
+                    </button>
+                )}
                 {props.showSideMenu && (
                     <button 
                         className="vertical-tab-button close-tab"
@@ -93,6 +108,14 @@ function PhotoOption(props) {
                             currentPhotoPath={props.currentPhotoPath}
                             showSideMenu={props.showSideMenu}
                             addFooterMessage={props.addFooterMessage}
+                        />
+                    )}
+                    {activeTab === "album" && isAlbumMode && (
+                        <AlbumTab 
+                            albumId={currentAlbumId}
+                            currentPhotoPath={props.currentPhotoPath}
+                            onAlbumUpdate={props.onAlbumUpdate}
+                            onAlbumDelete={props.onAlbumDelete}
                         />
                     )}
                 </div>

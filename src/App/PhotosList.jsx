@@ -606,6 +606,31 @@ function PhotosList(props) {
         setAllPhotosForCurrentFetch(updatedAllPhotos);
     };
 
+    // Album management handlers
+    const handleAlbumUpdate = () => {
+        // Refresh album list and current album after update
+        if (isAlbumListMode) {
+            loadAlbums();
+        }
+        if (currentAlbumId) {
+            loadAlbumPhotos(currentAlbumId);
+        }
+        logger.info('PhotosList', 'album_updated', 'Album refreshed after update', { currentAlbumId });
+    };
+
+    const handleAlbumDelete = (deletedAlbumId) => {
+        // Handle album deletion - navigate back to album list
+        if (deletedAlbumId === currentAlbumId) {
+            // Navigate back to album list
+            toggleAlbumListMode();
+            logger.info('PhotosList', 'album_deleted', 'Navigated back to album list after deletion', { deletedAlbumId });
+        }
+        // Refresh album list if we're in album list mode
+        if (isAlbumListMode) {
+            loadAlbums();
+        }
+    };
+
     // Function to parse CSS style string and convert to style object
     const parseCssStyle = (cssString) => {
         if (!cssString) return {};
@@ -1739,6 +1764,8 @@ function PhotosList(props) {
                 star={star}
                 onPhotosRefresh={getPhotos}
                 onCommentUpdate={updatePhotoComment}
+                onAlbumUpdate={handleAlbumUpdate}
+                onAlbumDelete={handleAlbumDelete}
             />
         )}
 
