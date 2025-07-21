@@ -8,4 +8,5 @@ pub struct PhotoInfo {
     pub star: i32,
     pub comment: String,
     pub css_style: Option<String>,
+    pub google_photo_url: Option<String>,
 }

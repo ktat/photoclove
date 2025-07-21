@@ -126,6 +126,7 @@ function PhotoInfo(props) {
                         <tr><th>Exposure Mode</th><td>{photoInfo.exif ? photoInfo.exif.exposure_mode : ""}</td></tr>
                         <tr><th>WhiteBalance Mode</th><td>{photoInfo.exif ? photoInfo.exif.white_balance_mode : ""}</td></tr>
                         <tr><th>Orientation</th><td>{photoInfo.exif ? photoInfo.exif.orientation : ""}</td></tr>
+                        <tr><th>Google Photos URL</th><td>{photoInfo.meta && photoInfo.meta.google_photo_url ? <a href={photoInfo.meta.google_photo_url} target="_blank" rel="noopener noreferrer">link</a> : ""}</td></tr>
                     </tbody>
                 </table>
             </div>

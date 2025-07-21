@@ -777,6 +777,7 @@ impl SQLite {
         star: i32,
         comment: String,
         css_style: Option<String>,
+        google_photo_url: Option<String>,
     ) -> meta_db::PhotoInfo {
         meta_db::PhotoInfo {
             path,
@@ -784,6 +785,7 @@ impl SQLite {
             star,
             comment,
             css_style,
+            google_photo_url,
         }
     }
 
@@ -1505,7 +1507,7 @@ impl MetaInfoDB for SQLite {
             .get_connection()
             .map_err(|e| format!("Failed to connect to database: {}", e))?;
         let mut stmt = conn
-            .prepare("SELECT path, photo_date, star, comment, css_style FROM photo_metadata WHERE date(photo_date) = ?1")
+            .prepare("SELECT path, photo_date, star, comment, css_style, google_photos_url FROM photo_metadata WHERE date(photo_date) = ?1")
             .map_err(|e| format!("Failed to prepare statement: {}", e))?;
 
         let rows = stmt
@@ -1516,6 +1518,7 @@ impl MetaInfoDB for SQLite {
                     row.get(2)?,
                     row.get(3)?,
                     row.get(4)?,
+                    row.get(5)?,
                 ))
             })
             .map_err(|e| format!("Failed to execute query: {}", e))?;
@@ -1539,7 +1542,7 @@ impl MetaInfoDB for SQLite {
         };
 
         let mut stmt = match conn
-            .prepare("SELECT path, photo_date, star, comment, css_style FROM photo_metadata WHERE path = ?1")
+            .prepare("SELECT path, photo_date, star, comment, css_style, google_photos_url FROM photo_metadata WHERE path = ?1")
         {
             Ok(stmt) => stmt,
             Err(_) => return photo_meta::PhotoMeta::new(photo.clone()),
@@ -1552,6 +1555,7 @@ impl MetaInfoDB for SQLite {
                 row.get(2)?,
                 row.get(3)?,
                 row.get(4)?,
+                row.get(5)?,
             ))
         });
 
@@ -3076,4 +3080,5 @@ impl SQLite {
         
         Ok(())
     }
+
 }

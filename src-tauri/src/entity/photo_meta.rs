@@ -10,6 +10,7 @@ pub struct PhotoMeta {
     photo: photo::Photo,
     pub star: star::Star,
     pub comment: comment::Comment,
+    pub google_photo_url: Option<String>,
 }
 #[derive(Debug)]
 pub struct PhotoMetas {
@@ -37,6 +38,7 @@ impl PhotoMeta {
             photo: photo,
             star: star::Star::new(0),
             comment: comment::Comment::new(""),
+            google_photo_url: None,
         }
     }
 
@@ -90,6 +92,7 @@ impl PhotoMeta {
             photo: photo.clone(),
             star: star::Star::new(0),
             comment: comment::Comment::new(""),
+            google_photo_url: None,
         }
     }
 
@@ -105,6 +108,7 @@ impl PhotoMeta {
             photo: photo,
             star: star::Star::new(record.star),
             comment: comment::Comment::new(&record.comment),
+            google_photo_url: record.google_photo_url.clone(),
         });
     }
 
@@ -113,6 +117,7 @@ impl PhotoMeta {
             photo: self.photo.clone(),
             star: self.star.clone(),
             comment: self.comment.clone(),
+            google_photo_url: self.google_photo_url.clone(),
         }
     }
 
