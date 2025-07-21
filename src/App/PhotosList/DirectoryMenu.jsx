@@ -224,6 +224,22 @@ function DirectoryMenu(props) {
                 });
             }
             
+            // Automatically set the first selected photo as the cover photo
+            if (props.photoSelection.length > 0) {
+                const firstPhotoPath = props.photoSelection[0];
+                logger.info('DirectoryMenu', 'set_cover_photo', 'Setting first photo as album cover', {
+                    albumId,
+                    coverPhotoPath: firstPhotoPath
+                });
+                
+                await invoke("update_album", {
+                    id: albumId,
+                    name: albumData.name,
+                    description: albumData.description,
+                    coverPhotoPath: firstPhotoPath
+                });
+            }
+            
             const photoCount = props.photoSelection.length;
             props.clearPhotoSelection();
             props.addFooterMessage(`Album "${albumData.name}" created with ${photoCount} photos`);
@@ -231,7 +247,8 @@ function DirectoryMenu(props) {
             logger.info('DirectoryMenu', 'album_created_from_selection', 'Album created from selected photos', {
                 albumName: albumData.name,
                 albumId,
-                photoCount
+                photoCount,
+                coverPhotoSet: props.photoSelection.length > 0
             });
             
             setShowAlbumCreationModal(false);
