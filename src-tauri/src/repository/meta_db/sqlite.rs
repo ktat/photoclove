@@ -62,9 +62,30 @@ impl SQLite {
             FOREIGN KEY (photo_path) REFERENCES photo_metadata(path) ON DELETE CASCADE,
             FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
         );
+        CREATE TABLE albums (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT DEFAULT '',
+            cover_photo_path TEXT,
+            created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
+            updated_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
+            FOREIGN KEY (cover_photo_path) REFERENCES photo_metadata(path) ON DELETE SET NULL
+        );
+        CREATE TABLE album_photos (
+            album_id INTEGER,
+            photo_path TEXT,
+            added_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
+            order_index INTEGER DEFAULT 0,
+            PRIMARY KEY (album_id, photo_path),
+            FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE,
+            FOREIGN KEY (photo_path) REFERENCES photo_metadata(path) ON DELETE CASCADE
+        );
         CREATE INDEX IF NOT EXISTS idx_date_summary_date ON date_summary(date);
         CREATE INDEX IF NOT EXISTS idx_photo_tags_photo_path ON photo_tags(photo_path);
-        CREATE INDEX IF NOT EXISTS idx_photo_tags_tag_id ON photo_tags(tag_id)"
+        CREATE INDEX IF NOT EXISTS idx_photo_tags_tag_id ON photo_tags(tag_id);
+        CREATE INDEX IF NOT EXISTS idx_album_photos_album_id ON album_photos(album_id);
+        CREATE INDEX IF NOT EXISTS idx_album_photos_photo_path ON album_photos(photo_path);
+        CREATE INDEX IF NOT EXISTS idx_album_photos_order ON album_photos(album_id, order_index)"
     }
 
     pub fn new(path: String) -> SQLite {
@@ -100,6 +121,16 @@ impl SQLite {
                     } else if statement.contains("CREATE TABLE photo_tags") {
                         let _ = conn.execute(
                             &format!("CREATE TABLE IF NOT EXISTS {}", statement.replace("CREATE TABLE photo_tags", "photo_tags")),
+                            [],
+                        );
+                    } else if statement.contains("CREATE TABLE albums") {
+                        let _ = conn.execute(
+                            &format!("CREATE TABLE IF NOT EXISTS {}", statement.replace("CREATE TABLE albums", "albums")),
+                            [],
+                        );
+                    } else if statement.contains("CREATE TABLE album_photos") {
+                        let _ = conn.execute(
+                            &format!("CREATE TABLE IF NOT EXISTS {}", statement.replace("CREATE TABLE album_photos", "album_photos")),
                             [],
                         );
                     } else if statement.contains("CREATE INDEX") {
@@ -1761,6 +1792,39 @@ impl MetaInfoDB for SQLite {
     fn get_photos_with_tags(&self, tag_ids: &[i32]) -> Result<Vec<String>, String> {
         SQLite::get_photos_with_tags(self, tag_ids)
     }
+    
+    // Album management trait implementations
+    fn get_all_albums(&self) -> Result<Vec<(i32, String, String, Option<String>, i32)>, String> {
+        SQLite::get_all_albums(self)
+    }
+
+    fn create_album(&self, name: &str, description: &str) -> Result<i32, String> {
+        SQLite::create_album(self, name, description)
+    }
+
+    fn update_album(&self, id: i32, name: &str, description: &str, cover_photo_path: Option<&str>) -> Result<bool, String> {
+        SQLite::update_album(self, id, name, description, cover_photo_path)
+    }
+
+    fn delete_album(&self, id: i32) -> Result<bool, String> {
+        SQLite::delete_album(self, id)
+    }
+
+    fn add_photo_to_album(&self, album_id: i32, photo_path: &str) -> Result<(), String> {
+        SQLite::add_photo_to_album(self, album_id, photo_path)
+    }
+
+    fn remove_photo_from_album(&self, album_id: i32, photo_path: &str) -> Result<bool, String> {
+        SQLite::remove_photo_from_album(self, album_id, photo_path)
+    }
+
+    fn get_album_photos(&self, album_id: i32) -> Result<Vec<String>, String> {
+        SQLite::get_album_photos(self, album_id)
+    }
+
+    fn reorder_album_photos(&self, album_id: i32, photo_order: Vec<String>) -> Result<(), String> {
+        SQLite::reorder_album_photos(self, album_id, photo_order)
+    }
 }
 
 impl SQLite {
@@ -2702,5 +2766,145 @@ impl SQLite {
         .map_err(|e| format!("Failed to collect photos: {}", e))?;
         
         Ok(photos)
+    }
+
+    // Album management functions
+    pub fn get_all_albums(&self) -> Result<Vec<(i32, String, String, Option<String>, i32)>, String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let mut stmt = conn.prepare(
+            "SELECT a.id, a.name, a.description, a.cover_photo_path, COUNT(ap.photo_path) as photo_count
+             FROM albums a 
+             LEFT JOIN album_photos ap ON a.id = ap.album_id 
+             GROUP BY a.id, a.name, a.description, a.cover_photo_path
+             ORDER BY a.name"
+        ).map_err(|e| format!("Failed to prepare query: {}", e))?;
+        
+        let albums = stmt.query_map([], |row| {
+            let id: i32 = row.get(0)?;
+            let name: String = row.get(1)?;
+            let description: String = row.get(2)?;
+            let cover_photo_path: Option<String> = row.get(3)?;
+            let photo_count: i32 = row.get(4)?;
+            Ok((id, name, description, cover_photo_path, photo_count))
+        }).map_err(|e| format!("Failed to query albums: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect albums: {}", e))?;
+        
+        Ok(albums)
+    }
+
+    pub fn create_album(&self, name: &str, description: &str) -> Result<i32, String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        
+        conn.execute(
+            "INSERT INTO albums (name, description, created_at, updated_at) VALUES (?1, ?2, ?3, ?4)",
+            params![name, description, now, now],
+        ).map_err(|e| format!("Failed to create album: {}", e))?;
+        
+        let album_id = conn.last_insert_rowid() as i32;
+        Ok(album_id)
+    }
+
+    pub fn update_album(&self, id: i32, name: &str, description: &str, cover_photo_path: Option<&str>) -> Result<bool, String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        
+        let rows_affected = conn.execute(
+            "UPDATE albums SET name = ?1, description = ?2, cover_photo_path = ?3, updated_at = ?4 WHERE id = ?5",
+            params![name, description, cover_photo_path, now, id],
+        ).map_err(|e| format!("Failed to update album: {}", e))?;
+        
+        Ok(rows_affected > 0)
+    }
+
+    pub fn delete_album(&self, id: i32) -> Result<bool, String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let rows_affected = conn.execute(
+            "DELETE FROM albums WHERE id = ?1",
+            params![id],
+        ).map_err(|e| format!("Failed to delete album: {}", e))?;
+        
+        Ok(rows_affected > 0)
+    }
+
+    pub fn add_photo_to_album(&self, album_id: i32, photo_path: &str) -> Result<(), String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        
+        // Get the next order index for this album
+        let mut stmt = conn.prepare("SELECT COALESCE(MAX(order_index), 0) + 1 FROM album_photos WHERE album_id = ?1")
+            .map_err(|e| format!("Failed to prepare order query: {}", e))?;
+        
+        let next_order: i32 = stmt.query_row(params![album_id], |row| {
+            Ok(row.get(0)?)
+        }).map_err(|e| format!("Failed to get next order index: {}", e))?;
+        
+        conn.execute(
+            "INSERT OR IGNORE INTO album_photos (album_id, photo_path, added_at, order_index) VALUES (?1, ?2, ?3, ?4)",
+            params![album_id, photo_path, now, next_order],
+        ).map_err(|e| format!("Failed to add photo to album: {}", e))?;
+        
+        Ok(())
+    }
+
+    pub fn remove_photo_from_album(&self, album_id: i32, photo_path: &str) -> Result<bool, String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let rows_affected = conn.execute(
+            "DELETE FROM album_photos WHERE album_id = ?1 AND photo_path = ?2",
+            params![album_id, photo_path],
+        ).map_err(|e| format!("Failed to remove photo from album: {}", e))?;
+        
+        Ok(rows_affected > 0)
+    }
+
+    pub fn get_album_photos(&self, album_id: i32) -> Result<Vec<String>, String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let mut stmt = conn.prepare(
+            "SELECT photo_path FROM album_photos WHERE album_id = ?1 ORDER BY order_index, added_at"
+        ).map_err(|e| format!("Failed to prepare query: {}", e))?;
+        
+        let photos = stmt.query_map(params![album_id], |row| {
+            let path: String = row.get(0)?;
+            Ok(path)
+        }).map_err(|e| format!("Failed to query album photos: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect album photos: {}", e))?;
+        
+        Ok(photos)
+    }
+
+    pub fn reorder_album_photos(&self, album_id: i32, photo_order: Vec<String>) -> Result<(), String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let tx = conn.unchecked_transaction()
+            .map_err(|e| format!("Failed to start transaction: {}", e))?;
+        
+        for (index, photo_path) in photo_order.iter().enumerate() {
+            tx.execute(
+                "UPDATE album_photos SET order_index = ?1 WHERE album_id = ?2 AND photo_path = ?3",
+                params![index as i32, album_id, photo_path],
+            ).map_err(|e| format!("Failed to update photo order: {}", e))?;
+        }
+        
+        tx.commit()
+            .map_err(|e| format!("Failed to commit transaction: {}", e))?;
+        
+        Ok(())
     }
 }

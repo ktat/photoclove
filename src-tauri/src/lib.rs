@@ -1335,6 +1335,167 @@ async fn search_photos_by_tags(tag_ids: Vec<i32>, state: tauri::State<'_, AppSta
     }
 }
 
+// Album management commands
+#[tauri::command]
+async fn get_all_albums(state: tauri::State<'_, AppState>) -> Result<Vec<(i32, String, String, Option<String>, i32)>, String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+    
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "albums", "get_all_albums_request; correlation_id={}", correlation_id);
+    
+    match meta_db.get_all_albums() {
+        Ok(albums) => {
+            log::info!(target: "albums", "get_all_albums_success; correlation_id={}; count={}", correlation_id, albums.len());
+            Ok(albums)
+        }
+        Err(e) => {
+            log::error!(target: "albums", "get_all_albums_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
+#[tauri::command]
+async fn create_album(name: String, description: String, state: tauri::State<'_, AppState>) -> Result<i32, String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+    
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "albums", "create_album_request; correlation_id={}; name={}", correlation_id, name);
+    
+    match meta_db.create_album(&name, &description) {
+        Ok(album_id) => {
+            log::info!(target: "albums", "create_album_success; correlation_id={}; album_id={}", correlation_id, album_id);
+            Ok(album_id)
+        }
+        Err(e) => {
+            log::error!(target: "albums", "create_album_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
+#[tauri::command]
+async fn update_album(id: i32, name: String, description: String, cover_photo_path: Option<String>, state: tauri::State<'_, AppState>) -> Result<bool, String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+    
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "albums", "update_album_request; correlation_id={}; id={}; name={}", correlation_id, id, name);
+    
+    match meta_db.update_album(id, &name, &description, cover_photo_path.as_deref()) {
+        Ok(updated) => {
+            log::info!(target: "albums", "update_album_success; correlation_id={}; updated={}", correlation_id, updated);
+            Ok(updated)
+        }
+        Err(e) => {
+            log::error!(target: "albums", "update_album_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
+#[tauri::command]
+async fn delete_album(id: i32, state: tauri::State<'_, AppState>) -> Result<bool, String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+    
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "albums", "delete_album_request; correlation_id={}; id={}", correlation_id, id);
+    
+    match meta_db.delete_album(id) {
+        Ok(deleted) => {
+            log::info!(target: "albums", "delete_album_success; correlation_id={}; deleted={}", correlation_id, deleted);
+            Ok(deleted)
+        }
+        Err(e) => {
+            log::error!(target: "albums", "delete_album_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
+#[tauri::command]
+async fn add_photo_to_album(album_id: i32, photo_path: String, state: tauri::State<'_, AppState>) -> Result<(), String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+    
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "albums", "add_photo_to_album_request; correlation_id={}; album_id={}; photo_path={}", correlation_id, album_id, photo_path);
+    
+    match meta_db.add_photo_to_album(album_id, &photo_path) {
+        Ok(()) => {
+            log::info!(target: "albums", "add_photo_to_album_success; correlation_id={}", correlation_id);
+            Ok(())
+        }
+        Err(e) => {
+            log::error!(target: "albums", "add_photo_to_album_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
+#[tauri::command]
+async fn remove_photo_from_album(album_id: i32, photo_path: String, state: tauri::State<'_, AppState>) -> Result<bool, String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+    
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "albums", "remove_photo_from_album_request; correlation_id={}; album_id={}; photo_path={}", correlation_id, album_id, photo_path);
+    
+    match meta_db.remove_photo_from_album(album_id, &photo_path) {
+        Ok(removed) => {
+            log::info!(target: "albums", "remove_photo_from_album_success; correlation_id={}; removed={}", correlation_id, removed);
+            Ok(removed)
+        }
+        Err(e) => {
+            log::error!(target: "albums", "remove_photo_from_album_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
+#[tauri::command]
+async fn get_album_photos(album_id: i32, state: tauri::State<'_, AppState>) -> Result<Vec<String>, String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+    
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "albums", "get_album_photos_request; correlation_id={}; album_id={}", correlation_id, album_id);
+    
+    match meta_db.get_album_photos(album_id) {
+        Ok(photos) => {
+            log::info!(target: "albums", "get_album_photos_success; correlation_id={}; count={}", correlation_id, photos.len());
+            Ok(photos)
+        }
+        Err(e) => {
+            log::error!(target: "albums", "get_album_photos_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
+#[tauri::command]
+async fn reorder_album_photos(album_id: i32, photo_order: Vec<String>, state: tauri::State<'_, AppState>) -> Result<(), String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+    
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "albums", "reorder_album_photos_request; correlation_id={}; album_id={}; photo_count={}", correlation_id, album_id, photo_order.len());
+    
+    match meta_db.reorder_album_photos(album_id, photo_order) {
+        Ok(()) => {
+            log::info!(target: "albums", "reorder_album_photos_success; correlation_id={}", correlation_id);
+            Ok(())
+        }
+        Err(e) => {
+            log::error!(target: "albums", "reorder_album_photos_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use crate::repository::*;
@@ -1518,6 +1679,14 @@ pub fn run() {
             remove_tag_from_photo,
             get_tags_for_photo,
             search_photos_by_tags,
+            get_all_albums,
+            create_album,
+            update_album,
+            delete_album,
+            add_photo_to_album,
+            remove_photo_from_album,
+            get_album_photos,
+            reorder_album_photos,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
