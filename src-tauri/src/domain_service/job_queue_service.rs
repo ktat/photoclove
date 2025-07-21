@@ -1096,28 +1096,51 @@ impl JobQueueManager {
         );
         
         // Use the existing upload_photo method which handles the batching internally
-        // Note: This will be fixed when we address the batching bug in google_photos.rs
-        google_photos.upload_photo(photo_refs).await;
-        
-        // Emit completion event
-        if let Err(e) = app_handle.emit("upload_progress", (
-            &job.job_unit_id,
-            format!("Completed batch {} of {}", job_data.chunk_index + 1, job_data.total_chunks),
-            100
-        )) {
-            log::error!(target: "google_photos", "Failed to emit completion event: {}", e);
+        // This now returns Result<(), String> so we can properly handle errors
+        match google_photos.upload_photo(photo_refs).await {
+            Ok(()) => {
+                // Emit completion event
+                if let Err(e) = app_handle.emit("upload_progress", (
+                    &job.job_unit_id,
+                    format!("Completed batch {} of {}", job_data.chunk_index + 1, job_data.total_chunks),
+                    100
+                )) {
+                    log::error!(target: "google_photos", "Failed to emit completion event: {}", e);
+                }
+                
+                log::info!(
+                    target: "google_photos", 
+                    "upload_job_complete; job_unit_id={}; batch={}/{}", 
+                    job.job_unit_id,
+                    job_data.chunk_index + 1,
+                    job_data.total_chunks
+                );
+                
+                eprintln!("=== GOOGLE PHOTOS UPLOAD JOB EXECUTION COMPLETE ===");
+                Ok(())
+            }
+            Err(error_msg) => {
+                log::error!(
+                    target: "google_photos", 
+                    "upload_job_failed; job_unit_id={}; batch={}/{}; error={}", 
+                    job.job_unit_id,
+                    job_data.chunk_index + 1,
+                    job_data.total_chunks,
+                    error_msg
+                );
+                
+                // Emit error event
+                if let Err(e) = app_handle.emit("upload_error", (
+                    &job.job_unit_id,
+                    format!("Batch {} of {} failed: {}", job_data.chunk_index + 1, job_data.total_chunks, error_msg)
+                )) {
+                    log::error!(target: "google_photos", "Failed to emit error event: {}", e);
+                }
+                
+                eprintln!("=== GOOGLE PHOTOS UPLOAD JOB FAILED: {} ===", error_msg);
+                Err(error_msg)
+            }
         }
-        
-        log::info!(
-            target: "google_photos", 
-            "upload_job_complete; job_unit_id={}; batch={}/{}", 
-            job.job_unit_id,
-            job_data.chunk_index + 1,
-            job_data.total_chunks
-        );
-        
-        eprintln!("=== GOOGLE PHOTOS UPLOAD JOB EXECUTION COMPLETE ===");
-        Ok(())
     }
 
     pub fn get_all_job_units(&self) -> Result<Vec<job_queue::JobUnit>, String> {
