@@ -19,6 +19,11 @@ export const PhotoProvider = ({ children }) => {
   const [hideLoading, setHideLoading] = useState(false);
   const [recentPhotosMode, setRecentPhotosMode] = useState(false);
   
+  // Album state
+  const [albumsList, setAlbumsList] = useState([]);
+  const [currentAlbum, setCurrentAlbum] = useState(null);
+  const [albumPhotos, setAlbumPhotos] = useState([]);
+  
   const setCurrentDateNum = useCallback((num) => {
     setDateNum(prevDateNum => {
       const newDateNum = { ...prevDateNum };
@@ -57,6 +62,24 @@ export const PhotoProvider = ({ children }) => {
         setShowPhotoDisplay({});
         setDatePage({});
       }
+    }, []),
+
+    // Album actions
+    updateAlbumsList: useCallback((albums) => {
+      setAlbumsList(albums);
+    }, []),
+
+    updateCurrentAlbum: useCallback((album) => {
+      setCurrentAlbum(album);
+    }, []),
+
+    updateAlbumPhotos: useCallback((photos) => {
+      setAlbumPhotos(photos);
+    }, []),
+
+    resetAlbumState: useCallback(() => {
+      setCurrentAlbum(null);
+      setAlbumPhotos([]);
     }, [])
   };
 
@@ -69,6 +92,9 @@ export const PhotoProvider = ({ children }) => {
     showPhotoDisplay,
     hideLoading,
     recentPhotosMode,
+    albumsList,
+    currentAlbum,
+    albumPhotos,
     // Actions
     ...photoActions
   };

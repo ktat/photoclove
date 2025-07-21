@@ -31,7 +31,13 @@ function PhotosList(props) {
         showPhotoDisplay,
         updateShowPhotoDisplay,
         setCurrentDateNum,
-        recentPhotosMode
+        recentPhotosMode,
+        albumsList,
+        currentAlbum,
+        albumPhotos,
+        updateAlbumsList,
+        updateCurrentAlbum,
+        updateAlbumPhotos
     } = usePhoto();
     
     logger.debug('PhotosList', 'component_render', 'PhotosList rendering', {
@@ -39,12 +45,22 @@ function PhotosList(props) {
         currentDate,
         propsCount: Object.keys(props).length
     });
-    const { addFooterMessage, toggleSearchPage, searchInitialQuery } = useUI();
+    const { 
+        addFooterMessage, 
+        toggleSearchPage, 
+        searchInitialQuery,
+        showAlbumsList,
+        currentAlbumId,
+        viewMode,
+        openAlbum 
+    } = useUI();
     const { handleTauriError, addError } = useError();
     
-    // Check if we're in search mode - moved before state declarations
+    // Check current mode - moved before state declarations
     const isSearchMode = props.searchMode || false;
     const isAdvancedSearchMode = props.isAdvancedSearchMode || false;
+    const isAlbumListMode = viewMode === 'album_list';
+    const isAlbumMode = viewMode === 'album' && currentAlbumId;
     
     // Use search hook when in search mode
     const { searchResults, searchQuery, isSearching, performSearch, clearSearch: clearSearchHook } = useSearch();
@@ -143,6 +159,10 @@ function PhotosList(props) {
     const [filterOptions, setFilterOptions] = useState(null);
     const [isFilterOptionsLoading, setIsFilterOptionsLoading] = useState(false);
     
+    // Album state
+    const [filteredAlbums, setFilteredAlbums] = useState([]);
+    const [albumSearchTerm, setAlbumSearchTerm] = useState('');
+    
     // Frontend filtering function - defined early to avoid temporal dead zone
     const applyFrontendFilters = (photos) => {
         // console.log(`[FILTER] Applying filters - star: ${starFilter}, hasComment: ${hasCommentFilter}, extension: ${extensionFilter}`);
@@ -202,7 +222,91 @@ function PhotosList(props) {
             setIsFilterOptionsLoading(false);
         }
     }, [filterOptions, isFilterOptionsLoading]);
-    
+
+    // Album loading functions
+    const loadAlbums = useCallback(async () => {
+        try {
+            logger.info('PhotosList', 'load_albums_start', 'Loading albums list');
+            const albums = await invoke("get_all_albums");
+            
+            const processedAlbums = albums.map(album => ({
+                id: album.id,
+                name: album.name,
+                description: album.description,
+                photoCount: album.photo_count || 0,
+                coverPhoto: album.cover_photo_path || null,
+                createdAt: album.created_at
+            }));
+            
+            updateAlbumsList(processedAlbums);
+            setFilteredAlbums(processedAlbums);
+            
+            logger.info('PhotosList', 'load_albums_complete', 'Albums loaded successfully', {
+                albumCount: processedAlbums.length
+            });
+        } catch (error) {
+            logger.error('PhotosList', 'load_albums_failed', 'Failed to load albums', {
+                error: error.message
+            });
+            handleTauriError(error, 'Load albums');
+        }
+    }, [updateAlbumsList, handleTauriError]);
+
+    const loadAlbumPhotos = useCallback(async (albumId) => {
+        try {
+            logger.info('PhotosList', 'load_album_photos_start', 'Loading album photos', { albumId });
+            const albumPhotos = await invoke("get_album_photos", { albumId });
+            
+            updateAlbumPhotos(albumPhotos);
+            setPhotosList({ photos: albumPhotos });
+            
+            logger.info('PhotosList', 'load_album_photos_complete', 'Album photos loaded', {
+                albumId,
+                photoCount: albumPhotos.length
+            });
+        } catch (error) {
+            logger.error('PhotosList', 'load_album_photos_failed', 'Failed to load album photos', {
+                albumId,
+                error: error.message
+            });
+            handleTauriError(error, 'Load album photos');
+        }
+    }, [updateAlbumPhotos, handleTauriError]);
+
+    // Filter albums by search term
+    useEffect(() => {
+        if (albumsList.length === 0) {
+            setFilteredAlbums([]);
+            return;
+        }
+        
+        if (!albumSearchTerm.trim()) {
+            setFilteredAlbums(albumsList);
+            return;
+        }
+        
+        const filtered = albumsList.filter(album =>
+            album.name.toLowerCase().includes(albumSearchTerm.toLowerCase())
+        );
+        setFilteredAlbums(filtered);
+    }, [albumsList, albumSearchTerm]);
+
+    // Load albums when in album list mode
+    useEffect(() => {
+        if (isAlbumListMode) {
+            logger.info('PhotosList', 'album_list_mode', 'Album list mode activated, loading albums');
+            loadAlbums();
+        }
+    }, [isAlbumListMode, loadAlbums]);
+
+    // Load album photos when album is selected
+    useEffect(() => {
+        if (isAlbumMode && currentAlbumId) {
+            logger.info('PhotosList', 'album_mode', 'Album mode activated, loading album photos', { albumId: currentAlbumId });
+            loadAlbumPhotos(currentAlbumId);
+        }
+    }, [isAlbumMode, currentAlbumId, loadAlbumPhotos]);
+
     // Search handlers (defined after state to ensure sortOfPhotos is available)
     const handleSearch = useCallback(async (query, type, filters) => {
         const params = { query, searchType: type, filters };
@@ -1093,6 +1197,123 @@ function PhotosList(props) {
 
     // Removed nextPhotosList function - replaced by infinite scroll
 
+    // Album grid rendering functions
+    const handleAlbumClick = useCallback((album) => {
+        logger.info('PhotosList', 'album_clicked', 'User clicked album', { 
+            albumId: album.id, 
+            albumName: album.name 
+        });
+        openAlbum(album.id);
+    }, [openAlbum]);
+
+    const renderAlbumGrid = () => {
+        if (filteredAlbums.length === 0) {
+            return <div>No albums found!</div>;
+        }
+
+        return (
+            <Scrollable className="albums">
+                {filteredAlbums.map((album) => (
+                    <div 
+                        key={album.id}
+                        className="album-tile"
+                        onClick={() => handleAlbumClick(album)}
+                        style={{
+                            width: `${iconSize + 50}px`,
+                            height: `${iconSize + 80}px`,
+                            cursor: 'pointer',
+                            border: '1px solid #ddd',
+                            borderRadius: '8px',
+                            margin: '10px',
+                            padding: '10px',
+                            display: 'inline-block',
+                            verticalAlign: 'top',
+                            backgroundColor: '#f9f9f9',
+                            transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.target.style.transform = 'scale(1.05)';
+                            e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.target.style.transform = 'scale(1)';
+                            e.target.style.boxShadow = 'none';
+                        }}
+                    >
+                        <div className="album-cover" style={{
+                            width: `${iconSize}px`,
+                            height: `${iconSize}px`,
+                            backgroundColor: '#e0e0e0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginBottom: '10px',
+                            borderRadius: '4px',
+                            overflow: 'hidden'
+                        }}>
+                            {album.coverPhoto ? (
+                                <img 
+                                    src={convertFileSrc(album.coverPhoto)} 
+                                    alt={album.name}
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover'
+                                    }}
+                                />
+                            ) : (
+                                <div style={{
+                                    fontSize: `${iconSize * 0.3}px`,
+                                    color: '#999'
+                                }}>📚</div>
+                            )}
+                        </div>
+                        <div className="album-info" style={{
+                            textAlign: 'center',
+                            fontSize: '12px'
+                        }}>
+                            <div className="album-name" style={{
+                                fontWeight: 'bold',
+                                marginBottom: '4px',
+                                wordWrap: 'break-word'
+                            }}>
+                                {album.name}
+                            </div>
+                            <div className="album-count" style={{
+                                color: '#666'
+                            }}>
+                                {album.photoCount} photos
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </Scrollable>
+        );
+    };
+
+    const renderAlbumSearchFilter = () => (
+        <div style={{ 
+            marginBottom: '20px',
+            padding: '10px',
+            backgroundColor: '#f5f5f5',
+            borderRadius: '4px'
+        }}>
+            <input 
+                type="text"
+                placeholder="Search albums..." 
+                value={albumSearchTerm}
+                onChange={(e) => setAlbumSearchTerm(e.target.value)}
+                style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '14px'
+                }}
+            />
+        </div>
+    );
+
     // Removed photosScroll function - replaced by handleInfiniteScroll
 
     return (
@@ -1151,9 +1372,33 @@ function PhotosList(props) {
                 </div>
                 <div className={(props.showSideMenu || !currentPhotoPath) ? "centerDisplay" : "centerDisplayMax"} id="photoList"
                     style={{ display: (!photoLoading && (!compatProps.showPhotoDisplay || !currentPhotoPath)) ? "block" : "none" }}
-                    data-date={recentPhotosMode ? "recent" : (isSearchMode ? "search_results" : compatProps.currentDate)} 
-                    data-page={recentPhotosMode ? (compatProps.datePage["recent"] || 1) : (isSearchMode ? (compatProps.datePage["search_results"] || 1) : (compatProps.datePage[compatProps.currentDate] || 1))}>
+                    data-date={recentPhotosMode ? "recent" : (isSearchMode ? "search_results" : (isAlbumListMode ? "albums" : (isAlbumMode ? `album_${currentAlbumId}` : compatProps.currentDate)))} 
+                    data-page={recentPhotosMode ? (compatProps.datePage["recent"] || 1) : (isSearchMode ? (compatProps.datePage["search_results"] || 1) : 1)}>
                     <div>
+                        {/* Album List Mode */}
+                        {isAlbumListMode && (
+                            <>
+                                <div className="photo-list-header">
+                                    <div className="photo-page-info">
+                                        <span>Albums ({filteredAlbums.length} albums)</span>
+                                    </div>
+                                    <div className="photo-operation">
+                                        Icon:<select name="icon_size" value={iconSize} onChange={(e) => setIconSize(parseInt(e.target.value))}>
+                                            <option value={50}>small</option>
+                                            <option value={100}>normal</option>
+                                            <option value={200}>large</option>
+                                            <option value={300}>huge</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                {renderAlbumSearchFilter()}
+                                {renderAlbumGrid()}
+                            </>
+                        )}
+                        
+                        {/* Regular Photo Display Mode */}
+                        {!isAlbumListMode && (
+                            <>
                         {displayedPhotos.length == 0 && isSearchMode && <div style={{float: "left", marginBottom: "10px"}}><a className="back-to-home" onClick={(e) => { e.preventDefault(); clearSearch(); }} href="#">Back to HOME</a></div>}
                         {displayedPhotos.length > 0 ?
                             <div className="photo-list-header">
@@ -1405,9 +1650,11 @@ function PhotosList(props) {
                                 </div>
                             )}
                         </Scrollable>
-                    </div>
-                    <div className="debug" style={{ display: (debugMessage == "" ? "none" : "block"), backgroundColor: "white", color: "black", position: "absolute", zIndex: "100", bottom: "0px", left: "0px", width: "400px", height: "200px" }}>
-                        {debugMessage}
+                        <div className="debug" style={{ display: (debugMessage == "" ? "none" : "block"), backgroundColor: "white", color: "black", position: "absolute", zIndex: "100", bottom: "0px", left: "0px", width: "400px", height: "200px" }}>
+                            {debugMessage}
+                        </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </>

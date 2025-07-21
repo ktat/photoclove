@@ -24,6 +24,11 @@ export const UIProvider = ({ children }) => {
   const [footerMessages, setFooterMessages] = useState({});
   const [welcomeImage, setWelcomeImage] = useState("");
   const [useCount, setUseCount] = useState(0);
+  
+  // Album navigation state
+  const [showAlbumsList, setShowAlbumsList] = useState(false);
+  const [currentAlbumId, setCurrentAlbumId] = useState(null);
+  const [viewMode, setViewMode] = useState('date'); // 'date', 'search', 'album', 'album_list'
 
   const addFooterMessage = useCallback((k, v, withDialog, deleteAfter) => {
     setFooterMessages(prev => ({
@@ -159,6 +164,33 @@ export const UIProvider = ({ children }) => {
     setShowPreferences(false);
     setShowJobQueue(false);
     setShowSearchPage(false);
+    setShowAlbumsList(false);
+    setViewMode('date');
+    setCurrentAlbumId(null);
+  }, []);
+
+  const toggleAlbumListMode = useCallback(() => {
+    setShowImporter(false);
+    setShowPhotosList(true);
+    setShowLogin(false);
+    setShowPreferences(false);
+    setShowJobQueue(false);
+    setShowSearchPage(false);
+    setShowAlbumsList(true);
+    setViewMode('album_list');
+    setCurrentAlbumId(null);
+  }, []);
+
+  const openAlbum = useCallback((albumId) => {
+    setShowImporter(false);
+    setShowPhotosList(true);
+    setShowLogin(false);
+    setShowPreferences(false);
+    setShowJobQueue(false);
+    setShowSearchPage(false);
+    setShowAlbumsList(false);
+    setViewMode('album');
+    setCurrentAlbumId(albumId);
   }, []);
 
   const showPhotosListView = useCallback(() => {
@@ -185,6 +217,9 @@ export const UIProvider = ({ children }) => {
     footerMessages,
     welcomeImage,
     useCount,
+    showAlbumsList,
+    currentAlbumId,
+    viewMode,
     
     // Actions
     toggleImporter,
@@ -193,6 +228,8 @@ export const UIProvider = ({ children }) => {
     toggleJobQueue,
     toggleSearchPage,
     toggleHome,
+    toggleAlbumListMode,
+    openAlbum,
     showPhotosListView,
     addFooterMessage,
     removeFooterMessage,

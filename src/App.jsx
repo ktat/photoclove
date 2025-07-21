@@ -43,6 +43,7 @@ function App() {
     toggleJobQueue,
     toggleSearchPage,
     toggleHome,
+    toggleAlbumListMode,
     addFooterMessage
   } = useUI();
   const {
@@ -277,6 +278,9 @@ function App() {
                   toggleSearchPage(true, "", true);
                 }} title="Search">🔍</a>
                 <a href="#" onClick={() => toggleImporter(true)} title="Import">📥</a>
+                <a href="#" onClick={() => {
+                  toggleAlbumListMode();
+                }} title="Albums">📚</a>
               </div>
               <div className="row">
                 <div style={{ display: "none" }}>
@@ -333,6 +337,9 @@ function App() {
               toggleSearchPage(true, "", true);
             }} title="Search">🔍</a>
             <a href="#" onClick={() => toggleImporter(true)} title="Import">📥</a>
+            <a href="#" onClick={() => {
+              toggleAlbumListMode();
+            }} title="Albums">📚</a>
           </div>
           <div className="row">
             <div style={{ display: "none" }}>
