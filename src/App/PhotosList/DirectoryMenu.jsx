@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { message, confirm } from "@tauri-apps/plugin-dialog";
 import { emit } from "@tauri-apps/api/event";
@@ -6,8 +6,10 @@ import { localForage } from "../../storage/forage";
 import { logger } from "../../services/LoggerService.js";
 import { useUI } from "../../context/UIContext.jsx";
 import { useError } from "../../context/ErrorContext.jsx";
+import { useTutorial } from "../../hooks/useTutorial.js";
 import AlbumCreationModal from "../../components/AlbumCreationModal.jsx";
 import AlbumSelectorModal from "../../components/AlbumSelectorModal.jsx";
+import TutorialTooltip from "../../components/TutorialTooltip.jsx";
 
 function DirectoryMenu(props) {
     const { viewMode, currentAlbumId } = useUI();
@@ -18,14 +20,102 @@ function DirectoryMenu(props) {
     const [showAlbumCreationModal, setShowAlbumCreationModal] = useState(false);
     const [showAlbumSelectorModal, setShowAlbumSelectorModal] = useState(false);
     
+    // Tutorial state
+    const [showTutorial, setShowTutorial] = useState(false);
+    const [tutorialContent, setTutorialContent] = useState('');
+    const dropdownRef = useRef(null);
+    
     // Check if we're in album mode
     const isAlbumMode = viewMode === 'album' && currentAlbumId;
+    
+    // Tutorial hooks
+    const {
+        shouldShowTutorial,
+        markTutorialShown,
+        dismissTutorial,
+        disableTutorial
+    } = useTutorial();
     
 
     useEffect(() => {
         let l = props.photoSelection.length;
         setPhotoIndex(l - 1)
     }, [props.photoSelection])
+
+    // Tutorial trigger effect
+    useEffect(() => {
+        if (props.photoSelection.length > 0) {
+            const context = isAlbumMode ? 'albumMode' : 'dateMode';
+            
+            if (shouldShowTutorial('selectionTutorial', context)) {
+                setTutorialContent(getTutorialContent(context, props.photoSelection.length));
+                setShowTutorial(true);
+                markTutorialShown('selectionTutorial', context);
+                
+                logger.info('DirectoryMenu', 'tutorial_triggered', 'Selection tutorial shown', {
+                    context,
+                    photoCount: props.photoSelection.length
+                });
+            }
+        } else {
+            setShowTutorial(false);
+        }
+    }, [props.photoSelection.length, isAlbumMode, shouldShowTutorial, markTutorialShown]);
+
+    // Generate tutorial content based on context
+    const getTutorialContent = (context, photoCount) => {
+        const photoText = `${photoCount} photo${photoCount !== 1 ? 's' : ''}`;
+        
+        if (context === 'albumMode') {
+            return (
+                <div>
+                    <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+                        💡 Selected {photoText} from this album
+                    </div>
+                    <div>You can now:</div>
+                    <ul style={{ margin: '8px 0', paddingLeft: '16px' }}>
+                        <li>📚 Create Album - Make a new album</li>
+                        <li>📚 Add to Album - Add to a different album</li>
+                        <li>❌ Remove from Album - Remove from current album</li>
+                        <li>⬆️ Upload to Google Photos - Sync with Google</li>
+                        <li>🗑️ Delete Files - Permanently remove files</li>
+                    </ul>
+                </div>
+            );
+        } else {
+            return (
+                <div>
+                    <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+                        💡 Selected {photoText}
+                    </div>
+                    <div>You can now:</div>
+                    <ul style={{ margin: '8px 0', paddingLeft: '16px' }}>
+                        <li>📚 Create Album - Make a new album</li>
+                        <li>📚 Add to Album - Add to existing album</li>
+                        <li>⬆️ Upload to Google Photos - Sync with Google</li>
+                        <li>🗑️ Delete Files - Permanently remove files</li>
+                    </ul>
+                </div>
+            );
+        }
+    };
+
+    // Tutorial event handlers
+    const handleTutorialDismiss = () => {
+        setShowTutorial(false);
+        const context = isAlbumMode ? 'albumMode' : 'dateMode';
+        dismissTutorial('selectionTutorial', context);
+        
+        logger.info('DirectoryMenu', 'tutorial_dismissed', 'User dismissed selection tutorial', { context });
+    };
+
+    const handleTutorialDisable = () => {
+        setShowTutorial(false);
+        const context = isAlbumMode ? 'albumMode' : 'dateMode';
+        disableTutorial('selectionTutorial', context);
+        
+        logger.info('DirectoryMenu', 'tutorial_disabled', 'User disabled selection tutorial', { context });
+    };
 
     let lock = false;
     let lockThumbnail = false;
@@ -483,7 +573,7 @@ function DirectoryMenu(props) {
                     :
                     <div>
                         <div className="operation">
-                            <select onChange={(e) => doOperation(e)}>
+                            <select ref={dropdownRef} onChange={(e) => doOperation(e)}>
                                 <option value="select">Select an Operation</option>
                                 
                                 {/* Album-specific operations (only in album mode) */}
@@ -535,6 +625,16 @@ function DirectoryMenu(props) {
                 onClose={() => setShowAlbumSelectorModal(false)}
                 onConfirm={addPhotosToAlbum}
                 selectedPhotosCount={props.photoSelection.length}
+            />
+            
+            {/* Tutorial Tooltip */}
+            <TutorialTooltip
+                isVisible={showTutorial}
+                content={tutorialContent}
+                targetElement={dropdownRef.current}
+                onDismiss={handleTutorialDismiss}
+                onDontShowAgain={handleTutorialDisable}
+                tutorialId={`selection_${isAlbumMode ? 'album' : 'date'}`}
             />
         </div >
     )
