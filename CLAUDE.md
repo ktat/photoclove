@@ -89,6 +89,81 @@ When working on features:
 2. Use the documented patterns (e.g., `toggle*()` for UI state, `use*()` for hooks)
 3. Follow the source code structure shown in the mappings
 
+# Database Migration Implementation
+
+## Album Tables Migration
+
+**File**: `src-tauri/src/repository/meta_db/sqlite.rs`
+
+### Migration Pattern
+
+PhotoClove uses a proper database migration system that checks for table existence before creation. All new tables should follow this pattern:
+
+```rust
+// Check if table exists
+let table_exists = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='table_name'")
+    .and_then(|mut stmt| {
+        stmt.query_row([], |row| {
+            let _name: String = row.get(0)?;
+            Ok(true)
+        })
+    })
+    .unwrap_or(false);
+
+if !table_exists {
+    log::info!(target: "component", "table_creation; status=creating_table");
+    
+    // Create table with full schema
+    conn.execute("CREATE TABLE table_name (...)", [])?;
+    
+    // Create indexes
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_name ON table_name(column)", [])?;
+    
+    log::info!(target: "component", "table_creation; status=completed");
+}
+```
+
+### Album Tables Implementation
+
+**Location**: Lines 644-718 in `init_db()` function
+
+**Tables Created**:
+1. **`albums`**: Stores album metadata (id, name, description, cover_photo_path, timestamps)
+2. **`album_photos`**: Junction table for album-photo relationships (album_id, photo_path, added_at, order_index)
+
+**Key Features**:
+- **Conditional creation**: Only creates tables if they don't exist
+- **Proper foreign keys**: Maintains referential integrity with photo_metadata table
+- **Performance indexes**: Optimized queries for album operations
+- **Structured logging**: Clear migration progress tracking
+- **Error handling**: Proper Result<()> return types, no silent failures
+
+**Migration Triggers**:
+- App startup calls `init_db()`
+- Tables created automatically if missing
+- Existing installations get tables on next app start
+- No data loss or conflicts with existing databases
+
+### Best Practices
+
+When adding new tables:
+
+1. **Follow the pattern**: Use `sqlite_master` existence check
+2. **Add proper logging**: Use structured logging with correlation info
+3. **Include indexes**: Add performance indexes during creation
+4. **Handle errors**: Use Result types, avoid silent failures
+5. **Test thoroughly**: Verify migration works on fresh and existing databases
+
+### Migration Benefits
+
+- **Automatic**: No manual database setup required
+- **Safe**: Checks existence before creation, prevents conflicts
+- **Traceable**: Comprehensive logging for debugging
+- **Consistent**: Follows established patterns used by other tables
+- **Maintainable**: Clear, readable migration code
+
+This migration system ensures album functionality works reliably across all user installations.
+
 # Improvement Discussion
 
 When I say `dicussion`, create new `imporvement/$number.md` file.

@@ -230,12 +230,11 @@ function PhotosList(props) {
             const albums = await invoke("get_all_albums");
             
             const processedAlbums = albums.map(album => ({
-                id: album.id,
-                name: album.name,
-                description: album.description,
-                photoCount: album.photo_count || 0,
-                coverPhoto: album.cover_photo_path || null,
-                createdAt: album.created_at
+                id: album[0],
+                name: album[1],
+                description: album[2],
+                coverPhoto: album[3] || null,
+                photoCount: album[4] || 0
             }));
             
             updateAlbumsList(processedAlbums);
@@ -255,7 +254,8 @@ function PhotosList(props) {
     const loadAlbumPhotos = useCallback(async (albumId) => {
         try {
             logger.info('PhotosList', 'load_album_photos_start', 'Loading album photos', { albumId });
-            const albumPhotos = await invoke("get_album_photos", { albumId });
+            const albumPhotosJson = await invoke("get_album_photos_with_metadata", { albumId });
+            const albumPhotos = JSON.parse(albumPhotosJson);
             
             updateAlbumPhotos(albumPhotos);
             setPhotosList({ photos: albumPhotos });
@@ -272,6 +272,20 @@ function PhotosList(props) {
             handleTauriError(error, 'Load album photos');
         }
     }, [updateAlbumPhotos, handleTauriError]);
+
+    // Handle album click to switch to album view
+    const handleAlbumClick = useCallback((album) => {
+        logger.info('PhotosList', 'album_click', 'User clicked on album', {
+            albumId: album.id,
+            albumName: album.name
+        });
+        
+        // Switch to album view mode
+        openAlbum(album.id);
+        
+        // Load photos for this album
+        loadAlbumPhotos(album.id);
+    }, [openAlbum, loadAlbumPhotos]);
 
     // Filter albums by search term
     useEffect(() => {
@@ -395,19 +409,24 @@ function PhotosList(props) {
 
     // Memoize filtered photos to avoid recalculating on every render
     const filteredPhotos = useMemo(() => {
+        // Use album photos when in album mode, otherwise use regular photos
+        const sourcePhotos = isAlbumMode ? albumPhotos : allPhotosForCurrentFetch;
+        
         logger.debug('PhotosList', 'filtering_photos', 'Applying frontend filters', {
-            allPhotosCount: allPhotosForCurrentFetch.length,
+            isAlbumMode,
+            sourcePhotosCount: sourcePhotos.length,
             starFilter,
             hasCommentFilter,
             extensionFilter
         });
-        const result = applyFrontendFilters(allPhotosForCurrentFetch);
+        const result = applyFrontendFilters(sourcePhotos);
         logger.debug('PhotosList', 'filtered_result', 'Frontend filter result', {
-            originalCount: allPhotosForCurrentFetch.length,
+            isAlbumMode,
+            originalCount: sourcePhotos.length,
             filteredCount: result.length
         });
         return result;
-    }, [allPhotosForCurrentFetch, starFilter, hasCommentFilter, extensionFilter]);
+    }, [isAlbumMode, albumPhotos, allPhotosForCurrentFetch, starFilter, hasCommentFilter, extensionFilter]);
 
     // Displayed photos for infinite scroll
     const displayedPhotos = useMemo(() => {
@@ -684,6 +703,12 @@ function PhotosList(props) {
     useEffect(() => {
         // console.log(`[FETCH_CONFIG_CHANGE] New fetchConfig:`, fetchConfig);
         
+        // Skip if in album mode - album photos are managed separately
+        if (isAlbumMode) {
+            logger.debug('PhotosList', 'useEffect_skip_album', 'Skipping fetchConfig reload - in album mode');
+            return;
+        }
+        
         // Skip if already loading to prevent race conditions
         if (photoLoading) {
             // console.log(`[FETCH_CONFIG_CHANGE] Already loading, skipping`);
@@ -719,7 +744,7 @@ function PhotosList(props) {
             logger.debug('PhotosList', 'useEffect_skip', 'Not loading photos - fetchConfig is null/undefined');
         }
         
-    }, [fetchConfig?.fetch_method, fetchConfig?.value, fetchConfig?.max_photos_per_fetch]);
+    }, [fetchConfig?.fetch_method, fetchConfig?.value, fetchConfig?.max_photos_per_fetch, isAlbumMode]);
 
     // Load filter options for Advanced Search mode
     useEffect(() => {
@@ -1223,13 +1248,6 @@ function PhotosList(props) {
     // Removed nextPhotosList function - replaced by infinite scroll
 
     // Album grid rendering functions
-    const handleAlbumClick = useCallback((album) => {
-        logger.info('PhotosList', 'album_clicked', 'User clicked album', { 
-            albumId: album.id, 
-            albumName: album.name 
-        });
-        openAlbum(album.id);
-    }, [openAlbum]);
 
     const renderAlbumGrid = () => {
         if (filteredAlbums.length === 0) {

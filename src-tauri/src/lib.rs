@@ -1478,6 +1478,27 @@ async fn get_album_photos(album_id: i32, state: tauri::State<'_, AppState>) -> R
 }
 
 #[tauri::command]
+async fn get_album_photos_with_metadata(album_id: i32, state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+    
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "albums", "get_album_photos_with_metadata_request; correlation_id={}; album_id={}", correlation_id, album_id);
+    
+    match meta_db.get_album_photos_with_metadata(album_id) {
+        Ok(photos) => {
+            log::info!(target: "albums", "get_album_photos_with_metadata_success; correlation_id={}; count={}", correlation_id, photos.len());
+            let photos_json = serde_json::to_string(&photos).map_err(|e| e.to_string())?;
+            Ok(photos_json)
+        }
+        Err(e) => {
+            log::error!(target: "albums", "get_album_photos_with_metadata_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
+#[tauri::command]
 async fn reorder_album_photos(album_id: i32, photo_order: Vec<String>, state: tauri::State<'_, AppState>) -> Result<(), String> {
     let meta_db = &state.meta_db;
     let logging_service = &state.logging_service;
@@ -1687,6 +1708,7 @@ pub fn run() {
             add_photo_to_album,
             remove_photo_from_album,
             get_album_photos,
+            get_album_photos_with_metadata,
             reorder_album_photos,
         ])
         .run(tauri::generate_context!())

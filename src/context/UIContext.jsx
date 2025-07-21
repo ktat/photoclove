@@ -201,6 +201,9 @@ export const UIProvider = ({ children }) => {
     setShowPreferences(false);
     setShowJobQueue(false);
     setShowSearchPage(false);
+    setShowAlbumsList(false);
+    setViewMode('date');
+    setCurrentAlbumId(null);
     console.log('🐛 UIContext showPhotosListView() - all states set');
   }, []);
 
