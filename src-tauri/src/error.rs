@@ -265,8 +265,10 @@ impl PhotoCloveError {
     /// Get suggestion for resolving the error
     pub fn suggestion(&self) -> String {
         match self {
-            PhotoCloveError::InvalidInput { suggestion, .. }
-            | PhotoCloveError::PermissionDenied { suggestion, .. }
+            PhotoCloveError::InvalidInput { suggestion, .. } => {
+                suggestion.as_ref().unwrap_or(&"Please check your input and try again".to_string()).clone()
+            }
+            PhotoCloveError::PermissionDenied { suggestion, .. }
             | PhotoCloveError::FileNotFound { suggestion, .. }
             | PhotoCloveError::DatabaseError { suggestion, .. }
             | PhotoCloveError::FileSystemError { suggestion, .. }
