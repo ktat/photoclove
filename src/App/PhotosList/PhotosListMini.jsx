@@ -52,7 +52,7 @@ function PhotosListMini(props) {
     const navigateLock = useRef(false);
     
     // Check if we're in album mode
-    const isAlbumMode = props.albumId !== undefined;
+    const isAlbumMode = props.albumId !== undefined && props.albumId !== null;
 
     // Helper function to get the correct date key for pagination
     const getDateKey = () => {
@@ -774,34 +774,27 @@ function PhotosListMini(props) {
                     </table>
                 </div>
                 
-                {/* Mode indicator */}
-                <div style={{
-                    position: 'fixed',
-                    top: '20px',
-                    right: '20px',
-                    background: 'rgba(0, 0, 0, 0.7)',
-                    color: 'white',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    fontSize: '14px',
-                    zIndex: 1000
-                }}>
-                    {isAlbumMode ? (
+                {/* Mode indicator - only show in album mode */}
+                {isAlbumMode && (
+                    <div style={{
+                        position: 'fixed',
+                        top: '20px',
+                        right: '20px',
+                        background: 'rgba(0, 0, 0, 0.7)',
+                        color: 'white',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        zIndex: 1000
+                    }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                             <div>📚 {props.albumName || 'Album'}</div>
                             <div style={{ fontSize: '11px', opacity: 0.8, marginTop: '2px' }}>
                                 DEL: Remove | Ctrl+DEL: Delete
                             </div>
                         </div>
-                    ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                            <div>📅 Library</div>
-                            <div style={{ fontSize: '11px', opacity: 0.8, marginTop: '2px' }}>
-                                DEL: Delete
-                            </div>
-                        </div>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
             
             {/* Context-aware delete modal */}

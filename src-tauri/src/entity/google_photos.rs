@@ -87,9 +87,10 @@ pub struct GoogleStatus {
 pub struct GoogleMediaItem {
     id: String,
     product_url: String,
-    base_url: String,
-    mime_type: String,
-    filename: String,
+    #[serde(rename = "baseUrl")]
+    base_url: Option<String>,
+    mime_type: Option<String>,
+    filename: Option<String>,
 }
 
 static API_END_POINT_URL: &str = "https://photoslibrary.googleapis.com/v1/";
@@ -136,38 +137,61 @@ impl GooglePhotos {
     pub async fn upload_photo(&self, files: Vec<&str>) {
         log::info!(target: "google_photos", "upload_start; files_count={}", files.len());
         
-        // Step 1: Upload all files and collect upload tokens
-        let mut upload_tokens = Vec::new();
+        // Step 1: Upload all files in parallel to collect upload tokens (Google Photos API allows parallel uploads)
         let upload_uri = API_END_POINT_URL.to_string() + "uploads";
+        let auth = "Bearer ".to_string() + &self.access_token;
         
-        for f in files {
-            log::info!(target: "google_photos", "uploading_file; file={}", f);
+        // Create parallel upload tasks
+        let upload_tasks: Vec<_> = files.iter().map(|&file_path| {
+            let upload_uri = upload_uri.clone();
+            let auth = auth.clone();
+            let file_path = file_path.to_string();
             
-            let mut file = File::open(f).unwrap();
-            let mut buffer = Vec::new();
-            file.read_to_end(&mut buffer).unwrap();
-
-            let auth = "Bearer ".to_string() + &self.access_token;
-            let client = reqwest::Client::new();
-            let response = client
-                .post(&upload_uri)
-                .header(reqwest::header::USER_AGENT, USER_AGENT)
-                .header(reqwest::header::CONTENT_TYPE, "application/octet-stream")
-                .header(reqwest::header::AUTHORIZATION, &auth)
-                .header("X-Google-Upload-Content-Type", "image/jpeg")
-                .header("X-Google-Upload-Protocol", "raw")
-                .body(buffer)
-                .send()
-                .await;
+            tokio::spawn(async move {
+                log::info!(target: "google_photos", "uploading_file; file={}", file_path);
                 
-            match response {
-                Ok(response) => {
-                    let upload_token = response.text().await.unwrap();
-                    upload_tokens.push((f.to_string(), upload_token));
-                    log::info!(target: "google_photos", "upload_token_received; file={}", f);
+                let mut file = File::open(&file_path).unwrap();
+                let mut buffer = Vec::new();
+                file.read_to_end(&mut buffer).unwrap();
+
+                let client = reqwest::Client::new();
+                let response = client
+                    .post(&upload_uri)
+                    .header(reqwest::header::USER_AGENT, USER_AGENT)
+                    .header(reqwest::header::CONTENT_TYPE, "application/octet-stream")
+                    .header(reqwest::header::AUTHORIZATION, &auth)
+                    .header("X-Google-Upload-Content-Type", "image/jpeg")
+                    .header("X-Google-Upload-Protocol", "raw")
+                    .body(buffer)
+                    .send()
+                    .await;
+                    
+                match response {
+                    Ok(response) => {
+                        let upload_token = response.text().await.unwrap();
+                        log::info!(target: "google_photos", "upload_token_received; file={}", file_path);
+                        Ok((file_path, upload_token))
+                    }
+                    Err(err) => {
+                        log::error!(target: "google_photos", "upload_failed; file={}; error={:?}", file_path, err);
+                        Err(err)
+                    }
                 }
-                Err(err) => {
-                    log::error!(target: "google_photos", "upload_failed; file={}; error={:?}", f, err);
+            })
+        }).collect();
+        
+        // Wait for all upload tasks to complete and collect results
+        let mut upload_tokens = Vec::new();
+        for task in upload_tasks {
+            match task.await {
+                Ok(Ok((file_path, upload_token))) => {
+                    upload_tokens.push((file_path, upload_token));
+                }
+                Ok(Err(err)) => {
+                    log::error!(target: "google_photos", "upload_task_failed; error={:?}", err);
+                }
+                Err(join_err) => {
+                    log::error!(target: "google_photos", "upload_task_join_failed; error={:?}", join_err);
                 }
             }
         }
@@ -180,6 +204,11 @@ impl GooglePhotos {
         
         for (batch_index, batch) in batches.iter().enumerate() {
             log::info!(target: "google_photos", "processing_batch; batch={}/{}", batch_index + 1, batches.len());
+            
+            // Add delay between batches to reduce API load
+            if batch_index > 0 {
+                tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+            }
             
             let mut items = Vec::new();
             for (file_name, upload_token) in batch.iter() {
@@ -209,6 +238,7 @@ impl GooglePhotos {
             // Parse the response and store URLs in database
             if let Ok(response_text) = res_post_request {
                 log::info!(target: "google_photos", "batch_create_response; batch={}", batch_index + 1);
+                log::debug!(target: "google_photos", "batch_create_raw_response; response={}", response_text);
                 
                 match serde_json::from_str::<GoogleBatchCreateResponse>(&response_text) {
                     Ok(batch_response) => {

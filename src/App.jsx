@@ -279,6 +279,7 @@ function App() {
                 }} title="Search">🔍</a>
                 <a href="#" onClick={() => toggleImporter(true)} title="Import">📥</a>
                 <a href="#" onClick={() => {
+                  resetPhotoState();
                   toggleAlbumListMode();
                 }} title="Albums">📚</a>
               </div>
@@ -307,6 +308,7 @@ function App() {
               onRightMenuToggle={setRightMenuOpen}
               searchMode={showSearchPage}
               isAdvancedSearchMode={isAdvancedSearchMode}
+              setShowJobQueueModal={setShowJobQueueModal}
             />
           </div>
         </div>
@@ -338,6 +340,7 @@ function App() {
             }} title="Search">🔍</a>
             <a href="#" onClick={() => toggleImporter(true)} title="Import">📥</a>
             <a href="#" onClick={() => {
+              resetPhotoState();
               toggleAlbumListMode();
             }} title="Albums">📚</a>
           </div>
@@ -366,6 +369,7 @@ function App() {
             shortCutNavigation={shortCutNavigation}
             addFooterMessage={addFooterMessage}
             onRightMenuToggle={setRightMenuOpen}
+            setShowJobQueueModal={setShowJobQueueModal}
           />
         </>
           :

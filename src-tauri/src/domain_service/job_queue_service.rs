@@ -145,12 +145,27 @@ impl JobQueueManager {
                     
                     eprintln!("=== PROCESSING {} NEW JOBS ===", pending_jobs.len());
                     
-                    // Process jobs in batches up to max_concurrent
-                    let batch_size = std::cmp::min(pending_jobs.len(), max_concurrent);
-                    let mut handles = Vec::new();
+                    // Separate Google Photos jobs from other jobs
+                    let (google_photos_jobs, other_jobs): (Vec<_>, Vec<_>) = pending_jobs.into_iter()
+                        .partition(|job| job.job.job_type == job_queue::JobType::GooglePhotosUpload);
                     
-                    for job in pending_jobs.into_iter().take(batch_size) {
-                        let db_clone = Arc::clone(&db);
+                    // Process Google Photos jobs sequentially first
+                    if !google_photos_jobs.is_empty() {
+                        eprintln!("Processing {} Google Photos jobs sequentially", google_photos_jobs.len());
+                        for job in google_photos_jobs {
+                            let db_clone = Arc::clone(&db);
+                            let app_handle_clone = app_handle.clone();
+                            Self::process_job(db_clone, job, app_handle_clone);
+                        }
+                    }
+                    
+                    // Process other jobs in batches up to max_concurrent
+                    if !other_jobs.is_empty() {
+                        let batch_size = std::cmp::min(other_jobs.len(), max_concurrent);
+                        let mut handles = Vec::new();
+                        
+                        for job in other_jobs.into_iter().take(batch_size) {
+                            let db_clone = Arc::clone(&db);
                         let app_handle_clone = app_handle.clone();
                         
                         let handle = thread::spawn(move || {
@@ -159,10 +174,11 @@ impl JobQueueManager {
                         handles.push(handle);
                     }
                     
-                    // Wait for all jobs in this batch to complete
-                    for handle in handles {
-                        if let Err(e) = handle.join() {
-                            eprintln!("Job thread panicked: {:?}", e);
+                        // Wait for all jobs in this batch to complete
+                        for handle in handles {
+                            if let Err(e) = handle.join() {
+                                eprintln!("Job thread panicked: {:?}", e);
+                            }
                         }
                     }
                     
