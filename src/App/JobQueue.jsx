@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { logger } from "../services/LoggerService.js";
 
 const JobQueue = (props) => {
   const [jobs, setJobs] = useState([]);
@@ -46,31 +47,51 @@ const JobQueue = (props) => {
     try {
       setLoading(true);
       setError(null);
+      logger.info('JobQueue', 'load_jobs_start', 'Loading job queue data');
       const result = await invoke("get_all_jobs");
+      logger.debug('JobQueue', 'raw_result_received', 'Raw result from get_all_jobs', { result });
       
       // Parse the JSON result
       let jobsData;
       try {
         jobsData = JSON.parse(result);
+        logger.debug('JobQueue', 'json_parse_success', 'Successfully parsed jobs data', { jobsCount: jobsData?.length });
       } catch (parseError) {
         // If JSON parsing fails, the result might be an error string
-        setError("Failed to parse jobs data: " + result);
+        logger.error('JobQueue', 'json_parse_failed', 'Failed to parse jobs data as JSON', { 
+          error: parseError.message, 
+          rawResult: result 
+        });
+        setError("Failed to parse jobs data. Raw response: " + result);
         setJobs([]);
         return;
       }
       
-      // Ensure jobsData is an array
-      if (Array.isArray(jobsData)) {
+      // Handle Rust Result wrapper: {"Ok": [...]} or {"Err": "error message"}
+      if (jobsData.Ok && Array.isArray(jobsData.Ok)) {
+        logger.info('JobQueue', 'jobs_loaded_success', 'Jobs loaded successfully', { jobsCount: jobsData.Ok.length });
+        setJobs(jobsData.Ok);
+      } else if (jobsData.Err) {
+        logger.error('JobQueue', 'backend_error', 'Backend returned error', { error: jobsData.Err });
+        setError(`Backend error: ${jobsData.Err}`);
+        setJobs([]);
+      } else if (Array.isArray(jobsData)) {
+        // Fallback: direct array (in case backend format changes)
+        logger.info('JobQueue', 'jobs_loaded_success', 'Jobs loaded successfully', { jobsCount: jobsData.length });
         setJobs(jobsData);
       } else {
-        setError("Invalid jobs data format received");
+        logger.error('JobQueue', 'invalid_data_format', 'Jobs data is not in expected format', { 
+          dataType: typeof jobsData, 
+          data: jobsData 
+        });
+        setError(`Invalid jobs data format received. Expected {Ok: array} or array, got ${typeof jobsData}: ${JSON.stringify(jobsData)}`);
         setJobs([]);
       }
     } catch (err) {
       // This catches Tauri command errors
+      logger.error('JobQueue', 'tauri_command_failed', 'Tauri get_all_jobs command failed', { error: err.message });
       setError("Failed to load jobs: " + err.message);
       setJobs([]);
-      console.error("Error loading jobs:", err);
     } finally {
       setLoading(false);
     }
@@ -83,17 +104,25 @@ const JobQueue = (props) => {
       try {
         response = JSON.parse(result);
       } catch (parseError) {
+        logger.error('JobQueue', 'retry_parse_failed', 'Failed to parse retry response', { error: parseError.message, result });
         props.addFooterMessage("Failed to parse retry response: " + result);
         return;
       }
       
-      if (response.result) {
+      // Handle Rust Result wrapper: {"Ok": boolean} or {"Err": "error message"}
+      if (response.Ok) {
+        logger.info('JobQueue', 'job_retry_success', 'Job queued for retry', { jobId });
         props.addFooterMessage("Job queued for retry");
         loadJobs(); // Reload jobs
+      } else if (response.Err) {
+        logger.error('JobQueue', 'job_retry_failed', 'Failed to retry job', { jobId, error: response.Err });
+        props.addFooterMessage(`Failed to retry job: ${response.Err}`);
       } else {
-        props.addFooterMessage("Failed to retry job");
+        logger.warn('JobQueue', 'retry_unexpected_format', 'Unexpected retry response format', { response });
+        props.addFooterMessage("Failed to retry job: unexpected response format");
       }
     } catch (err) {
+      logger.error('JobQueue', 'retry_error', 'Error retrying job', { jobId, error: err.message });
       props.addFooterMessage("Error retrying job: " + err.message);
     }
   };
@@ -109,16 +138,25 @@ const JobQueue = (props) => {
       try {
         response = JSON.parse(result);
       } catch (parseError) {
+        logger.error('JobQueue', 'delete_parse_failed', 'Failed to parse delete response', { error: parseError.message, result });
         props.addFooterMessage("Failed to parse delete response: " + result);
         return;
       }
-      if (response.result) {
+      
+      // Handle Rust Result wrapper: {"Ok": boolean} or {"Err": "error message"}
+      if (response.Ok) {
+        logger.info('JobQueue', 'job_delete_success', 'Job deleted successfully', { jobId });
         props.addFooterMessage("Job deleted successfully");
         loadJobs(); // Reload jobs
+      } else if (response.Err) {
+        logger.error('JobQueue', 'job_delete_failed', 'Failed to delete job', { jobId, error: response.Err });
+        props.addFooterMessage(`Failed to delete job: ${response.Err}`);
       } else {
-        props.addFooterMessage("Failed to delete job");
+        logger.warn('JobQueue', 'delete_unexpected_format', 'Unexpected delete response format', { response });
+        props.addFooterMessage("Failed to delete job: unexpected response format");
       }
     } catch (err) {
+      logger.error('JobQueue', 'delete_error', 'Error deleting job', { jobId, error: err.message });
       props.addFooterMessage("Error deleting job: " + err.message);
     }
   };
