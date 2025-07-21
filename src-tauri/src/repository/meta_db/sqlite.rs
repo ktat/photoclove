@@ -641,6 +641,82 @@ impl SQLite {
             log::info!(target: "date_summary", "table_creation; status=completed");
         }
         
+        // Check if albums table exists, create if not
+        let albums_exists = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='albums'")
+            .and_then(|mut stmt| {
+                stmt.query_row([], |row| {
+                    let _name: String = row.get(0)?;
+                    Ok(true)
+                })
+            })
+            .unwrap_or(false);
+        
+        if !albums_exists {
+            log::info!(target: "albums", "table_creation; status=creating_albums_table");
+            
+            // Create albums table
+            conn.execute(
+                "CREATE TABLE albums (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    description TEXT DEFAULT '',
+                    cover_photo_path TEXT,
+                    created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
+                    updated_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
+                    FOREIGN KEY (cover_photo_path) REFERENCES photo_metadata(path) ON DELETE SET NULL
+                )",
+                [],
+            )?;
+            
+            log::info!(target: "albums", "table_creation; status=albums_table_completed");
+        }
+        
+        // Check if album_photos table exists, create if not
+        let album_photos_exists = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='album_photos'")
+            .and_then(|mut stmt| {
+                stmt.query_row([], |row| {
+                    let _name: String = row.get(0)?;
+                    Ok(true)
+                })
+            })
+            .unwrap_or(false);
+        
+        if !album_photos_exists {
+            log::info!(target: "albums", "table_creation; status=creating_album_photos_table");
+            
+            // Create album_photos table
+            conn.execute(
+                "CREATE TABLE album_photos (
+                    album_id INTEGER,
+                    photo_path TEXT,
+                    added_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
+                    order_index INTEGER DEFAULT 0,
+                    PRIMARY KEY (album_id, photo_path),
+                    FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE,
+                    FOREIGN KEY (photo_path) REFERENCES photo_metadata(path) ON DELETE CASCADE
+                )",
+                [],
+            )?;
+            
+            // Create indexes for album_photos
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_album_photos_album_id ON album_photos(album_id)",
+                [],
+            )?;
+            
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_album_photos_photo_path ON album_photos(photo_path)",
+                [],
+            )?;
+            
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_album_photos_order ON album_photos(album_id, order_index)",
+                [],
+            )?;
+            
+            log::info!(target: "albums", "table_creation; status=album_photos_table_completed");
+        }
+        
         // Create job queue tables
         conn.execute(
             "CREATE TABLE IF NOT EXISTS job_unit (
@@ -2793,6 +2869,52 @@ impl SQLite {
         .map_err(|e| format!("Failed to collect albums: {}", e))?;
         
         Ok(albums)
+    }
+
+    pub fn get_album_by_id(&self, id: i32) -> Result<Option<serde_json::Value>, String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let mut stmt = conn.prepare(
+            "SELECT a.id, a.name, a.description, a.cover_photo_path, a.created_at, a.updated_at, 
+                    COUNT(ap.photo_path) as photo_count
+             FROM albums a 
+             LEFT JOIN album_photos ap ON a.id = ap.album_id 
+             WHERE a.id = ?1 
+             GROUP BY a.id, a.name, a.description, a.cover_photo_path, a.created_at, a.updated_at"
+        ).map_err(|e| format!("Failed to prepare album query: {}", e))?;
+        
+        let result = stmt.query_row(params![id], |row| {
+            Ok(serde_json::json!({
+                "id": row.get::<_, i32>("id")?,
+                "name": row.get::<_, String>("name")?,
+                "description": row.get::<_, Option<String>>("description")?,
+                "cover_photo_path": row.get::<_, Option<String>>("cover_photo_path")?,
+                "created_at": row.get::<_, String>("created_at")?,
+                "updated_at": row.get::<_, String>("updated_at")?,
+                "photo_count": row.get::<_, i32>("photo_count")?
+            }))
+        });
+        
+        match result {
+            Ok(album) => Ok(Some(album)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(format!("Failed to get album by id: {}", e))
+        }
+    }
+
+    pub fn update_album_cover(&self, album_id: i32, photo_path: &str) -> Result<bool, String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        
+        let rows_affected = conn.execute(
+            "UPDATE albums SET cover_photo_path = ?1, updated_at = ?2 WHERE id = ?3",
+            params![photo_path, now, album_id],
+        ).map_err(|e| format!("Failed to update album cover: {}", e))?;
+        
+        Ok(rows_affected > 0)
     }
 
     pub fn create_album(&self, name: &str, description: &str) -> Result<i32, String> {
