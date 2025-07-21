@@ -20,6 +20,8 @@ const JobQueue = (props) => {
         return "Thumbnail";
       case "CreateDb":
         return "Create DB";
+      case "GooglePhotosUpload":
+        return "Google Photos Upload";
       default:
         return jobType;
     }

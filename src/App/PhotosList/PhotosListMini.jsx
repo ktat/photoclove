@@ -2,6 +2,8 @@ import React, { useState, useEffect, useContext, useMemo, useCallback, useRef } 
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import PhotoDisplay from "./PhotosListMini/PhotoDisplay.jsx";
 import { ImgCacheContext, AllPhotosContext } from "../ImgCacheContext.jsx";
+import ContextualDeleteModal from "../../components/ContextualDeleteModal.jsx";
+import { logger } from "../../services/LoggerService.js";
 
 const NUM_OF_PHOTO_LIST = 9;
 
@@ -42,8 +44,15 @@ function PhotosListMini(props) {
     const [selectedContent, setSelectedContent] = useState("");
     const [unselectedContent, setUnselectedContent] = useState("");
     const [showHelp, setShowHelp] = useState(false);
+    
+    // Delete modal state
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteOperation, setDeleteOperation] = useState(null); // 'removeFromAlbum' | 'deleteFile'
 
     const navigateLock = useRef(false);
+    
+    // Check if we're in album mode
+    const isAlbumMode = props.albumId !== undefined;
 
     // Helper function to get the correct date key for pagination
     const getDateKey = () => {
@@ -498,6 +507,58 @@ function PhotosListMini(props) {
         }
     }
 
+    // Modal handlers
+    const showRemoveFromAlbumModal = () => {
+        setDeleteOperation('removeFromAlbum');
+        setShowDeleteModal(true);
+    };
+
+    const showDeleteFileModal = () => {
+        setDeleteOperation('deleteFile');
+        setShowDeleteModal(true);
+    };
+
+    const handleConfirmAction = async () => {
+        const currentPhoto = photosListMiniAllPhotos[props.currentIndex];
+        if (!currentPhoto) return;
+
+        try {
+            if (deleteOperation === 'removeFromAlbum') {
+                await invoke('remove_photo_from_album', {
+                    albumId: props.albumId,
+                    photoPath: currentPhoto.file.path
+                });
+                
+                logger.info('PhotosListMini', 'photo_removed_from_album', 'Photo removed from album', {
+                    albumId: props.albumId,
+                    photoPath: currentPhoto.file.path
+                });
+                
+                // Remove from current view
+                props.removePhotoFromList?.(props.currentIndex);
+                props.addFooterMessage?.('Photo removed from album');
+            } else {
+                await props.moveToTrashCan(currentPhoto.file.path);
+                
+                logger.info('PhotosListMini', 'photo_deleted', 'Photo moved to trash', {
+                    photoPath: currentPhoto.file.path
+                });
+                
+                // Photo removal is handled by moveToTrashCan
+                props.addFooterMessage?.('Photo deleted');
+            }
+        } catch (error) {
+            logger.error('PhotosListMini', 'action_failed', 'Failed to perform action', {
+                operation: deleteOperation,
+                error: error.message
+            });
+            props.handleTauriError?.(error, deleteOperation === 'removeFromAlbum' ? 'Remove from album' : 'Delete photo');
+        } finally {
+            setShowDeleteModal(false);
+            setDeleteOperation(null);
+        }
+    };
+
     // Keyboard navigation - restored from main branch
     function photoNavigation(e) {
         let f = props.currentPhotoPath;
@@ -528,7 +589,31 @@ function PhotosListMini(props) {
         } else if (e.keyCode === 191) { // ? ... show help
             setShowHelp(!showHelp);
         } else if (e.keyCode === 46) { // Del
-            props.moveToTrashCan(f)
+            e.preventDefault(); // Prevent default behavior
+            
+            if (isAlbumMode) {
+                if (e.ctrlKey) {
+                    // Ctrl+DEL: Delete file AND remove from album
+                    logger.info('PhotosListMini', 'delete_key_pressed', 'Ctrl+DEL pressed in album mode', {
+                        albumId: props.albumId,
+                        photoPath: f
+                    });
+                    showDeleteFileModal();
+                } else {
+                    // DEL only: Remove from album (safer default)
+                    logger.info('PhotosListMini', 'delete_key_pressed', 'DEL pressed in album mode', {
+                        albumId: props.albumId,
+                        photoPath: f
+                    });
+                    showRemoveFromAlbumModal();
+                }
+            } else {
+                // Date/Search mode: DEL deletes file (current behavior)
+                logger.info('PhotosListMini', 'delete_key_pressed', 'DEL pressed in library mode', {
+                    photoPath: f
+                });
+                showDeleteFileModal();
+            }
         } else if (photoZoomReady && e.keyCode === 48) { // ctrl+0
             setPhotoZoom("auto");
             SetImgStyle({ opacity: '100%' });
@@ -683,11 +768,54 @@ function PhotosListMini(props) {
                         <tr><th>S</th><td>increase star</td></tr>
                         <tr><th>D</th><td>decrease star</td></tr>
                         <tr><th>I</th><td>toggle photo info</td></tr>
-                        <tr><th>Del</th><td>move to trash can</td></tr>
+                        <tr><th>Del</th><td>{isAlbumMode ? "remove from album" : "move to trash can"}</td></tr>
+                        {isAlbumMode && <tr><th>Ctrl + Del</th><td>delete file permanently</td></tr>}
                         <tr><th>?</th><td>toggle showing this help</td></tr>
                     </table>
                 </div>
+                
+                {/* Mode indicator */}
+                <div style={{
+                    position: 'fixed',
+                    top: '20px',
+                    right: '20px',
+                    background: 'rgba(0, 0, 0, 0.7)',
+                    color: 'white',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    zIndex: 1000
+                }}>
+                    {isAlbumMode ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                            <div>📚 {props.albumName || 'Album'}</div>
+                            <div style={{ fontSize: '11px', opacity: 0.8, marginTop: '2px' }}>
+                                DEL: Remove | Ctrl+DEL: Delete
+                            </div>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                            <div>📅 Library</div>
+                            <div style={{ fontSize: '11px', opacity: 0.8, marginTop: '2px' }}>
+                                DEL: Delete
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
+            
+            {/* Context-aware delete modal */}
+            <ContextualDeleteModal
+                isOpen={showDeleteModal}
+                operation={deleteOperation}
+                photoPath={photosListMiniAllPhotos[props.currentIndex]?.file?.path}
+                albumName={props.albumName}
+                onConfirm={handleConfirmAction}
+                onCancel={() => {
+                    setShowDeleteModal(false);
+                    setDeleteOperation(null);
+                }}
+            />
         </>
     )
 }

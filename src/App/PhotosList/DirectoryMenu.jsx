@@ -190,29 +190,73 @@ function DirectoryMenu(props) {
 
     async function uploadToGooglePhotos() {
         if (lockUpload) {
-            message("Currently, this operation is locked. Pelase wait for a while", "This operation is locked");
+            message("Currently uploading. Please wait for the current upload to complete.", "Upload in Progress");
+            return;
+        }
+        
+        const files = props.photoSelection;
+        const BATCH_SIZE = 50;
+        const numBatches = Math.ceil(files.length / BATCH_SIZE);
+        
+        let answer = true;
+        if (files.length > BATCH_SIZE) {
+            answer = await confirm(
+                `Upload ${files.length} photos to Google Photos?\n` +
+                `This will create ${numBatches} upload jobs (max ${BATCH_SIZE} photos per job).`, 
+                "Confirm Upload"
+            );
         } else {
-            let files = [];
-            props.photoSelection.map((v, i) => files.push(v));
-            let answer = true;
-            if (files.length > 2) {
-                answer = await confirm("This takes long time if you have many photos.", "Warning");
-            }
-            if (answer) {
-                localForage.getItem("GoogleOAuthTokens").then((tokens) => {
-                    lockUpload = true;
-                    invoke("upload_to_google_photos", { dateStr: props.currentDate, selectedFiles: files, accessToken: tokens.accessToken, refleshToken: tokens.refreshToken }).then((r) => {
-                        props.clearPhotoSelection()
-                        lockUpload = false;
-                        let data = JSON.parse(r);
-                        // console.log("1 === ", data);
-                    }).catch(e => {
-                        // console.log("2 === ", e);
-                    });
+            answer = await confirm(
+                `Upload ${files.length} photos to Google Photos?`, 
+                "Confirm Upload"
+            );
+        }
+        
+        if (answer) {
+            try {
+                const tokens = await localForage.getItem("GoogleOAuthTokens");
+                if (!tokens) {
+                    message("Please sign in to Google Photos first", "Authentication Required");
+                    return;
                 }
-                ).catch((e) => {
-                    // console.log(e);
-                })
+                
+                lockUpload = true;
+                
+                logger.info('DirectoryMenu', 'google_photos_upload_start', 'User initiated Google Photos upload', {
+                    filesCount: files.length,
+                    batchesExpected: numBatches
+                });
+                
+                const jobUnitIds = await invoke("upload_to_google_photos", {
+                    selectedFiles: files,
+                    accessToken: tokens.accessToken,
+                    refreshToken: tokens.refreshToken
+                });
+                
+                props.clearPhotoSelection();
+                lockUpload = false;
+                
+                message(
+                    `Created ${jobUnitIds.length} upload job${jobUnitIds.length > 1 ? 's' : ''}. ` +
+                    `Check Job Queue for progress.`,
+                    "Upload Started"
+                );
+                
+                logger.info('DirectoryMenu', 'google_photos_jobs_created', 'Google Photos upload jobs created', {
+                    jobUnitsCreated: jobUnitIds.length,
+                    jobUnitIds: jobUnitIds
+                });
+                
+                // Show job queue to display progress
+                props.setShowJobQueue(true);
+                
+            } catch (e) {
+                lockUpload = false;
+                logger.error('DirectoryMenu', 'google_photos_upload_error', 'Failed to start Google Photos upload', {
+                    error: e.toString(),
+                    filesCount: files.length
+                });
+                message("Failed to start upload: " + e.toString(), "Upload Error");
             }
         }
     }

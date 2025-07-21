@@ -134,20 +134,23 @@ impl GooglePhotos {
     }
 
     pub async fn upload_photo(&self, files: Vec<&str>) {
-        let uri = API_END_POINT_URL.to_string() + "uploads";
-        eprintln!(" upload_photo !!!!!!!!!!!");
-
+        log::info!(target: "google_photos", "upload_start; files_count={}", files.len());
+        
+        // Step 1: Upload all files and collect upload tokens
+        let mut upload_tokens = Vec::new();
+        let upload_uri = API_END_POINT_URL.to_string() + "uploads";
+        
         for f in files {
+            log::info!(target: "google_photos", "uploading_file; file={}", f);
+            
             let mut file = File::open(f).unwrap();
-
-            // Read the contents of the file into a buffer
             let mut buffer = Vec::new();
             file.read_to_end(&mut buffer).unwrap();
 
             let auth = "Bearer ".to_string() + &self.access_token;
             let client = reqwest::Client::new();
             let response = client
-                .post(&uri)
+                .post(&upload_uri)
                 .header(reqwest::header::USER_AGENT, USER_AGENT)
                 .header(reqwest::header::CONTENT_TYPE, "application/octet-stream")
                 .header(reqwest::header::AUTHORIZATION, &auth)
@@ -156,42 +159,46 @@ impl GooglePhotos {
                 .body(buffer)
                 .send()
                 .await;
+                
             match response {
                 Ok(response) => {
-                    self.success_response(response, f).await;
+                    let upload_token = response.text().await.unwrap();
+                    upload_tokens.push((f.to_string(), upload_token));
+                    log::info!(target: "google_photos", "upload_token_received; file={}", f);
                 }
-                Err(err) => if err.status().unwrap() == reqwest::StatusCode::UNAUTHORIZED {},
+                Err(err) => {
+                    log::error!(target: "google_photos", "upload_failed; file={}; error={:?}", f, err);
+                }
             }
         }
-    }
-
-    async fn success_response(&self, response: reqwest::Response, f: &str) {
-        let mut items_list: Vec<Vec<GoogleNewMediaItem>> = vec![];
-        let mut items = vec![];
-        let r = response.text().await;
-        let upload_token = r.unwrap();
-        let item = GoogleSimpleMediaItem {
-            file_name: f.to_string(),
-            upload_token: upload_token.clone(),
-        };
-        let media_item = GoogleNewMediaItem {
-            description: "".to_string(),
-            simple_media_item: item,
-        };
-        items.push(media_item);
-        if items.len() == 50 {
-            items_list.push(items.clone());
-            items = Vec::new();
-        }
-        if items.len() != 0 {
-            items_list.push(items.clone());
-        }
-        for target_items in items_list {
-            eprintln!("{:?}", &target_items);
+        
+        // Step 2: Batch the upload tokens into groups of 50 and create media items
+        const BATCH_SIZE: usize = 50;
+        let batches: Vec<&[(String, String)]> = upload_tokens.chunks(BATCH_SIZE).collect();
+        
+        log::info!(target: "google_photos", "batching_tokens; total_tokens={}; batches={}", upload_tokens.len(), batches.len());
+        
+        for (batch_index, batch) in batches.iter().enumerate() {
+            log::info!(target: "google_photos", "processing_batch; batch={}/{}", batch_index + 1, batches.len());
+            
+            let mut items = Vec::new();
+            for (file_name, upload_token) in batch.iter() {
+                let item = GoogleSimpleMediaItem {
+                    file_name: file_name.clone(),
+                    upload_token: upload_token.clone(),
+                };
+                let media_item = GoogleNewMediaItem {
+                    description: "".to_string(),
+                    simple_media_item: item,
+                };
+                items.push(media_item);
+            }
+            
             let data = GoogleAlbumData {
-                new_media_items: target_items.clone(),
+                new_media_items: items.clone(),
             };
-
+            
+            // Call batchCreate API
             let res_post_request = self
                 .post_request(
                     "mediaItems:batchCreate",
@@ -201,7 +208,7 @@ impl GooglePhotos {
             
             // Parse the response and store URLs in database
             if let Ok(response_text) = res_post_request {
-                eprintln!("batchCreate response: {:?}", response_text);
+                log::info!(target: "google_photos", "batch_create_response; batch={}", batch_index + 1);
                 
                 match serde_json::from_str::<GoogleBatchCreateResponse>(&response_text) {
                     Ok(batch_response) => {
@@ -209,7 +216,7 @@ impl GooglePhotos {
                         
                         // Create a mapping from upload_token to file_name
                         let mut token_to_filename: std::collections::HashMap<String, String> = std::collections::HashMap::new();
-                        for item in &target_items {
+                        for item in &items {
                             token_to_filename.insert(
                                 item.simple_media_item.upload_token.clone(),
                                 item.simple_media_item.file_name.clone()
@@ -222,25 +229,30 @@ impl GooglePhotos {
                                 if let Some(file_path) = token_to_filename.get(&result.upload_token) {
                                     match sqlite_db.save_google_photos_url(file_path, &media_item.product_url) {
                                         Ok(()) => {
-                                            eprintln!("Saved Google Photos URL for {}: {}", file_path, media_item.product_url);
+                                            log::info!(target: "google_photos", "url_saved; file={}; url={}", file_path, media_item.product_url);
                                         }
                                         Err(e) => {
-                                            eprintln!("Failed to save Google Photos URL for {}: {}", file_path, e);
+                                            log::error!(target: "google_photos", "url_save_failed; file={}; error={}", file_path, e);
                                         }
                                     }
                                 }
                             } else {
-                                eprintln!("Upload failed for token {}: {}", result.upload_token, result.status.message);
+                                log::error!(target: "google_photos", "upload_failed; token={}; message={}", result.upload_token, result.status.message);
                             }
                         }
                     }
                     Err(e) => {
-                        eprintln!("Failed to parse batchCreate response: {}", e);
+                        log::error!(target: "google_photos", "batch_create_parse_error; error={}", e);
                     }
                 }
+            } else {
+                log::error!(target: "google_photos", "batch_create_request_failed; batch={}", batch_index + 1);
             }
         }
+        
+        log::info!(target: "google_photos", "upload_complete; files_processed={}", upload_tokens.len());
     }
+
 
     async fn get_request(&self, path: &str) -> Result<String, reqwest::Error> {
         let uri = API_END_POINT_URL.to_string() + path;

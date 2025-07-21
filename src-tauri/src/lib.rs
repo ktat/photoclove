@@ -917,17 +917,45 @@ fn lock(t: bool) -> bool {
 async fn upload_to_google_photos(
     _window: tauri::Window,
     state: tauri::State<'_, AppState>,
-    date_str: &str,
-    access_token: &str,
-    reflesh_token: &str,
-    selected_files: Vec<&str>,
-) -> Result<bool, ()> {
-    eprintln!("{:?}", date_str);
-    eprintln!("{:?}", selected_files);
-    let photos =
-        google_photos::GooglePhotos::new(access_token.to_string(), reflesh_token.to_string(), state.config.import_to.clone());
-    photos.upload_photo(selected_files).await;
-    return Ok(true);
+    selected_files: Vec<String>,
+    access_token: String,
+    refresh_token: String,
+) -> Result<Vec<String>, String> {
+    let logging_service = &state.logging_service;
+    let correlation_id = logging_service.generate_correlation_id();
+    
+    log::info!(
+        target: "google_photos", 
+        "upload_request; correlation_id={}; files_count={}", 
+        correlation_id, 
+        selected_files.len()
+    );
+    
+    // Submit jobs to queue manager
+    let job_queue_manager = state.job_queue_manager.lock().map_err(|_| {
+        let error = "Failed to acquire job queue manager lock".to_string();
+        log::error!(target: "google_photos", "upload_error; correlation_id={}; error={}", correlation_id, error);
+        error
+    })?;
+    
+    let job_unit_ids = job_queue_manager.submit_google_photos_upload_jobs(
+        selected_files,
+        access_token,
+        refresh_token,
+        _window.app_handle().clone(),
+    ).map_err(|e| {
+        log::error!(target: "google_photos", "submit_jobs_error; correlation_id={}; error={}", correlation_id, e);
+        format!("Failed to submit upload jobs: {}", e)
+    })?;
+    
+    log::info!(
+        target: "google_photos", 
+        "upload_jobs_submitted; correlation_id={}; job_units_created={}", 
+        correlation_id, 
+        job_unit_ids.len()
+    );
+    
+    Ok(job_unit_ids)
 }
 
 #[tauri::command]

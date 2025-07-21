@@ -870,6 +870,44 @@ function PhotosList(props) {
         setTabClass(c);
     }
 
+    // Remove photo from current view (for album removal)
+    const removePhotoFromList = (indexToRemove) => {
+        logger.info('PhotosList', 'remove_photo_from_list', 'Removing photo from current view', {
+            index: indexToRemove,
+            totalPhotos: photosListMiniAllPhotos.length
+        });
+        
+        // Remove from photosListMiniAllPhotos
+        const newAllPhotos = [...photosListMiniAllPhotos];
+        newAllPhotos.splice(indexToRemove, 1);
+        setPhotosListMiniAllPhotos(newAllPhotos);
+        
+        // Also remove from allPhotosForCurrentFetch and filteredPhotos
+        const removedPath = photosListMiniAllPhotos[indexToRemove]?.file?.path;
+        if (removedPath) {
+            const newAllPhotosForFetch = allPhotosForCurrentFetch.filter(photo => photo.file.path !== removedPath);
+            setAllPhotosForCurrentFetch(newAllPhotosForFetch);
+        }
+        
+        // Adjust current index if needed
+        if (indexToRemove >= newAllPhotos.length && newAllPhotos.length > 0) {
+            // Last photo was removed, go to previous
+            const newIndex = newAllPhotos.length - 1;
+            setPhotosListMiniCurrentIndex(newIndex);
+            setCurrentPhotoPath(newAllPhotos[newIndex].file.path);
+            setCurrentPhotoIndex(newIndex);
+        } else if (newAllPhotos.length > 0) {
+            // Stay at same index (now showing next photo)
+            const newIndex = Math.min(indexToRemove, newAllPhotos.length - 1);
+            setPhotosListMiniCurrentIndex(newIndex);
+            setCurrentPhotoPath(newAllPhotos[newIndex].file.path);
+            setCurrentPhotoIndex(newIndex);
+        } else {
+            // No photos left
+            closePhotoDisplay();
+        }
+    };
+
     function moveToTrashCan(f) {
         // console.log("delete file: " + f)
         invoke("move_to_trash", { pathStr: f, sortValue: parseInt(sortOfPhotos) }).then((d) => {
@@ -1408,6 +1446,13 @@ function PhotosList(props) {
                                     searchQuery={searchQuery}
                                     onClearSearch={clearSearch}
                                     recentPhotosMode={recentPhotosMode}
+                                    
+                                    // Album mode props
+                                    albumId={currentAlbumId}
+                                    albumName={currentAlbumName}
+                                    removePhotoFromList={removePhotoFromList}
+                                    addFooterMessage={compatProps.addFooterMessage}
+                                    handleTauriError={handleTauriError}
                                 />
                             </div>
                         </ImgCacheContext.Provider>

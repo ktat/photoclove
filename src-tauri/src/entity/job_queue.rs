@@ -60,6 +60,8 @@ pub enum JobType {
     Thumbnail,
     #[serde(rename = "create_db")]
     CreateDb,
+    #[serde(rename = "google_photos_upload")]
+    GooglePhotosUpload,
 }
 
 impl ToString for JobType {
@@ -68,6 +70,7 @@ impl ToString for JobType {
             JobType::Import => "import".to_string(),
             JobType::Thumbnail => "thumbnail".to_string(),
             JobType::CreateDb => "create_db".to_string(),
+            JobType::GooglePhotosUpload => "google_photos_upload".to_string(),
         }
     }
 }
@@ -194,4 +197,14 @@ impl JobProgress {
             0.0
         };
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GooglePhotosUploadJob {
+    pub photo_paths: Vec<String>,
+    pub access_token: String,
+    pub refresh_token: String,
+    pub album_id: Option<String>,
+    pub chunk_index: usize,
+    pub total_chunks: usize,
 }

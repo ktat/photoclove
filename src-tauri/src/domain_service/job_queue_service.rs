@@ -180,6 +180,93 @@ impl JobQueueManager {
         });
     }
 
+    pub fn submit_google_photos_upload_jobs(
+        &self,
+        photos: Vec<String>,
+        access_token: String,
+        refresh_token: String,
+        app_handle: tauri::AppHandle,
+    ) -> Result<Vec<String>, String> {
+        const GOOGLE_PHOTOS_BATCH_SIZE: usize = 50;
+        
+        log::info!(
+            target: "google_photos", 
+            "submit_jobs; total_photos={}; batch_size={}", 
+            photos.len(), 
+            GOOGLE_PHOTOS_BATCH_SIZE
+        );
+        
+        let mut job_unit_ids = Vec::new();
+        let total_chunks = (photos.len() + GOOGLE_PHOTOS_BATCH_SIZE - 1) / GOOGLE_PHOTOS_BATCH_SIZE;
+        
+        // Create separate job units for each chunk
+        for (chunk_index, chunk) in photos.chunks(GOOGLE_PHOTOS_BATCH_SIZE).enumerate() {
+            // Create job unit for this chunk
+            let job_types = vec!["google_photos_upload".to_string()];
+            let job_unit = job_queue::JobUnit::new(job_types);
+            let job_unit_id = job_unit.id.clone();
+            
+            log::info!(
+                target: "google_photos", 
+                "create_job_unit; job_unit_id={}; batch={}/{}; photos_in_batch={}", 
+                job_unit_id,
+                chunk_index + 1,
+                total_chunks,
+                chunk.len()
+            );
+            
+            // Save job unit
+            self.db.create_job_unit(&job_unit)?;
+            
+            // Create Google Photos upload job data
+            let job_data = job_queue::GooglePhotosUploadJob {
+                photo_paths: chunk.to_vec(),
+                access_token: access_token.clone(),
+                refresh_token: refresh_token.clone(),
+                album_id: None,
+                chunk_index,
+                total_chunks,
+            };
+            
+            // Serialize job data to store in target field
+            let job_data_json = serde_json::to_string(&job_data)
+                .map_err(|e| format!("Failed to serialize job data: {}", e))?;
+            
+            // Create the job with serialized data in target field
+            let upload_job = job_queue::Job::new(
+                job_unit_id.clone(),
+                job_queue::JobType::GooglePhotosUpload,
+                vec![job_data_json], // Store serialized job data
+            );
+            
+            // Queue the job
+            let queued = job_queue::QueuedJob::new(job_unit_id.clone(), upload_job);
+            let job_id = self.db.create_job(&queued)?;
+            
+            log::info!(
+                target: "google_photos", 
+                "job_created; job_unit_id={}; job_id={}; batch={}/{}", 
+                job_unit_id,
+                job_id,
+                chunk_index + 1,
+                total_chunks
+            );
+            
+            job_unit_ids.push(job_unit_id);
+        }
+        
+        // Start processing
+        self.process_new_jobs(app_handle);
+        
+        log::info!(
+            target: "google_photos", 
+            "submit_complete; job_units_created={}", 
+            job_unit_ids.len()
+        );
+        
+        Ok(job_unit_ids)
+    }
+
     pub fn submit_import_jobs(&self, files: Vec<String>, app_handle: tauri::AppHandle) -> Result<String, String> {
         eprintln!("Submitting import jobs for {} files", files.len());
         
@@ -350,6 +437,14 @@ impl JobQueueManager {
             job_queue::JobType::CreateDb => {
                 eprintln!("Calling process_create_db_job for job {}", job_id);
                 Self::process_create_db_job(&job, &app_handle).map(|_| ())
+            },
+            job_queue::JobType::GooglePhotosUpload => {
+                eprintln!("Calling process_google_photos_upload_job for job {}", job_id);
+                // Note: This will need to be awaited, but current architecture doesn't support async job processing
+                // For now, we'll use a blocking runtime
+                tokio::runtime::Runtime::new().unwrap().block_on(
+                    Self::process_google_photos_upload_job(&job, &app_handle, &db)
+                )
             },
         };
         
@@ -930,6 +1025,85 @@ impl JobQueueManager {
                 vec![]
             }
         }
+    }
+
+    async fn process_google_photos_upload_job(
+        job: &job_queue::QueuedJob,
+        app_handle: &tauri::AppHandle,
+        db: &Arc<SQLite>,
+    ) -> Result<(), String> {
+        eprintln!("=== GOOGLE PHOTOS UPLOAD JOB EXECUTION START ===");
+        eprintln!("Job Unit ID: {}", job.job_unit_id);
+        
+        // Deserialize job data from target field
+        let job_data_json = job.job.target.get(0)
+            .ok_or_else(|| "No job data found in target field".to_string())?;
+        
+        let job_data: job_queue::GooglePhotosUploadJob = serde_json::from_str(job_data_json)
+            .map_err(|e| format!("Failed to deserialize job data: {}", e))?;
+        
+        log::info!(
+            target: "google_photos", 
+            "upload_job_start; job_unit_id={}; batch={}/{}; photos={}", 
+            job.job_unit_id,
+            job_data.chunk_index + 1, 
+            job_data.total_chunks,
+            job_data.photo_paths.len()
+        );
+        
+        // Get app state for database path
+        let state = app_handle.state::<crate::AppState>();
+        let config = &state.config;
+        
+        // Create GooglePhotos instance
+        let google_photos = crate::entity::google_photos::GooglePhotos::new(
+            job_data.access_token.clone(),
+            job_data.refresh_token.clone(),
+            config.import_to.clone(), // db_path
+        );
+        
+        // Emit progress event
+        if let Err(e) = app_handle.emit("upload_progress", (
+            &job.job_unit_id, 
+            format!("Starting batch {} of {}", job_data.chunk_index + 1, job_data.total_chunks),
+            0
+        )) {
+            log::error!(target: "google_photos", "Failed to emit progress event: {}", e);
+        }
+        
+        // Upload photos in this batch
+        let photo_refs: Vec<&str> = job_data.photo_paths.iter().map(|s| s.as_str()).collect();
+        
+        log::info!(
+            target: "google_photos", 
+            "starting_upload; job_unit_id={}; files={:?}", 
+            job.job_unit_id,
+            photo_refs
+        );
+        
+        // Use the existing upload_photo method which handles the batching internally
+        // Note: This will be fixed when we address the batching bug in google_photos.rs
+        google_photos.upload_photo(photo_refs).await;
+        
+        // Emit completion event
+        if let Err(e) = app_handle.emit("upload_progress", (
+            &job.job_unit_id,
+            format!("Completed batch {} of {}", job_data.chunk_index + 1, job_data.total_chunks),
+            100
+        )) {
+            log::error!(target: "google_photos", "Failed to emit completion event: {}", e);
+        }
+        
+        log::info!(
+            target: "google_photos", 
+            "upload_job_complete; job_unit_id={}; batch={}/{}", 
+            job.job_unit_id,
+            job_data.chunk_index + 1,
+            job_data.total_chunks
+        );
+        
+        eprintln!("=== GOOGLE PHOTOS UPLOAD JOB EXECUTION COMPLETE ===");
+        Ok(())
     }
 
     pub fn get_all_job_units(&self) -> Result<Vec<job_queue::JobUnit>, String> {
