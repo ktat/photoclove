@@ -26,6 +26,7 @@ use std::os::windows::fs::symlink_file;
 
 mod domain_service;
 mod entity;
+mod error;
 mod repository;
 mod value;
 

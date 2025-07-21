@@ -12,8 +12,10 @@ import '../scrollable.css';
 import { usePhoto } from "../context/PhotoContext.jsx";
 import { useUI } from "../context/UIContext.jsx";
 import { useSearch } from "../hooks/useSearch.js";
+import { useError } from "../context/ErrorContext.jsx";
 import SearchTools from "../components/SearchTools.jsx";
 import TagChip from "../components/TagChip.jsx";
+import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import { logger } from "../services/LoggerService.js";
 
 function PhotosList(props) {
@@ -38,6 +40,7 @@ function PhotosList(props) {
         propsCount: Object.keys(props).length
     });
     const { addFooterMessage, toggleSearchPage, searchInitialQuery } = useUI();
+    const { handleTauriError, addError } = useError();
     
     // Check if we're in search mode - moved before state declarations
     const isSearchMode = props.searchMode || false;
@@ -193,6 +196,7 @@ function PhotosList(props) {
             return options;
         } catch (error) {
             console.error('Failed to load filter options:', error);
+            handleTauriError(error, 'Load filter options');
             return null;
         } finally {
             setIsFilterOptionsLoading(false);
@@ -280,6 +284,7 @@ function PhotosList(props) {
                 photoPath,
                 error: error.toString()
             });
+            addError(error, 'Load photo tags', `loading tags for ${photoPath}`);
             return [];
         }
     }, [photoTags]);
@@ -395,6 +400,7 @@ function PhotosList(props) {
                 logger.error('PhotosList', 'load_tags_batch_error', 'Failed to load tags for photos', {
                     error: error.toString()
                 });
+                addError(error, 'Load photo tags (batch)', 'loading tags for multiple photos');
             }
         };
 
@@ -974,7 +980,10 @@ function PhotosList(props) {
             // Hide loading indicator on error
             setPhotoLoading(false);
             
-            // Show user-friendly error message
+            // Use enhanced error handling
+            handleTauriError(error, 'Load photos');
+            
+            // Fallback footer message
             compatProps.addFooterMessage && compatProps.addFooterMessage(`Failed to load photos: ${error.message || error}`);
         }
     }
@@ -1032,7 +1041,7 @@ function PhotosList(props) {
         }
         
         const fetchPhotos = async () => getPhotos();
-        fetchPhotos().catch(console.error)
+        fetchPhotos().catch(error => handleTauriError(error, 'Refresh photos after closing display'))
     }
 
     function closeRightColumn() {
@@ -1086,7 +1095,9 @@ function PhotosList(props) {
 
     // Removed photosScroll function - replaced by handleInfiniteScroll
 
-    return <>
+    return (
+        <ErrorBoundary name="PhotosList" level="component">
+            <>
         {photoLoading ?
             <div className="photoLoadingOnParent" style={{ display: photoLoading ? "block" : "none" }}>
                 <PhotoLoading />
@@ -1529,7 +1540,9 @@ function PhotosList(props) {
                 </div>
             </div>
         )}
-    </>
+            </>
+        </ErrorBoundary>
+    );
 }
 
 export default PhotosList;
