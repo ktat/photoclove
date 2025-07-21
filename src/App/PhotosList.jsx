@@ -52,7 +52,8 @@ function PhotosList(props) {
         showAlbumsList,
         currentAlbumId,
         viewMode,
-        openAlbum 
+        openAlbum,
+        toggleJobQueue
     } = useUI();
     const { handleTauriError, addError } = useError();
     
@@ -160,7 +161,6 @@ function PhotosList(props) {
     const [isFilterOptionsLoading, setIsFilterOptionsLoading] = useState(false);
     
     // Album state
-    const [albumsList, setAlbumsList] = useState([]);
     const [filteredAlbums, setFilteredAlbums] = useState([]);
     const [albumSearchTerm, setAlbumSearchTerm] = useState('');
     const [currentAlbumName, setCurrentAlbumName] = useState('');
@@ -240,7 +240,6 @@ function PhotosList(props) {
             }));
             
             updateAlbumsList(processedAlbums);
-            setAlbumsList(processedAlbums);
             setFilteredAlbums(processedAlbums);
             
             logger.info('PhotosList', 'load_albums_complete', 'Albums loaded successfully', {
@@ -1867,6 +1866,9 @@ function PhotosList(props) {
                         setExtensionFilter={setExtensionFilter}
                         extensionFilter={extensionFilter}
                         setShowSideMenu={setShowSideMenu}
+                        
+                        // Job Queue integration
+                        setShowJobQueue={(show) => toggleJobQueue(show)}
                         
                         // Search mode props
                         searchMode={isSearchMode}
