@@ -1842,170 +1842,6 @@ a.run-app {
   border-color: #fff;
 }
 
-/* Job Queue Styles */
-.job-queue {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: #1b1b1b;
-  z-index: 1000;
-  overflow: auto;
-  padding: 20px;
-  color: #e4e4e4;
-}
-
-.job-queue-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding: 0 20px;
-}
-
-.job-queue-header h2 {
-  margin: 0;
-  color: #e4e4e4;
-}
-
-.job-queue-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.job-queue-actions button {
-  padding: 8px 16px;
-  background: #333;
-  color: #e4e4e4;
-  border: 1px solid #555;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.job-queue-actions button:hover {
-  background: #444;
-}
-
-.job-queue-actions button:disabled {
-  background: #222;
-  color: #666;
-  cursor: not-allowed;
-}
-
-.job-queue-content {
-  background: #2a2a2a;
-  border-radius: 8px;
-  padding: 20px;
-  max-height: calc(100vh - 140px);
-  overflow: auto;
-}
-
-.job-table-container {
-  overflow-x: auto;
-}
-
-.job-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #2a2a2a;
-  color: #e4e4e4;
-}
-
-.job-table th,
-.job-table td {
-  padding: 12px 8px;
-  text-align: left;
-  border-bottom: 1px solid #444;
-}
-
-.job-table th {
-  background: #333;
-  font-weight: 600;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.job-table tr:hover {
-  background: #333;
-}
-
-.job-table td {
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.job-table td[title] {
-  cursor: help;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.8em;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-
-.error-text {
-  color: #ff6b6b;
-  font-size: 0.9em;
-}
-
-.job-actions {
-  display: flex;
-  gap: 6px;
-}
-
-.retry-button {
-  padding: 4px 8px;
-  background: #28a745;
-  color: white;
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.retry-button:hover {
-  background: #218838;
-}
-
-.delete-button {
-  padding: 4px 8px;
-  background: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.delete-button:hover {
-  background: #c82333;
-}
-
-.error-message {
-  background: #ff6b6b;
-  color: white;
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-.loading {
-  text-align: center;
-  padding: 40px;
-  font-size: 18px;
-  color: #999;
-}
-
 /* Editor styles */
 .editor-controls {
     display: flex;
@@ -2904,4 +2740,137 @@ a.run-app {
 .copy-message-button:hover {
     opacity: 1;
     background: rgba(0, 0, 0, 0.2);
+}
+
+/* JobQueue modal styles to match LogViewer */
+.job-queue-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.job-queue {
+    background: var(--bg-elevated);
+    color: var(--text);
+    border-radius: 8px;
+    width: 95vw;
+    height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+.job-queue-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.job-queue-header h2 {
+    margin: 0;
+    color: var(--text);
+}
+
+.job-queue-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.job-queue-actions button {
+    background: var(--bg-elevated) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+}
+
+.job-queue-actions button:hover {
+    background: var(--accent) !important;
+    color: white !important;
+}
+
+.job-queue-actions button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.job-queue-error {
+    padding: 1rem;
+    background: #fee;
+    border-left: 4px solid #f00;
+    color: #c00;
+}
+
+.job-queue-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    background: var(--bg-elevated);
+}
+
+.job-table-container {
+    overflow-x: auto;
+}
+
+.job-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.job-table th,
+.job-table td {
+    padding: 0.5rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+.job-table th {
+    background: var(--bg);
+    color: var(--text);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+}
+
+.job-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.job-actions button {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: 3px;
+    border: none;
+    cursor: pointer;
+}
+
+.retry-button {
+    background: #ffa500;
+    color: white;
+}
+
+.retry-button:hover {
+    background: #ff8c00;
+}
+
+.delete-button {
+    background: #dc3545;
+    color: white;
+}
+
+.delete-button:hover {
+    background: #c82333;
 }

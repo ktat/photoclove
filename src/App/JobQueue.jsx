@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { logger } from "../services/LoggerService.js";
 
-const JobQueue = (props) => {
+const JobQueue = ({ onClose, ...props }) => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -188,121 +188,125 @@ const JobQueue = (props) => {
   }, []);
 
   return (
-    <div className="job-queue">
-      <div className="job-queue-header">
-        <h2>Job Queue Management</h2>
-        <div className="job-queue-actions">
-          <button onClick={loadJobs} disabled={loading}>
-            {loading ? "Loading..." : "Refresh"}
-          </button>
-          <button onClick={cleanupCompletedJobs} disabled={loading}>
-            Cleanup Completed
-          </button>
-          <button onClick={() => props.toggleJobQueue(false)}>
-            Close
-          </button>
+    <div className="job-queue-overlay">
+      <div className="job-queue">
+        <div className="job-queue-header">
+          <div className="job-queue-title-section">
+            <h2>Job Queue Management</h2>
+          </div>
+          <div className="job-queue-actions">
+            <button onClick={loadJobs} disabled={loading}>
+              {loading ? "Loading..." : "Refresh"}
+            </button>
+            <button onClick={cleanupCompletedJobs} disabled={loading}>
+              Cleanup Completed
+            </button>
+            <button onClick={onClose}>
+              Close
+            </button>
+          </div>
         </div>
-      </div>
 
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
-
-      <div className="job-queue-content">
-        {loading ? (
-          <div className="loading">Loading jobs...</div>
-        ) : (
-          <div className="job-table-container">
-            <table className="job-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Job Unit ID</th>
-                  <th>Job Type</th>
-                  <th>Target Count</th>
-                  <th>Status</th>
-                  <th>Created</th>
-                  <th>Started</th>
-                  <th>Completed</th>
-                  <th>Error Message</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {jobs.length === 0 ? (
-                  <tr>
-                    <td colSpan="10" style={{ textAlign: "center", padding: "20px" }}>
-                      No jobs in queue
-                    </td>
-                  </tr>
-                ) : (
-                  jobs.map((job) => (
-                    <tr key={job.id}>
-                      <td>{job.id}</td>
-                      <td title={job.job_unit_id}>
-                        {job.job_unit_id.substring(0, 8)}...
-                      </td>
-                      <td>{getJobTypeName(job.job.job_type)}</td>
-                      <td>{job.job.target.length}</td>
-                      <td>
-                        <span
-                          className="status-badge"
-                          style={{ 
-                            backgroundColor: getStatusColor(job.status),
-                            color: "white",
-                            padding: "2px 6px",
-                            borderRadius: "3px",
-                            fontSize: "0.8em"
-                          }}
-                        >
-                          {job.status}
-                        </span>
-                      </td>
-                      <td>{formatDateTime(job.created_at)}</td>
-                      <td>{formatDateTime(job.started_at)}</td>
-                      <td>{formatDateTime(job.completed_at)}</td>
-                      <td title={job.error_message || ""}>
-                        {job.error_message ? (
-                          <span className="error-text">
-                            {job.error_message.length > 30 
-                              ? job.error_message.substring(0, 30) + "..."
-                              : job.error_message}
-                          </span>
-                        ) : (
-                          "N/A"
-                        )}
-                      </td>
-                      <td>
-                        <div className="job-actions">
-                          {job.status === "failed" && (
-                            <button
-                              onClick={() => retryJob(job.id)}
-                              className="retry-button"
-                              title="Retry job"
-                            >
-                              Retry
-                            </button>
-                          )}
-                          {(job.status === "pending" || job.status === "failed") && (
-                            <button
-                              onClick={() => deleteJob(job.id)}
-                              className="delete-button"
-                              title="Delete job"
-                            >
-                              Delete
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+        {error && (
+          <div className="job-queue-error">
+            <strong>Error:</strong> {error}
           </div>
         )}
+
+        <div className="job-queue-content">
+          {loading ? (
+            <div className="loading">Loading jobs...</div>
+          ) : (
+            <div className="job-table-container">
+              <table className="job-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Job Unit ID</th>
+                    <th>Job Type</th>
+                    <th>Target Count</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Started</th>
+                    <th>Completed</th>
+                    <th>Error Message</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {jobs.length === 0 ? (
+                    <tr>
+                      <td colSpan="10" style={{ textAlign: "center", padding: "20px" }}>
+                        No jobs in queue
+                      </td>
+                    </tr>
+                  ) : (
+                    jobs.map((job) => (
+                      <tr key={job.id}>
+                        <td>{job.id}</td>
+                        <td title={job.job_unit_id}>
+                          {job.job_unit_id.substring(0, 8)}...
+                        </td>
+                        <td>{getJobTypeName(job.job.job_type)}</td>
+                        <td>{job.job.target.length}</td>
+                        <td>
+                          <span
+                            className="status-badge"
+                            style={{ 
+                              backgroundColor: getStatusColor(job.status),
+                              color: "white",
+                              padding: "2px 6px",
+                              borderRadius: "3px",
+                              fontSize: "0.8em"
+                            }}
+                          >
+                            {job.status}
+                          </span>
+                        </td>
+                        <td>{formatDateTime(job.created_at)}</td>
+                        <td>{formatDateTime(job.started_at)}</td>
+                        <td>{formatDateTime(job.completed_at)}</td>
+                        <td title={job.error_message || ""}>
+                          {job.error_message ? (
+                            <span className="error-text">
+                              {job.error_message.length > 30 
+                                ? job.error_message.substring(0, 30) + "..."
+                                : job.error_message}
+                            </span>
+                          ) : (
+                            "N/A"
+                          )}
+                        </td>
+                        <td>
+                          <div className="job-actions">
+                            {job.status === "failed" && (
+                              <button
+                                onClick={() => retryJob(job.id)}
+                                className="retry-button"
+                                title="Retry job"
+                              >
+                                Retry
+                              </button>
+                            )}
+                            {(job.status === "pending" || job.status === "failed") && (
+                              <button
+                                onClick={() => deleteJob(job.id)}
+                                className="delete-button"
+                                title="Delete job"
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

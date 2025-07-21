@@ -31,7 +31,6 @@ function App() {
     showImporter,
     showPhotosList,
     showPreferences,
-    showJobQueue,
     showLogin,
     showSearchPage,
     isAdvancedSearchMode,
@@ -40,7 +39,6 @@ function App() {
     setWelcomeImage,
     toggleImporter,
     togglePreferences,
-    toggleJobQueue,
     toggleSearchPage,
     toggleHome,
     toggleAlbumListMode,
@@ -60,6 +58,7 @@ function App() {
   const [name, setName] = useState("");
   const [rightMenuOpen, setRightMenuOpen] = useState(true);
   const [showLogViewer, setShowLogViewer] = useState(false);
+  const [showJobQueueModal, setShowJobQueueModal] = useState(false);
 
   const [shortCutNavigation, setShortCutNavigation] = useState({
     onKeyDown: (e) => { console.log(e) },
@@ -93,6 +92,7 @@ function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
 
   useEffect((e) => {
 
@@ -163,7 +163,7 @@ function App() {
           } else if (e.payload === "pref") {
             togglePreferences(true);
           } else if (e.payload === "job_queue") {
-            toggleJobQueue(true);
+            setShowJobQueueModal(true);
           } else if (e.payload == "login") {
             loginGoogle();
           }
@@ -360,7 +360,7 @@ function App() {
             toggleSearchPage={toggleSearchPage}
           />
         </div>
-        {(console.log('🐛 App.jsx render decision:', { showPhotosList, showImporter, showPreferences, showJobQueue, showSearchPage, currentDate, recentPhotosMode }), showPhotosList) ? <>
+        {(console.log('🐛 App.jsx render decision:', { showPhotosList, showImporter, showPreferences, showJobQueueModal, showSearchPage, currentDate, recentPhotosMode }), showPhotosList) ? <>
           {console.log('🐛 App.jsx: Rendering PhotosList')}
           <PhotosList
             shortCutNavigation={shortCutNavigation}
@@ -380,12 +380,7 @@ function App() {
                 togglePreferences={togglePreferences}
               ></Preferences>
             </div>
-            <div style={{ display: showJobQueue ? "block" : "none" }}>
-              <JobQueue
-                toggleJobQueue={toggleJobQueue}
-              ></JobQueue>
-            </div>
-            <div style={{ display: (console.log('🐛 Home display condition:', { showImporter, showLogin, showPreferences, showJobQueue, showSearchPage, currentDate, recentPhotosMode, showPhotosList, willShowHome: (!showImporter && !showLogin && !showPreferences && !showJobQueue && !showSearchPage && ((!currentDate && !recentPhotosMode) || !showPhotosList)) }), (!showImporter && !showLogin && !showPreferences && !showJobQueue && !showSearchPage && ((!currentDate && !recentPhotosMode) || !showPhotosList))) ? "block" : "none" }}>
+            <div style={{ display: (console.log('🐛 Home display condition:', { showImporter, showLogin, showPreferences, showJobQueueModal, showSearchPage, currentDate, recentPhotosMode, showPhotosList, willShowHome: (!showImporter && !showLogin && !showPreferences && !showJobQueueModal && !showSearchPage && ((!currentDate && !recentPhotosMode) || !showPhotosList)) }), (!showImporter && !showLogin && !showPreferences && !showJobQueueModal && !showSearchPage && ((!currentDate && !recentPhotosMode) || !showPhotosList))) ? "block" : "none" }}>
               {console.log('🐛 App.jsx: Rendering Home component')}
               <Home welcomeImage={welcomeImage} setWelcomeImage={setWelcomeImage} />
             </div>
@@ -396,6 +391,9 @@ function App() {
       <ErrorDisplay />
       {showLogViewer && (
         <LogViewer onClose={() => setShowLogViewer(false)} />
+      )}
+      {showJobQueueModal && (
+        <JobQueue onClose={() => setShowJobQueueModal(false)} addFooterMessage={addFooterMessage} />
       )}
     </div >
   );
