@@ -93,8 +93,8 @@ impl SQLite {
             db_path: path + "/photoclove.db",
         };
         if let Err(e) = sqlite.init_db() {
-            eprintln!("Failed to initialize SQLite database: {}", e);
-            eprintln!("Falling back to basic table creation");
+            log::error!(target: "sqlite", "db_init_error; error={}", e);
+            log::warn!(target: "sqlite", "db_init; status=fallback_to_basic_creation");
             // Try basic table creation as fallback
             if let Ok(conn) = sqlite.get_connection() {
                 // Execute the full schema (which now includes date_summary table)
@@ -1391,7 +1391,7 @@ impl MetaInfoDB for SQLite {
                     }
                 },
                 None => {
-                    eprintln!("WARNING: Skipping photo due to missing date: {} (dir: {})", photo.file.path, photo.dir.path);
+                    log::warn!(target: "sqlite", "photo_skip; reason=missing_date; file={}; dir={}", photo.file.path, photo.dir.path);
                     continue;
                 },
             };
@@ -1435,11 +1435,11 @@ impl MetaInfoDB for SQLite {
                 None::<String>
             ])
             .map_err(|e| {
-                eprintln!("Failed to execute database statement for {}: {}", photo.file.path, e);
+                log::error!(target: "sqlite", "db_statement_error; file={}; error={}", photo.file.path, e);
                 "Failed to execute statement"
             })?;
             
-            eprintln!("Successfully inserted metadata for: {} (date: {})", photo.file.path, date);
+            log::debug!(target: "sqlite", "photo_metadata_insert; file={}; date={}", photo.file.path, date);
         }
 
         // Update date_summary for newly inserted photos
@@ -1481,17 +1481,14 @@ impl MetaInfoDB for SQLite {
             // Delete photos from database that are no longer in filesystem
             for (path, existing_photo) in existing_photos.iter() {
                 if !current_paths.contains(path) {
-                    eprintln!("Deleting orphaned photo from DB: {}", path);
+                    log::info!(target: "sqlite", "orphaned_photo_delete; path={}", path);
                     self.delete_photo(existing_photo.photo());
                 }
             }
 
             let result = self.record_photos_meta_data(photos.photos);
             if result.is_err() {
-                eprintln!(
-                    "Error recording photos for date {}: {:?}",
-                    date.to_string(),
-                    result.err()
+                log::error!(target: "sqlite", "photo_recording_error; date={}; error={:?}", date.to_string(), result.err()
                 );
             }
         }
@@ -2058,7 +2055,7 @@ impl SQLite {
         
         // If no incomplete jobs, mark job unit as completed
         if incomplete_count == 0 {
-            eprintln!("All jobs completed for job unit {}, updating status", job_unit_id);
+            log::info!(target: "sqlite", "job_unit_complete; job_unit_id={}; status=updating", job_unit_id);
             conn.execute(
                 "UPDATE job_unit SET status = 'completed' WHERE id = ?1",
                 [job_unit_id],
@@ -2085,7 +2082,7 @@ impl SQLite {
         ).map_err(|e| format!("Failed to cleanup completed job units: {}", e))?;
         
         if deleted_jobs > 0 || deleted_units > 0 {
-            eprintln!("Cleaned up {} completed jobs and {} completed job units", deleted_jobs, deleted_units);
+            log::info!(target: "sqlite", "job_cleanup; deleted_jobs={}; deleted_units={}", deleted_jobs, deleted_units);
         }
         
         Ok(())

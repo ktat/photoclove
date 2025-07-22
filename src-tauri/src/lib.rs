@@ -259,7 +259,7 @@ fn get_dates(window: tauri::Window, state: tauri::State<AppState>) -> String {
                 return json_result;
             }
             Err(e) => {
-                eprintln!("Error getting dates from SQLite: {}", e);
+                log::error!(target: "photo", "get_dates_error; error={}", e);
                 // Fall through to filesystem scanning
             }
         }
@@ -318,13 +318,13 @@ async fn link_file_to_public(
 ) -> Result<String, ()> {
     let from = path::Path::new(from_file_path);
     let to = path::Path::new("../public/").join(to_file_name.to_string());
-    eprintln!("{:?} => {:?}", from, to);
+    log::debug!(target: "file_service", "create_symlink; from={:?}; to={:?}", from, to);
 
     if cfg!(target_os = "windows") {
         return match std::fs::copy(from, to.clone()) {
             Ok(_) => Ok("true".to_string()),
             Err(e) => {
-                eprintln!("Cannot copy file {:?} => {:?}: {:?}", from, to, e);
+                log::error!(target: "file_service", "copy_file_failed; from={:?}; to={:?}; error={:?}", from, to, e);
                 Ok("false".to_string())
             }
         };
@@ -332,7 +332,7 @@ async fn link_file_to_public(
         match fs::remove_file(to.as_path()) {
             Ok(_) => {}
             Err(e) => {
-                eprintln!("Cannot delete file {:?} : {:?}", to.clone(), e);
+                log::error!(target: "file_service", "delete_file_failed; file={:?}; error={:?}", to.clone(), e);
                 // return Ok("false".to_string());
             }
         };
@@ -341,7 +341,7 @@ async fn link_file_to_public(
         return match symlink(from, to.clone()) {
             Ok(_) => Ok("true".to_string()),
             Err(e) => {
-                eprintln!("Cannot create symlink {:?} => {:?}: {:?}", from, to, e);
+                log::error!(target: "file_service", "create_symlink_failed; from={:?}; to={:?}; error={:?}", from, to, e);
                 Ok("false".to_string())
             }
         };
@@ -349,7 +349,7 @@ async fn link_file_to_public(
         return match symlink_file(from, to.clone()) {
             Ok(_) => Ok("true".to_string()),
             Err(e) => {
-                eprintln!("Cannot create symlink {:?} => {:?}: {:?}", from, to, e);
+                log::error!(target: "file_service", "create_symlink_failed; from={:?}; to={:?}; error={:?}", from, to, e);
                 Ok("false".to_string())
             }
         };
@@ -610,7 +610,7 @@ async fn import_photos(
     files: Vec<&str>,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
-    eprintln!("import_photos called with {} files", files.len());
+    log::info!(target: "importer", "import_photos_request; file_count={}", files.len());
     
     // Convert Vec<&str> to Vec<String>
     let file_strings: Vec<String> = files.iter().map(|s| s.to_string()).collect();
@@ -619,17 +619,17 @@ async fn import_photos(
     let app_handle = window.app_handle().clone();
     
     // Submit jobs to the queue
-    eprintln!("Acquiring job_queue_manager lock...");
+    log::debug!(target: "importer", "acquiring_lock; target=job_queue_manager");
     let job_queue_manager = state.job_queue_manager.lock().unwrap();
-    eprintln!("Lock acquired, submitting jobs...");
+    log::debug!(target: "importer", "lock_acquired; action=submitting_jobs");
     
     match job_queue_manager.submit_import_jobs(file_strings, app_handle) {
         Ok(job_unit_id) => {
-            eprintln!("Import jobs submitted with job unit ID: {}", job_unit_id);
+            log::info!(target: "importer", "import_jobs_submitted; job_unit_id={}", job_unit_id);
             Ok(job_unit_id)
         }
         Err(e) => {
-            eprintln!("Failed to submit import jobs: {}", e);
+            log::error!(target: "importer", "submit_import_jobs_failed; error={}", e);
             Err(e)
         }
     }
@@ -682,9 +682,9 @@ async fn move_photos_to_exif_date(
 ) -> Result<String, ()> {
     let date = date::Date::from_string(&date_str.to_string(), Option::Some("/"));
     window.emit("move_files", "start").unwrap();
-    eprintln!("target date: {:?}", date);
+    log::debug!(target: "photo", "move_photos_to_exif_date; target_date={:?}", date);
     let dates = state.repo_db.move_photos_to_exif_date(date).await;
-    eprintln!("date: {:?}", dates);
+    log::debug!(target: "photo", "move_photos_completed; dates={:?}", dates);
     window.emit("move_files", "end_move").unwrap();
     match state.meta_db.record_photos_all_meta_data(dates) {
         Ok(ret) => {
@@ -1089,7 +1089,7 @@ async fn move_to_trash(
         Ok(data) => data,
         Err(_e) => photo_meta::PhotoMetas::new(),
     };
-    eprintln!("to Trash: {:?}", path_str);
+    log::info!(target: "photo", "move_to_trash; path={:?}", path_str);
     let trash = trash::Trash::new(state.config.trash_path.to_string());
     let file = file::File::new(path_str.to_string());
     file_service::move_to_trash(file, trash);
@@ -1228,7 +1228,7 @@ async fn save_styled_copy_from_frontend(
             }
         }
         Err(e) => {
-            eprintln!("Warning: Failed to record photo metadata: {:?}", e);
+            log::warn!(target: "photo", "record_photo_metadata_failed; error={:?}", e);
         }
     }
     
@@ -1249,7 +1249,7 @@ async fn save_styled_copy_from_frontend(
             config.thumbnail_ratio,
             config.thumbnail_ignore_file_size,
         ).await {
-            eprintln!("Warning: Failed to create thumbnail: {:?}", e);
+            log::warn!(target: "photo", "create_thumbnail_failed; error={:?}", e);
         }
     });
     
@@ -1677,12 +1677,12 @@ pub fn run() {
     // Create job queue manager with same database instance
     let sqlite_db = repository::meta_db::sqlite::SQLite::new(c.import_to.clone());
     // Initialize the database to ensure job queue tables are created
-    eprintln!("Initializing job queue database...");
+    log::info!(target: "app", "initializing_job_queue_database");
     if let Err(e) = sqlite_db.init_db() {
-        eprintln!("Failed to initialize job queue database: {}", e);
+        log::error!(target: "app", "job_queue_database_init_failed; error={}", e);
         panic!("Failed to initialize job queue database: {}", e);
     }
-    eprintln!("Job queue database initialized successfully");
+    log::info!(target: "app", "job_queue_database_initialized");
     let job_queue_manager = job_queue_service::JobQueueManager::new(sqlite_db, c.copy_parallel as usize);
     
     // Initialize logging service
@@ -1691,13 +1691,13 @@ pub fn run() {
     
     // Clean up log files if logging is disabled
     if let Err(e) = logging_service.cleanup_log_files_if_disabled(c.logging_enabled) {
-        eprintln!("Warning: Failed to cleanup log files: {}", e);
+        log::warn!(target: "app", "cleanup_log_files_failed; error={}", e);
     }
     
     // Setup backend logging to file only if logging is enabled
     if c.logging_enabled {
         if let Err(e) = logging_service.setup_backend_logging() {
-            eprintln!("Warning: Failed to setup backend logging: {}", e);
+            log::warn!(target: "app", "setup_backend_logging_failed; error={}", e);
             // Continue without file logging
             env_logger::Builder::from_default_env()
                 .filter_level(log::LevelFilter::Debug)
@@ -1743,6 +1743,10 @@ pub fn run() {
             let help_submenu = SubmenuBuilder::new(app, "?")
                 .text("show_log", "Show log")
                 .text("github", "GitHub")
+                .separator()
+                .text("privacy_policy", "Privacy Policy")
+                .text("terms_of_use", "Terms of Use")
+                .separator()
                 .text("about", "About")
                 .build()?;
 
@@ -1779,17 +1783,17 @@ pub fn run() {
                 } else if e.id == "pref" {
                     app.emit("click_menu", "pref").unwrap();
                 } else {
-                    eprintln!("{:?}", e);
+                    log::debug!(target: "app", "unhandled_menu_event; event={:?}", e);
                 }
             });
             
             // Start background job processing
-            eprintln!("Starting background job processing...");
+            log::info!(target: "job_queue", "starting_background_job_processing");
             let app_handle = app.handle().clone();
             let state = app.state::<AppState>();
             let job_queue_manager = state.job_queue_manager.lock().unwrap();
             job_queue_manager.start_background_processing(app_handle);
-            eprintln!("Background job processing started");
+            log::info!(target: "job_queue", "background_job_processing_started");
             
             Ok(())
         })

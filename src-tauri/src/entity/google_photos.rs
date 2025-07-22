@@ -310,7 +310,7 @@ impl GooglePhotos {
             .send()
             .await?;
 
-        eprintln!("!!!!!!!!!!!!============== {}", response.status());
+        log::debug!(target: "google_photos", "api_response; status={}", response.status());
 
         if response.status().is_success() {
             return response.text().await;

@@ -14,16 +14,16 @@ pub fn move_to_trash(file: file::File, trash: trash::Trash) {
     fs::create_dir_all(target_trash_dir.clone());
 
     let target_path = target_trash_dir.join(target_file.file_name().unwrap());
-    eprintln!("{:?} => {:?}", target_file, target_path);
+    log::info!(target: "file_service", "move_to_trash; source={:?}; destination={:?}", target_file, target_path);
     match fs::copy(target_file, target_path) {
         Ok(_) => match fs::remove_file(target_file) {
             Ok(_) => (),
             Err(err) => {
-                eprintln!("failed to remove file after copy: {:?}", err);
+                log::error!(target: "file_service", "move_to_trash_error; operation=remove_after_copy; error={:?}", err);
             }
         },
         Err(err) => {
-            eprintln!("failed to copy file to trash: {:?}", err);
+            log::error!(target: "file_service", "move_to_trash_error; operation=copy_to_trash; error={:?}", err);
         }
     };
 }

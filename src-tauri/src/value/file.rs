@@ -64,10 +64,11 @@ impl Dir {
         let result = p.try_exists();
         if !result.is_ok() || cp.is_err() {
             if cp.is_err() {
-                eprintln!("Invalid abs path for Dir: {:?}, error: {:?}", p, cp.err());
+                log::error!(target: "file", "invalid_abs_path; path={:?}; error={:?}", p, cp.err());
             } else {
-                eprintln!(
-                    "Invalid path for Dir: {:?}, CanonicalPath: {:?}",
+                log::error!(
+                    target: "file",
+                    "invalid_path_for_dir; path={:?}; canonical_path={:?}",
                     p,
                     cp.unwrap().as_path()
                 );
@@ -163,8 +164,9 @@ impl File {
         let p = Path::new(&path);
         let cp = PathAbs::new(p);
         if !p.exists() || cp.is_err() {
-            eprintln!(
-                "Invalid path for file(new_if_exists): {:?}, {:?}",
+            log::warn!(
+                target: "file",
+                "invalid_path_for_file; path={:?}; error={:?}",
                 path,
                 cp.err()
             );

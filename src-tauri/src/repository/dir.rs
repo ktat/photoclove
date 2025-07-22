@@ -120,7 +120,7 @@ impl Dir {
                 if last_index > start_index {
                     df.files.files = df.files.files[start_index..last_index].to_vec()
                 } else {
-                    eprintln!("why ? {} : {}", start_index, last_index);
+                    log::error!(target: "repository", "invalid_index_range; start_index={}; last_index={}", start_index, last_index);
                 }
             }
             return df;

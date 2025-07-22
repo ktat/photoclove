@@ -137,14 +137,14 @@ fn migrate_files_from_sha256_to_uuid(
                                     &file_path.to_string_lossy(),
                                     &dest_path.to_string_lossy()
                                 ) {
-                                    eprintln!("Failed to update photo path in database: {}", e);
+                                    log::error!(target: "importer", "database_update_failed; error={}", e);
                                 }
                             }
                         }
                         
                         // Remove the empty SHA256 directory
                         if let Err(e) = fs::remove_dir(&sha256_dir) {
-                            eprintln!("Failed to remove SHA256 directory: {}", e);
+                            log::warn!(target: "importer", "sha256_dir_removal_failed; path={}; error={}", sha256_dir.display(), e);
                         }
                     }
                 }
@@ -224,7 +224,7 @@ fn get_or_create_source_uuid(
             if has_existing_sha256_dir {
                 if let (Some(dest_dir), Some(meta_db)) = (destination_dir, origin_meta_db) {
                     if let Err(e) = migrate_files_from_sha256_to_uuid(dest_dir, &sha256_hash, &new_uuid, meta_db) {
-                        eprintln!("Failed to migrate files from SHA256 to UUID directory: {}", e);
+                        log::error!(target: "importer", "migration_failed; from=sha256; to=uuid; error={}", e);
                     }
                 }
             }
@@ -278,7 +278,7 @@ impl ImporterSelectedFiles {
             ) {
                 Ok(uuid) => Some(uuid),
                 Err(e) => {
-                    eprintln!("Failed to get or create source UUID: {}", e);
+                    log::error!(target: "importer", "source_uuid_creation_failed; error={}", e);
                     None
                 }
             }
@@ -315,7 +315,7 @@ impl ImporterSelectedFiles {
             let arc_trash_path = Arc::clone(&trash_dir);
             let arc_date_list_clone = Arc::clone(&arc_date_list);
             let source_uuid_clone = source_uuid.clone();
-            // eprintln!("{:?}", &arc_trash_path);
+            // log::debug!(target: "importer", "trash_path; path={:?}", &arc_trash_path);
             let handle = thread::spawn(move || {
                 let mut n: usize = 0;
                 let mut photos: Vec<photo::Photo> = Vec::new();
@@ -336,7 +336,7 @@ impl ImporterSelectedFiles {
                             match fs::create_dir_all(&uuid_dir) {
                                 Ok(_) => {}
                                 Err(e) => {
-                                    eprintln!("cannot create UUID directory: {}", e);
+                                    log::error!(target: "importer", "uuid_dir_creation_failed; path={}; error={}", uuid_dir.display(), e);
                                 }
                             }
                         }
@@ -347,7 +347,7 @@ impl ImporterSelectedFiles {
                             match fs::create_dir(destination_date_dir.clone()) {
                                 Ok(_) => {}
                                 Err(e) => {
-                                    eprintln!("cannot create directory: {}", e);
+                                    log::error!(target: "importer", "dir_creation_failed; path={}; error={}", destination_date_dir.display(), e);
                                 }
                             }
                         }
@@ -359,32 +359,28 @@ impl ImporterSelectedFiles {
                         match fs::create_dir_all(&destination_date_dir) {
                             Ok(_) => {}
                             Err(e) => {
-                                eprintln!("cannot create date directory: {}", e);
+                                log::error!(target: "importer", "date_dir_creation_failed; path={}; error={}", destination_date_dir.display(), e);
                             }
                         }
                     }
                     let p = file.path.clone();
                     if p == destination_path.display().to_string() {
-                        eprintln!("ignore same file: {:?} to {:?}\n", p, destination_path);
+                        log::info!(target: "importer", "file_ignored; reason=same_file; from={}; to={}", p, destination_path.display());
                         n += 1;
                         continue;
                     } else {
                         let trash_file_path = arc_trash_path
                             .join(destination_path.clone().strip_prefix("/").unwrap());
-                        eprintln!("trash_file_path: {:?}", &trash_file_path);
+                        log::debug!(target: "importer", "trash_file_check; path={}", trash_file_path.display());
                         if trash_file_path.exists() {
                             n += 1;
                             continue;
                         }
                         let result = copy_file(&p, &destination_path.display().to_string());
                         thread::sleep(sleep_millis);
-                        eprintln!("copy {:?} to {:?}\n", p, destination_path);
+                        log::info!(target: "importer", "file_copied; from={}; to={}", p, destination_path.display());
                         if result.is_err() {
-                            eprintln!(
-                                "copy error: {:?}: {}",
-                                result.err(),
-                                destination_path.display()
-                            );
+                            log::error!(target: "importer", "file_copy_failed; error={:?}; path={}", result.err(), destination_path.display());
                         }
                     }
                     let df = file::File::new(destination_path.display().to_string());
@@ -401,7 +397,7 @@ impl ImporterSelectedFiles {
                         match window.emit("import", current_num + n) {
                             Ok(()) => (),
                             Err(e) => {
-                                eprintln!("Error on emit: {:?}", e);
+                                log::error!(target: "importer", "event_emit_failed; event=import; error={:?}", e);
                             }
                         }
                         n = 0;

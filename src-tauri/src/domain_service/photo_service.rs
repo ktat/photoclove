@@ -36,7 +36,7 @@ pub async fn create_thumbnails(
 ) -> Result<(), Box<dyn Error>> {
     let mut last_result: Result<(), Box<dyn Error>> = Result::Ok(());
     for date in dates.dates {
-        eprintln!("{}", date.to_string());
+        log::info!(target: "photo_service", "thumbnail_creation; date={}", date.to_string());
         let (tx, tr) = mpsc::channel(); // Sender and Receiver. for more info, check mpsc and message passing.
         let from = origin.join(date.to_string());
         let to = dest.join(date.to_string());
@@ -50,7 +50,7 @@ pub async fn create_thumbnails(
             Ok(ret) => {
                 last_result = r;
                 let ignore_file_size = ignore_file_size as u64;
-                eprintln!("target: {:?} => {:?}", from, to);
+                log::info!(target: "photo_service", "thumbnail_processing; from={:?}; to={:?}", from, to);
                 let entries = std::fs::read_dir(&from)?;
 
                 for entry in entries {
@@ -70,33 +70,24 @@ pub async fn create_thumbnails(
                             let new_file_path = to.join(new_file_name.as_ref());
                             if new_file_path.exists() {
                                 if file_size < ignore_file_size {
-                                    eprintln!(
-                                        "remove mini size thumbnail: {:?} < {:?} {:?} < {:?}",
-                                        entry.path().to_string_lossy(),
-                                        new_file_path.clone(),
-                                        file_size,
-                                        ignore_file_size
-                                    );
+                                    log::info!(target: "photo_service", "thumbnail_cleanup; reason=mini_size; source={:?}; target={:?}; file_size={}; threshold={}", entry.path().to_string_lossy(), new_file_path.clone(), file_size, ignore_file_size);
                                     std::fs::remove_file(new_file_path)?;
                                 } else if new_file_path.exists() {
                                     let thumbnail_file_size =
                                         std::path::Path::new(&new_file_path).metadata()?.len();
                                     if thumbnail_file_size == file_size {
-                                        eprintln!(
-                                            "remove same size thumbnail: {:?}",
-                                            new_file_path.clone()
-                                        );
+                                        log::info!(target: "photo_service", "thumbnail_cleanup; reason=same_size; target={:?}", new_file_path.clone());
                                         std::fs::remove_file(new_file_path)?;
                                     }
                                 }
                             } else {
-                                eprintln!("{:?} not exists", new_file_path);
+                                log::debug!(target: "photo_service", "thumbnail_status; file={:?}; status=not_exists", new_file_path);
                             }
                         } else if ext == "mp4" || ext == "webm" {
                             let thumbnail_file_name =
                                 format!("{}.jpg", file_name.to_string_lossy());
                             let thumbnail_path = to.join(thumbnail_file_name);
-                            eprintln!("target {:?} => {:?}", file_name, thumbnail_path.clone());
+                            log::info!(target: "photo_service", "video_thumbnail; source={:?}; target={:?}", file_name, thumbnail_path.clone());
                             let output = Command::new("ffmpeg")
                                 .arg("-i")
                                 .arg(entry.path().to_str().unwrap())
@@ -109,25 +100,20 @@ pub async fn create_thumbnails(
                             if output.is_ok() {
                                 let o = output.unwrap();
                                 if o.status.success() {
-                                    eprintln!("success!: {:?}", thumbnail_path);
+                                    log::info!(target: "photo_service", "video_thumbnail; status=success; path={:?}", thumbnail_path);
                                 } else {
-                                    eprintln!(
-                                        "Error!: {:?}, {:?} : {:?}",
-                                        entry.path(),
-                                        thumbnail_path,
-                                        o.stderr,
-                                    );
+                                    log::error!(target: "photo_service", "video_thumbnail_error; source={:?}; target={:?}; stderr={:?}", entry.path(), thumbnail_path, o.stderr);
                                 }
                             } else {
-                                eprintln!("ffmpeg error: {:?}", output.err());
+                                log::error!(target: "photo_service", "ffmpeg_error; error={:?}", output.err());
                             }
                         }
                     }
                 }
-                eprintln!("Success");
+                log::info!(target: "photo_service", "thumbnail_creation; status=success");
             }
             Err(ref e) => {
-                eprintln!("{}", e.to_string());
+                log::error!(target: "photo_service", "thumbnail_creation_error; error={}", e.to_string());
                 return r;
             }
         }

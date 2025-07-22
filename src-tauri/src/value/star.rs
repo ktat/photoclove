@@ -8,7 +8,7 @@ pub struct Star {
 impl Star {
     pub fn new(star: i32) -> Star {
         if star > 5 {
-            eprintln!("star must be less than 5: {}", star);
+            log::warn!(target: "star", "star_validation; requested={}; max=5; clamped=5", star);
             return Star { data: 5 };
         }
         Star { data: star }

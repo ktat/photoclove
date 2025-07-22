@@ -65,10 +65,7 @@ impl ExifData {
             for e in exif_data.unwrap().entries {
                 match e.tag {
                     _ => {
-                        // eprintln!("{:?}", e.tag);
-                        // eprintln!("{:?}", e.ifd.ext_data);
-                        // eprintln!("{:?}", e.value.to_string());
-                        // eprintln!("{:?}", e.value_more_readable.to_string());
+                        // Debug info available: tag, ifd.ext_data, value, value_more_readable
                     }
                 }
             }

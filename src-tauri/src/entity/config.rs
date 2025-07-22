@@ -7,7 +7,7 @@ fn default_download_dir() -> String {
     let home = match home_dir() {
         Some(path) => path,
         None => {
-            eprintln!("Cannot get HOME directory!");
+            log::error!(target: "config", "home_directory_error; status=failed");
             return "Downloads".to_string();
         }
     };
@@ -113,7 +113,7 @@ impl Config {
             if !result.is_err() {
                 result.unwrap();
             } else {
-                eprintln!("{:?}", result.err());
+                log::error!(target: "config", "directory_creation_failed; error={:?}", result.err());
             }
         }
     }
@@ -127,7 +127,9 @@ impl Config {
             .unwrap();
         let writer = BufWriter::new(file);
         let result = serde_yaml::to_writer(writer, self);
-        eprintln!("{:?}", result);
+        if let Err(ref error) = result {
+            log::error!(target: "config", "config_save_failed; error={:?}", error);
+        }
         match result {
             Ok(()) => return true,
             _ => return false,

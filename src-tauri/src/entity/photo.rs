@@ -92,7 +92,7 @@ impl Photo {
                 self.has_thumbnail = p.exists();
             }
         } else {
-            eprintln!("called set_has_thumbnail from photo doesn't have config");
+            log::error!(target: "photo", "thumbnail_check_without_config; photo_path={:?}", self.file.path);
         }
     }
 

@@ -78,7 +78,7 @@ impl RepositoryDB for Directory {
 
     fn get_photo_count_in_date(&self, date: date::Date) -> i32 {
         let dir = self.path.child(date.to_string());
-        eprintln!("{:?}", dir);
+        log::debug!(target: "directory", "photo_count_check; dir={:?}", dir);
         let files = dir_service::find_files(&dir);
         return files.files.iter().count() as i32;
     }
@@ -131,9 +131,9 @@ impl RepositoryDB for Directory {
                 let mut meta = exif::ExifData::empty();
                 let result = meta_data.get(&f.path);
                 if result.is_none() {
-                    eprintln!("no meta info: {:?}", &f);
+                    log::debug!(target: "directory", "photo_meta_missing; file={:?}", &f);
                     meta.date_time = f.created_datetime();
-                    eprintln!("use instead: {}", meta.date_time);
+                    log::debug!(target: "directory", "photo_meta_fallback; date_time={}", meta.date_time);
                     // No metadata available, use defaults
                     p.set_star(0);
                     p.set_comment("".to_string());
@@ -419,11 +419,7 @@ impl RepositoryDB for Directory {
                 let new_pathbuf = new_dir.as_pathbuf();
                 let new_path = new_pathbuf.as_path().join(filename);
                 fs::rename(&photo.file.path, &new_path.display().to_string());
-                eprintln!(
-                    "move file: {} to {}",
-                    photo.file.path,
-                    new_path.display().to_string()
-                );
+                log::info!(target: "directory", "file_move; from={}; to={}", photo.file.path, new_path.display().to_string());
             }
         }
         let mut dates = date::Dates::new(&[]);
