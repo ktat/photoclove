@@ -59,11 +59,25 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **Related Files**: `src/App/LogViewer.jsx`, `src/services/LoggerService.js`, `src-tauri/src/domain_service/logging_service.rs`
 
 ### 🔄 Background Job Processing
-**When you need to understand**: Async operations, job queues, progress tracking
+**When you need to understand**: Async operations, job queues, progress tracking, manual job retry
 - **Architecture**: [Performance Optimizations](architecture.md#4-performance-optimizations) → Job Queue
 - **Sequences**: [Job Queue Management](feature-sequences.md#job-queue-management)
 - **Components**: [Job Queue Interface](component-structure.md#job-queue-interface)
+- **Features**: Background processing, progress tracking, immediate manual retry, comprehensive logging with correlation IDs
+- **Job Types**: Photo import, Google Photos upload, thumbnail generation
+- **Enhanced Retry**: Manual job retry now executes immediately instead of waiting for next app startup
 - **Related Files**: `src/App/JobQueue.jsx`, `src-tauri/src/domain_service/job_queue_service.rs`, `src-tauri/src/entity/job_queue.rs`
+
+### 🔐 Google OAuth Token Management
+**When you need to understand**: Google Photos authentication, token storage, automatic refresh, secure credential management
+- **Documentation**: [OAuth Token Management](oauth-token-management.md)
+- **Architecture**: Platform-native keyring storage with external service integration
+- **Features**: Secure token storage, automatic refresh, external OAuth proxy, debug tools
+- **Security**: Platform-native keyring (Linux Secret Service, macOS Keychain, Windows Credential Manager)
+- **Token Lifecycle**: Automatic refresh 5 minutes before expiration, graceful error handling
+- **Testing Tools**: Built-in debug commands, Python keyring scripts, comprehensive test utilities
+- **Integration**: Seamless Google Photos API authentication with transparent token management
+- **Related Files**: `src-tauri/src/domain_service/token_storage_service.rs`, `src/services/firebase/auth.js`, `src-tauri/src/bin/test_keyring.rs`
 
 ### 🗄️ Database Operations
 **When you need to understand**: SQLite operations, metadata storage, database creation, performance optimizations
@@ -107,6 +121,16 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **Important**: Filter structure consistency between frontend and backend (has_comment vs has_comments, star_rating vs min_rating)
 - **Bug Fix (2025-07-20)**: Fixed first-click photo loading bug where null reference in logging prevented photo display
 - **Related Files**: `src/components/SearchTools.jsx`, `src/components/SearchBar.jsx`, `src/components/AdvancedFilters.jsx`, `src/components/SavedSearches.jsx`, `src/hooks/useSearch.js`, `src-tauri/src/lib.rs` (search commands)
+
+### ☁️ Google Photos Integration
+**When you need to understand**: Google Photos upload, cloud storage sync, OAuth authentication, API error handling
+- **Documentation**: [OAuth Token Management](oauth-token-management.md) for authentication details
+- **Features**: Photo upload to Google Photos, automatic token refresh, job queue integration, comprehensive error handling
+- **Authentication**: Secure OAuth flow with external service, automatic token management
+- **Upload Process**: Integrated with job queue system for background uploads with progress tracking
+- **Error Handling**: Proper API error detection and job failure handling, structured logging
+- **Token Management**: Automatic refresh using external service, secure keyring storage
+- **Related Files**: `src-tauri/src/entity/google_photos.rs`, `src-tauri/src/domain_service/token_storage_service.rs`, `src/services/firebase/auth.js`
 
 ## Quick Reference by Technology
 
@@ -262,6 +286,9 @@ This reverse index helps you quickly find the relevant documentation when workin
 | Date Calendar & Recent Photos | `src/App/DateList.jsx` |
 | Tauri Commands | `src-tauri/src/lib.rs` |
 | Job Queue Service | `src-tauri/src/domain_service/job_queue_service.rs` |
+| OAuth Token Management | `src-tauri/src/domain_service/token_storage_service.rs` |
+| Google Photos Integration | `src-tauri/src/entity/google_photos.rs` |
+| Token Testing Tool | `src-tauri/src/bin/test_keyring.rs` |
 | Logging Service | `src-tauri/src/domain_service/logging_service.rs` |
 | Photo Processing | `src-tauri/src/domain_service/photo_service.rs` |
 | Database Operations | `src-tauri/src/repository/meta_db/sqlite.rs` |
