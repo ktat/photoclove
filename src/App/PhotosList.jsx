@@ -53,7 +53,6 @@ function PhotosList(props) {
         currentAlbumId,
         viewMode,
         openAlbum,
-        toggleJobQueue
     } = useUI();
     const { handleTauriError, addError } = useError();
     
@@ -1868,7 +1867,7 @@ function PhotosList(props) {
                         setShowSideMenu={setShowSideMenu}
                         
                         // Job Queue integration
-                        setShowJobQueue={(show) => toggleJobQueue(show)}
+                        setShowJobQueue={(show) => props.setShowJobQueueModal(show)}
                         
                         // Search mode props
                         searchMode={isSearchMode}

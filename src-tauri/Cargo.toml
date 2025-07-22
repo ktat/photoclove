@@ -7,6 +7,7 @@ license = ""
 repository = ""
 edition = "2021"
 rust-version = "1.84.1"
+default-run = "photoclove"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -21,7 +22,7 @@ tauri-plugin-cli = "2"
 serde_json = "1.0.139"
 serde = { version = "1.0.218", features = ["derive"] }
 tauri = { version = "2", features = [ "protocol-asset"] }
-chrono = { version = "0.4", features = ["unstable-locales"] }
+chrono = { version = "0.4", features = ["unstable-locales", "serde"] }
 rusqlite = { version = "*", features = ["bundled"] }
 rexif = "0.7.3"
 linked-hash-map = "0.5.6"
@@ -49,6 +50,7 @@ tokio = { version = "1.0", features = ["full"] }
 base64 = "0.21"
 log = "0.4"
 env_logger = "0.10"
+keyring = "2.3"
 # tauri-plugin-shell = "2"
 # turbojpeg-sys = {version = "0.2.3", features = ["bindgen"] }
 # turbojpeg = {version = "0.5", features = ["image"] }

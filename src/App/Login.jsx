@@ -3,9 +3,13 @@ import { listen } from "@tauri-apps/api/event";
 import { auth } from '../services/firebase';
 const { openGoogleSignIn, googleSignIn, signOut } = auth;
 import { localForage } from "../storage/forage";
+import { logger } from "../services/LoggerService.js";
 
 function loginGoogle() {
+    logger.info('Login', 'oauth_start', 'Starting Google OAuth flow');
+    
     listen('oauth://url', (data) => {
+        logger.info('Login', 'oauth_callback', 'Received OAuth callback', { payload: data.payload });
         googleSignIn(data.payload);
     });
 
@@ -38,9 +42,10 @@ function loginGoogle() {
               `
         }
     }).then((port) => {
+        logger.info('Login', 'oauth_server_started', 'OAuth server started', { port });
         openGoogleSignIn(port);
     }).catch((e) => {
-        console.log("error: " + e);
+        logger.error('Login', 'oauth_start_error', 'Failed to start OAuth flow', { error: e.toString() });
     })
 }
 

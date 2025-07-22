@@ -202,8 +202,6 @@ impl JobProgress {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GooglePhotosUploadJob {
     pub photo_paths: Vec<String>,
-    pub access_token: String,
-    pub refresh_token: String,
     pub album_id: Option<String>,
     pub chunk_index: usize,
     pub total_chunks: usize,

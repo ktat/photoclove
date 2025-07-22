@@ -842,16 +842,45 @@ fn get_all_jobs(state: tauri::State<'_, AppState>) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn retry_job(job_id: i64, state: tauri::State<'_, AppState>) -> Result<String, String> {
+fn retry_job(job_id: i64, window: tauri::Window, state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let logging_service = &state.logging_service;
+    let correlation_id = logging_service.generate_correlation_id();
+    
+    log::info!(
+        target: "job_queue", 
+        "manual_retry_request; correlation_id={}; job_id={}", 
+        correlation_id, 
+        job_id
+    );
+    
     let job_queue_manager = state.job_queue_manager.clone();
+    let app_handle = window.app_handle().clone();
     let result = {
         let manager = job_queue_manager.lock().unwrap();
-        manager.retry_job(job_id)
+        manager.retry_job(job_id, app_handle)
     };
     
     match result {
-        Ok(success) => Ok(format!("{{\"result\": {}}}", success)),
-        Err(e) => Err(format!("Failed to retry job: {}", e)),
+        Ok(success) => {
+            log::info!(
+                target: "job_queue", 
+                "manual_retry_success; correlation_id={}; job_id={}; success={}", 
+                correlation_id, 
+                job_id,
+                success
+            );
+            Ok(format!("{{\"result\": {}}}", success))
+        },
+        Err(e) => {
+            log::error!(
+                target: "job_queue", 
+                "manual_retry_error; correlation_id={}; job_id={}; error={}", 
+                correlation_id, 
+                job_id,
+                e
+            );
+            Err(format!("Failed to retry job: {}", e))
+        }
     }
 }
 
@@ -918,8 +947,6 @@ async fn upload_to_google_photos(
     _window: tauri::Window,
     state: tauri::State<'_, AppState>,
     selected_files: Vec<String>,
-    access_token: String,
-    refresh_token: String,
 ) -> Result<Vec<String>, String> {
     let logging_service = &state.logging_service;
     let correlation_id = logging_service.generate_correlation_id();
@@ -931,6 +958,13 @@ async fn upload_to_google_photos(
         selected_files.len()
     );
     
+    // Check if user is authenticated
+    if !crate::domain_service::token_storage_service::TokenStorageService::has_stored_tokens() {
+        let error = "Not authenticated with Google Photos. Please login first.".to_string();
+        log::error!(target: "google_photos", "upload_error; correlation_id={}; error={}", correlation_id, error);
+        return Err(error);
+    }
+    
     // Submit jobs to queue manager
     let job_queue_manager = state.job_queue_manager.lock().map_err(|_| {
         let error = "Failed to acquire job queue manager lock".to_string();
@@ -940,8 +974,6 @@ async fn upload_to_google_photos(
     
     let job_unit_id = job_queue_manager.submit_google_photos_upload_jobs(
         selected_files,
-        access_token,
-        refresh_token,
         _window.app_handle().clone(),
     ).map_err(|e| {
         log::error!(target: "google_photos", "submit_jobs_error; correlation_id={}; error={}", correlation_id, e);
@@ -956,6 +988,91 @@ async fn upload_to_google_photos(
     );
     
     Ok(vec![job_unit_id])
+}
+
+// Google OAuth token management commands
+#[tauri::command]
+async fn store_google_tokens(
+    access_token: String,
+    refresh_token: String,
+    expires_in: i64,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    let logging_service = &state.logging_service;
+    let correlation_id = logging_service.generate_correlation_id();
+    
+    log::info!(target: "token_storage", "store_tokens_request; correlation_id={}", correlation_id);
+    
+    match crate::domain_service::token_storage_service::TokenStorageService::store_google_tokens(
+        &access_token, 
+        &refresh_token, 
+        expires_in
+    ) {
+        Ok(()) => {
+            log::info!(target: "token_storage", "store_tokens_success; correlation_id={}", correlation_id);
+            Ok(())
+        }
+        Err(e) => {
+            log::error!(target: "token_storage", "store_tokens_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
+#[tauri::command]
+async fn is_google_authenticated(state: tauri::State<'_, AppState>) -> Result<bool, String> {
+    let logging_service = &state.logging_service;
+    let correlation_id = logging_service.generate_correlation_id();
+    
+    let is_authenticated = crate::domain_service::token_storage_service::TokenStorageService::has_stored_tokens();
+    
+    log::info!(
+        target: "token_storage", 
+        "check_authentication; correlation_id={}; authenticated={}", 
+        correlation_id, 
+        is_authenticated
+    );
+    
+    Ok(is_authenticated)
+}
+
+#[tauri::command]
+#[cfg(debug_assertions)]
+async fn get_google_token_info(state: tauri::State<'_, AppState>) -> Result<serde_json::Value, String> {
+    let logging_service = &state.logging_service;
+    let correlation_id = logging_service.generate_correlation_id();
+    
+    log::info!(target: "token_storage", "get_token_info_request; correlation_id={}", correlation_id);
+    
+    match crate::domain_service::token_storage_service::TokenStorageService::get_token_info() {
+        Ok(info) => {
+            log::info!(target: "token_storage", "get_token_info_success; correlation_id={}", correlation_id);
+            Ok(info)
+        }
+        Err(e) => {
+            log::error!(target: "token_storage", "get_token_info_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
+#[tauri::command]
+async fn logout_google(state: tauri::State<'_, AppState>) -> Result<(), String> {
+    let logging_service = &state.logging_service;
+    let correlation_id = logging_service.generate_correlation_id();
+    
+    log::info!(target: "token_storage", "logout_request; correlation_id={}", correlation_id);
+    
+    match crate::domain_service::token_storage_service::TokenStorageService::delete_google_tokens() {
+        Ok(()) => {
+            log::info!(target: "token_storage", "logout_success; correlation_id={}", correlation_id);
+            Ok(())
+        }
+        Err(e) => {
+            log::error!(target: "token_storage", "logout_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
 }
 
 #[tauri::command]
@@ -1713,6 +1830,11 @@ pub fn run() {
             link_file_to_public,
             move_photos_to_exif_date,
             upload_to_google_photos,
+            store_google_tokens,
+            is_google_authenticated,
+            logout_google,
+            #[cfg(debug_assertions)]
+            get_google_token_info,
             save_css_style,
             get_css_style,
             get_download_dir,

@@ -199,8 +199,6 @@ impl JobQueueManager {
     pub fn submit_google_photos_upload_jobs(
         &self,
         photos: Vec<String>,
-        access_token: String,
-        refresh_token: String,
         app_handle: tauri::AppHandle,
     ) -> Result<String, String> {
         const GOOGLE_PHOTOS_BATCH_SIZE: usize = 50;
@@ -235,8 +233,6 @@ impl JobQueueManager {
             // Create Google Photos upload job data
             let job_data = job_queue::GooglePhotosUploadJob {
                 photo_paths: chunk.to_vec(),
-                access_token: access_token.clone(),
-                refresh_token: refresh_token.clone(),
                 album_id: None,
                 chunk_index,
                 total_chunks,
@@ -1069,10 +1065,19 @@ impl JobQueueManager {
         let state = app_handle.state::<crate::AppState>();
         let config = &state.config;
         
+        // Get fresh access token (will auto-refresh if needed)
+        let access_token = crate::domain_service::token_storage_service::TokenStorageService::get_valid_access_token()
+            .await
+            .map_err(|e| format!("Authentication failed: {}", e))?;
+        
+        // Get refresh token for GooglePhotos instance (though it won't be used directly anymore)
+        let refresh_token = crate::domain_service::token_storage_service::TokenStorageService::get_refresh_token()
+            .map_err(|e| format!("Failed to get refresh token: {}", e))?;
+        
         // Create GooglePhotos instance
         let google_photos = crate::entity::google_photos::GooglePhotos::new(
-            job_data.access_token.clone(),
-            job_data.refresh_token.clone(),
+            access_token,
+            refresh_token,
             config.import_to.clone(), // db_path
         );
         
@@ -1156,10 +1161,21 @@ impl JobQueueManager {
         }
     }
 
-    pub fn retry_job(&self, job_id: i64) -> Result<bool, String> {
+    pub fn retry_job(&self, job_id: i64, app_handle: tauri::AppHandle) -> Result<bool, String> {
+        eprintln!("=== MANUAL JOB RETRY ===");
+        eprintln!("Retrying job ID: {}", job_id);
+        
         // Reset job status to pending so it can be retried
         match self.db.update_job_status(job_id, &job_queue::JobStatus::Pending, None) {
-            Ok(()) => Ok(true),
+            Ok(()) => {
+                eprintln!("Job {} status reset to pending", job_id);
+                
+                // Immediately process the retried job
+                eprintln!("Starting immediate processing of retried job...");
+                Self::process_specific_jobs_immediately(self.db.clone(), vec![job_id], app_handle);
+                
+                Ok(true)
+            },
             Err(e) => Err(format!("Failed to retry job: {}", e)),
         }
     }
