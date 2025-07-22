@@ -15,8 +15,9 @@ PhotoClove is a desktop photo manager designed for speed and simplicity. Built w
 - **🔍 Advanced Search**: Comprehensive search interface with EXIF filters, saved searches, search history, and database optimization
 - **🔍 Debug Logging**: Real-time log viewer with frontend/backend correlation for troubleshooting
 - **🎬 Video Support**: View and manage MP4/WebM videos with thumbnail generation
-- **☁️ Cloud Integration**: Upload to Google Photos with progress tracking
-- **🔄 Background Processing**: Asynchronous job queue for imports and thumbnail generation
+- **☁️ Google Photos Integration**: Secure OAuth authentication with automatic token refresh and seamless photo uploads
+- **🔄 Background Processing**: Advanced job queue with immediate retry, progress tracking, and comprehensive logging
+- **🔐 Secure Authentication**: Platform-native keyring storage for OAuth tokens with external service integration
 - **🖥️ Cross-Platform**: Works on Windows, macOS, and Linux
 
 ## 🏗️ Architecture
@@ -83,8 +84,9 @@ Comprehensive documentation is available in the [`docs/`](./docs/) directory:
 
 ### Additional Documentation
 - [Authentication](./docs/authentication.md) - OAuth flow for Google Photos integration
+- [OAuth Token Management](./docs/oauth-token-management.md) - Secure token storage, automatic refresh, and testing tools
 - [Database Schema](./docs/database-schema.md) - SQLite structure and EXIF fields
-- [Job Queue System](./docs/job-queue-system.md) - Asynchronous background processing
+- [Job Queue System](./docs/job-queue-system.md) - Asynchronous background processing with enhanced retry
 - [Image Editor](./docs/image-editor.md) - CSS-based photo editing features
 
 ## 🎯 Use Cases
@@ -189,14 +191,43 @@ PhotoClove includes a comprehensive search system with advanced features:
 
 ## 🔄 Background Processing
 
-PhotoClove uses an advanced job queue system for:
+PhotoClove uses an advanced job queue system with enhanced capabilities:
 
-- **Photo Import**: Copy files to organized structure
-- **Thumbnail Generation**: Create preview images
-- **Database Updates**: Index new photos and metadata
-- **Cloud Uploads**: Upload to Google Photos (optional)
+### Job Types
+- **Photo Import**: Copy files to organized structure with progress tracking
+- **Thumbnail Generation**: Create preview images with batch processing
+- **Database Updates**: Index new photos and metadata efficiently
+- **Google Photos Upload**: Secure cloud uploads with automatic token refresh
+
+### Enhanced Features
+- **Immediate Retry**: Manual job retry executes instantly instead of waiting for next startup
+- **Comprehensive Logging**: Structured logging with correlation IDs for debugging
+- **Progress Monitoring**: Real-time job status and progress tracking
+- **Error Handling**: Detailed error reporting with recovery suggestions
 
 Monitor progress in the Job Queue interface (File → Job Queue).
+
+## 🔐 Google Photos Integration
+
+PhotoClove provides seamless Google Photos integration with enterprise-grade security:
+
+### Authentication
+- **Secure OAuth Flow**: External service handles credentials, client never stores secrets
+- **Platform-Native Storage**: Tokens stored in system keyring (Linux Secret Service, macOS Keychain, Windows Credential Manager)
+- **Automatic Refresh**: Tokens refreshed automatically 5 minutes before expiration
+- **Zero-Maintenance**: No manual token management required
+
+### Upload Features
+- **Background Processing**: Upload jobs integrated with job queue system
+- **Progress Tracking**: Real-time upload progress with detailed status
+- **Error Recovery**: Comprehensive error handling with automatic retry
+- **API Error Detection**: Proper handling of Google Photos API failures
+
+### Security
+- **No Client Secrets**: OAuth credentials never stored on client device
+- **Encrypted Storage**: Platform-native keyring encryption for token security
+- **Secure Refresh**: External service handles token refresh securely
+- **Debug Tools**: Comprehensive testing and debugging utilities for development
 
 ## 🔍 Debug Logging
 
@@ -228,6 +259,9 @@ PhotoClove uses a structured development workflow with the `improvement/` direct
 ## 📋 Roadmap
 
 ### Recently Completed ✅
+- [x] **Google OAuth Token Management**: Secure platform-native token storage with automatic refresh and external service integration
+- [x] **Enhanced Job Queue**: Immediate manual retry, comprehensive logging, and improved error handling
+- [x] **Google Photos Integration**: Complete OAuth flow with token refresh, API error detection, and secure credential management
 - [x] **Bug Fixes**: Fixed thumbnail list not updating after DEL key deletion in Recent Photos and Search modes
 - [x] **Architecture Improvement**: Removed date dependencies from PhotosList components, improving reliability across viewing modes
 - [x] **Advanced Search System**: Complete search interface with EXIF-based filtering, saved searches, and search history
