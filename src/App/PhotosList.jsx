@@ -17,6 +17,7 @@ import SearchTools from "../components/SearchTools.jsx";
 import TagChip from "../components/TagChip.jsx";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import { logger } from "../services/LoggerService.js";
+import { usePhotosListState } from "../hooks/usePhotosListState.js";
 
 function PhotosList(props) {
     const {
@@ -64,6 +65,9 @@ function PhotosList(props) {
     
     // Use search hook when in search mode
     const { searchResults, searchQuery, isSearching, performSearch, clearSearch: clearSearchHook } = useSearch();
+    
+    // Use new state management hooks for cleaner organization
+    const photosListState = usePhotosListState();
     
     // Search state for the PhotosList component
     const [searchFilters, setSearchFilters] = useState({});
