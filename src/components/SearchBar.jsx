@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '../services/LoggerService.js';
 
 const SearchBar = ({ onSearch, onClear, searchResults, initialQuery = '' }) => {
   const [query, setQuery] = useState(initialQuery);
@@ -22,7 +23,11 @@ const SearchBar = ({ onSearch, onClear, searchResults, initialQuery = '' }) => {
       // Filters are handled separately by AdvancedFilters component
       onSearch(query.trim(), searchType);
     } catch (error) {
-      console.error('Search failed:', error);
+      logger.error('SearchBar', 'search_failed', 'Search operation failed', {
+        error: error.message || error.toString(),
+        query,
+        searchType
+      });
     } finally {
       setIsSearching(false);
     }
@@ -54,7 +59,7 @@ const SearchBar = ({ onSearch, onClear, searchResults, initialQuery = '' }) => {
             className="search-input"
           />
           {query && (
-            <button 
+            <button
               onClick={() => setQuery('')}
               className="input-clear-button"
               title="Clear query"
@@ -64,15 +69,15 @@ const SearchBar = ({ onSearch, onClear, searchResults, initialQuery = '' }) => {
             </button>
           )}
         </div>
-        <button 
-          onClick={handleSearch} 
+        <button
+          onClick={handleSearch}
           disabled={isSearching}
           className="search-button"
           title="Search"
         >
           {isSearching ? '⏳' : '🔍'}
         </button>
-        <button 
+        <button
           onClick={() => setShowAdvanced(!showAdvanced)}
           className="advanced-toggle"
           title="Advanced search options"
@@ -80,12 +85,12 @@ const SearchBar = ({ onSearch, onClear, searchResults, initialQuery = '' }) => {
           ⚙️
         </button>
       </div>
-      
+     
       {showAdvanced && (
         <div className="advanced-search">
           <label>Search in:</label>
-          <select 
-            value={searchType} 
+          <select
+            value={searchType}
             onChange={(e) => setSearchType(e.target.value)}
             className="search-type-select"
           >

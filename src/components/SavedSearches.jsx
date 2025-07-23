@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '../services/LoggerService.js';
 
 const SavedSearches = ({ onSearchSelect, currentSearch }) => {
   const [savedSearches, setSavedSearches] = useState([]);
@@ -14,7 +15,9 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
       try {
         setSavedSearches(JSON.parse(saved));
       } catch (error) {
-        console.error('Failed to load saved searches:', error);
+        logger.error('SavedSearches', 'load_searches_failed', 'Failed to load saved searches', {
+          error: error.message || error.toString()
+        });
       }
     }
   }, []);
@@ -42,7 +45,7 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
     const updatedSearches = [...savedSearches, newSearch];
     setSavedSearches(updatedSearches);
     saveToStorage(updatedSearches);
-    
+   
     setSearchName('');
     setShowSaveDialog(false);
   };
@@ -52,7 +55,7 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
       return;
     }
 
-    const updatedSearches = savedSearches.map(search => 
+    const updatedSearches = savedSearches.map(search =>
       search.id === searchToEdit.id
         ? {
             ...search,
@@ -76,7 +79,7 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
   };
 
   const handleRenameSearch = (searchId, newName) => {
-    const updatedSearches = savedSearches.map(search => 
+    const updatedSearches = savedSearches.map(search =>
       search.id === searchId
         ? { ...search, name: newName.trim() }
         : search
@@ -87,7 +90,7 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
 
   const handleSearchSelect = (search) => {
     // Update last used timestamp
-    const updatedSearches = savedSearches.map(s => 
+    const updatedSearches = savedSearches.map(s =>
       s.id === search.id
         ? { ...s, lastUsed: new Date().toISOString() }
         : s
@@ -137,7 +140,7 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
 
   const formatFilterValue = (key, value) => {
     if (!value && value !== 0 && value !== false) return '';
-    
+   
     // CRITICAL: Check if value is an object first to prevent React rendering errors
     if (typeof value === 'object' && value !== null) {
       // Handle dateRange with start/end properties (most common case)
@@ -153,7 +156,7 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
             return String(dateValue);
           }
         };
-        
+       
         const start = formatDate(value.start);
         const end = formatDate(value.end);
         if (start && end) return `${start} → ${end}`;
@@ -173,7 +176,7 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
       // Fallback for any other object - convert to readable format
       return `[Object: ${Object.keys(value).join(', ')}]`;
     }
-    
+   
     // Handle date formatting (for string dates)
     if (key.includes('date') || key.includes('Date')) {
       try {
@@ -184,7 +187,7 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
         return String(value);
       }
     }
-    
+   
     // Handle special value types
     if (key === 'star' || key === 'starRating') {
       const stars = parseInt(value) || 0;
@@ -192,7 +195,7 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
     }
     if (key === 'hasComment') return value ? 'Yes' : 'No';
     if (key === 'fileExtension') return value.toUpperCase();
-    
+   
     // Ensure we always return a string
     return String(value);
   };
@@ -200,7 +203,7 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
   // Get active filters for display
   const getActiveFilters = (search) => {
     const filters = [];
-    
+   
     // Add query and search type
     if (search.query) {
       filters.push({ key: 'query', label: 'Query', value: search.query });
@@ -208,7 +211,7 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
     if (search.searchType && search.searchType !== 'all') {
       filters.push({ key: 'searchType', label: 'Search In', value: search.searchType });
     }
-    
+   
     // Add other filters
     if (search.filters) {
       Object.entries(search.filters).forEach(([key, value]) => {
@@ -224,7 +227,7 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
         }
       });
     }
-    
+   
     return filters;
   };
 
@@ -238,12 +241,12 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
     const jsonString = JSON.stringify(exportData, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    
+   
     const a = document.createElement('a');
     a.href = url;
     a.download = `saved_searches_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
-    
+   
     URL.revokeObjectURL(url);
   };
 
@@ -260,18 +263,20 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
             ...search,
             id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
           }));
-          
+         
           const updatedSearches = [...savedSearches, ...newSearches];
           setSavedSearches(updatedSearches);
           saveToStorage(updatedSearches);
         }
       } catch (error) {
-        console.error('Failed to import searches:', error);
+        logger.error('SavedSearches', 'import_searches_failed', 'Failed to import searches', {
+          error: error.message || error.toString()
+        });
         alert('Failed to import searches. Please check the file format.');
       }
     };
     reader.readAsText(file);
-    
+   
     // Reset input
     event.target.value = '';
   };
@@ -282,7 +287,7 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
         <h3>Saved Searches</h3>
         <div className="header-actions">
           {currentSearch && (
-            <button 
+            <button
               onClick={() => setShowSaveDialog(true)}
               className="save-button"
               title="Save current search"
@@ -290,7 +295,7 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
               💾
             </button>
           )}
-          <button 
+          <button
             onClick={exportSearches}
             className="export-button"
             title="Export saved searches"
@@ -362,7 +367,7 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
                       <span>Last used: {formatDate(search.lastUsed)}</span>
                     </div>
                   </div>
-                  
+                 
                   {getActiveFilters(search).length > 0 && (
                     <div className="search-conditions-wrapper">
                       <button
@@ -385,8 +390,8 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
                         </span>
                         Search Conditions
                       </button>
-                      
-                      <div 
+                     
+                      <div
                         id={`conditions-${search.id}`}
                         className={`conditions-panel ${expandedSearches.has(search.id) ? 'expanded' : ''}`}
                       >
@@ -402,15 +407,15 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
                     </div>
                   )}
                 </div>
-                
+               
                 <div className="search-actions" style={{ float: 'right' }}>
-                  <button 
+                  <button
                     onClick={() => setSearchToEdit(search)}
                     title="Update with current search"
                   >
                     ✏️
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
                       const newName = prompt('Enter new name:', search.name);
                       if (newName && newName.trim()) {
@@ -421,7 +426,7 @@ const SavedSearches = ({ onSearchSelect, currentSearch }) => {
                   >
                     📝
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
                       if (confirm(`Delete "${search.name}"?`)) {
                         handleDeleteSearch(search.id);

@@ -14,7 +14,7 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     this.setState({ errorInfo });
-    
+   
     // Log the error with structured format
     logger.error('ErrorBoundary', 'react_error_caught', 'React component error boundary triggered', {
       errorMessage: error.message,
@@ -23,9 +23,13 @@ class ErrorBoundary extends React.Component {
       errorBoundary: this.props.name || 'unnamed',
       timestamp: new Date().toISOString()
     });
-    
-    console.error('Error caught by boundary:', error, errorInfo);
-    
+   
+    logger.error('ErrorBoundary', 'error_caught', 'Error caught by boundary', {
+      error: error.message || error.toString(),
+      stack: error.stack,
+      componentStack: errorInfo.componentStack
+    });
+   
     // Report to parent if callback provided
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
@@ -33,17 +37,17 @@ class ErrorBoundary extends React.Component {
   }
 
   handleReset = () => {
-    this.setState({ 
-      hasError: false, 
-      error: null, 
-      errorInfo: null 
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null
     });
-    
+   
     // Call parent reset callback if provided
     if (this.props.onReset) {
       this.props.onReset();
     }
-    
+   
     logger.info('ErrorBoundary', 'error_boundary_reset', 'User reset error boundary', {
       errorBoundary: this.props.name || 'unnamed'
     });
@@ -59,9 +63,9 @@ class ErrorBoundary extends React.Component {
           resetError: this.handleReset
         });
       }
-      
+     
       return (
-        <ErrorFallback 
+        <ErrorFallback
           error={this.state.error}
           errorInfo={this.state.errorInfo}
           resetError={this.handleReset}
@@ -70,7 +74,7 @@ class ErrorBoundary extends React.Component {
         />
       );
     }
-    
+   
     return this.props.children;
   }
 }

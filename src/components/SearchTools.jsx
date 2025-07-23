@@ -4,10 +4,10 @@ import AdvancedFilters from './AdvancedFilters';
 import SavedSearches from './SavedSearches';
 import { logger } from '../services/LoggerService.js';
 
-const SearchTools = ({ 
-    onSearch, 
-    onClear, 
-    searchResults, 
+const SearchTools = ({
+    onSearch,
+    onClear,
+    searchResults,
     initialQuery,
     onFiltersChange,
     initialFilters,
@@ -21,7 +21,7 @@ const SearchTools = ({
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(isAdvancedSearchMode || false);
     const [currentFilters, setCurrentFilters] = useState(initialFilters || {});
     const [searchQuery, setSearchQuery] = useState(initialQuery || '');
-    
+   
     // Update filters when initialFilters change (e.g., from saved search)
     useEffect(() => {
         if (initialFilters) {
@@ -52,7 +52,7 @@ const SearchTools = ({
 
     // Handle filter changes
     const handleFiltersChange = (newFilters) => {
-        console.log('SearchTools - Filters changed:', {
+        logger.debug('SearchTools', 'filters_changed', 'Filters changed', {
             oldFilters: currentFilters,
             newFilters: newFilters
         });
@@ -76,7 +76,7 @@ const SearchTools = ({
         });
         onSearch('', 'all', currentFilters);
     };
-    
+   
     // Check if there are active filters to enable/disable the manual search button
     const hasActiveFilters = Object.keys(currentFilters).some(key => {
         const value = currentFilters[key];
@@ -91,25 +91,25 @@ const SearchTools = ({
 
     return (
         <div className="search-tools">
-            <SearchBar 
+            <SearchBar
                 onSearch={handleSearch}
                 onClear={() => { setSearchQuery(''); onClear(); }}
                 searchResults={searchResults}
                 initialQuery={initialQuery}
             />
-            
+           
             <div className="search-filters-toggle">
-                <button 
+                <button
                     onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                     className="toggle-advanced-filters"
                 >
                     {showAdvancedFilters ? 'Hide' : 'Show'} Search Options
                 </button>
             </div>
-            
+           
             {showAdvancedFilters && (
                 <div className="advanced-filters-section">
-                    <AdvancedFilters 
+                    <AdvancedFilters
                         onFiltersChange={handleFiltersChange}
                         initialFilters={currentFilters}
                         filterOptions={filterOptions}
@@ -118,9 +118,9 @@ const SearchTools = ({
                     />
                 </div>
             )}
-            
+           
             <div className="manual-search-controls">
-                <button 
+                <button
                     onClick={applyFilters}
                     className="search-button manual-search-button"
                     disabled={!hasActiveFilters && !searchQuery.trim()}
@@ -131,8 +131,8 @@ const SearchTools = ({
                     Click "Execute Search" to apply your filter changes
                 </p>
             </div>
-            
-            <SavedSearches 
+           
+            <SavedSearches
                 onSearchSelect={onSearchSelect}
                 currentSearch={currentSearch}
             />

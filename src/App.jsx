@@ -18,12 +18,13 @@ import Footer from "./App/Footer.jsx"
 import WelcomeImage from "./WelcomeImage.jsx";
 import ErrorDisplay from "./components/ErrorDisplay.jsx";
 import LogViewer from "./App/LogViewer.jsx";
+import DocumentViewer from "./components/DocumentViewer.jsx";
 import { useError } from "./context/ErrorContext.jsx";
+import { logger } from "./services/LoggerService.js";
 import { useUI } from "./context/UIContext.jsx";
 import { usePhoto } from "./context/PhotoContext.jsx";
 import { useDateNavigation } from "./hooks/useDateNavigation.js";
 import { useAppConfig } from "./hooks/useAppConfig.js";
-import { logger } from "./services/LoggerService.js";
 
 function App() {
   const { handleTauriError } = useError();
@@ -58,6 +59,8 @@ function App() {
   const [name, setName] = useState("");
   const [rightMenuOpen, setRightMenuOpen] = useState(true);
   const [showLogViewer, setShowLogViewer] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showTermsOfUse, setShowTermsOfUse] = useState(false);
   const [showJobQueueModal, setShowJobQueueModal] = useState(false);
 
   const [shortCutNavigation, setShortCutNavigation] = useState({
@@ -96,10 +99,25 @@ function App() {
 
   useEffect((e) => {
 
-    let unlisten0, unlisten1, unlisten2, unlisten3, unlisten4;
+    let unlisten0, unlisten1, unlisten2, unlisten3, unlisten4, menuUnlisten;
 
     const setupListeners = async () => {
+      // Listen for new menu events (Privacy Policy and Terms of Use)
+      menuUnlisten = await listen("menu", (e) => {
+        logger.debug('App', 'menu_event', 'Menu event received', { event: e });
+        
+        // Extract menu ID from the event structure
+        const menuId = e.payload?.id || e.id;
+        
+        if (menuId === "privacy_policy") {
+          setShowPrivacyPolicy(true);
+        } else if (menuId === "terms_of_use") {
+          setShowTermsOfUse(true);
+        }
+      });
+
       unlisten0 = await listen("click_menu_static", (e) => {
+        logger.debug('App', 'static_menu_event', 'Static menu event received', { event: e });
       invoke("lock", { t: true }).then((le) => {
         if (le) {
           if (e.payload === "show_log") {
@@ -108,8 +126,12 @@ function App() {
             message("PhotoClove is an application to manage photos.\n (c)ktat");
           } else if (e.payload === "github") {
             open("https://github.com/ktat/photoclove/");
+          } else if (e.payload === "privacy_policy") {
+            setShowPrivacyPolicy(true);
+          } else if (e.payload === "terms_of_use") {
+            setShowTermsOfUse(true);
           } else {
-            console.log("not match" + e.payload)
+            logger.warn('App', 'unhandled_menu_event', 'Unmatched menu payload', { payload: e.payload })
           }
           setTimeout(() => {
             invoke("lock", { t: false })
@@ -213,6 +235,7 @@ function App() {
 
     // Cleanup function to remove event listeners
     return () => {
+      if (menuUnlisten) menuUnlisten();
       if (unlisten0) unlisten0();
       if (unlisten1) unlisten1();
       if (unlisten2) unlisten2(); 
@@ -395,6 +418,20 @@ function App() {
       <ErrorDisplay />
       {showLogViewer && (
         <LogViewer onClose={() => setShowLogViewer(false)} />
+      )}
+      {showPrivacyPolicy && (
+        <DocumentViewer
+          title="Privacy Policy"
+          fileName="privacy-policy"
+          onClose={() => setShowPrivacyPolicy(false)}
+        />
+      )}
+      {showTermsOfUse && (
+        <DocumentViewer
+          title="Terms of Use"
+          fileName="terms-of-use"
+          onClose={() => setShowTermsOfUse(false)}
+        />
       )}
       {showJobQueueModal && (
         <JobQueue onClose={() => setShowJobQueueModal(false)} addFooterMessage={addFooterMessage} />

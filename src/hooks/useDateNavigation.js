@@ -3,20 +3,21 @@ import { invoke } from "@tauri-apps/api/core";
 import { usePhoto } from '../context/PhotoContext.jsx';
 import { useUI } from '../context/UIContext.jsx';
 import { useError } from '../context/ErrorContext.jsx';
+import { logger } from '../services/LoggerService.js';
 
 export const useDateNavigation = () => {
-  const { 
-    dateList, 
-    updateDateList, 
-    updateDateNum, 
-    updateHideLoading 
+  const {
+    dateList,
+    updateDateList,
+    updateDateNum,
+    updateHideLoading
   } = usePhoto();
   const { addFooterMessage } = useUI();
   const { handleTauriError } = useError();
 
   const getDates = useCallback(() => {
     updateHideLoading(false);
-    
+   
     invoke("get_dates").then((r) => {
       let l = JSON.parse(r);
       updateDateList(l);
@@ -24,7 +25,7 @@ export const useDateNavigation = () => {
       const newDateNum = {};
       let n = 0;
       const promises = [];
-      
+     
       l.map((v, i) => {
         n += 1;
         datesStr += v.year;
@@ -45,14 +46,20 @@ export const useDateNavigation = () => {
           const reqDatesStr = datesStr;
           n = 0;
           datesStr = "";
-          
+         
           const promise = new Promise((resolve, reject) => {
             invoke("get_dates_num", { datesStr: reqDatesStr }).then((r) => {
-              console.log(r);
+              logger.debug('useDateNavigation', 'get_dates_num_success', 'Retrieved date numbers', {
+                result: r,
+                requestCount: reqDatesStr.length
+              });
               let l = JSON.parse(r);
               return resolve(l);
-            }).catch((e) => { 
-              console.log(e);
+            }).catch((e) => {
+              logger.error('useDateNavigation', 'get_dates_num_failed', 'Failed to get date numbers', {
+                error: e.toString(),
+                requestCount: reqDatesStr.length
+              });
               handleTauriError(e, "Getting date numbers");
               reject(e);
             });
@@ -60,7 +67,7 @@ export const useDateNavigation = () => {
           promises.push(promise);
         }
       });
-      
+     
       Promise.all(promises).then((results) => {
         results.map((result) => {
           Object.keys(result).map((k) => {

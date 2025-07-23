@@ -121,6 +121,13 @@ impl Photo {
             date_string.to_string()
         };
 
+        // Check if date_only is empty before parsing
+        if date_only.trim().is_empty() {
+            log::error!(target: "photo", "get_imported_dir_date_error; path={}; import_path={}; date_string={}; date_only={}", 
+                path, import_path, date_string, date_only);
+            panic!("Invalid date string extracted from path: empty date_only");
+        }
+
         return date::Date::from_string(&date_only, Option::Some("-"));
     }
 
@@ -158,6 +165,13 @@ impl Photo {
     pub fn created_date(&self) -> date::Date {
         let re = regex::Regex::new(r"^([0-9]{4})/([0-9]{1,2})/([0-9]{1,2}).+$").unwrap();
         let replaced = re.replace(&self.time, "$1-$2-$3").to_string();
+        
+        // Check if the replacement resulted in a valid date string
+        if replaced == self.time || replaced.trim().is_empty() {
+            log::error!(target: "photo", "created_date_parse_error; time={}; replaced={}", self.time, replaced);
+            panic!("Invalid time format for date parsing: {}", self.time);
+        }
+        
         date::Date::from_string(&replaced, Option::Some("-"))
     }
 }

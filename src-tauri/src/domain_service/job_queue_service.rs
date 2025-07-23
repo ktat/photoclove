@@ -753,8 +753,11 @@ impl JobQueueManager {
         let mut dates = Vec::new();
         for date_str in dates_set {
             log::debug!(target: "thumbnail_job", "date_processing; date={}", date_str);
-            let date = crate::value::date::Date::from_string(&date_str, Some("-"));
-            dates.push(date);
+            // Skip empty date strings
+            if !date_str.trim().is_empty() {
+                let date = crate::value::date::Date::from_string(&date_str, Some("-"));
+                dates.push(date);
+            }
         }
         
         let dates_obj = crate::value::date::Dates::new(&dates);
@@ -843,8 +846,11 @@ impl JobQueueManager {
         let mut dates = Vec::new();
         for date_str in dates_set {
             log::debug!(target: "create_db_job", "date_processing; date={}", date_str);
-            let date = crate::value::date::Date::from_string(&date_str, Some("-"));
-            dates.push(date);
+            // Skip empty date strings
+            if !date_str.trim().is_empty() {
+                let date = crate::value::date::Date::from_string(&date_str, Some("-"));
+                dates.push(date);
+            }
         }
         
         let dates_obj = crate::value::date::Dates::new(&dates);

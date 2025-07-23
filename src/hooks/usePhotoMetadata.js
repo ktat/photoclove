@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { debounce } from '../utils/photoUtils';
+import { logger } from '../services/LoggerService.js';
 
 export const usePhotoMetadata = (photo, options = {}) => {
   const {
@@ -11,7 +12,7 @@ export const usePhotoMetadata = (photo, options = {}) => {
     saveDelay = 1000,
     onMetadataChange = null
   } = options;
-  
+ 
   // State
   const [starRating, setStarRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -20,7 +21,7 @@ export const usePhotoMetadata = (photo, options = {}) => {
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [error, setError] = useState(null);
-  
+ 
   // Initialize metadata when photo changes
   useEffect(() => {
     if (photo) {
@@ -37,14 +38,14 @@ export const usePhotoMetadata = (photo, options = {}) => {
       setError(null);
     }
   }, [photo]);
-  
+ 
   // Save metadata to backend
   const saveMetadata = useCallback(async (updatedMetadata = {}) => {
     if (!photo?.file?.path) return false;
-    
+   
     setIsSaving(true);
     setError(null);
-    
+   
     try {
       const metadataToSave = {
         file_path: photo.file.path,
@@ -52,26 +53,31 @@ export const usePhotoMetadata = (photo, options = {}) => {
         comment: updatedMetadata.comment ?? comment,
         ...updatedMetadata
       };
-      
+     
       await invoke('update_photo_metadata', metadataToSave);
-      
+     
       setHasUnsavedChanges(false);
-      
+     
       // Call callback if provided
       if (onMetadataChange) {
         onMetadataChange(metadataToSave);
       }
-      
+     
       return true;
     } catch (err) {
-      console.error('Error saving photo metadata:', err);
+      logger.error('usePhotoMetadata', 'save_metadata_failed', 'Failed to save photo metadata', {
+        error: err.message || err.toString(),
+        photoPath: photo?.file?.path,
+        starRating,
+        comment: comment?.length || 0
+      });
       setError(err.message || 'Failed to save metadata');
       return false;
     } finally {
       setIsSaving(false);
     }
   }, [photo, starRating, comment, onMetadataChange]);
-  
+ 
   // Debounced save function
   const debouncedSave = useCallback(
     debounce((metadata) => {
@@ -81,7 +87,7 @@ export const usePhotoMetadata = (photo, options = {}) => {
     }, saveDelay),
     [autoSave, saveMetadata, saveDelay]
   );
-  
+ 
   // Update star rating
   const updateStarRating = useCallback((newRating) => {
     if (newRating >= 0 && newRating <= 5) {
@@ -90,52 +96,55 @@ export const usePhotoMetadata = (photo, options = {}) => {
       debouncedSave({ star_rating: newRating });
     }
   }, [debouncedSave]);
-  
+ 
   // Update comment
   const updateComment = useCallback((newComment) => {
     setComment(newComment);
     setHasUnsavedChanges(true);
     debouncedSave({ comment: newComment });
   }, [debouncedSave]);
-  
+ 
   // Load EXIF data
   const loadExifData = useCallback(async () => {
     if (!photo?.file?.path) return null;
-    
+   
     setIsLoading(true);
     setError(null);
-    
+   
     try {
-      const exif = await invoke('get_photo_exif', { 
-        file_path: photo.file.path 
+      const exif = await invoke('get_photo_exif', {
+        file_path: photo.file.path
       });
-      
+     
       const parsedExif = typeof exif === 'string' ? JSON.parse(exif) : exif;
       setExifData(parsedExif);
       return parsedExif;
     } catch (err) {
-      console.warn('Error loading EXIF data:', err);
+      logger.warn('usePhotoMetadata', 'load_exif_failed', 'Failed to load EXIF data', {
+        error: err.message || err.toString(),
+        photoPath: photo?.file?.path
+      });
       setError(err.message || 'Failed to load EXIF data');
       return null;
     } finally {
       setIsLoading(false);
     }
   }, [photo]);
-  
+ 
   // Load additional metadata
   const loadFullMetadata = useCallback(async () => {
     if (!photo?.file?.path) return null;
-    
+   
     setIsLoading(true);
     setError(null);
-    
+   
     try {
-      const metadata = await invoke('get_photo_metadata', { 
-        file_path: photo.file.path 
+      const metadata = await invoke('get_photo_metadata', {
+        file_path: photo.file.path
       });
-      
+     
       const parsedMetadata = typeof metadata === 'string' ? JSON.parse(metadata) : metadata;
-      
+     
       // Update state with loaded metadata
       if (parsedMetadata.star_rating !== undefined) {
         setStarRating(parsedMetadata.star_rating);
@@ -146,23 +155,26 @@ export const usePhotoMetadata = (photo, options = {}) => {
       if (parsedMetadata.exif) {
         setExifData(parsedMetadata.exif);
       }
-      
+     
       setHasUnsavedChanges(false);
       return parsedMetadata;
     } catch (err) {
-      console.warn('Error loading photo metadata:', err);
+      logger.warn('usePhotoMetadata', 'load_metadata_failed', 'Failed to load photo metadata', {
+        error: err.message || err.toString(),
+        photoPath: photo?.file?.path
+      });
       setError(err.message || 'Failed to load metadata');
       return null;
     } finally {
       setIsLoading(false);
     }
   }, [photo]);
-  
+ 
   // Force save current changes
   const forceSave = useCallback(() => {
     return saveMetadata();
   }, [saveMetadata]);
-  
+ 
   // Reset metadata to original values
   const resetMetadata = useCallback(() => {
     if (photo) {
@@ -172,13 +184,13 @@ export const usePhotoMetadata = (photo, options = {}) => {
       setError(null);
     }
   }, [photo]);
-  
+ 
   // Helper to format EXIF data for display
   const getFormattedExifData = useCallback(() => {
     if (!exifData) return {};
-    
+   
     const formatted = {};
-    
+   
     // Common EXIF fields with readable names
     const fieldMappings = {
       'Camera Make': exifData.make || exifData.Make,
@@ -194,28 +206,28 @@ export const usePhotoMetadata = (photo, options = {}) => {
       'GPS Latitude': exifData.gps_latitude || exifData.GPSLatitude,
       'GPS Longitude': exifData.gps_longitude || exifData.GPSLongitude
     };
-    
+   
     Object.entries(fieldMappings).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
         formatted[key] = value;
       }
     });
-    
+   
     return formatted;
   }, [exifData]);
-  
+ 
   return {
     // Current values
     starRating,
     comment,
     exifData,
-    
+   
     // Status
     isLoading,
     isSaving,
     hasUnsavedChanges,
     error,
-    
+   
     // Actions
     updateStarRating,
     updateComment,
@@ -223,10 +235,10 @@ export const usePhotoMetadata = (photo, options = {}) => {
     loadFullMetadata,
     forceSave,
     resetMetadata,
-    
+   
     // Utilities
     getFormattedExifData,
-    
+   
     // Direct save function
     saveMetadata
   };

@@ -18,15 +18,14 @@ const openBrowserToConsent = (port) => {
   const randomString = Array.from({ length: 50 }, () => chars[parseInt(Math.random() * chars.length)]).join('');
   const url = 'https://www.rwds.net/cgi-bin/token.cgi?state=' + randomString + '&url=http%3A%2F%2Flocalhost%3A' + port;
   return axios.get(url).then(() => {
-    return open('https://accounts.google.com/o/oauth2/auth?' +
-      'response_type=code&' +
-      'access_type=offline&' +
-      'state=' + randomString + '&' +
-      'client_id=' + GoogleAuthConfig.clientId + '&' +
-      'redirect_uri=https%3A//rwds.net/cgi-bin/token.cgi&' +
-      'scope=email%20profile%20openid%20' +
-      'https:%2F%2Fwww.googleapis.com%2Fauth%2Fphotoslibrary.readonly%20' +
-      'https:%2F%2Fwww.googleapis.com%2Fauth%2Fphotoslibrary.appendonly&' +
+    return open('https://accounts.google.com/o/oauth2/auth?',
+      'response_type=code&',
+      'access_type=offline&',
+      'state=' + randomString + '&',
+      'client_id=' + GoogleAuthConfig.clientId + '&',
+      'redirect_uri=https%3A//rwds.net/cgi-bin/token.cgi&',
+      'scope=https:%2F%2Fwww.googleapis.com%2Fauth%2Fphotoslibrary.readonly%20',
+      'https:%2F%2Fwww.googleapis.com%2Fauth%2Fphotoslibrary.appendonly&',
       'prompt=consent'
     );
   });
@@ -40,7 +39,7 @@ export const openGoogleSignIn = (port) => {
 
 export const googleSignIn = async (payload) => {
   logger.info('GoogleAuth', 'signin_start', 'Starting Google Sign In process', { payload });
-  
+ 
   try {
     const url = new URL(payload);
     // Get `access_token` from redirect_uri param
@@ -72,8 +71,8 @@ export const googleSignIn = async (payload) => {
       });
       logger.info('GoogleAuth', 'tokens_stored', 'Tokens stored securely in keyring');
     } catch (tokenError) {
-      logger.error('GoogleAuth', 'token_storage_error', 'Failed to store tokens securely', { 
-        error: tokenError.toString() 
+      logger.error('GoogleAuth', 'token_storage_error', 'Failed to store tokens securely', {
+        error: tokenError.toString()
       });
       // Continue with Firebase auth even if secure storage fails
     }
@@ -89,8 +88,8 @@ export const googleSignIn = async (payload) => {
       );
       logger.debug('GoogleAuth', 'legacy_storage', 'Tokens also stored in legacy localForage');
     } catch (legacyError) {
-      logger.warn('GoogleAuth', 'legacy_storage_error', 'Failed to store in localForage', { 
-        error: legacyError.toString() 
+      logger.warn('GoogleAuth', 'legacy_storage_error', 'Failed to store in localForage', {
+        error: legacyError.toString()
       });
     }
 
@@ -101,9 +100,9 @@ export const googleSignIn = async (payload) => {
   } catch (error) {
     const errorCode = error.code || 'unknown';
     const errorMessage = error.message || error.toString();
-    logger.error('GoogleAuth', 'signin_error', 'Google Sign In failed', { 
-      errorCode, 
-      errorMessage 
+    logger.error('GoogleAuth', 'signin_error', 'Google Sign In failed', {
+      errorCode,
+      errorMessage
     });
   }
 };

@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import TagChip from './TagChip.jsx';
+import { logger } from '../services/LoggerService.js';
 
-const AdvancedFilters = ({ 
-  onFiltersChange, 
-  initialFilters = {}, 
-  filterOptions, 
-  onLoadFilterOptions, 
-  isLoading 
+const AdvancedFilters = ({
+  onFiltersChange,
+  initialFilters = {},
+  filterOptions,
+  onLoadFilterOptions,
+  isLoading
 }) => {
   const [filters, setFilters] = useState({
     camera: '',
@@ -52,13 +53,15 @@ const AdvancedFilters = ({
         const formattedTags = tags.map(([id, name, color]) => ({ id, name, color }));
         setAvailableTags(formattedTags);
       } catch (error) {
-        console.error('Failed to load tags for filter:', error);
+        logger.error('AdvancedFilters', 'load_tags_failed', 'Failed to load tags for filter', {
+          error: error.message || error.toString()
+        });
       }
     };
 
     loadTags();
   }, []);
-  
+ 
   // Component mount effect to request filter options if not loaded
   useEffect(() => {
     if (!filterOptions && !isLoading && onLoadFilterOptions) {
@@ -69,10 +72,10 @@ const AdvancedFilters = ({
   const updateFilter = (key, value) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
-    console.log('AdvancedFilters - Filter updated:', {
-      key, 
-      oldValue: filters[key], 
-      newValue: value, 
+    logger.debug('AdvancedFilters', 'filter_updated', 'Filter updated', {
+      key,
+      oldValue: filters[key],
+      newValue: value,
       allFilters: newFilters
     });
     onFiltersChange(newFilters);
@@ -86,7 +89,13 @@ const AdvancedFilters = ({
       [key]: { ...filters[key], [subKey]: processedValue }
     };
     setFilters(newFilters);
-    console.log('Range filter updated:', key, subKey, value, '=>', processedValue, 'All filters:', newFilters);
+    logger.debug('AdvancedFilters', 'range_filter_updated', 'Range filter updated', {
+      key,
+      subKey,
+      originalValue: value,
+      processedValue,
+      allFilters: newFilters
+    });
     onFiltersChange(newFilters);
   };
 
@@ -110,17 +119,17 @@ const AdvancedFilters = ({
 
   const handleTagToggle = (tag) => {
     const isSelected = filters.selectedTags.some(t => t.id === tag.id);
-    const newSelectedTags = isSelected 
+    const newSelectedTags = isSelected
       ? filters.selectedTags.filter(t => t.id !== tag.id)
       : [...filters.selectedTags, tag];
-    
+   
     updateFilter('selectedTags', newSelectedTags);
   };
 
   if (!filterOptions && isLoading) {
     return <div className="advanced-filters loading">Loading filter options...</div>;
   }
-  
+ 
   // Fallback to empty arrays if filterOptions is not available
   const availableOptions = filterOptions || {
     cameras: [],
@@ -143,13 +152,13 @@ const AdvancedFilters = ({
         {/* Camera Equipment */}
         <div className="filter-section">
           <h4>Camera Equipment</h4>
-          
+         
           <div className="filter-group">
             <label>Camera:</label>
-            <select 
-              value={filters.camera} 
+            <select
+              value={filters.camera}
               onChange={(e) => {
-                console.log('Camera filter changed:', {
+                logger.debug('AdvancedFilters', 'camera_filter_changed', 'Camera filter changed', {
                   selectedValue: e.target.value,
                   availableCameras: availableOptions.cameras?.slice(0, 3), // Log first 3 for debugging
                   totalCameras: availableOptions.cameras?.length
@@ -168,8 +177,8 @@ const AdvancedFilters = ({
 
           <div className="filter-group">
             <label>Lens:</label>
-            <select 
-              value={filters.lens} 
+            <select
+              value={filters.lens}
               onChange={(e) => updateFilter('lens', e.target.value)}
             >
               <option value="">All Lenses</option>
@@ -185,7 +194,7 @@ const AdvancedFilters = ({
         {/* Technical Settings */}
         <div className="filter-section">
           <h4>Technical Settings</h4>
-          
+         
           <div className="filter-group">
             <label>ISO Range:</label>
             <div className="range-inputs">
@@ -249,7 +258,7 @@ const AdvancedFilters = ({
         {/* Date Range */}
         <div className="filter-section">
           <h4>Date Range</h4>
-          
+         
           <div className="filter-group">
             <label>From:</label>
             <div className="date-input-wrapper">
@@ -263,7 +272,7 @@ const AdvancedFilters = ({
                 }}
               />
               {filters.dateRange.start && (
-                <button 
+                <button
                   onClick={() => updateRangeFilter('dateRange', 'start', '')}
                   className="input-clear-button"
                   title="Clear start date"
@@ -288,7 +297,7 @@ const AdvancedFilters = ({
                 }}
               />
               {filters.dateRange.end && (
-                <button 
+                <button
                   onClick={() => updateRangeFilter('dateRange', 'end', '')}
                   className="input-clear-button"
                   title="Clear end date"
@@ -304,7 +313,7 @@ const AdvancedFilters = ({
         {/* Tags Filter */}
         <div className="filter-section">
           <h4>Tags</h4>
-          
+         
           <div className="filter-group">
             <label>Filter by Tags:</label>
             {availableTags.length > 0 ? (
@@ -329,7 +338,7 @@ const AdvancedFilters = ({
                     })}
                   </div>
                 </div>
-                
+               
                 {filters.selectedTags.length > 0 && (
                   <div className="selected-tags">
                     <div className="tag-filter-label">Selected Tags ({filters.selectedTags.length}):</div>
@@ -357,11 +366,11 @@ const AdvancedFilters = ({
         {/* Other Filters */}
         <div className="filter-section">
           <h4>Other Filters</h4>
-          
+         
           <div className="filter-group">
             <label>File Extension:</label>
-            <select 
-              value={filters.fileExtension} 
+            <select
+              value={filters.fileExtension}
               onChange={(e) => updateFilter('fileExtension', e.target.value)}
             >
               <option value="">All Types</option>
@@ -375,12 +384,15 @@ const AdvancedFilters = ({
 
           <div className="filter-group">
             <label>Star Rating:</label>
-            <select 
-              value={filters.starRating} 
+            <select
+              value={filters.starRating}
               onChange={(e) => {
                 const value = parseInt(e.target.value, 10);
                 const starValue = isNaN(value) ? 0 : value;
-                console.log('Star rating changed:', e.target.value, '=>', starValue);
+                logger.debug('AdvancedFilters', 'star_rating_changed', 'Star rating changed', {
+                  originalValue: e.target.value,
+                  processedValue: starValue
+                });
                 updateFilter('starRating', starValue);
               }}
             >

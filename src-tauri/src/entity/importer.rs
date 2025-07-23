@@ -420,9 +420,12 @@ impl ImporterSelectedFiles {
 
         let mut dates: date::Dates = date::Dates::empty();
         for key in arc_date_list.read().unwrap().keys() {
-            dates
-                .dates
-                .push(date::Date::from_string(key, Option::Some("-")));
+            // Skip empty keys
+            if !key.trim().is_empty() {
+                dates
+                    .dates
+                    .push(date::Date::from_string(key, Option::Some("-")));
+            }
         }
 
         return Result::Ok(dates);

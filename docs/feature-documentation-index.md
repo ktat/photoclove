@@ -48,6 +48,16 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **Architecture**: [Core Components → Configuration Components](architecture.md#4-configuration-components)
 - **Sequences**: [Configuration Management](feature-sequences.md#configuration-management)
 - **Components**: [Preferences Screen](component-structure.md#preferences-screen)
+
+### 🔄 State Management
+**When you need to understand**: React state, Context APIs, component state patterns, state debugging
+- **Guide**: [State Management Guide](state-management-guide.md) - Comprehensive guide to state management patterns
+- **Architecture**: Context structure (PhotoContext, UIContext, ErrorContext, ImportContext)
+- **Patterns**: View mode management, fetch config patterns, common pitfalls and solutions
+- **Improvement Plan**: [State Management Refactoring](../improvement/plan/state-management-refactoring.md)
+- **Related Files**: `src/context/*.jsx`, `src/App/PhotosList.jsx`
+
+### ⚙️ Configuration Management (continued)
 - **Related Files**: `src/App/Preferences.jsx`, `src/FolderPicker.jsx`, `src-tauri/src/entity/config.rs`
 
 ### 🐛 Debug Logging & Log Viewer

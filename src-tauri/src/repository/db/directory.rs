@@ -426,9 +426,12 @@ impl RepositoryDB for Directory {
         if dates_to_be_changed.keys().len() > 0 {
             dates_to_be_changed.insert(date.to_string(), true);
             for date_string in dates_to_be_changed.keys() {
-                dates
-                    .dates
-                    .push(date::Date::from_string(date_string, Option::Some("-")));
+                // Skip empty date strings
+                if !date_string.trim().is_empty() {
+                    dates
+                        .dates
+                        .push(date::Date::from_string(date_string, Option::Some("-")));
+                }
             }
         }
         return dates;

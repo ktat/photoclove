@@ -20,10 +20,10 @@ function PhotoDisplay(props) {
     // Function to parse CSS style string and convert to style object
     const parseCssStyle = (cssString) => {
         if (!cssString) return {};
-        
+
         const styles = {};
         const declarations = cssString.split(';').filter(decl => decl.trim());
-        
+
         declarations.forEach(declaration => {
             const [property, value] = declaration.split(':').map(s => s.trim());
             if (property && value) {
@@ -32,7 +32,7 @@ function PhotoDisplay(props) {
                 styles[camelCaseProperty] = value;
             }
         });
-        
+
         return styles;
     };
 
@@ -53,9 +53,9 @@ function PhotoDisplay(props) {
                 }, 50);
             }
         };
-        
+
         window.addEventListener('resize', resizeHandler);
-        
+
         // Cleanup on unmount
         return () => {
             window.removeEventListener('resize', resizeHandler);
@@ -69,7 +69,7 @@ function PhotoDisplay(props) {
     useEffect((e) => {
         // Don't set opacity here - let handleImgLoad handle it when image is ready
         document.querySelector("#dummy-for-focus").focus();
-        
+
         // Small delay to ensure container is ready when transitioning from thumbnail view
         setTimeout(() => {
             if (props.currentPhotoPath && props.currentPhotoPath.match(/(mp4|webm)$/i)) {
@@ -189,11 +189,11 @@ function PhotoDisplay(props) {
             height = e.naturalHeight;
             width = e.naturalWidth;
         }
-        
+
         // Use the event target dimensions if available, otherwise use globals
         const imgWidth = e?.naturalWidth || width;
         const imgHeight = e?.naturalHeight || height;
-        
+
         if (imgWidth > 0 && imgHeight > 0) {
             // Always apply styling immediately - no container dimension checks needed
             props.SetImgStyle(

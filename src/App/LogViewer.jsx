@@ -26,7 +26,7 @@ const LogViewer = ({ onClose }) => {
       };
     }
   };
-  
+ 
   const [filters, setFilters] = useState(loadFilters);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -36,11 +36,11 @@ const LogViewer = ({ onClose }) => {
   const loadLogs = async () => {
     setIsLoading(true);
     setError(null);
-    
+   
     try {
       // Get ALL frontend logs - don't filter here
       const frontendLogs = logger.getLogs();
-      
+     
       // Get backend logs only
       const backendLogsResult = await invoke('get_logs', {
         logType: 'backend',
@@ -51,7 +51,9 @@ const LogViewer = ({ onClose }) => {
       setLogs(frontendLogs);
       setBackendLogs(backendLogsResult);
     } catch (error) {
-      console.error('Failed to load logs:', error);
+      logger.error('LogViewer', 'load_logs_failed', 'Failed to load logs', {
+        error: error.message || error.toString()
+      });
       setError(`Failed to load logs: ${error.message || error}`);
     } finally {
       setIsLoading(false);
@@ -64,7 +66,7 @@ const LogViewer = ({ onClose }) => {
     const interval = setInterval(loadLogs, 5000); // Refresh every 5 seconds
     return () => clearInterval(interval);
   }, []); // Empty dependency - only run on mount
-  
+ 
   // Save filter changes to localStorage
   useEffect(() => {
     localStorage.setItem('logviewer_filters', JSON.stringify(filters));
@@ -88,19 +90,19 @@ const LogViewer = ({ onClose }) => {
     try {
       const newEnabled = !loggingEnabled;
       await invoke('set_logging_enabled', { enabled: newEnabled });
-      
+     
       // Update local state
       setLoggingEnabled(newEnabled);
       setLoggingStatus(prev => ({ ...prev, enabled: newEnabled }));
-      
+     
       // Update logger service
       logger.setEnabled(newEnabled);
-      
+     
       // Log the change (if enabled)
       if (newEnabled) {
         logger.info('LogViewer', 'logging_toggled', 'Logging enabled via LogViewer toggle');
       }
-      
+     
       // Refresh logs after toggling
       await loadLogs();
     } catch (error) {
@@ -121,7 +123,7 @@ const LogViewer = ({ onClose }) => {
       const blob = new Blob([JSON.stringify(allLogs, null, 2)], {
         type: 'application/json'
       });
-      
+     
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -153,8 +155,8 @@ const LogViewer = ({ onClose }) => {
           <span className="log-event">-</span>
           <span className="log-message">
             {log.message}
-            <button 
-              className="copy-message-button" 
+            <button
+              className="copy-message-button"
               onClick={() => {
                 navigator.clipboard.writeText(log.message);
               }}
@@ -176,8 +178,8 @@ const LogViewer = ({ onClose }) => {
         <span className="log-event">{log.event}</span>
         <span className="log-message">
           {log.message}
-          <button 
-            className="copy-message-button" 
+          <button
+            className="copy-message-button"
             onClick={() => {
               navigator.clipboard.writeText(log.message);
             }}
@@ -317,10 +319,33 @@ const LogViewer = ({ onClose }) => {
         if (filters.keyword && filters.keyword.trim()) {
           const keyword = filters.keyword.toLowerCase();
           const searchText = (
-            (log.message || '') + ' ' +
+            (log.message || '') + ' '
             (log.component || '')
           ).toLowerCase();
           if (!searchText.includes(keyword)) return false;
+        }
+        
+        // Time filter for backend logs - same logic as frontend
+        if (filters.since !== 'all') {
+          const logTime = new Date(log.timestamp);
+          const now = new Date();
+          let cutoffTime;
+          
+          switch(filters.since) {
+            case '5m':
+              cutoffTime = new Date(now.getTime() - 5 * 60 * 1000);
+              break;
+            case '1h':
+              cutoffTime = new Date(now.getTime() - 60 * 60 * 1000);
+              break;
+            case '24h':
+              cutoffTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+              break;
+            default:
+              cutoffTime = new Date(0); // Beginning of time
+          }
+          
+          if (logTime < cutoffTime) return false;
         }
         
         return true;

@@ -288,10 +288,13 @@ async fn get_dates_num(
     for date_tupple in splitted.enumerate() {
         let date_str = date_tupple.1;
         println!("get_dates_num() - Processing date: {:?}", date_str);
-        dates.dates.push(date::Date::from_string(
-            &date_str.to_string(),
-            Option::Some("-"),
-        ));
+        // Skip empty date strings
+        if !date_str.trim().is_empty() {
+            dates.dates.push(date::Date::from_string(
+                &date_str.to_string(),
+                Option::Some("-"),
+            ));
+        }
     }
     println!("get_dates_num() - Parsed {} dates", dates.dates.len());
     
@@ -365,6 +368,10 @@ async fn get_photos(
     state: tauri::State<'_, AppState>,
     offset: u32,
 ) -> Result<String, ()> {
+    // Check if date_str is empty
+    if date_str.trim().is_empty() {
+        return Err(());
+    }
     let date = date::Date::from_string(&date_str.to_string(), Option::None);
     let repo_db = &state.repo_db;
     let meta_db = &state.meta_db;
@@ -401,6 +408,10 @@ async fn get_photos_with_filter(
     state: tauri::State<'_, AppState>,
     offset: u32,
 ) -> Result<String, ()> {
+    // Check if date_str is empty
+    if date_str.trim().is_empty() {
+        return Err(());
+    }
     let date = date::Date::from_string(&date_str.to_string(), Option::None);
     let repo_db = &state.repo_db;
     let meta_db = &state.meta_db;
@@ -469,6 +480,10 @@ async fn get_next_photo(
     window: tauri::Window,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, ()> {
+    // Check if date_str is empty
+    if date_str.trim().is_empty() {
+        return Err(());
+    }
     let date = date::Date::from_string(&date_str.to_string(), Option::None);
     println!("get_photos is called from {}", window.label());
     let repo_db = &state.repo_db;
@@ -501,6 +516,10 @@ async fn get_prev_photo(
     window: tauri::Window,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, ()> {
+    // Check if date_str is empty
+    if date_str.trim().is_empty() {
+        return Err(());
+    }
     let date = date::Date::from_string(&date_str.to_string(), Option::None);
     println!("get_photos is called from {}", window.label());
     let repo_db = &state.repo_db;
@@ -680,6 +699,10 @@ async fn move_photos_to_exif_date(
     state: tauri::State<'_, AppState>,
     date_str: &str,
 ) -> Result<String, ()> {
+    // Check if date_str is empty
+    if date_str.trim().is_empty() {
+        return Err(());
+    }
     let date = date::Date::from_string(&date_str.to_string(), Option::Some("/"));
     window.emit("move_files", "start").unwrap();
     log::debug!(target: "photo", "move_photos_to_exif_date; target_date={:?}", date);
@@ -719,6 +742,10 @@ async fn create_db_in_date(
     state: tauri::State<'_, AppState>,
     date_str: &str,
 ) -> Result<String, ()> {
+    // Check if date_str is empty
+    if date_str.trim().is_empty() {
+        return Err(());
+    }
     let date = date::Date::from_string(&date_str.to_string(), Option::Some("/"));
     let dates = date::Dates::new(&[date]);
     match state.meta_db.record_photos_all_meta_data(dates) {
@@ -771,6 +798,10 @@ async fn create_thumbnails_in_date(
     state: tauri::State<'_, AppState>,
     date_str: &str,
 ) -> Result<String, ()> {
+    // Check if date_str is empty
+    if date_str.trim().is_empty() {
+        return Err(());
+    }
     let date = date::Date::from_string(&date_str.to_string(), Option::Some("/"));
     let dates = date::Dates::new(&[date]);
     let c = &state.config;
