@@ -1,266 +1,409 @@
-# PhotoClove State管理ガイド
+# PhotoClove State Management Guide
 
-このドキュメントは、PhotoCloveのstate管理の現状と、開発時の注意点をまとめたものです。
+This document describes PhotoClove's state management architecture after the comprehensive refactoring.
 
-## 📋 目次
+## 📋 Table of Contents
 
-1. [概要](#概要)
-2. [Context構造](#context構造)
-3. [State管理のパターン](#state管理のパターン)
-4. [よくある問題と対処法](#よくある問題と対処法)
-5. [開発時の注意点](#開発時の注意点)
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Custom Hooks](#custom-hooks)
+4. [Context Structure](#context-structure)
+5. [View Mode State Machine](#view-mode-state-machine)
+6. [Cache Management](#cache-management)
+7. [Best Practices](#best-practices)
+8. [Migration Guide](#migration-guide)
 
-## 概要
+## Overview
 
-PhotoCloveは複数のReact Contextを使用してグローバルstateを管理しています。しかし、各コンポーネント（特にPhotosList.jsx）には多数のローカルstateも存在し、これらの相互作用が複雑になっています。
+PhotoClove's state management has been refactored to use a modular, hook-based architecture that provides:
 
-### 主な課題
+- **Separation of Concerns**: State is organized into focused custom hooks
+- **View Mode State Machine**: Centralized navigation with validated transitions
+- **Unified Cache Management**: Comprehensive caching with automatic cleanup
+- **Type Safety**: Clear interfaces and return types
+- **Debugging Support**: Structured logging throughout
 
-1. **State管理の分散**: グローバル（Context）とローカル（コンポーネント）のstateが混在
-2. **依存関係の複雑さ**: 複数のstateが相互に依存し、更新順序が重要
-3. **非同期処理**: 写真のロード、検索などの非同期処理とstate更新のタイミング
+## Architecture
 
-## Context構造
+### High-Level Architecture
 
-### 1. PhotoContext
+```
+┌─────────────────────────────────────────────────────────┐
+│                     App.jsx                             │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │              Context Providers                    │   │
+│  │  ┌─────────────┐  ┌──────────────┐             │   │
+│  │  │ PhotoContext│  │  UIContext   │             │   │
+│  │  │             │  │ (useViewMode)│             │   │
+│  │  └─────────────┘  └──────────────┘             │   │
+│  └─────────────────────────────────────────────────┘   │
+│                                                         │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │              PhotosList.jsx                      │   │
+│  │  ┌─────────────────────────────────────────┐   │   │
+│  │  │         usePhotosListState()             │   │   │
+│  │  │  ┌──────────┐ ┌──────────┐ ┌──────────┐│   │   │
+│  │  │  │Display   │ │Filters   │ │Selection ││   │   │
+│  │  │  │Hook      │ │Hook      │ │Hook      ││   │   │
+│  │  │  └──────────┘ └──────────┘ └──────────┘│   │   │
+│  │  └─────────────────────────────────────────┘   │   │
+│  └─────────────────────────────────────────────────┘   │
+│                                                         │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │           PhotoCacheService                      │   │
+│  │  (Singleton - Unified Cache Management)         │   │
+│  └─────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────┘
+```
 
-**場所**: `src/context/PhotoContext.jsx`
+## Custom Hooks
 
-**責任範囲**: 写真表示に関するメインのstate管理
+### usePhotosListState
+
+Main hook that combines all specialized hooks for PhotosList component.
+
+**Location**: `src/hooks/usePhotosListState.js`
 
 ```javascript
-// 管理するstate
+const {
+  // Display state
+  photos, currentPhotoPath, photoLoading,
+  
+  // Filter state
+  filters, applyFrontendFilters,
+  
+  // Selection state
+  photoSelection, toggleSelection,
+  
+  // Cache functions
+  getCachedTags, cacheTags,
+  
+  // Computed values
+  filteredPhotos,
+  
+  // Actions
+  loadPhotosWithConfig, resetAllState
+} = usePhotosListState();
+```
+
+### usePhotosListDisplay
+
+Manages photo display and navigation state.
+
+**Location**: `src/hooks/usePhotosListDisplay.js`
+
+**Manages**:
+- Photo list and current photo
+- Loading states
+- Thumbnail and image caching
+- Display configuration (icon size, sort order)
+
+### usePhotosListFilters
+
+Handles all filtering logic and state.
+
+**Location**: `src/hooks/usePhotosListFilters.js`
+
+**Features**:
+- Star rating filter
+- Comment filter
+- File extension filter
+- Filter summary generation
+- Frontend filtering logic
+
+### usePhotosListSelection
+
+Manages photo selection operations.
+
+**Location**: `src/hooks/usePhotosListSelection.js`
+
+**Features**:
+- Single and multi-selection
+- Range selection
+- Selection dictionary for O(1) lookups
+- Bulk operations support
+
+## Context Structure
+
+### PhotoContext
+
+**Location**: `src/context/PhotoContext.jsx`
+
+Manages photo-related global state:
+```javascript
 {
-  dateList: [],        // 日付リスト
-  datePage: {},        // 日付ごとのページ番号
-  currentDate: "",     // 現在選択中の日付
-  dateNum: {},         // 日付ごとの写真数
-  showPhotoDisplay: {}, // 写真表示状態
-  hideLoading: false,  // ローディング非表示フラグ
-  recentPhotosMode: false, // 最近の写真モード
-  albumsList: [],      // アルバムリスト
-  currentAlbum: null,  // 現在のアルバム
-  albumPhotos: []      // アルバム内の写真
+  dateList: [],          // Date list from backend
+  datePage: {},          // Pagination per date
+  currentDate: "",       // Selected date
+  dateNum: {},           // Photo count per date
+  showPhotoDisplay: {},  // Display states
+  recentPhotosMode: false, // Recent photos mode
+  albumsList: [],        // Album list
+  currentAlbum: null,    // Current album
+  albumPhotos: []        // Photos in current album
 }
 ```
 
-### 2. UIContext
+### UIContext (Refactored)
 
-**場所**: `src/context/UIContext.jsx`
+**Location**: `src/context/UIContext.jsx`
 
-**責任範囲**: UI表示状態とナビゲーション管理
-
+Now uses the view mode state machine:
 ```javascript
-// 管理するstate
 {
-  showImporter: false,     // インポーター表示
-  showPhotosList: true,    // 写真リスト表示
-  showPreferences: false,  // 設定画面表示
-  showJobQueue: false,     // ジョブキュー表示
-  showLogin: false,        // ログイン画面表示
-  showSearchPage: false,   // 検索ページ表示
-  searchInitialQuery: "",  // 検索初期クエリ
-  isAdvancedSearchMode: false, // 高度な検索モード
-  viewMode: 'date',        // ビューモード
-  currentAlbumId: null     // 現在のアルバムID
+  // View mode state machine
+  currentMode: 'home',     // Current view mode
+  modeData: {},           // Mode-specific data
+  showImporter: false,    // Computed from mode
+  showPhotosList: false,  // Computed from mode
+  // ... other computed visibility states
+  
+  // Navigation functions
+  transitionTo(mode, data),
+  showDatePhotos(date),
+  showRecentPhotos(),
+  openAlbum(albumId),
+  
+  // Non-view state
+  footerMessages: {},
+  welcomeImage: "",
+  useCount: 0
 }
 ```
 
-### 3. ErrorContext
+## View Mode State Machine
 
-**場所**: `src/context/ErrorContext.jsx`
+### useViewMode Hook
 
-**責任範囲**: エラー管理とユーザーフレンドリーなエラー表示
+**Location**: `src/hooks/useViewMode.js`
 
-### 4. ImportContext
+Implements centralized view navigation with state machine pattern.
 
-**場所**: `src/context/ImportContext.jsx`
-
-**責任範囲**: 写真インポート機能のstate管理
-
-## State管理のパターン
-
-### 1. ビューモードの決定
-
-現在のビューモードは複数のstateの組み合わせで決定されます：
+#### View Modes
 
 ```javascript
-// PhotosList.jsx内での判定
-const isSearchMode = props.searchMode || false;
-const isAdvancedSearchMode = props.isAdvancedSearchMode || false;
-const isAlbumListMode = viewMode === 'album_list';
-const isAlbumMode = viewMode === 'album' && currentAlbumId;
+VIEW_MODES = {
+  HOME: 'home',
+  DATE: 'date',
+  RECENT: 'recent',
+  SEARCH: 'search',
+  ADVANCED_SEARCH: 'advanced_search',
+  ALBUM_LIST: 'album_list',
+  ALBUM: 'album',
+  IMPORT: 'import',
+  PREFERENCES: 'preferences',
+  JOB_QUEUE: 'job_queue',
+  LOGIN: 'login'
+}
 ```
 
-**問題点**: 複数のstateから導出されるため、整合性の保証が難しい
+#### Key Features
 
-### 2. 画面遷移パターン
+1. **Validated Transitions**: Only allowed transitions are permitted
+2. **History Tracking**: Navigate back through view history
+3. **Mode Data**: Pass context data with transitions
+4. **Computed Visibility**: Screen visibility derived from current mode
 
-UIContextの`toggle*`関数で画面遷移を管理：
+#### Usage Example
 
 ```javascript
-// 検索ページへの遷移例
-const toggleSearchPage = useCallback((t, initialQuery = "", isAdvanced = false) => {
-    if (t) {
-      setShowImporter(false);
-      setShowPhotosList(false);
-      setShowLogin(false);
-      setShowPreferences(false);
-      setShowJobQueue(false);
-      setShowSearchPage(true);
-      setSearchInitialQuery(initialQuery);
-      setIsAdvancedSearchMode(isAdvanced);
-    }
-    // ...
-}, []);
+const viewMode = useViewMode(VIEW_MODES.HOME);
+
+// Transition to date view
+viewMode.showDatePhotos('2024-01-15');
+
+// Check current mode
+if (viewMode.isMode(VIEW_MODES.DATE)) {
+  // In date view
+}
+
+// Go back
+viewMode.goBack();
 ```
 
-**問題点**: 多数のsetState呼び出しが必要で、バグの原因になりやすい
+## Cache Management
 
-### 3. fetchConfigパターン
+### PhotoCacheService
 
-写真の取得方法を決定する重要なパターン：
+**Location**: `src/services/PhotoCacheService.js`
+
+Singleton service providing unified cache management.
+
+#### Cache Types
+
+1. **Thumbnail Cache**: Photo thumbnails with LRU eviction
+2. **Photo Cache**: Full-size photo data
+3. **Tag Cache**: Photo tags by path
+4. **Metadata Cache**: Photo metadata
+5. **Album Cache**: Album photo lists
+
+#### Features
+
+- **LRU Eviction**: Automatic memory management
+- **TTL Support**: 30-minute expiration
+- **Periodic Cleanup**: 5-minute intervals
+- **Statistics**: Hit rates and performance metrics
+- **Structured Logging**: Debug cache operations
+
+#### Usage Example
 
 ```javascript
-const fetchConfig = useMemo(() => {
-    if (props.fetchConfig) return props.fetchConfig;
-    if (isAdvancedSearchMode || isSearchMode) return null;
-    
-    return {
-        fetch_method: recentPhotosMode ? "recent" : "date",
-        value: recentPhotosMode ? "recent" : currentDate,
-        title: recentPhotosMode ? "Recent Photos (60 most recent)" : currentDate,
-        max_photos_per_fetch: recentPhotosMode ? 60 : undefined
-    };
-}, [props.fetchConfig, isAdvancedSearchMode, isSearchMode, recentPhotosMode, currentDate]);
+import { photoCacheService } from '../services/PhotoCacheService.js';
+
+// Cache thumbnail
+photoCacheService.setThumbnail(photoPath, thumbnailData);
+
+// Get cached thumbnail
+const cached = photoCacheService.getThumbnail(photoPath);
+
+// Get cache statistics
+const stats = photoCacheService.getStats();
+console.log(`Thumbnail hit rate: ${stats.thumbnailHitRate}`);
 ```
 
-## よくある問題と対処法
+## Best Practices
 
-### 1. 初期化順序の問題
+### 1. State Organization
 
-**問題**: useEffectでまだ定義されていない関数を参照する
+- **Use appropriate hooks**: Don't access internal state directly
+- **Leverage computed values**: Use `filteredPhotos` instead of filtering manually
+- **Batch updates**: Update related state together
+
+### 2. Navigation
+
+- **Use view mode transitions**: Always use the state machine for navigation
+- **Pass mode data**: Include context when transitioning
+- **Check transitions**: Use `canTransitionTo()` to validate
+
+### 3. Caching
+
+- **Cache early**: Cache data as soon as it's fetched
+- **Invalidate properly**: Clear cache when data changes
+- **Monitor performance**: Check cache statistics regularly
+
+### 4. Debugging
+
+- **Use structured logging**: Follow the established pattern
+- **Include correlation IDs**: Track operations across components
+- **Check view mode history**: Debug navigation issues
+
+## Migration Guide
+
+### From Old State Management
+
+#### Before (PhotosList.jsx)
+```javascript
+// ~40 individual useState calls
+const [photos, setPhotos] = useState([]);
+const [currentPhotoPath, setCurrentPhotoPath] = useState("");
+const [starFilter, setStarFilter] = useState(0);
+// ... many more
+```
+
+#### After (PhotosList.jsx)
+```javascript
+// Single hook with all state
+const photosListState = usePhotosListState();
+const { photos, currentPhotoPath, filters } = photosListState;
+```
+
+### From Old Navigation
+
+#### Before (UIContext)
+```javascript
+// Repetitive toggle functions
+const toggleImporter = (show) => {
+  setShowImporter(show);
+  setShowPhotosList(!show);
+  setShowPreferences(false);
+  // ... more manual updates
+};
+```
+
+#### After (UIContext)
+```javascript
+// Simple state machine transition
+viewMode.transitionTo(VIEW_MODES.IMPORT);
+```
+
+### Gradual Migration
+
+The refactored system maintains backward compatibility:
+
+1. **Start with new features**: Use new patterns for new code
+2. **Migrate gradually**: Update existing code incrementally
+3. **Use compatibility layer**: Old props still work during transition
+4. **Remove old code**: Clean up after verification
+
+## Common Patterns
+
+### Loading Photos with Filters
 
 ```javascript
-// ❌ 間違い
-useEffect(() => {
-    handleSearch(); // handleSearchがまだ定義されていない
-}, []);
+const { loadPhotosWithConfig, filters, applyFrontendFilters } = usePhotosListState();
 
-const handleSearch = useCallback(() => {
-    // ...
-}, []);
+// Load photos
+await loadPhotosWithConfig(fetchConfig, appConfig);
 
-// ✅ 正解
-const handleSearch = useCallback(() => {
-    // ...
-}, []);
-
-useEffect(() => {
-    handleSearch(); // handleSearchが定義済み
-}, [handleSearch]);
+// Filtered photos are automatically computed
+const { filteredPhotos } = usePhotosListState();
 ```
 
-### 2. State更新のタイミング問題
-
-**問題**: 複数のstate更新が正しい順序で実行されない
+### Navigation Flow
 
 ```javascript
-// ❌ 問題のあるコード
-setCurrentDate("2024-01-01");
-setShowPhotoDisplay(true); // currentDateの更新がまだ反映されていない可能性
+const { showDatePhotos, showRecentPhotos, openAlbum } = useUI();
 
-// ✅ 推奨される方法
-// 1. useEffectで依存関係を明確にする
-useEffect(() => {
-    if (currentDate) {
-        setShowPhotoDisplay(true);
-    }
-}, [currentDate]);
+// Navigate to specific date
+showDatePhotos('2024-01-15');
 
-// 2. または、状態更新を統合する
-const updateDateAndDisplay = useCallback((date) => {
-    setCurrentDate(date);
-    setShowPhotoDisplay(prev => ({ ...prev, [date]: true }));
-}, []);
+// Show recent photos
+showRecentPhotos();
+
+// Open album
+openAlbum(albumId);
 ```
 
-### 3. 非同期処理とstate更新
-
-**問題**: 非同期処理完了前にコンポーネントがアンマウントされる
+### Cache Usage
 
 ```javascript
-// ✅ クリーンアップを適切に行う
-useEffect(() => {
-    let isMounted = true;
-    
-    const loadData = async () => {
-        const result = await fetchPhotos();
-        if (isMounted) {
-            setPhotos(result);
-        }
-    };
-    
-    loadData();
-    
-    return () => {
-        isMounted = false;
-    };
-}, []);
+const { getCachedTags, cacheTags } = usePhotosListState();
+
+// Check cache first
+let tags = getCachedTags(photoPath);
+if (!tags) {
+  // Fetch from backend
+  tags = await fetchTags(photoPath);
+  // Cache for next time
+  cacheTags(photoPath, tags);
+}
 ```
 
-## 開発時の注意点
+## Troubleshooting
 
-### 1. State追加時のチェックリスト
+### Navigation Issues
 
-新しいstateを追加する前に確認すること：
+1. **Check current mode**: `console.log(viewMode.currentMode)`
+2. **Verify transitions**: `console.log(viewMode.getAvailableTransitions())`
+3. **Check history**: `console.log(viewMode.history)`
 
-- [ ] 既存のContextで管理すべきか、ローカルstateで十分か
-- [ ] 他のstateとの依存関係はあるか
-- [ ] 非同期更新が必要か
-- [ ] リセット処理は必要か
+### State Not Updating
 
-### 2. useEffectの使用ガイドライン
+1. **Check hook usage**: Ensure using the correct hook
+2. **Verify updates**: Check if state updates are batched
+3. **Review logs**: Structured logging shows all state changes
 
-- **依存配列を正確に記述する**: ESLintのexhaustive-depsルールを有効にする
-- **クリーンアップ関数を忘れない**: 特に非同期処理やイベントリスナー
-- **無限ループに注意**: 依存配列に含まれる値を更新しない
+### Cache Issues
 
-### 3. Context更新時の影響範囲
+1. **Check statistics**: `photoCacheService.getStats()`
+2. **Verify TTL**: Items expire after 30 minutes
+3. **Monitor size**: Check if hitting cache limits
 
-Contextの値を更新すると、そのContextを使用している全てのコンポーネントが再レンダリングされます：
+## Future Enhancements
 
-```javascript
-// PhotoContextを使用しているコンポーネント
-- PhotosList
-- DateList
-- AlbumView
-- その他多数
+1. **React Query Integration**: Server state management (Phase 3)
+2. **State Persistence**: Save and restore application state
+3. **Optimistic Updates**: Immediate UI updates with rollback
+4. **State DevTools**: Enhanced debugging capabilities
 
-// 更新時は影響範囲を考慮
-updateCurrentDate("2024-01-01"); // 上記全てのコンポーネントが再レンダリング
-```
-
-### 4. デバッグのヒント
-
-1. **React Developer Tools**を使用してstate変更を追跡
-2. **console.log**でstate更新のタイミングを確認
-3. **useEffect**の実行順序を把握
-
-```javascript
-// デバッグ用のログ
-useEffect(() => {
-    console.log('State updated:', { currentDate, showPhotoDisplay });
-}, [currentDate, showPhotoDisplay]);
-```
-
-## 今後の改善に向けて
-
-現在のstate管理は複雑になっているため、以下の改善を検討中です：
-
-1. **State管理の統合**: 関連するstateを1つのオブジェクトにまとめる
-2. **カスタムフックの活用**: 複雑なロジックをカスタムフックに切り出す
-3. **State Machineの導入**: ビューモード管理をより明確にする
-4. **キャッシュ管理の改善**: 専用のキャッシュ層を導入
-
-詳しい改善計画は `improvement/plan/` ディレクトリを参照してください。
+This guide reflects the current state management architecture after the comprehensive refactoring. The new system provides better organization, performance, and developer experience while maintaining backward compatibility.

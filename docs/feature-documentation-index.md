@@ -51,13 +51,25 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **Sequences**: [Configuration Management](feature-sequences.md#configuration-management)
 - **Components**: [Preferences Screen](component-structure.md#preferences-screen)
 
-### 🔄 State Management
-**When you need to understand**: React state, Context APIs, component state patterns, state debugging
-- **Guide**: [State Management Guide](state-management-guide.md) - Comprehensive guide to state management patterns
-- **Architecture**: Context structure (PhotoContext, UIContext, ErrorContext, ImportContext)
-- **Patterns**: View mode management, fetch config patterns, common pitfalls and solutions
-- **Improvement Plan**: [State Management Refactoring](../improvement/plan/state-management-refactoring.md)
-- **Related Files**: `src/context/*.jsx`, `src/App/PhotosList.jsx`
+### 🔄 State Management (Refactored)
+**When you need to understand**: React state, Context APIs, component state patterns, state debugging, custom hooks
+- **Guide**: [State Management Guide](state-management-guide.md) - Comprehensive guide to refactored state management architecture
+- **Architecture**: Hook-based state management with view mode state machine
+- **Custom Hooks**: 
+  - `usePhotosListState` - Main PhotosList state management hook
+  - `usePhotosListDisplay` - Photo display and navigation state
+  - `usePhotosListFilters` - Filter logic and state management
+  - `usePhotosListSelection` - Photo selection operations
+  - `useViewMode` - View navigation state machine
+- **Contexts**: PhotoContext, UIContext (refactored with view mode), ErrorContext, ImportContext
+- **Cache Service**: PhotoCacheService for unified cache management
+- **Patterns**: State machine navigation, hook composition, cache-first data fetching
+- **Migration**: Gradual migration support with backward compatibility
+- **Related Files**: 
+  - Hooks: `src/hooks/usePhotosListState.js`, `src/hooks/usePhotosListDisplay.js`, `src/hooks/usePhotosListFilters.js`, `src/hooks/usePhotosListSelection.js`, `src/hooks/useViewMode.js`
+  - Services: `src/services/PhotoCacheService.js`
+  - Contexts: `src/context/*.jsx`
+  - Components: `src/App/PhotosList.jsx` (migrating)
 
 ### ⚙️ Configuration Management (continued)
 - **Related Files**: `src/App/Preferences.jsx`, `src/FolderPicker.jsx`, `src-tauri/src/entity/config.rs`
@@ -305,8 +317,14 @@ This reverse index helps you quickly find the relevant documentation when workin
 | Advanced Filters | `src/components/AdvancedFilters.jsx` |
 | Saved Searches | `src/components/SavedSearches.jsx` |
 | Search Hook | `src/hooks/useSearch.js` |
+| PhotosList State Hook | `src/hooks/usePhotosListState.js` |
+| PhotosList Display Hook | `src/hooks/usePhotosListDisplay.js` |
+| PhotosList Filters Hook | `src/hooks/usePhotosListFilters.js` |
+| PhotosList Selection Hook | `src/hooks/usePhotosListSelection.js` |
+| View Mode State Machine | `src/hooks/useViewMode.js` |
 | Debug Log Viewer | `src/App/LogViewer.jsx` |
 | Logger Service | `src/services/LoggerService.js` |
+| Photo Cache Service | `src/services/PhotoCacheService.js` |
 | Import Interface | `src/App/Importer.jsx` |
 | Preferences Panel | `src/App/Preferences.jsx` |
 | Job Queue Monitor | `src/App/JobQueue.jsx` |

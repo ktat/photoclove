@@ -176,12 +176,47 @@ thumbnail_store/
 - **Search**: Metadata-based search capabilities
 - **Batch operations**: Multi-select for mass actions
 
-### 4. Performance Optimizations
-- **Thumbnail caching**: Pre-generated compressed thumbnails
+### 4. State Management Architecture (Refactored)
+
+#### Custom Hooks Architecture
+
+The application uses a modular hook-based state management system:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                 usePhotosListState                      │
+│  ┌─────────────┬─────────────┬─────────────┐          │
+│  │Display Hook │Filters Hook │Selection Hook│          │
+│  └─────────────┴─────────────┴─────────────┘          │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### View Mode State Machine
+
+Navigation is managed through a centralized state machine in UIContext:
+
+```
+HOME ──→ DATE ──→ ALBUM
+  ↓       ↓        ↓
+SEARCH  RECENT  IMPORT
+  ↓               ↓
+ADVANCED    PREFERENCES
+```
+
+#### Cache Service
+
+Unified caching with automatic management:
+- **LRU Eviction**: Memory-efficient caching
+- **TTL Support**: 30-minute automatic expiration
+- **Statistics**: Hit rate and performance monitoring
+
+### 5. Performance Optimizations
+- **Thumbnail caching**: PhotoCacheService with LRU eviction
 - **Lazy loading**: Photos loaded as needed
 - **Virtual scrolling**: Efficient large dataset rendering
 - **Async operations**: Non-blocking file operations
 - **Job queue**: Background processing for heavy tasks
+- **Unified caching**: Centralized cache management across components
 
 ## Security Considerations
 
