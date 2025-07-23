@@ -100,6 +100,9 @@ const TRANSITIONS = {
     TO_HOME: VIEW_MODES.HOME,
     TO_DATE: VIEW_MODES.DATE,
     TO_RECENT: VIEW_MODES.RECENT,
+    TO_SEARCH: VIEW_MODES.SEARCH,
+    TO_ADVANCED_SEARCH: VIEW_MODES.ADVANCED_SEARCH,
+    TO_ALBUM_LIST: VIEW_MODES.ALBUM_LIST,
     TO_PREFERENCES: VIEW_MODES.PREFERENCES,
     TO_JOB_QUEUE: VIEW_MODES.JOB_QUEUE
   },
@@ -213,7 +216,7 @@ export const useViewMode = (initialMode = VIEW_MODES.HOME) => {
   // Screen visibility state computed from current mode
   const screenVisibility = useMemo(() => ({
     showImporter: currentMode === VIEW_MODES.IMPORT,
-    showPhotosList: [VIEW_MODES.DATE, VIEW_MODES.RECENT, VIEW_MODES.ALBUM].includes(currentMode),
+    showPhotosList: [VIEW_MODES.DATE, VIEW_MODES.RECENT, VIEW_MODES.ALBUM, VIEW_MODES.ALBUM_LIST].includes(currentMode),
     showSearchPage: [VIEW_MODES.SEARCH, VIEW_MODES.ADVANCED_SEARCH].includes(currentMode),
     showAlbumsList: currentMode === VIEW_MODES.ALBUM_LIST,
     showPreferences: currentMode === VIEW_MODES.PREFERENCES,
@@ -272,6 +275,14 @@ export const useViewMode = (initialMode = VIEW_MODES.HOME) => {
     transitionTo(VIEW_MODES.ALBUM_LIST);
   }, [transitionTo]);
 
+  const showDatePhotos = useCallback((date) => {
+    transitionTo(VIEW_MODES.DATE, { date });
+  }, [transitionTo]);
+
+  const showRecentPhotos = useCallback(() => {
+    transitionTo(VIEW_MODES.RECENT);
+  }, [transitionTo]);
+
   return {
     // State
     currentMode,
@@ -296,6 +307,8 @@ export const useViewMode = (initialMode = VIEW_MODES.HOME) => {
     toggleLogin,
     openAlbum,
     openAlbumsList,
+    showDatePhotos,
+    showRecentPhotos,
     
     // Additional computed values
     isSearchMode: isMode(VIEW_MODES.SEARCH) || isMode(VIEW_MODES.ADVANCED_SEARCH),

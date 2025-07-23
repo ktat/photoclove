@@ -70,6 +70,16 @@ export const UIProvider = ({ children }) => {
     console.log('🐛 UIContext showPhotosListView() - view mode transition complete');
   }, [viewMode]);
 
+  const showDatePhotos = useCallback((date) => {
+    console.log('🐛 UIContext showDatePhotos() called - transitioning to DATE mode with date:', date);
+    viewMode.showDatePhotos(date);
+  }, [viewMode]);
+
+  const showRecentPhotos = useCallback(() => {
+    console.log('🐛 UIContext showRecentPhotos() called - transitioning to RECENT mode');
+    viewMode.showRecentPhotos();
+  }, [viewMode]);
+
   const value = {
     // View mode state (from state machine)
     ...viewMode,
@@ -86,6 +96,8 @@ export const UIProvider = ({ children }) => {
     toggleHome,
     toggleAlbumListMode,
     showPhotosListView,
+    showDatePhotos,
+    showRecentPhotos,
     
     // Footer message actions
     addFooterMessage,

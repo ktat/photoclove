@@ -19,7 +19,7 @@ function DateList(props) {
         updateRecentPhotosMode
     } = usePhoto();
     
-    const { toggleSearchPage, showPhotosListView } = useUI();
+    const { toggleSearchPage, showPhotosListView, showDatePhotos, showRecentPhotos } = useUI();
     
     const [selectedStyle, setSelectedStyle] = useState({});
 
@@ -59,11 +59,10 @@ function DateList(props) {
                                    setSelectedStyle({});
                                    updateRecentPhotosMode(true);
                                    updateShowPhotoDisplay({});
-                                   props.toggleImporter(false);
-                                   // Show PhotosList for Recent Photos
-                                   logger.info('DateList', 'recent_photos_click', 'About to call showPhotosListView()');
-                                   showPhotosListView();
-                                   logger.info('DateList', 'recent_photos_click', 'showPhotosListView() called');
+                                   // Use showRecentPhotos to properly transition to RECENT mode
+                                   logger.info('DateList', 'recent_photos_click', 'About to call showRecentPhotos()');
+                                   showRecentPhotos();
+                                   logger.info('DateList', 'recent_photos_click', 'showRecentPhotos() called');
                                }}>
                                 Recent Photos
                             </a>
@@ -78,11 +77,10 @@ function DateList(props) {
                                     updateRecentPhotosMode(false);
                                     updateCurrentDate(date);
                                     updateShowPhotoDisplay({});
-                                    props.toggleImporter(false);
-                                    // Show PhotosList for date navigation
-                                    logger.info('DateList', 'date_click', 'About to call showPhotosListView()', { date });
-                                    showPhotosListView();
-                                    logger.info('DateList', 'date_click', 'showPhotosListView() called', { date });
+                                    // Use showDatePhotos to properly transition to DATE mode
+                                    logger.info('DateList', 'date_click', 'About to call showDatePhotos()', { date });
+                                    showDatePhotos(date);
+                                    logger.info('DateList', 'date_click', 'showDatePhotos() called', { date });
                                 }
                                 } data-date={date} data-page={datePage[date]}>
                                     {date}
