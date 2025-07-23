@@ -61,15 +61,23 @@ This reverse index helps you quickly find the relevant documentation when workin
   - `usePhotosListFilters` - Filter logic and state management
   - `usePhotosListSelection` - Photo selection operations
   - `useViewMode` - View navigation state machine
+- **React Query Hooks**:
+  - `usePhotosQuery` - Custom React Query implementation with caching
+  - `usePhotosWithFilter` - Photo fetching with automatic caching
+  - `usePhotoTags` - Tag fetching with cache management
+  - `useAlbumPhotos` - Album photo fetching
+  - `useUpdatePhotoStar` - Star rating mutation with cache invalidation
+  - `useUpdatePhotoComment` - Comment mutation with cache invalidation
+  - `useUpdatePhotoTags` - Tag mutation with cache invalidation
 - **Contexts**: PhotoContext, UIContext (refactored with view mode), ErrorContext, ImportContext
 - **Cache Service**: PhotoCacheService for unified cache management
 - **Patterns**: State machine navigation, hook composition, cache-first data fetching
 - **Migration**: Gradual migration support with backward compatibility
 - **Related Files**: 
-  - Hooks: `src/hooks/usePhotosListState.js`, `src/hooks/usePhotosListDisplay.js`, `src/hooks/usePhotosListFilters.js`, `src/hooks/usePhotosListSelection.js`, `src/hooks/useViewMode.js`
+  - Hooks: `src/hooks/usePhotosListState.js`, `src/hooks/usePhotosListDisplay.js`, `src/hooks/usePhotosListFilters.js`, `src/hooks/usePhotosListSelection.js`, `src/hooks/useViewMode.js`, `src/hooks/usePhotosQuery.js`
   - Services: `src/services/PhotoCacheService.js`
   - Contexts: `src/context/*.jsx`
-  - Components: `src/App/PhotosList.jsx` (migrating)
+  - Components: `src/App/PhotosList.jsx` (with React Query integration)
 
 ### ⚙️ Configuration Management (continued)
 - **Related Files**: `src/App/Preferences.jsx`, `src/FolderPicker.jsx`, `src-tauri/src/entity/config.rs`
@@ -322,6 +330,7 @@ This reverse index helps you quickly find the relevant documentation when workin
 | PhotosList Filters Hook | `src/hooks/usePhotosListFilters.js` |
 | PhotosList Selection Hook | `src/hooks/usePhotosListSelection.js` |
 | View Mode State Machine | `src/hooks/useViewMode.js` |
+| React Query Implementation | `src/hooks/usePhotosQuery.js` |
 | Debug Log Viewer | `src/App/LogViewer.jsx` |
 | Logger Service | `src/services/LoggerService.js` |
 | Photo Cache Service | `src/services/PhotoCacheService.js` |

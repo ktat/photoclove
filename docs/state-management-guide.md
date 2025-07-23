@@ -399,11 +399,62 @@ if (!tags) {
 2. **Verify TTL**: Items expire after 30 minutes
 3. **Monitor size**: Check if hitting cache limits
 
+## React Query Integration (Phase 3)
+
+### Custom React Query Implementation
+
+PhotoClove includes a custom React Query-like implementation that provides:
+
+- **Automatic Caching**: Query results cached with configurable TTL
+- **Background Refetching**: Automatic data refresh on window focus/reconnect
+- **Retry Logic**: Exponential backoff for failed requests
+- **Loading States**: Comprehensive loading/error state management
+- **Mutation Support**: Optimistic updates with cache invalidation
+
+#### Photo Queries
+
+```javascript
+import { usePhotosWithFilter, usePhotoTags, useAlbumPhotos } from '../hooks/usePhotosQuery.js';
+
+// Fetch photos with automatic caching
+const photosQuery = usePhotosWithFilter(fetchConfig, {
+  staleTime: 60 * 1000, // 1 minute
+  cacheTime: 10 * 60 * 1000, // 10 minutes
+  refetchOnWindowFocus: false
+});
+
+// Access loading states
+const { isLoading, isError, error, isFetching, data } = photosQuery;
+```
+
+#### Photo Mutations
+
+```javascript
+import { useUpdatePhotoStar, useUpdatePhotoComment, useUpdatePhotoTags } from '../hooks/usePhotosQuery.js';
+
+// Update photo star rating
+const starMutation = useUpdatePhotoStar({
+  onSuccess: () => {
+    // Auto-invalidates photo queries
+    console.log('Star rating updated');
+  }
+});
+
+// Update photo comment
+const commentMutation = useUpdatePhotoComment();
+
+// Update photo tags
+const tagsMutation = useUpdatePhotoTags();
+
+// Usage
+starMutation.mutate({ photoPath: '/path/to/photo.jpg', starValue: 4 });
+```
+
 ## Future Enhancements
 
-1. **React Query Integration**: Server state management (Phase 3)
-2. **State Persistence**: Save and restore application state
-3. **Optimistic Updates**: Immediate UI updates with rollback
-4. **State DevTools**: Enhanced debugging capabilities
+1. **State Persistence**: Save and restore application state
+2. **Optimistic Updates**: Immediate UI updates with rollback
+3. **State DevTools**: Enhanced debugging capabilities
+4. **Query Devtools**: Visual query cache inspection
 
 This guide reflects the current state management architecture after the comprehensive refactoring. The new system provides better organization, performance, and developer experience while maintaining backward compatibility.

@@ -210,6 +210,15 @@ Unified caching with automatic management:
 - **TTL Support**: 30-minute automatic expiration
 - **Statistics**: Hit rate and performance monitoring
 
+#### React Query Integration
+
+Custom React Query-like implementation for server state management:
+- **Query Caching**: Automatic caching with configurable stale time
+- **Background Refetching**: Auto-refresh on window focus/reconnect
+- **Mutation Support**: Optimistic updates with cache invalidation
+- **Retry Logic**: Exponential backoff for failed requests
+- **Loading States**: Comprehensive loading/error state management
+
 ### 5. Performance Optimizations
 - **Thumbnail caching**: PhotoCacheService with LRU eviction
 - **Lazy loading**: Photos loaded as needed

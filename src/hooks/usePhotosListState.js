@@ -3,18 +3,42 @@
  * Combines all specialized hooks for centralized state management
  * Extracted from PhotosList.jsx to reduce complexity
  */
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { usePhotosListDisplay } from './usePhotosListDisplay.js';
 import { usePhotosListFilters } from './usePhotosListFilters.js';
 import { usePhotosListSelection } from './usePhotosListSelection.js';
+import { usePhotosWithFilter } from './usePhotosQuery.js';
 import { logger } from '../services/LoggerService.js';
 import { photoCacheService } from '../services/PhotoCacheService.js';
 
-export const usePhotosListState = () => {
+export const usePhotosListState = (initialFetchConfig = null) => {
   // Specialized hooks
   const photoDisplay = usePhotosListDisplay();
   const filters = usePhotosListFilters();
   const selection = usePhotosListSelection();
+  
+  // Fetch config state
+  const [fetchConfig, setFetchConfig] = useState(initialFetchConfig);
+  
+  // Use photos query with automatic caching and refetching
+  const photosQuery = usePhotosWithFilter(fetchConfig, {
+    enabled: !!fetchConfig,
+    staleTime: 60 * 1000, // 1 minute
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false // Disable for photo apps
+  });
+  
+  // Update display hook when query succeeds
+  useEffect(() => {
+    if (photosQuery.isSuccess && photosQuery.data) {
+      photoDisplay.setPhotosList(photosQuery.data);
+      setAllPhotosForCurrentFetch(photosQuery.data.photos || []);
+      
+      logger.debug('usePhotosListState', 'photos_query_success', 'Photos loaded from query', {
+        photoCount: photosQuery.data.photos?.length || 0
+      });
+    }
+  }, [photosQuery.isSuccess, photosQuery.data, photoDisplay]);
   
   // Additional PhotosList-specific state
   const [config, setConfig] = useState(null);
@@ -79,10 +103,10 @@ export const usePhotosListState = () => {
         setIsLimitedByConfig(false);
       }
       
-      // Use the display hook's load function
-      await photoDisplay.loadPhotos(fetchConfig);
+      // Update fetch config to trigger React Query
+      setFetchConfig(fetchConfig);
       
-      logger.info('usePhotosListState', 'load_photos_with_config', 'Photos loaded with config', {
+      logger.info('usePhotosListState', 'load_photos_with_config', 'Photos loading with React Query', {
         fetchConfig,
         configLimit: config?.max_photos_per_fetch
       });
@@ -93,7 +117,7 @@ export const usePhotosListState = () => {
       });
       throw error;
     }
-  }, [photoDisplay]);
+  }, []);
   
   // Update displayed photo count for infinite scroll
   const updateDisplayedPhotoCount = useCallback((count) => {
@@ -183,6 +207,13 @@ export const usePhotosListState = () => {
     ...photoDisplay,
     ...filters,
     ...selection,
+    
+    // React Query state
+    isLoading: photosQuery.isLoading,
+    isError: photosQuery.isError,
+    error: photosQuery.error,
+    isFetching: photosQuery.isFetching,
+    refetch: photosQuery.refetch,
     
     // Additional state
     config,
