@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { logger } from '../services/LoggerService.js';
 import { useError } from '../context/ErrorContext.jsx';
+import './AlbumSelectorModal.css';
 
 const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 0 }) => {
   const { handleTauriError } = useError();
@@ -111,7 +112,7 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
       zIndex: 1000
     }}>
       <div style={{
-        backgroundColor: 'white',
+        backgroundColor: 'var(--bg-elevated)',
         borderRadius: '8px',
         padding: '24px',
         minWidth: '400px',
@@ -129,7 +130,7 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
             alignItems: 'center',
             marginBottom: '8px'
           }}>
-            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold' }}>Add to Album</h2>
+            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: 'var(--text)' }}>Add to Album</h2>
             <button 
               onClick={handleClose}
               disabled={isAdding}
@@ -138,7 +139,7 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
                 border: 'none',
                 fontSize: '24px',
                 cursor: isAdding ? 'not-allowed' : 'pointer',
-                color: '#666',
+                color: 'var(--text)',
                 padding: '0',
                 width: '30px',
                 height: '30px',
@@ -150,7 +151,7 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
               ×
             </button>
           </div>
-          <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>
+          <p style={{ margin: 0, color: 'var(--text)', fontSize: '14px' }}>
             Add {selectedPhotosCount} photo{selectedPhotosCount !== 1 ? 's' : ''} to an existing album
           </p>
         </div>
@@ -163,13 +164,16 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             disabled={isAdding}
+            className="album-search-input"
             style={{
               width: '100%',
               padding: '8px 12px',
-              border: '1px solid #ddd',
+              border: '1px solid var(--border)',
               borderRadius: '4px',
               fontSize: '14px',
-              boxSizing: 'border-box'
+              boxSizing: 'border-box',
+              backgroundColor: 'var(--bg-elevated)',
+              color: 'var(--text)'
             }}
           />
         </div>
@@ -180,14 +184,15 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
           maxHeight: '300px', 
           overflowY: 'auto', 
           marginBottom: '20px',
-          border: '1px solid #e0e0e0',
-          borderRadius: '4px'
+          border: '1px solid var(--border)',
+          borderRadius: '4px',
+          backgroundColor: 'var(--bg)'
         }}>
           {isLoading ? (
             <div style={{ 
               padding: '20px', 
               textAlign: 'center', 
-              color: '#666',
+              color: 'var(--text)',
               fontSize: '14px'
             }}>
               Loading albums...
@@ -196,7 +201,7 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
             <div style={{ 
               padding: '20px', 
               textAlign: 'center', 
-              color: '#666',
+              color: 'var(--text)',
               fontSize: '14px'
             }}>
               {searchTerm ? 'No albums match your search' : 'No albums found'}
@@ -209,15 +214,15 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
                 style={{
                   padding: '12px',
                   cursor: isAdding ? 'not-allowed' : 'pointer',
-                  backgroundColor: selectedAlbumId === album.id ? '#E3F2FD' : 'transparent',
+                  backgroundColor: selectedAlbumId === album.id ? 'rgba(33, 150, 243, 0.2)' : 'transparent',
                   border: selectedAlbumId === album.id ? '2px solid #2196F3' : 'none',
-                  borderBottom: '1px solid #f0f0f0',
+                  borderBottom: '1px solid var(--border)',
                   transition: 'background-color 0.2s',
                   opacity: isAdding ? 0.6 : 1
                 }}
                 onMouseEnter={(e) => {
                   if (!isAdding && selectedAlbumId !== album.id) {
-                    e.target.style.backgroundColor = '#f5f5f5';
+                    e.target.style.backgroundColor = 'var(--bg-elevated)';
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -229,13 +234,14 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
                 <div style={{ 
                   fontWeight: selectedAlbumId === album.id ? 'bold' : 'normal',
                   fontSize: '14px',
-                  marginBottom: '4px'
+                  marginBottom: '4px',
+                  color: 'var(--text)'
                 }}>
                   {album.name}
                 </div>
                 <div style={{ 
                   fontSize: '12px', 
-                  color: '#666'
+                  color: 'var(--text)'
                 }}>
                   📸 {album.photo_count || 0} photos
                   {album.description && (
@@ -260,10 +266,10 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
             disabled={isAdding}
             style={{
               padding: '8px 16px',
-              border: '1px solid #ddd',
+              border: '1px solid var(--border)',
               borderRadius: '4px',
-              backgroundColor: 'white',
-              color: '#333',
+              backgroundColor: 'var(--bg-elevated)',
+              color: 'var(--text)',
               cursor: isAdding ? 'not-allowed' : 'pointer',
               fontSize: '14px',
               opacity: isAdding ? 0.6 : 1

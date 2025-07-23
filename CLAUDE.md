@@ -82,6 +82,25 @@ When working on features:
 2. Use the documented patterns (e.g., `toggle*()` for UI state, `use*()` for hooks)
 3. Follow the source code structure shown in the mappings
 
+#### UI Theme & Color Guidelines
+**PhotoClove is a dark theme application**. Follow these strict color rules:
+
+- **Background colors**: Always use dark colors (e.g., `var(--bg)`, `var(--bg-elevated)`, `#1f2937`, `#374151`)
+- **Text colors**: Always use light colors for text (e.g., `var(--text)`, `#e4e4e4`, `#f9fafb`)
+- **Light colors prohibition**: NEVER use light colors (white, light gray) for large areas or backgrounds
+- **Light color usage**: Light colors can ONLY be used for:
+  - Small accents (buttons, highlights, icons)
+  - Active/selected states
+  - Focus indicators
+  - Small UI elements that need emphasis
+- **CSS Variables**: Always prefer CSS variables over hardcoded colors:
+  - `var(--bg)` for main background
+  - `var(--bg-elevated)` for elevated surfaces
+  - `var(--text)` for text
+  - `var(--border)` for borders
+  - `var(--accent)` for accent colors
+- **Hardcoded colors to avoid**: Never use `white`, `#fff`, `#ffffff`, `#f5f5f5`, `#fafafa` for backgrounds
+
 ### 3. Testing & Validation
 - Run `cargo check` for Rust changes in `src-tauri/src/`
 - Verify with appropriate test commands

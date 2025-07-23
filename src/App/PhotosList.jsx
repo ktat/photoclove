@@ -78,18 +78,18 @@ function PhotosList(props) {
     }, [clearSearchHook, toggleSearchPage]);
     
     // fetchConfig from props or generate from currentDate
-    // For Advanced Search mode, don't set initial fetchConfig to prevent auto-loading
+    // For Advanced Search mode or Search mode, don't set initial fetchConfig to prevent auto-loading
     const fetchConfig = useMemo(() => {
         if (props.fetchConfig) return props.fetchConfig;
-        if (isAdvancedSearchMode) return null;
+        if (isAdvancedSearchMode || isSearchMode) return null;
         
         return {
-            fetch_method: recentPhotosMode ? "recent" : (isSearchMode ? "search" : "date"),
-            value: recentPhotosMode ? "recent" : (isSearchMode ? searchQuery : currentDate),
-            title: recentPhotosMode ? "Recent Photos (60 most recent)" : (isSearchMode ? `Search: "${searchQuery}"` : currentDate),
+            fetch_method: recentPhotosMode ? "recent" : "date",
+            value: recentPhotosMode ? "recent" : currentDate,
+            title: recentPhotosMode ? "Recent Photos (60 most recent)" : currentDate,
             max_photos_per_fetch: recentPhotosMode ? 60 : undefined
         };
-    }, [props.fetchConfig, isAdvancedSearchMode, recentPhotosMode, isSearchMode, searchQuery, currentDate]);
+    }, [props.fetchConfig, isAdvancedSearchMode, isSearchMode, recentPhotosMode, currentDate]);
 
     // Debug logging
     logger.debug('PhotosList', 'fetchConfig_generation', 'FetchConfig debug', {
@@ -361,6 +361,17 @@ function PhotosList(props) {
         
         await performSearch(query, type, filters, sortField, sortOrder);
     }, [performSearch, sortOfPhotos]);
+
+    // Auto-execute search when coming from HOME with initial query
+    useEffect(() => {
+        if (isSearchMode && searchInitialQuery && searchInitialQuery.trim() && !searchQuery) {
+            logger.info('PhotosList', 'auto_search_from_home', 'Executing auto-search from HOME', {
+                searchInitialQuery,
+                isSearchMode
+            });
+            handleSearch(searchInitialQuery, 'all', {});
+        }
+    }, [isSearchMode, searchInitialQuery, searchQuery, handleSearch]);
 
     const handleSearchClear = useCallback(() => {
         clearSearch();
@@ -1314,13 +1325,13 @@ function PhotosList(props) {
                             width: `${iconSize + 50}px`,
                             height: `${iconSize + 80}px`,
                             cursor: 'pointer',
-                            border: '1px solid #ddd',
+                            border: '1px solid var(--border)',
                             borderRadius: '8px',
                             margin: '10px',
                             padding: '10px',
                             display: 'inline-block',
                             verticalAlign: 'top',
-                            backgroundColor: '#f9f9f9',
+                            backgroundColor: 'var(--bg-elevated)',
                             transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                         }}
                         onMouseEnter={(e) => {
@@ -1335,13 +1346,14 @@ function PhotosList(props) {
                         <div className="album-cover" style={{
                             width: `${iconSize}px`,
                             height: `${iconSize}px`,
-                            backgroundColor: '#e0e0e0',
+                            backgroundColor: '#374151',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             marginBottom: '10px',
                             borderRadius: '4px',
-                            overflow: 'hidden'
+                            overflow: 'hidden',
+                            border: '1px solid var(--border)'
                         }}>
                             {album.coverPhoto ? (
                                 <img 
@@ -1387,20 +1399,24 @@ function PhotosList(props) {
         <div style={{ 
             marginBottom: '20px',
             padding: '10px',
-            backgroundColor: '#f5f5f5',
-            borderRadius: '4px'
+            backgroundColor: 'var(--bg-elevated)',
+            borderRadius: '4px',
+            border: '1px solid var(--border)'
         }}>
             <input 
                 type="text"
                 placeholder="Search albums..." 
                 value={albumSearchTerm}
                 onChange={(e) => setAlbumSearchTerm(e.target.value)}
+                className="album-list-search-input"
                 style={{
                     width: '100%',
                     padding: '8px 12px',
-                    border: '1px solid #ddd',
+                    border: '1px solid var(--border)',
                     borderRadius: '4px',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    backgroundColor: '#374151',
+                    color: 'var(--text)'
                 }}
             />
         </div>
@@ -1535,7 +1551,7 @@ function PhotosList(props) {
                                     {/* Num selector removed - not needed with infinite scroll */}
                                 </div>
                             </div>
-                            : <>{isSearchMode ? "No Search Result" : "No Photo Found!"}</>
+                            : <>{isSearchMode ? (isSearching ? <PhotoLoading /> : "No Search Result") : "No Photo Found!"}</>
                         }
                         <Scrollable f={handleInfiniteScroll} className="photos">
                             {/* Removed scroll indicators for infinite scroll */}

@@ -1,0 +1,23 @@
+/* Album Selector Modal styles */
+
+.album-search-input::placeholder {
+    color: var(--accent);
+    opacity: 0.7;
+}
+
+/* Dark theme improvements for album selector */
+.album-selector-selected {
+    background-color: #2196F3 !important;
+    color: white !important;
+}
+
+.album-selector-selected .album-info {
+    color: white !important;
+}
+
+/* Improve selected state visibility in dark mode */
+@media (prefers-color-scheme: dark) {
+    .album-selector-selected {
+        background-color: #1976D2 !important;
+    }
+}
