@@ -18,6 +18,9 @@ PhotoClove is a desktop photo manager designed for speed and simplicity. Built w
 - **☁️ Google Photos Integration**: Secure OAuth authentication with automatic token refresh and seamless photo uploads
 - **🔄 Background Processing**: Advanced job queue with immediate retry, progress tracking, and comprehensive logging
 - **🔐 Secure Authentication**: Platform-native keyring storage for OAuth tokens with external service integration
+- **📚 Album Management**: Create custom photo collections with descriptions, cover photos, and custom ordering
+- **🏷️ Tag System**: Color-coded tags for photo categorization with search integration
+- **💡 Tutorial System**: Context-aware help tooltips for new users
 - **🖥️ Cross-Platform**: Works on Windows, macOS, and Linux
 
 ## 🏗️ Architecture
@@ -81,6 +84,7 @@ Comprehensive documentation is available in the [`docs/`](./docs/) directory:
 - **[Component Structure](./docs/component-structure.md)** - React component hierarchy and HTML structure
 - **[Source Tree](./docs/source-tree.md)** - Complete codebase organization guide
 - **[Feature Documentation Index](./docs/feature-documentation-index.md)** - Quick reference for finding relevant docs
+- **[Terms Reference](./docs/terms.md)** - Mapping between features, concepts, and source code
 
 ### Additional Documentation
 - [Authentication](./docs/authentication.md) - OAuth flow for Google Photos integration
@@ -161,6 +165,24 @@ import_to/
 - **Save Options**: Save styles to database or export new image file
 - **Transform Controls**: Brightness, contrast, saturation, hue, rotation, scaling
 
+## 📚 Albums & Tags
+
+PhotoClove provides powerful organization features for managing your photo collections:
+
+### Album Management
+- **Create Albums**: Organize photos into named collections with descriptions
+- **Cover Photos**: Set representative images for each album
+- **Custom Ordering**: Arrange photos within albums as desired
+- **Multi-Album Support**: Photos can belong to multiple albums
+- **Album Navigation**: Browse photos by album in PhotosList
+
+### Tag System
+- **Color-Coded Tags**: Create tags with custom colors for visual organization
+- **Bulk Operations**: Assign or remove tags from multiple photos at once
+- **Tag Management**: Edit tag names and colors in Preferences
+- **Search Integration**: Filter photos by tags in advanced search
+- **Visual Indicators**: Tags displayed on photo thumbnails
+
 ## 🔍 Search & Filtering
 
 PhotoClove includes a comprehensive search system with advanced features:
@@ -179,6 +201,7 @@ PhotoClove includes a comprehensive search system with advanced features:
 ### Filter Options
 - **Star Ratings**: 1-5 star rating system with searchable ratings
 - **Comments**: Searchable text annotations and comment filtering
+- **Tag Filters**: Filter by assigned tags with color-coded display
 - **File Types**: Filter by extension (JPG, MP4, PNG, etc.)
 - **Camera Equipment**: Filter by camera model, lens, and technical specifications
 - **Performance Optimized**: Database indexes for fast metadata queries
@@ -270,10 +293,10 @@ PhotoClove uses a structured development workflow with the `improvement/` direct
 - [x] **Search Functionality**: Complete search interface with advanced filters
 - [x] **Thumbnail Display**: Implement Display Window Algorithm for efficient thumbnail loading
 - [x] **Crop Tool**: Complete the photo cropping functionality
+- [x] **Album Support**: Create custom photo collections with descriptions, cover photos, and ordering
+- [x] **Tag System**: Color-coded taggable labels with search integration and bulk management
 
 ### Current Focus
-- [ ] **Tag System**: Add taggable labels for better organization
-- [ ] **Album Support**: Group photos into custom collections
 - [ ] **Enhanced Error Handling**: Improve user feedback for failed operations
 - [ ] **Performance Optimization**: Further optimize large collection handling
 
@@ -306,6 +329,12 @@ See [`CHANGES.md`](./CHANGES.md) for detailed version history and recent updates
 - Check LogViewer for search-related errors
 - Ensure search index is properly built
 - Verify advanced search filters are correctly configured
+- Check tag filters if searching by tags
+
+**Albums or Tags not showing?**
+- Ensure database migration completed (check logs)
+- Verify album/tag tables exist in SQLite database
+- Try restarting the application to trigger migrations
 
 **Performance issues?**
 - Increase thumbnail parallel processing in Preferences

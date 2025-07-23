@@ -5,11 +5,13 @@ This reverse index helps you quickly find the relevant documentation when workin
 ## Quick Reference by Feature
 
 ### 🏠 Application Startup & Navigation
-**When you need to understand**: App initialization, routing, menu system, startup state management
+**When you need to understand**: App initialization, routing, menu system, startup state management, screen transitions
 - **Architecture**: [System Architecture](architecture.md#system-architecture) → Frontend Architecture → Application Shell
+- **Navigation Flow**: [Screen Transition Diagram](screen-transition-diagram.md) - Complete visual guide to all screen transitions and navigation flows
 - **Sequences**: [Application Startup Sequence](feature-sequences.md#application-startup-sequence)
 - **Components**: [Main Application Container](component-structure.md#main-application-container), [Left Menu](component-structure.md#left-menu-and-date-list)
 - **Startup Behavior**: Welcome screen for first-time users (useCount ≤ 2), Home component for returning users, proper state management prevents "No Photo Found!" at startup
+- **Navigation Patterns**: Left Column Menu as primary navigation, dual search entry points, PhotosList component multi-mode behavior
 - **Related Files**: `src/App.jsx`, `src/context/UIContext.jsx`, `src/main.jsx`, `src-tauri/src/lib.rs`
 
 ### 📸 Photo Import System
@@ -98,13 +100,16 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **Related Files**: `src-tauri/src/repository/meta_db/sqlite.rs`, `src-tauri/src/entity/photo_meta.rs`
 
 ### 📝 Logging & Debugging System
-**When you need to understand**: Application logging, LogViewer, debug information, bug investigation
-- **Architecture**: Structured logging with frontend LoggerService and backend log macros
+**When you need to understand**: Application logging, LogViewer, debug information, bug investigation, structured logging
+- **Architecture**: Comprehensive structured logging system with frontend LoggerService and backend log macros
+- **Implementation**: Complete replacement of eprintln! with structured logging across all Rust modules
 - **Components**: LogViewer component (`src/App/LogViewer.jsx`), configurable logging in Preferences
-- **Features**: Toggle logging on/off, configurable log levels, structured logging format, daily log files
+- **Features**: Toggle logging on/off, configurable log levels, structured logging format, daily log files, correlation ID tracking
+- **Format**: Structured key=value pairs with correlation IDs for request tracing and debugging
 - **Access**: Ctrl+Shift+L to open LogViewer, Preferences panel for logging settings
 - **Storage**: Frontend logs in memory, backend logs in `~/.local/share/photoclove/logs/`
 - **Bug Investigation**: Systematic debugging approach documented in `CLAUDE.md`
+- **Improvements**: Enhanced error handling, proper context propagation, empty string validation in date processing
 - **Related Files**: `src/App/LogViewer.jsx`, `src/services/LoggerService.js`, `src-tauri/src/domain_service/logging_service.rs`, `CLAUDE.md`
 
 ### 🏷️ Tag System
@@ -141,6 +146,16 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **Error Handling**: Proper API error detection and job failure handling, structured logging
 - **Token Management**: Automatic refresh using external service, secure keyring storage
 - **Related Files**: `src-tauri/src/entity/google_photos.rs`, `src-tauri/src/domain_service/token_storage_service.rs`, `src/services/firebase/auth.js`
+
+### 🎨 UI Theme & Dark Mode
+**When you need to understand**: Application theming, dark mode implementation, UI consistency, color management
+- **Architecture**: Dark theme as primary design system with CSS variables for consistency
+- **Guidelines**: Comprehensive theme guidelines documented in `CLAUDE.md` with strict color usage rules
+- **Implementation**: CSS variables (`--bg`, `--bg-elevated`, `--text`, `--border`, `--accent`) used throughout application
+- **Components**: All UI components follow dark theme patterns with proper contrast and accessibility
+- **Fixes**: Fixed white backgrounds in tag selectors, album modals, search inputs, and album tiles
+- **Restrictions**: Light colors prohibited for large areas, only allowed for small accents and highlights
+- **Related Files**: `src/style.css`, `src/components/TagSelector.css`, `src/components/AlbumSelectorModal.css`, `CLAUDE.md`
 
 ## Quick Reference by Technology
 
@@ -277,11 +292,13 @@ This reverse index helps you quickly find the relevant documentation when workin
 
 | What you're looking for | File Path |
 |-------------------------|-----------|
+| Screen Transition Diagram | `docs/screen-transition-diagram.md` |
 | Main App Component | `src/App.jsx` |
 | Photo Grid Display | `src/App/PhotosList.jsx` |
 | Full Screen Photo Viewer | `src/App/PhotosList/PhotosListMini.jsx` |
 | Photo Editor | `src/App/PhotosList/PhotoOption/PhotoEditor.jsx` |
 | Photo Tags Panel | `src/App/PhotosList/PhotoOption/PhotoTags.jsx` |
+| Document Viewer | `src/components/DocumentViewer.jsx` |
 | Tag Components | `src/components/Tag*.jsx` |
 | Search Tools Container | `src/components/SearchTools.jsx` |
 | Search Input Bar | `src/components/SearchBar.jsx` |
