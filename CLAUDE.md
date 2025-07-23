@@ -1,5 +1,8 @@
-# Improvement WorkFlow
+# CLAUDE.md - PhotoClove Development Guidelines
 
+## 🎯 Priority Commands (Always Check First)
+
+### `do improvement`
 If I say "do improvement", do the following.
 
 Read files under `improvement/*.md` order by file name as int.
@@ -15,8 +18,7 @@ At last commit your changes to the branch.
 
 If `improvement/*.md` are left, repeat this step and clear context if "keep context" is not written at the last line of `*.md` file.
 
-# Update Document WorkFlow
-
+### `update docs`
 If I say "update docs", do the following.
 
 Read "docs/.current-docs-sha" and get commit sha hash.
@@ -25,78 +27,80 @@ After finishing document update, commit your changes and update "docs/.current-d
 
 Note that: You carefully check whether the update of docs/feature-documentation-index.md is required or not.
 
-# Compile check
-
-If I say `compile check`, do the follwoing.
+### `compile check`
+If I say `compile check`, do the following.
 
 You should check `cd src-tauri/src/` and `cargo check` when you change `*.rs` files.
 
-# Logging Rules
+### `discussion`
+When I say `discussion`, create new `improvement/$number.md` file.
+`$number` is determined from the file under improvement/done/.
+
+I suggest to you new feature. do discussion about it.
+
+- carefully consider about the influence of the new feature to existing features.
+- How do you implement the task?
+- Which source code you will change
+
+## 📋 General Development Rules (Apply to ALL Tasks)
+
+### 1. Logging Standards
 
 When implementing logging in the codebase:
 
-## Frontend Logging
+#### Frontend Logging
 - Use the structured `logger` service from `src/services/LoggerService.js`
 - Import: `import { logger } from '../services/LoggerService.js';`
 - Pattern: `logger.level('ComponentName', 'event_name', 'Description', { data })`
 - Example: `logger.info('PhotosList', 'search_triggered', 'User initiated search', { query, filters })`
 - Avoid direct `console.log/warn/error` calls - use the structured logger instead
 
-## Backend Logging
+#### Backend Logging
 - Use Rust's `log` macros with structured format in semicolon-separated key=value pairs
 - Pattern: `log::level!(target: "component", "event; key1={}; key2={}", value1, value2)`
 - Always include `correlation_id` when available for request tracing
 - Example: `log::info!(target: "search", "search_request; correlation_id={}; query={}", correlation_id, query)`
 
-## LogViewer Integration
+#### LogViewer Integration
 - All logs are automatically collected and viewable in LogViewer.jsx
 - Frontend logs: stored in memory via LoggerService
 - Backend logs: written to daily files and retrieved via `get_logs` command
 - Use structured logging to enable proper filtering and search in LogViewer
 
-# Bug Investigation
+### 2. Code Style & Patterns
 
-## First-Click Bug Solution (Fixed 2025-07-20)
-
-**Problem**: "No Photo Found!" displayed on first date/Recent Photos click after app startup.  
-**Root Cause**: Null reference error in logging code (`config.fetch_method` when `config` is null).  
-**Solution**: Use optional chaining in PhotosList.jsx:873:
-
-```javascript
-fetchMethod: config?.fetch_method || fetchConfig?.fetch_method || 'unknown',
-```
-
-**Lesson**: Logging errors can prevent state updates. Always use defensive programming in logging code.
-
-## Investigation Process
-
-1. **Check logs first**: `~/.local/share/photoclove/logs/`
-2. **Trace data flow**: User Action → State → Backend → Response → UI
-3. **Use optional chaining** for null-safe property access
-4. **Investigate systematically**, avoid repeated fixes
-
-# Terms & Source Code Reference
-
+#### Terms & Source Code Reference
 For effective communication about PhotoClove features and implementation:
 
-- **Use terms document**: Refer to `docs/terms.doc` for standard terminology and source code mappings
+- **Use terms document**: Refer to `docs/terms.md` for standard terminology and source code mappings
 - **Find implementation quickly**: Use the Term → File mapping to locate where features are implemented
 - **Consistent naming**: Use the documented terms when discussing features, components, and concepts
 - **Example**: Instead of saying "photo grid component", use "PhotosList" and reference `src/App/PhotosList.jsx`
 
 When working on features:
-1. Check `docs/terms.doc` for the correct term and file location
+1. Check `docs/terms.md` for the correct term and file location
 2. Use the documented patterns (e.g., `toggle*()` for UI state, `use*()` for hooks)
 3. Follow the source code structure shown in the mappings
 
-# Database Migration Implementation
+### 3. Testing & Validation
+- Run `cargo check` for Rust changes in `src-tauri/src/`
+- Verify with appropriate test commands
+- Check neighboring files for conventions and patterns
 
-## Album Tables Migration
+### 4. Important Reminders
+- Do what has been asked; nothing more, nothing less.
+- NEVER create files unless they're absolutely necessary for achieving your goal.
+- ALWAYS prefer editing an existing file to creating a new one.
+- NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
 
+## 🔧 Context-Specific Guidelines
+
+### Database Migration Implementation
+
+#### Album Tables Migration
 **File**: `src-tauri/src/repository/meta_db/sqlite.rs`
 
-### Migration Pattern
-
+##### Migration Pattern
 PhotoClove uses a proper database migration system that checks for table existence before creation. All new tables should follow this pattern:
 
 ```rust
@@ -123,8 +127,7 @@ if !table_exists {
 }
 ```
 
-### Album Tables Implementation
-
+##### Album Tables Implementation
 **Location**: Lines 644-718 in `init_db()` function
 
 **Tables Created**:
@@ -144,8 +147,7 @@ if !table_exists {
 - Existing installations get tables on next app start
 - No data loss or conflicts with existing databases
 
-### Best Practices
-
+##### Best Practices
 When adding new tables:
 
 1. **Follow the pattern**: Use `sqlite_master` existence check
@@ -154,8 +156,7 @@ When adding new tables:
 4. **Handle errors**: Use Result types, avoid silent failures
 5. **Test thoroughly**: Verify migration works on fresh and existing databases
 
-### Migration Benefits
-
+##### Migration Benefits
 - **Automatic**: No manual database setup required
 - **Safe**: Checks existence before creation, prevents conflicts
 - **Traceable**: Comprehensive logging for debugging
@@ -164,13 +165,21 @@ When adding new tables:
 
 This migration system ensures album functionality works reliably across all user installations.
 
-# Improvement Discussion
+### Bug Investigation
 
-When I say `dicussion`, create new `imporvement/$number.md` file.
-`$number` is determined from the file under improvement/done/.
+#### First-Click Bug Solution (Fixed 2025-07-20)
+**Problem**: "No Photo Found!" displayed on first date/Recent Photos click after app startup.  
+**Root Cause**: Null reference error in logging code (`config.fetch_method` when `config` is null).  
+**Solution**: Use optional chaining in PhotosList.jsx:873:
 
-I suggest to you new feature. do discussion about it.
+```javascript
+fetchMethod: config?.fetch_method || fetchConfig?.fetch_method || 'unknown',
+```
 
-- carefuly consider about the influence of the new feature to exiting futures.
-- How do you implement the task?
-- Which source code you will change
+**Lesson**: Logging errors can prevent state updates. Always use defensive programming in logging code.
+
+#### Investigation Process
+1. **Check logs first**: `~/.local/share/photoclove/logs/`
+2. **Trace data flow**: User Action → State → Backend → Response → UI
+3. **Use optional chaining** for null-safe property access
+4. **Investigate systematically**, avoid repeated fixes
