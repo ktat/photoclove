@@ -4,6 +4,7 @@
  */
 import { useState, useCallback } from 'react';
 import { logger } from '../services/LoggerService.js';
+import { photoCacheService } from '../services/PhotoCacheService.js';
 
 export const usePhotosListDisplay = () => {
   // Photo display state
@@ -54,6 +55,26 @@ export const usePhotosListDisplay = () => {
     } finally {
       setPhotoLoading(false);
     }
+  }, []);
+  
+  // Get thumbnail from cache or return null
+  const getCachedThumbnail = useCallback((photoPath) => {
+    return photoCacheService.getThumbnail(photoPath);
+  }, []);
+  
+  // Cache thumbnail
+  const cacheThumbnail = useCallback((photoPath, thumbnailData) => {
+    photoCacheService.setThumbnail(photoPath, thumbnailData);
+  }, []);
+  
+  // Get photo from cache
+  const getCachedPhoto = useCallback((photoPath) => {
+    return photoCacheService.getPhoto(photoPath);
+  }, []);
+  
+  // Cache photo
+  const cachePhoto = useCallback((photoPath, photoData) => {
+    photoCacheService.setPhoto(photoPath, photoData);
   }, []);
   
   // Reset photo display state
@@ -116,6 +137,12 @@ export const usePhotosListDisplay = () => {
     // Functions
     loadPhotos,
     resetPhotoDisplay,
-    updateCurrentPhoto
+    updateCurrentPhoto,
+    
+    // Cache functions
+    getCachedThumbnail,
+    cacheThumbnail,
+    getCachedPhoto,
+    cachePhoto
   };
 };

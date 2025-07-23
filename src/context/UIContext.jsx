@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { invoke } from "@tauri-apps/api/core";
 import { message } from '@tauri-apps/plugin-dialog';
+import { useViewMode, VIEW_MODES } from '../hooks/useViewMode.js';
 
 const UIContext = createContext();
 
@@ -13,22 +14,13 @@ export const useUI = () => {
 };
 
 export const UIProvider = ({ children }) => {
-  const [showImporter, setShowImporter] = useState(false);
-  const [showPhotosList, setShowPhotosList] = useState(false);
-  const [showPreferences, setShowPreferences] = useState(false);
-  const [showJobQueue, setShowJobQueue] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
-  const [showSearchPage, setShowSearchPage] = useState(false);
-  const [searchInitialQuery, setSearchInitialQuery] = useState("");
-  const [isAdvancedSearchMode, setIsAdvancedSearchMode] = useState(false);
+  // Use the new view mode state machine
+  const viewMode = useViewMode(VIEW_MODES.HOME);
+  
+  // Keep non-view-related state
   const [footerMessages, setFooterMessages] = useState({});
   const [welcomeImage, setWelcomeImage] = useState("");
   const [useCount, setUseCount] = useState(0);
-  
-  // Album navigation state
-  const [showAlbumsList, setShowAlbumsList] = useState(false);
-  const [currentAlbumId, setCurrentAlbumId] = useState(null);
-  const [viewMode, setViewMode] = useState('date'); // 'date', 'search', 'album', 'album_list'
 
   const addFooterMessage = useCallback((k, v, withDialog, deleteAfter) => {
     setFooterMessages(prev => ({
@@ -63,179 +55,43 @@ export const UIProvider = ({ children }) => {
     }, timeAfter);
   }, []);
 
-  const toggleImporter = useCallback((t) => {
-    if (t) {
-      setShowImporter(true);
-      setShowPhotosList(false);
-      setShowPreferences(false);
-      setShowJobQueue(false);
-      setShowLogin(false);
-      setShowSearchPage(false);
-    } else {
-      setShowImporter(false);
-      setShowPreferences(false);
-      setShowJobQueue(false);
-      setShowLogin(false);
-      setShowPhotosList(true);
-      setShowSearchPage(false);
-    }
-  }, []);
-
-  const toggleLogin = useCallback((t) => {
-    if (t) {
-      setShowLogin(true);
-      setShowImporter(false);
-      setShowPhotosList(false);
-      setShowPreferences(false);
-      setShowJobQueue(false);
-      setShowSearchPage(false);
-    } else {
-      setShowImporter(false);
-      setShowPreferences(false);
-      setShowJobQueue(false);
-      setShowLogin(false);
-      setShowPhotosList(false);
-      setShowSearchPage(false);
-    }
-  }, []);
-
-  const togglePreferences = useCallback((t) => {
-    if (t) {
-      setShowImporter(false);
-      setShowPhotosList(false);
-      setShowLogin(false);
-      setShowJobQueue(false);
-      setShowPreferences(true);
-      setShowSearchPage(false);
-    } else {
-      setShowImporter(false);
-      setShowPreferences(false);
-      setShowJobQueue(false);
-      setShowLogin(false);
-      setShowPhotosList(true);
-      setShowSearchPage(false);
-    }
-  }, []);
-
-  const toggleJobQueue = useCallback((t) => {
-    if (t) {
-      setShowImporter(false);
-      setShowPhotosList(false);
-      setShowLogin(false);
-      setShowPreferences(false);
-      setShowJobQueue(true);
-      setShowSearchPage(false);
-    } else {
-      setShowImporter(false);
-      setShowPreferences(false);
-      setShowJobQueue(false);
-      setShowLogin(false);
-      setShowPhotosList(true);
-      setShowSearchPage(false);
-    }
-  }, []);
-
-  const toggleSearchPage = useCallback((t, initialQuery = "", isAdvanced = false) => {
-    if (t) {
-      setShowImporter(false);
-      setShowPhotosList(false);
-      setShowLogin(false);
-      setShowPreferences(false);
-      setShowJobQueue(false);
-      setShowSearchPage(true);
-      setSearchInitialQuery(initialQuery);
-      setIsAdvancedSearchMode(isAdvanced);
-    } else {
-      setShowImporter(false);
-      setShowPreferences(false);
-      setShowJobQueue(false);
-      setShowLogin(false);
-      setShowPhotosList(true);
-      setShowSearchPage(false);
-      setSearchInitialQuery("");
-      setIsAdvancedSearchMode(false);
-    }
-  }, []);
-
+  // Enhanced navigation functions using the view mode state machine
   const toggleHome = useCallback(() => {
-    setShowImporter(false);
-    setShowPhotosList(false);
-    setShowLogin(false);
-    setShowPreferences(false);
-    setShowJobQueue(false);
-    setShowSearchPage(false);
-    setShowAlbumsList(false);
-    setViewMode('date');
-    setCurrentAlbumId(null);
-  }, []);
+    viewMode.transitionTo(VIEW_MODES.HOME);
+  }, [viewMode]);
 
   const toggleAlbumListMode = useCallback(() => {
-    setShowImporter(false);
-    setShowPhotosList(true);
-    setShowLogin(false);
-    setShowPreferences(false);
-    setShowJobQueue(false);
-    setShowSearchPage(false);
-    setShowAlbumsList(true);
-    setViewMode('album_list');
-    setCurrentAlbumId(null);
-  }, []);
-
-  const openAlbum = useCallback((albumId) => {
-    setShowImporter(false);
-    setShowPhotosList(true);
-    setShowLogin(false);
-    setShowPreferences(false);
-    setShowJobQueue(false);
-    setShowSearchPage(false);
-    setShowAlbumsList(false);
-    setViewMode('album');
-    setCurrentAlbumId(albumId);
-  }, []);
+    viewMode.transitionTo(VIEW_MODES.ALBUM_LIST);
+  }, [viewMode]);
 
   const showPhotosListView = useCallback(() => {
-    console.log('🐛 UIContext showPhotosListView() called - setting showPhotosList to true');
-    setShowImporter(false);
-    setShowPhotosList(true);
-    setShowLogin(false);
-    setShowPreferences(false);
-    setShowJobQueue(false);
-    setShowSearchPage(false);
-    setShowAlbumsList(false);
-    setViewMode('date');
-    setCurrentAlbumId(null);
-    console.log('🐛 UIContext showPhotosListView() - all states set');
-  }, []);
+    console.log('🐛 UIContext showPhotosListView() called - transitioning to DATE mode');
+    viewMode.transitionTo(VIEW_MODES.DATE);
+    console.log('🐛 UIContext showPhotosListView() - view mode transition complete');
+  }, [viewMode]);
 
   const value = {
-    // State
-    showImporter,
-    showPhotosList,
-    showPreferences,
-    showJobQueue,
-    showLogin,
-    showSearchPage,
-    searchInitialQuery,
-    isAdvancedSearchMode,
+    // View mode state (from state machine)
+    ...viewMode,
+    
+    // Legacy compatibility - map new state to old property names
+    viewMode: viewMode.currentMode,
+    
+    // Non-view-related state
     footerMessages,
     welcomeImage,
     useCount,
-    showAlbumsList,
-    currentAlbumId,
-    viewMode,
     
-    // Actions
-    toggleImporter,
-    toggleLogin,
-    togglePreferences,
-    toggleJobQueue,
-    toggleSearchPage,
+    // Enhanced navigation actions
     toggleHome,
     toggleAlbumListMode,
-    openAlbum,
     showPhotosListView,
+    
+    // Footer message actions
     addFooterMessage,
     removeFooterMessage,
+    
+    // App state setters
     setWelcomeImage,
     setUseCount
   };

@@ -8,6 +8,7 @@ import { usePhotosListDisplay } from './usePhotosListDisplay.js';
 import { usePhotosListFilters } from './usePhotosListFilters.js';
 import { usePhotosListSelection } from './usePhotosListSelection.js';
 import { logger } from '../services/LoggerService.js';
+import { photoCacheService } from '../services/PhotoCacheService.js';
 
 export const usePhotosListState = () => {
   // Specialized hooks
@@ -129,6 +130,54 @@ export const usePhotosListState = () => {
     }
   }, [isLoadingMore, infiniteScrollEnabled, displayedPhotoCount]);
   
+  // Tag cache methods
+  const getCachedTags = useCallback((photoPath) => {
+    return photoCacheService.getTags(photoPath);
+  }, []);
+  
+  const cacheTags = useCallback((photoPath, tags) => {
+    photoCacheService.setTags(photoPath, tags);
+    
+    // Also update local cache
+    setPhotoTags(prev => ({
+      ...prev,
+      [photoPath]: tags
+    }));
+  }, []);
+  
+  const invalidateTagsCache = useCallback((photoPath) => {
+    photoCacheService.invalidateTags(photoPath);
+    
+    // Remove from local cache
+    setPhotoTags(prev => {
+      const newTags = { ...prev };
+      delete newTags[photoPath];
+      return newTags;
+    });
+  }, []);
+  
+  // Album cache methods
+  const getCachedAlbumPhotos = useCallback((albumId) => {
+    return photoCacheService.getAlbumPhotos(albumId);
+  }, []);
+  
+  const cacheAlbumPhotos = useCallback((albumId, photos) => {
+    photoCacheService.setAlbumPhotos(albumId, photos);
+  }, []);
+  
+  // Cache statistics
+  const getCacheStats = useCallback(() => {
+    return photoCacheService.getStats();
+  }, []);
+  
+  // Clear all caches
+  const clearAllCaches = useCallback(() => {
+    photoCacheService.clear();
+    setPhotoTags({});
+    
+    logger.info('usePhotosListState', 'caches_cleared', 'All caches cleared');
+  }, []);
+  
   return {
     // Specialized hook state and functions
     ...photoDisplay,
@@ -170,6 +219,15 @@ export const usePhotosListState = () => {
     resetAllState,
     loadPhotosWithConfig,
     updateDisplayedPhotoCount,
-    loadMorePhotos
+    loadMorePhotos,
+    
+    // Cache functions
+    getCachedTags,
+    cacheTags,
+    invalidateTagsCache,
+    getCachedAlbumPhotos,
+    cacheAlbumPhotos,
+    getCacheStats,
+    clearAllCaches
   };
 };

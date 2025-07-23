@@ -4,6 +4,7 @@
  */
 import { useState, useCallback } from 'react';
 import { logger } from '../services/LoggerService.js';
+import { photoCacheService } from '../services/PhotoCacheService.js';
 
 export const usePhotosListFilters = () => {
   // Filter state
@@ -118,6 +119,16 @@ export const usePhotosListFilters = () => {
     return active.length > 0 ? active.join(', ') : 'No filters';
   }, [filters]);
   
+  // Cache filter options
+  const cacheFilterOptions = useCallback((key, options) => {
+    photoCacheService.setMetadata(`filter_options:${key}`, options);
+  }, []);
+  
+  // Get cached filter options
+  const getCachedFilterOptions = useCallback((key) => {
+    return photoCacheService.getMetadata(`filter_options:${key}`);
+  }, []);
+  
   return {
     // Unified filter state
     filters,
@@ -146,6 +157,10 @@ export const usePhotosListFilters = () => {
     resetFilters,
     applyFrontendFilters,
     hasActiveFilters,
-    getFilterSummary
+    getFilterSummary,
+    
+    // Cache functions
+    cacheFilterOptions,
+    getCachedFilterOptions
   };
 };
