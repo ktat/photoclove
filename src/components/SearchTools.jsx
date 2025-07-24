@@ -66,15 +66,18 @@ const SearchTools = ({
         onSearch(query, searchType, currentFilters);
     };
 
-    // Apply filters even without search query
+    // Apply filters with current search query
     const applyFilters = () => {
-        // Use empty query to search with filters only
-        logger.info('SearchTools', 'apply_filters', 'Executing filter-only search', {
+        // Use current search query with filters (if both are present)
+        const queryToUse = searchQuery.trim();
+        logger.info('SearchTools', 'apply_filters', 'Executing search with query and filters', {
+            query: queryToUse,
             currentFilters,
             hasActiveFilters,
-            filterCount: Object.keys(currentFilters).length
+            filterCount: Object.keys(currentFilters).length,
+            searchType: 'all'
         });
-        onSearch('', 'all', currentFilters);
+        onSearch(queryToUse, 'all', currentFilters);
     };
    
     // Check if there are active filters to enable/disable the manual search button
@@ -128,7 +131,7 @@ const SearchTools = ({
                     🔍 Execute Search
                 </button>
                 <p className="manual-search-hint">
-                    Click "Execute Search" to apply your filter changes
+                    Click "Execute Search" to apply filters with your search query
                 </p>
             </div>
            
