@@ -428,10 +428,10 @@ function PhotosList(props) {
     // Handle new album creation
     const handleNewAlbumClick = useCallback(() => {
         logger.info('PhotosList', 'new_album_click', 'Opening album creation modal from grid', {
-            currentMode: currentViewMode
+            currentMode: viewMode
         });
         setShowAlbumCreationModal(true);
-    }, [currentViewMode]);
+    }, [viewMode]);
 
     // Handle album creation from modal
     const createEmptyAlbum = useCallback(async (albumData) => {
