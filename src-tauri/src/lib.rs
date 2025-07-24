@@ -5,8 +5,6 @@ use crate::repository::RepositoryDB;
 use crate::repository::*;
 use crate::value::*;
 use entity::config::Config;
-use rusqlite::ToSql;
-use serde_json::json;
 use std::{
     fs, path,
     path::PathBuf,
@@ -396,80 +394,222 @@ async fn get_photos(
     Ok(photos.to_json())
 }
 
-#[tauri::command]
-async fn get_photos_with_filter(
-    date_str: &str,
-    page: u32,
-    sort_value: i32,
-    num: u32,
-    star: i32,
-    has_comment: bool,
-    extension: &str,
-    state: tauri::State<'_, AppState>,
-    offset: u32,
-) -> Result<String, ()> {
-    // Check if date_str is empty
-    if date_str.trim().is_empty() {
-        return Err(());
-    }
-    let date = date::Date::from_string(&date_str.to_string(), Option::None);
-    let repo_db = &state.repo_db;
-    let meta_db = &state.meta_db;
-    let meta_data = match meta_db.get_photo_meta_data_in_date(date) {
-        Ok(data) => data,
-        Err(_e) => photo_meta::PhotoMetas::new(),
-    };
-    let photos = repo_db
-        .get_photos_in_date(
-            &meta_data,
-            date,
-            repository::sort_from_int(sort_value),
-            num,
-            page,
-            offset as usize,
-            star,
-            has_comment,
-            extension,
-            Option::Some(state.config.clone()),
-        )
-        .await;
-    Ok(photos.to_json())
+
+#[derive(serde::Deserialize, Debug)]
+#[serde(tag = "type")]
+enum PhotoRequest {
+    #[serde(rename = "search")]
+    Search {
+        // 検索の種類を指定 (recent, date, text_search, favorites, album_photos)
+        search_type: String,
+        
+        // 検索クエリ (date検索なら日付文字列、text検索なら検索テキスト、album_photosならalbum_id等)
+        query: Option<String>,
+        
+        // フィルタリング条件
+        star: Option<i32>,
+        has_comment: Option<bool>,
+        extension: Option<String>,
+        
+        // ページネーション
+        page: Option<u32>,
+        limit: Option<u32>,
+        offset: Option<u32>,
+        
+        // ソート
+        sort_value: Option<i32>,
+        
+        // 追加パラメータ (album_id等、柔軟に対応)
+        params: Option<serde_json::Value>,
+    },
+    #[serde(rename = "albums")]
+    Albums, // アルバム一覧のみ別扱い
 }
 
 #[tauri::command]
-async fn get_recent_photos(
-    limit: Option<u32>,
-    sort_value: i32,
-    star: i32,
-    has_comment: bool,
-    extension: &str,
+async fn get_photos_unified(
+    request: PhotoRequest,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, ()> {
+    log::info!(target: "get_photos", "unified_request; type={:?}", request);
+    
     let repo_db = &state.repo_db;
     let meta_db = &state.meta_db;
-    let limit = limit.unwrap_or(60);
     
-    // Get recent photos metadata directly from database using SQL
-    let meta_data = match meta_db.get_recent_photos_metadata(limit) {
-        Ok(data) => data,
-        Err(_e) => return Err(()),
-    };
-    
-    let photos = repo_db
-        .get_recent_photos(
-            &meta_data,
-            1, // page
-            repository::sort_from_int(sort_value),
-            limit,
-            0, // offset
-            star,
-            has_comment,
-            extension,
-            Option::Some(state.config.clone()),
-        )
-        .await;
-    
-    Ok(photos.to_json())
+    match request {
+        PhotoRequest::Search { 
+            search_type, 
+            query, 
+            star, 
+            has_comment, 
+            extension, 
+            page, 
+            limit, 
+            offset, 
+            sort_value, 
+            params 
+        } => {
+            // デフォルト値を設定
+            let star = star.unwrap_or(-1);
+            let has_comment = has_comment.unwrap_or(false);
+            let extension = extension.as_deref().unwrap_or("all");
+            let page = page.unwrap_or(1);
+            let sort_value = sort_value.unwrap_or(0);
+            
+            log::info!(target: "get_photos", "search_request; search_type={}; query={:?}", search_type, query);
+            
+            match search_type.as_str() {
+                "recent" => {
+                    let limit = limit.unwrap_or(60);
+                    
+                    // Get recent photos metadata directly from database using SQL
+                    let meta_data = match meta_db.get_recent_photos_metadata(limit) {
+                        Ok(data) => data,
+                        Err(_e) => return Err(()),
+                    };
+                    
+                    let photos = repo_db
+                        .get_recent_photos(
+                            &meta_data,
+                            page,
+                            repository::sort_from_int(sort_value),
+                            limit,
+                            offset.unwrap_or(0) as usize,
+                            star,
+                            has_comment,
+                            extension,
+                            Option::Some(state.config.clone()),
+                        )
+                        .await;
+                    
+                    let json_result = photos.to_json();
+                    log::info!(target: "get_photos", "recent_complete; json_length={}", json_result.len());
+                    Ok(json_result)
+                },
+                "date" => {
+                    let date_str = query.ok_or_else(|| {
+                        log::error!(target: "get_photos", "missing_date_query");
+                    })?;
+                    
+                    let limit = limit.unwrap_or(1000);
+                    let offset = offset.unwrap_or(0);
+                    
+                    // Convert date string to Date object - detect delimiter
+                    let delimiter = if date_str.contains("/") { Some("/") } else { Some("-") };
+                    let date = match value::date::Date::try_from_string(&date_str.to_string(), delimiter) {
+                        Ok(d) => d,
+                        Err(e) => {
+                            log::error!(target: "get_photos", "date_parse_error; date_str={}; error={}", date_str, e);
+                            return Err(());
+                        }
+                    };
+                    
+                    // Get metadata first
+                    let metadata = match meta_db.get_photo_meta_data_in_date(date) {
+                        Ok(data) => data,
+                        Err(_e) => photo_meta::PhotoMetas::new(),
+                    };
+                    
+                    let photos = repo_db
+                        .get_photos_in_date(
+                            &metadata,
+                            date,
+                            repository::sort_from_int(sort_value),
+                            limit,
+                            page,
+                            offset as usize,
+                            star,
+                            has_comment,
+                            extension,
+                            Option::Some(state.config.clone()),
+                        )
+                        .await;
+                    
+                    Ok(photos.to_json())
+                },
+                "favorites" => {
+                    let limit = limit.unwrap_or(60);
+                    
+                    // Get recent photos metadata, but filter for starred photos
+                    let meta_data = match meta_db.get_recent_photos_metadata(limit * 3) { // Get more to account for filtering
+                        Ok(data) => data,
+                        Err(_e) => return Err(()),
+                    };
+                    
+                    let photos = repo_db
+                        .get_recent_photos(
+                            &meta_data,
+                            page,
+                            repository::sort_from_int(sort_value),
+                            limit,
+                            offset.unwrap_or(0) as usize,
+                            1, // star >= 1 for favorites
+                            has_comment,
+                            extension,
+                            Option::Some(state.config.clone()),
+                        )
+                        .await;
+                    
+                    Ok(photos.to_json())
+                },
+                "album_photos" => {
+                    let album_id = if let Some(params) = params {
+                        params.get("album_id")
+                            .and_then(|v| v.as_i64())
+                            .map(|v| v as i32)
+                            .ok_or_else(|| {
+                                log::error!(target: "get_photos", "missing_album_id_in_params");
+                            })?
+                    } else {
+                        log::error!(target: "get_photos", "missing_params_for_album_photos");
+                        return Err(());
+                    };
+                    
+                    log::info!(target: "get_photos", "album_photos_request; album_id={}", album_id);
+                    
+                    match meta_db.get_album_photos_with_metadata(album_id) {
+                        Ok(photos) => {
+                            // Convert to Photos format to match other responses
+                            let photos_response = entity::photo::Photos {
+                                photos,
+                                has_next: false,
+                                has_prev: false,
+                            };
+                            Ok(photos_response.to_json())
+                        },
+                        Err(_) => {
+                            log::error!(target: "get_photos", "failed_to_get_album_photos; album_id={}", album_id);
+                            Err(())
+                        }
+                    }
+                },
+                "text_search" => {
+                    let query_text = query.ok_or_else(|| {
+                        log::error!(target: "get_photos", "missing_text_query");
+                    })?;
+                    
+                    // TODO: テキスト検索の実装
+                    log::info!(target: "get_photos", "text_search_request; query={}", query_text);
+                    Ok("[]".to_string())
+                },
+                _ => {
+                    log::error!(target: "get_photos", "unsupported_search_type; search_type={}", search_type);
+                    Err(())
+                }
+            }
+        },
+        PhotoRequest::Albums => {
+            log::info!(target: "get_photos", "albums_list_request");
+            
+            match meta_db.get_all_albums() {
+                Ok(albums) => Ok(serde_json::to_string(&albums).unwrap_or_else(|_| "[]".to_string())),
+                Err(_) => {
+                    log::error!(target: "get_photos", "failed_to_get_albums");
+                    Err(())
+                }
+            }
+        }
+    }
 }
 
 #[tauri::command]
@@ -1835,8 +1975,7 @@ pub fn run() {
             get_filter_options,
             get_dates,
             get_photos,
-            get_photos_with_filter,
-            get_recent_photos,
+            get_photos_unified,
             get_photo_info,
             get_next_photo,
             get_prev_photo,

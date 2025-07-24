@@ -119,7 +119,7 @@ export const mockPhotoEditData = {
 };
 
 export const mockTauriResponses = {
-  get_photos_with_filter: JSON.stringify(mockPhotos),
+  get_photos_unified: JSON.stringify(mockPhotos),
   get_dates: JSON.stringify(mockDateList),
   get_date_num: JSON.stringify(mockDateNum),
   get_config: JSON.stringify(mockConfig),

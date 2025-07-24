@@ -127,7 +127,12 @@ export const usePhotosQuery = (queryKey, queryFn, options = {}) => {
       
       logger.info('usePhotosQuery', 'fetch_success', 'Data fetched successfully', {
         cacheKey,
-        dataSize: Array.isArray(data) ? data.length : 1
+        dataSize: Array.isArray(data) ? data.length : 1,
+        dataType: typeof data,
+        isArray: Array.isArray(data),
+        hasPhotos: !!data?.photos,
+        photosLength: data?.photos?.length || 0,
+        dataKeys: typeof data === 'object' && data !== null ? Object.keys(data) : []
       });
       
       return data;
@@ -249,8 +254,28 @@ export const usePhotosWithFilter = (fetchConfig, options = {}) => {
   const queryFn = useCallback(async ({ signal }) => {
     if (!fetchConfig) return { photos: [] };
     
-    const result = await invoke('get_photos_with_filter', {
-      config: fetchConfig,
+    // Convert old fetchConfig to new unified API format
+    let searchType = "recent";
+    let query = null;
+    
+    if (fetchConfig.type === "date") {
+      searchType = "date";
+      query = fetchConfig.value;
+    } else if (fetchConfig.type === "recent") {
+      searchType = "recent";
+    }
+    
+    const result = await invoke('get_photos_unified', {
+      request: {
+        type: "search",
+        search_type: searchType,
+        query,
+        limit: fetchConfig.limit || 1000,
+        sort_value: fetchConfig.sort || 0,
+        star: fetchConfig.star || -1,
+        has_comment: fetchConfig.hasComment || false,
+        extension: fetchConfig.extension || "all"
+      },
       signal
     });
     
@@ -281,6 +306,32 @@ export const usePhotoTags = (photoPath, options = {}) => {
 };
 
 /**
+ * Hook for fetching recent photos
+ */
+export const useRecentPhotos = (limit = 60, sortValue = 0, options = {}) => {
+  const queryKey = ['recent_photos', limit, sortValue];
+  
+  const queryFn = useCallback(async ({ signal }) => {
+    const result = await invoke('get_photos_unified', {
+      request: {
+        type: "search",
+        search_type: "recent",
+        limit,
+        sort_value: sortValue,
+        star: -1,
+        has_comment: false,
+        extension: "all"
+      },
+      signal
+    });
+    
+    return result;
+  }, [limit, sortValue]);
+  
+  return usePhotosQuery(queryKey, queryFn, options);
+};
+
+/**
  * Hook for fetching album photos
  */
 export const useAlbumPhotos = (albumId, options = {}) => {
@@ -289,8 +340,12 @@ export const useAlbumPhotos = (albumId, options = {}) => {
   const queryFn = useCallback(async ({ signal }) => {
     if (!albumId) return [];
     
-    const photos = await invoke('get_album_photos_with_metadata', {
-      albumId,
+    const photos = await invoke('get_photos_unified', {
+      request: {
+        type: "search",
+        search_type: "album_photos",
+        params: { album_id: albumId }
+      },
       signal
     });
     

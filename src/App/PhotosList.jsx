@@ -18,6 +18,7 @@ import TagChip from "../components/TagChip.jsx";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import { logger } from "../services/LoggerService.js";
 import { usePhotosListState } from "../hooks/usePhotosListState.js";
+import { useRecentPhotos } from "../hooks/usePhotosQuery.js";
 
 function PhotosList(props) {
     const {
@@ -129,6 +130,8 @@ function PhotosList(props) {
     // Removed scrollLock for infinite scroll implementation
     const [sortOfPhotos, setSort] = useState(0);
     const sortInitialized = useRef(false);
+    
+    // All photo fetching (including Recent Photos) unified through loadAllPhotosBasedOnFetchConfig
     const [photoLoading, setPhotoLoading] = useState(false);
     const [photoSelection, setPhotoSelection] = useState([]);
     const [photoSelectionDict, setPhotoSelectionDict] = useState({});
@@ -1029,25 +1032,26 @@ function PhotosList(props) {
             });
             switch (fetchConfig.fetch_method) {
                 case "date":
-                    // Note: We need to pass filter values that won't exclude any photos
-                    // but will still cause the backend to include metadata
-                    logger.info('PhotosList', 'date_case_start', 'About to call get_photos_with_filter for date', {
+                    logger.info('PhotosList', 'date_case_start', 'Using unified get_photos for date', {
                         dateStr: fetchConfig.value,
                         sortValue: parseInt(sortOfPhotos)
                     });
-                    result = await invoke("get_photos_with_filter", {
-                        dateStr: fetchConfig.value,
-                        sortValue: parseInt(sortOfPhotos),
-                        page: 1,
-                        num: Math.min(9999, config?.max_photos_per_fetch || 1000), // Limit based on config for performance
-                        offset: 0,
-                        star: -1, // -1 means no star filter but include star data
-                        hasComment: false,
-                        extension: "all"
+                    result = await invoke("get_photos_unified", {
+                        request: {
+                            type: "search",
+                            search_type: "date",
+                            query: fetchConfig.value,
+                            sort_value: parseInt(sortOfPhotos),
+                            page: 1,
+                            limit: Math.min(9999, config?.max_photos_per_fetch || 1000),
+                            offset: 0,
+                            star: -1,
+                            has_comment: false,
+                            extension: "all"
+                        }
                     });
-                    logger.info('PhotosList', 'date_case_result', 'get_photos_with_filter result', {
+                    logger.info('PhotosList', 'date_case_result', 'Unified get_photos result', {
                         resultType: typeof result,
-                        resultLength: result ? result.length : 'null',
                         hasResult: !!result
                     });
                     break;
@@ -1067,15 +1071,19 @@ function PhotosList(props) {
                     } else {
                         // Fall back to date-based search for now
                         logger.warn('PhotosList', 'search_fallback', 'No search results available, falling back to date-based');
-                        result = await invoke("get_photos_with_filter", {
-                            dateStr: fetchConfig.value || compatProps.currentDate,
-                            sortValue: parseInt(sortOfPhotos),
-                            page: 1,
-                            num: Math.min(9999, config?.max_photos_per_fetch || 1000), // Limit based on config for performance
-                            offset: 0,
-                            star: -1,
-                            hasComment: false,
-                            extension: "all"
+                        result = await invoke("get_photos_unified", {
+                            request: {
+                                type: "search",
+                                search_type: "date",
+                                query: fetchConfig.value || compatProps.currentDate,
+                                sort_value: parseInt(sortOfPhotos),
+                                page: 1,
+                                limit: Math.min(9999, config?.max_photos_per_fetch || 1000),
+                                offset: 0,
+                                star: -1,
+                                has_comment: false,
+                                extension: "all"
+                            }
                         });
                     }
                     break;
@@ -1083,49 +1091,56 @@ function PhotosList(props) {
                 case "tag":
                     // Fall back to date-based search for now
                     console.warn("[LOAD_ALL] Tag API not implemented, falling back to date-based");
-                    result = await invoke("get_photos_with_filter", {
-                        dateStr: fetchConfig.value || compatProps.currentDate,
-                        sortValue: parseInt(sortOfPhotos),
-                        page: 1,
-                        num: Math.min(9999, config?.max_photos_per_fetch || 1000), // Limit based on config for performance
-                        offset: 0,
-                        star: -1,
-                        hasComment: false,
-                        extension: "all"
+                    result = await invoke("get_photos_unified", {
+                        request: {
+                            type: "search",
+                            search_type: "date",
+                            query: fetchConfig.value || compatProps.currentDate,
+                            sort_value: parseInt(sortOfPhotos),
+                            page: 1,
+                            limit: Math.min(9999, config?.max_photos_per_fetch || 1000),
+                            offset: 0,
+                            star: -1,
+                            has_comment: false,
+                            extension: "all"
+                        }
                     });
                     break;
                     
                 case "favorites":
-                    // Fall back to date-based search for now
-                    console.warn("[LOAD_ALL] Favorites API not implemented, falling back to date-based");
-                    result = await invoke("get_photos_with_filter", {
-                        dateStr: compatProps.currentDate,
-                        sortValue: parseInt(sortOfPhotos),
-                        page: 1,
-                        num: Math.min(9999, config?.max_photos_per_fetch || 1000), // Limit based on config for performance
-                        offset: 0,
-                        star: -1,
-                        hasComment: false,
-                        extension: "all"
+                    logger.info('PhotosList', 'favorites_case_start', 'Using unified get_photos for favorites');
+                    result = await invoke("get_photos_unified", {
+                        request: {
+                            type: "search",
+                            search_type: "favorites",
+                            sort_value: parseInt(sortOfPhotos),
+                            page: 1,
+                            limit: Math.min(9999, config?.max_photos_per_fetch || 1000),
+                            offset: 0,
+                            has_comment: false,
+                            extension: "all"
+                        }
                     });
                     break;
                     
                 case "recent":
-                    const recentParams = {
+                    logger.info('PhotosList', 'recent_case_start', 'Using unified get_photos for recent', {
                         limit: Math.min(60, config?.max_photos_per_fetch || 60),
-                        sortValue: parseInt(sortOfPhotos),
-                        star: -1,
-                        hasComment: false,
-                        extension: "all"
-                    };
-                    logger.info('PhotosList', 'recent_case_start', 'About to call get_recent_photos', {
-                        limit: recentParams.limit,
-                        sortValue: recentParams.sortValue
+                        sortValue: parseInt(sortOfPhotos)
                     });
-                    result = await invoke("get_recent_photos", recentParams);
-                    logger.info('PhotosList', 'recent_case_result', 'get_recent_photos result', {
+                    result = await invoke("get_photos_unified", {
+                        request: {
+                            type: "search",
+                            search_type: "recent",
+                            limit: Math.min(60, config?.max_photos_per_fetch || 60),
+                            sort_value: parseInt(sortOfPhotos),
+                            star: -1,
+                            has_comment: false,
+                            extension: "all"
+                        }
+                    });
+                    logger.info('PhotosList', 'recent_case_result', 'Unified get_photos result', {
                         resultType: typeof result,
-                        resultLength: result ? result.length : 'null',
                         hasResult: !!result
                     });
                     break;

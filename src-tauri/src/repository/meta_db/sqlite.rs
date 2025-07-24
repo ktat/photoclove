@@ -1798,12 +1798,23 @@ impl MetaInfoDB for SQLite {
     }
 
     fn get_recent_photos_metadata(&self, limit: u32) -> Result<photo_meta::PhotoMetas, String> {
+        log::info!(target: "recent_photos", "get_recent_photos_metadata_start; limit={}", limit);
+        
         let conn = self
             .get_connection()
             .map_err(|e| format!("Failed to connect to database: {}", e))?;
 
+        // First check how many total records exist
+        let count_query = "SELECT COUNT(*) as total FROM photo_metadata";
+        let total_count: i64 = conn.query_row(count_query, [], |row| row.get(0))
+            .unwrap_or(0);
+        log::info!(target: "recent_photos", "database_total_count; total_records={}", total_count);
+        
+        let query = "SELECT * FROM photo_metadata ORDER BY created_at DESC LIMIT ?";
+        log::info!(target: "recent_photos", "executing_sql_query; query={}; limit={}", query, limit);
+        
         let mut stmt = conn
-            .prepare("SELECT * FROM photo_metadata ORDER BY created_at DESC LIMIT ?")
+            .prepare(query)
             .map_err(|e| format!("Failed to prepare statement: {}", e))?;
 
         let rows = stmt
@@ -1832,12 +1843,23 @@ impl MetaInfoDB for SQLite {
             .map_err(|e| format!("Failed to execute query: {}", e))?;
 
         let mut photo_metas = photo_meta::PhotoMetas::new();
+        let mut row_count = 0;
+        let mut success_count = 0;
         for row in rows {
-            if let Ok((path, meta)) = row {
-                photo_metas.insert(&path, meta);
+            row_count += 1;
+            match row {
+                Ok((path, meta)) => {
+                    photo_metas.insert(&path, meta);
+                    success_count += 1;
+                    log::debug!(target: "recent_photos", "processed_row; path={}", path);
+                },
+                Err(e) => {
+                    log::warn!(target: "recent_photos", "row_processing_error; row={}; error={:?}", row_count, e);
+                }
             }
         }
 
+        log::info!(target: "recent_photos", "get_recent_photos_metadata_complete; total_rows={}; success_count={}; final_count={}", row_count, success_count, photo_metas.keys().len());
         Ok(photo_metas)
     }
     
