@@ -29,3 +29,8 @@ use_count: 0
 # Higher values allow more photos to be loaded at once but use more memory
 # Lower values reduce memory usage but may require more frequent API calls
 max_photos_per_fetch: 1000
+
+# Debug logging settings
+# Enable logging for troubleshooting and development
+logging_enabled: true        # true in development, false in production by default
+logging_level: debug         # debug, info, warn, error (debug in dev, info in prod)
