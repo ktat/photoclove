@@ -258,6 +258,190 @@ impl LoggingService {
 
         Ok(())
     }
+
+    pub fn clear_backend_logs(&self) -> Result<(), String> {
+        info!(
+            target: "logging",
+            "clear_backend_logs_requested"
+        );
+
+        // Remove all backend log files in the log directory
+        match std::fs::read_dir(&self.log_directory) {
+            Ok(entries) => {
+                for entry in entries {
+                    if let Ok(entry) = entry {
+                        let path = entry.path();
+                        if path.is_file() && 
+                           path.extension().map_or(false, |ext| ext == "log") &&
+                           path.file_name().map_or(false, |name| {
+                               let name_str = name.to_string_lossy();
+                               name_str.starts_with("photoclove-") && !name_str.contains("frontend")
+                           }) {
+                            match std::fs::remove_file(&path) {
+                                Ok(()) => {
+                                    info!(
+                                        target: "logging",
+                                        "backend_log_file_cleared; file={}",
+                                        path.display()
+                                    );
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        target: "logging",
+                                        "failed_to_clear_backend_log_file; file={}; error={}",
+                                        path.display(),
+                                        e
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                warn!(
+                    target: "logging",
+                    "failed_to_read_log_directory_for_clearing; directory={}; error={}",
+                    self.log_directory.display(),
+                    e
+                );
+                return Err(format!("Failed to read log directory: {}", e));
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn clear_frontend_logs(&self) -> Result<(), String> {
+        info!(
+            target: "logging",
+            "clear_frontend_logs_requested"
+        );
+
+        // Clear in-memory frontend logs
+        if let Ok(mut logs) = self.frontend_logs.lock() {
+            logs.clear();
+        }
+
+        // Remove frontend log files
+        match std::fs::read_dir(&self.log_directory) {
+            Ok(entries) => {
+                for entry in entries {
+                    if let Ok(entry) = entry {
+                        let path = entry.path();
+                        if path.is_file() && 
+                           path.extension().map_or(false, |ext| ext == "log") &&
+                           path.file_name().map_or(false, |name| {
+                               name.to_string_lossy().contains("frontend")
+                           }) {
+                            match std::fs::remove_file(&path) {
+                                Ok(()) => {
+                                    info!(
+                                        target: "logging",
+                                        "frontend_log_file_cleared; file={}",
+                                        path.display()
+                                    );
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        target: "logging",
+                                        "failed_to_clear_frontend_log_file; file={}; error={}",
+                                        path.display(),
+                                        e
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                warn!(
+                    target: "logging",
+                    "failed_to_read_log_directory_for_frontend_clearing; directory={}; error={}",
+                    self.log_directory.display(),
+                    e
+                );
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn export_logs_to_file(&self, export_path: &str, log_type: &str, filtered_logs: Option<String>) -> Result<String, String> {
+        info!(
+            target: "logging",
+            "export_logs_requested; export_path={}; log_type={}",
+            export_path,
+            log_type
+        );
+
+        let timestamp = chrono::Utc::now().format("%Y-%m-%d_%H-%M-%S").to_string();
+        let filename = format!("photoclove-logs-{}-{}.json", log_type, timestamp);
+        let full_path = std::path::Path::new(export_path).join(&filename);
+
+        let logs_data = if let Some(filtered) = filtered_logs {
+            // Use provided filtered logs
+            filtered
+        } else {
+            // Get all logs
+            match log_type {
+                "all" => {
+                    let frontend = self.get_frontend_logs(None, None)?;
+                    let backend = self.get_backend_logs(None, None)?;
+                    
+                    let combined = serde_json::json!({
+                        "frontend": serde_json::from_str::<Vec<FrontendLogEntry>>(&frontend).unwrap_or_default(),
+                        "backend": backend,
+                        "export_timestamp": chrono::Utc::now().to_rfc3339(),
+                        "export_type": "all_logs"
+                    });
+                    
+                    serde_json::to_string_pretty(&combined)
+                        .map_err(|e| format!("Failed to serialize logs: {}", e))?
+                }
+                "frontend" => {
+                    let frontend_logs = self.get_frontend_logs(None, None)?;
+                    let parsed_logs: Vec<FrontendLogEntry> = serde_json::from_str(&frontend_logs)
+                        .unwrap_or_default();
+                    
+                    let export_data = serde_json::json!({
+                        "frontend": parsed_logs,
+                        "export_timestamp": chrono::Utc::now().to_rfc3339(),
+                        "export_type": "frontend_logs"
+                    });
+                    
+                    serde_json::to_string_pretty(&export_data)
+                        .map_err(|e| format!("Failed to serialize frontend logs: {}", e))?
+                }
+                "backend" => {
+                    let backend_logs = self.get_backend_logs(None, None)?;
+                    
+                    let export_data = serde_json::json!({
+                        "backend": backend_logs,
+                        "export_timestamp": chrono::Utc::now().to_rfc3339(),
+                        "export_type": "backend_logs"
+                    });
+                    
+                    serde_json::to_string_pretty(&export_data)
+                        .map_err(|e| format!("Failed to serialize backend logs: {}", e))?
+                }
+                _ => return Err(format!("Unknown log type: {}", log_type))
+            }
+        };
+
+        std::fs::write(&full_path, logs_data)
+            .map_err(|e| format!("Failed to write log file: {}", e))?;
+
+        info!(
+            target: "logging",
+            "logs_exported_successfully; file={}; size_bytes={}",
+            full_path.display(),
+            std::fs::metadata(&full_path).map(|m| m.len()).unwrap_or(0)
+        );
+
+        Ok(full_path.to_string_lossy().to_string())
+    }
 }
 
 impl Default for LoggingService {

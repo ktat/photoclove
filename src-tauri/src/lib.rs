@@ -1639,6 +1639,38 @@ async fn get_logging_status(
     }))
 }
 
+#[tauri::command]
+async fn clear_backend_logs(
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    let logging_service = &state.logging_service;
+    logging_service.clear_backend_logs()
+}
+
+#[tauri::command]
+async fn clear_frontend_logs(
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    let logging_service = &state.logging_service;
+    logging_service.clear_frontend_logs()
+}
+
+#[tauri::command]
+async fn export_logs_to_download_dir(
+    log_type: String,
+    filtered_logs: Option<String>,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    let logging_service = &state.logging_service;
+    let download_dir = &state.config.download_dir;
+    
+    // Ensure download directory exists
+    std::fs::create_dir_all(download_dir)
+        .map_err(|e| format!("Failed to create download directory: {}", e))?;
+    
+    logging_service.export_logs_to_file(download_dir, &log_type, filtered_logs)
+}
+
 // Tag management commands
 #[tauri::command]
 async fn get_all_tags(state: tauri::State<'_, AppState>) -> Result<Vec<(i32, String, Option<String>)>, String> {
@@ -2170,6 +2202,9 @@ pub fn run() {
             submit_frontend_logs,
             set_logging_enabled,
             get_logging_status,
+            clear_backend_logs,
+            clear_frontend_logs,
+            export_logs_to_download_dir,
             get_all_tags,
             get_all_tags_with_photo_count,
             create_tag,

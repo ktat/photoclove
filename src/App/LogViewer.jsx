@@ -110,34 +110,88 @@ const LogViewer = ({ onClose }) => {
     }
   };
 
-  const exportLogs = () => {
+  const exportLogs = async () => {
     try {
-      const allLogs = {
-        frontend: logs,
-        backend: backendLogs,
-        timestamp: new Date().toISOString(),
+      setIsLoading(true);
+      
+      // Get the filtered logs for export
+      const filteredLogs = combineAndFilterLogs();
+      const exportData = {
+        logs: filteredLogs,
         filters,
+        timestamp: new Date().toISOString(),
         stats: logger.getStats()
       };
-
-      const blob = new Blob([JSON.stringify(allLogs, null, 2)], {
-        type: 'application/json'
+      
+      const result = await invoke('export_logs_to_download_dir', {
+        logType: 'all',
+        filteredLogs: JSON.stringify(exportData, null, 2)
       });
-     
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `photoclove-logs-${new Date().toISOString().split('T')[0]}.json`;
-      link.click();
-      URL.revokeObjectURL(url);
+      
+      logger.info('LogViewer', 'logs_exported', 'Successfully exported logs to download directory', {
+        exportPath: result,
+        logCount: filteredLogs.length,
+        filters
+      });
+      
+      // Show success message with file location
+      alert(`Logs exported successfully to:\n${result}`);
+      
     } catch (error) {
+      logger.error('LogViewer', 'export_failed', 'Failed to export logs', {
+        error: error.message || error.toString()
+      });
       setError(`Failed to export logs: ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const clearFrontendLogs = () => {
-    logger.clear();
-    setLogs([]);
+  const clearFrontendLogs = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Clear frontend logs in memory (LoggerService)
+      logger.clear();
+      setLogs([]);
+      
+      // Also clear frontend log files on backend
+      await invoke('clear_frontend_logs');
+      
+      logger.info('LogViewer', 'frontend_logs_cleared', 'Successfully cleared frontend logs');
+      
+      // Refresh logs to show the cleared state
+      await loadLogs();
+      
+    } catch (error) {
+      logger.error('LogViewer', 'clear_frontend_logs_failed', 'Failed to clear frontend logs', {
+        error: error.message || error.toString()
+      });
+      setError(`Failed to clear frontend logs: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const clearBackendLogs = async () => {
+    try {
+      setIsLoading(true);
+      
+      await invoke('clear_backend_logs');
+      
+      logger.info('LogViewer', 'backend_logs_cleared', 'Successfully cleared backend logs');
+      
+      // Refresh logs to show the cleared state
+      await loadLogs();
+      
+    } catch (error) {
+      logger.error('LogViewer', 'clear_backend_logs_failed', 'Failed to clear backend logs', {
+        error: error.message || error.toString()
+      });
+      setError(`Failed to clear backend logs: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const clearKeywordFilter = () => {
@@ -384,7 +438,8 @@ const LogViewer = ({ onClose }) => {
           </div>
           <div className="log-viewer-actions">
             <button onClick={exportLogs} disabled={isLoading}>Export Logs</button>
-            <button onClick={clearFrontendLogs}>Clear Frontend Logs</button>
+            <button onClick={clearFrontendLogs} disabled={isLoading}>Clear Frontend Logs</button>
+            <button onClick={clearBackendLogs} disabled={isLoading}>Clear Backend Logs</button>
             <button onClick={loadLogs} disabled={isLoading}>
               {isLoading ? 'Loading...' : 'Refresh'}
             </button>
