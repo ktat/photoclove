@@ -417,23 +417,23 @@ button:hover {
 .leftMenu .navigation-icons {
   display: flex;
   justify-content: center;
-  gap: 15px;
-  padding: 10px 0;
+  gap: 8px;
+  padding: 6px 0;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .leftMenu .navigation-icons a {
-  font-size: 20px;
+  font-size: 16px;
   text-decoration: none;
-  padding: 8px;
+  padding: 5px;
   border-radius: 4px;
   transition: background-color 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 36px;
-  min-height: 36px;
+  min-width: 28px;
+  min-height: 28px;
 }
 
 .leftMenu .navigation-icons a:hover {
@@ -441,7 +441,7 @@ button:hover {
 }
 
 .leftMenu .dateList {
-  height: calc(100vh - 135px);
+  height: calc(100vh - 110px);
   overflow-y: auto;
 }
 
