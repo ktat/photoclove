@@ -865,15 +865,16 @@ function PhotosList(props) {
         // Async batch addition to prevent UI blocking
         setTimeout(() => {
             setDisplayedPhotoCount(prev => {
-                // Access current filtered photos length via the state updater function
-                const currentFilteredPhotos = applyFrontendFilters(allPhotosForCurrentFetch);
+                // Use appropriate photo source based on current mode (same as filteredPhotos logic)
+                const sourcePhotos = isAlbumMode ? albumPhotos : (isTagMode ? tagPhotos : (isTrashMode ? trashPhotos : allPhotosForCurrentFetch));
+                const currentFilteredPhotos = applyFrontendFilters(sourcePhotos);
                 const newCount = Math.min(prev + 50, currentFilteredPhotos.length);
                 console.log(`[INFINITE_SCROLL] Loading more: prev=${prev}, filtered=${currentFilteredPhotos.length}, newCount=${newCount}`);
                 return newCount >= currentFilteredPhotos.length ? currentFilteredPhotos.length : newCount;
             });
             setIsLoadingMore(false);
         }, 100);
-    }, [isLoadingMore, applyFrontendFilters, allPhotosForCurrentFetch]);
+    }, [isLoadingMore, applyFrontendFilters, allPhotosForCurrentFetch, isAlbumMode, albumPhotos, isTagMode, tagPhotos, isTrashMode, trashPhotos]);
     
     const handleInfiniteScroll = useCallback((e) => {
         const scrollContainer = e.target;
