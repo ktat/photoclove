@@ -40,7 +40,8 @@ impl SQLite {
             exif_exposure_mode TEXT,
             exif_white_balance_mode TEXT,
             exif_orientation TEXT,
-            css_style TEXT
+            css_style TEXT,
+            delete_flg INTEGER NOT NULL DEFAULT 0
         );
         CREATE TABLE date_summary (
             date TEXT PRIMARY KEY,
@@ -85,7 +86,8 @@ impl SQLite {
         CREATE INDEX IF NOT EXISTS idx_photo_tags_tag_id ON photo_tags(tag_id);
         CREATE INDEX IF NOT EXISTS idx_album_photos_album_id ON album_photos(album_id);
         CREATE INDEX IF NOT EXISTS idx_album_photos_photo_path ON album_photos(photo_path);
-        CREATE INDEX IF NOT EXISTS idx_album_photos_order ON album_photos(album_id, order_index)"
+        CREATE INDEX IF NOT EXISTS idx_album_photos_order ON album_photos(album_id, order_index);
+        CREATE INDEX IF NOT EXISTS idx_photo_metadata_delete_flg ON photo_metadata(delete_flg)"
     }
 
     pub fn new(path: String) -> SQLite {
@@ -717,6 +719,43 @@ impl SQLite {
             log::info!(target: "albums", "table_creation; status=album_photos_table_completed");
         }
         
+        // Check if delete_flg column exists in photo_metadata table, add if not
+        let delete_flg_exists = conn.prepare("PRAGMA table_info(photo_metadata)")
+            .and_then(|mut stmt| {
+                let rows = stmt.query_map([], |row| {
+                    let column_name: String = row.get(1)?;
+                    Ok(column_name)
+                })?;
+                
+                for row in rows {
+                    if let Ok(column_name) = row {
+                        if column_name == "delete_flg" {
+                            return Ok(true);
+                        }
+                    }
+                }
+                Ok(false)
+            })
+            .unwrap_or(false);
+        
+        if !delete_flg_exists {
+            log::info!(target: "trash_migration", "table_migration; status=adding_delete_flg_column");
+            
+            // Add delete_flg column with default value 0 (not deleted)
+            conn.execute(
+                "ALTER TABLE photo_metadata ADD COLUMN delete_flg INTEGER NOT NULL DEFAULT 0",
+                [],
+            )?;
+            
+            // Create index for efficient filtering by delete_flg
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_photo_metadata_delete_flg ON photo_metadata(delete_flg)",
+                [],
+            )?;
+            
+            log::info!(target: "trash_migration", "table_migration; status=delete_flg_column_added");
+        }
+        
         // Create job queue tables
         conn.execute(
             "CREATE TABLE IF NOT EXISTS job_unit (
@@ -756,7 +795,7 @@ impl SQLite {
         Ok(())
     }
 
-    fn get_connection(&self) -> Result<Connection> {
+    pub fn get_connection(&self) -> Result<Connection> {
         // Ensure parent directory exists
         if let Some(parent) = std::path::Path::new(&self.db_path).parent() {
             if !parent.exists() {
@@ -970,7 +1009,7 @@ impl SQLite {
         log::info!(target: "date_summary", "fallback_get_available_dates; using_group_by=true");
 
         let mut stmt = conn
-            .prepare("SELECT DISTINCT date(photo_date) FROM photo_metadata ORDER BY photo_date")
+            .prepare("SELECT DISTINCT date(photo_date) FROM photo_metadata WHERE (delete_flg = 0 OR delete_flg IS NULL) ORDER BY photo_date")
             .map_err(|e| {
                 log::error!(target: "date_summary", "fallback_get_available_dates; prepare_failed; error={}", e);
                 format!("Failed to prepare fallback statement: {}", e)
@@ -1504,7 +1543,7 @@ impl MetaInfoDB for SQLite {
             .get_connection()
             .map_err(|e| format!("Failed to connect to database: {}", e))?;
         let mut stmt = conn
-            .prepare("SELECT path, photo_date, star, comment, css_style, google_photos_url FROM photo_metadata WHERE date(photo_date) = ?1")
+            .prepare("SELECT path, photo_date, star, comment, css_style, google_photos_url FROM photo_metadata WHERE date(photo_date) = ?1 AND (delete_flg = 0 OR delete_flg IS NULL)")
             .map_err(|e| format!("Failed to prepare statement: {}", e))?;
 
         let rows = stmt
@@ -1626,13 +1665,56 @@ impl MetaInfoDB for SQLite {
         let existing_meta = self.get_photo_meta(photo.clone());
         let photo_date = existing_meta.photo_time();
 
+        // Soft delete: set delete_flg = 1 instead of DELETE
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        let _ = conn.execute(
+            "UPDATE photo_metadata SET delete_flg = 1, updated_at = ? WHERE path = ?",
+            params![now, photo.file.path],
+        );
+
+        // Update date_summary after deletion (photo is hidden from normal views)
+        let _ = self.update_date_summary_for_photo(&photo_date, -1);
+    }
+
+    fn delete_photo_permanently(&self, photo: &photo::Photo) {
+        let conn = match self.get_connection() {
+            Ok(conn) => conn,
+            Err(_) => return,
+        };
+
+        // Get the photo date before deletion for date_summary update
+        let existing_meta = self.get_photo_meta(photo.clone());
+        let photo_date = existing_meta.photo_time();
+
+        // Hard delete: completely remove from database
         let _ = conn.execute(
             "DELETE FROM photo_metadata WHERE path = ?1",
             params![photo.file.path],
         );
 
-        // Update date_summary after deletion
+        // Update date_summary after permanent deletion
         let _ = self.update_date_summary_for_photo(&photo_date, -1);
+    }
+
+    fn restore_photo_from_trash(&self, photo: &photo::Photo) {
+        let conn = match self.get_connection() {
+            Ok(conn) => conn,
+            Err(_) => return,
+        };
+
+        // Get the photo date for date_summary update
+        let existing_meta = self.get_photo_meta(photo.clone());
+        let photo_date = existing_meta.photo_time();
+
+        // Restore: set delete_flg = 0
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        let _ = conn.execute(
+            "UPDATE photo_metadata SET delete_flg = 0, updated_at = ? WHERE path = ?",
+            params![now, photo.file.path],
+        );
+
+        // Update date_summary after restoration (photo is visible in normal views again)
+        let _ = self.update_date_summary_for_photo(&photo_date, 1);
     }
 
     fn update_photo_path(&self, old_path: &str, new_path: &str) -> Result<bool, &str> {
@@ -1737,7 +1819,7 @@ impl MetaInfoDB for SQLite {
         }
 
         // Use GROUP BY to get all counts in a single query
-        let mut stmt = match conn.prepare("SELECT date(photo_date) as date_only, COUNT(*) as count FROM photo_metadata GROUP BY date(photo_date)") {
+        let mut stmt = match conn.prepare("SELECT date(photo_date) as date_only, COUNT(*) as count FROM photo_metadata WHERE (delete_flg = 0 OR delete_flg IS NULL) GROUP BY date(photo_date)") {
             Ok(stmt) => {
                 println!("SQLite::get_photo_count_per_dates() - GROUP BY query prepared successfully");
                 stmt
@@ -1810,7 +1892,7 @@ impl MetaInfoDB for SQLite {
             .unwrap_or(0);
         log::info!(target: "recent_photos", "database_total_count; total_records={}", total_count);
         
-        let query = "SELECT * FROM photo_metadata ORDER BY created_at DESC LIMIT ?";
+        let query = "SELECT * FROM photo_metadata WHERE (delete_flg = 0 OR delete_flg IS NULL) ORDER BY created_at DESC LIMIT ?";
         log::info!(target: "recent_photos", "executing_sql_query; query={}; limit={}", query, limit);
         
         let mut stmt = conn
@@ -2357,7 +2439,7 @@ impl SQLite {
         );
         
         // Build search query based on search_type
-        let mut sql_query = String::from("SELECT * FROM photo_metadata WHERE 1=1");
+        let mut sql_query = String::from("SELECT * FROM photo_metadata WHERE (delete_flg = 0 OR delete_flg IS NULL)");
         let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
         
         // Add search condition based on search_type (only if query is not empty)

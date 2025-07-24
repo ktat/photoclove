@@ -1272,6 +1272,134 @@ async fn move_to_trash(
 }
 
 #[tauri::command]
+async fn get_trash_photos(
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    log::info!(target: "trash", "get_trash_photos; retrieving_deleted_photos");
+    
+    let meta_db = &state.meta_db;
+    let conn = meta_db.get_connection()
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+    
+    let mut stmt = conn
+        .prepare("SELECT * FROM photo_metadata WHERE delete_flg = 1 ORDER BY updated_at DESC")
+        .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+    
+    let rows = stmt.query_map([], |row| {
+        Ok(crate::repository::meta_db::PhotoInfo {
+            path: row.get("path")?,
+            date: row.get("photo_date")?,
+            star: row.get("star")?,
+            comment: row.get("comment")?,
+            css_style: row.get("css_style").ok(),
+            google_photo_url: row.get("google_photos_url").ok(),
+        })
+    }).map_err(|e| format!("Failed to execute query: {}", e))?;
+    
+    let mut trash_photos = Vec::new();
+    for row in rows {
+        if let Ok(photo_info) = row {
+            trash_photos.push(photo_info);
+        }
+    }
+    
+    log::info!(target: "trash", "get_trash_photos; found_count={}", trash_photos.len());
+    
+    serde_json::to_string(&trash_photos)
+        .map_err(|e| format!("Failed to serialize trash photos: {}", e))
+}
+
+#[tauri::command]
+async fn restore_from_trash(
+    path_str: &str,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    log::info!(target: "trash", "restore_from_trash; path={}", path_str);
+    
+    let photo = photo::Photo::new(file::File::new(path_str.to_string()), Option::None);
+    let meta_db = &state.meta_db;
+    
+    // First, move the file back from trash to library
+    let trash = trash::Trash::new(state.config.trash_path.to_string());
+    let file = file::File::new(path_str.to_string());
+    let library_path = state.config.import_to.clone();
+    
+    // Move file from trash back to library
+    match file_service::restore_from_trash(file, trash, library_path) {
+        Ok(_) => {
+            // Update database to restore photo (set delete_flg = 0)
+            meta_db.restore_photo_from_trash(&photo);
+            Ok("Photo restored successfully".to_string())
+        },
+        Err(e) => Err(format!("Failed to restore file: {}", e))
+    }
+}
+
+#[tauri::command]
+async fn delete_permanently(
+    path_str: &str,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    log::info!(target: "trash", "delete_permanently; path={}", path_str);
+    
+    let photo = photo::Photo::new(file::File::new(path_str.to_string()), Option::None);
+    let meta_db = &state.meta_db;
+    let trash = trash::Trash::new(state.config.trash_path.to_string());
+    let file = file::File::new(path_str.to_string());
+    
+    // Remove file from trash directory permanently
+    match file_service::remove_from_trash_permanently(file, trash) {
+        Ok(_) => {
+            // Permanently delete from database
+            meta_db.delete_photo_permanently(&photo);
+            Ok("Photo deleted permanently".to_string())
+        },
+        Err(e) => Err(format!("Failed to delete file permanently: {}", e))
+    }
+}
+
+#[tauri::command]
+async fn empty_trash(
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    log::info!(target: "trash", "empty_trash; starting_bulk_delete");
+    
+    let meta_db = &state.meta_db;
+    let conn = meta_db.get_connection()
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+    
+    // Get all photos in trash
+    let mut stmt = conn
+        .prepare("SELECT path FROM photo_metadata WHERE delete_flg = 1")
+        .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+    
+    let rows = stmt.query_map([], |row| {
+        let path: String = row.get(0)?;
+        Ok(path)
+    }).map_err(|e| format!("Failed to execute query: {}", e))?;
+    
+    let mut deleted_count = 0;
+    
+    for row in rows {
+        if let Ok(path) = row {
+            let photo = photo::Photo::new(file::File::new(path.clone()), Option::None);
+            let file = file::File::new(path);
+            let trash = trash::Trash::new(state.config.trash_path.to_string());
+            
+            // Remove file from trash permanently
+            if file_service::remove_from_trash_permanently(file, trash).is_ok() {
+                // Permanently delete from database
+                meta_db.delete_photo_permanently(&photo);
+                deleted_count += 1;
+            }
+        }
+    }
+    
+    log::info!(target: "trash", "empty_trash; completed; deleted_count={}", deleted_count);
+    Ok(format!("Permanently deleted {} photos from trash", deleted_count))
+}
+
+#[tauri::command]
 async fn save_css_style(
     photo_path: &str,
     css_style: &str,
@@ -2012,6 +2140,10 @@ pub fn run() {
             get_photos_to_import_under_directory,
             get_dates_num,
             move_to_trash,
+            get_trash_photos,
+            restore_from_trash,
+            delete_permanently,
+            empty_trash,
             lock,
             create_db,
             create_db_in_date,
