@@ -54,6 +54,7 @@ function PhotosList(props) {
         currentAlbumId,
         viewMode,
         openAlbum,
+        toggleAlbumListMode,
     } = useUI();
     const { handleTauriError, addError } = useError();
     
@@ -1519,11 +1520,14 @@ function PhotosList(props) {
                         {!isAlbumListMode && (
                             <>
                         {displayedPhotos.length == 0 && isSearchMode && <div style={{float: "left", marginBottom: "10px"}}><a className="back-to-home" onClick={(e) => { e.preventDefault(); clearSearch(); }} href="#">Back to HOME</a></div>}
+                        {displayedPhotos.length == 0 && isAlbumMode && <div style={{float: "left", marginBottom: "10px"}}><a className="back-to-home" onClick={(e) => { e.preventDefault(); toggleAlbumListMode(); }} href="#">Back to Album List</a></div>}
                         {displayedPhotos.length > 0 ?
                             <div className="photo-list-header">
                                 <div className="photo-page-info">
                                     {isSearchMode ? (
                                         <><a className="back-to-home" href="#" onClick={(e)=>{ e.preventDefault(); clearSearch(); }}>Back to HOME</a> <span style={{marginLeft: "10px"}}>{fetchConfig?.title || 'Search Results'} ({filteredPhotos.length} photos)</span></>
+                                    ) : isAlbumMode ? (
+                                        <><a className="back-to-home" href="#" onClick={(e)=>{ e.preventDefault(); toggleAlbumListMode(); }}>Back to Album List</a> <span style={{marginLeft: "10px"}}>{currentAlbumName || 'Album'} ({filteredPhotos.length} photos)</span></>
                                     ) : (
                                         <span>{fetchConfig?.title || 'Photos'} ({filteredPhotos.length} photos)</span>
                                     )}
@@ -1555,7 +1559,7 @@ function PhotosList(props) {
                                     {/* Num selector removed - not needed with infinite scroll */}
                                 </div>
                             </div>
-                            : <>{isSearchMode ? (isSearching ? <PhotoLoading /> : "No Search Result") : "No Photo Found!"}</>
+                            : <>{isSearchMode ? (isSearching ? <PhotoLoading /> : "No Search Result") : isAlbumMode ? `No photos in album: ${currentAlbumName || 'Unknown Album'}` : "No Photo Found!"}</>
                         }
                         <Scrollable f={handleInfiniteScroll} className="photos">
                             {/* Removed scroll indicators for infinite scroll */}
