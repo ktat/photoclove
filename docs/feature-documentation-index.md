@@ -308,6 +308,16 @@ This reverse index helps you quickly find the relevant documentation when workin
 - **Frontend**: `src/App/Preferences.jsx`
 - **Backend**: `src-tauri/src/entity/config.rs`
 
+## Legal Documentation
+
+### Privacy and Terms
+**When you need to understand**: Data handling policies, usage terms, legal compliance
+- **Privacy Policy**: [privacy-policy.md](../privacy-policy.md) - Data collection and handling practices
+- **Terms of Use**: [terms-of-use.md](../terms-of-use.md) - Application usage terms and conditions
+- **Japanese Versions**: [privacy-policy-ja.md](../privacy-policy-ja.md), [terms-of-use-ja.md](../terms-of-use-ja.md)
+- **Public Access**: Available in `public/` directory for web serving
+- **Related Files**: `privacy-policy*.md`, `terms-of-use*.md`, `public/privacy-policy*.md`, `public/terms-of-use*.md`
+
 ## File Location Quick Reference
 
 | What you're looking for | File Path |

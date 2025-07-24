@@ -31,6 +31,9 @@ PhotoClove uses a modern desktop architecture:
 - **Backend**: Rust with Tauri for native performance and system integration
 - **Database**: SQLite for fast metadata queries and search
 - **Storage**: Local filesystem with organized directory structure
+- **State Management**: Custom hooks architecture with React Query-like data fetching
+- **Navigation**: View mode state machine for consistent UI transitions
+- **Caching**: Unified cache service with LRU eviction and automatic cleanup
 
 ## 🚀 Quick Start
 
@@ -87,6 +90,7 @@ Comprehensive documentation is available in the [`docs/`](./docs/) directory:
 - **[Terms Reference](./docs/terms.md)** - Mapping between features, concepts, and source code
 
 ### Additional Documentation
+- [State Management Guide](./docs/state-management-guide.md) - Custom hooks architecture with React Query-like implementation
 - [Authentication](./docs/authentication.md) - OAuth flow for Google Photos integration
 - [OAuth Token Management](./docs/oauth-token-management.md) - Secure token storage, automatic refresh, and testing tools
 - [Database Schema](./docs/database-schema.md) - SQLite structure and EXIF fields
@@ -282,6 +286,10 @@ PhotoClove uses a structured development workflow with the `improvement/` direct
 ## 📋 Roadmap
 
 ### Recently Completed ✅
+- [x] **State Management Refactoring**: Complete overhaul with custom hooks architecture, view mode state machine, and React Query-like data fetching
+- [x] **React Query Integration**: Custom implementation with automatic caching, background refetching, mutation support, and retry logic
+- [x] **Performance Optimization**: Unified cache service with LRU eviction, automatic cleanup, and comprehensive statistics
+- [x] **Navigation Improvements**: View mode state machine with validated transitions and history tracking
 - [x] **Google OAuth Token Management**: Secure platform-native token storage with automatic refresh and external service integration
 - [x] **Enhanced Job Queue**: Immediate manual retry, comprehensive logging, and improved error handling
 - [x] **Google Photos Integration**: Complete OAuth flow with token refresh, API error detection, and secure credential management
