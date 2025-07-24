@@ -1595,26 +1595,7 @@ function PhotosList(props) {
                             </div>
                             : <div>
                                 {isSearchMode ? (
-                                    isSearching ? <PhotoLoading /> : (
-                                        <>
-                                            <div>No Search Result</div>
-                                            {hasActiveFilters && (
-                                                <div style={{fontSize: "12px", color: "#666", marginTop: "5px"}}>
-                                                    {getFilterSummary}
-                                                    <button 
-                                                        style={{marginLeft: "10px", fontSize: "11px", padding: "2px 6px", cursor: "pointer"}}
-                                                        onClick={() => {
-                                                            setStarFilter(0);
-                                                            setHasCommentFilter(false);
-                                                            setExtensionFilter('all');
-                                                        }}
-                                                    >
-                                                        Clear Filters
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </>
-                                    )
+                                    isSearching ? <PhotoLoading /> : "No Search Result"
                                 ) : isAlbumMode ? (
                                     <>
                                         <div>No photos in album: {currentAlbumName || 'Unknown Album'}</div>
