@@ -44,6 +44,7 @@ function App() {
     toggleHome,
     toggleAlbumListMode,
     openTagsList,
+    openTrash,
     addFooterMessage
   } = useUI();
   const {
@@ -310,6 +311,10 @@ function App() {
                   resetPhotoState();
                   openTagsList();
                 }} title="Tags">🏷️</a>
+                <a href="#" onClick={() => {
+                  resetPhotoState();
+                  openTrash();
+                }} title="Trash">🗑️</a>
               </div>
               <div className="row">
                 <div style={{ display: "none" }}>
@@ -375,6 +380,10 @@ function App() {
               resetPhotoState();
               openTagsList();
             }} title="Tags">🏷️</a>
+            <a href="#" onClick={() => {
+              resetPhotoState();
+              openTrash();
+            }} title="Trash">🗑️</a>
           </div>
           <div className="row">
             <div style={{ display: "none" }}>

@@ -57,10 +57,12 @@ function PhotosList(props) {
         currentAlbumId,
         currentTagId,
         viewMode,
+        isTrashMode,
         openAlbum,
         toggleAlbumListMode,
         openTag,
         openTagsList,
+        toggleHome,
     } = useUI();
     const { handleTauriError, addError } = useError();
     
@@ -186,6 +188,7 @@ function PhotosList(props) {
     const [tagSearchTerm, setTagSearchTerm] = useState('');
     const [currentTagName, setCurrentTagName] = useState('');
     const [tagPhotos, setTagPhotos] = useState([]);
+    const [trashPhotos, setTrashPhotos] = useState([]);
     
     // Filter popover state
     const [showFilterPopover, setShowFilterPopover] = useState(false);
@@ -373,6 +376,35 @@ function PhotosList(props) {
         }
     }, [handleTauriError]);
 
+    // Load trash photos
+    const loadTrashPhotos = useCallback(async () => {
+        try {
+            logger.info('PhotosList', 'load_trash_photos_start', 'Loading trash photos');
+            const trashPhotosJson = await invoke("get_trash_photos");
+            const trashPhotosData = JSON.parse(trashPhotosJson);
+            
+            // Convert to photo objects for display with proper structure
+            const photoObjects = trashPhotosData.map(photo => ({
+                file: { path: photo.path, name: photo.path.split('/').pop() || photo.path },
+                path: photo.path,
+                has_thumbnail: photo.has_thumbnail || true,
+                star: photo.star || 0,
+                comment: photo.comment || ''
+            }));
+            
+            setTrashPhotos(photoObjects);
+            
+            logger.info('PhotosList', 'load_trash_photos_complete', 'Trash photos loaded', {
+                photoCount: trashPhotosData.length
+            });
+        } catch (error) {
+            logger.error('PhotosList', 'load_trash_photos_failed', 'Failed to load trash photos', {
+                error: error.message
+            });
+            handleTauriError(error, 'Load trash photos');
+        }
+    }, [handleTauriError]);
+
     // Handle tag click to switch to tag view
     const handleTagClick = useCallback((tag) => {
         logger.info('PhotosList', 'tag_click', 'User clicked on tag', {
@@ -556,6 +588,14 @@ function PhotosList(props) {
         }
     }, [isTagMode, currentTagId, loadTagPhotos, tagsList]);
 
+    // Load trash photos when in trash mode
+    useEffect(() => {
+        if (isTrashMode) {
+            logger.info('PhotosList', 'trash_mode', 'Trash mode activated, loading trash photos');
+            loadTrashPhotos();
+        }
+    }, [isTrashMode, loadTrashPhotos]);
+
     // Search handlers (defined after state to ensure sortOfPhotos is available)
     const handleSearch = useCallback(async (query, type, filters) => {
         const params = { query, searchType: type, filters };
@@ -656,11 +696,12 @@ function PhotosList(props) {
     // Memoize filtered photos to avoid recalculating on every render
     const filteredPhotos = useMemo(() => {
         // Use appropriate photo source based on current mode
-        const sourcePhotos = isAlbumMode ? albumPhotos : (isTagMode ? tagPhotos : allPhotosForCurrentFetch);
+        const sourcePhotos = isAlbumMode ? albumPhotos : (isTagMode ? tagPhotos : (isTrashMode ? trashPhotos : allPhotosForCurrentFetch));
         
         logger.debug('PhotosList', 'filtering_photos', 'Applying frontend filters', {
             isAlbumMode,
             isTagMode,
+            isTrashMode,
             sourcePhotosCount: sourcePhotos.length,
             starFilter,
             hasCommentFilter,
@@ -669,11 +710,13 @@ function PhotosList(props) {
         const result = applyFrontendFilters(sourcePhotos);
         logger.debug('PhotosList', 'filtered_result', 'Frontend filter result', {
             isAlbumMode,
+            isTagMode,
+            isTrashMode,
             originalCount: sourcePhotos.length,
             filteredCount: result.length
         });
         return result;
-    }, [isAlbumMode, isTagMode, albumPhotos, tagPhotos, allPhotosForCurrentFetch, starFilter, hasCommentFilter, extensionFilter]);
+    }, [isAlbumMode, isTagMode, isTrashMode, albumPhotos, tagPhotos, trashPhotos, allPhotosForCurrentFetch, starFilter, hasCommentFilter, extensionFilter]);
 
     // Check if any filters are active
     const hasActiveFilters = useMemo(() => {
@@ -965,9 +1008,13 @@ function PhotosList(props) {
     useEffect(() => {
         // console.log(`[FETCH_CONFIG_CHANGE] New fetchConfig:`, fetchConfig);
         
-        // Skip if in album mode - album photos are managed separately
+        // Skip if in album mode or trash mode - these photos are managed separately
         if (isAlbumMode) {
             logger.debug('PhotosList', 'useEffect_skip_album', 'Skipping fetchConfig reload - in album mode');
+            return;
+        }
+        if (isTrashMode) {
+            logger.debug('PhotosList', 'useEffect_skip_trash', 'Skipping fetchConfig reload - in trash mode');
             return;
         }
         
@@ -1961,7 +2008,7 @@ function PhotosList(props) {
                 </div>
                 <div className={(props.showSideMenu || !currentPhotoPath) ? "centerDisplay" : "centerDisplayMax"} id="photoList"
                     style={{ display: (!photoLoading && (!compatProps.showPhotoDisplay || !currentPhotoPath)) ? "block" : "none" }}
-                    data-date={recentPhotosMode ? "recent" : (isSearchMode ? "search_results" : (isAlbumListMode ? "albums" : (isAlbumMode ? `album_${currentAlbumId}` : (isTagListMode ? "tags" : (isTagMode ? `tag_${currentTagId}` : compatProps.currentDate)))))} 
+                    data-date={recentPhotosMode ? "recent" : (isSearchMode ? "search_results" : (isAlbumListMode ? "albums" : (isAlbumMode ? `album_${currentAlbumId}` : (isTagListMode ? "tags" : (isTagMode ? `tag_${currentTagId}` : (isTrashMode ? "trash" : compatProps.currentDate))))))} 
                     data-page={recentPhotosMode ? (compatProps.datePage["recent"] || 1) : (isSearchMode ? (compatProps.datePage["search_results"] || 1) : 1)}>
                     <div>
                         {/* Album List Mode */}
@@ -2012,6 +2059,7 @@ function PhotosList(props) {
                         {displayedPhotos.length == 0 && isSearchMode && <div style={{float: "left", marginBottom: "10px"}}><a className="back-to-home" onClick={(e) => { e.preventDefault(); clearSearch(); }} href="#">Back to HOME</a></div>}
                         {displayedPhotos.length == 0 && isAlbumMode && <div style={{float: "left", marginBottom: "10px"}}><a className="back-to-home" onClick={(e) => { e.preventDefault(); toggleAlbumListMode(); }} href="#">Back to Album List</a></div>}
                         {displayedPhotos.length == 0 && isTagMode && <div style={{float: "left", marginBottom: "10px"}}><a className="back-to-home" onClick={(e) => { e.preventDefault(); openTagsList(); }} href="#">Back to Tag List</a></div>}
+                        {displayedPhotos.length == 0 && isTrashMode && <div style={{float: "left", marginBottom: "10px"}}><a className="back-to-home" onClick={(e) => { e.preventDefault(); toggleHome(); }} href="#">Back to HOME</a></div>}
                         {displayedPhotos.length > 0 ?
                             <div className="photo-list-header">
                                 <div className="photo-page-info">
@@ -2021,6 +2069,8 @@ function PhotosList(props) {
                                         <><a className="back-to-home" href="#" onClick={(e)=>{ e.preventDefault(); toggleAlbumListMode(); }}>Back to Album List</a> <span style={{marginLeft: "10px"}}>{currentAlbumName || 'Album'} ({filteredPhotos.length} photos)</span></>
                                     ) : isTagMode ? (
                                         <><a className="back-to-home" href="#" onClick={(e)=>{ e.preventDefault(); openTagsList(); }}>Back to Tag List</a> <span style={{marginLeft: "10px"}}>{currentTagName || 'Tag'} ({filteredPhotos.length} photos)</span></>
+                                    ) : isTrashMode ? (
+                                        <><a className="back-to-home" href="#" onClick={(e)=>{ e.preventDefault(); toggleHome(); }}>Back to HOME</a> <span style={{marginLeft: "10px"}}>Trash ({filteredPhotos.length} photos)</span></>
                                     ) : (
                                         <span>{fetchConfig?.title || 'Photos'} ({filteredPhotos.length} photos)</span>
                                     )}
@@ -2110,6 +2160,44 @@ function PhotosList(props) {
                                 ) : isAlbumMode ? (
                                     <>
                                         <div>No photos in album: {currentAlbumName || 'Unknown Album'}</div>
+                                        {hasActiveFilters && (
+                                            <div style={{fontSize: "12px", color: "#666", marginTop: "5px"}}>
+                                                {getFilterSummary}
+                                                <button 
+                                                    style={{marginLeft: "10px", fontSize: "11px", padding: "2px 6px", cursor: "pointer"}}
+                                                    onClick={() => {
+                                                        setStarFilter(0);
+                                                        setHasCommentFilter(false);
+                                                        setExtensionFilter('all');
+                                                    }}
+                                                >
+                                                    Clear Filters
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : isTagMode ? (
+                                    <>
+                                        <div>No photos with tag: {currentTagName || 'Unknown Tag'}</div>
+                                        {hasActiveFilters && (
+                                            <div style={{fontSize: "12px", color: "#666", marginTop: "5px"}}>
+                                                {getFilterSummary}
+                                                <button 
+                                                    style={{marginLeft: "10px", fontSize: "11px", padding: "2px 6px", cursor: "pointer"}}
+                                                    onClick={() => {
+                                                        setStarFilter(0);
+                                                        setHasCommentFilter(false);
+                                                        setExtensionFilter('all');
+                                                    }}
+                                                >
+                                                    Clear Filters
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : isTrashMode ? (
+                                    <>
+                                        <div>Trash is empty</div>
                                         {hasActiveFilters && (
                                             <div style={{fontSize: "12px", color: "#666", marginTop: "5px"}}>
                                                 {getFilterSummary}
