@@ -455,6 +455,21 @@ function PhotosList(props) {
         return result;
     }, [isAlbumMode, albumPhotos, allPhotosForCurrentFetch, starFilter, hasCommentFilter, extensionFilter]);
 
+    // Check if any filters are active
+    const hasActiveFilters = useMemo(() => {
+        return starFilter > 0 || hasCommentFilter || extensionFilter !== 'all';
+    }, [starFilter, hasCommentFilter, extensionFilter]);
+
+    // Get filter summary for display
+    const getFilterSummary = useMemo(() => {
+        const active = [];
+        if (starFilter > 0) active.push(`★${starFilter}+`);
+        if (hasCommentFilter) active.push('Has comment');
+        if (extensionFilter !== 'all') active.push(`${extensionFilter}`);
+        
+        return active.length > 0 ? `Active filters: ${active.join(', ')}` : '';
+    }, [starFilter, hasCommentFilter, extensionFilter]);
+
     // Displayed photos for infinite scroll
     const displayedPhotos = useMemo(() => {
         logger.debug('PhotosList', 'display_photos', 'Calculating displayed photos', {
@@ -1559,7 +1574,49 @@ function PhotosList(props) {
                                     {/* Num selector removed - not needed with infinite scroll */}
                                 </div>
                             </div>
-                            : <>{isSearchMode ? (isSearching ? <PhotoLoading /> : "No Search Result") : isAlbumMode ? `No photos in album: ${currentAlbumName || 'Unknown Album'}` : "No Photo Found!"}</>
+                            : <div>
+                                {isSearchMode ? (
+                                    isSearching ? <PhotoLoading /> : "No Search Result"
+                                ) : isAlbumMode ? (
+                                    <>
+                                        <div>No photos in album: {currentAlbumName || 'Unknown Album'}</div>
+                                        {hasActiveFilters && (
+                                            <div style={{fontSize: "12px", color: "#666", marginTop: "5px"}}>
+                                                {getFilterSummary}
+                                                <button 
+                                                    style={{marginLeft: "10px", fontSize: "11px", padding: "2px 6px", cursor: "pointer"}}
+                                                    onClick={() => {
+                                                        setStarFilter(0);
+                                                        setHasCommentFilter(false);
+                                                        setExtensionFilter('all');
+                                                    }}
+                                                >
+                                                    Clear Filters
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <>
+                                        <div>No Photo Found!</div>
+                                        {hasActiveFilters && (
+                                            <div style={{fontSize: "12px", color: "#666", marginTop: "5px"}}>
+                                                {getFilterSummary}
+                                                <button 
+                                                    style={{marginLeft: "10px", fontSize: "11px", padding: "2px 6px", cursor: "pointer"}}
+                                                    onClick={() => {
+                                                        setStarFilter(0);
+                                                        setHasCommentFilter(false);
+                                                        setExtensionFilter('all');
+                                                    }}
+                                                >
+                                                    Clear Filters
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
                         }
                         <Scrollable f={handleInfiniteScroll} className="photos">
                             {/* Removed scroll indicators for infinite scroll */}
