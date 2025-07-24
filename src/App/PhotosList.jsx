@@ -655,11 +655,12 @@ function PhotosList(props) {
 
     // Memoize filtered photos to avoid recalculating on every render
     const filteredPhotos = useMemo(() => {
-        // Use album photos when in album mode, otherwise use regular photos
-        const sourcePhotos = isAlbumMode ? albumPhotos : allPhotosForCurrentFetch;
+        // Use appropriate photo source based on current mode
+        const sourcePhotos = isAlbumMode ? albumPhotos : (isTagMode ? tagPhotos : allPhotosForCurrentFetch);
         
         logger.debug('PhotosList', 'filtering_photos', 'Applying frontend filters', {
             isAlbumMode,
+            isTagMode,
             sourcePhotosCount: sourcePhotos.length,
             starFilter,
             hasCommentFilter,
@@ -672,7 +673,7 @@ function PhotosList(props) {
             filteredCount: result.length
         });
         return result;
-    }, [isAlbumMode, albumPhotos, allPhotosForCurrentFetch, starFilter, hasCommentFilter, extensionFilter]);
+    }, [isAlbumMode, isTagMode, albumPhotos, tagPhotos, allPhotosForCurrentFetch, starFilter, hasCommentFilter, extensionFilter]);
 
     // Check if any filters are active
     const hasActiveFilters = useMemo(() => {
