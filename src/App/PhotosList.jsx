@@ -348,17 +348,17 @@ function PhotosList(props) {
             logger.info('PhotosList', 'load_tag_photos_start', 'Loading tag photos', { tagId });
             const tagPhotosPaths = await invoke("search_photos_by_tags", { tagIds: [tagId] });
             
-            // For now, we'll just use the photo paths and let the normal photo loading handle metadata
-            // Later we can optimize this with a get_tag_photos_with_metadata function
-            setTagPhotos(tagPhotosPaths);
-            
-            // Convert to photo objects for display - simplified for now
+            // Convert to photo objects for display with proper structure
             const photoObjects = tagPhotosPaths.map(path => ({
                 file: { path, name: path.split('/').pop() || path },
-                path: path
+                path: path,
+                has_thumbnail: true, // Assume true for now
+                star: 0, // Default values
+                comment: ''
             }));
             
-            setPhotosList({ photos: photoObjects });
+            // Set tagPhotos with proper photo objects
+            setTagPhotos(photoObjects);
             
             logger.info('PhotosList', 'load_tag_photos_complete', 'Tag photos loaded', {
                 tagId,
