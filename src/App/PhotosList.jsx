@@ -16,6 +16,7 @@ import { useError } from "../context/ErrorContext.jsx";
 import SearchTools from "../components/SearchTools.jsx";
 import TagChip from "../components/TagChip.jsx";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
+import AlbumCreationModal from "../components/AlbumCreationModal.jsx";
 import { logger } from "../services/LoggerService.js";
 import { usePhotosListState } from "../hooks/usePhotosListState.js";
 import { useRecentPhotos } from "../hooks/usePhotosQuery.js";
@@ -173,6 +174,7 @@ function PhotosList(props) {
     const [filteredAlbums, setFilteredAlbums] = useState([]);
     const [albumSearchTerm, setAlbumSearchTerm] = useState('');
     const [currentAlbumName, setCurrentAlbumName] = useState('');
+    const [showAlbumCreationModal, setShowAlbumCreationModal] = useState(false);
     
     // Tag state
     const [tagsList, setTagsList] = useState([]);
@@ -414,6 +416,51 @@ function PhotosList(props) {
             handleTauriError(error, 'Create tag');
         }
     }, [handleTauriError, loadTags]);
+
+    // Handle new album creation
+    const handleNewAlbumClick = useCallback(() => {
+        logger.info('PhotosList', 'new_album_click', 'Opening album creation modal from grid', {
+            currentMode: currentViewMode
+        });
+        setShowAlbumCreationModal(true);
+    }, [currentViewMode]);
+
+    // Handle album creation from modal
+    const createEmptyAlbum = useCallback(async (albumData) => {
+        try {
+            logger.info('PhotosList', 'create_empty_album_start', 'Creating empty album', {
+                albumName: albumData.name,
+                hasDescription: !!albumData.description
+            });
+
+            const albumId = await invoke("create_album", {
+                name: albumData.name,
+                description: albumData.description || ''
+            });
+
+            logger.info('PhotosList', 'create_empty_album_success', 'Empty album created successfully', {
+                albumId,
+                albumName: albumData.name
+            });
+
+            // Close modal
+            setShowAlbumCreationModal(false);
+            
+            // Reload albums to show the new album
+            loadAlbums();
+
+            // Navigate to the new album
+            openAlbum(albumId);
+            setCurrentAlbumName(albumData.name);
+
+        } catch (error) {
+            logger.error('PhotosList', 'create_empty_album_failed', 'Failed to create empty album', {
+                albumName: albumData.name,
+                error: error.message
+            });
+            handleTauriError(error, 'Create album');
+        }
+    }, [handleTauriError, loadAlbums, openAlbum]);
 
     // Filter albums by search term
     useEffect(() => {
@@ -1506,13 +1553,73 @@ function PhotosList(props) {
     // Album grid rendering functions
 
     const renderAlbumGrid = () => {
-        if (filteredAlbums.length === 0) {
-            return <div>No albums found!</div>;
-        }
-
         return (
             <Scrollable className="albums">
-                {filteredAlbums.map((album) => (
+                {/* Add New Album Tile */}
+                <div 
+                    key="new-album"
+                    className="album-tile new-album-tile"
+                    onClick={() => handleNewAlbumClick()}
+                    style={{
+                        width: `${iconSize + 50}px`,
+                        height: `${iconSize + 80}px`,
+                        cursor: 'pointer',
+                        border: '2px dashed var(--border)',
+                        borderRadius: '8px',
+                        margin: '10px',
+                        padding: '10px',
+                        display: 'inline-block',
+                        verticalAlign: 'top',
+                        backgroundColor: 'var(--bg-elevated)',
+                        transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.target.style.transform = 'scale(1.05)';
+                        e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.target.style.transform = 'scale(1)';
+                        e.target.style.boxShadow = 'none';
+                    }}
+                >
+                    <div className="album-cover" style={{
+                        width: `${iconSize}px`,
+                        height: `${iconSize}px`,
+                        backgroundColor: 'var(--bg-elevated)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: '10px',
+                        borderRadius: '4px',
+                        overflow: 'hidden',
+                        border: '1px dashed var(--border)'
+                    }}>
+                        <div style={{
+                            fontSize: `${iconSize * 0.15}px`,
+                            color: '#999',
+                            textAlign: 'center',
+                            lineHeight: '1.2'
+                        }}>+ New Album</div>
+                    </div>
+                    <div className="album-info" style={{
+                        textAlign: 'center',
+                        fontSize: '12px'
+                    }}>
+                        <div className="album-name" style={{
+                            fontWeight: 'bold',
+                            marginBottom: '4px',
+                            wordWrap: 'break-word'
+                        }}>
+                            Create New Album
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Existing Albums */}
+                {filteredAlbums.length === 0 ? (
+                    <div style={{ margin: '20px', color: '#666' }}>No albums found! Create your first album by clicking "New Album".</div>
+                ) : (
+                    filteredAlbums.map((album) => (
                     <div 
                         key={album.id}
                         className="album-tile"
@@ -1586,7 +1693,8 @@ function PhotosList(props) {
                             </div>
                         </div>
                     </div>
-                ))}
+                    ))
+                )}
             </Scrollable>
         );
     };
@@ -2353,6 +2461,13 @@ function PhotosList(props) {
                 </div>
             </div>
         )}
+        {/* Album Creation Modal */}
+        <AlbumCreationModal
+            isOpen={showAlbumCreationModal}
+            onClose={() => setShowAlbumCreationModal(false)}
+            onConfirm={createEmptyAlbum}
+            selectedPhotosCount={0}
+        />
             </>
         </ErrorBoundary>
     );
