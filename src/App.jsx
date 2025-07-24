@@ -43,6 +43,7 @@ function App() {
     toggleSearchPage,
     toggleHome,
     toggleAlbumListMode,
+    openTagsList,
     addFooterMessage
   } = useUI();
   const {
