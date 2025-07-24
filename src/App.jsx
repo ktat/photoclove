@@ -305,6 +305,10 @@ function App() {
                   resetPhotoState();
                   toggleAlbumListMode();
                 }} title="Albums">📚</a>
+                <a href="#" onClick={() => {
+                  resetPhotoState();
+                  openTagsList();
+                }} title="Tags">🏷️</a>
               </div>
               <div className="row">
                 <div style={{ display: "none" }}>

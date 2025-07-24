@@ -64,6 +64,8 @@ function PhotosList(props) {
     const isAdvancedSearchMode = props.isAdvancedSearchMode || false;
     const isAlbumListMode = viewMode === 'album_list';
     const isAlbumMode = viewMode === 'album' && currentAlbumId;
+    const isTagListMode = viewMode === 'tag_list';
+    const isTagMode = viewMode === 'tag' && currentTagId;
     
     // Use search hook when in search mode
     const { searchResults, searchQuery, isSearching, performSearch, clearSearch: clearSearchHook } = useSearch();
@@ -171,6 +173,13 @@ function PhotosList(props) {
     const [filteredAlbums, setFilteredAlbums] = useState([]);
     const [albumSearchTerm, setAlbumSearchTerm] = useState('');
     const [currentAlbumName, setCurrentAlbumName] = useState('');
+    
+    // Tag state
+    const [tagsList, setTagsList] = useState([]);
+    const [filteredTags, setFilteredTags] = useState([]);
+    const [tagSearchTerm, setTagSearchTerm] = useState('');
+    const [currentTagName, setCurrentTagName] = useState('');
+    const [tagPhotos, setTagPhotos] = useState([]);
     
     // Frontend filtering function - defined early to avoid temporal dead zone
     const applyFrontendFilters = (photos) => {
@@ -297,6 +306,115 @@ function PhotosList(props) {
         loadAlbumPhotos(album.id);
     }, [openAlbum, loadAlbumPhotos]);
 
+    // Tag loading functions
+    const loadTags = useCallback(async () => {
+        try {
+            logger.info('PhotosList', 'load_tags_start', 'Loading tags list');
+            const tags = await invoke("get_all_tags_with_photo_count");
+            
+            const processedTags = tags.map(tag => ({
+                id: tag[0],
+                name: tag[1],
+                color: tag[2] || null,
+                photoCount: tag[3] || 0
+            }));
+            
+            setTagsList(processedTags);
+            setFilteredTags(processedTags);
+            
+            logger.info('PhotosList', 'load_tags_complete', 'Tags loaded successfully', {
+                tagCount: processedTags.length
+            });
+        } catch (error) {
+            logger.error('PhotosList', 'load_tags_failed', 'Failed to load tags', {
+                error: error.message
+            });
+            handleTauriError(error, 'Load tags');
+        }
+    }, [handleTauriError]);
+
+    const loadTagPhotos = useCallback(async (tagId) => {
+        try {
+            logger.info('PhotosList', 'load_tag_photos_start', 'Loading tag photos', { tagId });
+            const tagPhotosPaths = await invoke("search_photos_by_tags", { tagIds: [tagId] });
+            
+            // For now, we'll just use the photo paths and let the normal photo loading handle metadata
+            // Later we can optimize this with a get_tag_photos_with_metadata function
+            setTagPhotos(tagPhotosPaths);
+            
+            // Convert to photo objects for display - simplified for now
+            const photoObjects = tagPhotosPaths.map(path => ({
+                file: { path, name: path.split('/').pop() || path },
+                path: path
+            }));
+            
+            setPhotosList({ photos: photoObjects });
+            
+            logger.info('PhotosList', 'load_tag_photos_complete', 'Tag photos loaded', {
+                tagId,
+                photoCount: tagPhotosPaths.length
+            });
+        } catch (error) {
+            logger.error('PhotosList', 'load_tag_photos_failed', 'Failed to load tag photos', {
+                tagId,
+                error: error.message
+            });
+            handleTauriError(error, 'Load tag photos');
+        }
+    }, [handleTauriError]);
+
+    // Handle tag click to switch to tag view
+    const handleTagClick = useCallback((tag) => {
+        logger.info('PhotosList', 'tag_click', 'User clicked on tag', {
+            tagId: tag.id,
+            tagName: tag.name
+        });
+        
+        // Switch to tag view mode
+        openTag(tag.id);
+        setCurrentTagName(tag.name);
+        
+        // Load tag photos
+        loadTagPhotos(tag.id);
+    }, [openTag, loadTagPhotos]);
+
+    // Handle new tag creation
+    const handleNewTagClick = useCallback(async () => {
+        try {
+            const tagName = prompt("Enter tag name:");
+            if (!tagName || tagName.trim() === '') {
+                return;
+            }
+
+            const tagColor = prompt("Enter tag color (hex code, e.g., #ff0000) or leave empty:");
+            const color = tagColor && tagColor.trim() !== '' ? tagColor.trim() : null;
+
+            logger.info('PhotosList', 'create_tag_start', 'Creating new tag', {
+                tagName: tagName.trim(),
+                color
+            });
+
+            const tagId = await invoke("create_tag", {
+                name: tagName.trim(),
+                color
+            });
+
+            logger.info('PhotosList', 'create_tag_success', 'Tag created successfully', {
+                tagId,
+                tagName: tagName.trim()
+            });
+
+            // Reload tags to show the new tag
+            loadTags();
+
+        } catch (error) {
+            logger.error('PhotosList', 'create_tag_failed', 'Failed to create tag', {
+                error: error.message
+            });
+            handleTauriError(error, 'Create tag');
+        }
+    }, [handleTauriError, loadTags]);
+
     // Filter albums by search term
     useEffect(() => {
         if (albumsList.length === 0) {
@@ -314,6 +432,24 @@ function PhotosList(props) {
         );
         setFilteredAlbums(filtered);
     }, [albumsList, albumSearchTerm]);
+
+    // Filter tags by search term
+    useEffect(() => {
+        if (tagsList.length === 0) {
+            setFilteredTags([]);
+            return;
+        }
+        
+        if (!tagSearchTerm.trim()) {
+            setFilteredTags(tagsList);
+            return;
+        }
+        
+        const filtered = tagsList.filter(tag =>
+            tag.name.toLowerCase().includes(tagSearchTerm.toLowerCase())
+        );
+        setFilteredTags(filtered);
+    }, [tagsList, tagSearchTerm]);
 
     // Load albums when in album list mode
     useEffect(() => {
@@ -339,6 +475,31 @@ function PhotosList(props) {
             setCurrentAlbumName('');
         }
     }, [isAlbumMode, currentAlbumId, loadAlbumPhotos, albumsList]);
+
+    // Load tags when in tag list mode
+    useEffect(() => {
+        if (isTagListMode) {
+            logger.info('PhotosList', 'tag_list_mode', 'Tag list mode activated, loading tags');
+            loadTags();
+        }
+    }, [isTagListMode, loadTags]);
+
+    // Load tag photos when tag is selected
+    useEffect(() => {
+        if (isTagMode && currentTagId) {
+            logger.info('PhotosList', 'tag_mode', 'Tag mode activated, loading tag photos', { tagId: currentTagId });
+            loadTagPhotos(currentTagId);
+            
+            // Set current tag name if we have tags loaded
+            const currentTag = tagsList.find(tag => tag.id === currentTagId);
+            if (currentTag) {
+                setCurrentTagName(currentTag.name);
+            }
+        } else {
+            // Clear tag name when not in tag mode
+            setCurrentTagName('');
+        }
+    }, [isTagMode, currentTagId, loadTagPhotos, tagsList]);
 
     // Search handlers (defined after state to ensure sortOfPhotos is available)
     const handleSearch = useCallback(async (query, type, filters) => {
@@ -1457,6 +1618,168 @@ function PhotosList(props) {
         </div>
     );
 
+    const renderTagGrid = () => {
+        return (
+            <Scrollable className="tags">
+                {/* Add New Tag Tile */}
+                <div 
+                    key="new-tag"
+                    className="tag-tile new-tag-tile"
+                    onClick={() => handleNewTagClick()}
+                    style={{
+                        width: `${iconSize + 50}px`,
+                        height: `${iconSize + 80}px`,
+                        cursor: 'pointer',
+                        border: '2px dashed var(--border)',
+                        borderRadius: '8px',
+                        margin: '10px',
+                        padding: '10px',
+                        display: 'inline-block',
+                        verticalAlign: 'top',
+                        backgroundColor: 'var(--bg-elevated)',
+                        transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.target.style.transform = 'scale(1.05)';
+                        e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.target.style.transform = 'scale(1)';
+                        e.target.style.boxShadow = 'none';
+                    }}
+                >
+                    <div className="tag-cover" style={{
+                        width: `${iconSize}px`,
+                        height: `${iconSize}px`,
+                        backgroundColor: '#374151',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: '10px',
+                        borderRadius: '4px',
+                        overflow: 'hidden',
+                        border: '1px dashed var(--border)'
+                    }}>
+                        <div style={{
+                            fontSize: `${iconSize * 0.15}px`,
+                            color: '#999',
+                            textAlign: 'center',
+                            lineHeight: '1.2'
+                        }}>+ New Tag</div>
+                    </div>
+                    <div className="tag-info" style={{
+                        textAlign: 'center',
+                        fontSize: '12px'
+                    }}>
+                        <div className="tag-name" style={{
+                            fontWeight: 'bold',
+                            marginBottom: '4px',
+                            wordWrap: 'break-word'
+                        }}>
+                            Create New Tag
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Existing Tags */}
+                {filteredTags.length === 0 ? (
+                    <div style={{ margin: '20px', color: '#666' }}>No tags found! Create your first tag by clicking "New Tag".</div>
+                ) : (
+                    filteredTags.map((tag) => (
+                    <div 
+                        key={tag.id}
+                        className="tag-tile"
+                        onClick={() => handleTagClick(tag)}
+                        style={{
+                            width: `${iconSize + 50}px`,
+                            height: `${iconSize + 80}px`,
+                            cursor: 'pointer',
+                            border: '1px solid var(--border)',
+                            borderRadius: '8px',
+                            margin: '10px',
+                            padding: '10px',
+                            display: 'inline-block',
+                            verticalAlign: 'top',
+                            backgroundColor: 'var(--bg-elevated)',
+                            transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.target.style.transform = 'scale(1.05)';
+                            e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.target.style.transform = 'scale(1)';
+                            e.target.style.boxShadow = 'none';
+                        }}
+                    >
+                        <div className="tag-cover" style={{
+                            width: `${iconSize}px`,
+                            height: `${iconSize}px`,
+                            backgroundColor: tag.color || '#374151',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginBottom: '10px',
+                            borderRadius: '4px',
+                            overflow: 'hidden',
+                            border: '1px solid var(--border)'
+                        }}>
+                            <div style={{
+                                fontSize: `${iconSize * 0.3}px`,
+                                color: tag.color ? '#fff' : '#999'
+                            }}>🏷️</div>
+                        </div>
+                        <div className="tag-info" style={{
+                            textAlign: 'center',
+                            fontSize: '12px'
+                        }}>
+                            <div className="tag-name" style={{
+                                fontWeight: 'bold',
+                                marginBottom: '4px',
+                                wordWrap: 'break-word'
+                            }}>
+                                {tag.name}
+                            </div>
+                            <div className="tag-count" style={{
+                                color: '#666'
+                            }}>
+                                {tag.photoCount} photos
+                            </div>
+                        </div>
+                    </div>
+                    ))
+                )}
+            </Scrollable>
+        );
+    };
+
+    const renderTagSearchFilter = () => (
+        <div style={{ 
+            marginBottom: '20px',
+            padding: '10px',
+            backgroundColor: 'var(--bg-elevated)',
+            borderRadius: '4px',
+            border: '1px solid var(--border)'
+        }}>
+            <input 
+                type="text"
+                placeholder="Search tags..." 
+                value={tagSearchTerm}
+                onChange={(e) => setTagSearchTerm(e.target.value)}
+                className="tag-list-search-input"
+                style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                    fontSize: '14px',
+                    backgroundColor: '#374151',
+                    color: 'var(--text)'
+                }}
+            />
+        </div>
+    );
+
     // Removed photosScroll function - replaced by handleInfiniteScroll
 
     return (
@@ -1522,7 +1845,7 @@ function PhotosList(props) {
                 </div>
                 <div className={(props.showSideMenu || !currentPhotoPath) ? "centerDisplay" : "centerDisplayMax"} id="photoList"
                     style={{ display: (!photoLoading && (!compatProps.showPhotoDisplay || !currentPhotoPath)) ? "block" : "none" }}
-                    data-date={recentPhotosMode ? "recent" : (isSearchMode ? "search_results" : (isAlbumListMode ? "albums" : (isAlbumMode ? `album_${currentAlbumId}` : compatProps.currentDate)))} 
+                    data-date={recentPhotosMode ? "recent" : (isSearchMode ? "search_results" : (isAlbumListMode ? "albums" : (isAlbumMode ? `album_${currentAlbumId}` : (isTagListMode ? "tags" : (isTagMode ? `tag_${currentTagId}` : compatProps.currentDate)))))} 
                     data-page={recentPhotosMode ? (compatProps.datePage["recent"] || 1) : (isSearchMode ? (compatProps.datePage["search_results"] || 1) : 1)}>
                     <div>
                         {/* Album List Mode */}
@@ -1545,12 +1868,34 @@ function PhotosList(props) {
                                 {renderAlbumGrid()}
                             </>
                         )}
+
+                        {/* Tag List Mode */}
+                        {isTagListMode && (
+                            <>
+                                <div className="photo-list-header">
+                                    <div className="photo-page-info">
+                                        <span>Tags ({filteredTags.length} tags)</span>
+                                    </div>
+                                    <div className="photo-operation">
+                                        Icon:<select name="icon_size" value={iconSize} onChange={(e) => setIconSize(parseInt(e.target.value))}>
+                                            <option value={50}>small</option>
+                                            <option value={100}>normal</option>
+                                            <option value={200}>large</option>
+                                            <option value={300}>huge</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                {renderTagSearchFilter()}
+                                {renderTagGrid()}
+                            </>
+                        )}
                         
                         {/* Regular Photo Display Mode */}
-                        {!isAlbumListMode && (
+                        {!isAlbumListMode && !isTagListMode && (
                             <>
                         {displayedPhotos.length == 0 && isSearchMode && <div style={{float: "left", marginBottom: "10px"}}><a className="back-to-home" onClick={(e) => { e.preventDefault(); clearSearch(); }} href="#">Back to HOME</a></div>}
                         {displayedPhotos.length == 0 && isAlbumMode && <div style={{float: "left", marginBottom: "10px"}}><a className="back-to-home" onClick={(e) => { e.preventDefault(); toggleAlbumListMode(); }} href="#">Back to Album List</a></div>}
+                        {displayedPhotos.length == 0 && isTagMode && <div style={{float: "left", marginBottom: "10px"}}><a className="back-to-home" onClick={(e) => { e.preventDefault(); openTagsList(); }} href="#">Back to Tag List</a></div>}
                         {displayedPhotos.length > 0 ?
                             <div className="photo-list-header">
                                 <div className="photo-page-info">
@@ -1558,6 +1903,8 @@ function PhotosList(props) {
                                         <><a className="back-to-home" href="#" onClick={(e)=>{ e.preventDefault(); clearSearch(); }}>Back to HOME</a> <span style={{marginLeft: "10px"}}>{fetchConfig?.title || 'Search Results'} ({filteredPhotos.length} photos)</span></>
                                     ) : isAlbumMode ? (
                                         <><a className="back-to-home" href="#" onClick={(e)=>{ e.preventDefault(); toggleAlbumListMode(); }}>Back to Album List</a> <span style={{marginLeft: "10px"}}>{currentAlbumName || 'Album'} ({filteredPhotos.length} photos)</span></>
+                                    ) : isTagMode ? (
+                                        <><a className="back-to-home" href="#" onClick={(e)=>{ e.preventDefault(); openTagsList(); }}>Back to Tag List</a> <span style={{marginLeft: "10px"}}>{currentTagName || 'Tag'} ({filteredPhotos.length} photos)</span></>
                                     ) : (
                                         <span>{fetchConfig?.title || 'Photos'} ({filteredPhotos.length} photos)</span>
                                     )}

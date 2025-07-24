@@ -1533,6 +1533,26 @@ async fn get_all_tags(state: tauri::State<'_, AppState>) -> Result<Vec<(i32, Str
 }
 
 #[tauri::command]
+async fn get_all_tags_with_photo_count(state: tauri::State<'_, AppState>) -> Result<Vec<(i32, String, Option<String>, i32)>, String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+    
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "tags", "get_all_tags_with_photo_count_request; correlation_id={}", correlation_id);
+    
+    match meta_db.get_all_tags_with_photo_count() {
+        Ok(tags) => {
+            log::info!(target: "tags", "get_all_tags_with_photo_count_success; correlation_id={}; count={}", correlation_id, tags.len());
+            Ok(tags)
+        }
+        Err(e) => {
+            log::error!(target: "tags", "get_all_tags_with_photo_count_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
+#[tauri::command]
 async fn create_tag(name: String, color: Option<String>, state: tauri::State<'_, AppState>) -> Result<i32, String> {
     let meta_db = &state.meta_db;
     let logging_service = &state.logging_service;
@@ -2019,6 +2039,7 @@ pub fn run() {
             set_logging_enabled,
             get_logging_status,
             get_all_tags,
+            get_all_tags_with_photo_count,
             create_tag,
             delete_tag,
             add_tag_to_photo,

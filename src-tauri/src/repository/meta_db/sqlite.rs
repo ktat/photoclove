@@ -1868,6 +1868,10 @@ impl MetaInfoDB for SQLite {
         SQLite::get_all_tags(self)
     }
 
+    fn get_all_tags_with_photo_count(&self) -> Result<Vec<(i32, String, Option<String>, i32)>, String> {
+        SQLite::get_all_tags_with_photo_count(self)
+    }
+
     fn create_tag(&self, name: &str, color: Option<&str>) -> Result<i32, String> {
         SQLite::create_tag(self, name, color)
     }
@@ -2754,6 +2758,31 @@ impl SQLite {
             let name: String = row.get(1)?;
             let color: Option<String> = row.get(2)?;
             Ok((id, name, color))
+        }).map_err(|e| format!("Failed to query tags: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect tags: {}", e))?;
+        
+        Ok(tags)
+    }
+
+    pub fn get_all_tags_with_photo_count(&self) -> Result<Vec<(i32, String, Option<String>, i32)>, String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let mut stmt = conn.prepare(
+            "SELECT t.id, t.name, t.color, COUNT(pt.photo_path) as photo_count
+             FROM tags t 
+             LEFT JOIN photo_tags pt ON t.id = pt.tag_id 
+             GROUP BY t.id, t.name, t.color
+             ORDER BY t.name"
+        ).map_err(|e| format!("Failed to prepare query: {}", e))?;
+        
+        let tags = stmt.query_map([], |row| {
+            let id: i32 = row.get(0)?;
+            let name: String = row.get(1)?;
+            let color: Option<String> = row.get(2)?;
+            let photo_count: i32 = row.get(3)?;
+            Ok((id, name, color, photo_count))
         }).map_err(|e| format!("Failed to query tags: {}", e))?
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| format!("Failed to collect tags: {}", e))?;

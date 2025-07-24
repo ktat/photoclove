@@ -122,6 +122,7 @@ pub(crate) trait MetaInfoDB {
     
     // Tag management methods
     fn get_all_tags(&self) -> Result<Vec<(i32, String, Option<String>)>, String>;
+    fn get_all_tags_with_photo_count(&self) -> Result<Vec<(i32, String, Option<String>, i32)>, String>;
     fn create_tag(&self, name: &str, color: Option<&str>) -> Result<i32, String>;
     fn delete_tag(&self, tag_id: i32) -> Result<bool, String>;
     fn add_tag_to_photo(&self, photo_path: &str, tag_id: i32) -> Result<(), String>;
