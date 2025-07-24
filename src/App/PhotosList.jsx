@@ -55,6 +55,7 @@ function PhotosList(props) {
         searchInitialQuery,
         showAlbumsList,
         currentAlbumId,
+        currentTagId,
         viewMode,
         openAlbum,
         toggleAlbumListMode,
@@ -183,7 +184,6 @@ function PhotosList(props) {
     const [tagsList, setTagsList] = useState([]);
     const [filteredTags, setFilteredTags] = useState([]);
     const [tagSearchTerm, setTagSearchTerm] = useState('');
-    const [currentTagId, setCurrentTagId] = useState(null);
     const [currentTagName, setCurrentTagName] = useState('');
     const [tagPhotos, setTagPhotos] = useState([]);
     
