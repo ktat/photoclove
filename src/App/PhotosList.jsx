@@ -17,6 +17,7 @@ import SearchTools from "../components/SearchTools.jsx";
 import TagChip from "../components/TagChip.jsx";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import AlbumCreationModal from "../components/AlbumCreationModal.jsx";
+import FilterPopover from "../components/FilterPopover.jsx";
 import { logger } from "../services/LoggerService.js";
 import { usePhotosListState } from "../hooks/usePhotosListState.js";
 import { useRecentPhotos } from "../hooks/usePhotosQuery.js";
@@ -57,6 +58,8 @@ function PhotosList(props) {
         viewMode,
         openAlbum,
         toggleAlbumListMode,
+        openTag,
+        openTagsList,
     } = useUI();
     const { handleTauriError, addError } = useError();
     
@@ -180,8 +183,13 @@ function PhotosList(props) {
     const [tagsList, setTagsList] = useState([]);
     const [filteredTags, setFilteredTags] = useState([]);
     const [tagSearchTerm, setTagSearchTerm] = useState('');
+    const [currentTagId, setCurrentTagId] = useState(null);
     const [currentTagName, setCurrentTagName] = useState('');
     const [tagPhotos, setTagPhotos] = useState([]);
+    
+    // Filter popover state
+    const [showFilterPopover, setShowFilterPopover] = useState(false);
+    const filterButtonRef = useRef(null);
     
     // Frontend filtering function - defined early to avoid temporal dead zone
     const applyFrontendFilters = (photos) => {
@@ -1105,7 +1113,6 @@ function PhotosList(props) {
     }
 
     const [tabClass, setTabClass] = useState({
-        'filter': !isSearchMode,
         'maintenance': false,
         'selection': false,
         'search': isSearchMode,
@@ -2025,6 +2032,39 @@ function PhotosList(props) {
                                 </div>
                                 {/* Removed navigation - replaced by infinite scroll */}
                                 <div className="photo-operation">
+                                    <button
+                                        ref={filterButtonRef}
+                                        onClick={() => setShowFilterPopover(!showFilterPopover)}
+                                        style={{
+                                            padding: '6px 10px',
+                                            marginRight: '10px',
+                                            backgroundColor: (starFilter > 0 || hasCommentFilter || extensionFilter !== "all") ? 'var(--accent)' : 'var(--bg-elevated)',
+                                            border: '1px solid var(--border)',
+                                            borderRadius: '4px',
+                                            cursor: 'pointer',
+                                            color: 'var(--text)',
+                                            fontSize: '14px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px'
+                                        }}
+                                        title="Filter photos"
+                                    >
+                                        <span style={{ fontSize: '16px' }}>⚙️</span>
+                                        Filter
+                                        {(starFilter > 0 || hasCommentFilter || extensionFilter !== "all") && (
+                                            <span style={{
+                                                backgroundColor: 'var(--accent)',
+                                                color: '#fff',
+                                                borderRadius: '10px',
+                                                padding: '2px 6px',
+                                                fontSize: '11px',
+                                                marginLeft: '4px'
+                                            }}>
+                                                {[starFilter > 0, hasCommentFilter, extensionFilter !== "all"].filter(Boolean).length}
+                                            </span>
+                                        )}
+                                    </button>
                                     Icon:<select name="icon_size" value={iconSize} onChange={(e) => setIconSize(parseInt(e.target.value))}>
                                         <option value={50}>small</option>
                                         <option value={100}>normal</option>
@@ -2344,16 +2384,6 @@ function PhotosList(props) {
                 </button>
             )}
             <button 
-                className={tabClass['filter'] ? "directory-vertical-tab-button active" : "directory-vertical-tab-button"}
-                onClick={(e) => {
-                    changeTab(e, "#tab-filter");
-                    setShowSideMenu(true);
-                }}
-                title="Filter Photos"
-            >
-                <span className="directory-vertical-text">Filter</span>
-            </button>
-            <button 
                 className={tabClass['selection'] ? "directory-vertical-tab-button active" : "directory-vertical-tab-button"}
                 onClick={(e) => {
                     changeTab(e, "#tab-selection");
@@ -2467,6 +2497,19 @@ function PhotosList(props) {
             onClose={() => setShowAlbumCreationModal(false)}
             onConfirm={createEmptyAlbum}
             selectedPhotosCount={0}
+        />
+        
+        {/* Filter Popover */}
+        <FilterPopover
+            isOpen={showFilterPopover}
+            onClose={() => setShowFilterPopover(false)}
+            anchorRef={filterButtonRef}
+            starFilter={starFilter}
+            setStarFilter={setStarFilter}
+            hasCommentFilter={hasCommentFilter}
+            setHasCommentFilter={setHasCommentFilter}
+            extensionFilter={extensionFilter}
+            setExtensionFilter={setExtensionFilter}
         />
             </>
         </ErrorBoundary>
