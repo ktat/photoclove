@@ -405,6 +405,17 @@ function PhotosList(props) {
         }
     }, [handleTauriError]);
 
+    // Helper function to get the display path for photos (add trash path if in trash mode)
+    const getDisplayPath = useCallback((photo) => {
+        if (isTrashMode && config?.trash_path && photo?.path) {
+            // Remove trailing slash from trash_path and leading slash from photo.path to avoid duplicates
+            const trashPath = config.trash_path.replace(/\/$/, '');
+            const photoPath = photo.path.startsWith('/') ? photo.path : '/' + photo.path;
+            return trashPath + photoPath;
+        }
+        return photo?.path || '';
+    }, [isTrashMode, config]);
+
     // Handle tag click to switch to tag view
     const handleTagClick = useCallback((tag) => {
         logger.info('PhotosList', 'tag_click', 'User clicked on tag', {
@@ -1084,7 +1095,11 @@ function PhotosList(props) {
     }, [displayedPhotos]);
 
     function displayPhoto(f, i) {
-        setCurrentPhotoPath(f);
+        // In trash mode, we need to find the photo by original path, but display the trash path
+        const photoToFind = photosListMiniAllPhotos[i];
+        const displayPath = photoToFind ? getDisplayPath(photoToFind) : f;
+        
+        setCurrentPhotoPath(displayPath);
         setCurrentPhotoIndex(i);
         
         // Find the global index in the all photos array
@@ -1218,6 +1233,13 @@ function PhotosList(props) {
 
     function moveToTrashCan(f) {
         // console.log("delete file: " + f)
+        
+        // If in trash mode, permanently delete instead of moving to trash
+        if (isTrashMode) {
+            permanentlyDeletePhoto(f);
+            return;
+        }
+        
         invoke("move_to_trash", { pathStr: f, sortValue: parseInt(sortOfPhotos) }).then((d) => {
             if (d) {
                 const date = d
@@ -1258,6 +1280,48 @@ function PhotosList(props) {
                     }
                 }
             }
+        });
+    }
+
+    function permanentlyDeletePhoto(f) {
+        // console.log("permanently delete file: " + f)
+        invoke("delete_permanently", { pathStr: f }).then((result) => {
+            logger.info('PhotosList', 'permanent_delete_success', 'Photo permanently deleted', { path: f, result });
+            
+            // Remove from trash photos list
+            setTrashPhotos(prevPhotos => prevPhotos.filter(photo => photo.path !== f));
+            
+            // Update thumbnail list when photo is deleted from current view
+            if (photosListMiniAllPhotos.length > 0) {
+                const allPhotos = photosListMiniAllPhotos
+                // Create a new array instead of mutating the existing one to trigger React state update
+                const newAllPhotos = [...allPhotos];
+                newAllPhotos.splice(currentPhotoIndex, 1);
+                setPhotosListMiniAllPhotos(newAllPhotos);
+                // no photos are remaining after the deleted photo
+                // last photo
+                if (currentPhotoIndex >= newAllPhotos.length) {
+                    const ci = currentPhotoIndex - 1;
+                    // console.log("last photo!")
+                    if (newAllPhotos[ci]) {
+                        setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
+                        setCurrentPhotoPath(newAllPhotos[ci].file.path);
+                        setCurrentPhotoIndex(ci);
+                    }
+                }
+                // not last photo
+                else {
+                    const ci = currentPhotoIndex;
+                    // console.log("Not last photo!")
+                    setPhotosListMiniReread(!photosListMiniReread);
+                    setCurrentPhotoPath(newAllPhotos[ci].file.path);
+                }
+                if (newAllPhotos.length == 0) {
+                    closePhotoDisplay();
+                }
+            }
+        }).catch((error) => {
+            logger.error('PhotosList', 'permanent_delete_error', 'Failed to permanently delete photo', { path: f, error });
         });
     }
 
@@ -1984,6 +2048,8 @@ function PhotosList(props) {
 
                                     reread={photosListMiniReread}
                                     currentIndex={photosListMiniCurrentIndex}
+                                    isTrashMode={isTrashMode}
+                                    config={config}
                                     setCurrentIndex={setPhotosListMiniCurrentIndex}
                                     setShowSideMenu={setShowSideMenu}
                                     showSideMenu={showSideMenu}

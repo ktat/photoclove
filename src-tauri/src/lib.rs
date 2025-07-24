@@ -1,4 +1,4 @@
-use crate::domain_service::{file_service, photo_service, job_queue_service, logging_service};
+use crate::domain_service::{file_service, photo_service, job_queue_service, logging_service, thumbnail_service};
 use crate::entity::importer;
 use crate::entity::*;
 use crate::repository::RepositoryDB;
@@ -1350,6 +1350,9 @@ async fn delete_permanently(
     // Remove file from trash directory permanently
     match file_service::remove_from_trash_permanently(file, trash) {
         Ok(_) => {
+            // Delete thumbnail if it exists
+            let _ = thumbnail_service::delete_thumbnail(&photo, &state.config);
+            
             // Permanently delete from database
             meta_db.delete_photo_permanently(&photo);
             Ok("Photo deleted permanently".to_string())
