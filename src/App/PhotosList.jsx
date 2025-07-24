@@ -1534,7 +1534,26 @@ function PhotosList(props) {
                         {/* Regular Photo Display Mode */}
                         {!isAlbumListMode && (
                             <>
-                        {displayedPhotos.length == 0 && isSearchMode && <div style={{float: "left", marginBottom: "10px"}}><a className="back-to-home" onClick={(e) => { e.preventDefault(); clearSearch(); }} href="#">Back to HOME</a></div>}
+                        {displayedPhotos.length == 0 && isSearchMode && (
+                            <div style={{float: "left", marginBottom: "10px"}}>
+                                <a className="back-to-home" onClick={(e) => { e.preventDefault(); clearSearch(); }} href="#">Back to HOME</a>
+                                {hasActiveFilters && (
+                                    <div style={{fontSize: "12px", color: "#666", marginTop: "5px"}}>
+                                        {getFilterSummary}
+                                        <button 
+                                            style={{marginLeft: "10px", fontSize: "11px", padding: "2px 6px", cursor: "pointer"}}
+                                            onClick={() => {
+                                                setStarFilter(0);
+                                                setHasCommentFilter(false);
+                                                setExtensionFilter('all');
+                                            }}
+                                        >
+                                            Clear Filters
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                         {displayedPhotos.length == 0 && isAlbumMode && <div style={{float: "left", marginBottom: "10px"}}><a className="back-to-home" onClick={(e) => { e.preventDefault(); toggleAlbumListMode(); }} href="#">Back to Album List</a></div>}
                         {displayedPhotos.length > 0 ?
                             <div className="photo-list-header">
@@ -1576,7 +1595,26 @@ function PhotosList(props) {
                             </div>
                             : <div>
                                 {isSearchMode ? (
-                                    isSearching ? <PhotoLoading /> : "No Search Result"
+                                    isSearching ? <PhotoLoading /> : (
+                                        <>
+                                            <div>No Search Result</div>
+                                            {hasActiveFilters && (
+                                                <div style={{fontSize: "12px", color: "#666", marginTop: "5px"}}>
+                                                    {getFilterSummary}
+                                                    <button 
+                                                        style={{marginLeft: "10px", fontSize: "11px", padding: "2px 6px", cursor: "pointer"}}
+                                                        onClick={() => {
+                                                            setStarFilter(0);
+                                                            setHasCommentFilter(false);
+                                                            setExtensionFilter('all');
+                                                        }}
+                                                    >
+                                                        Clear Filters
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </>
+                                    )
                                 ) : isAlbumMode ? (
                                     <>
                                         <div>No photos in album: {currentAlbumName || 'Unknown Album'}</div>
