@@ -1020,9 +1020,27 @@ function PhotosList(props) {
     useEffect(() => {
         // console.log(`[FETCH_CONFIG_CHANGE] New fetchConfig:`, fetchConfig);
         
-        // Skip if in album mode or trash mode - these photos are managed separately
+        setShowSideMenu(isSearchMode);
+        
+        // Cancel current photo loading if in progress
+        if (currentPhotoLoadingController) {
+            currentPhotoLoadingController.abort();
+            setCurrentPhotoLoadingController(null);
+        }
+        
+        // Always reset state when switching modes to ensure clean state
+        setPhotosList({ "photos": [] });
+        setCurrentPhotoIndex(0);
+        setPhotosListMiniCurrentIndex(0);
+        setCurrentPhotoPath(undefined);
+        
+        // Skip photo loading if in album, tag, or trash mode - these photos are managed separately
         if (isAlbumMode) {
             logger.debug('PhotosList', 'useEffect_skip_album', 'Skipping fetchConfig reload - in album mode');
+            return;
+        }
+        if (isTagMode) {
+            logger.debug('PhotosList', 'useEffect_skip_tag', 'Skipping fetchConfig reload - in tag mode');
             return;
         }
         if (isTrashMode) {
@@ -1035,20 +1053,6 @@ function PhotosList(props) {
             // console.log(`[FETCH_CONFIG_CHANGE] Already loading, skipping`);
             return;
         }
-        
-        setShowSideMenu(isSearchMode);
-        
-        // Cancel current photo loading if in progress
-        if (currentPhotoLoadingController) {
-            currentPhotoLoadingController.abort();
-            setCurrentPhotoLoadingController(null);
-        }
-        
-        // Reset state for infinite scroll
-        setPhotosList({ "photos": [] });
-        setCurrentPhotoIndex(0);
-        setPhotosListMiniCurrentIndex(0);
-        setCurrentPhotoPath(undefined);
         
         // Load all photos based on fetch config (skip if fetchConfig is null for Advanced Search mode)
         logger.debug('PhotosList', 'useEffect_trigger', 'UseEffect triggered - loading photos', {
@@ -1065,7 +1069,7 @@ function PhotosList(props) {
             logger.debug('PhotosList', 'useEffect_skip', 'Not loading photos - fetchConfig is null/undefined');
         }
         
-    }, [fetchConfig?.fetch_method, fetchConfig?.value, fetchConfig?.max_photos_per_fetch, isAlbumMode]);
+    }, [fetchConfig?.fetch_method, fetchConfig?.value, fetchConfig?.max_photos_per_fetch, isAlbumMode, isTagMode, isTrashMode]);
 
     // Load filter options for Advanced Search mode
     useEffect(() => {
