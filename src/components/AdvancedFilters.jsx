@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import TagChip from './TagChip.jsx';
 import { logger } from '../services/LoggerService.js';
+import './AdvancedFilters.css';
 
 const AdvancedFilters = ({
   onFiltersChange,
