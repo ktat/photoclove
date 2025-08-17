@@ -1,8 +1,7 @@
-/* Base styles: CSS variables, resets, typography */
-
 /* --- Windows / Linux ずれ防止パッチ --- */
 html {
   scrollbar-gutter: stable both-edges;
+  /* フォールバック */
 }
 
 html,
@@ -26,7 +25,18 @@ body,
   }
 }
 
-/* Root Variables and Typography */
+body {
+  min-width: 100%;
+  max-width: 100%;
+}
+
+.centerDisplay,
+.photoLoadingOn,
+.photos {
+  min-width: calc(var(--vw) - 560px);
+  overflow: hidden;
+}
+
 :root {
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
   font-size: 16px;
@@ -43,26 +53,18 @@ body,
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
 
-  /* dark theme variables */
+  /* dark theme */
   --bg: #5b5b5b;
+  /* ページ地 */
   --bg-elevated: #242424;
+  /* 入力欄・カード */
   --text: #e4e4e4;
   --border: #444;
   --accent: #999;
+  /* チェックボックスなどの強調色 */
 }
 
-/* Body Base Styles */
-body {
-  min-width: 100%;
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  background: #1b1b1b;
-  color: var(--text);
-}
-
-/* Base Form Elements */
+/* start dark theme */
 input,
 textarea,
 select,
@@ -77,9 +79,22 @@ button {
 input::placeholder,
 textarea::placeholder {
   color: #888;
+  /* グレーで控えめに */
 }
 
-/* Checkbox and Radio Styling */
+input::placeholder,
+textarea::placeholder {
+  color: #888;
+  /* グレーで控えめに */
+}
+
+/* Album list search input placeholder */
+.album-list-search-input::placeholder {
+  color: #9ca3af;
+  opacity: 0.8;
+}
+
+/* 2023 年以降の主要ブラウザでサポート */
 input[type="checkbox"],
 input[type="radio"],
 progress,
@@ -87,12 +102,22 @@ meter {
   accent-color: var(--accent);
 }
 
-/* Range Input Styling */
+/* 2023 年以降の主要ブラウザでサポート */
+
+input[type="checkbox"],
+input[type="radio"],
+progress,
+meter {
+  accent-color: var(--accent);
+}
+
 input[type="range"] {
   accent-color: var(--accent);
+  /* 新ブラウザならこれだけで OK */
   width: 100%;
 }
 
+/* 古い WebKit 互換を残したい場合のピンポイント上書き */
 input[type="range"]::-webkit-slider-runnable-track {
   background: var(--accent);
 }
@@ -101,28 +126,11 @@ input[type="range"]::-moz-range-track {
   background: var(--accent);
 }
 
-/* Date Input Dark Mode */
+/* 📅 アイコンも暗く反転させたい場合 */
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
 }
 
-/* Number Input */
-input[type="number"] {
-  width: 90px;
-  background: var(--bg-elevated);
-  color: var(--text);
-  border: 1px solid var(--border);
-}
-
-/* Button Base Styles */
-button {
-  background: var(--bg-elevated);
-  color: var(--text);
-  border: 1px solid var(--border);
-  cursor: pointer;
-}
-
-/* Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -137,23 +145,27 @@ button {
   border-radius: 6px;
 }
 
-/* Typography Base */
-h1, h2, h3, h4, h5, h6 {
+/* finish dark theme */
+
+input[type="number"] {
+  width: 90px;
+  background: var(--bg-elevated);
   color: var(--text);
-  margin: 0;
+  border: 1px solid var(--border);
 }
 
-a {
-  color: var(--accent);
-  text-decoration: none;
+button {
+  background: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
 }
 
-a:hover {
-  opacity: 0.8;
+.inner-container,
+body {
+  overflow: hidden;
 }
 
-/* Special Placeholders */
-.album-list-search-input::placeholder {
-  color: #9ca3af;
-  opacity: 0.8;
+body {
+  max-width: var(--vw);
+  min-width: var(--vw);
 }
