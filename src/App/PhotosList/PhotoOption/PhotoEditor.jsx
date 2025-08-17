@@ -6,6 +6,13 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import { logger } from '../../../services/LoggerService.js';
 import fileUrl from '../../../PathUtil.jsx';
 
+// TODO: This file is too large (1284 lines) and should be refactored into smaller modules:
+// - PhotoEditor/cssUtils.js: CSS parsing and generation utilities
+// - PhotoEditor/cropUtils.js: Crop functionality and preset handling
+// - PhotoEditor/styleUtils.js: Style application and transformation utilities
+// - PhotoEditor/ToolBar.jsx: Editor controls and UI components
+// - PhotoEditor/CropOverlay.jsx: Crop selection overlay component
+
 function PhotoEditor(props) {
     const [originalStyles, setOriginalStyles] = useState(new Map());
     const [editorStyles, setEditorStyles] = useState({

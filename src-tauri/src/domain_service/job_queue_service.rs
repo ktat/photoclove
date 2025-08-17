@@ -1,3 +1,9 @@
+// TODO: This file is too large (1208 lines) and should be refactored into smaller modules:
+// - job_queue/manager.rs: Core JobQueueManager struct and lifecycle methods
+// - job_queue/submission.rs: Job submission methods (submit_import_jobs, submit_google_photos_upload_jobs)
+// - job_queue/executor.rs: Job processing and execution logic
+// - job_queue/handlers.rs: Individual job type handlers (import, thumbnail, create_db, google_photos)
+
 use crate::entity::job_queue;
 use crate::repository::meta_db::sqlite::SQLite;
 use crate::repository::MetaInfoDB;

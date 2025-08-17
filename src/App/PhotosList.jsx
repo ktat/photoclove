@@ -1,3 +1,12 @@
+// TODO: This file is too large (2033 lines) and should be refactored into smaller modules:
+// - hooks/usePhotoSelection.js: Photo selection and multi-select functionality
+// - hooks/usePhotoFetch.js: Data fetching and loading logic for different modes
+// - hooks/useInfiniteScroll.js: Infinite scroll handling (already exists)
+// - components/PhotoGrid.jsx: Photo grid rendering (already exists)  
+// - components/PhotoActions.jsx: Action buttons and toolbars
+// - PhotosList/PhotosListCore.jsx: Main component orchestrator
+// - PhotosList/PhotosListViewModel.js: State management and business logic
+
 import { useState, useEffect, useMemo, useCallback } from "react";
 import PhotosListMini from "./PhotosList/PhotosListMini.jsx";
 import PhotoOption from "./PhotosList/PhotoOption.jsx";

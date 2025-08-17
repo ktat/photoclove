@@ -1,3 +1,13 @@
+/* TODO: This file is too large (2952 lines) and should be refactored into smaller modules:
+ * - styles/base.css: CSS variables, resets, base elements, typography
+ * - styles/layout.css: Grid, flex, container, and layout utilities
+ * - styles/components.css: Button, input, modal, and form component styles
+ * - styles/sidebar.css: Left sidebar, navigation, and menu styles
+ * - styles/photos.css: Photo grid, viewer, and photo-specific styles
+ * - styles/utilities.css: Helper classes and utility styles
+ * Use @import statements to include all modules
+ */
+
 /* --- Windows / Linux ずれ防止パッチ --- */
 html {
   scrollbar-gutter: stable both-edges;

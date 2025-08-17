@@ -1,3 +1,12 @@
+// TODO: This file is too large (2664 lines) and should be refactored into smaller modules:
+// - commands/photo_commands.rs: Photo-related Tauri commands (get_photos_unified, get_next_photo, etc.)
+// - commands/album_commands.rs: Album-related commands (get_albums, create_album, etc.)
+// - commands/search_commands.rs: Search and filter commands (search_photos, get_filter_options, etc.)
+// - commands/system_commands.rs: System operations (import_photos, create_db, etc.)
+// - commands/google_commands.rs: Google Photos integration commands
+// - app_state.rs: AppState struct and related initialization
+// Keep only main app setup and command registration in lib.rs
+
 use crate::domain_service::{
     file_service, job_queue_service, logging_service, photo_service, thumbnail_service,
 };

@@ -1,0 +1,167 @@
+/* Advanced Filters Styles */
+.advanced-filters {
+  margin-bottom: 20px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 15px;
+  background: #2a2a2a;
+  color: #e0e0e0;
+}
+
+.advanced-filters.loading {
+  text-align: center;
+  padding: 20px;
+  color: #ccc;
+}
+
+.advanced-search {
+  padding: 10px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.filters-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.filters-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #e0e0e0;
+}
+
+.clear-filters-button {
+  padding: 5px 10px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #3a3a3a;
+  color: #e0e0e0;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.clear-filters-button:hover {
+  background: #4a4a4a;
+}
+
+.filter-sections {
+  display: grid;
+  gap: 20px;
+}
+
+.filter-section {
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 15px;
+  background: #333;
+}
+
+.filter-section h4 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: #e0e0e0;
+}
+
+.filter-group {
+  margin-bottom: 15px;
+}
+
+.filter-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  font-size: 12px;
+  color: #e0e0e0;
+}
+
+.filter-group select, .filter-group input {
+  width: 100%;
+  padding: 5px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  font-size: 12px;
+  background: #2a2a2a;
+  color: #e0e0e0;
+}
+
+.filter-group input[type="checkbox"] {
+  width: auto !important;
+  margin-right: 8px;
+  transform: scale(1.2);
+  cursor: pointer;
+  display: inline-block !important;
+  visibility: visible !important;
+}
+
+.filter-group label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.filter-group label input[type="checkbox"] {
+  vertical-align: middle;
+}
+
+.range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.range-inputs input {
+  flex: 1;
+}
+
+.range-inputs span {
+  font-size: 12px;
+  color: #ccc;
+}
+
+/* Search Tab Filter Controls */
+.search-filters-toggle {
+  margin-bottom: 5px;
+  display: flex;
+  gap: 5px;
+  flex-direction: column;
+}
+
+.toggle-advanced-filters {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #2a2a2a;
+  color: #e0e0e0;
+  cursor: pointer;
+  font-size: 11px;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  max-width: 100%;
+}
+
+.toggle-advanced-filters:hover {
+  background: #3a3a3a;
+}
+
+.apply-filters-button {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #4a9eff;
+  border-radius: 4px;
+  background: #4a9eff;
+  color: white;
+  cursor: pointer;
+  font-size: 11px;
+  box-sizing: border-box;
+  font-weight: 500;
+}
+
+.apply-filters-button:hover {
+  background: #3a8eef;
+}
