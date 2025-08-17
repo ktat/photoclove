@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { logger } from "../services/LoggerService.js";
+import './JobQueue.css';
 
 const JobQueue = ({ onClose, ...props }) => {
   const [jobs, setJobs] = useState([]);
