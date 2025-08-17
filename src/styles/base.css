@@ -1,0 +1,159 @@
+/* Base styles: CSS variables, resets, typography */
+
+/* --- Windows / Linux ずれ防止パッチ --- */
+html {
+  scrollbar-gutter: stable both-edges;
+}
+
+html,
+body,
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* 可変ビューポート幅 */
+@supports (width: 100dvw) {
+  :root {
+    --vw: 100dvw;
+  }
+}
+
+@supports not (width: 100dvw) {
+  :root {
+    --vw: 100vw;
+  }
+}
+
+/* Root Variables and Typography */
+:root {
+  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+
+  color-scheme: dark light;
+  background: #1b1b1b;
+  color: #e4e4e4;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+
+  /* dark theme variables */
+  --bg: #5b5b5b;
+  --bg-elevated: #242424;
+  --text: #e4e4e4;
+  --border: #444;
+  --accent: #999;
+}
+
+/* Body Base Styles */
+body {
+  min-width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #1b1b1b;
+  color: var(--text);
+}
+
+/* Base Form Elements */
+input,
+textarea,
+select,
+button {
+  background: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
+  margin-right: 10px;
+  margin-left: 10px;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #888;
+}
+
+/* Checkbox and Radio Styling */
+input[type="checkbox"],
+input[type="radio"],
+progress,
+meter {
+  accent-color: var(--accent);
+}
+
+/* Range Input Styling */
+input[type="range"] {
+  accent-color: var(--accent);
+  width: 100%;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  background: var(--accent);
+}
+
+input[type="range"]::-moz-range-track {
+  background: var(--accent);
+}
+
+/* Date Input Dark Mode */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+/* Number Input */
+input[type="number"] {
+  width: 90px;
+  background: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+/* Button Base Styles */
+button {
+  background: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 6px;
+}
+
+/* Typography Base */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  margin: 0;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  opacity: 0.8;
+}
+
+/* Special Placeholders */
+.album-list-search-input::placeholder {
+  color: #9ca3af;
+  opacity: 0.8;
+}
