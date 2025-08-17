@@ -72,7 +72,7 @@ function Preferences(props) {
                 setConfigLoaded(!configLoaded);
             }
         }).catch((error) => {
-            console.error("Failed to save configuration:", error);
+            logger.error('Preferences', 'config_save_failed', 'Failed to save configuration', { error: error.message });
             message("Failed to save configuration. Please try again.");
         });
         message("Changes are not reflected until restart application.").then((t) => {

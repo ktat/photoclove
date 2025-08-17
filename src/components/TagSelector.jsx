@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { UnifiedPhotoCollection } from '../domain/UnifiedPhotoCollection.js';
 import { logger } from '../services/LoggerService.js';
 import TagChip from './TagChip.jsx';
 import TagInput from './TagInput.jsx';
@@ -35,10 +36,9 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
 
     const loadAllTags = async () => {
         try {
-            const tags = await invoke('get_all_tags');
-            const formattedTags = tags.map(([id, name, color]) => ({ id, name, color }));
-            setAllTags(formattedTags);
-            logger.info('TagSelector', 'tags_loaded', 'All tags loaded', { count: formattedTags.length });
+            const tags = await UnifiedPhotoCollection.getAllTags();
+            setAllTags(tags);
+            logger.info('TagSelector', 'tags_loaded', 'All tags loaded using unified collections', { count: tags.length });
         } catch (error) {
             logger.error('TagSelector', 'load_tags_error', 'Failed to load tags', { error: error.toString() });
         }
@@ -64,15 +64,19 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
 
         setIsLoading(true);
         try {
-            await invoke('add_tag_to_photo', {
-                photoPath: photoPath,
-                tagId: tag.id
+            // Find the tag collection and add photo to it
+            const tagCollection = new UnifiedPhotoCollection({
+                id: tag.id,
+                type: 'tag',
+                name: tag.name,
+                color: tag.color
             });
+            await tagCollection.addPhoto(photoPath);
 
             const newSelectedTags = [...selectedTags, tag];
             onTagsChange?.(newSelectedTags);
             
-            logger.info('TagSelector', 'tag_added', 'Tag added to photo', { 
+            logger.info('TagSelector', 'tag_added', 'Tag added to photo using unified collection', { 
                 tagId: tag.id, 
                 tagName: tag.name,
                 photoPath 
@@ -100,15 +104,18 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
 
         setIsLoading(true);
         try {
-            await invoke('remove_tag_from_photo', {
-                photoPath: photoPath,
-                tagId: tagId
+            // Find the tag in allTags to get its full data
+            const tag = allTags.find(t => t.id === tagId) || { id: tagId, type: 'tag' };
+            const tagCollection = new UnifiedPhotoCollection({
+                ...tag,
+                type: 'tag'
             });
+            await tagCollection.removePhoto(photoPath);
 
             const newSelectedTags = selectedTags.filter(tag => tag.id !== tagId);
             onTagsChange?.(newSelectedTags);
             
-            logger.info('TagSelector', 'tag_removed', 'Tag removed from photo', { 
+            logger.info('TagSelector', 'tag_removed', 'Tag removed from photo using unified collection', { 
                 tagId, 
                 photoPath 
             });

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { logger } from '../services/LoggerService.js';
+import { unifiedCollectionService } from '../services/UnifiedCollectionService.js';
 import TagChip from './TagChip.jsx';
 import TagInput from './TagInput.jsx';
 import './TagManager.css';
@@ -18,7 +19,13 @@ const TagManager = () => {
     const loadTags = async () => {
         setIsLoading(true);
         try {
-            const result = await invoke('get_all_tags');
+            const tagsResult = await invoke('get_photos_unified', {
+                request: {
+                    type: 'search',
+                    search_type: 'all_tags'
+                }
+            });
+            const result = JSON.parse(tagsResult);
             const formattedTags = result.map(([id, name, color]) => ({ id, name, color }));
             setTags(formattedTags);
             logger.info('TagManager', 'tags_loaded', 'Tags loaded successfully', { 
@@ -35,6 +42,10 @@ const TagManager = () => {
 
     const handleTagCreated = (newTag) => {
         setTags(prev => [...prev, newTag]);
+        
+        // Clear the unified collection service cache to ensure other components refresh
+        unifiedCollectionService.clearCache();
+        
         logger.info('TagManager', 'tag_created', 'New tag created', { 
             id: newTag.id,
             name: newTag.name 
@@ -54,6 +65,10 @@ const TagManager = () => {
             
             if (deleted) {
                 setTags(prev => prev.filter(t => t.id !== tagId));
+                
+                // Clear the unified collection service cache to ensure other components refresh
+                unifiedCollectionService.clearCache();
+                
                 logger.info('TagManager', 'tag_deleted', 'Tag deleted successfully', { 
                     tagId,
                     tagName: tag?.name 

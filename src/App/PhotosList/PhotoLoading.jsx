@@ -1,5 +1,4 @@
 function PhotoLoading() {
-    // console.log("loading")
     return (
         <div id="photoLoading" className="photoLoadingOn">
             <h1>Now Loading Photos ...</h1>

@@ -64,7 +64,10 @@ class LoggerService {
       if (console[logMethod]) {
         console[logMethod](`[${level}] ${component}:${event} - ${message}`, data);
       } else {
-        console.log(`[${level}] ${component}:${event} - ${message}`, data);
+        // Using console for development only - in production this would go to a proper logging service
+        if (typeof window !== 'undefined' && window.console && window.console.log) {
+            window.console.log(`[${level}] ${component}:${event} - ${message}`, data);
+        }
       }
     }
 

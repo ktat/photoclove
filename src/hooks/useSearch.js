@@ -195,20 +195,46 @@ export const useSearch = () => {
       });
       
       const endTime = performance.now();
+      
+      logger.info('useSearch', 'raw_result_received', 'Raw search result from backend', {
+        resultType: typeof result,
+        resultLength: result.length,
+        resultSample: result.substring(0, 200),
+        correlationId
+      });
+      
       const searchData = JSON.parse(result);
+      
+      logger.info('useSearch', 'search_data_parsed', 'Search data after JSON parse', {
+        searchDataType: typeof searchData,
+        isArray: Array.isArray(searchData),
+        searchDataKeys: searchData && typeof searchData === 'object' && !Array.isArray(searchData) ? Object.keys(searchData) : null,
+        hasPhotos: searchData && searchData.photos !== undefined,
+        photosLength: searchData && searchData.photos ? searchData.photos.length : null,
+        firstPhotoKeys: searchData && searchData.photos && searchData.photos[0] ? Object.keys(searchData.photos[0]) : null,
+        correlationId
+      });
+
+      // Handle both array and object formats
+      let photos = [];
+      if (Array.isArray(searchData)) {
+        photos = searchData;
+      } else if (searchData && searchData.photos) {
+        photos = searchData.photos;
+      }
 
       logger.info('useSearch', 'search_completed', 'Search completed successfully', {
-        resultCount: searchData.length,
+        resultCount: photos.length,
         duration_ms: Math.round(endTime - startTime),
         correlationId
       });
 
-      setSearchResults(searchData);
+      setSearchResults(photos);
       
       // Save to history with filters and sort information
-      saveSearchHistory(query, type, filters, sortField, sortOrder, searchData.length);
+      saveSearchHistory(query, type, filters, sortField, sortOrder, photos.length);
       
-      return searchData;
+      return photos;
     } catch (error) {
       const endTime = performance.now();
       

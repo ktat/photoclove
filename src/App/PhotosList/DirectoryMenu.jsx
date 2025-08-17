@@ -4,15 +4,17 @@ import { message, confirm } from "@tauri-apps/plugin-dialog";
 import { emit } from "@tauri-apps/api/event";
 import { localForage } from "../../storage/forage";
 import { logger } from "../../services/LoggerService.js";
+import { UnifiedPhotoCollection } from "../../domain/UnifiedPhotoCollection.js";
 import { useUI } from "../../context/UIContext.jsx";
 import { useError } from "../../context/ErrorContext.jsx";
+import { VIEW_MODES } from "../../constants/viewModes.js";
 import { useTutorial } from "../../hooks/useTutorial.js";
 import AlbumCreationModal from "../../components/AlbumCreationModal.jsx";
 import AlbumSelectorModal from "../../components/AlbumSelectorModal.jsx";
 import TutorialTooltip from "../../components/TutorialTooltip.jsx";
+import Scrollable from "../../Scrollable.jsx";
 
 function DirectoryMenu(props) {
-    const { viewMode, currentAlbumId } = useUI();
     const { handleTauriError } = useError();
 
     const [photoIndex, setPhotoIndex] = useState(-1);
@@ -25,8 +27,8 @@ function DirectoryMenu(props) {
     const [tutorialContent, setTutorialContent] = useState('');
     const dropdownRef = useRef(null);
     
-    // Check if we're in album mode
-    const isAlbumMode = viewMode === 'album' && currentAlbumId;
+    // Use ViewMode value object methods instead of const checks
+    // Assumes props.viewModeObj is passed from parent component
     
     // Tutorial hooks
     const {
@@ -45,7 +47,7 @@ function DirectoryMenu(props) {
     // Tutorial trigger effect
     useEffect(() => {
         if (props.photoSelection.length > 0) {
-            const context = isAlbumMode ? 'albumMode' : 'dateMode';
+            const context = props.viewModeObj?.isAlbumMode() ? 'albumMode' : 'dateMode';
             
             if (shouldShowTutorial('selectionTutorial', context)) {
                 setTutorialContent(getTutorialContent(context, props.photoSelection.length));
@@ -60,7 +62,7 @@ function DirectoryMenu(props) {
         } else {
             setShowTutorial(false);
         }
-    }, [props.photoSelection.length, isAlbumMode, shouldShowTutorial, markTutorialShown]);
+    }, [props.photoSelection.length, props.viewModeObj, shouldShowTutorial, markTutorialShown]);
 
     // Generate tutorial content based on context
     const getTutorialContent = (context, photoCount) => {
@@ -103,7 +105,7 @@ function DirectoryMenu(props) {
     // Tutorial event handlers
     const handleTutorialDismiss = () => {
         setShowTutorial(false);
-        const context = isAlbumMode ? 'albumMode' : 'dateMode';
+        const context = props.viewModeObj?.isAlbumMode() ? 'albumMode' : 'dateMode';
         dismissTutorial('selectionTutorial', context);
         
         logger.info('DirectoryMenu', 'tutorial_dismissed', 'User dismissed selection tutorial', { context });
@@ -111,7 +113,7 @@ function DirectoryMenu(props) {
 
     const handleTutorialDisable = () => {
         setShowTutorial(false);
-        const context = isAlbumMode ? 'albumMode' : 'dateMode';
+        const context = props.viewModeObj?.isAlbumMode() ? 'albumMode' : 'dateMode';
         disableTutorial('selectionTutorial', context);
         
         logger.info('DirectoryMenu', 'tutorial_disabled', 'User disabled selection tutorial', { context });
@@ -135,8 +137,52 @@ function DirectoryMenu(props) {
             showCreateAlbumModal();
         } else if (selected == "addToAlbum") {
             showAddToAlbumModal();
+        } else if (selected == "importSelected") {
+            importSelectedPhotos();
+        } else if (selected == "selectAllInDirectory") {
+            props.selectAllPhotosInDirectory?.();
+        } else if (selected == "unselectAll") {
+            props.clearPhotoSelection();
         }
         e.target.value = "";
+    }
+
+    async function importSelectedPhotos() {
+        if (!props.importState || props.photoSelection.length === 0) {
+            props.addFooterMessage('Please select photos first');
+            return;
+        }
+
+        const count = props.photoSelection.length;
+        const confirmed = await confirm(
+            `Import ${count} photo${count > 1 ? 's' : ''} to your library?`,
+            "Confirm Import"
+        );
+
+        if (confirmed) {
+            try {
+                logger.info('DirectoryMenu', 'import_photos_start', 'Starting photo import', {
+                    photoCount: count,
+                    currentPath: props.importState.currentImportPath
+                });
+
+                // Use ImportState to handle import
+                await props.importState.importPhotos(props.photoSelection);
+                
+                props.clearPhotoSelection();
+                props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} imported successfully`);
+                
+                logger.info('DirectoryMenu', 'photos_imported', 'Photos imported successfully', {
+                    photoCount: count
+                });
+            } catch (error) {
+                logger.error('DirectoryMenu', 'import_photos_failed', 'Failed to import photos', {
+                    photoCount: count,
+                    error: error.message
+                });
+                handleTauriError(error, 'Import photos');
+            }
+        }
     }
 
     async function createDbInDate() {
@@ -180,7 +226,6 @@ function DirectoryMenu(props) {
                     lockThumbnail = true;
                     invoke("create_thumbnails_in_date", { dateStr: props.currentDate }).then((r) => {
                         lockThumbnail = false;
-                        // console.log(r);
                     })
                 }
             });
@@ -340,36 +385,30 @@ function DirectoryMenu(props) {
 
     async function createAlbumFromSelection(albumData) {
         try {
-            logger.info('DirectoryMenu', 'create_album_start', 'Creating album from selection', {
+            logger.info('DirectoryMenu', 'create_album_start', 'Creating album from selection using unified collections', {
                 albumName: albumData.name,
                 photoCount: props.photoSelection.length
             });
             
-            const albumId = await invoke("create_album", {
+            const album = await UnifiedPhotoCollection.create('album', {
                 name: albumData.name,
                 description: albumData.description
             });
             
             // Add all selected photos to the new album
             for (const photoPath of props.photoSelection) {
-                await invoke("add_photo_to_album", {
-                    albumId: albumId,
-                    photoPath: photoPath
-                });
+                await album.addPhoto(photoPath);
             }
             
             // Automatically set the first selected photo as the cover photo
             if (props.photoSelection.length > 0) {
                 const firstPhotoPath = props.photoSelection[0];
-                logger.info('DirectoryMenu', 'set_cover_photo', 'Setting first photo as album cover', {
-                    albumId,
+                logger.info('DirectoryMenu', 'set_cover_photo', 'Setting first photo as album cover using unified collection', {
+                    albumId: album.id,
                     coverPhotoPath: firstPhotoPath
                 });
                 
-                await invoke("update_album", {
-                    id: albumId,
-                    name: albumData.name,
-                    description: albumData.description,
+                await album.update({
                     coverPhotoPath: firstPhotoPath
                 });
             }
@@ -448,6 +487,90 @@ function DirectoryMenu(props) {
                     <li><a href="#" onClick={() => { createThumbnails() }}>Make thumbnails</a></li>
                 </ul>
             </div>
+            
+            {/* Directory Tab - Import Mode Only */}
+            {props.viewModeObj?.shouldShowDirectoryTab() && props.importState && (
+                <div 
+                    id="tab-directory" 
+                    className={props.tabClass['directory'] ? "tab-active" : "tab"}
+                    style={{
+                        height: 'calc(-10px + 100vh)',
+                        overflowY: 'hidden'
+                    }}
+                >
+                    {/* Import paths dropdown */}
+                    <div style={{ marginBottom: '10px' }}>
+                        <label><strong>Import Photos From</strong>: </label>
+                        <select 
+                            value={props.importState.currentImportPath || ''} 
+                            onChange={(e) => props.importState.changeDirectory(e.target.value)}
+                            style={{ 
+                                width: '100%', 
+                                maxWidth: '200px',
+                                padding: '4px',
+                                marginTop: '4px'
+                            }}
+                        >
+                            <option value="">Select import source...</option>
+                            {props.importState.importPaths?.map((p, i) => (
+                                <option key={i} value={p}>{p}</option>
+                            ))}
+                        </select>
+                    </div>
+                    
+                    {/* Current directory - show only if different from root paths */}
+                    {props.importState.currentImportPath && 
+                     !props.importState.importPaths?.includes(props.importState.currentImportPath) && (
+                        <p style={{ 
+                            fontSize: '0.9em', 
+                            color: '#888', 
+                            marginBottom: '10px',
+                            fontStyle: 'italic'
+                        }}>
+                            Currently browsing: {props.importState.currentImportPath}
+                        </p>
+                    )}
+                    
+                    {/* Date filter - integrated with directory selection */}
+                    <div style={{ marginBottom: '10px' }}>
+                        <label>Created Date: after </label>
+                        <input 
+                            type="date" 
+                            value={props.importState.importFilter || ''} 
+                            onChange={(e) => props.importState.updateImportFilter(e.target.value)} 
+                        />
+                    </div>
+                    
+                    {/* Directory navigation */}
+                    <Scrollable 
+                        style={{ 
+                            maxHeight: '250px',
+                            border: '1px solid var(--border)',
+                            borderRadius: '4px',
+                            backgroundColor: 'var(--bg-elevated)'
+                        }}
+                    >
+                        <ul style={{ listStyle: 'none', padding: '8px', margin: 0 }}>
+                            {/* Parent directory - only show if not at root */}
+                            {props.importState.currentImportPath && props.importState.currentImportPath !== '/' && (
+                                <li style={{ padding: '4px 0' }}>
+                                    <a href="#" onClick={() => props.importState.changeDirectory(props.importState.getParentDirectory())}>
+                                        ↩️
+                                    </a>
+                                </li>
+                            )}
+                            
+                            {/* Subdirectories */}
+                            {props.importState.directories?.map((dir, i) => (
+                                <li key={i} style={{ padding: '4px 0' }}>
+                                    📁 <a href="#" onClick={() => props.importState.changeDirectory(dir.path)}>{dir.path.replace(/^.+\//, '')}</a>
+                                </li>
+                            ))}
+                        </ul>
+                    </Scrollable>
+                </div>
+            )}
+            
             <div id="tab-filter" className={props.tabClass['filter'] ? "tab-active" : "tab"}>
                 <ul>
                     <li>
@@ -608,30 +731,48 @@ function DirectoryMenu(props) {
                 </ul>
             </div>
             <div id="tab-selection" className={props.tabClass['selection'] ? "tab-active" : "tab"}>
-                <div>
-                    <button onClick={() => props.selectAllPhotoToSelection()}>Select all photos in page</button>
-                </div>
-                {props.photoSelection.length == 0
-                    ?
-                    <div><br />Photos are not selected.</div>
-                    :
-                    <div>
+                {/* Photo Selection (default mode) */}
+                {props.viewModeObj?.shouldShowPhotoSelection() && (
+                    <>
+                        <div>
+                            <button onClick={() => props.selectAllPhotoToSelection()}>Select all photos in page</button>
+                        </div>
+                        {props.photoSelection.length == 0
+                            ?
+                            <div><br />Photos are not selected.</div>
+                            :
+                            <div>
                         <div className="operation">
                             <select ref={dropdownRef} onChange={(e) => doOperation(e)}>
                                 <option value="select">Select an Operation</option>
                                 
-                                {/* Album-specific operations (only in album mode) */}
-                                {isAlbumMode && (
-                                    <option value="removeFromAlbum">Remove from Album</option>
+                                {/* Import-specific operations (only in import mode) */}
+                                {props.viewModeObj?.shouldShowImportOperations() && (
+                                    <>
+                                        {props.viewModeObj?.showImportSelected() && <option value="importSelected">Import Selected Photos</option>}
+                                        {props.viewModeObj?.showSelectAllInDirectory() && <option value="selectAllInDirectory">Select All in This Directory</option>}
+                                        <option value="unselectAll">Unselect All</option>
+                                    </>
                                 )}
                                 
-                                {/* Standard operations (all modes) */}
-                                <option value="uploadToGooglePhotos">Upload to Google Photos</option>
-                                <option value="deleteFiles">Delete files</option>
+                                {/* Album-specific operations (only in album mode) */}
+                                {props.viewModeObj?.shouldShowAlbumOperations() && (
+                                    <>
+                                        {props.viewModeObj?.showRemoveFromAlbum() && <option value="removeFromAlbum">Remove from Album</option>}
+                                    </>
+                                )}
                                 
-                                {/* Album operations (all modes) */}
-                                <option value="createAlbum">Create Album</option>
-                                <option value="addToAlbum">Add to Existing Album</option>
+                                {/* Standard operations (non-import modes) */}
+                                {props.viewModeObj?.shouldShowStandardOperations() && (
+                                    <>
+                                        {props.viewModeObj?.showUploadToGooglePhotos() && <option value="uploadToGooglePhotos">Upload to Google Photos</option>}
+                                        {props.viewModeObj?.showDeleteFiles() && <option value="deleteFiles">Delete files</option>}
+                                        
+                                        {/* Album operations (all modes) */}
+                                        {props.viewModeObj?.showCreateAlbum() && <option value="createAlbum">Create Album</option>}
+                                        {props.viewModeObj?.showAddToAlbum() && <option value="addToAlbum">Add to Existing Album</option>}
+                                    </>
+                                )}
                             </select>
                         </div>
                         <ul className="list-of-selected">
@@ -640,6 +781,26 @@ function DirectoryMenu(props) {
                             })}
                         </ul>
                         <button onClick={() => props.clearPhotoSelection()}>Clear Selection</button>
+                        
+                        {/* Import Progress Display - Import Mode Only */}
+                        {props.viewModeObj?.shouldShowImportProgress() && props.importState?.importProgress && (
+                            <div className="import-progress" style={{ 
+                                marginTop: '15px', 
+                                padding: '10px', 
+                                backgroundColor: 'var(--bg-elevated)', 
+                                border: '1px solid var(--border)', 
+                                borderRadius: '4px' 
+                            }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Import Progress</div>
+                                <div>Progress: {props.importState.importProgress.progress}%</div>
+                                <div>Current: {props.importState.importProgress.current_file}</div>
+                                {props.importState.importProgress.error && (
+                                    <div style={{ color: '#dc2626', marginTop: '5px' }}>
+                                        Error: {props.importState.importProgress.error}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 }
                 {photoIndex >= 0 &&
@@ -647,6 +808,124 @@ function DirectoryMenu(props) {
                         onMouseOver={() => setShowBigPhoto(true)}
                         src={convertFileSrc(props.photoSelection[photoIndex])}
                     />}
+                    </>
+                )}
+                
+                {/* Album Selection (album list mode) */}
+                {props.viewModeObj?.shouldShowAlbumSelection() && (
+                    <div>
+                        <div style={{ marginBottom: '15px' }}>
+                            <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>Selected Albums</h3>
+                        </div>
+                        {props.selectedAlbums.length === 0 ? (
+                            <div><br />No albums selected.</div>
+                        ) : (
+                            <div>
+                                <div className="operation" style={{ marginBottom: '15px' }}>
+                                    <button 
+                                        onClick={props.deleteSelectedAlbums}
+                                        style={{
+                                            padding: '8px 12px',
+                                            backgroundColor: '#dc2626',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '4px',
+                                            cursor: 'pointer',
+                                            marginRight: '10px'
+                                        }}
+                                    >
+                                        Delete Selected Albums
+                                    </button>
+                                    <button 
+                                        onClick={() => props.clearAlbumSelection()}
+                                        style={{
+                                            padding: '8px 12px',
+                                            backgroundColor: 'var(--bg-elevated)',
+                                            color: 'var(--text)',
+                                            border: '1px solid var(--border)',
+                                            borderRadius: '4px',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        Clear Selection
+                                    </button>
+                                </div>
+                                <ul className="list-of-selected">
+                                    {props.selectedAlbums.map((albumId) => {
+                                        const album = props.albumsList.find(a => a.id === albumId);
+                                        return album ? (
+                                            <li key={albumId}>
+                                                <span>{album.name} ({album.photoCount} photos)</span>
+                                            </li>
+                                        ) : null;
+                                    })}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                )}
+                
+                {/* Tag Selection (tag list mode) */}
+                {props.viewModeObj?.shouldShowTagSelection() && (
+                    <div>
+                        <div style={{ marginBottom: '15px' }}>
+                            <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>Selected Tags</h3>
+                        </div>
+                        {props.selectedTags.length === 0 ? (
+                            <div><br />No tags selected.</div>
+                        ) : (
+                            <div>
+                                <div className="operation" style={{ marginBottom: '15px' }}>
+                                    <button 
+                                        onClick={props.deleteSelectedTags}
+                                        style={{
+                                            padding: '8px 12px',
+                                            backgroundColor: '#dc2626',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '4px',
+                                            cursor: 'pointer',
+                                            marginRight: '10px'
+                                        }}
+                                    >
+                                        Delete Selected Tags
+                                    </button>
+                                    <button 
+                                        onClick={() => props.clearTagSelection()}
+                                        style={{
+                                            padding: '8px 12px',
+                                            backgroundColor: 'var(--bg-elevated)',
+                                            color: 'var(--text)',
+                                            border: '1px solid var(--border)',
+                                            borderRadius: '4px',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        Clear Selection
+                                    </button>
+                                </div>
+                                <ul className="list-of-selected">
+                                    {props.selectedTags.map((tagId) => {
+                                        const tag = props.tagsList.find(t => t.id === tagId);
+                                        return tag ? (
+                                            <li key={tagId}>
+                                                <span style={{ 
+                                                    display: 'inline-block',
+                                                    width: '12px',
+                                                    height: '12px',
+                                                    backgroundColor: tag.color || '#374151',
+                                                    borderRadius: '50%',
+                                                    marginRight: '8px'
+                                                }}></span>
+                                                <span>{tag.name} ({tag.photoCount} photos)</span>
+                                            </li>
+                                        ) : null;
+                                    })}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
             <div className="big-photo-in-selection" style={{ display: showBigPhoto ? "block" : "none" }}
                 onMouseLeave={() => setShowBigPhoto(false)}
@@ -678,7 +957,7 @@ function DirectoryMenu(props) {
                 targetElement={dropdownRef.current}
                 onDismiss={handleTutorialDismiss}
                 onDontShowAgain={handleTutorialDisable}
-                tutorialId={`selection_${isAlbumMode ? 'album' : 'date'}`}
+                tutorialId={`selection_${props.viewModeObj?.isAlbumMode() ? 'album' : 'date'}`}
             />
         </div >
     )

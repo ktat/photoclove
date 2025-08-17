@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { invoke } from "@tauri-apps/api/core";
 import { usePhoto } from '../context/PhotoContext.jsx';
 import { useUI } from '../context/UIContext.jsx';
@@ -14,75 +14,57 @@ export const useDateNavigation = () => {
   } = usePhoto();
   const { addFooterMessage } = useUI();
   const { handleTauriError } = useError();
+  const isLoadingRef = useRef(false);
 
   const getDates = useCallback(() => {
+    // Prevent multiple simultaneous calls
+    if (isLoadingRef.current) {
+      logger.debug('useDateNavigation', 'get_dates_skipped', 'Skipping duplicate getDates call');
+      return;
+    }
+    
+    isLoadingRef.current = true;
     updateHideLoading(false);
    
     invoke("get_dates").then((r) => {
       let l = JSON.parse(r);
       updateDateList(l);
-      let datesStr = "";
-      const newDateNum = {};
-      let n = 0;
-      const promises = [];
-     
-      l.map((v, i) => {
-        n += 1;
-        datesStr += v.year;
-        if (v.month < 10) {
-          datesStr += "-0" + v.month;
-        } else {
-          datesStr += "-" + v.month;
-        }
-        if (v.day < 10) {
-          datesStr += "-0" + v.day;
-        } else {
-          datesStr += "-" + v.day;
-        }
-        if (i !== l.length - 1 && n < 20) {
-          datesStr += ",";
-        }
-        if (n === 20 || i === l.length - 1) {
-          const reqDatesStr = datesStr;
-          n = 0;
-          datesStr = "";
-         
-          const promise = new Promise((resolve, reject) => {
-            invoke("get_dates_num", { datesStr: reqDatesStr }).then((r) => {
-              logger.debug('useDateNavigation', 'get_dates_num_success', 'Retrieved date numbers', {
-                result: r,
-                requestCount: reqDatesStr.length
-              });
-              let l = JSON.parse(r);
-              return resolve(l);
-            }).catch((e) => {
-              logger.error('useDateNavigation', 'get_dates_num_failed', 'Failed to get date numbers', {
-                error: e.toString(),
-                requestCount: reqDatesStr.length
-              });
-              handleTauriError(e, "Getting date numbers");
-              reject(e);
-            });
-          });
-          promises.push(promise);
-        }
+      
+      // Build comma-separated string of all dates for single request
+      const datesArray = l.map((v) => {
+        const month = v.month < 10 ? `0${v.month}` : v.month;
+        const day = v.day < 10 ? `0${v.day}` : v.day;
+        return `${v.year}-${month}-${day}`;
       });
-     
-      Promise.all(promises).then((results) => {
-        results.map((result) => {
-          Object.keys(result).map((k) => {
-            newDateNum[k] = result[k];
-          });
-          updateDateNum(newDateNum);
-          updateHideLoading(true);
+      const datesStr = datesArray.join(",");
+      
+      // Make single request for all dates (backend is now optimized)
+      logger.debug('useDateNavigation', 'get_dates_num_request', 'Requesting date numbers', {
+        dateCount: l.length,
+        sampleDates: datesArray.slice(0, 5)
+      });
+      
+      invoke("get_dates_num", { datesStr }).then((r) => {
+        logger.debug('useDateNavigation', 'get_dates_num_success', 'Retrieved all date numbers', {
+          dateCount: l.length
         });
-      }).catch((error) => {
-        handleTauriError(error, "Processing date numbers");
+        const dateNumData = JSON.parse(r);
+        updateDateNum(dateNumData);
         updateHideLoading(true);
+        isLoadingRef.current = false;
+      }).catch((error) => {
+        logger.error('useDateNavigation', 'get_dates_num_failed', 'Failed to get date numbers', {
+          error: error.toString(),
+          dateCount: l.length
+        });
+        handleTauriError(error, "Getting date numbers");
+        updateHideLoading(true);
+        isLoadingRef.current = false;
       });
     }).catch((error) => {
       handleTauriError(error, "Getting dates");
       updateHideLoading(true);
+      isLoadingRef.current = false;
     });
   }, [updateDateList, updateDateNum, updateHideLoading, handleTauriError]);
 

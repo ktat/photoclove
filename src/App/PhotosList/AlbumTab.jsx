@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { confirm } from '@tauri-apps/plugin-dialog';
 import { logger } from '../../services/LoggerService.js';
 import { useError } from '../../context/ErrorContext.jsx';
+import { unifiedCollectionService } from '../../services/UnifiedCollectionService.js';
 
 const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) => {
   const { handleTauriError } = useError();
@@ -23,9 +24,27 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
     setIsLoading(true);
     try {
       logger.info('AlbumTab', 'load_album_info_start', 'Loading album information', { albumId });
-      const album = await invoke('get_album_by_id', { albumId });
       
-      setAlbumInfo(album);
+      // Get all albums and find the one with matching ID
+      const albums = await unifiedCollectionService.getAlbums();
+      const album = albums.find(a => a.id === albumId);
+      
+      if (!album) {
+        throw new Error(`Album with id ${albumId} not found`);
+      }
+      
+      // Convert to format expected by the component
+      const albumInfo = {
+        id: album.id,
+        name: album.name,
+        description: album.description,
+        cover_photo_path: album.coverPhotoPath,
+        photo_count: album.photoCount,
+        created_at: album.createdAt,
+        updated_at: album.updatedAt
+      };
+      
+      setAlbumInfo(albumInfo);
       setEditedName(album.name);
       setEditedDescription(album.description || '');
       
@@ -36,7 +55,7 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
       logger.info('AlbumTab', 'load_album_info_complete', 'Album information loaded', { 
         albumId, 
         albumName: album.name,
-        photoCount: album.photo_count 
+        photoCount: album.photoCount 
       });
     } catch (error) {
       logger.error('AlbumTab', 'load_failed', 'Failed to load album info', { 
@@ -60,8 +79,7 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
         hasDescription: !!editedDescription.trim()
       });
       
-      await invoke('update_album', {
-        albumId,
+      await unifiedCollectionService.updateCollection(albumId, {
         name: editedName.trim(),
         description: editedDescription.trim() || null
       });
@@ -95,9 +113,8 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
         photoPath: currentPhotoPath 
       });
       
-      await invoke('update_album_cover', { 
-        albumId, 
-        photoPath: currentPhotoPath 
+      await unifiedCollectionService.updateCollection(albumId, {
+        coverPhotoPath: currentPhotoPath
       });
       
       await loadAlbumInfo();
@@ -135,7 +152,7 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
           albumName: albumInfo.name 
         });
         
-        await invoke('delete_album', { albumId });
+        await unifiedCollectionService.deleteCollection(albumId);
         onAlbumDelete?.(albumId);
         
         logger.info('AlbumTab', 'album_deleted', 'Album deleted successfully', { 

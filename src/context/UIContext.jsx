@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { invoke } from "@tauri-apps/api/core";
 import { message } from '@tauri-apps/plugin-dialog';
-import { useViewMode, VIEW_MODES } from '../hooks/useViewMode.js';
+import { useViewMode } from '../hooks/useViewMode.js';
+import { VIEW_MODES } from '../constants/viewModes.js';
+import { logger } from '../services/LoggerService.js';
 
 const UIContext = createContext();
 
@@ -65,18 +67,18 @@ export const UIProvider = ({ children }) => {
   }, [viewMode]);
 
   const showPhotosListView = useCallback(() => {
-    console.log('🐛 UIContext showPhotosListView() called - transitioning to DATE mode');
+    logger.debug('UIContext', 'show_photos_list_view', 'Transitioning to DATE mode');
     viewMode.transitionTo(VIEW_MODES.DATE);
-    console.log('🐛 UIContext showPhotosListView() - view mode transition complete');
+    logger.debug('UIContext', 'photos_list_view_complete', 'View mode transition complete');
   }, [viewMode]);
 
   const showDatePhotos = useCallback((date) => {
-    console.log('🐛 UIContext showDatePhotos() called - transitioning to DATE mode with date:', date);
+    logger.debug('UIContext', 'show_date_photos', 'Transitioning to DATE mode with date', { date });
     viewMode.showDatePhotos(date);
   }, [viewMode]);
 
   const showRecentPhotos = useCallback(() => {
-    console.log('🐛 UIContext showRecentPhotos() called - transitioning to RECENT mode');
+    logger.debug('UIContext', 'show_recent_photos', 'Transitioning to RECENT mode');
     viewMode.showRecentPhotos();
   }, [viewMode]);
 

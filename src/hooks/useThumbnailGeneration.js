@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useContext } from 'react';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { getThumbnailSrc, createThumbnailLoadingStrategy } from '../utils/thumbnailUtils';
 import { ImgCacheContext } from '../App/ImgCacheContext.jsx';
+import { logger } from '../services/LoggerService.js';
 
 export const useThumbnailGeneration = (options = {}) => {
   const {
@@ -31,7 +32,7 @@ export const useThumbnailGeneration = (options = {}) => {
         const parsedConfig = JSON.parse(config);
         setThumbnailStore(parsedConfig.thumbnail_store || '');
       } catch (error) {
-        console.warn('Failed to load thumbnail store config:', error);
+        logger.warn('useThumbnailGeneration', 'config_load_failed', 'Failed to load thumbnail store config', { error: error.message });
       }
     };
     
@@ -95,7 +96,7 @@ export const useThumbnailGeneration = (options = {}) => {
         return thumbnailSource.primary;
       }
     } catch (error) {
-      console.warn('Error loading thumbnail:', error);
+      logger.warn('useThumbnailGeneration', 'thumbnail_load_error', 'Error loading thumbnail', { filePath, error: error.message });
       setErrorThumbnails(prev => new Set(prev).add(filePath));
     } finally {
       setLoadingThumbnails(prev => {
@@ -130,7 +131,7 @@ export const useThumbnailGeneration = (options = {}) => {
     try {
       await Promise.allSettled(preloadPromises);
     } catch (error) {
-      console.warn('Error preloading thumbnails:', error);
+      logger.warn('useThumbnailGeneration', 'preload_error', 'Error preloading thumbnails', { startIndex, count, error: error.message });
     }
   }, [preloadNext, loadThumbnail]);
   

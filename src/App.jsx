@@ -7,7 +7,6 @@ import "./App.css";
 import "./components/search.css";
 import PhotosList from "./App/PhotosList.jsx"
 import DateList from "./App/DateList.jsx"
-import Importer from "./App/Importer.jsx"
 import Preferences from "./App/Preferences.jsx"
 import JobQueue from "./App/JobQueue.jsx"
 import Welcome from "./Welcome.jsx"
@@ -55,7 +54,7 @@ function App() {
     recentPhotosMode
   } = usePhoto();
   const { getDates } = useDateNavigation();
-  const { useCount } = useAppConfig();
+  const { useCount, config } = useAppConfig();
   
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
@@ -66,8 +65,8 @@ function App() {
   const [showJobQueueModal, setShowJobQueueModal] = useState(false);
 
   const [shortCutNavigation, setShortCutNavigation] = useState({
-    onKeyDown: (e) => { console.log(e) },
-    onKeyUp: (e) => { console.log(e) }
+    onKeyDown: (e) => { logger.debug('App', 'key_down', 'Key down event', { key: e.key, code: e.code }) },
+    onKeyUp: (e) => { logger.debug('App', 'key_up', 'Key up event', { key: e.key, code: e.code }) }
   });
 
   let in_db_creation = false;
@@ -79,7 +78,7 @@ function App() {
         await logger.initializeFromConfig();
         logger.info('App', 'initialization', 'Logger initialized from config');
       } catch (error) {
-        console.warn('Failed to initialize logger from config:', error);
+        logger.warn('App', 'logger_init_failed', 'Failed to initialize logger from config', { error: error.message });
       }
     };
     initializeLogging();
@@ -144,7 +143,7 @@ function App() {
 
       // const sab = new SharedArrayBuffer(1024);
       unlisten1 = await listen("create_db", (e) => {
-      console.log(e);
+      logger.error('App', 'app_error', 'Application error', { error: e });
       if (e.payload === "start") {
         addFooterMessage("create_db", "Database (re)creation is started", false, 10000);
       } else if (e.payload === "finish") {
@@ -153,7 +152,7 @@ function App() {
     });
 
       unlisten4 = await listen("create_thumbnails", (e) => {
-      console.log(e);
+      logger.error('App', 'app_error', 'Application error', { error: e });
       if (e.payload === "start") {
         addFooterMessage("create_thumbnail", "Thumbnail creation is started", false, 10000);
       } else if (e.payload === "finish") {
@@ -172,7 +171,7 @@ function App() {
     });
 
       unlisten2 = await listen("click_menu", (e) => {
-      console.log(e)
+      logger.debug('App', 'menu_click_event', 'Menu click event received', { event: e });
       invoke("lock", { t: true }).then((le) => {
         if (le) {
           if (e.payload === "load_dates") {
@@ -217,7 +216,7 @@ function App() {
                 setTimeout(() => {
                   invoke("lock", { t: false });
                 }, 1000);
-                console.log("error: " + e);
+                logger.error('App', 'init_error', 'Initialization error', { error: e });
               })
             }
           }
@@ -252,7 +251,7 @@ function App() {
   // login page is not used now.
   function toggleLogin(t) {
     // This function is kept for backward compatibility but should be refactored
-    console.log("Login toggle called:", t);
+    logger.debug('App', 'login_toggle', 'Login toggle called', { enabled: t });
   }
   /*
     HTML code for login page
@@ -336,6 +335,7 @@ function App() {
               />
             </div>
             <PhotosList
+              config={config}
               shortCutNavigation={shortCutNavigation}
               addFooterMessage={addFooterMessage}
               onRightMenuToggle={setRightMenuOpen}
@@ -404,9 +404,20 @@ function App() {
             toggleSearchPage={toggleSearchPage}
           />
         </div>
-        {(console.log('🐛 App.jsx render decision:', { showPhotosList, showImporter, showPreferences, showJobQueueModal, showSearchPage, currentDate, recentPhotosMode }), showPhotosList) ? <>
-          {console.log('🐛 App.jsx: Rendering PhotosList')}
+        {(() => {
+          logger.debug('App', 'render_decision', 'App render decision', { 
+            showPhotosList, showImporter, showPreferences, showJobQueueModal, 
+            showSearchPage, currentDate, recentPhotosMode 
+          });
+          if (showPhotosList || showImporter) {
+            logger.debug('App', 'rendering_photos_list', 'Rendering PhotosList component', { 
+              isImportMode: showImporter 
+            });
+          }
+          return showPhotosList || showImporter;
+        })() ? <>
           <PhotosList
+            config={config}
             shortCutNavigation={shortCutNavigation}
             addFooterMessage={addFooterMessage}
             onRightMenuToggle={setRightMenuOpen}
@@ -414,19 +425,27 @@ function App() {
           />
         </>
           :
-          <>{console.log('🐛 App.jsx: NOT rendering PhotosList - showing other components')}
-            <div style={{ width: "100%", display: showImporter ? "flex" : "none" }}>
-              <Importer
-                getDates={getDates}
-              />
-            </div>
+          <>{(() => {
+            logger.debug('App', 'not_rendering_photos_list', 'NOT rendering PhotosList - showing other components');
+            return null;
+          })()}
             <div style={{ display: showPreferences ? "block" : "none" }}>
               <Preferences
                 togglePreferences={togglePreferences}
               ></Preferences>
             </div>
-            <div style={{ display: (console.log('🐛 Home display condition:', { showImporter, showLogin, showPreferences, showJobQueueModal, showSearchPage, currentDate, recentPhotosMode, showPhotosList, willShowHome: (!showImporter && !showLogin && !showPreferences && !showJobQueueModal && !showSearchPage && ((!currentDate && !recentPhotosMode) || !showPhotosList)) }), (!showImporter && !showLogin && !showPreferences && !showJobQueueModal && !showSearchPage && ((!currentDate && !recentPhotosMode) || !showPhotosList))) ? "block" : "none" }}>
-              {console.log('🐛 App.jsx: Rendering Home component')}
+            <div style={{ display: (() => {
+              const willShowHome = (!showImporter && !showLogin && !showPreferences && !showJobQueueModal && !showSearchPage && ((!currentDate && !recentPhotosMode) || !showPhotosList));
+              logger.debug('App', 'home_display_condition', 'Home display condition evaluated', { 
+                showImporter, showLogin, showPreferences, showJobQueueModal, showSearchPage, 
+                currentDate, recentPhotosMode, showPhotosList, willShowHome 
+              });
+              return willShowHome ? "block" : "none";
+            })() }}>
+              {(() => {
+                logger.debug('App', 'rendering_home', 'Rendering Home component');
+                return null;
+              })()}
               <Home welcomeImage={welcomeImage} setWelcomeImage={setWelcomeImage} />
             </div>
           </>

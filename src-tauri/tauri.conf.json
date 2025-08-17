@@ -63,7 +63,8 @@
       "assetProtocol": {
         "scope": [
           "**",
-          "**/.photoclove/**"
+          "**/.photoclove/**",
+          "**/.photoclove_trash/**"
         ],
         "enable": true
       },

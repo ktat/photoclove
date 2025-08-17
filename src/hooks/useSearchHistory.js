@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { logger } from '../services/LoggerService.js';
 
 export const useSearchHistory = () => {
   const [searchHistory, setSearchHistory] = useState([]);
@@ -10,7 +11,7 @@ export const useSearchHistory = () => {
       try {
         setSearchHistory(JSON.parse(savedHistory));
       } catch (error) {
-        console.error('Failed to load search history:', error);
+        logger.error('useSearchHistory', 'load_failed', 'Failed to load search history', { error: error.message });
       }
     }
   }, []);

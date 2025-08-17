@@ -30,6 +30,14 @@ impl DatesNum {
     pub fn to_json(&self) -> String {
         serde_json::to_string(&self.data).unwrap()
     }
+
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
+    pub fn contains_key(&self, key: &str) -> bool {
+        self.data.contains_key(key)
+    }
 }
 
 pub fn sort_from_int(i: i32) -> Sort {
@@ -129,6 +137,7 @@ pub(crate) trait MetaInfoDB {
     fn delete_tag(&self, tag_id: i32) -> Result<bool, String>;
     fn add_tag_to_photo(&self, photo_path: &str, tag_id: i32) -> Result<(), String>;
     fn remove_tag_from_photo(&self, photo_path: &str, tag_id: i32) -> Result<bool, String>;
+    fn remove_all_tags_from_photo(&self, photo_path: &str) -> Result<i32, String>;
     fn get_tags_for_photo(&self, photo_path: &str) -> Result<Vec<(i32, String, Option<String>)>, String>;
     fn get_photos_with_tags(&self, tag_ids: &[i32]) -> Result<Vec<String>, String>;
     
@@ -142,4 +151,13 @@ pub(crate) trait MetaInfoDB {
     fn get_album_photos(&self, album_id: i32) -> Result<Vec<String>, String>;
     fn get_album_photos_with_metadata(&self, album_id: i32) -> Result<Vec<photo::Photo>, String>;
     fn reorder_album_photos(&self, album_id: i32, photo_order: Vec<String>) -> Result<(), String>;
+    
+    // Unified PhotoCollection methods
+    fn create_collection(&self, collection_type: &str, name: &str, description: Option<&str>, color: Option<&str>) -> Result<i32, String>;
+    fn get_all_collections(&self, collection_type: Option<&str>) -> Result<Vec<serde_json::Value>, String>;
+    fn update_collection(&self, id: i32, name: Option<&str>, description: Option<&str>, color: Option<&str>, cover_photo_path: Option<&str>) -> Result<(), String>;
+    fn delete_collection(&self, id: i32) -> Result<bool, String>;
+    fn add_photo_to_collection(&self, collection_id: i32, photo_path: &str) -> Result<(), String>;
+    fn remove_photo_from_collection(&self, collection_id: i32, photo_path: &str) -> Result<(), String>;
+    fn get_collection_photos(&self, collection_id: i32, ordered: bool) -> Result<Vec<photo::Photo>, String>;
 }

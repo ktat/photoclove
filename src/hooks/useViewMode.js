@@ -5,24 +5,7 @@
  */
 import { useState, useCallback, useMemo } from 'react';
 import { logger } from '../services/LoggerService.js';
-
-// Define all possible view modes
-export const VIEW_MODES = {
-  HOME: 'home',
-  DATE: 'date',
-  RECENT: 'recent',
-  SEARCH: 'search',
-  ADVANCED_SEARCH: 'advanced_search',
-  ALBUM_LIST: 'album_list',
-  ALBUM: 'album',
-  TAG_LIST: 'tag_list',
-  TAG: 'tag',
-  TRASH: 'trash',
-  IMPORT: 'import',
-  PREFERENCES: 'preferences',
-  JOB_QUEUE: 'job_queue',
-  LOGIN: 'login'
-};
+import { VIEW_MODES } from '../constants/viewModes.js';
 
 // Define valid transitions between view modes
 const TRANSITIONS = {
@@ -208,8 +191,8 @@ export const useViewMode = (initialMode = VIEW_MODES.HOME) => {
       return false;
     }
 
-    // Check if transition is allowed
-    const isValidTransition = Object.values(transitions).includes(newMode);
+    // Allow self-transitions (same mode with different data)
+    const isValidTransition = Object.values(transitions).includes(newMode) || currentMode === newMode;
     if (!isValidTransition) {
       logger.warn('useViewMode', 'invalid_transition', `Invalid transition from ${currentMode} to ${newMode}`, {
         currentMode,
@@ -222,12 +205,16 @@ export const useViewMode = (initialMode = VIEW_MODES.HOME) => {
     // Perform the transition
     setCurrentMode(newMode);
     setModeData(data);
-    setHistory(prev => [...prev, newMode]);
+    // Only add to history if it's a different mode
+    if (currentMode !== newMode) {
+      setHistory(prev => [...prev, newMode]);
+    }
 
     logger.info('useViewMode', 'mode_transition', `View mode changed: ${currentMode} → ${newMode}`, {
       fromMode: currentMode,
       toMode: newMode,
-      data
+      data,
+      isSelfTransition: currentMode === newMode
     });
 
     return true;

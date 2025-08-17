@@ -121,7 +121,7 @@ export const ErrorProvider = ({ children }) => {
 
   // Enhanced Tauri error handler that can handle PhotoClove errors
   const handleTauriError = useCallback((error, operation = 'Operation') => {
-    console.error(`${operation} failed:`, error);
+    logger.error('ErrorContext', 'tauri_operation_failed', `${operation} failed`, { operation, error: error.message, stack: error.stack });
     
     // Try to parse as PhotoClove error first
     let parsedError = error;

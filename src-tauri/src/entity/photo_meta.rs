@@ -11,6 +11,7 @@ pub struct PhotoMeta {
     pub star: star::Star,
     pub comment: comment::Comment,
     pub google_photo_url: Option<String>,
+    pub tags: Option<Vec<(i32, String, Option<String>)>>,
 }
 #[derive(Debug)]
 pub struct PhotoMetas {
@@ -39,6 +40,7 @@ impl PhotoMeta {
             star: star::Star::new(0),
             comment: comment::Comment::new(""),
             google_photo_url: None,
+            tags: None,
         }
     }
 
@@ -93,6 +95,7 @@ impl PhotoMeta {
             star: star::Star::new(0),
             comment: comment::Comment::new(""),
             google_photo_url: None,
+            tags: None,
         }
     }
 
@@ -109,6 +112,7 @@ impl PhotoMeta {
             star: star::Star::new(record.star),
             comment: comment::Comment::new(&record.comment),
             google_photo_url: record.google_photo_url.clone(),
+            tags: record.tags.clone(),
         });
     }
 
@@ -118,6 +122,26 @@ impl PhotoMeta {
             star: self.star.clone(),
             comment: self.comment.clone(),
             google_photo_url: self.google_photo_url.clone(),
+            tags: self.tags.clone(),
+        }
+    }
+
+    pub fn tags_string(&self) -> Option<String> {
+        if let Some(tags) = &self.tags {
+            if tags.is_empty() {
+                None
+            } else {
+                // Convert back to string format for directory mode
+                let tag_strings: Vec<String> = tags.iter()
+                    .map(|(id, name, color)| {
+                        let color_str = color.as_ref().map_or("", |c| c.as_str());
+                        format!("{}:{}:{}", id, name, color_str)
+                    })
+                    .collect();
+                Some(tag_strings.join(","))
+            }
+        } else {
+            None
         }
     }
 

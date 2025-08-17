@@ -1,28 +1,45 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import PhotosListMini from "./PhotosList/PhotosListMini.jsx";
 import PhotoOption from "./PhotosList/PhotoOption.jsx";
-import { invoke, convertFileSrc } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import PhotoLoading from "./PhotosList/PhotoLoading.jsx";
 import DirectoryMenu from "./PhotosList/DirectoryMenu.jsx";
-import { openUrl } from '@tauri-apps/plugin-opener';
 import { ImgCacheContext, AllPhotosContext } from "./ImgCacheContext.jsx";
 import Scrollable from "../Scrollable.jsx";
-import fileUrl from "../PathUtil.jsx";
 import '../scrollable.css';
 import { usePhoto } from "../context/PhotoContext.jsx";
 import { useUI } from "../context/UIContext.jsx";
-import { useSearch } from "../hooks/useSearch.js";
+import { useSearchAndFilters } from "../hooks/useSearchAndFilters.jsx";
+import { usePhotoOperations } from "../hooks/usePhotoOperations.js";
+import { usePhotoDataLoader } from "../hooks/usePhotoDataLoader.js";
+import { useInfiniteScroll } from "../hooks/useInfiniteScroll.js";
 import { useError } from "../context/ErrorContext.jsx";
+import { VIEW_MODES } from "../constants/viewModes.js";
+import { ViewMode } from "../domain/ViewMode.js";
+import { PhotoCollection } from "../domain/PhotoCollection.js";
+import { Photo } from "../domain/Photo.js";
+import { ImportState } from "../domain/ImportState.js";
 import SearchTools from "../components/SearchTools.jsx";
 import TagChip from "../components/TagChip.jsx";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import AlbumCreationModal from "../components/AlbumCreationModal.jsx";
 import FilterPopover from "../components/FilterPopover.jsx";
+import BackNavigationLink from "../components/BackNavigationLink.jsx";
+import VerticalTabBar from "../components/VerticalTabBar.jsx";
 import { logger } from "../services/LoggerService.js";
-import { usePhotosListState } from "../hooks/usePhotosListState.js";
-import { useRecentPhotos } from "../hooks/usePhotosQuery.js";
+import { unifiedCollectionService } from "../services/UnifiedCollectionService.js";
+// New separated components
+import GenericListView from "./PhotosList/GenericListView.jsx";
+import PhotoGrid from "./PhotosList/PhotoGrid.jsx";
+import PhotosToolbar from "./PhotosList/PhotosToolbar.jsx";
+import StatusBar from "./PhotosList/StatusBar.jsx";
+import ListViewHeader from "./PhotosList/ListViewHeader.jsx";
+import { usePhotosState } from "../hooks/usePhotosState.js";
+import { convertPhotosToEntities, applyFrontendFilters, convertJSONToPhotoEntities } from "../utils/PhotoProcessingUtils.js";
+import { hasActiveFilters, getFilterSummary, getSortConfig, getCurrentSortConfig } from "../utils/UIStateUtils.js";
 
 function PhotosList(props) {
+    const { config: appConfig } = props; // Extract config from props
     const {
         dateList,
         datePage,
@@ -41,80 +58,64 @@ function PhotosList(props) {
         albumPhotos,
         updateAlbumsList,
         updateCurrentAlbum,
-        updateAlbumPhotos
+        updateAlbumPhotos,
+        togglePhotoDisplay
     } = usePhoto();
-    
+
     logger.debug('PhotosList', 'component_render', 'PhotosList rendering', {
         recentPhotosMode,
         currentDate,
         propsCount: Object.keys(props).length
     });
-    const { 
-        addFooterMessage, 
-        toggleSearchPage, 
+    const {
+        addFooterMessage,
+        toggleSearchPage,
         searchInitialQuery,
         showAlbumsList,
         currentAlbumId,
         currentTagId,
         viewMode,
-        isTrashMode,
+        modeData,
         openAlbum,
         toggleAlbumListMode,
         openTag,
         openTagsList,
         toggleHome,
     } = useUI();
+
     const { handleTauriError, addError } = useError();
-    
-    // Check current mode - moved before state declarations
-    const isSearchMode = props.searchMode || false;
-    const isAdvancedSearchMode = props.isAdvancedSearchMode || false;
-    const isAlbumListMode = viewMode === 'album_list';
-    const isAlbumMode = viewMode === 'album' && currentAlbumId;
-    const isTagListMode = viewMode === 'tag_list';
-    const isTagMode = viewMode === 'tag' && currentTagId;
-    
-    // Use search hook when in search mode
-    const { searchResults, searchQuery, isSearching, performSearch, clearSearch: clearSearchHook } = useSearch();
-    
-    // Use new state management hooks for cleaner organization
-    const photosListState = usePhotosListState();
-    
-    // Search state for the PhotosList component
-    const [searchFilters, setSearchFilters] = useState({});
-    const [currentSearchParams, setCurrentSearchParams] = useState(null);
-    
+
+    // Log viewMode changes
+    useEffect(() => {
+        logger.info('PhotosList', 'mode_change', 'View mode changed', { viewMode });
+    }, [viewMode]);
+
+    // Use new search and filters hook
+    const {
+        searchFilters,
+        setSearchFilters,
+        currentSearchParams,
+        setCurrentSearchParams,
+        searchResults,
+        searchQuery,
+        isSearching,
+        performSearch,
+        clearSearch: clearSearchHook,
+        clearAllSearchFilters,
+        updateSearchParams,
+        executeSearch
+    } = useSearchAndFilters();
+
     // Custom clear search function that also navigates back to home
     const clearSearch = useCallback(() => {
         clearSearchHook();
-        setCurrentSearchParams(null);
+        updateSearchParams(null);
         // Navigate back to home by toggling search page off
         toggleSearchPage(false);
-    }, [clearSearchHook, toggleSearchPage]);
-    
-    // fetchConfig from props or generate from currentDate
-    // For Advanced Search mode or Search mode, don't set initial fetchConfig to prevent auto-loading
-    const fetchConfig = useMemo(() => {
-        if (props.fetchConfig) return props.fetchConfig;
-        if (isAdvancedSearchMode || isSearchMode) return null;
-        
-        return {
-            fetch_method: recentPhotosMode ? "recent" : "date",
-            value: recentPhotosMode ? "recent" : currentDate,
-            title: recentPhotosMode ? "Recent Photos (60 most recent)" : currentDate,
-            max_photos_per_fetch: recentPhotosMode ? 60 : undefined
-        };
-    }, [props.fetchConfig, isAdvancedSearchMode, isSearchMode, recentPhotosMode, currentDate]);
+    }, [clearSearchHook, updateSearchParams, toggleSearchPage]);
 
-    // Debug logging
-    logger.debug('PhotosList', 'fetchConfig_generation', 'FetchConfig debug', {
-        recentPhotosMode,
-        isSearchMode,
-        currentDate,
-        fetchConfig,
-        propsMode: props.recentMode
-    });
-    
+    // ViewMode now handles all configuration - fetchConfig deprecated
+
     // Create props compatibility layer for gradual migration
     const compatProps = {
         dateList: dateList || [],
@@ -127,309 +128,258 @@ function PhotosList(props) {
         setShowPhotoDisplay: updateShowPhotoDisplay,
         setDateNum: updateDateNum,
         setDateList: updateDateList,
+        togglePhotoDisplay: togglePhotoDisplay,
         setCurrentDateNum: setCurrentDateNum,
         addFooterMessage: addFooterMessage,
         ...props
     };
-    const [iconSize, setIconSize] = useState(100);
-    const [numOfPhoto, setNumOfPhoto] = useState(20);
-    const [currentPhotoPath, setCurrentPhotoPath] = useState("");
-    const [currentPhotoIndex, setCurrentPhotoIndex] = useState(undefined);
-    const [photos, setPhotosList] = useState({ "photos": [] });
-    // Removed scrollLock for infinite scroll implementation
-    const [sortOfPhotos, setSort] = useState(0);
-    const sortInitialized = useRef(false);
-    
-    // All photo fetching (including Recent Photos) unified through loadAllPhotosBasedOnFetchConfig
-    const [photoLoading, setPhotoLoading] = useState(false);
-    const [photoSelection, setPhotoSelection] = useState([]);
-    const [photoSelectionDict, setPhotoSelectionDict] = useState({});
-    const [thumbnailStore, setThumbnailStore] = useState("");
-    const [photosListMiniAllPhotos, setPhotosListMiniAllPhotos] = useState([]);
-    const [photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex] = useState(0);
-    const [photosListMiniReread, setPhotosListMiniReread] = useState(false);
-    const [photosListImgSrc, setPhotosListImgSrc] = useState({});
-    const [imgCacheMap, setImgCacheMap] = useState({});
-    const [photoTags, setPhotoTags] = useState({}); // Cache for photo tags: { photoPath: [tags] }
-    const [showSideMenu, setShowSideMenu] = useState(isSearchMode);
-    
-    // Infinite scroll state
-    const [infiniteScrollEnabled, setInfiniteScrollEnabled] = useState(true);
-    const [displayedPhotoCount, setDisplayedPhotoCount] = useState(50);
-    const [isLoadingMore, setIsLoadingMore] = useState(false);
-    
-    // Store all photos for current fetch config (unfiltered)
-    const [allPhotosForCurrentFetch, setAllPhotosForCurrentFetch] = useState([]);
-    
-    // Store configuration for photo fetch limits
-    const [config, setConfig] = useState(null);
-    const [isLimitedByConfig, setIsLimitedByConfig] = useState(false);
-    const [configLimit, setConfigLimit] = useState(null);
-    const [star, setStar] = useState([false, false, false, false, false]);
-    const [starFilter, setStarFilter] = useState(0);
-    const [hasCommentFilter, setHasCommentFilter] = useState(false);
-    const [extensionFilter, setExtensionFilter] = useState("all");
-    const [debugMessage, setDebugMessage] = useState("");
-    const [currentPhotoLoadingController, setCurrentPhotoLoadingController] = useState(null);
-    
-    // Filter options caching state
-    const [filterOptions, setFilterOptions] = useState(null);
-    const [isFilterOptionsLoading, setIsFilterOptionsLoading] = useState(false);
-    
-    // Album state
-    const [filteredAlbums, setFilteredAlbums] = useState([]);
-    const [albumSearchTerm, setAlbumSearchTerm] = useState('');
-    const [currentAlbumName, setCurrentAlbumName] = useState('');
-    const [showAlbumCreationModal, setShowAlbumCreationModal] = useState(false);
-    
-    // Tag state
-    const [tagsList, setTagsList] = useState([]);
-    const [filteredTags, setFilteredTags] = useState([]);
-    const [tagSearchTerm, setTagSearchTerm] = useState('');
-    const [currentTagName, setCurrentTagName] = useState('');
-    const [tagPhotos, setTagPhotos] = useState([]);
-    const [trashPhotos, setTrashPhotos] = useState([]);
-    
-    // Filter popover state
-    const [showFilterPopover, setShowFilterPopover] = useState(false);
-    const filterButtonRef = useRef(null);
-    
-    // Frontend filtering function - defined early to avoid temporal dead zone
-    const applyFrontendFilters = (photos) => {
-        // console.log(`[FILTER] Applying filters - star: ${starFilter}, hasComment: ${hasCommentFilter}, extension: ${extensionFilter}`);
-        // console.log(`[FILTER] Input photos count: ${photos.length}`);
+    // Replace all individual useState calls with centralized state management hook
+    const {
+        // Core photo data
+        photos, setPhotosList,
+        photoCollection, setPhotoCollection,
+        allPhotosForCurrentFetch, setAllPhotosForCurrentFetch,
+        currentPhotoPath, setCurrentPhotoPath,
+        currentPhotoIndex, setCurrentPhotoIndex,
         
-        const filtered = photos.filter(photo => {
-            // Apply star filter
-            if (starFilter > 0 && (!photo.star || photo.star < starFilter)) {
-                return false;
-            }
-            
-            // Apply comment filter
-            if (hasCommentFilter && (!photo.comment || photo.comment.trim() === "")) {
-                return false;
-            }
-            
-            // Apply extension filter
-            if (extensionFilter !== "all") {
-                const extension = photo.file.name.split('.').pop().toLowerCase();
-                const allowedExtensions = extensionFilter.split(',').map(ext => ext.trim().toLowerCase());
-                if (!allowedExtensions.includes(extension)) {
-                    return false;
-                }
-            }
-            
-            return true;
-        });
+        // UI state
+        iconSize, setIconSize,
+        numOfPhoto, setNumOfPhoto,
+        photoLoading, setPhotoLoading,
+        showSideMenu, setShowSideMenu,
         
-        // console.log(`[FILTER] Filtered photos count: ${filtered.length}`);
-        return filtered;
-    };
-    
-    // Filter options caching function
-    const loadFilterOptions = useCallback(async () => {
-        if (filterOptions || isFilterOptionsLoading) return filterOptions;
+        // Selection state
+        photoSelection, setPhotoSelection,
+        photoSelectionDict, setPhotoSelectionDict,
         
-        setIsFilterOptionsLoading(true);
-        try {
-            const [cameras, lenses, extensions] = await Promise.all([
-                invoke('get_filter_options', { filterType: 'cameras' }),
-                invoke('get_filter_options', { filterType: 'lenses' }),
-                invoke('get_filter_options', { filterType: 'extensions' })
-            ]);
+        // Infinite scroll - now handled by useInfiniteScroll hook
+        
+        // Configuration limits
+        isLimitedByConfig, setIsLimitedByConfig,
+        configLimit, setConfigLimit,
+        
+        // Filter state
+        star, setStar,
+        starFilter, setStarFilter,
+        hasCommentFilter, setHasCommentFilter,
+        hasTagFilter, setHasTagFilter,
+        extensionFilter, setExtensionFilter,
+        
+        // PhotosListMini
+        photosListMiniAllPhotos, setPhotosListMiniAllPhotos,
+        photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex,
+        photosListMiniReread, setPhotosListMiniReread,
+        
+        // Cache and performance
+        photosListImgSrc, setPhotosListImgSrc,
+        imgCacheMap, setImgCacheMap,
+        thumbnailStore, setThumbnailStore,
+        
+        // Debug and misc
+        debugMessage, setDebugMessage,
+        currentPhotoLoadingController, setCurrentPhotoLoadingController,
+        
+        // Sorting
+        sortOfPhotos, setSort,
+        sortInitialized,
+        
+        // Filter options
+        filterOptions, setFilterOptions,
+        isFilterOptionsLoading, setIsFilterOptionsLoading,
+        
+        // Import
+        importState, setImportState,
+        
+        // Albums
+        filteredAlbums, setFilteredAlbums,
+        albumSearchTerm, setAlbumSearchTerm,
+        currentAlbumName, setCurrentAlbumName,
+        showAlbumCreationModal, setShowAlbumCreationModal,
+        selectedAlbums, setSelectedAlbums,
+        
+        // Tags
+        tagsList, setTagsList,
+        filteredTags, setFilteredTags,
+        tagSearchTerm, setTagSearchTerm,
+        currentTagName, setCurrentTagName,
+        tagPhotos, setTagPhotos,
+        trashPhotos, setTrashPhotos,
+        selectedTags, setSelectedTags,
+        
+        // Filter popover
+        showFilterPopover, setShowFilterPopover,
+        filterButtonRef
+    } = usePhotosState();
 
-            const options = {
-                cameras: JSON.parse(cameras),
-                lenses: JSON.parse(lenses),
-                extensions: JSON.parse(extensions)
-            };
-            setFilterOptions(options);
-            return options;
+    // Create ViewMode object from global state - single source of truth
+    const viewModeObj = useMemo(() => {
+        // Defensive programming: ensure viewMode is valid
+        const safeViewMode = viewMode || VIEW_MODES.HOME;
+        logger.debug('PhotosList', 'viewmode_creation', 'Creating ViewMode object', {
+            viewMode: safeViewMode,
+            albumId: currentAlbumId,
+            tagId: currentTagId,
+            date: currentDate
+        });
+
+        try {
+            return new ViewMode(safeViewMode, {
+                albumId: currentAlbumId,
+                albumName: currentAlbumName,
+                tagId: currentTagId,
+                tagName: currentTagName,
+                searchQuery: searchInitialQuery,
+                date: currentDate
+            });
         } catch (error) {
-            console.error('Failed to load filter options:', error);
-            handleTauriError(error, 'Load filter options');
-            return null;
-        } finally {
-            setIsFilterOptionsLoading(false);
+            logger.error('PhotosList', 'viewmode_creation_error', 'Failed to create ViewMode', {
+                viewMode: safeViewMode,
+                error: error.message
+            });
+            // Fallback to HOME mode
+            return new ViewMode(VIEW_MODES.HOME, {});
         }
-    }, [filterOptions, isFilterOptionsLoading]);
+    }, [viewMode, currentAlbumId, currentAlbumName, currentTagId, currentTagName, searchInitialQuery, currentDate]);
+
+    // Mode detection using ViewMode value object
+    // ViewMode object is the single source of truth for mode state
+    const isSearchMode = viewModeObj.isSearchMode();
+    const isAdvancedSearchMode = viewModeObj.isAdvancedSearchMode();
+
+    // Extract boolean mode checks from ViewMode object (method calls)
+    const isAlbumMode = viewModeObj.isAlbumMode();
+    const isAlbumListMode = viewModeObj.isAlbumListMode();
+    const isTagMode = viewModeObj.isTagMode();
+    const isTagListMode = viewModeObj.isTagListMode();
+    const isTrashMode = viewModeObj.isTrashMode();
+
+    // Convert photos function wrapper to maintain callback behavior
+    const convertPhotosWithConfig = useCallback((photosData, isFromTrash = false, toJSON = true) => {
+        return convertPhotosToEntities(photosData, appConfig, isFromTrash, toJSON);
+    }, [appConfig]);
+
+    // Unified error handler for consistent error logging and handling
+    const handleError = useCallback((error, operation, context = {}) => {
+        const logContext = {
+            error: error.message,
+            ...context
+        };
+        
+        logger.error('PhotosList', `${operation.toLowerCase().replace(/\s+/g, '_')}_failed`, 
+            `Failed to ${operation.toLowerCase()}`, logContext);
+        
+        handleTauriError(error, operation);
+    }, [handleTauriError]);
+
+    // Use photo data loader hook
+    const {
+        loadUnifiedData,
+        loadAlbums,
+        loadAlbumPhotos,
+        handleAlbumClick,
+        loadTags,
+        loadTagPhotos,
+        loadTrashPhotos,
+        loadFilterOptions,
+        logOperation
+    } = usePhotoDataLoader({
+        handleError,
+        convertPhotosToEntities: convertPhotosWithConfig,
+        updateAlbumsList,
+        setFilteredAlbums,
+        updateAlbumPhotos,
+        setPhotosList,
+        setTagsList,
+        setFilteredTags,
+        setTagPhotos,
+        setTrashPhotos,
+        setCurrentAlbumName,
+        openAlbum,
+        setFilterOptions,
+        setIsFilterOptionsLoading,
+        filterOptions,
+        isFilterOptionsLoading,
+        appConfig
+    });
+
+    // Photo operations hook - handles photo-related actions
+    const {
+        handleAddToAlbum,
+        removePhotoFromAlbum,
+        deletePhoto,
+        restorePhoto,
+        permanentlyDeletePhoto: hookPermanentlyDeletePhoto,
+        handleAlbumSelection,
+        clearAlbumSelection,
+        deleteSelectedAlbums,
+        handleAlbumDelete,
+        handleTagSelection,
+        clearTagSelection,
+        deleteSelectedTags
+    } = usePhotoOperations({
+        selectedAlbums,
+        setSelectedAlbums,
+        selectedTags,
+        setSelectedTags,
+        tagsList,
+        albumsList,
+        appConfig,
+        currentViewMode: viewMode,
+        currentDate,
+        currentAlbumName,
+        currentTagName,
+        searchQuery,
+        handleError,
+        addFooterMessage: compatProps.addFooterMessage,
+        loadAlbums,
+        loadTags,
+        currentAlbumId,
+        toggleAlbumListMode,
+        isTrashMode
+    });
+
+    // Clear all active filters
+    const clearAllFilters = useCallback(() => {
+        setStarFilter(0);
+        setHasCommentFilter(false);
+        setHasTagFilter(false);
+        setExtensionFilter('all');
+    }, [setStarFilter, setHasCommentFilter, setHasTagFilter, setExtensionFilter]);
+
+
+    // Frontend filtering function wrapper
+    const applyFiltersWithConfig = useCallback((photos) => {
+        return applyFrontendFilters(photos, {
+            starFilter,
+            hasCommentFilter,
+            hasTagFilter,
+            extensionFilter
+        });
+    }, [starFilter, hasCommentFilter, hasTagFilter, extensionFilter]);
+
+
+    // Initialize showSideMenu based on view mode
+    useEffect(() => {
+        setShowSideMenu(isSearchMode || viewMode === VIEW_MODES.IMPORT);
+    }, [isSearchMode, viewMode, setShowSideMenu]);
 
     // Album loading functions
-    const loadAlbums = useCallback(async () => {
-        try {
-            logger.info('PhotosList', 'load_albums_start', 'Loading albums list');
-            const albums = await invoke("get_all_albums");
-            
-            const processedAlbums = albums.map(album => ({
-                id: album[0],
-                name: album[1],
-                description: album[2],
-                coverPhoto: album[3] || null,
-                photoCount: album[4] || 0
-            }));
-            
-            updateAlbumsList(processedAlbums);
-            setFilteredAlbums(processedAlbums);
-            
-            logger.info('PhotosList', 'load_albums_complete', 'Albums loaded successfully', {
-                albumCount: processedAlbums.length
-            });
-        } catch (error) {
-            logger.error('PhotosList', 'load_albums_failed', 'Failed to load albums', {
-                error: error.message
-            });
-            handleTauriError(error, 'Load albums');
-        }
-    }, [updateAlbumsList, handleTauriError]);
 
-    const loadAlbumPhotos = useCallback(async (albumId) => {
-        try {
-            logger.info('PhotosList', 'load_album_photos_start', 'Loading album photos', { albumId });
-            const albumPhotosJson = await invoke("get_album_photos_with_metadata", { albumId });
-            const albumPhotos = JSON.parse(albumPhotosJson);
-            
-            updateAlbumPhotos(albumPhotos);
-            setPhotosList({ photos: albumPhotos });
-            
-            logger.info('PhotosList', 'load_album_photos_complete', 'Album photos loaded', {
-                albumId,
-                photoCount: albumPhotos.length
-            });
-        } catch (error) {
-            logger.error('PhotosList', 'load_album_photos_failed', 'Failed to load album photos', {
-                albumId,
-                error: error.message
-            });
-            handleTauriError(error, 'Load album photos');
-        }
-    }, [updateAlbumPhotos, handleTauriError]);
-
-    // Handle album click to switch to album view
-    const handleAlbumClick = useCallback((album) => {
-        logger.info('PhotosList', 'album_click', 'User clicked on album', {
-            albumId: album.id,
-            albumName: album.name
-        });
-        
-        // Switch to album view mode
-        openAlbum(album.id);
-        setCurrentAlbumName(album.name);
-        
-        // Load photos for this album
-        loadAlbumPhotos(album.id);
-    }, [openAlbum, loadAlbumPhotos]);
-
-    // Tag loading functions
-    const loadTags = useCallback(async () => {
-        try {
-            logger.info('PhotosList', 'load_tags_start', 'Loading tags list');
-            const tags = await invoke("get_all_tags_with_photo_count");
-            
-            const processedTags = tags.map(tag => ({
-                id: tag[0],
-                name: tag[1],
-                color: tag[2] || null,
-                photoCount: tag[3] || 0
-            }));
-            
-            setTagsList(processedTags);
-            setFilteredTags(processedTags);
-            
-            logger.info('PhotosList', 'load_tags_complete', 'Tags loaded successfully', {
-                tagCount: processedTags.length
-            });
-        } catch (error) {
-            logger.error('PhotosList', 'load_tags_failed', 'Failed to load tags', {
-                error: error.message
-            });
-            handleTauriError(error, 'Load tags');
-        }
-    }, [handleTauriError]);
-
-    const loadTagPhotos = useCallback(async (tagId) => {
-        try {
-            logger.info('PhotosList', 'load_tag_photos_start', 'Loading tag photos', { tagId });
-            const tagPhotosPaths = await invoke("search_photos_by_tags", { tagIds: [tagId] });
-            
-            // Convert to photo objects for display with proper structure
-            const photoObjects = tagPhotosPaths.map(path => ({
-                file: { path, name: path.split('/').pop() || path },
-                path: path,
-                has_thumbnail: true, // Assume true for now
-                star: 0, // Default values
-                comment: ''
-            }));
-            
-            // Set tagPhotos with proper photo objects
-            setTagPhotos(photoObjects);
-            
-            logger.info('PhotosList', 'load_tag_photos_complete', 'Tag photos loaded', {
-                tagId,
-                photoCount: tagPhotosPaths.length
-            });
-        } catch (error) {
-            logger.error('PhotosList', 'load_tag_photos_failed', 'Failed to load tag photos', {
-                tagId,
-                error: error.message
-            });
-            handleTauriError(error, 'Load tag photos');
-        }
-    }, [handleTauriError]);
-
-    // Load trash photos
-    const loadTrashPhotos = useCallback(async () => {
-        try {
-            logger.info('PhotosList', 'load_trash_photos_start', 'Loading trash photos');
-            const trashPhotosJson = await invoke("get_trash_photos");
-            const trashPhotosData = JSON.parse(trashPhotosJson);
-            
-            // Convert to photo objects for display with proper structure
-            const photoObjects = trashPhotosData.map(photo => ({
-                file: { path: photo.path, name: photo.path.split('/').pop() || photo.path },
-                path: photo.path,
-                has_thumbnail: photo.has_thumbnail || true,
-                star: photo.star || 0,
-                comment: photo.comment || ''
-            }));
-            
-            setTrashPhotos(photoObjects);
-            
-            logger.info('PhotosList', 'load_trash_photos_complete', 'Trash photos loaded', {
-                photoCount: trashPhotosData.length
-            });
-        } catch (error) {
-            logger.error('PhotosList', 'load_trash_photos_failed', 'Failed to load trash photos', {
-                error: error.message
-            });
-            handleTauriError(error, 'Load trash photos');
-        }
-    }, [handleTauriError]);
-
-    // Helper function to get the display path for photos (add trash path if in trash mode)
-    const getDisplayPath = useCallback((photo) => {
-        if (isTrashMode && config?.trash_path && photo?.path) {
-            // Remove trailing slash from trash_path and leading slash from photo.path to avoid duplicates
-            const trashPath = config.trash_path.replace(/\/$/, '');
-            const photoPath = photo.path.startsWith('/') ? photo.path : '/' + photo.path;
-            return trashPath + photoPath;
-        }
-        return photo?.path || '';
-    }, [isTrashMode, config]);
 
     // Handle tag click to switch to tag view
     const handleTagClick = useCallback((tag) => {
-        logger.info('PhotosList', 'tag_click', 'User clicked on tag', {
+        logOperation.click('tag', {
             tagId: tag.id,
             tagName: tag.name
         });
-        
+
         // Switch to tag view mode
         openTag(tag.id);
         setCurrentTagName(tag.name);
-        
+
         // Load tag photos
         loadTagPhotos(tag.id);
-    }, [openTag, loadTagPhotos]);
+    }, [openTag, loadTagPhotos, logOperation]);
 
     // Handle new tag creation
     const handleNewTagClick = useCallback(async () => {
@@ -442,31 +392,28 @@ function PhotosList(props) {
             const tagColor = prompt("Enter tag color (hex code, e.g., #ff0000) or leave empty:");
             const color = tagColor && tagColor.trim() !== '' ? tagColor.trim() : null;
 
-            logger.info('PhotosList', 'create_tag_start', 'Creating new tag', {
+            logger.info('PhotosList', 'create_tag_start', 'Creating new tag via unified collection service', {
                 tagName: tagName.trim(),
                 color
             });
 
-            const tagId = await invoke("create_tag", {
+            const newTag = await unifiedCollectionService.createCollection('tag', {
                 name: tagName.trim(),
                 color
             });
 
             logger.info('PhotosList', 'create_tag_success', 'Tag created successfully', {
-                tagId,
-                tagName: tagName.trim()
+                tagId: newTag.id,
+                tagName: newTag.name
             });
 
             // Reload tags to show the new tag
             loadTags();
 
         } catch (error) {
-            logger.error('PhotosList', 'create_tag_failed', 'Failed to create tag', {
-                error: error.message
-            });
-            handleTauriError(error, 'Create tag');
+            handleError(error, 'Create tag');
         }
-    }, [handleTauriError, loadTags]);
+    }, [handleError, loadTags]);
 
     // Handle new album creation
     const handleNewAlbumClick = useCallback(() => {
@@ -479,39 +426,114 @@ function PhotosList(props) {
     // Handle album creation from modal
     const createEmptyAlbum = useCallback(async (albumData) => {
         try {
-            logger.info('PhotosList', 'create_empty_album_start', 'Creating empty album', {
+            logger.info('PhotosList', 'create_empty_album_start', 'Creating empty album via unified collection service', {
                 albumName: albumData.name,
                 hasDescription: !!albumData.description
             });
 
-            const albumId = await invoke("create_album", {
+            const newAlbum = await unifiedCollectionService.createCollection('album', {
                 name: albumData.name,
                 description: albumData.description || ''
             });
 
             logger.info('PhotosList', 'create_empty_album_success', 'Empty album created successfully', {
-                albumId,
-                albumName: albumData.name
+                albumId: newAlbum.id,
+                albumName: newAlbum.name
             });
 
             // Close modal
             setShowAlbumCreationModal(false);
-            
+
             // Reload albums to show the new album
             loadAlbums();
 
             // Navigate to the new album
-            openAlbum(albumId);
-            setCurrentAlbumName(albumData.name);
+            openAlbum(newAlbum.id);
+            setCurrentAlbumName(newAlbum.name);
 
         } catch (error) {
-            logger.error('PhotosList', 'create_empty_album_failed', 'Failed to create empty album', {
-                albumName: albumData.name,
-                error: error.message
-            });
-            handleTauriError(error, 'Create album');
+            handleError(error, 'Create album', { albumName: albumData.name });
         }
-    }, [handleTauriError, loadAlbums, openAlbum]);
+    }, [handleError, loadAlbums, openAlbum]);
+
+
+    // Mode-to-loader function mapping
+    const modeLoaders = useMemo(() => ({
+        [VIEW_MODES.ALBUM_LIST]: () => loadAlbums(),
+        [VIEW_MODES.TAG_LIST]: () => loadTags(),
+        [VIEW_MODES.TRASH]: async () => {
+            // Wait for config to be loaded
+            if (!appConfig) {
+                logger.warn('PhotosList', 'trash_mode_config_not_ready', 'Config not loaded yet, skipping trash load');
+                return;
+            }
+
+            const trashCollection = PhotoCollection.createTrashCollection([], appConfig, parseInt(sortOfPhotos || 0));
+            setPhotoCollection(trashCollection);
+
+            // Fetch trash photos
+            try {
+                const updatedCollection = await trashCollection.fetchPhotos(1, 1000, {
+                    star: -1,
+                    hasComment: false,
+                    extension: 'all'
+                });
+
+                logger.info('PhotosList', 'trash_mode_loader_success', 'Trash collection loaded', {
+                    photoCount: updatedCollection.photos.length
+                });
+
+                setPhotoCollection(updatedCollection);
+            } catch (error) {
+                handleError(error, 'Load trash collection');
+            }
+        },
+        [VIEW_MODES.ALBUM]: () => {
+            if (currentAlbumId) {
+                loadAlbumPhotos(currentAlbumId);
+            }
+        },
+        [VIEW_MODES.TAG]: () => {
+            if (currentTagId) {
+                loadTagPhotos(currentTagId);
+            }
+        }
+    }), [loadAlbums, loadTags, appConfig, sortOfPhotos, loadAlbumPhotos, loadTagPhotos, currentAlbumId, currentTagId]);
+
+    // Execute mode-specific loader functions
+    useEffect(() => {
+        const loader = modeLoaders[viewMode];
+        if (loader) {
+            loader();
+        }
+
+        // Clear names when not in specific modes
+        if (viewMode !== VIEW_MODES.ALBUM) {
+            setCurrentAlbumName('');
+        }
+        if (viewMode !== VIEW_MODES.TAG) {
+            setCurrentTagName('');
+        }
+    }, [viewMode, modeLoaders]);
+
+    // Set album/tag names based on current selection
+    useEffect(() => {
+        if (viewMode === VIEW_MODES.ALBUM && currentAlbumId && albumsList.length > 0) {
+            const currentAlbum = albumsList.find(album => album.id === currentAlbumId);
+            if (currentAlbum) {
+                setCurrentAlbumName(currentAlbum.name);
+            }
+        }
+    }, [viewMode, currentAlbumId, albumsList, setCurrentAlbumName]);
+
+    useEffect(() => {
+        if (viewMode === VIEW_MODES.TAG && currentTagId && tagsList.length > 0) {
+            const currentTag = tagsList.find(tag => tag.id === currentTagId);
+            if (currentTag) {
+                setCurrentTagName(currentTag.name);
+            }
+        }
+    }, [viewMode, currentTagId, tagsList, setCurrentTagName]);
 
     // Filter albums by search term
     useEffect(() => {
@@ -519,12 +541,12 @@ function PhotosList(props) {
             setFilteredAlbums([]);
             return;
         }
-        
+
         if (!albumSearchTerm.trim()) {
             setFilteredAlbums(albumsList);
             return;
         }
-        
+
         const filtered = albumsList.filter(album =>
             album.name.toLowerCase().includes(albumSearchTerm.toLowerCase())
         );
@@ -537,103 +559,36 @@ function PhotosList(props) {
             setFilteredTags([]);
             return;
         }
-        
+
         if (!tagSearchTerm.trim()) {
             setFilteredTags(tagsList);
             return;
         }
-        
+
         const filtered = tagsList.filter(tag =>
             tag.name.toLowerCase().includes(tagSearchTerm.toLowerCase())
         );
         setFilteredTags(filtered);
     }, [tagsList, tagSearchTerm]);
 
-    // Load albums when in album list mode
-    useEffect(() => {
-        if (isAlbumListMode) {
-            logger.info('PhotosList', 'album_list_mode', 'Album list mode activated, loading albums');
-            loadAlbums();
-        }
-    }, [isAlbumListMode, loadAlbums]);
-
-    // Load album photos when album is selected
-    useEffect(() => {
-        if (isAlbumMode && currentAlbumId) {
-            logger.info('PhotosList', 'album_mode', 'Album mode activated, loading album photos', { albumId: currentAlbumId });
-            loadAlbumPhotos(currentAlbumId);
-            
-            // Set current album name if we have albums loaded
-            const currentAlbum = albumsList.find(album => album.id === currentAlbumId);
-            if (currentAlbum) {
-                setCurrentAlbumName(currentAlbum.name);
-            }
-        } else {
-            // Clear album name when not in album mode
-            setCurrentAlbumName('');
-        }
-    }, [isAlbumMode, currentAlbumId, loadAlbumPhotos, albumsList]);
-
-    // Load tags when in tag list mode
-    useEffect(() => {
-        if (isTagListMode) {
-            logger.info('PhotosList', 'tag_list_mode', 'Tag list mode activated, loading tags');
-            loadTags();
-        }
-    }, [isTagListMode, loadTags]);
-
-    // Load tag photos when tag is selected
-    useEffect(() => {
-        if (isTagMode && currentTagId) {
-            logger.info('PhotosList', 'tag_mode', 'Tag mode activated, loading tag photos', { tagId: currentTagId });
-            loadTagPhotos(currentTagId);
-            
-            // Set current tag name if we have tags loaded
-            const currentTag = tagsList.find(tag => tag.id === currentTagId);
-            if (currentTag) {
-                setCurrentTagName(currentTag.name);
-            }
-        } else {
-            // Clear tag name when not in tag mode
-            setCurrentTagName('');
-        }
-    }, [isTagMode, currentTagId, loadTagPhotos, tagsList]);
-
-    // Load trash photos when in trash mode
-    useEffect(() => {
-        if (isTrashMode) {
-            logger.info('PhotosList', 'trash_mode', 'Trash mode activated, loading trash photos');
-            loadTrashPhotos();
-        }
-    }, [isTrashMode, loadTrashPhotos]);
 
     // Search handlers (defined after state to ensure sortOfPhotos is available)
     const handleSearch = useCallback(async (query, type, filters) => {
         const params = { query, searchType: type, filters };
         logger.info('PhotosList', 'handle_search', 'Search triggered from UI', {
-            query, 
-            type, 
+            query,
+            type,
             filters,
             isSearchMode,
             searchResultsLength: searchResults.length
         });
-        setCurrentSearchParams(params);
-        
+        updateSearchParams(params);
+
         // Map sortOfPhotos to backend sort field names with order
-        const sortConfig = {
-            0: { field: 'exif_date_time_original', order: 'desc' },  // Shot Time (desc)
-            1: { field: 'exif_date_time_original', order: 'asc' },   // Shot Time (asc)
-            2: { field: 'photo_date', order: 'desc' },               // Added Time (desc)
-            3: { field: 'photo_date', order: 'asc' },                // Added Time (asc)
-            4: { field: 'star', order: 'desc' },                     // Star Rating (desc)
-            5: { field: 'star', order: 'asc' },                      // Star Rating (asc)
-            6: { field: 'path', order: 'desc' },                     // File Name (desc)
-            7: { field: 'path', order: 'asc' }                       // File Name (asc)
-        };
-        const config = sortConfig[sortOfPhotos] || sortConfig[0];
+        const config = getCurrentSortConfig(sortOfPhotos);
         const sortField = config.field;
         const sortOrder = config.order;
-        
+
         await performSearch(query, type, filters, sortField, sortOrder);
     }, [performSearch, sortOfPhotos]);
 
@@ -648,124 +603,96 @@ function PhotosList(props) {
         }
     }, [isSearchMode, searchInitialQuery, searchQuery, handleSearch]);
 
-    const handleSearchClear = useCallback(() => {
-        clearSearch();
-    }, [clearSearch]);
 
     const handleSavedSearchSelect = useCallback((searchParams) => {
-        setCurrentSearchParams(searchParams);
-        
-        // Update search filters state to reflect in UI
-        if (searchParams.filters) {
-            setSearchFilters(searchParams.filters);
-        }
-        
+        updateSearchParams(searchParams);
+
         // Map sortOfPhotos to backend sort field names with order
-        const sortConfig = {
-            0: { field: 'exif_date_time_original', order: 'desc' },  // Shot Time (desc)
-            1: { field: 'exif_date_time_original', order: 'asc' },   // Shot Time (asc)
-            2: { field: 'photo_date', order: 'desc' },               // Added Time (desc)
-            3: { field: 'photo_date', order: 'asc' },                // Added Time (asc)
-            4: { field: 'star', order: 'desc' },                     // Star Rating (desc)
-            5: { field: 'star', order: 'asc' },                      // Star Rating (asc)
-            6: { field: 'path', order: 'desc' },                     // File Name (desc)
-            7: { field: 'path', order: 'asc' }                       // File Name (asc)
-        };
-        const config = sortConfig[sortOfPhotos] || sortConfig[0];
+        const config = getCurrentSortConfig(sortOfPhotos);
         const sortField = config.field;
         const sortOrder = config.order;
-        
+
         performSearch(searchParams.query, searchParams.searchType, searchParams.filters, sortField, sortOrder);
     }, [performSearch, sortOfPhotos]);
 
-    // Function to load tags for a photo
-    const loadPhotoTags = useCallback(async (photoPath) => {
-        if (photoTags[photoPath]) {
-            return photoTags[photoPath]; // Return cached tags
-        }
-        
-        try {
-            const tags = await invoke('get_tags_for_photo', { photoPath });
-            const formattedTags = tags.map(([id, name, color]) => ({ id, name, color }));
-            
-            setPhotoTags(prev => ({
-                ...prev,
-                [photoPath]: formattedTags
-            }));
-            
-            return formattedTags;
-        } catch (error) {
-            logger.error('PhotosList', 'load_photo_tags_error', 'Failed to load photo tags', {
-                photoPath,
-                error: error.toString()
-            });
-            addError(error, 'Load photo tags', `loading tags for ${photoPath}`);
-            return [];
-        }
-    }, [photoTags]);
 
-    // Memoize filtered photos to avoid recalculating on every render
+    // Use filtered photos based on current view mode (compatible with existing data flow)
     const filteredPhotos = useMemo(() => {
         // Use appropriate photo source based on current mode
-        const sourcePhotos = isAlbumMode ? albumPhotos : (isTagMode ? tagPhotos : (isTrashMode ? trashPhotos : allPhotosForCurrentFetch));
-        
-        logger.debug('PhotosList', 'filtering_photos', 'Applying frontend filters', {
-            isAlbumMode,
-            isTagMode,
-            isTrashMode,
-            sourcePhotosCount: sourcePhotos.length,
-            starFilter,
-            hasCommentFilter,
-            extensionFilter
+        const sourcePhotos = viewModeObj.isAlbumMode() ? albumPhotos :
+            (viewModeObj.isTagMode() ? tagPhotos :
+                (viewModeObj.isTrashMode() ? (photoCollection?.photos || []) :
+                    allPhotosForCurrentFetch));
+
+        logger.debug('PhotosList', 'filtered_photos_source', 'Using photo source for filtering', {
+            mode: viewModeObj.mode,
+            sourceCount: sourcePhotos.length,
+            isAlbumMode: viewModeObj.isAlbumMode(),
+            isTagMode: viewModeObj.isTagMode(),
+            isTrashMode: viewModeObj.isTrashMode(),
+            sourceType: sourcePhotos.length > 0 ? typeof sourcePhotos[0] : 'empty',
+            firstPhotoIsEntity: sourcePhotos.length > 0 ? sourcePhotos[0].constructor.name : 'none'
         });
-        const result = applyFrontendFilters(sourcePhotos);
-        logger.debug('PhotosList', 'filtered_result', 'Frontend filter result', {
-            isAlbumMode,
-            isTagMode,
-            isTrashMode,
-            originalCount: sourcePhotos.length,
-            filteredCount: result.length
+
+        // Convert source photos to Photo entities if they're plain objects
+        const photosWithMethods = convertJSONToPhotoEntities(sourcePhotos, appConfig);
+
+        // Apply frontend filters
+        const result = applyFiltersWithConfig(photosWithMethods);
+
+        logger.debug('PhotosList', 'filtered_photos_result', 'Filtering completed', {
+            inputCount: sourcePhotos.length,
+            outputCount: result.length,
+            resultType: result.length > 0 ? typeof result[0] : 'empty'
         });
+
         return result;
-    }, [isAlbumMode, isTagMode, isTrashMode, albumPhotos, tagPhotos, trashPhotos, allPhotosForCurrentFetch, starFilter, hasCommentFilter, extensionFilter]);
+    }, [viewModeObj, albumPhotos, tagPhotos, photoCollection?.photos, allPhotosForCurrentFetch, applyFiltersWithConfig]);
 
-    // Check if any filters are active
-    const hasActiveFilters = useMemo(() => {
-        return starFilter > 0 || hasCommentFilter || extensionFilter !== 'all';
-    }, [starFilter, hasCommentFilter, extensionFilter]);
+    // Use infinite scroll hook
+    const {
+        infiniteScrollEnabled,
+        setInfiniteScrollEnabled,
+        displayedPhotoCount,
+        setDisplayedPhotoCount,
+        isLoadingMore,
+        setIsLoadingMore,
+        displayedPhotos,
+        hasMorePhotos,
+        allPhotosLoaded,
+        loadMorePhotos,
+        handleInfiniteScroll,
+        totalPhotos,
+        displayedCount
+    } = useInfiniteScroll(filteredPhotos);
 
-    // Get filter summary for display
-    const getFilterSummary = useMemo(() => {
-        const active = [];
-        if (starFilter > 0) active.push(`★${starFilter}+`);
-        if (hasCommentFilter) active.push('Has comment');
-        if (extensionFilter !== 'all') active.push(`${extensionFilter}`);
+    // Check if any filters are active using utility function
+    const hasActiveFiltersState = useMemo(() => {
+        return hasActiveFilters({ starFilter, hasCommentFilter, hasTagFilter, extensionFilter });
+    }, [starFilter, hasCommentFilter, hasTagFilter, extensionFilter]);
+
+    // Get filter summary using utility function
+    const getFilterSummaryText = useMemo(() => {
+        return getFilterSummary({ starFilter, hasCommentFilter, hasTagFilter, extensionFilter });
+    }, [starFilter, hasCommentFilter, hasTagFilter, extensionFilter]);
+
+    // Render filter clearing UI component
+    const renderFilterClearingUI = useCallback(() => {
+        if (!hasActiveFiltersState) return null;
         
-        return active.length > 0 ? `Active filters: ${active.join(', ')}` : '';
-    }, [starFilter, hasCommentFilter, extensionFilter]);
+        return (
+            <div style={{ fontSize: "12px", color: "#666", marginTop: "5px" }}>
+                {getFilterSummaryText}
+                <button
+                    style={{ marginLeft: "10px", fontSize: "11px", padding: "2px 6px", cursor: "pointer" }}
+                    onClick={clearAllFilters}
+                >
+                    Clear Filters
+                </button>
+            </div>
+        );
+    }, [hasActiveFiltersState, getFilterSummaryText, clearAllFilters]);
 
-    // Displayed photos for infinite scroll
-    const displayedPhotos = useMemo(() => {
-        logger.debug('PhotosList', 'display_photos', 'Calculating displayed photos', {
-            filteredCount: filteredPhotos.length,
-            displayedPhotoCount,
-            infiniteScrollEnabled
-        });
-        if (infiniteScrollEnabled) {
-            const result = filteredPhotos.slice(0, displayedPhotoCount);
-            logger.debug('PhotosList', 'displayed_result', 'Displayed photos result', {
-                filtered: filteredPhotos.length,
-                displayCount: displayedPhotoCount,
-                result: result.length
-            });
-            console.log(`[DISPLAYED_PHOTOS] Slice: filtered=${filteredPhotos.length}, displayCount=${displayedPhotoCount}, result=${result.length}`);
-            return result;
-        }
-        logger.debug('PhotosList', 'displayed_all', 'Showing all filtered photos (infinite scroll disabled)', {
-            count: filteredPhotos.length
-        });
-        return filteredPhotos; // Infinite scroll disabled shows all
-    }, [filteredPhotos, displayedPhotoCount, infiniteScrollEnabled]);
 
     // Notify parent when menu state changes
     useEffect(() => {
@@ -773,7 +700,7 @@ function PhotosList(props) {
             props.onRightMenuToggle(showSideMenu);
         }
     }, [showSideMenu, props.onRightMenuToggle]);
-    
+
     // Close side menu when transitioning from search mode to non-search mode
     useEffect(() => {
         if (!isSearchMode && showSideMenu) {
@@ -789,14 +716,14 @@ function PhotosList(props) {
             sortInitialized.current = true;
             return;
         }
-        
+
         // Only re-execute if we're in search mode, have search params, and there are search results
         if (isSearchMode && currentSearchParams && searchResults.length > 0) {
             logger.info('PhotosList', 'sort_changed_reexecute', 'Re-executing search due to sort change', {
                 sortOfPhotos,
                 currentSearchParams
             });
-            
+
             // Call performSearch directly to avoid dependency cycle
             const sortConfig = {
                 0: { field: 'exif_date_time_original', order: 'desc' },
@@ -809,10 +736,10 @@ function PhotosList(props) {
                 7: { field: 'path', order: 'asc' }
             };
             const config = sortConfig[sortOfPhotos] || sortConfig[0];
-            
+
             performSearch(
-                currentSearchParams.query, 
-                currentSearchParams.searchType, 
+                currentSearchParams.query,
+                currentSearchParams.searchType,
                 currentSearchParams.filters,
                 config.field,
                 config.order
@@ -820,78 +747,19 @@ function PhotosList(props) {
         }
     }, [sortOfPhotos, isSearchMode, currentSearchParams, performSearch]);
 
-    // Load tags for displayed photos
-    useEffect(() => {
-        const loadTagsForPhotos = async () => {
-            if (!filteredPhotos || filteredPhotos.length === 0) return;
-            
-            const visiblePhotos = filteredPhotos.slice(0, displayedPhotoCount);
-            const photosNeedingTags = visiblePhotos.filter(photo => !photoTags[photo.file.path]);
-            
-            if (photosNeedingTags.length === 0) return;
-            
-            try {
-                const tagPromises = photosNeedingTags.map(photo => 
-                    loadPhotoTags(photo.file.path)
-                );
-                await Promise.all(tagPromises);
-            } catch (error) {
-                logger.error('PhotosList', 'load_tags_batch_error', 'Failed to load tags for photos', {
-                    error: error.toString()
-                });
-                addError(error, 'Load photo tags (batch)', 'loading tags for multiple photos');
-            }
-        };
-
-        loadTagsForPhotos();
-    }, [filteredPhotos, displayedPhotoCount, loadPhotoTags]);
 
     const handleFiltersChange = useCallback((newFilters) => {
-        // console.log('handleFiltersChange called with:', newFilters);
-        setSearchFilters(newFilters);
-        
-        // Manual execution only - auto search removed per improvement #46
-        // console.log('Filters updated. User needs to manually execute search.');
+        updateSearchParams({ filters: newFilters });
     }, []); // Removed dependencies for manual execution only
-    
+
     // Infinite scroll handlers
-    const loadMorePhotos = useCallback(() => {
-        if (isLoadingMore) {
-            return;
-        }
-        
-        setIsLoadingMore(true);
-        
-        // Async batch addition to prevent UI blocking
-        setTimeout(() => {
-            setDisplayedPhotoCount(prev => {
-                // Use appropriate photo source based on current mode (same as filteredPhotos logic)
-                const sourcePhotos = isAlbumMode ? albumPhotos : (isTagMode ? tagPhotos : (isTrashMode ? trashPhotos : allPhotosForCurrentFetch));
-                const currentFilteredPhotos = applyFrontendFilters(sourcePhotos);
-                const newCount = Math.min(prev + 50, currentFilteredPhotos.length);
-                console.log(`[INFINITE_SCROLL] Loading more: prev=${prev}, filtered=${currentFilteredPhotos.length}, newCount=${newCount}`);
-                return newCount >= currentFilteredPhotos.length ? currentFilteredPhotos.length : newCount;
-            });
-            setIsLoadingMore(false);
-        }, 100);
-    }, [isLoadingMore, applyFrontendFilters, allPhotosForCurrentFetch, isAlbumMode, albumPhotos, isTagMode, tagPhotos, isTrashMode, trashPhotos]);
-    
-    const handleInfiniteScroll = useCallback((e) => {
-        const scrollContainer = e.target;
-        const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-        
-        // Trigger load when 80% scrolled
-        if (scrollTop + clientHeight >= scrollHeight * 0.8) {
-            loadMorePhotos();
-        }
-    }, [loadMorePhotos]);
-    
+
     // Notify parent when menu state changes
 
     // Create enhanced setStar function that updates photosListMiniAllPhotos
     const setStarWithUpdate = (newStar) => {
         setStar(newStar);
-        
+
         // Calculate star value from array
         let starValue = 0;
         for (let i = 0; i < 5; i++) {
@@ -901,40 +769,40 @@ function PhotosList(props) {
                 break;
             }
         }
-        
+
         // Update the star value in photosListMiniAllPhotos
-        const updatedPhotos = photosListMiniAllPhotos.map(photo => {
-            if (photo.file.path === currentPhotoPath) {
-                return { ...photo, star: starValue };
+        const updatedPhotos = photosListMiniAllPhotos.map(photoJSON => {
+            if (photoJSON.originalPath === currentPhotoPath) {
+                return { ...photoJSON, star: starValue };
             }
-            return photo;
+            return photoJSON;
         });
         setPhotosListMiniAllPhotos(updatedPhotos);
-        
+
         // Also update allPhotosForCurrentFetch to trigger re-filtering
         const updatedAllPhotos = allPhotosForCurrentFetch.map(photo => {
-            if (photo.file.path === currentPhotoPath) {
+            if (photo.originalPath === currentPhotoPath) {
                 return { ...photo, star: starValue };
             }
             return photo;
         });
         setAllPhotosForCurrentFetch(updatedAllPhotos);
     };
-    
+
     // Create function to update comment in photo lists
     const updatePhotoComment = (photoPath, hasComment) => {
         // Update photosListMiniAllPhotos
-        const updatedPhotos = photosListMiniAllPhotos.map(photo => {
-            if (photo.file.path === photoPath) {
-                return { ...photo, comment: hasComment ? "has comment" : null };
+        const updatedPhotos = photosListMiniAllPhotos.map(photoJSON => {
+            if (photoJSON.originalPath === photoPath) {
+                return { ...photoJSON, comment: hasComment ? "has comment" : null };
             }
-            return photo;
+            return photoJSON;
         });
         setPhotosListMiniAllPhotos(updatedPhotos);
-        
+
         // Also update allPhotosForCurrentFetch to trigger re-filtering
         const updatedAllPhotos = allPhotosForCurrentFetch.map(photo => {
-            if (photo.file.path === photoPath) {
+            if (photo.originalPath === photoPath) {
                 return { ...photo, comment: hasComment ? "has comment" : null };
             }
             return photo;
@@ -945,7 +813,7 @@ function PhotosList(props) {
     // Album management handlers
     const handleAlbumUpdate = () => {
         // Refresh album list and current album after update
-        if (isAlbumListMode) {
+        if (viewMode === VIEW_MODES.ALBUM_LIST) {
             loadAlbums();
         }
         if (currentAlbumId) {
@@ -954,59 +822,27 @@ function PhotosList(props) {
         logger.info('PhotosList', 'album_updated', 'Album refreshed after update', { currentAlbumId });
     };
 
-    const handleAlbumDelete = (deletedAlbumId) => {
-        // Handle album deletion - navigate back to album list
-        if (deletedAlbumId === currentAlbumId) {
-            // Navigate back to album list
-            toggleAlbumListMode();
-            logger.info('PhotosList', 'album_deleted', 'Navigated back to album list after deletion', { deletedAlbumId });
-        }
-        // Refresh album list if we're in album list mode
-        if (isAlbumListMode) {
-            loadAlbums();
-        }
-    };
 
-    // Function to parse CSS style string and convert to style object
-    const parseCssStyle = (cssString) => {
-        if (!cssString) return {};
-        
-        const styles = {};
-        const declarations = cssString.split(';').filter(decl => decl.trim());
-        
-        declarations.forEach(declaration => {
-            const [property, value] = declaration.split(':').map(s => s.trim());
-            if (property && value) {
-                // Convert CSS property names to camelCase for React
-                const camelCaseProperty = property.replace(/-([a-z])/g, (match, letter) => letter.toUpperCase());
-                styles[camelCaseProperty] = value;
-            }
-        });
-        
-        return styles;
-    };
 
     useEffect((e) => {
-        invoke("get_config", {},).then((e) => {
-            const json = JSON.parse(e);
-            setThumbnailStore(json.thumbnail_store);
-            setConfig(json); // Store the full config including max_photos_per_fetch
-        });
-        
+        if (appConfig) {
+            setThumbnailStore(appConfig.thumbnail_store);
+        }
+
         // Cleanup function to cancel any pending photo loading on component unmount
         return () => {
             if (currentPhotoLoadingController) {
                 currentPhotoLoadingController.abort();
             }
         };
-    }, [])
+    }, [appConfig])
 
     useEffect(() => {
         // Set CSS custom property for grid column sizing based on icon size
         // Use a more appropriate calculation for grid sizing
         const gridSize = Math.max(120, parseInt(iconSize) + 41);
         document.documentElement.style.setProperty('--photo-grid-size', `${gridSize}px`);
-        
+
         // Cleanup function
         return () => {
             // Cancel any pending requests when component unmounts
@@ -1016,60 +852,75 @@ function PhotosList(props) {
         };
     }, [iconSize])
 
-    // Load photos when fetchConfig changes
+    // Load photos when ViewMode changes
     useEffect(() => {
-        // console.log(`[FETCH_CONFIG_CHANGE] New fetchConfig:`, fetchConfig);
-        
+        if (!viewMode) {
+            logger.debug('PhotosList', 'useEffect_skip_no_viewmode', 'Skipping photo reload - no viewMode');
+            return;
+        }
+
         setShowSideMenu(isSearchMode);
-        
+
         // Cancel current photo loading if in progress
         if (currentPhotoLoadingController) {
             currentPhotoLoadingController.abort();
             setCurrentPhotoLoadingController(null);
         }
-        
-        // Always reset state when switching modes to ensure clean state
+
+        // Create ViewMode object
+        const viewModeObj = new ViewMode(viewMode, {
+            date: currentDate,
+            albumId: currentAlbumId,
+            tagId: currentTagId,
+            searchQuery: searchQuery,
+            searchParams: currentSearchParams
+        });
+
+        // Skip photo loading if in album or tag mode - these photos are managed separately
+        if (viewModeObj.isAlbumMode()) {
+            logger.debug('PhotosList', 'useEffect_skip_album', 'Skipping photo reload - in album mode');
+            return;
+        }
+        if (viewModeObj.isTagMode()) {
+            logger.debug('PhotosList', 'useEffect_skip_tag', 'Skipping photo reload - in tag mode');
+            return;
+        }
+
+        // Reset photo list state and clear currentPhotoPath when changing modes
         setPhotosList({ "photos": [] });
         setCurrentPhotoIndex(0);
         setPhotosListMiniCurrentIndex(0);
-        setCurrentPhotoPath(undefined);
-        
-        // Skip photo loading if in album, tag, or trash mode - these photos are managed separately
-        if (isAlbumMode) {
-            logger.debug('PhotosList', 'useEffect_skip_album', 'Skipping fetchConfig reload - in album mode');
-            return;
-        }
-        if (isTagMode) {
-            logger.debug('PhotosList', 'useEffect_skip_tag', 'Skipping fetchConfig reload - in tag mode');
-            return;
-        }
-        if (isTrashMode) {
-            logger.debug('PhotosList', 'useEffect_skip_trash', 'Skipping fetchConfig reload - in trash mode');
-            return;
-        }
-        
+        setCurrentPhotoPath("");
+
         // Skip if already loading to prevent race conditions
         if (photoLoading) {
-            // console.log(`[FETCH_CONFIG_CHANGE] Already loading, skipping`);
             return;
         }
-        
-        // Load all photos based on fetch config (skip if fetchConfig is null for Advanced Search mode)
-        logger.debug('PhotosList', 'useEffect_trigger', 'UseEffect triggered - loading photos', {
-            fetchConfig,
-            recentPhotosMode,
-            willLoad: !!fetchConfig,
-            fetchMethod: fetchConfig?.fetch_method,
-            fetchValue: fetchConfig?.value
-        });
-        if (fetchConfig) {
-            logger.debug('PhotosList', 'useEffect_load', 'Calling loadAllPhotosBasedOnFetchConfig');
-            loadAllPhotosBasedOnFetchConfig(fetchConfig);
-        } else {
-            logger.debug('PhotosList', 'useEffect_skip', 'Not loading photos - fetchConfig is null/undefined');
+
+        // Load all photos based on ViewMode
+        logger.debug('PhotosList', 'useEffect_load', 'Calling loadPhotosWithCollection (ViewMode approach)');
+        loadPhotosWithCollection(viewModeObj);
+
+    }, [viewMode, currentDate, currentAlbumId, currentTagId, searchQuery, currentSearchParams, appConfig]);
+
+    // Handle import state changes  
+    useEffect(() => {
+        if (viewMode === VIEW_MODES.IMPORT && importState) {
+            logger.info('PhotosList', 'import_state_changed', 'Import state changed, reloading photos', {
+                currentPath: importState.currentImportPath,
+                filter: importState.importFilter,
+                importStateId: importState._stateId // Add unique identifier to track state changes
+            });
+            
+            const viewModeObj = new ViewMode(VIEW_MODES.IMPORT, {
+                currentImportPath: importState.currentImportPath,
+                importFilter: importState.importFilter
+            });
+            loadPhotosWithCollection(viewModeObj);
         }
-        
-    }, [fetchConfig?.fetch_method, fetchConfig?.value, fetchConfig?.max_photos_per_fetch, isAlbumMode, isTagMode, isTrashMode]);
+    }, [importState, viewMode]);
+
+
 
     // Load filter options for Advanced Search mode
     useEffect(() => {
@@ -1082,16 +933,28 @@ function PhotosList(props) {
     // Apply filters when filter settings change (infinite scroll version)
     useEffect(() => {
         if (filteredPhotos.length > 0 || allPhotosForCurrentFetch.length > 0) {
-            // console.log(`[FILTER_CHANGE] Applying frontend filters: ${filteredPhotos.length} photos after filtering`);
-            setPhotosListMiniAllPhotos(filteredPhotos);
+            // Convert Photo entities to JSON for PhotosListMini (with safety check)
+            const photosAsJSON = filteredPhotos
+                .filter(photo => photo && typeof photo.toJSON === 'function')
+                .map(photo => photo.toJSON());
             
+            logger.debug('PhotosList', 'photos_json_conversion', 'Converting photos to JSON', {
+                totalPhotos: filteredPhotos.length,
+                validPhotos: photosAsJSON.length,
+                skippedPhotos: filteredPhotos.length - photosAsJSON.length,
+                firstPhotoType: filteredPhotos.length > 0 ? filteredPhotos[0].constructor.name : 'none',
+                hasToJSONMethod: filteredPhotos.length > 0 ? typeof filteredPhotos[0].toJSON : 'none'
+            });
+            
+            setPhotosListMiniAllPhotos(photosAsJSON);
+
             // Reset display count for infinite scroll when filters change
             if (infiniteScrollEnabled) {
                 setDisplayedPhotoCount(Math.min(50, filteredPhotos.length));
             }
         }
     }, [filteredPhotos, infiniteScrollEnabled, allPhotosForCurrentFetch]);
-    
+
     // Update photos list when displayedPhotos changes (for infinite scroll)
     useEffect(() => {
         if (displayedPhotos.length > 0) {
@@ -1100,28 +963,31 @@ function PhotosList(props) {
     }, [displayedPhotos]);
 
     function displayPhoto(f, i) {
-        // In trash mode, we need to find the photo by original path, but display the trash path
         const photoToFind = photosListMiniAllPhotos[i];
-        const displayPath = photoToFind ? getDisplayPath(photoToFind) : f;
-        
+        const displayPath = photoToFind ? (photoToFind.file?.path || photoToFind.path || f) : f;
+
+        // Calculate the correct key for showPhotoDisplay based on current mode
+        const displayKey = viewModeObj.isRecentMode() ? "recent" : viewModeObj.getDataAttribute();
+
+
         setCurrentPhotoPath(displayPath);
         setCurrentPhotoIndex(i);
-        
+
         // Find the global index in the all photos array
-        const globalIndex = photosListMiniAllPhotos.findIndex(photo => photo.file.path === f);
+        const globalIndex = photosListMiniAllPhotos.findIndex(photo => photo.originalPath === f);
         if (globalIndex !== -1) {
-            // console.log(`[DISPLAY_PHOTO] Found photo at global index: ${globalIndex} (total photos: ${photosListMiniAllPhotos.length})`);
             setPhotosListMiniCurrentIndex(globalIndex);
         } else {
-            // console.log(`[DISPLAY_PHOTO] Photo not found in all photos array, using page-relative index: ${i}`);
             // Fallback: use the provided index if photo not found in all photos
             setPhotosListMiniCurrentIndex(i);
         }
-        
+
         // Force a re-read to ensure thumbnails are properly initialized
         setPhotosListMiniReread(!photosListMiniReread);
-        
-        compatProps.setShowPhotoDisplay(true);
+
+        // Use togglePhotoDisplay with the correct key
+        compatProps.togglePhotoDisplay(displayKey, true);
+
     }
 
     function addSelection(t, f) {
@@ -1164,26 +1030,41 @@ function PhotosList(props) {
     function selectAllPhotoToSelection() {
         const selection = photoSelection.concat();
         const newSelectionDict = { ...photoSelectionDict };
-        
+
         // For infinite scroll, select only displayed photos to avoid confusion
         const targetPhotos = infiniteScrollEnabled ? displayedPhotos : filteredPhotos;
-        
+
         targetPhotos.forEach((photo) => {
-            const path = photo.file.path;
+            const path = photo.originalPath;
             if (!newSelectionDict[path]) {
                 selection.push(path);
                 newSelectionDict[path] = true;
             }
         });
-        
+
         setPhotoSelectionDict(newSelectionDict);
         setPhotoSelection(selection);
     }
 
-    const [tabClass, setTabClass] = useState({
-        'maintenance': false,
-        'selection': false,
-        'search': isSearchMode,
+    const [tabClass, setTabClass] = useState(() => {
+        // Initialize tabs based on current view mode
+        if (viewMode === VIEW_MODES.IMPORT) {
+            return {
+                'directory': true,  // Default to directory tab in import mode
+                'selection': false,
+                'filter': false,
+                'maintenance': false,
+                'search': false,
+            };
+        } else {
+            return {
+                'maintenance': false,
+                'selection': false,
+                'search': isSearchMode,
+                'filter': false,
+                'directory': false,
+            };
+        }
     });
 
     function changeTab(e, t) {
@@ -1193,10 +1074,93 @@ function PhotosList(props) {
             'maintenance': false,
             'selection': false,
             'search': false,
+            'directory': false,
         };
         c[t.replace(/^.*#tab-/, '')] = true;
         setTabClass(c);
     }
+
+    // Update tab state when view mode changes
+    useEffect(() => {
+        if (viewMode === VIEW_MODES.IMPORT) {
+            setTabClass({
+                'directory': true,  // Default to directory tab in import mode
+                'selection': false,
+                'filter': false,
+                'maintenance': false,
+                'search': false,
+            });
+            setShowSideMenu(true);  // Automatically open side menu in import mode
+
+            // Clear existing photo data when entering import mode
+            logger.info('PhotosList', 'import_mode_entered', 'Clearing existing photo data for import mode');
+            setAllPhotosForCurrentFetch([]);
+            setPhotosListMiniAllPhotos([]);
+            setPhotosList({ photos: [], has_next: false, has_prev: false });
+            setPhotoSelection([]);
+            setPhotoSelectionDict({});
+
+            // Initialize ImportState if not already initialized
+            if (!importState) {
+                ImportState.create().then((newImportState) => {
+                    // Set up callbacks
+                    newImportState.onDirectoryChange = (updatedState) => {
+                        logger.info('PhotosList', 'import_directory_changed', 'Directory changed in import mode', {
+                            currentPath: updatedState.currentImportPath,
+                            importPaths: updatedState.importPaths
+                        });
+                        // Create a new object with updated timestamp to ensure React detects change
+                        const newState = Object.assign(Object.create(Object.getPrototypeOf(updatedState)), updatedState);
+                        newState._stateId = Date.now(); // Add unique identifier
+                        setImportState(newState);
+                    };
+
+                    newImportState.onImportFilterChange = (updatedState) => {
+                        logger.info('PhotosList', 'import_filter_changed', 'Filter changed in import mode', {
+                            filter: updatedState.importFilter
+                        });
+                        // Create a new object with updated timestamp to ensure React detects change
+                        const newState = Object.assign(Object.create(Object.getPrototypeOf(updatedState)), updatedState);
+                        newState._stateId = Date.now(); // Add unique identifier
+                        setImportState(newState);
+                    };
+
+                    newImportState._stateId = Date.now(); // Add initial state ID
+                    setImportState(newImportState);
+                }).catch((error) => {
+                    logger.error('PhotosList', 'import_state_init_failed', 'Failed to initialize ImportState', {
+                        error: error.message
+                    });
+                });
+            }
+        } else if (isSearchMode) {
+            setTabClass({
+                'directory': false,
+                'selection': false,
+                'filter': false,
+                'maintenance': false,
+                'search': true,
+            });
+            setShowSideMenu(true);  // Automatically open side menu in search mode
+        } else {
+            // For other modes, default to no active tab (or maintenance/selection as needed)
+            setTabClass({
+                'directory': false,
+                'selection': false,
+                'filter': false,
+                'maintenance': false,
+                'search': false,
+            });
+            setShowSideMenu(false);  // Close side menu for other modes
+
+            // Clean up ImportState when leaving import mode
+            if (importState && viewMode !== VIEW_MODES.IMPORT) {
+                logger.info('PhotosList', 'import_mode_exited', 'Cleaning up ImportState');
+                importState.cleanup();
+                setImportState(null);
+            }
+        }
+    }, [viewMode, isSearchMode, importState]);
 
     // Remove photo from current view (for album removal)
     const removePhotoFromList = (indexToRemove) => {
@@ -1204,19 +1168,19 @@ function PhotosList(props) {
             index: indexToRemove,
             totalPhotos: photosListMiniAllPhotos.length
         });
-        
+
         // Remove from photosListMiniAllPhotos
         const newAllPhotos = [...photosListMiniAllPhotos];
         newAllPhotos.splice(indexToRemove, 1);
         setPhotosListMiniAllPhotos(newAllPhotos);
-        
+
         // Also remove from allPhotosForCurrentFetch and filteredPhotos
         const removedPath = photosListMiniAllPhotos[indexToRemove]?.file?.path;
         if (removedPath) {
-            const newAllPhotosForFetch = allPhotosForCurrentFetch.filter(photo => photo.file.path !== removedPath);
+            const newAllPhotosForFetch = allPhotosForCurrentFetch.filter(photo => photo.originalPath !== removedPath);
             setAllPhotosForCurrentFetch(newAllPhotosForFetch);
         }
-        
+
         // Adjust current index if needed
         if (indexToRemove >= newAllPhotos.length && newAllPhotos.length > 0) {
             // Last photo was removed, go to previous
@@ -1237,18 +1201,16 @@ function PhotosList(props) {
     };
 
     function moveToTrashCan(f) {
-        // console.log("delete file: " + f)
-        
+
         // If in trash mode, permanently delete instead of moving to trash
         if (isTrashMode) {
             permanentlyDeletePhoto(f);
             return;
         }
-        
+
         invoke("move_to_trash", { pathStr: f, sortValue: parseInt(sortOfPhotos) }).then((d) => {
             if (d) {
                 const date = d
-                const date_with_slash = d.replace(/-/g, "/");
                 if (compatProps.dateNum[date] > 0) {
                     compatProps.dateNum[date] -= 1;
                     compatProps.setDateNum(compatProps.dateNum);
@@ -1266,7 +1228,6 @@ function PhotosList(props) {
                     // last photo
                     if (currentPhotoIndex >= newAllPhotos.length) {
                         const ci = currentPhotoIndex - 1;
-                        // console.log("last photo!")
                         if (newAllPhotos[ci]) {
                             setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
                             setCurrentPhotoPath(newAllPhotos[ci].file.path);
@@ -1276,7 +1237,6 @@ function PhotosList(props) {
                     // not last photo
                     else {
                         const ci = currentPhotoIndex;
-                        // console.log("Not last photo!")
                         setPhotosListMiniReread(!photosListMiniReread);
                         setCurrentPhotoPath(newAllPhotos[ci].file.path);
                     }
@@ -1289,13 +1249,12 @@ function PhotosList(props) {
     }
 
     function permanentlyDeletePhoto(f) {
-        // console.log("permanently delete file: " + f)
         invoke("delete_permanently", { pathStr: f }).then((result) => {
             logger.info('PhotosList', 'permanent_delete_success', 'Photo permanently deleted', { path: f, result });
-            
+
             // Remove from trash photos list
             setTrashPhotos(prevPhotos => prevPhotos.filter(photo => photo.path !== f));
-            
+
             // Update thumbnail list when photo is deleted from current view
             if (photosListMiniAllPhotos.length > 0) {
                 const allPhotos = photosListMiniAllPhotos
@@ -1307,7 +1266,6 @@ function PhotosList(props) {
                 // last photo
                 if (currentPhotoIndex >= newAllPhotos.length) {
                     const ci = currentPhotoIndex - 1;
-                    // console.log("last photo!")
                     if (newAllPhotos[ci]) {
                         setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
                         setCurrentPhotoPath(newAllPhotos[ci].file.path);
@@ -1317,7 +1275,6 @@ function PhotosList(props) {
                 // not last photo
                 else {
                     const ci = currentPhotoIndex;
-                    // console.log("Not last photo!")
                     setPhotosListMiniReread(!photosListMiniReread);
                     setCurrentPhotoPath(newAllPhotos[ci].file.path);
                 }
@@ -1330,160 +1287,222 @@ function PhotosList(props) {
         });
     }
 
-    async function loadAllPhotosBasedOnFetchConfig(fetchConfig) {
-        logger.info('PhotosList', 'load_photos_config', 'loadAllPhotosBasedOnFetchConfig called', {
-            config: fetchConfig,
-            hasConfig: !!fetchConfig
+    /**
+     * Load photos using PhotoCollection (new approach)
+     */
+    async function loadPhotosWithCollection(viewModeObj) {
+        if (!viewModeObj) {
+            logger.warn('PhotosList', 'load_photos_collection_no_viewmode', 'ViewMode not provided, skipping photo loading');
+            return;
+        }
+
+        if (!appConfig) {
+            logger.warn('PhotosList', 'load_photos_collection_no_config', 'Config not loaded yet, skipping photo loading');
+            return;
+        }
+
+        if (photoLoading) {
+            logger.info('PhotosList', 'loading_already_in_progress', 'Photo loading already in progress, skipping');
+            return;
+        }
+
+        logger.info('PhotosList', 'load_photos_collection', 'Loading photos with PhotoCollection', {
+            viewMode: viewModeObj.mode,
+            viewModeData: viewModeObj.data,
+            hasAppConfig: !!appConfig
         });
-        if (!fetchConfig) return;
-        
+
+        setPhotoLoading(true);
+
+        try {
+            let collection;
+
+            // Create appropriate PhotoCollection based on view mode
+            if (viewModeObj.isDateMode()) {
+                logger.info('PhotosList', 'creating_date_collection', 'Creating date collection', {
+                    date: viewModeObj.getCurrentDate(),
+                    sortOfPhotos: sortOfPhotos
+                });
+                collection = PhotoCollection.createDateCollection([], viewModeObj.getCurrentDate(), appConfig, parseInt(sortOfPhotos));
+            } else if (viewModeObj.isRecentMode()) {
+                logger.info('PhotosList', 'creating_recent_collection', 'Creating recent collection', {
+                    sortOfPhotos: parseInt(sortOfPhotos)
+                });
+                collection = PhotoCollection.createRecentCollection([], appConfig, parseInt(sortOfPhotos));
+            } else if (viewModeObj.isSearchMode()) {
+                // For search, use searchResults if available
+                collection = PhotoCollection.createSearchCollection([], viewModeObj.getSearchQuery(), appConfig, searchResults.length > 0 ? searchResults : null, parseInt(sortOfPhotos));
+            } else if (viewModeObj.isImportMode()) {
+                // For import mode, need to get values from importState
+                if (!importState) {
+                    logger.warn('PhotosList', 'import_state_missing', 'Import state not initialized, skipping photo load');
+                    return;
+                }
+                logger.info('PhotosList', 'creating_import_collection', 'Creating import collection', {
+                    currentImportPath: importState.currentImportPath,
+                    importPaths: importState.importPaths,
+                    importFilter: importState.importFilter,
+                    sortOfPhotos: parseInt(sortOfPhotos)
+                });
+                collection = PhotoCollection.createImportCollection(
+                    [], 
+                    importState.currentImportPath || '', 
+                    importState.importPaths || [], 
+                    importState.importFilter || '', 
+                    appConfig, 
+                    parseInt(sortOfPhotos)
+                );
+            } else if (viewModeObj.isTrashMode()) {
+                logger.info('PhotosList', 'creating_trash_collection', 'Creating trash collection', {
+                    sortOfPhotos: parseInt(sortOfPhotos)
+                });
+                collection = PhotoCollection.createTrashCollection([], appConfig, parseInt(sortOfPhotos));
+            } else {
+                logger.warn('PhotosList', 'unsupported_view_mode', 'View mode not yet supported in PhotoCollection', {
+                    mode: viewModeObj.mode
+                });
+                // Fallback to new unified method
+                return await loadAllPhotosBasedOnViewMode(viewModeObj, appConfig);
+            }
+
+            // いらんのでは？ Set config in collection metadata for Photo entity creation
+            // collection = collection.withMetadata({ appConfig });
+
+            // Fetch photos using PhotoCollection
+            const filters = {
+                star: -1,
+                hasComment: false,
+                extension: "all"
+            };
+
+            logger.info('PhotosList', 'fetching_photos', 'About to fetch photos using PhotoCollection', {
+                mode: collection.mode,
+                pageSize: Math.min(9999, appConfig?.max_photos_per_fetch || 1000),
+                filters
+            });
+            const updatedCollection = await collection.fetchPhotos(1, Math.min(9999, appConfig?.max_photos_per_fetch || 1000), filters);
+            logger.info('PhotosList', 'fetch_photos_result', 'Photos fetched from PhotoCollection', {
+                mode: collection.mode,
+                photoCount: updatedCollection.photos.length,
+                hasNext: updatedCollection.metadata.hasNext,
+                hasPrev: updatedCollection.metadata.hasPrev
+            });
+
+
+            // Update states
+            setPhotoCollection(updatedCollection);
+            setPhotosList({
+                photos: updatedCollection.photos,
+                has_next: updatedCollection.metadata.hasNext,
+                has_prev: updatedCollection.metadata.hasPrev
+            });
+
+            // CRITICAL: Set allPhotosForCurrentFetch to enable filtering
+            // Store Photo entities directly to preserve methods
+            const photoEntities = updatedCollection.photos
+                .filter(photo => photo !== null);
+            setAllPhotosForCurrentFetch(photoEntities);
+
+            // Clear photo selection and related states
+            setPhotoSelection([]);
+            setPhotosListImgSrc({});
+            setCurrentPhotoPath("");
+            setCurrentPhotoIndex(undefined);
+
+            logger.info('PhotosList', 'load_photos_collection_success', 'Successfully loaded photos with PhotoCollection', {
+                photoCount: updatedCollection.photos.length,
+                hasNext: updatedCollection.metadata.hasNext
+            });
+
+        } catch (error) {
+            handleError(error, 'Load photos collection', {
+                viewMode: viewModeObj.mode,
+                viewModeData: viewModeObj.data
+            });
+            // Fallback to unified method on error
+            return await loadAllPhotosBasedOnViewMode(viewModeObj, appConfig);
+        } finally {
+            setPhotoLoading(false);
+        }
+    }
+
+    async function loadAllPhotosBasedOnViewMode(viewModeObj, appConfig) {
+        logger.info('PhotosList', 'load_photos_viewmode', 'loadAllPhotosBasedOnViewMode called', {
+            viewMode: viewModeObj.mode,
+            viewModeData: viewModeObj.data,
+            hasConfig: !!appConfig
+        });
+        if (!viewModeObj || !appConfig) {
+            logger.error("PhotosList", "error", "no viewModeObj or appConfig", {
+                viewModeObj: viewModeObj,
+                config: appConfig
+            })
+            return
+        }
+
+
         // Prevent duplicate loading
         if (photoLoading) {
             logger.info('PhotosList', 'loading_already_in_progress', 'Photo loading already in progress, skipping');
             return;
         }
-        
-        // Some fetch methods don't require a value (e.g., favorites, search with filters only, recent)
-        if (fetchConfig.fetch_method !== "favorites" && fetchConfig.fetch_method !== "search" && fetchConfig.fetch_method !== "recent" && !fetchConfig.value) return;
-        
-        logger.info('PhotosList', 'load_all_start', 'Loading all photos', { 
-            config, 
-            isSearchMode, 
-            searchResultsLength: searchResults.length,
-            fetchMethod: fetchConfig?.fetch_method
+
+        // Some view modes don't require a value (e.g., search with filters only, recent)
+        if (!viewModeObj.isSearchMode() && !viewModeObj.isRecentMode() && !viewModeObj.getCurrentDate() && !viewModeObj.getCurrentAlbumId() && !viewModeObj.getCurrentTagId()) return;
+
+        logger.info('PhotosList', 'load_all_start', 'Loading all photos', {
+            viewMode: viewModeObj.mode,
+            viewModeData: viewModeObj.data,
+            appConfig,
+            isSearchMode,
+            searchResultsLength: searchResults.length
         });
-        
+
         // Show loading indicator
         setPhotoLoading(true);
-        
+
         try {
             let result;
-            
-            logger.debug('PhotosList', 'load_all_switch', 'About to switch on fetch_method', { 
-                fetch_method: fetchConfig.fetch_method 
+
+            logger.debug('PhotosList', 'load_all_viewmode', 'Using ViewMode to generate parameters', {
+                mode: viewModeObj.mode,
+                viewModeData: viewModeObj.data
             });
-            switch (fetchConfig.fetch_method) {
-                case "date":
-                    logger.info('PhotosList', 'date_case_start', 'Using unified get_photos for date', {
-                        dateStr: fetchConfig.value,
-                        sortValue: parseInt(sortOfPhotos)
+
+            try {
+                // Handle special case for search mode with existing results
+                if (isSearchMode && searchResults.length > 0) {
+                    logger.info('PhotosList', 'using_search_results', 'Using search results from hook');
+                    result = JSON.stringify({ photos: searchResults });
+                } else {
+                    // Generate parameters using ViewMode
+                    const photoParams = viewModeObj.getUnifiedPhotoParams(appConfig, {
+                        sort_value: parseInt(sortOfPhotos),
+                        star: starFilter || -1,
+                        has_comment: hasCommentFilter || false,
+                        extension: extensionFilter || "all"
                     });
+                    
+                    logger.info('PhotosList', 'viewmode_params_generated', 'Generated parameters using ViewMode', {
+                        mode: viewModeObj.mode,
+                        params: photoParams
+                    });
+                    
                     result = await invoke("get_photos_unified", {
-                        request: {
-                            type: "search",
-                            search_type: "date",
-                            query: fetchConfig.value,
-                            sort_value: parseInt(sortOfPhotos),
-                            page: 1,
-                            limit: Math.min(9999, config?.max_photos_per_fetch || 1000),
-                            offset: 0,
-                            star: -1,
-                            has_comment: false,
-                            extension: "all"
-                        }
+                        request: photoParams
                     });
-                    logger.info('PhotosList', 'date_case_result', 'Unified get_photos result', {
+                    
+                    logger.info('PhotosList', 'viewmode_result', 'Unified get_photos result from ViewMode', {
                         resultType: typeof result,
-                        hasResult: !!result
+                        hasResult: !!result,
+                        mode: viewModeObj.mode
                     });
-                    break;
-                    
-                case "search":
-                    // Use search results from the hook if available
-                    logger.debug('PhotosList', 'search_mode_debug', 'Search mode debug information', {
-                        isSearchMode,
-                        searchResultsLength: searchResults.length,
-                        searchResults: searchResults.slice(0, 3), // Log first 3 results for debugging
-                        propsSearchMode: props.searchMode
-                    });
-                    
-                    if (isSearchMode && searchResults.length > 0) {
-                        logger.info('PhotosList', 'using_search_results', 'Using search results from hook');
-                        result = JSON.stringify({ photos: searchResults });
-                    } else {
-                        // Fall back to date-based search for now
-                        logger.warn('PhotosList', 'search_fallback', 'No search results available, falling back to date-based');
-                        result = await invoke("get_photos_unified", {
-                            request: {
-                                type: "search",
-                                search_type: "date",
-                                query: fetchConfig.value || compatProps.currentDate,
-                                sort_value: parseInt(sortOfPhotos),
-                                page: 1,
-                                limit: Math.min(9999, config?.max_photos_per_fetch || 1000),
-                                offset: 0,
-                                star: -1,
-                                has_comment: false,
-                                extension: "all"
-                            }
-                        });
-                    }
-                    break;
-                    
-                case "tag":
-                    // Fall back to date-based search for now
-                    console.warn("[LOAD_ALL] Tag API not implemented, falling back to date-based");
-                    result = await invoke("get_photos_unified", {
-                        request: {
-                            type: "search",
-                            search_type: "date",
-                            query: fetchConfig.value || compatProps.currentDate,
-                            sort_value: parseInt(sortOfPhotos),
-                            page: 1,
-                            limit: Math.min(9999, config?.max_photos_per_fetch || 1000),
-                            offset: 0,
-                            star: -1,
-                            has_comment: false,
-                            extension: "all"
-                        }
-                    });
-                    break;
-                    
-                case "favorites":
-                    logger.info('PhotosList', 'favorites_case_start', 'Using unified get_photos for favorites');
-                    result = await invoke("get_photos_unified", {
-                        request: {
-                            type: "search",
-                            search_type: "favorites",
-                            sort_value: parseInt(sortOfPhotos),
-                            page: 1,
-                            limit: Math.min(9999, config?.max_photos_per_fetch || 1000),
-                            offset: 0,
-                            has_comment: false,
-                            extension: "all"
-                        }
-                    });
-                    break;
-                    
-                case "recent":
-                    logger.info('PhotosList', 'recent_case_start', 'Using unified get_photos for recent', {
-                        limit: Math.min(60, config?.max_photos_per_fetch || 60),
-                        sortValue: parseInt(sortOfPhotos)
-                    });
-                    result = await invoke("get_photos_unified", {
-                        request: {
-                            type: "search",
-                            search_type: "recent",
-                            limit: Math.min(60, config?.max_photos_per_fetch || 60),
-                            sort_value: parseInt(sortOfPhotos),
-                            star: -1,
-                            has_comment: false,
-                            extension: "all"
-                        }
-                    });
-                    logger.info('PhotosList', 'recent_case_result', 'Unified get_photos result', {
-                        resultType: typeof result,
-                        hasResult: !!result
-                    });
-                    break;
-                    
-                default:
-                    logger.error('PhotosList', 'load_all_unknown', 'Unknown fetch method', {
-                        fetchMethod: fetchConfig.fetch_method
-                    });
-                    return;
+                }
+            } catch (error) {
+                handleError(error, `Unsupported mode ${viewModeObj.mode}`, { mode: viewModeObj.mode });
+                return;
             }
-            
+
             logger.info('PhotosList', 'about_to_parse', 'About to parse result', {
                 resultType: typeof result,
                 resultLength: result ? result.length : 'null',
@@ -1494,7 +1513,7 @@ function PhotosList(props) {
                 hasPhotos: !!(data && data.photos),
                 photoCount: data && data.photos ? data.photos.length : 'no photos key'
             });
-            
+
             // Validate data structure before proceeding
             if (!data || !data.photos || !Array.isArray(data.photos)) {
                 logger.error('PhotosList', 'invalid_data_structure', 'Invalid data structure from backend', {
@@ -1505,65 +1524,70 @@ function PhotosList(props) {
                 });
                 return;
             }
-            
+
             logger.info('PhotosList', 'load_all_parsed', 'Photos loaded and parsed', {
                 photoCount: data.photos.length,
-                fetchMethod: config?.fetch_method || fetchConfig?.fetch_method || 'unknown',
+                viewMode: viewModeObj.mode,
                 hasNext: data.has_next,
                 hasPrev: data.has_prev
             });
-            
+
             // Debug: Check if metadata is included
             if (data.photos.length > 0) {
-                // console.log(`[LOAD_ALL] Sample photo data:`, data.photos[0]);
-                // console.log(`[LOAD_ALL] Available properties:`, Object.keys(data.photos[0]));
-                
+                const firstPhoto = data.photos[0];
+                logger.info('PhotosList', 'backend_data_sample', 'First photo from backend', {
+                    path: firstPhoto?.file?.path || firstPhoto?.path,
+                    hasTags: !!firstPhoto.tags,
+                    tagsType: typeof firstPhoto.tags,
+                    tagsLength: Array.isArray(firstPhoto.tags) ? firstPhoto.tags.length : 'not array',
+                    tagsContent: firstPhoto.tags,
+                    fullPhotoKeys: Object.keys(firstPhoto || {})
+                });
+
                 // Check different possible metadata locations
                 if (data.photos[0].meta) {
-                    // console.log(`[LOAD_ALL] Meta object:`, data.photos[0].meta);
                 }
                 if (data.photos[0].metadata) {
-                    // console.log(`[LOAD_ALL] Metadata object:`, data.photos[0].metadata);
                 }
             }
-            
+
             // Check if we hit the configuration limit
-            const effectiveLimit = config?.max_photos_per_fetch || 1000;
+            const effectiveLimit = appConfig?.max_photos_per_fetch || 1000;
             const isLimited = data.photos.length >= effectiveLimit && (data.has_next || data.photos.length === effectiveLimit);
             setIsLimitedByConfig(isLimited);
             setConfigLimit(effectiveLimit);
-            
-            // Store all photos unfiltered
+
+            // Store all photos unfiltered - convert to Photo entities then to JSON for React state
             logger.info('PhotosList', 'setting_photos', 'Setting allPhotosForCurrentFetch', {
                 photoCount: data.photos.length,
                 firstPhotoPath: data.photos[0]?.file?.path || 'no photos'
             });
-            setAllPhotosForCurrentFetch(data.photos);
+
+            // Convert backend data to Photo entities and store directly
+            const photoEntities = convertPhotosToEntities(data.photos, appConfig, false, false);
+            setAllPhotosForCurrentFetch(photoEntities);
             logger.info('PhotosList', 'photos_set', 'allPhotosForCurrentFetch state updated');
-            
+
             // Don't apply filters here - let the memoized filteredPhotos handle it
             // This ensures consistency between all components
-            
+
             // Hide loading indicator
             setPhotoLoading(false);
-            
+
         } catch (error) {
-            console.error("[LOAD_ALL] Failed to load photos:", error);
-            console.error("[LOAD_ALL] Config was:", config);
-            
             // Reset to safe state
             setAllPhotosForCurrentFetch([]);
             setPhotosListMiniAllPhotos([]);
             setPhotosList({ photos: [], has_next: false, has_prev: false });
             setIsLimitedByConfig(false);
             setConfigLimit(null);
-            
+
             // Hide loading indicator on error
             setPhotoLoading(false);
-            
+
             // Use enhanced error handling
-            handleTauriError(error, 'Load photos');
-            
+            handleError(error, 'Load photos', { appConfig });
+
             // Fallback footer message
             compatProps.addFooterMessage && compatProps.addFooterMessage(`Failed to load photos: ${error.message || error}`);
         }
@@ -1572,62 +1596,63 @@ function PhotosList(props) {
     // Initialize search parameters when in search mode (moved after function definitions)
     useEffect(() => {
         if (isSearchMode && searchQuery && !currentSearchParams) {
-            setCurrentSearchParams({
+            updateSearchParams({
                 query: searchQuery,
                 searchType: "all",
                 filters: searchFilters
             });
         }
     }, [isSearchMode, searchQuery, currentSearchParams, searchFilters]);
-    
+
     // Perform initial search when component mounts with searchInitialQuery (moved after function definitions)
     useEffect(() => {
         if (isSearchMode && searchInitialQuery && !currentSearchParams) {
             handleSearch(searchInitialQuery, "all", {});
         }
     }, [isSearchMode, searchInitialQuery, currentSearchParams, handleSearch]);
-    
+
     // Trigger photo loading when search results are available (moved after function definitions)
     useEffect(() => {
-        logger.debug('PhotosList', 'search_results_effect', 'Search results effect triggered', {
-            isSearchMode,
-            searchResultsLength: searchResults.length,
-            searchQuery,
-            condition: isSearchMode && searchResults.length > 0,
-            fetchMethod: fetchConfig?.fetch_method
-        });
-        
-        // Only load search results if we're in search mode AND the fetchConfig is also for search
+        // Only load search results if we're in search mode 
         // This prevents search results from overriding date-based loading when user switches from search to date
         if (isSearchMode && searchResults.length > 0) {
             logger.info('PhotosList', 'search_results_loading', 'Search results available, loading photos');
-            loadAllPhotosBasedOnFetchConfig({
-                fetch_method: "search",
-                value: searchQuery,
-                title: `Search: "${searchQuery}"`
+            const searchViewMode = new ViewMode(VIEW_MODES.SEARCH, {
+                searchQuery: searchQuery,
+                searchResults: searchResults
             });
+            loadAllPhotosBasedOnViewMode(searchViewMode, appConfig);
         }
-    }, [isSearchMode, searchResults, searchQuery, fetchConfig?.fetch_method]);
+    }, [isSearchMode, searchResults, searchQuery]);
 
     function closePhotoDisplay() {
         setShowSideMenu(false);
-        compatProps.setShowPhotoDisplay(false);
-        if (props.currentPhotoPath !== "") setCurrentPhotoPath("");
-        // console.log("photos-list-close-photod-display -- getPhotos")
-        
+
+        // Calculate the correct key for showPhotoDisplay based on current mode
+        const displayKey = viewModeObj.isRecentMode() ? "recent" : viewModeObj.getDataAttribute();
+
+        // Use togglePhotoDisplay with the correct key
+        compatProps.togglePhotoDisplay(displayKey, false);
+        setCurrentPhotoPath("");
+
         // Cancel any existing photo loading before starting new request
         if (currentPhotoLoadingController) {
             currentPhotoLoadingController.abort();
             setCurrentPhotoLoadingController(null);
         }
-        
+
         const fetchPhotos = async () => getPhotos();
-        fetchPhotos().catch(error => handleTauriError(error, 'Refresh photos after closing display'))
+        fetchPhotos().catch(error => handleError(error, 'Refresh photos after closing display'))
     }
 
     function closeRightColumn() {
         setShowSideMenu(false);
-        compatProps.setShowPhotoDisplay(false);
+
+        // Calculate the correct key for showPhotoDisplay based on current mode
+        const displayKey = viewModeObj.isRecentMode() ? "recent" : viewModeObj.getDataAttribute();
+
+        // Use togglePhotoDisplay with the correct key
+        compatProps.togglePhotoDisplay(displayKey, false);
     }
 
     async function getPhotos(e, isForward) {
@@ -1636,24 +1661,24 @@ function PhotosList(props) {
             setPhotoLoading(false);
             return;
         }
-        
+
         setPhotoLoading(true);
-        
-        let date = recentPhotosMode ? "recent" : (isSearchMode ? "search_results" : compatProps.currentDate);
+
+        let date = recentPhotosMode ? "recent" : (isSearchMode ? "search_results" : viewModeObj.getDataAttribute());
         let page = compatProps.datePage[date] || 1;
-        
+
         if (!page || page == "NaN") {
             page = 1;
         }
         page = parseInt(page);
-        
+
         // Calculate page boundaries
         const pageStart = (page - 1) * numOfPhoto;
         const pageEnd = pageStart + parseInt(numOfPhoto);
-        
+
         // Get photos for current page from filtered data
         const pagePhotos = filteredPhotos.slice(pageStart, pageEnd);
-        
+
         if (pagePhotos.length > 0) {
             setPhotosList({
                 photos: pagePhotos,
@@ -1665,1012 +1690,341 @@ function PhotosList(props) {
             page -= 1;
             compatProps.datePage[date] = page;
         }
-        
+
         compatProps.datePage[date] = page;
         compatProps.setDatePage(compatProps.datePage);
         setPhotoLoading(false);
         // Removed scrollLock for infinite scroll
     };
 
-    // Removed nextPhotosList function - replaced by infinite scroll
-
-    // Album grid rendering functions
-
-    const renderAlbumGrid = () => {
-        return (
-            <Scrollable className="albums">
-                {/* Add New Album Tile */}
-                <div 
-                    key="new-album"
-                    className="album-tile new-album-tile"
-                    onClick={() => handleNewAlbumClick()}
-                    style={{
-                        width: `${iconSize + 50}px`,
-                        height: `${iconSize + 80}px`,
-                        cursor: 'pointer',
-                        border: '2px dashed var(--border)',
-                        borderRadius: '8px',
-                        margin: '10px',
-                        padding: '10px',
-                        display: 'inline-block',
-                        verticalAlign: 'top',
-                        backgroundColor: 'var(--bg-elevated)',
-                        transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                        e.target.style.transform = 'scale(1.05)';
-                        e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.target.style.transform = 'scale(1)';
-                        e.target.style.boxShadow = 'none';
-                    }}
-                >
-                    <div className="album-cover" style={{
-                        width: `${iconSize}px`,
-                        height: `${iconSize}px`,
-                        backgroundColor: 'var(--bg-elevated)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginBottom: '10px',
-                        borderRadius: '4px',
-                        overflow: 'hidden',
-                        border: '1px dashed var(--border)'
-                    }}>
-                        <div style={{
-                            fontSize: `${iconSize * 0.15}px`,
-                            color: '#999',
-                            textAlign: 'center',
-                            lineHeight: '1.2'
-                        }}>+ New Album</div>
-                    </div>
-                    <div className="album-info" style={{
-                        textAlign: 'center',
-                        fontSize: '12px'
-                    }}>
-                        <div className="album-name" style={{
-                            fontWeight: 'bold',
-                            marginBottom: '4px',
-                            wordWrap: 'break-word'
-                        }}>
-                            Create New Album
-                        </div>
-                    </div>
-                </div>
-                
-                {/* Existing Albums */}
-                {filteredAlbums.length === 0 ? (
-                    <div style={{ margin: '20px', color: '#666' }}>No albums found! Create your first album by clicking "New Album".</div>
-                ) : (
-                    filteredAlbums.map((album) => (
-                    <div 
-                        key={album.id}
-                        className="album-tile"
-                        onClick={() => handleAlbumClick(album)}
-                        style={{
-                            width: `${iconSize + 50}px`,
-                            height: `${iconSize + 80}px`,
-                            cursor: 'pointer',
-                            border: '1px solid var(--border)',
-                            borderRadius: '8px',
-                            margin: '10px',
-                            padding: '10px',
-                            display: 'inline-block',
-                            verticalAlign: 'top',
-                            backgroundColor: 'var(--bg-elevated)',
-                            transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                            e.target.style.transform = 'scale(1.05)';
-                            e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.target.style.transform = 'scale(1)';
-                            e.target.style.boxShadow = 'none';
-                        }}
-                    >
-                        <div className="album-cover" style={{
-                            width: `${iconSize}px`,
-                            height: `${iconSize}px`,
-                            backgroundColor: '#374151',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginBottom: '10px',
-                            borderRadius: '4px',
-                            overflow: 'hidden',
-                            border: '1px solid var(--border)'
-                        }}>
-                            {album.coverPhoto ? (
-                                <img 
-                                    src={convertFileSrc(album.coverPhoto)} 
-                                    alt={album.name}
-                                    style={{
-                                        width: '100%',
-                                        height: '100%',
-                                        objectFit: 'cover'
-                                    }}
-                                />
-                            ) : (
-                                <div style={{
-                                    fontSize: `${iconSize * 0.3}px`,
-                                    color: '#999'
-                                }}>📚</div>
-                            )}
-                        </div>
-                        <div className="album-info" style={{
-                            textAlign: 'center',
-                            fontSize: '12px'
-                        }}>
-                            <div className="album-name" style={{
-                                fontWeight: 'bold',
-                                marginBottom: '4px',
-                                wordWrap: 'break-word'
-                            }}>
-                                {album.name}
-                            </div>
-                            <div className="album-count" style={{
-                                color: '#666'
-                            }}>
-                                {album.photoCount} photos
-                            </div>
-                        </div>
-                    </div>
-                    ))
-                )}
-            </Scrollable>
-        );
-    };
-
-    const renderAlbumSearchFilter = () => (
-        <div style={{ 
-            marginBottom: '20px',
-            padding: '10px',
-            backgroundColor: 'var(--bg-elevated)',
-            borderRadius: '4px',
-            border: '1px solid var(--border)'
-        }}>
-            <input 
-                type="text"
-                placeholder="Search albums..." 
-                value={albumSearchTerm}
-                onChange={(e) => setAlbumSearchTerm(e.target.value)}
-                className="album-list-search-input"
-                style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: '1px solid var(--border)',
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                    backgroundColor: '#374151',
-                    color: 'var(--text)'
-                }}
-            />
-        </div>
-    );
-
-    const renderTagGrid = () => {
-        return (
-            <Scrollable className="tags">
-                {/* Add New Tag Tile */}
-                <div 
-                    key="new-tag"
-                    className="tag-tile new-tag-tile"
-                    onClick={() => handleNewTagClick()}
-                    style={{
-                        width: `${iconSize + 50}px`,
-                        height: `${iconSize + 80}px`,
-                        cursor: 'pointer',
-                        border: '2px dashed var(--border)',
-                        borderRadius: '8px',
-                        margin: '10px',
-                        padding: '10px',
-                        display: 'inline-block',
-                        verticalAlign: 'top',
-                        backgroundColor: 'var(--bg-elevated)',
-                        transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                        e.target.style.transform = 'scale(1.05)';
-                        e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.target.style.transform = 'scale(1)';
-                        e.target.style.boxShadow = 'none';
-                    }}
-                >
-                    <div className="tag-cover" style={{
-                        width: `${iconSize}px`,
-                        height: `${iconSize}px`,
-                        backgroundColor: '#374151',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginBottom: '10px',
-                        borderRadius: '4px',
-                        overflow: 'hidden',
-                        border: '1px dashed var(--border)'
-                    }}>
-                        <div style={{
-                            fontSize: `${iconSize * 0.15}px`,
-                            color: '#999',
-                            textAlign: 'center',
-                            lineHeight: '1.2'
-                        }}>+ New Tag</div>
-                    </div>
-                    <div className="tag-info" style={{
-                        textAlign: 'center',
-                        fontSize: '12px'
-                    }}>
-                        <div className="tag-name" style={{
-                            fontWeight: 'bold',
-                            marginBottom: '4px',
-                            wordWrap: 'break-word'
-                        }}>
-                            Create New Tag
-                        </div>
-                    </div>
-                </div>
-                
-                {/* Existing Tags */}
-                {filteredTags.length === 0 ? (
-                    <div style={{ margin: '20px', color: '#666' }}>No tags found! Create your first tag by clicking "New Tag".</div>
-                ) : (
-                    filteredTags.map((tag) => (
-                    <div 
-                        key={tag.id}
-                        className="tag-tile"
-                        onClick={() => handleTagClick(tag)}
-                        style={{
-                            width: `${iconSize + 50}px`,
-                            height: `${iconSize + 80}px`,
-                            cursor: 'pointer',
-                            border: '1px solid var(--border)',
-                            borderRadius: '8px',
-                            margin: '10px',
-                            padding: '10px',
-                            display: 'inline-block',
-                            verticalAlign: 'top',
-                            backgroundColor: 'var(--bg-elevated)',
-                            transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                            e.target.style.transform = 'scale(1.05)';
-                            e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.target.style.transform = 'scale(1)';
-                            e.target.style.boxShadow = 'none';
-                        }}
-                    >
-                        <div className="tag-cover" style={{
-                            width: `${iconSize}px`,
-                            height: `${iconSize}px`,
-                            backgroundColor: tag.color || '#374151',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginBottom: '10px',
-                            borderRadius: '4px',
-                            overflow: 'hidden',
-                            border: '1px solid var(--border)'
-                        }}>
-                            <div style={{
-                                fontSize: `${iconSize * 0.3}px`,
-                                color: tag.color ? '#fff' : '#999'
-                            }}>🏷️</div>
-                        </div>
-                        <div className="tag-info" style={{
-                            textAlign: 'center',
-                            fontSize: '12px'
-                        }}>
-                            <div className="tag-name" style={{
-                                fontWeight: 'bold',
-                                marginBottom: '4px',
-                                wordWrap: 'break-word'
-                            }}>
-                                {tag.name}
-                            </div>
-                            <div className="tag-count" style={{
-                                color: '#666'
-                            }}>
-                                {tag.photoCount} photos
-                            </div>
-                        </div>
-                    </div>
-                    ))
-                )}
-            </Scrollable>
-        );
-    };
-
-    const renderTagSearchFilter = () => (
-        <div style={{ 
-            marginBottom: '20px',
-            padding: '10px',
-            backgroundColor: 'var(--bg-elevated)',
-            borderRadius: '4px',
-            border: '1px solid var(--border)'
-        }}>
-            <input 
-                type="text"
-                placeholder="Search tags..." 
-                value={tagSearchTerm}
-                onChange={(e) => setTagSearchTerm(e.target.value)}
-                className="tag-list-search-input"
-                style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: '1px solid var(--border)',
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                    backgroundColor: '#374151',
-                    color: 'var(--text)'
-                }}
-            />
-        </div>
-    );
-
-    // Removed photosScroll function - replaced by handleInfiniteScroll
+    // Component functions have been moved to separate files for better organization
 
     return (
         <ErrorBoundary name="PhotosList" level="component">
             <>
-        {photoLoading ?
-            <div className="photoLoadingOnParent" style={{ display: photoLoading ? "block" : "none" }}>
-                <PhotoLoading />
-            </div>
-            :
-            <>
-                <div id="photos-display-wrapper" style={{ display: (!photoLoading && compatProps.showPhotoDisplay && currentPhotoPath) ? "block" : "none" }}>
-                    <AllPhotosContext.Provider value={{ photosListMiniAllPhotos, setPhotosListMiniAllPhotos }}>
-                        <ImgCacheContext.Provider value={{ imgCacheMap, setImgCacheMap }}>
-                            <div className="photo-display">
-                                <PhotosListMini
-                                    moveToTrashCan={moveToTrashCan}
-                                    closePhotoDisplay={closePhotoDisplay}
-                                    toggleSelection={toggleSelection}
-                                    isSelected={isSelected}
+                {photoLoading ?
+                    <div className="photoLoadingOnParent" style={{ display: photoLoading ? "block" : "none" }}>
+                        <PhotoLoading />
+                    </div>
+                    :
+                    <>
+                        <div id="photos-display-wrapper" style={{
+                            display: (() => {
+                                const displayKey = viewModeObj.isRecentMode() ? "recent" : viewModeObj.getDataAttribute();
+                                const shouldDisplay = !photoLoading && compatProps.showPhotoDisplay[displayKey] && currentPhotoPath;
 
-                                    setShortCutNavigation={props.setShortCutNavigation}
-                                    setShowPhotoDisplay={compatProps.setShowPhotoDisplay}
-                                    shortCutNavigation={props.shortCutNavigation}
-                                    getPhotos={getPhotos}
-                                    currentPhotoPath={currentPhotoPath}
-                                    setCurrentPhotoPath={setCurrentPhotoPath}
-                                    sortOfPhotos={sortOfPhotos}
-                                    currentDate={compatProps.currentDate}
-                                    datePage={compatProps.datePage}
-                                    num={numOfPhoto}
-                                    currentPhotoIndex={currentPhotoIndex}
-                                    setCurrentPhotoIndex={setCurrentPhotoIndex}
-                                    setStar={setStarWithUpdate}
-                                    hasCommentFilter={hasCommentFilter}
-                                    starFilter={starFilter}
-                                    extensionFilter={extensionFilter}
-                                    hasNext={photos.has_next}
+                                return shouldDisplay ? "block" : "none";
+                            })()
+                        }}>
+                            <AllPhotosContext.Provider value={{ photosListMiniAllPhotos, setPhotosListMiniAllPhotos }}>
+                                <ImgCacheContext.Provider value={{ imgCacheMap, setImgCacheMap }}>
+                                    <div className="photo-display">
+                                        <PhotosListMini
+                                            moveToTrashCan={moveToTrashCan}
+                                            closePhotoDisplay={closePhotoDisplay}
+                                            toggleSelection={toggleSelection}
+                                            isSelected={isSelected}
 
-                                    reread={photosListMiniReread}
-                                    currentIndex={photosListMiniCurrentIndex}
-                                    isTrashMode={isTrashMode}
-                                    config={config}
-                                    setCurrentIndex={setPhotosListMiniCurrentIndex}
-                                    setShowSideMenu={setShowSideMenu}
-                                    showSideMenu={showSideMenu}
-                                    centerDisplayClass={showSideMenu ? "centerDisplay" : "centerDisplayMax"}
-                                    
-                                    // Search mode props
-                                    searchMode={isSearchMode}
-                                    searchQuery={searchQuery}
-                                    onClearSearch={clearSearch}
-                                    recentPhotosMode={recentPhotosMode}
-                                    
-                                    // Album mode props
-                                    albumId={currentAlbumId}
-                                    albumName={currentAlbumName}
-                                    removePhotoFromList={removePhotoFromList}
-                                    addFooterMessage={compatProps.addFooterMessage}
-                                    handleTauriError={handleTauriError}
-                                />
-                            </div>
-                        </ImgCacheContext.Provider>
-                    </AllPhotosContext.Provider>
-                </div>
-                <div className={(props.showSideMenu || !currentPhotoPath) ? "centerDisplay" : "centerDisplayMax"} id="photoList"
-                    style={{ display: (!photoLoading && (!compatProps.showPhotoDisplay || !currentPhotoPath)) ? "block" : "none" }}
-                    data-date={recentPhotosMode ? "recent" : (isSearchMode ? "search_results" : (isAlbumListMode ? "albums" : (isAlbumMode ? `album_${currentAlbumId}` : (isTagListMode ? "tags" : (isTagMode ? `tag_${currentTagId}` : (isTrashMode ? "trash" : compatProps.currentDate))))))} 
-                    data-page={recentPhotosMode ? (compatProps.datePage["recent"] || 1) : (isSearchMode ? (compatProps.datePage["search_results"] || 1) : 1)}>
-                    <div>
-                        {/* Album List Mode */}
-                        {isAlbumListMode && (
-                            <>
-                                <div className="photo-list-header">
-                                    <div className="photo-page-info">
-                                        <span>Albums ({filteredAlbums.length} albums)</span>
-                                    </div>
-                                    <div className="photo-operation">
-                                        Icon:<select name="icon_size" value={iconSize} onChange={(e) => setIconSize(parseInt(e.target.value))}>
-                                            <option value={50}>small</option>
-                                            <option value={100}>normal</option>
-                                            <option value={200}>large</option>
-                                            <option value={300}>huge</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                {renderAlbumSearchFilter()}
-                                {renderAlbumGrid()}
-                            </>
-                        )}
+                                            setShortCutNavigation={props.setShortCutNavigation}
+                                            setShowPhotoDisplay={compatProps.setShowPhotoDisplay}
+                                            shortCutNavigation={props.shortCutNavigation}
+                                            getPhotos={getPhotos}
+                                            currentPhotoPath={currentPhotoPath}
+                                            setCurrentPhotoPath={setCurrentPhotoPath}
+                                            sortOfPhotos={sortOfPhotos}
+                                            currentDate={compatProps.currentDate}
+                                            datePage={compatProps.datePage}
+                                            num={numOfPhoto}
+                                            currentPhotoIndex={currentPhotoIndex}
+                                            setCurrentPhotoIndex={setCurrentPhotoIndex}
+                                            setStar={setStarWithUpdate}
+                                            hasCommentFilter={hasCommentFilter}
+                                            starFilter={starFilter}
+                                            extensionFilter={extensionFilter}
+                                            hasNext={photos.has_next}
 
-                        {/* Tag List Mode */}
-                        {isTagListMode && (
-                            <>
-                                <div className="photo-list-header">
-                                    <div className="photo-page-info">
-                                        <span>Tags ({filteredTags.length} tags)</span>
+                                            reread={photosListMiniReread}
+                                            currentIndex={photosListMiniCurrentIndex}
+                                            isTrashMode={isTrashMode}
+                                            config={appConfig}
+                                            setCurrentIndex={setPhotosListMiniCurrentIndex}
+                                            setShowSideMenu={setShowSideMenu}
+                                            showSideMenu={showSideMenu}
+                                            centerDisplayClass={showSideMenu ? "centerDisplay" : "centerDisplayMax"}
+
+                                            // Search mode props
+                                            searchMode={isSearchMode}
+                                            searchQuery={searchQuery}
+                                            onClearSearch={clearSearch}
+                                            recentPhotosMode={recentPhotosMode}
+
+                                            // Album mode props
+                                            albumId={currentAlbumId}
+                                            albumName={currentAlbumName}
+                                            removePhotoFromList={removePhotoFromList}
+                                            addFooterMessage={compatProps.addFooterMessage}
+                                            handleTauriError={handleTauriError}
+                                        />
                                     </div>
-                                    <div className="photo-operation">
-                                        Icon:<select name="icon_size" value={iconSize} onChange={(e) => setIconSize(parseInt(e.target.value))}>
-                                            <option value={50}>small</option>
-                                            <option value={100}>normal</option>
-                                            <option value={200}>large</option>
-                                            <option value={300}>huge</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                {renderTagSearchFilter()}
-                                {renderTagGrid()}
-                            </>
-                        )}
-                        
-                        {/* Regular Photo Display Mode */}
-                        {!isAlbumListMode && !isTagListMode && (
-                            <>
-                        {displayedPhotos.length == 0 && isSearchMode && <div style={{float: "left", marginBottom: "10px"}}><a className="back-to-home" onClick={(e) => { e.preventDefault(); clearSearch(); }} href="#">Back to HOME</a></div>}
-                        {displayedPhotos.length == 0 && isAlbumMode && <div style={{float: "left", marginBottom: "10px"}}><a className="back-to-home" onClick={(e) => { e.preventDefault(); toggleAlbumListMode(); }} href="#">Back to Album List</a></div>}
-                        {displayedPhotos.length == 0 && isTagMode && <div style={{float: "left", marginBottom: "10px"}}><a className="back-to-home" onClick={(e) => { e.preventDefault(); openTagsList(); }} href="#">Back to Tag List</a></div>}
-                        {displayedPhotos.length == 0 && isTrashMode && <div style={{float: "left", marginBottom: "10px"}}><a className="back-to-home" onClick={(e) => { e.preventDefault(); toggleHome(); }} href="#">Back to HOME</a></div>}
-                        {displayedPhotos.length > 0 ?
-                            <div className="photo-list-header">
-                                <div className="photo-page-info">
-                                    {isSearchMode ? (
-                                        <><a className="back-to-home" href="#" onClick={(e)=>{ e.preventDefault(); clearSearch(); }}>Back to HOME</a> <span style={{marginLeft: "10px"}}>{fetchConfig?.title || 'Search Results'} ({filteredPhotos.length} photos)</span></>
-                                    ) : isAlbumMode ? (
-                                        <><a className="back-to-home" href="#" onClick={(e)=>{ e.preventDefault(); toggleAlbumListMode(); }}>Back to Album List</a> <span style={{marginLeft: "10px"}}>{currentAlbumName || 'Album'} ({filteredPhotos.length} photos)</span></>
-                                    ) : isTagMode ? (
-                                        <><a className="back-to-home" href="#" onClick={(e)=>{ e.preventDefault(); openTagsList(); }}>Back to Tag List</a> <span style={{marginLeft: "10px"}}>{currentTagName || 'Tag'} ({filteredPhotos.length} photos)</span></>
-                                    ) : isTrashMode ? (
-                                        <><a className="back-to-home" href="#" onClick={(e)=>{ e.preventDefault(); toggleHome(); }}>Back to HOME</a> <span style={{marginLeft: "10px"}}>Trash ({filteredPhotos.length} photos)</span></>
-                                    ) : (
-                                        <span>{fetchConfig?.title || 'Photos'} ({filteredPhotos.length} photos)</span>
-                                    )}
-                                    {infiniteScrollEnabled && displayedPhotoCount < filteredPhotos.length && (
-                                        <span style={{marginLeft: "10px", fontSize: "12px", color: "#666"}}> - Showing: {displayedPhotoCount} photos</span>
-                                    )}
-                                    {isLimitedByConfig && (
-                                        <span style={{marginLeft: "10px", fontSize: "11px", color: "#f60", fontWeight: "bold"}}> (Limited by config)</span>
-                                    )}
-                                </div>
-                                {/* Removed navigation - replaced by infinite scroll */}
-                                <div className="photo-operation">
-                                    <button
-                                        ref={filterButtonRef}
-                                        onClick={() => setShowFilterPopover(!showFilterPopover)}
-                                        style={{
-                                            padding: '6px 10px',
-                                            marginRight: '10px',
-                                            backgroundColor: (starFilter > 0 || hasCommentFilter || extensionFilter !== "all") ? 'var(--accent)' : 'var(--bg-elevated)',
-                                            border: '1px solid var(--border)',
-                                            borderRadius: '4px',
-                                            cursor: 'pointer',
-                                            color: 'var(--text)',
-                                            fontSize: '14px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '4px'
-                                        }}
-                                        title="Filter photos"
-                                    >
-                                        <span style={{ fontSize: '16px' }}>⚙️</span>
-                                        Filter
-                                        {(starFilter > 0 || hasCommentFilter || extensionFilter !== "all") && (
-                                            <span style={{
-                                                backgroundColor: 'var(--accent)',
-                                                color: '#fff',
-                                                borderRadius: '10px',
-                                                padding: '2px 6px',
-                                                fontSize: '11px',
-                                                marginLeft: '4px'
-                                            }}>
-                                                {[starFilter > 0, hasCommentFilter, extensionFilter !== "all"].filter(Boolean).length}
-                                            </span>
-                                        )}
-                                    </button>
-                                    Icon:<select name="icon_size" value={iconSize} onChange={(e) => setIconSize(parseInt(e.target.value))}>
-                                        <option value={50}>small</option>
-                                        <option value={100}>normal</option>
-                                        <option value={200}>large</option>
-                                        <option value={300}>huge</option>
-                                    </select>
-                                    Sort:<select name="sort" value={sortOfPhotos} onChange={(e) => setSort(parseInt(e.target.value))}>
-                                        <option value={0}>Shot Time (desc)</option>
-                                        <option value={1}>Shot Time (asc)</option>
-                                        <option value={2}>Added Time (desc)</option>
-                                        <option value={3}>Added Time (asc)</option>
-                                        <option value={4}>Star Rating (desc)</option>
-                                        <option value={5}>Star Rating (asc)</option>
-                                        <option value={6}>File Name (desc)</option>
-                                        <option value={7}>File Name (asc)</option>
-                                    </select>
-                                    {/* Num selector removed - not needed with infinite scroll */}
-                                </div>
-                            </div>
-                            : <div>
-                                {isSearchMode ? (
-                                    isSearching ? <PhotoLoading /> : (
+                                </ImgCacheContext.Provider>
+                            </AllPhotosContext.Provider>
+                        </div>
+                        <div className={(props.showSideMenu || !currentPhotoPath) ? "centerDisplay" : "centerDisplayMax"} id="photoList"
+                            style={{ display: (!photoLoading && (!compatProps.showPhotoDisplay[viewModeObj.isRecentMode() ? "recent" : viewModeObj.getDataAttribute()] || !currentPhotoPath)) ? "block" : "none" }}
+                            data-date={viewModeObj.isRecentMode() ? "recent" : viewModeObj.getDataAttribute()}
+                            data-page={recentPhotosMode ? (compatProps.datePage["recent"] || 1) : (isSearchMode ? (compatProps.datePage["search_results"] || 1) : 1)}>
+                            <div>
+                                {/* List Mode (Albums or Tags) */}
+                                {(viewMode === VIEW_MODES.ALBUM_LIST || isTagListMode) && (() => {
+                                    const isAlbumList = viewMode === VIEW_MODES.ALBUM_LIST;
+                                    const listConfig = {
+                                        title: isAlbumList ? "Albums" : "Tags",
+                                        count: isAlbumList ? filteredAlbums.length : filteredTags.length,
+                                        itemType: isAlbumList ? "albums" : "tags",
+                                        itemTypeSingular: isAlbumList ? "album" : "tag",
+                                        items: isAlbumList ? filteredAlbums : filteredTags,
+                                        selectedItems: isAlbumList ? selectedAlbums : selectedTags,
+                                        onItemSelection: isAlbumList ? handleAlbumSelection : handleTagSelection,
+                                        onItemClick: isAlbumList ? handleAlbumClick : handleTagClick,
+                                        onNewItemClick: isAlbumList ? handleNewAlbumClick : handleNewTagClick,
+                                        searchTerm: isAlbumList ? albumSearchTerm : tagSearchTerm,
+                                        onSearchChange: isAlbumList ? setAlbumSearchTerm : setTagSearchTerm
+                                    };
+
+                                    return (
                                         <>
-                                            <div>No Search Result</div>
-                                            {hasActiveFilters && (
-                                                <div style={{fontSize: "12px", color: "#666", marginTop: "5px"}}>
-                                                    {getFilterSummary}
-                                                    <button 
-                                                        style={{marginLeft: "10px", fontSize: "11px", padding: "2px 6px", cursor: "pointer"}}
-                                                        onClick={() => {
-                                                            setStarFilter(0);
-                                                            setHasCommentFilter(false);
-                                                            setExtensionFilter('all');
-                                                        }}
-                                                    >
-                                                        Clear Filters
-                                                    </button>
-                                                </div>
-                                            )}
+                                            <ListViewHeader
+                                                title={listConfig.title}
+                                                count={listConfig.count}
+                                                itemType={listConfig.itemType}
+                                                iconSize={iconSize}
+                                                onIconSizeChange={setIconSize}
+                                            />
+                                            <GenericListView
+                                                items={listConfig.items}
+                                                itemType={listConfig.itemTypeSingular}
+                                                iconSize={iconSize}
+                                                selectedItems={listConfig.selectedItems}
+                                                onItemSelection={listConfig.onItemSelection}
+                                                onItemClick={listConfig.onItemClick}
+                                                onNewItemClick={listConfig.onNewItemClick}
+                                                searchTerm={listConfig.searchTerm}
+                                                onSearchChange={listConfig.onSearchChange}
+                                            />
                                         </>
-                                    )
-                                ) : isAlbumMode ? (
+                                    );
+                                })()}
+
+                                {/* Regular Photo Display Mode */}
+                                {viewMode !== VIEW_MODES.ALBUM_LIST && viewMode !== VIEW_MODES.TAG_LIST && (
                                     <>
-                                        <div>No photos in album: {currentAlbumName || 'Unknown Album'}</div>
-                                        {hasActiveFilters && (
-                                            <div style={{fontSize: "12px", color: "#666", marginTop: "5px"}}>
-                                                {getFilterSummary}
-                                                <button 
-                                                    style={{marginLeft: "10px", fontSize: "11px", padding: "2px 6px", cursor: "pointer"}}
-                                                    onClick={() => {
-                                                        setStarFilter(0);
-                                                        setHasCommentFilter(false);
-                                                        setExtensionFilter('all');
-                                                    }}
-                                                >
-                                                    Clear Filters
-                                                </button>
-                                            </div>
+                                        {displayedPhotos.length == 0 && (
+                                            <BackNavigationLink
+                                                viewModeObj={viewModeObj}
+                                                clearSearch={clearSearch}
+                                                toggleAlbumListMode={toggleAlbumListMode}
+                                                openTagsList={openTagsList}
+                                                toggleHome={toggleHome}
+                                            />
                                         )}
-                                    </>
-                                ) : isTagMode ? (
-                                    <>
-                                        <div>No photos with tag: {currentTagName || 'Unknown Tag'}</div>
-                                        {hasActiveFilters && (
-                                            <div style={{fontSize: "12px", color: "#666", marginTop: "5px"}}>
-                                                {getFilterSummary}
-                                                <button 
-                                                    style={{marginLeft: "10px", fontSize: "11px", padding: "2px 6px", cursor: "pointer"}}
-                                                    onClick={() => {
-                                                        setStarFilter(0);
-                                                        setHasCommentFilter(false);
-                                                        setExtensionFilter('all');
-                                                    }}
-                                                >
-                                                    Clear Filters
-                                                </button>
+                                        {displayedPhotos.length > 0 ?
+                                            <div className="photo-list-header">
+                                                <StatusBar
+                                                    viewMode={viewMode}
+                                                    currentDate={currentDate}
+                                                    currentAlbumName={currentAlbumName}
+                                                    currentTagName={currentTagName}
+                                                    searchQuery={searchQuery}
+                                                    isSearchMode={isSearchMode}
+                                                    clearSearch={clearSearch}
+                                                    toggleAlbumListMode={toggleAlbumListMode}
+                                                    openTagsList={openTagsList}
+                                                    toggleHome={toggleHome}
+                                                    filteredPhotos={filteredPhotos}
+                                                    infiniteScrollEnabled={infiniteScrollEnabled}
+                                                    displayedPhotoCount={displayedPhotoCount}
+                                                    isLimitedByConfig={isLimitedByConfig}
+                                                />
+                                                {/* Removed navigation - replaced by infinite scroll */}
+                                                <PhotosToolbar
+                                                    iconSize={iconSize}
+                                                    setIconSize={setIconSize}
+                                                    sortOfPhotos={sortOfPhotos}
+                                                    setSort={setSort}
+                                                    showFilterPopover={showFilterPopover}
+                                                    setShowFilterPopover={setShowFilterPopover}
+                                                    filterButtonRef={filterButtonRef}
+                                                    starFilter={starFilter}
+                                                    hasCommentFilter={hasCommentFilter}
+                                                    hasTagFilter={hasTagFilter}
+                                                    extensionFilter={extensionFilter}
+                                                    hasActiveFilters={hasActiveFiltersState}
+                                                />
                                             </div>
-                                        )}
-                                    </>
-                                ) : isTrashMode ? (
-                                    <>
-                                        <div>Trash is empty</div>
-                                        {hasActiveFilters && (
-                                            <div style={{fontSize: "12px", color: "#666", marginTop: "5px"}}>
-                                                {getFilterSummary}
-                                                <button 
-                                                    style={{marginLeft: "10px", fontSize: "11px", padding: "2px 6px", cursor: "pointer"}}
-                                                    onClick={() => {
-                                                        setStarFilter(0);
-                                                        setHasCommentFilter(false);
-                                                        setExtensionFilter('all');
-                                                    }}
-                                                >
-                                                    Clear Filters
-                                                </button>
+                                            : <div>
+                                                <>
+                                                    <div>{viewModeObj.getEmptyStateMessage()}</div>
+                                                    {renderFilterClearingUI()}
+                                                </>
                                             </div>
-                                        )}
-                                    </>
-                                ) : (
-                                    <>
-                                        <div>No Photo Found!</div>
-                                        {hasActiveFilters && (
-                                            <div style={{fontSize: "12px", color: "#666", marginTop: "5px"}}>
-                                                {getFilterSummary}
-                                                <button 
-                                                    style={{marginLeft: "10px", fontSize: "11px", padding: "2px 6px", cursor: "pointer"}}
-                                                    onClick={() => {
-                                                        setStarFilter(0);
-                                                        setHasCommentFilter(false);
-                                                        setExtensionFilter('all');
-                                                    }}
-                                                >
-                                                    Clear Filters
-                                                </button>
-                                            </div>
-                                        )}
+                                        }
+                                        <PhotoGrid
+                                            displayedPhotos={displayedPhotos}
+                                            totalPhotosCount={filteredPhotos.length}
+                                            iconSize={iconSize}
+                                            photoSelectionDict={photoSelectionDict}
+                                            onAddSelection={addSelection}
+                                            onDisplayPhoto={displayPhoto}
+                                            onInfiniteScroll={handleInfiniteScroll}
+                                            isLimitedByConfig={isLimitedByConfig}
+                                            configLimit={configLimit}
+                                            starFilter={starFilter}
+                                            hasCommentFilter={hasCommentFilter}
+                                            hasTagFilter={hasTagFilter}
+                                            extensionFilter={extensionFilter}
+                                            onClearFilters={() => {
+                                                setStarFilter(0);
+                                                setHasCommentFilter(false);
+                                                setHasTagFilter(false);
+                                                setExtensionFilter('all');
+                                            }}
+                                            showSideMenu={showSideMenu}
+                                            setShowSideMenu={setShowSideMenu}
+                                        />
+                                        {/* Replaced photo grid with PhotoGrid component */}
+
+                                        <div className="debug" style={{ display: (debugMessage == "" ? "none" : "block"), backgroundColor: "white", color: "black", position: "absolute", zIndex: "100", bottom: "0px", left: "0px", width: "400px", height: "200px" }}>
+                                            {debugMessage}
+                                        </div>
                                     </>
                                 )}
                             </div>
-                        }
-                        <Scrollable f={handleInfiniteScroll} className="photos">
-                            {/* Removed scroll indicators for infinite scroll */}
-                            {displayedPhotos.map((l, i) => {
-                                const image_for_not_found = "/img_error.png";
-                                let thumbnailSrc = "";
-                                if (l.has_thumbnail) {
-                                    // Extract UUID from the full file path
-                                    // Path format: /path/to/target/2025-07-01/[UUID]/image.jpg
-                                    const pathParts = l.file.path.split('/');
-                                    let uuid = null;
-                                    
-                                    // Find the date directory and the UUID directory after it
-                                    const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-                                    for (let j = 0; j < pathParts.length - 1; j++) {
-                                        if (datePattern.test(pathParts[j]) && pathParts[j + 2] !== undefined) {
-                                            uuid = pathParts[j + 1];
-                                            break;
-                                        }
-                                    }
-                                    
-                                    // Always extract date from photo path for thumbnail generation
-                                    let photoDate = null;
-                                    // Extract date from the photo's path
-                                    for (let j = 0; j < pathParts.length; j++) {
-                                        if (datePattern.test(pathParts[j])) {
-                                            photoDate = pathParts[j];
-                                            break;
-                                        }
-                                    }
-                                    
-                                    if (uuid && photoDate) {
-                                        // Build thumbnail path with UUID directory
-                                        if (l.file.name.match(/(mp4|webm)$/i)) {
-                                            thumbnailSrc = thumbnailStore + '/' + photoDate.replace(/\//g, '-') + '/' + uuid + '/' + l.file.name + ".jpg";
-                                        } else {
-                                            thumbnailSrc = (thumbnailStore + '/' + photoDate.replace(/\//g, '-') + '/' + uuid + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
-                                        }
-                                    } else if (photoDate) {
-                                        // Fallback to old behavior if UUID cannot be extracted
-                                        if (l.file.name.match(/(mp4|webm)$/i)) {
-                                            thumbnailSrc = thumbnailStore + '/' + photoDate.replace(/\//g, '-') + '/' + l.file.name + ".jpg";
-                                        } else {
-                                            thumbnailSrc = (thumbnailStore + '/' + photoDate.replace(/\//g, '-') + '/' + l.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
-                                        }
-                                    }
-                                    photosListImgSrc[l.file.path] = convertFileSrc(thumbnailSrc);
-                                } else {
-                                    photosListImgSrc[l.file.path] = convertFileSrc(l.file.path);
-                                }
-                                return (
-                                    <>
-                                        <div key={i} className={"row pict-" + iconSize} style={{ flex: "0 0 " + ((iconSize / 1) + 41) + "px", textAlign: "center", verticalAlign: "middle", position: "relative" }} >
-                                            <div style={{ flexShrink: 0 }}>
-                                                <a href="#" onClick={() => {
-                                                    displayPhoto(l.file.path, i)
-                                                }}>
-                                                    {!l.has_thumbnail && l.file.path.match(/\.(mp4|webm)$/i)
-                                                        ? <div className="photo-list-movie" style={{ minWidth: (iconSize - 20) + 'px', marginTop: (iconSize / 7) + "px" }}>
-                                                            <span style={{ fontSize: (iconSize / 3) + 'px' }}>&#127909;</span>
-                                                        </div>
-                                                        : <div style={{ width: iconSize + 'px', height: iconSize + 'px', flexShrink: 0 }} >
-                                                        <img loading="eager"
-                                                            alt={l.file.path}
-                                                            style={{ 
-                                                                width: "97%",
-                                                                ...parseCssStyle(l.css_style)
-                                                            }}
-                                                            src={photosListImgSrc[l.file.path]}
-                                                            onLoad={(e) => {
-                                                                let w = e.currentTarget.width;
-                                                                let h = e.currentTarget.height;
-                                                                if (w > h) {
-                                                                    e.currentTarget.style.width = "97%";
-                                                                    e.currentTarget.style.height = "auto";
-                                                                } else {
-                                                                    e.currentTarget.style.height = "97%";
-                                                                    e.currentTarget.style.width = "auto";
-                                                                }
-                                                            }}
-                                                            onError={(e) => {
-                                                                /*
-                                                                // To debug image load error on Windows
-                                                                let url = e.currentTarget.src;
-                                                                    fetch(url)
-                                                                    .then(res => {
-                                                                        setDebugMessage(l.file.path + ","+ url + ", " + res.statusText);
-                                                                    })
-                                                                    .catch(err => {
-                                                                        setDebugMessage( url + ", Image load failed: ", l.file.path);
-                                                                    });
-                                                                */
-                                                                if (e.currentTarget.src != image_for_not_found) {
-                                                                    photosListImgSrc[l.file.path] = image_for_not_found;
-                                                                    e.currentTarget.src = photosListImgSrc[l.file.path];
-                                                                }
-                                                            }}
-                                                        />
-                                                            {l.file.path.match(/\.(mp4|webm)$/i) && <div style={{ color: "white", position: "relative", top: iconSize / -3, fontSize: (iconSize / 6) + 'px' }}>&#x25b6;</div>}
-                                                        </div>
-                                                    }
-                                                </a>
-                                                
-                                                {/* Metadata overlay - stars and comments */}
-                                                {(l.star > 0 || l.comment) && (
-                                                    <div style={{
-                                                        position: "absolute",
-                                                        bottom: "25px",
-                                                        right: "42px",
-                                                        backgroundColor: "rgba(0, 0, 0, 0.5)",
-                                                        color: "white",
-                                                        padding: "1px 3px",
-                                                        borderRadius: "3px",
-                                                        fontSize: "10px",
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        gap: "2px"
-                                                    }}>
-                                                        {l.star > 0 && (
-                                                            <span>⭐{l.star}</span>
-                                                        )}
-                                                        {l.comment && (
-                                                            <span>💬</span>
-                                                        )}
-                                                    </div>
-                                                )}
-                                                
-                                                {/* Tags overlay */}
-                                                {photoTags[l.file.path] && photoTags[l.file.path].length > 0 && (
-                                                    <div style={{
-                                                        position: "absolute",
-                                                        bottom: "4px",
-                                                        left: "4px",
-                                                        right: "4px",
-                                                        display: "flex",
-                                                        flexWrap: "wrap",
-                                                        gap: "2px",
-                                                        maxHeight: "40px",
-                                                        overflow: "hidden"
-                                                    }}>
-                                                        {photoTags[l.file.path].slice(0, 3).map(tag => (
-                                                            <TagChip
-                                                                key={tag.id}
-                                                                tag={tag}
-                                                                style={{
-                                                                    fontSize: "8px",
-                                                                    padding: "1px 4px",
-                                                                    maxWidth: "60px"
-                                                                }}
-                                                            />
-                                                        ))}
-                                                        {photoTags[l.file.path].length > 3 && (
-                                                            <span style={{
-                                                                fontSize: "8px",
-                                                                backgroundColor: "rgba(0, 0, 0, 0.5)",
-                                                                color: "white",
-                                                                padding: "1px 4px",
-                                                                borderRadius: "8px"
-                                                            }}>
-                                                                +{photoTags[l.file.path].length - 3}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="photo-list-menu">
-                                                <input type="checkbox"
-                                                    id={"photo-checkbox-" + i}
-                                                    checked={photoSelectionDict[l.file.path] ? "checked" : ""}
-                                                    onChange={(e) => addSelection(e.target.checked, l.file.path)}
-                                                />
-                                                <label className={"checkbox-photo checkbox hover"} htmlFor={"photo-checkbox-" + i}></label>
-                                                <a href="#" onClick={() => {
-                                                    displayPhoto(l.file.path, i)
-                                                    setShowSideMenu(true);
-                                                }
-                                                } >(&#8505;)</a>
-                                                <a href="#" className="run-app" onClick={(e) => openUrl(fileUrl(l.file.path))}>&#128640;</a>
-                                            </div>
-                                        </div>
-                                        {/* Removed scroll indicator for infinite scroll */}
-                                    </>
-                                )
-                            })}
-                            {/* Infinite scroll footer */}
-                            {infiniteScrollEnabled && displayedPhotoCount < filteredPhotos.length && (
-                                <div className="infinite-scroll-trigger" 
-                                     style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', gridColumn: '1 / -1' }}>
-                                    {isLoadingMore ? (
-                                        <div className="loading-spinner">Loading...</div>
-                                    ) : (
-                                        <div>Scroll to load more</div>
-                                    )}
-                                </div>
-                            )}
-                            
-                            {/* Completion indicator */}
-                            {displayedPhotoCount >= filteredPhotos.length && filteredPhotos.length > 0 && (
-                                <div className="infinite-scroll-complete"
-                                     style={{ textAlign: 'center', padding: '20px', width: '100%', gridColumn: '1 / -1', color: '#666' }}>
-                                    {isLimitedByConfig ? (
-                                        <div>
-                                            <div>Showing {filteredPhotos.length} photos (limited by configuration)</div>
-                                            <div style={{ fontSize: '12px', marginTop: '5px', color: '#999' }}>
-                                                Display limit: {configLimit} photos. There may be more photos available.
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div>All photos displayed ({filteredPhotos.length} photos)</div>
-                                    )}
-                                </div>
-                            )}
-                        </Scrollable>
-                        <div className="debug" style={{ display: (debugMessage == "" ? "none" : "block"), backgroundColor: "white", color: "black", position: "absolute", zIndex: "100", bottom: "0px", left: "0px", width: "400px", height: "200px" }}>
-                            {debugMessage}
                         </div>
-                            </>
-                        )}
-                    </div>
-                </div>
-            </>
-        }
-        {/* Tabs positioned independently - only show when NOT in photo display mode */}
-        {(!compatProps.showPhotoDisplay || !currentPhotoPath) && (
-            <div className={`directory-vertical-tabs ${showSideMenu ? 'menu-open' : 'menu-closed'}`}>
-            {isSearchMode && (
-                <button 
-                    className={tabClass['search'] ? "directory-vertical-tab-button active" : "directory-vertical-tab-button"}
-                    onClick={(e) => {
-                        changeTab(e, "#tab-search");
-                        setShowSideMenu(true);
-                    }}
-                    title="Search Tools"
-                >
-                    <span className="directory-vertical-text">Search</span>
-                </button>
-            )}
-            <button 
-                className={tabClass['selection'] ? "directory-vertical-tab-button active" : "directory-vertical-tab-button"}
-                onClick={(e) => {
-                    changeTab(e, "#tab-selection");
-                    setShowSideMenu(true);
-                }}
-                title="Photo Selection"
-            >
-                <span className="directory-vertical-text">Selection</span>
-            </button>
-            {!isSearchMode && (
-                <button 
-                    className={tabClass['maintenance'] ? "directory-vertical-tab-button active" : "directory-vertical-tab-button"}
-                    onClick={(e) => {
-                        changeTab(e, "#tab-maintenance");
-                        setShowSideMenu(true);
-                    }}
-                    title="Maintenance Tools"
-                >
-                    <span className="directory-vertical-text">Maintenance</span>
-                </button>
-            )}
-            {showSideMenu && (
-                <button 
-                    className="directory-vertical-tab-button directory-close-tab"
-                    onClick={closeRightColumn}
-                    title="Close Panel"
-                >
-                    ×
-                </button>
-            )}
-        </div>
-        )}
-
-        {/* PhotoOption tabs - always visible in photo display mode */}
-        {(compatProps.showPhotoDisplay && currentPhotoPath) && (
-            <PhotoOption
-                setShowSideMenu={setShowSideMenu}
-                showSideMenu={showSideMenu}
-                currentPhotoPath={currentPhotoPath}
-                closePhotoDisplay={closePhotoDisplay}
-                path={currentPhotoPath}
-                
-                // Search mode props
-                searchMode={isSearchMode}
-                searchQuery={searchQuery}
-                searchResultsCount={displayedPhotos.length}
-                onClearSearch={clearSearch}
-                searchTools={props.searchTools}
-                addFooterMessage={compatProps.addFooterMessage}
-                imgCacheMap={imgCacheMap}
-                setStar={setStarWithUpdate}
-                star={star}
-                onPhotosRefresh={getPhotos}
-                onCommentUpdate={updatePhotoComment}
-                onAlbumUpdate={handleAlbumUpdate}
-                onAlbumDelete={handleAlbumDelete}
-            />
-        )}
-
-        {showSideMenu && (
-            <div className="rightMenu">
-                <div style={{ display: (!compatProps.showPhotoDisplay || !currentPhotoPath) ? "block" : "none" }}>
-                    <DirectoryMenu
-                        addFooterMessage={compatProps.addFooterMessage}
+                    </>
+                }
+                {/* Tabs positioned independently - only show when NOT in photo display mode */}
+                {(!compatProps.showPhotoDisplay || !currentPhotoPath) && (
+                    <VerticalTabBar
+                        viewMode={viewMode}
+                        isSearchMode={isSearchMode}
+                        showSideMenu={showSideMenu}
                         tabClass={tabClass}
-                        setTabClass={setTabClass}
                         changeTab={changeTab}
-                        currentDate={compatProps.currentDate}
-                        closeRightColumn={closeRightColumn}
-                        photoSelection={photoSelection}
-                        clearPhotoSelection={clearPhotoSelection}
-                        selectAllPhotoToSelection={selectAllPhotoToSelection}
-                        dateNum={compatProps.dateNum}
-                        setCurrentDateNum={compatProps.setCurrentDateNum}
-                        moveToTrashCan={moveToTrashCan}
-                        setStarFilter={setStarFilter}
-                        setHasCommentFilter={setHasCommentFilter}
-                        starFilter={starFilter}
-                        setExtensionFilter={setExtensionFilter}
-                        extensionFilter={extensionFilter}
                         setShowSideMenu={setShowSideMenu}
-                        
-                        // Job Queue integration
-                        setShowJobQueue={(show) => props.setShowJobQueueModal(show)}
-                        
+                        closeRightColumn={closeRightColumn}
+                    />
+                )}
+
+                {/* PhotoOption tabs - always visible in photo display mode */}
+                {(compatProps.showPhotoDisplay && currentPhotoPath) && (
+                    <PhotoOption
+                        setShowSideMenu={setShowSideMenu}
+                        showSideMenu={showSideMenu}
+                        currentPhotoPath={currentPhotoPath}
+                        closePhotoDisplay={closePhotoDisplay}
+                        path={currentPhotoPath}
+
                         // Search mode props
                         searchMode={isSearchMode}
-                        searchTools={isSearchMode ? (
-                            <SearchTools
-                                onSearch={handleSearch}
-                                onClear={handleSearchClear}
-                                searchResults={searchResults}
-                                initialQuery={searchQuery}
-                                onFiltersChange={handleFiltersChange}
-                                initialFilters={searchFilters}
-                                onSearchSelect={handleSavedSearchSelect}
-                                currentSearch={currentSearchParams}
-                                filterOptions={filterOptions}
-                                onLoadFilterOptions={loadFilterOptions}
-                                isFilterOptionsLoading={isFilterOptionsLoading}
-                                isAdvancedSearchMode={isAdvancedSearchMode}
-                            />
-                        ) : null}
+                        searchQuery={searchQuery}
+                        searchResultsCount={displayedPhotos.length}
+                        onClearSearch={clearSearch}
+                        searchTools={props.searchTools}
+                        addFooterMessage={compatProps.addFooterMessage}
+                        imgCacheMap={imgCacheMap}
+                        setStar={setStarWithUpdate}
+                        star={star}
+                        onPhotosRefresh={getPhotos}
+                        onCommentUpdate={updatePhotoComment}
+                        onAlbumUpdate={handleAlbumUpdate}
+                        onAlbumDelete={handleAlbumDelete}
                     />
-                </div>
-            </div>
-        )}
-        {/* Album Creation Modal */}
-        <AlbumCreationModal
-            isOpen={showAlbumCreationModal}
-            onClose={() => setShowAlbumCreationModal(false)}
-            onConfirm={createEmptyAlbum}
-            selectedPhotosCount={0}
-        />
-        
-        {/* Filter Popover */}
-        <FilterPopover
-            isOpen={showFilterPopover}
-            onClose={() => setShowFilterPopover(false)}
-            anchorRef={filterButtonRef}
-            starFilter={starFilter}
-            setStarFilter={setStarFilter}
-            hasCommentFilter={hasCommentFilter}
-            setHasCommentFilter={setHasCommentFilter}
-            extensionFilter={extensionFilter}
-            setExtensionFilter={setExtensionFilter}
-        />
+                )}
+
+                {showSideMenu && (
+                    <div className="rightMenu">
+                        <div style={{ display: (!compatProps.showPhotoDisplay[viewModeObj.isRecentMode() ? "recent" : viewModeObj.getDataAttribute()] || !currentPhotoPath) ? "block" : "none" }}>
+                            <DirectoryMenu
+                                viewModeObj={viewModeObj}
+                                addFooterMessage={compatProps.addFooterMessage}
+                                tabClass={tabClass}
+                                setTabClass={setTabClass}
+                                changeTab={changeTab}
+                                currentDate={compatProps.currentDate}
+                                closeRightColumn={closeRightColumn}
+                                photoSelection={photoSelection}
+                                clearPhotoSelection={clearPhotoSelection}
+                                selectAllPhotoToSelection={selectAllPhotoToSelection}
+                                dateNum={compatProps.dateNum}
+                                setCurrentDateNum={compatProps.setCurrentDateNum}
+                                moveToTrashCan={moveToTrashCan}
+                                setStarFilter={setStarFilter}
+                                setHasCommentFilter={setHasCommentFilter}
+                                starFilter={starFilter}
+                                setExtensionFilter={setExtensionFilter}
+                                extensionFilter={extensionFilter}
+                                setShowSideMenu={setShowSideMenu}
+
+                                // Job Queue integration
+                                setShowJobQueue={(show) => props.setShowJobQueueModal(show)}
+
+                                // Search mode props
+                                searchMode={isSearchMode}
+                                searchTools={isSearchMode ? (
+                                    <SearchTools
+                                        onSearch={handleSearch}
+                                        onClear={clearSearch}
+                                        searchResults={searchResults}
+                                        initialQuery={searchQuery}
+                                        onFiltersChange={handleFiltersChange}
+                                        initialFilters={searchFilters}
+                                        onSearchSelect={handleSavedSearchSelect}
+                                        currentSearch={currentSearchParams}
+                                        filterOptions={filterOptions}
+                                        onLoadFilterOptions={loadFilterOptions}
+                                        isFilterOptionsLoading={isFilterOptionsLoading}
+                                        isAdvancedSearchMode={isAdvancedSearchMode}
+                                    />
+                                ) : null}
+
+                                // Import mode props
+                                importState={importState}
+
+                                // Album and Tag selection props
+                                selectedAlbums={selectedAlbums}
+                                selectedTags={selectedTags}
+                                albumsList={albumsList}
+                                tagsList={tagsList}
+                                clearAlbumSelection={clearAlbumSelection}
+                                clearTagSelection={clearTagSelection}
+                                deleteSelectedAlbums={deleteSelectedAlbums}
+                                deleteSelectedTags={deleteSelectedTags}
+                            />
+                        </div>
+                    </div>
+                )}
+                {/* Album Creation Modal */}
+                <AlbumCreationModal
+                    isOpen={showAlbumCreationModal}
+                    onClose={() => setShowAlbumCreationModal(false)}
+                    onConfirm={createEmptyAlbum}
+                    selectedPhotosCount={0}
+                />
+
+                {/* Filter Popover */}
+                <FilterPopover
+                    isOpen={showFilterPopover}
+                    onClose={() => setShowFilterPopover(false)}
+                    anchorRef={filterButtonRef}
+                    starFilter={starFilter}
+                    setStarFilter={setStarFilter}
+                    hasCommentFilter={hasCommentFilter}
+                    setHasCommentFilter={setHasCommentFilter}
+                    hasTagFilter={hasTagFilter}
+                    setHasTagFilter={setHasTagFilter}
+                    extensionFilter={extensionFilter}
+                    setExtensionFilter={setExtensionFilter}
+                />
             </>
         </ErrorBoundary>
     );

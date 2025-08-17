@@ -80,7 +80,7 @@ const LogViewer = ({ onClose }) => {
         setLoggingStatus(status);
         setLoggingEnabled(status.enabled);
       } catch (error) {
-        console.warn('Failed to load logging status:', error);
+        logger.warn('LogViewer', 'logging_status_load_failed', 'Failed to load logging status', { error: error.message });
       }
     };
     loadLoggingStatus();
@@ -373,7 +373,7 @@ const LogViewer = ({ onClose }) => {
         if (filters.keyword && filters.keyword.trim()) {
           const keyword = filters.keyword.toLowerCase();
           const searchText = (
-            (log.message || '') + ' '
+            (log.message || '') + ' ' + 
             (log.component || '')
           ).toLowerCase();
           if (!searchText.includes(keyword)) return false;

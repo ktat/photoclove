@@ -9,6 +9,7 @@
 /improvement/
 /example/thumbnail/
 /t/
+./public/movie.tmp.MP4
 
 run.sh
 rsync-ui.sh

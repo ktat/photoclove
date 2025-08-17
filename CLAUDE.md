@@ -49,6 +49,8 @@ I suggest to you new feature. do discussion about it.
 When implementing logging in the codebase:
 
 #### Frontend Logging
+
+- Never use console.log
 - Use the structured `logger` service from `src/services/LoggerService.js`
 - Import: `import { logger } from '../services/LoggerService.js';`
 - Pattern: `logger.level('ComponentName', 'event_name', 'Description', { data })`
@@ -56,6 +58,7 @@ When implementing logging in the codebase:
 - Avoid direct `console.log/warn/error` calls - use the structured logger instead
 
 #### Backend Logging
+- Nerver use `print!`, `println!` etc.
 - Use Rust's `log` macros with structured format in semicolon-separated key=value pairs
 - Pattern: `log::level!(target: "component", "event; key1={}; key2={}", value1, value2)`
 - Always include `correlation_id` when available for request tracing
@@ -106,7 +109,13 @@ When working on features:
 - Verify with appropriate test commands
 - Check neighboring files for conventions and patterns
 
-### 4. Important Reminders
+### 4. Code Quality Standards
+- **DDD Architecture**: Prioritize Domain-Driven Design - separate business logic into domain layers, use repositories for data access, and maintain clear boundaries between layers
+- **DRY Principle**: Don't Repeat Yourself - extract common logic into reusable functions, components, or modules
+- **File Length Limit**: Keep each file under 1000 lines - split large files into smaller, focused modules
+- **Task Verification**: After implementing code changes, compare the implementation with the original task requirements. If any features are missing or incomplete, create subtasks to address them
+
+### 5. Important Reminders
 - Do what has been asked; nothing more, nothing less.
 - NEVER create files unless they're absolutely necessary for achieving your goal.
 - ALWAYS prefer editing an existing file to creating a new one.

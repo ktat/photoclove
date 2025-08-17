@@ -7,19 +7,24 @@ PhotoClove is a desktop photo manager designed for speed and simplicity. Built w
 ## ✨ Key Features
 
 - **🚀 Lightning Fast**: Optimized for handling large photo collections with minimal lag
-- **📥 Smart Import**: Batch photo import with UUID-based organization to prevent conflicts
-- **🎨 Non-Destructive Editing**: CSS-based image transformations with real-time preview
-- **📅 Date Organization**: Automatic photo organization by date with calendar navigation and Recent Photos access
-- **🎯 Infinite Scroll**: Smooth photo browsing with batch loading and configuration limit detection
-- **⭐ Metadata Management**: Star ratings, comments, and searchable metadata
+- **📥 Smart Import**: Unified import system using PhotosList components with directory navigation, progress tracking, and JobQueue integration
+- **🎨 Non-Destructive Editing**: CSS-based image transformations with real-time preview and crop functionality
+- **📅 Date Organization**: Automatic photo organization by date with enhanced navigation features:
+  - Hierarchical tree view with collapsible year/month structure
+  - Year/month filter controls for quick navigation
+  - List/Tree view mode toggle
+  - Recent Photos quick access (60 most recent)
+  - Optimized with date_summary table for ~10x faster loading
+- **🎯 Infinite Scroll**: Smooth photo browsing with batch loading (50 photos per batch) and configuration limit detection
+- **⭐ Metadata Management**: Star ratings, comments, and searchable metadata with EXIF data extraction
 - **🔍 Advanced Search**: Comprehensive search interface with EXIF filters, saved searches, search history, and database optimization
-- **🔍 Debug Logging**: Real-time log viewer with frontend/backend correlation for troubleshooting
+- **📊 Debug Logging**: Real-time log viewer with frontend/backend correlation for troubleshooting (Ctrl+Shift+L)
 - **🎬 Video Support**: View and manage MP4/WebM videos with thumbnail generation
 - **☁️ Google Photos Integration**: Secure OAuth authentication with automatic token refresh and seamless photo uploads
 - **🔄 Background Processing**: Advanced job queue with immediate retry, progress tracking, and comprehensive logging
 - **🔐 Secure Authentication**: Platform-native keyring storage for OAuth tokens with external service integration
 - **📚 Album Management**: Create custom photo collections with descriptions, cover photos, and custom ordering
-- **🏷️ Tag System**: Color-coded tags for photo categorization with search integration
+- **🏷️ Tag System**: Color-coded tags for photo categorization with search integration and bulk operations
 - **💡 Tutorial System**: Context-aware help tooltips for new users
 - **🖥️ Cross-Platform**: Works on Windows, macOS, and Linux
 
@@ -27,20 +32,21 @@ PhotoClove is a desktop photo manager designed for speed and simplicity. Built w
 
 PhotoClove uses a modern desktop architecture:
 
-- **Frontend**: React 18 with Vite for fast development and responsive UI
-- **Backend**: Rust with Tauri for native performance and system integration
-- **Database**: SQLite for fast metadata queries and search
-- **Storage**: Local filesystem with organized directory structure
-- **State Management**: Custom hooks architecture with React Query-like data fetching
-- **Navigation**: View mode state machine for consistent UI transitions
+- **Frontend**: React 18 with Vite for fast development and responsive UI (106 JSX/JS files)
+- **Backend**: Rust with Tauri 2.0 for native performance and system integration (36 Rust modules)
+- **Database**: SQLite with optimized indexes for fast metadata queries and search
+- **Storage**: Local filesystem with date-based organization and UUID conflict prevention
+- **State Management**: Domain-Driven Design with ViewMode value object for centralized view state management
+- **Navigation**: View mode state machine with transition validation and UI display conditions
 - **Caching**: Unified cache service with LRU eviction and automatic cleanup
+- **Domain Model**: Domain-Driven Design with Photo, PhotoCollection, and ImportState entities
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- **Node.js** v18+ and **pnpm**
-- **Rust** 1.84+ (for building)
+- **Node.js** v18+ and **pnpm** (package manager)
+- **Rust** 1.84.1+ (for building from source)
 - **FFmpeg** and **GStreamer** (for video support)
 
 #### Ubuntu/Debian Setup
@@ -82,20 +88,31 @@ env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
 
 Comprehensive documentation is available in the [`docs/`](./docs/) directory:
 
+### Core Documentation
 - **[Architecture Overview](./docs/architecture.md)** - System design and technology stack
-- **[Feature Sequences](./docs/feature-sequences.md)** - Frontend/backend interaction flows
-- **[Component Structure](./docs/component-structure.md)** - React component hierarchy and HTML structure
-- **[Source Tree](./docs/source-tree.md)** - Complete codebase organization guide
 - **[Feature Documentation Index](./docs/feature-documentation-index.md)** - Quick reference for finding relevant docs
+- **[Feature Quick Reference](./docs/feature-quick-reference.md)** - Find documentation by feature/component
+- **[API Reference](./docs/api-reference.md)** - Backend commands and implementation guides
+- **[Source Tree](./docs/source-tree.md)** - Complete codebase organization guide
 - **[Terms Reference](./docs/terms.md)** - Mapping between features, concepts, and source code
 
-### Additional Documentation
-- [State Management Guide](./docs/state-management-guide.md) - Custom hooks architecture with React Query-like implementation
-- [Authentication](./docs/authentication.md) - OAuth flow for Google Photos integration
-- [OAuth Token Management](./docs/oauth-token-management.md) - Secure token storage, automatic refresh, and testing tools
-- [Database Schema](./docs/database-schema.md) - SQLite structure and EXIF fields
-- [Job Queue System](./docs/job-queue-system.md) - Asynchronous background processing with enhanced retry
-- [Image Editor](./docs/image-editor.md) - CSS-based photo editing features
+### Technical Guides
+- **[Feature Sequences](./docs/feature-sequences.md)** - Frontend/backend interaction flows
+- **[Component Structure](./docs/component-structure.md)** - React component hierarchy and HTML structure
+- **[Database Schema](./docs/database-schema.md)** - SQLite structure and EXIF fields
+- **[Screen Transition Diagram](./docs/screen-transition-diagram.md)** - Visual navigation flow
+- **[PhotosList Modes](./docs/photoslist-modes-operations.md)** - Photo view modes and operations
+
+### Implementation Guides
+- **[State Management Guide](./docs/guides/state-management-guide.md)** - Custom hooks architecture with React Query-like implementation
+- **[OAuth Token Management](./docs/guides/oauth-token-management.md)** - Secure token storage, automatic refresh, and testing tools
+- **[Configuration Guide](./docs/guides/configuration.md)** - Application settings and preferences
+- **[Image Editor](./docs/guides/image-editor.md)** - CSS-based photo editing features
+- **[Troubleshooting Guide](./docs/guides/troubleshooting-guide.md)** - Debug common issues
+
+### Feature-Specific Documentation
+- **[Google Photos Integration](./docs/google-photos-integration.md)** - OAuth flow and upload features
+- **[Job Queue System](./docs/job-queue-system.md)** - Asynchronous background processing with enhanced retry
 
 ## 🎯 Use Cases
 
@@ -266,6 +283,7 @@ PhotoClove includes a comprehensive logging system for troubleshooting and devel
 - **Advanced Filtering**: Filter logs by level, component, source, time range, and keywords
 - **Export Functionality**: Download logs as JSON for external analysis
 - **Performance Tracking**: Monitor search performance and system operations
+- **Log Storage**: Backend logs stored in `~/.local/share/photoclove/logs/` (Linux) or equivalent platform directory
 
 Access LogViewer from any page using the keyboard shortcut or Help → "Show log" menu.
 
@@ -282,6 +300,13 @@ We welcome contributions! Here's how to get started:
 ### Development Workflow
 
 PhotoClove uses a structured development workflow with the `improvement/` directory for task management. See [`CLAUDE.md`](./CLAUDE.md) for AI-assisted development guidelines.
+
+### Code Guidelines
+- Follow existing code patterns and conventions
+- Use structured logging (logger service in frontend, log macros in backend)
+- Maintain Domain-Driven Design principles
+- Keep files under 1000 lines
+- Add tests for new features
 
 ## 📋 Roadmap
 
@@ -304,9 +329,11 @@ PhotoClove uses a structured development workflow with the `improvement/` direct
 - [x] **Album Support**: Create custom photo collections with descriptions, cover photos, and ordering
 - [x] **Tag System**: Color-coded taggable labels with search integration and bulk management
 
-### Current Focus
+### Current Focus 🎯
+- [ ] **Collection Migration Completion**: Finalize unified collection system across all view modes
 - [ ] **Enhanced Error Handling**: Improve user feedback for failed operations
 - [ ] **Performance Optimization**: Further optimize large collection handling
+- [ ] **Database Migrations**: Automatic schema updates on app startup
 
 ### Future Plans
 - [ ] **Cloud Storage**: Amazon Photos integration
@@ -362,14 +389,15 @@ See [`CHANGES.md`](./CHANGES.md) for detailed version history and recent updates
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. Copyright (c) 2023 Atsushi Kato - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- **Tauri Team** for the excellent desktop framework
-- **React Team** for the robust UI library
-- **Rust Community** for the amazing ecosystem
-- **Contributors** who help make PhotoClove better
+- **[Tauri Team](https://tauri.app)** for the excellent desktop framework
+- **[React Team](https://react.dev)** for the robust UI library
+- **[Rust Community](https://www.rust-lang.org)** for the amazing ecosystem
+- **[Contributors](https://github.com/ktat/photoclove/contributors)** who help make PhotoClove better
+- **All open source libraries** that make this project possible
 
 ---
 

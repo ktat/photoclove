@@ -702,6 +702,12 @@ button:hover {
   box-sizing: border-box;
 }
 
+/* Ensure wrapper respects container constraints */
+#imageWrapper {
+  max-width: 100%;
+  max-height: 100%;
+}
+
 .selectedPhotos li {
   list-style: none;
 }
@@ -1084,6 +1090,70 @@ div.dateListLoading-crub {
   display: inline-block;
   font-size: 7px;
   animation: date-list-loader 0.8s linear infinite;
+}
+
+/* Date List Filter Controls */
+.dateListFilters select {
+  background-color: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 11px;
+  padding: 2px 4px;
+}
+
+.dateListFilters select:focus {
+  outline: none;
+  border-color: #646cff;
+}
+
+.dateListFilters button {
+  background-color: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.dateListFilters button:hover {
+  background-color: var(--bg);
+  border-color: #646cff;
+}
+
+/* Hierarchical date view styling */
+.dateList .hierarchical-year {
+  font-weight: bold;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.dateList .hierarchical-month {
+  font-weight: 600;
+  color: #aaa;
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+
+.dateList .hierarchical-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-left: 0;
+  padding-left: 0;
+}
+
+.dateList .hierarchical-day {
+  font-size: 11px;
+  padding: 2px 4px;
+  display: inline-block;
+  border-radius: 3px;
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+}
+
+.dateList .hierarchical-day:hover {
+  background-color: var(--bg-elevated);
 }
 
 #photo img {

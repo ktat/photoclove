@@ -9,4 +9,5 @@ pub struct PhotoInfo {
     pub comment: String,
     pub css_style: Option<String>,
     pub google_photo_url: Option<String>,
+    pub tags: Option<Vec<(i32, String, Option<String>)>>,
 }

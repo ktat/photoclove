@@ -2,7 +2,6 @@ import React from 'react';
 import { ErrorProvider } from '../context/ErrorContext.jsx';
 import { PhotoProvider } from '../context/PhotoContext.jsx';
 import { UIProvider } from '../context/UIContext.jsx';
-import { ImportProvider } from '../context/ImportContext.jsx';
 import ErrorBoundary from '../components/ErrorBoundary.jsx';
 
 const AppProviders = ({ children }) => {
@@ -11,9 +10,7 @@ const AppProviders = ({ children }) => {
       <ErrorBoundary>
         <UIProvider>
           <PhotoProvider>
-            <ImportProvider>
-              {children}
-            </ImportProvider>
+            {children}
           </PhotoProvider>
         </UIProvider>
       </ErrorBoundary>

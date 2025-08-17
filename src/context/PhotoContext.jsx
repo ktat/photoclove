@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { Photo } from '../domain/Photo.js';
 
 const PhotoContext = createContext();
 
@@ -74,6 +75,7 @@ export const PhotoProvider = ({ children }) => {
     }, []),
 
     updateAlbumPhotos: useCallback((photos) => {
+      // photos should already be in JSON format from loadAlbumPhotos
       setAlbumPhotos(photos);
     }, []),
 

@@ -20,6 +20,11 @@ photoclove/
 ├── 📄 CLAUDE.md               # Development workflow instructions
 ├── 📄 README.md               # Project documentation
 └── 📄 LICENSE                 # Project license
+
+## File Location Quick Reference
+
+| What you're looking for | File Path |
+|-------------------------|-----------|
 ```
 
 ## Frontend Source Code (`src/`)
@@ -200,19 +205,23 @@ src-tauri/
 - **`config.rs`**: Application configuration settings and preferences
 - **`photo.rs`**: Photo object with file information, EXIF data, and metadata
 - **`photo_meta.rs`**: Photo metadata like ratings, comments, and user annotations
+- **`photo_collection.rs`**: Unified collection entity for albums and tags
 - **`importer.rs`**: Import operation state and progress tracking
 - **`job_queue.rs`**: Background job definitions and status tracking
+- **`google_photos.rs`**: Google Photos integration entity
 - **`trash.rs`**: Deleted photo management
 
 **Domain Services** (`domain_service/`): Business logic operations
 - **`photo_service.rs`**: Photo processing (thumbnails, EXIF extraction, transformations)
 - **`file_service.rs`**: File system operations (copy, move, delete)
 - **`job_queue_service.rs`**: Asynchronous job processing and queue management
+- **`token_storage_service.rs`**: OAuth token management with keyring storage
+- **`logging_service.rs`**: Structured logging service with correlation tracking
 - **`dir_service.rs`**: Directory scanning and organization
 
 **Repositories** (`repository/`): Data access and persistence
 - **`db/directory.rs`**: Filesystem-based photo storage and retrieval
-- **`meta_db/sqlite.rs`**: SQLite database for metadata, ratings, and search indices
+- **`meta_db/sqlite.rs`**: SQLite database for metadata, unified collections, and search indices
 - **`config/json.rs`**: JSON-based configuration file management
 
 **Value Objects** (`value/`): Immutable data types
@@ -236,14 +245,11 @@ docs/
 ├── 📄 component-structure.md   # React component hierarchy and HTML structure
 ├── 📄 feature-documentation-index.md # Reverse index for finding documentation
 ├── 📄 source-tree.md           # This file - source code organization
-├── 📄 authentication.md        # Firebase authentication setup
-├── 📄 conifg.md               # Configuration management
+├── 📁 guides/                  # Step-by-step guides and tutorials
 ├── 📄 database-schema.md       # SQLite database schema
 ├── 📄 google-photos-integration.md # Google Photos API integration
-├── 📄 image-editor.md          # Photo editing features
 ├── 📄 job-queue-system.md      # Background job processing
-├── 📄 tsv-migration.md         # Data migration utilities
-└── 📄 uuid-import.md           # UUID-based file organization
+└── 📄 terms.md                 # Feature terminology and mappings
 ```
 
 ## Static Assets and Configuration
@@ -317,4 +323,30 @@ improvement/
 3. **Caching Strategy**: Multiple layers (browser, filesystem thumbnails, database indices)
 4. **Lazy Loading**: Photos and thumbnails loaded on-demand
 
-This source tree structure reflects a well-organized, scalable application with clear separation of concerns and modern development practices. The codebase is designed for maintainability, testability, and extensibility.
+| Main App Component | `src/App.jsx` |
+| Photo Grid Display | `src/App/PhotosList.jsx` |
+| Full Screen Photo Viewer | `src/App/PhotosList/PhotosListMini.jsx` |
+| Photo Editor | `src/App/PhotosList/PhotoOption/PhotoEditor.jsx` |
+| Tag Components | `src/components/Tag*.jsx` |
+| Unified Collection Service | `src/services/UnifiedCollectionService.js` |
+| Unified Photo Collection Domain | `src/domain/UnifiedPhotoCollection.js` |
+| Search Tools Container | `src/components/SearchTools.jsx` |
+| Advanced Filters | `src/components/AdvancedFilters.jsx` |
+| ViewMode DDD Value Object | `src/domain/ViewMode.js` |
+| ViewMode React Hook | `src/hooks/useViewModeObject.js` |
+| PhotosList State Hooks | `src/hooks/usePhotosListState.js` |
+| Debug Log Viewer | `src/App/LogViewer.jsx` |
+| Logger Service | `src/services/LoggerService.js` |
+| Photo Cache Service | `src/services/PhotoCacheService.js` |
+| Date Calendar & Recent Photos | `src/App/DateList.jsx` |
+| Tauri Commands | `src-tauri/src/lib.rs` |
+| Unified Collection Entity | `src-tauri/src/entity/photo_collection.rs` |
+| Job Queue Service | `src-tauri/src/domain_service/job_queue_service.rs` |
+| OAuth Token Management | `src-tauri/src/domain_service/token_storage_service.rs` |
+| Google Photos Integration | `src-tauri/src/entity/google_photos.rs` |
+| Logging Service | `src-tauri/src/domain_service/logging_service.rs` |
+| Database Operations | `src-tauri/src/repository/meta_db/sqlite.rs` |
+| Configuration Entity | `src-tauri/src/entity/config.rs` |
+| Photo Entity | `src-tauri/src/entity/photo.rs` |
+
+This source tree structure reflects a well-organized, scalable application with clear separation of concerns and modern development practices including unified collection system, Domain-Driven Design, and comprehensive logging. The codebase is designed for maintainability, testability, and extensibility.

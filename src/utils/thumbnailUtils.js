@@ -1,6 +1,7 @@
 /**
  * Thumbnail utility functions for handling thumbnail operations
  */
+import { logger } from '../services/LoggerService.js';
 
 /**
  * Extract UUID from file path for thumbnail generation
@@ -113,7 +114,7 @@ export const checkThumbnailExists = async (filePath, thumbnailStore) => {
     // For now, return true and let the image loading handle errors
     return true;
   } catch (error) {
-    console.warn('Error checking thumbnail existence:', error);
+    logger.warn('thumbnailUtils', 'thumbnail_check_error', 'Error checking thumbnail existence', { filePath, thumbnailStore, error: error.message });
     return false;
   }
 };

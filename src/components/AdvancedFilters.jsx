@@ -49,7 +49,13 @@ const AdvancedFilters = ({
   useEffect(() => {
     const loadTags = async () => {
       try {
-        const tags = await invoke('get_all_tags');
+        const tagsResult = await invoke('get_photos_unified', {
+          request: {
+            type: 'search',
+            search_type: 'all_tags'
+          }
+        });
+        const tags = JSON.parse(tagsResult);
         const formattedTags = tags.map(([id, name, color]) => ({ id, name, color }));
         setAvailableTags(formattedTags);
       } catch (error) {

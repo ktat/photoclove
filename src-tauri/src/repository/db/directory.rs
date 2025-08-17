@@ -103,12 +103,16 @@ impl RepositoryDB for Directory {
         if has_opt {
             conf = opt_conf.unwrap();
         }
-        
+
         // Parse extension filter
         let extension_filters: Vec<&str> = if extension == "all" || extension.is_empty() {
             vec![]
         } else {
-            extension.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect()
+            extension
+                .split(',')
+                .map(|s| s.trim())
+                .filter(|s| !s.is_empty())
+                .collect()
         };
         if meta_data.keys().len() == 0 {
             let files = dir_service::find_files(&dir);
@@ -116,11 +120,14 @@ impl RepositoryDB for Directory {
                 // Apply extension filter
                 if !extension_filters.is_empty() {
                     let file_extension = f.path.split('.').last().unwrap_or("").to_lowercase();
-                    if !extension_filters.iter().any(|&ext| ext.to_lowercase() == file_extension) {
+                    if !extension_filters
+                        .iter()
+                        .any(|&ext| ext.to_lowercase() == file_extension)
+                    {
                         continue;
                     }
                 }
-                
+
                 let mut p: photo::Photo;
                 if has_opt {
                     p = photo::Photo::new(f.clone(), Option::Some(conf.clone()));
@@ -156,11 +163,14 @@ impl RepositoryDB for Directory {
                 if hasComment && md.comment.comment().len() == 0 {
                     continue;
                 }
-                
+
                 // Apply extension filter
                 if !extension_filters.is_empty() {
                     let file_extension = f.split('.').last().unwrap_or("").to_lowercase();
-                    if !extension_filters.iter().any(|&ext| ext.to_lowercase() == file_extension) {
+                    if !extension_filters
+                        .iter()
+                        .any(|&ext| ext.to_lowercase() == file_extension)
+                    {
                         continue;
                     }
                 }
@@ -185,6 +195,8 @@ impl RepositoryDB for Directory {
                 // Set star and comment from metadata
                 p.set_star(photo_meta.star.star());
                 p.set_comment(photo_meta.comment.comment());
+                // Set tags from metadata
+                p.set_tags_from_string(photo_meta.tags_string());
                 photos.photos.push(p)
             }
         }
@@ -245,12 +257,16 @@ impl RepositoryDB for Directory {
         if has_opt {
             conf = opt_conf.unwrap();
         }
-        
+
         // Parse extension filter
         let extension_filters: Vec<&str> = if extension == "all" || extension.is_empty() {
             vec![]
         } else {
-            extension.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect()
+            extension
+                .split(',')
+                .map(|s| s.trim())
+                .filter(|s| !s.is_empty())
+                .collect()
         };
 
         // Use metadata to get all photos (recent photos are already sorted by DB query)
@@ -262,11 +278,14 @@ impl RepositoryDB for Directory {
             if hasComment && md.comment.comment().len() == 0 {
                 continue;
             }
-            
+
             // Apply extension filter
             if !extension_filters.is_empty() {
                 let file_extension = f.split('.').last().unwrap_or("").to_lowercase();
-                if !extension_filters.iter().any(|&ext| ext.to_lowercase() == file_extension) {
+                if !extension_filters
+                    .iter()
+                    .any(|&ext| ext.to_lowercase() == file_extension)
+                {
                     continue;
                 }
             }
@@ -289,6 +308,8 @@ impl RepositoryDB for Directory {
             p.set_css_style(photo_meta.photo().css_style.clone());
             p.set_star(photo_meta.star.star());
             p.set_comment(photo_meta.comment.comment());
+            // Set tags from metadata
+            p.set_tags_from_string(photo_meta.tags_string());
             photos.photos.push(p)
         }
 

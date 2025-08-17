@@ -41,15 +41,11 @@ function PhotoDisplay(props) {
         document.querySelector("#dummy-for-focus").focus();
 
         const resizeHandler = () => {
-            // Recalculate image sizing on window resize
+            // Recalculate wrapper sizing on window resize
             if (width > 0 && height > 0) {
                 // Small delay to ensure container has updated dimensions
                 setTimeout(() => {
-                    props.SetImgStyle(
-                        { opacity: 1, transition: "opacity 0.3s" },
-                        width,
-                        height
-                    );
+                    handleImgLoad(null, 0); // Recalculate wrapper size
                 }, 50);
             }
         };
@@ -63,7 +59,7 @@ function PhotoDisplay(props) {
     }, []);
 
     useEffect((e) => {
-        handleImgLoad();
+        handleImgLoad(null, 0);
     }, [props.photosListMiniClosed])
 
     useEffect((e) => {
@@ -129,35 +125,80 @@ function PhotoDisplay(props) {
         let zoom = props.photoZoom === "auto" ? 100 : parseInt(props.photoZoom.replace("%", ""));
 
         const imgTag = document.querySelector(".photo img");
-        const display = e.currentTarget.parentElement;
+        const wrapperDiv = document.querySelector('#imageWrapper');
+        
+        if (!imgTag || !wrapperDiv) {
+            setScrollLock(false);
+            return;
+        }
 
-        const x = e.clientX - imgTag.offsetLeft + display.scrollLeft;
-        const y = e.clientY - imgTag.offsetTop + display.scrollTop;
-
-        const xPos = x / imgTag.width;
-        const yPos = y / imgTag.height;
-
+        // Get current zoom scale before update
+        const currentZoom = zoom;
+        
+        // Calculate dynamic zoom speed based on current zoom level
+        // Base speed increases with zoom level for more natural feel
+        const baseSpeed = 10;
+        const zoomFactor = Math.max(1, currentZoom / 100);
+        const zoomSpeed = Math.round(baseSpeed * zoomFactor);
+        
+        // Update zoom level with dynamic speed
         if (e.deltaY > 0) {
-            zoom -= 5;
+            zoom -= zoomSpeed;
             if (zoom <= 100) {
                 zoom = 100;
             }
         } else if (e.deltaY < 0) {
-            zoom += 5;
+            zoom += zoomSpeed;
+        }
+
+        // If zoom hasn't changed, return
+        if (zoom === currentZoom) {
+            setScrollLock(false);
+            return;
         }
 
         props.setPhotoZoom(zoom + "%");
 
-        const sTop = (imgTag.height * yPos - display.clientHeight * yPos);
-        const sLeft = (imgTag.width * xPos - display.clientWidth * xPos);
-        display.scrollTop = sTop - sTop % (50 * zoom / 200);
-        display.scrollLeft = sLeft - sLeft % (50 * zoom / 200);
+        // Get wrapper base dimensions (100% size)
+        const wrapperWidth = parseFloat(wrapperDiv.style.width);
+        const wrapperHeight = parseFloat(wrapperDiv.style.height);
+        
+        // Calculate old and new dimensions
+        const oldScale = currentZoom / 100;
+        const newScale = zoom / 100;
+        
+        const oldWidth = wrapperWidth * oldScale;
+        const oldHeight = wrapperHeight * oldScale;
+        const newWidth = wrapperWidth * newScale;
+        const newHeight = wrapperHeight * newScale;
 
-        if (props.currentPhotoSize[1] && props.currentPhotoSize[1] > props.currentPhotoSize[0]) {
-            props.SetImgStyle({ minHeight: zoom + "%", opacity: '100%' });
-        } else {
-            props.SetImgStyle({ minWidth: zoom + "%", opacity: '100%' });
-        }
+        // Get mouse position relative to image
+        const rect = imgTag.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        // Calculate position ratios
+        const xRatio = x / oldWidth;
+        const yRatio = y / oldHeight;
+
+        // Apply new size
+        props.SetImgStyle({ 
+            width: newWidth + 'px',
+            height: newHeight + 'px',
+            opacity: '100%' 
+        });
+
+        // Calculate scroll to keep mouse point stable
+        setTimeout(() => {
+            const newX = newWidth * xRatio;
+            const newY = newHeight * yRatio;
+            
+            const deltaX = newX - x;
+            const deltaY = newY - y;
+            
+            wrapperDiv.scrollLeft += deltaX;
+            wrapperDiv.scrollTop += deltaY;
+        }, 0);
 
         setTimeout(() => { setScrollLock(false) }, 100);
         window.onscroll = function () { };
@@ -167,14 +208,12 @@ function PhotoDisplay(props) {
         if (dragPhotoInfo.is_dragging) {
             let x = e.clientX - dragPhotoInfo.x;
             let y = e.clientY - dragPhotoInfo.y;
-            let display = e.currentTarget.parentElement;
+            // Use the wrapper div as the scrollable container
+            let display = document.querySelector('#imageWrapper') || e.currentTarget.parentElement;
             display.scrollTop -= y / 20;
             display.scrollLeft -= x / 20;
         } else {
             /*
-            console.log(e.clientY - document.getElementsByClassName("photo")[0].children[0].offsetTop);
-            console.log(e.clientX - document.getElementsByClassName("photo")[0].children[0].offsetLeft);
-            console.log([e.clientX, e.clientY])
             */
         }
     }
@@ -184,8 +223,8 @@ function PhotoDisplay(props) {
         setDragPhotoInfo({});
     }
 
-    const handleImgLoad = (e) => {
-        if (e !== undefined) {
+    const handleImgLoad = (e, retryCount = 0) => {
+        if (e !== undefined && e !== null) {
             height = e.naturalHeight;
             width = e.naturalWidth;
         }
@@ -195,9 +234,99 @@ function PhotoDisplay(props) {
         const imgHeight = e?.naturalHeight || height;
 
         if (imgWidth > 0 && imgHeight > 0) {
+            // Calculate wrapper size to contain whole image within #photo container
+            const photoContainer = document.querySelector('#photo');
+            const wrapperDiv = document.querySelector('#imageWrapper');
+            
+            if (photoContainer && wrapperDiv) {
+                let availableWidth = photoContainer.clientWidth - 40; // Account for padding
+                let availableHeight = photoContainer.clientHeight - 40; // Account for padding
+                
+                // Handle case where container dimensions are not ready on first load
+                if ((availableWidth <= 0 || availableHeight <= 0) && retryCount < 3) {
+                    // Retry after a small delay to allow container to render (max 3 attempts)
+                    setTimeout(() => {
+                        handleImgLoad(e, retryCount + 1);
+                    }, 100);
+                    // Set wrapper to reasonable default size as fallback
+                    const fallbackWidth = Math.min(imgWidth, 800);
+                    const fallbackHeight = Math.min(imgHeight, 600);
+                    wrapperDiv.style.width = fallbackWidth + 'px';
+                    wrapperDiv.style.height = fallbackHeight + 'px';
+                    wrapperDiv.style.maxWidth = '100%';
+                    wrapperDiv.style.maxHeight = '100%';
+                    wrapperDiv.style.overflow = 'hidden';
+                    console.log('Using fallback wrapper size (retry ' + (retryCount + 1) + '):', { fallbackWidth, fallbackHeight });
+                    return;
+                }
+                
+                // Use fallback dimensions if still no container size after retries
+                if (availableWidth <= 0 || availableHeight <= 0) {
+                    availableWidth = 800;
+                    availableHeight = 600;
+                    console.log('Using emergency fallback dimensions:', { availableWidth, availableHeight });
+                }
+                
+                const imageAspectRatio = imgWidth / imgHeight;
+                const availableAspectRatio = availableWidth / availableHeight;
+                
+                let fittedWidth, fittedHeight;
+                
+                if (imageAspectRatio > availableAspectRatio) {
+                    // Image is wider relative to available space - fit to width
+                    fittedWidth = Math.min(imgWidth, availableWidth);
+                    fittedHeight = fittedWidth / imageAspectRatio;
+                } else {
+                    // Image is taller relative to available space - fit to height
+                    fittedHeight = Math.min(imgHeight, availableHeight);
+                    fittedWidth = fittedHeight * imageAspectRatio;
+                }
+                
+                // Set the wrapper to calculated fixed size
+                wrapperDiv.style.width = fittedWidth + 'px';
+                wrapperDiv.style.height = fittedHeight + 'px';
+                wrapperDiv.style.overflow = 'hidden';
+                
+                console.log('Calculated wrapper size:', { fittedWidth, fittedHeight, imgWidth, imgHeight, availableWidth, availableHeight });
+            }
+            
             // Always apply styling immediately - no container dimension checks needed
+            // Reset to wrapper size when loading new image using fixed pixel sizes
+            let resetStyle;
+            if (wrapperDiv && wrapperDiv.style.width && wrapperDiv.style.height) {
+                const wrapperWidth = parseFloat(wrapperDiv.style.width);
+                const wrapperHeight = parseFloat(wrapperDiv.style.height);
+                if (wrapperWidth > 0 && wrapperHeight > 0) {
+                    resetStyle = { 
+                        opacity: 1, 
+                        transition: "opacity 0.3s", 
+                        width: wrapperWidth + 'px', 
+                        height: wrapperHeight + 'px',
+                        maxWidth: 'none',
+                        maxHeight: 'none'
+                    };
+                } else {
+                    resetStyle = { 
+                        opacity: 1, 
+                        transition: "opacity 0.3s", 
+                        width: '100%', 
+                        height: '100%',
+                        maxWidth: '100%',
+                        maxHeight: '100%'
+                    };
+                }
+            } else {
+                resetStyle = { 
+                    opacity: 1, 
+                    transition: "opacity 0.3s", 
+                    width: '100%', 
+                    height: '100%',
+                    maxWidth: '100%',
+                    maxHeight: '100%'
+                };
+            }
             props.SetImgStyle(
-                { opacity: 1, transition: "opacity 0.3s" },
+                resetStyle,
                 imgWidth,
                 imgHeight
             );
@@ -229,29 +358,40 @@ function PhotoDisplay(props) {
                 Open with other software: <a href="#" onClick={(e) => openUrl(fileUrl(props.currentPhotoPath))}>{props.currentPhotoPath}</a>
             </div>
             {props.currentPhotoPath && !props.currentPhotoPath.match(/\.(mp4|webm)$/i) &&
-                <img id="photoImgTag" className={photoDisplayImgClass}
-                    loading="eager"
-                    onDoubleClick={(e) => props.togglePhotoSelected()}
-                    onError={(e) => {
-                        e.target.src = "/img_error.png";
-                    }}
-                    style={{
-                        ...props.imgStyle,
-                        ...parseCssStyle(props.currentPhotoCssStyle)
-                    }}
-                    onLoad={(e) => {
-                        console.log('=== PHOTODISPLAY DEBUG ===');
-                        console.log('currentPhotoCssStyle:', props.currentPhotoCssStyle);
-                        console.log('parsed CSS style:', parseCssStyle(props.currentPhotoCssStyle));
-                        console.log('imgStyle:', props.imgStyle);
-                        handleImgLoad(e.target);
-                    }}
-                    src={(props.imgCacheMap[props.currentPhotoPath] && props.imgCacheMap[props.currentPhotoPath][0]) || convertFileSrc(props.currentPhotoPath)}
-                    onMouseDown={(e) => dragPhotoStart(e)}
-                    onMouseMove={(e) => dragPhoto(e)}
-                    onMouseUp={(e) => dragPhotoEnd(e)}
-                    onWheel={(e) => photoScroll(e)}
-                />
+                <div id="imageWrapper" style={{ overflow: 'auto', alignItems: 'center', justifyContent: 'center', maxWidth: '100%', maxHeight: '100%' }}>
+                    <img id="photoImgTag" className={photoDisplayImgClass}
+                        loading="eager"
+                        onDoubleClick={(e) => props.togglePhotoSelected()}
+                        onError={(e) => {
+                            // Only handle error if not already showing error image
+                            if (e.target.src.includes('/img_error.png')) {
+                                return;
+                            }
+                            
+                            // Try thumbnail as fallback if main image fails and we have a thumbnail
+                            if (props.thumbnailSrc && !e.target.dataset.triedThumbnail) {
+                                e.target.dataset.triedThumbnail = "true";
+                                const thumbnailSrc = convertFileSrc(props.thumbnailSrc);
+                                e.target.src = thumbnailSrc;
+                            } else {
+                                // Final fallback: show error image
+                                e.target.src = "/img_error.png";
+                            }
+                        }}
+                        style={{
+                            ...props.imgStyle,
+                            ...parseCssStyle(props.currentPhotoCssStyle)
+                        }}
+                        onLoad={(e) => {
+                            handleImgLoad(e.target);
+                        }}
+                        src={(props.imgCacheMap[props.currentPhotoPath] && props.imgCacheMap[props.currentPhotoPath][0]) || convertFileSrc(props.currentPhotoPath)}
+                        onMouseDown={(e) => dragPhotoStart(e)}
+                        onMouseMove={(e) => dragPhoto(e)}
+                        onMouseUp={(e) => dragPhotoEnd(e)}
+                        onWheel={(e) => photoScroll(e)}
+                    />
+                </div>
             }
         </div>
     );

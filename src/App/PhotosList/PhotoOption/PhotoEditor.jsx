@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { logger } from '../../../services/LoggerService.js';
 import fileUrl from '../../../PathUtil.jsx';
 
 function PhotoEditor(props) {
@@ -41,11 +42,6 @@ function PhotoEditor(props) {
             // Load saved CSS style for this photo
             invoke("get_css_style", { photoPath: props.currentPhotoPath })
                 .then((savedCssStyle) => {
-                    // console.log('=== CSS LOADING DEBUG ===');
-                    // console.log('Photo path:', props.currentPhotoPath);
-                    // console.log('Raw saved CSS style:', savedCssStyle);
-                    // console.log('CSS style length:', savedCssStyle ? savedCssStyle.length : 0);
-                    // console.log('CSS style trimmed:', savedCssStyle ? savedCssStyle.trim() : 'null');
                     
                     if (savedCssStyle && savedCssStyle.trim() !== '') {
                         // Parse the saved CSS and update editor values
@@ -54,11 +50,9 @@ function PhotoEditor(props) {
                         
                         // Update UI elements with saved values
                         setTimeout(() => {
-                            // console.log('Updating UI elements with saved values');
                             updateUIElementsWithValues(editorValues, savedCssStyle);
                             
                             // Note: Don't apply temp styles here - PhotoDisplay will apply saved CSS via props
-                            // console.log('Saved styles will be applied by PhotoDisplay via props');
                         }, 200);
                     } else {
                         // No saved CSS, use default values
@@ -79,7 +73,7 @@ function PhotoEditor(props) {
                     }
                 })
                 .catch((error) => {
-                    console.error('Failed to load CSS style:', error);
+                    logger.error('PhotoEditor', 'css_load_failed', 'Failed to load CSS style', { photoPath: props.currentPhotoPath, error: error.message });
                     // Fallback to reset editor styles
                     const defaultValues = {
                         rotate: 0,
@@ -112,18 +106,15 @@ function PhotoEditor(props) {
         if (props.currentPhotoPath) {
             // Ensure CSS preview is populated
             setTimeout(() => {
-                // console.log('=== EDITOR OPEN DEBUG ===');
-                // console.log('Current editorStyles:', editorStyles);
                 
                 const css = generateCSSFromValues(editorStyles);
-                // console.log('Generated CSS from editorStyles:', css);
                 
                 const previewTextarea = document.getElementById('css-preview-text');
                 if (previewTextarea) {
                     previewTextarea.value = css;
-                    console.log('Updated CSS preview:', css);
+                    logger.debug('PhotoEditor', 'css_preview_updated', 'CSS preview updated', { css });
                 } else {
-                    console.warn('CSS preview textarea not found');
+                    logger.warn('PhotoEditor', 'css_preview_missing', 'CSS preview textarea not found');
                 }
                 
                 // Also ensure UI elements reflect current editorStyles
@@ -134,22 +125,21 @@ function PhotoEditor(props) {
 
     // Helper function to update CSS preview
     function updateUIElementsWithValues(editorValues, cssStyle) {
-        console.log('Updating CSS preview with values:', editorValues);
+        logger.debug('PhotoEditor', 'update_css_preview', 'Updating CSS preview with values', { editorValues });
         
         // Update CSS preview with the actual saved CSS
         const previewTextarea = document.getElementById('css-preview-text');
         if (previewTextarea) {
             previewTextarea.value = cssStyle || '';
-            console.log('Updated CSS preview with:', cssStyle);
+            logger.debug('PhotoEditor', 'css_preview_set', 'CSS preview textarea updated', { cssStyle });
         } else {
-            console.warn('CSS preview textarea not found');
+            logger.warn('PhotoEditor', 'css_preview_not_found', 'CSS preview textarea not found');
         }
     }
     
     // Function to parse CSS string and extract editor values
     function parseCssToEditorValues(cssString) {
-        console.log('=== PARSING CSS ===');
-        console.log('Input CSS string:', cssString);
+        logger.debug('PhotoEditor', 'parse_css_start', 'Parsing CSS string', { cssString });
         
         const defaultValues = {
             rotate: 0,
@@ -162,7 +152,7 @@ function PhotoEditor(props) {
         };
 
         if (!cssString || cssString.trim() === '') {
-            console.log('CSS string is empty, returning defaults');
+            logger.debug('PhotoEditor', 'parse_css_empty', 'CSS string is empty, returning defaults');
             return defaultValues;
         }
 
@@ -232,7 +222,7 @@ function PhotoEditor(props) {
             };
         }
         
-        console.log('Parsed values:', values);
+        logger.debug('PhotoEditor', 'parse_css_complete', 'CSS parsing complete', { values });
         return values;
     }
 
@@ -257,7 +247,7 @@ function PhotoEditor(props) {
             const previewTextarea = document.getElementById('css-preview-text');
             if (previewTextarea) {
                 previewTextarea.value = css;
-                console.log('Updated CSS preview in updateStyle:', css);
+                logger.debug('PhotoEditor', 'update_style_preview', 'CSS preview updated in updateStyle', { css });
             }
             
             // Apply to current image immediately with new values
@@ -329,13 +319,12 @@ function PhotoEditor(props) {
     }
 
     function applyTempStyleWithValues(styles) {
-        console.log('=== APPLYING TEMP STYLES ===');
-        console.log('Styles to apply:', styles);
+        logger.debug('PhotoEditor', 'apply_temp_styles', 'Applying temporary styles', { styles });
         const { rotate, brightness, contrast, saturation, hue, scale, crop } = styles;
         
         // Store and apply styles to main image
         const mainImage = document.querySelector('#photoImgTag');
-        console.log('Main image element found:', !!mainImage);
+        logger.debug('PhotoEditor', 'main_image_check', 'Main image element found', { found: !!mainImage });
         if (mainImage) {
             // Store original styles immediately if not stored
             if (!originalStyles.has('main-image')) {
@@ -468,7 +457,7 @@ function PhotoEditor(props) {
             
             props.addFooterMessage('editor', 'Style applied successfully', false, 3000);
         } catch (error) {
-            console.error('Failed to apply style:', error);
+            logger.error('PhotoEditor', 'style_apply_failed', 'Failed to apply style', { error: error.message });
             props.addFooterMessage('editor', 'Failed to apply style', false, 3000);
         }
     }
@@ -508,7 +497,12 @@ function PhotoEditor(props) {
                 const scale = Math.min(maxSize / width, maxSize / height);
                 width = Math.floor(width * scale);
                 height = Math.floor(height * scale);
-                console.log(`Resizing image from ${mainImage.naturalWidth}x${mainImage.naturalHeight} to ${width}x${height}`);
+                logger.info('PhotoEditor', 'resize_image', 'Resizing image', {
+                    originalWidth: mainImage.naturalWidth,
+                    originalHeight: mainImage.naturalHeight,
+                    newWidth: width,
+                    newHeight: height
+                });
             }
             
             canvas.width = width;
@@ -648,7 +642,7 @@ function PhotoEditor(props) {
                                 }
                                 
                             } catch (error) {
-                                console.error('Failed to save styled copy:', error);
+                                logger.error('PhotoEditor', 'save_styled_copy_failed', 'Failed to save styled copy', { error: error.message });
                                 props.addFooterMessage('editor', `Failed to create styled copy: ${error}`, false, 5000);
                             }
                         };
@@ -661,7 +655,7 @@ function PhotoEditor(props) {
                         reader.readAsDataURL(blob);
                         
                     } catch (error) {
-                        console.error('Failed to save styled copy:', error);
+                        logger.error('PhotoEditor', 'save_styled_copy_failed', 'Failed to save styled copy', { error: error.message });
                         props.addFooterMessage('editor', `Failed to create styled copy: ${error}`, false, 5000);
                     }
                 }, 'image/jpeg', 0.95);
@@ -675,7 +669,7 @@ function PhotoEditor(props) {
             tempImg.src = mainImage.src;
             
         } catch (error) {
-            console.error('Failed to save styled copy:', error);
+            logger.error('PhotoEditor', 'save_styled_copy_failed', 'Failed to save styled copy', { error: error.message });
             props.addFooterMessage('editor', `Failed to create styled copy: ${error}`, false, 5000);
         }
     }
@@ -920,19 +914,19 @@ function PhotoEditor(props) {
                                     try {
                                         await invoke('open_file_in_default_app', { filePath: fullPath });
                                     } catch (error) {
-                                        console.error('Failed to open downloaded file:', error);
+                                        logger.error('PhotoEditor', 'file_open_failed', 'Failed to open downloaded file', { error: error.message });
                                         // Fallback to plugin opener
                                         try {
                                             await openUrl(fileUrl(fullPath));
                                         } catch (fallbackError) {
-                                            console.error('Fallback file opening also failed:', fallbackError);
+                                            logger.error('PhotoEditor', 'fallback_file_open_failed', 'Fallback file opening also failed', { error: fallbackError.message });
                                         }
                                     }
                                 });
                             }
                         }, 100);
                     } catch (error) {
-                        console.error('Failed to get download directory or show notification:', error);
+                        logger.error('PhotoEditor', 'download_notification_failed', 'Failed to get download directory or show notification', { error: error.message });
                         // Fallback to footer message only
                         props.addFooterMessage("download", `Styled image downloaded: ${fileName}`, false, 5000);
                     }
@@ -947,7 +941,7 @@ function PhotoEditor(props) {
             tempImg.src = mainImage.src;
             
         } catch (error) {
-            console.error('Download failed:', error);
+            logger.error('PhotoEditor', 'download_failed', 'Download failed', { error: error.message });
             props.addFooterMessage('editor', 'Download failed: ' + error.message, false, 3000);
         }
     }
@@ -956,14 +950,14 @@ function PhotoEditor(props) {
     function enterCropMode() {
         setCropMode(true);
         setCropSelection({ x: 0, y: 0, width: 100, height: 100 });
-        console.log('Entering crop mode');
+        logger.debug('PhotoEditor', 'crop_mode_enter', 'Entering crop mode');
     }
 
     function exitCropMode() {
         setCropMode(false);
         setCropSelection({ x: 0, y: 0, width: 100, height: 100 });
         setIsDragging(false);
-        console.log('Exiting crop mode');
+        logger.debug('PhotoEditor', 'crop_mode_exit', 'Exiting crop mode');
     }
 
     function applyCrop() {
@@ -1012,14 +1006,14 @@ function PhotoEditor(props) {
     function handleImageMouseDown(e) {
         if (!cropMode) return;
         
-        console.log('Mouse down event in crop mode');
+        logger.debug('PhotoEditor', 'crop_mouse_down', 'Mouse down event in crop mode');
         
         // Get position relative to the overlay element (which covers the image)
         const rect = e.currentTarget.getBoundingClientRect();
         const x = ((e.clientX - rect.left) / rect.width) * 100;
         const y = ((e.clientY - rect.top) / rect.height) * 100;
         
-        console.log('Calculated crop position:', { x, y });
+        logger.debug('PhotoEditor', 'crop_position', 'Calculated crop position', { x, y });
 
         setIsDragging(true);
         setDragStart({ x, y });
@@ -1060,7 +1054,7 @@ function PhotoEditor(props) {
 
     function handleImageMouseUp(e) {
         if (!cropMode) return;
-        console.log('Mouse up event in crop mode');
+        logger.debug('PhotoEditor', 'crop_mouse_up', 'Mouse up event in crop mode');
         setIsDragging(false);
         
         // Prevent default to avoid any interference

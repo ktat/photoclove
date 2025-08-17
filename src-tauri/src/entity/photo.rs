@@ -18,6 +18,7 @@ pub struct Photo {
     pub css_style: Option<String>,
     pub star: Option<i32>,
     pub comment: Option<String>,
+    pub tags: Option<Vec<(i32, String, Option<String>)>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -54,6 +55,7 @@ impl Photo {
             css_style: None,
             star: None,
             comment: None,
+            tags: None,
         }
     }
 
@@ -80,7 +82,7 @@ impl Photo {
             let import_path = self.import_to.clone();
             let thumbnail_store = self.thumbnail_store.clone();
             let thumbnail_path = self.file.path.replace(&import_path, &thumbnail_store);
-            let ext_regex = regex::Regex::new(r"\.JPG$").unwrap();
+            let ext_regex = regex::Regex::new(r"\.(?i)jpe?g$").unwrap();
             let thumbnail_path_ext_changed = ext_regex.replace(&thumbnail_path, ".jpg").to_string();
             if thumbnail_path == thumbnail_path_ext_changed {
                 // maybe movie files
@@ -116,7 +118,11 @@ impl Photo {
         // For paths like "2025-06-20/cb06329f-01ad-4895-842e-dea81d3eaac4", we want just "2025-06-20"
         let date_only = if date_string.contains("/") {
             // Split by "/" and take the first part (the date)
-            date_string.split("/").next().unwrap_or(&date_string).to_string()
+            date_string
+                .split("/")
+                .next()
+                .unwrap_or(&date_string)
+                .to_string()
         } else {
             date_string.to_string()
         };
@@ -148,6 +154,33 @@ impl Photo {
         self.comment = Some(comment);
     }
 
+    pub fn set_tags(&mut self, tags: Vec<(i32, String, Option<String>)>) {
+        self.tags = Some(tags);
+    }
+
+    pub fn set_tags_from_string(&mut self, tags_string: Option<String>) {
+        if let Some(tag_str) = tags_string {
+            if !tag_str.is_empty() {
+                let mut tags = Vec::new();
+                for tag_entry in tag_str.split(',') {
+                    let parts: Vec<&str> = tag_entry.split(':').collect();
+                    if parts.len() >= 2 {
+                        if let Ok(tag_id) = parts[0].parse::<i32>() {
+                            let tag_name = parts[1].to_string();
+                            let tag_color = if parts.len() > 2 && !parts[2].is_empty() {
+                                Some(parts[2].to_string())
+                            } else {
+                                None
+                            };
+                            tags.push((tag_id, tag_name, tag_color));
+                        }
+                    }
+                }
+                self.tags = Some(tags);
+            }
+        }
+    }
+
     pub fn is_meta_empty(&self) -> bool {
         self.is_meta_not_loaded
     }
@@ -165,13 +198,13 @@ impl Photo {
     pub fn created_date(&self) -> date::Date {
         let re = regex::Regex::new(r"^([0-9]{4})/([0-9]{1,2})/([0-9]{1,2}).+$").unwrap();
         let replaced = re.replace(&self.time, "$1-$2-$3").to_string();
-        
+
         // Check if the replacement resulted in a valid date string
         if replaced == self.time || replaced.trim().is_empty() {
             log::error!(target: "photo", "created_date_parse_error; time={}; replaced={}", self.time, replaced);
             panic!("Invalid time format for date parsing: {}", self.time);
         }
-        
+
         date::Date::from_string(&replaced, Option::Some("-"))
     }
 }

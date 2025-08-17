@@ -71,7 +71,13 @@ export const usePhotosListState = (initialFetchConfig = null) => {
   const filteredPhotos = useMemo(() => {
     const photosArray = photoDisplay.photos.photos || [];
     return filters.applyFrontendFilters(photosArray);
-  }, [photoDisplay.photos.photos, filters]);
+  }, [
+    photoDisplay.photos.photos, 
+    filters.filters.star, 
+    filters.filters.hasComment, 
+    filters.filters.extension,
+    filters.applyFrontendFilters
+  ]);
   
   // Reset all state
   const resetAllState = useCallback(() => {

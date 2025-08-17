@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Scrollable from "../Scrollable.jsx";
 import '../scrollable.css';
 import { usePhoto } from "../context/PhotoContext.jsx";
@@ -22,15 +22,184 @@ function DateList(props) {
     const { toggleSearchPage, showPhotosListView, showDatePhotos, showRecentPhotos } = useUI();
     
     const [selectedStyle, setSelectedStyle] = useState({});
+    
+    // Filter and view mode state
+    const [filterYear, setFilterYear] = useState('all');
+    const [filterMonth, setFilterMonth] = useState('all');
+    const [viewMode, setViewMode] = useState('flat'); // 'flat' or 'hierarchical'
+    
+    // Collapse/expand state for hierarchical view
+    const [expandedYears, setExpandedYears] = useState(new Set());
+    const [expandedMonths, setExpandedMonths] = useState(new Set());
 
     useEffect((e) => {
         props.getDates();
     }, [])
 
+    // Get available years and months for filter dropdowns
+    const availableYears = useMemo(() => {
+        const years = [...new Set(dateList.map(d => d.year))].sort((a, b) => b - a);
+        return years;
+    }, [dateList]);
+
+    const availableMonths = useMemo(() => {
+        if (filterYear === 'all') {
+            return [...new Set(dateList.map(d => d.month))].sort((a, b) => a - b);
+        }
+        return [...new Set(dateList.filter(d => d.year === parseInt(filterYear)).map(d => d.month))].sort((a, b) => a - b);
+    }, [dateList, filterYear]);
+
+    // Filter dates based on selected year and month
+    const filteredDateList = useMemo(() => {
+        let filtered = dateList;
+        
+        if (filterYear !== 'all') {
+            filtered = filtered.filter(d => d.year === parseInt(filterYear));
+        }
+        
+        if (filterMonth !== 'all') {
+            filtered = filtered.filter(d => d.month === parseInt(filterMonth));
+        }
+        
+        return filtered;
+    }, [dateList, filterYear, filterMonth]);
+
+    // Group dates hierarchically for hierarchical view
+    const hierarchicalData = useMemo(() => {
+        const grouped = {};
+        
+        filteredDateList.forEach(dateObj => {
+            const { year, month, day } = dateObj;
+            
+            if (!grouped[year]) {
+                grouped[year] = {};
+            }
+            
+            if (!grouped[year][month]) {
+                grouped[year][month] = [];
+            }
+            
+            grouped[year][month].push(day);
+        });
+        
+        // Sort everything
+        const sortedYears = Object.keys(grouped).sort((a, b) => b - a);
+        const result = [];
+        
+        sortedYears.forEach(year => {
+            const sortedMonths = Object.keys(grouped[year]).sort((a, b) => b - a);
+            const yearData = {
+                year: parseInt(year),
+                months: []
+            };
+            
+            sortedMonths.forEach(month => {
+                const sortedDays = grouped[year][month].sort((a, b) => b - a);
+                yearData.months.push({
+                    month: parseInt(month),
+                    days: sortedDays
+                });
+            });
+            
+            result.push(yearData);
+        });
+        
+        return result;
+    }, [filteredDateList]);
+
+
+    // Helper function to handle date click
+    const handleDateClick = (year, month, day) => {
+        const date = new Date(year + '/' + month + '/' + day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        setSelectedStyle({ ["a-" + date]: "#ccc", ["li-" + date]: "square" });
+        logger.info('DateList', 'date_click', 'Date clicked - starting navigation', { date });
+        updateRecentPhotosMode(false);
+        updateCurrentDate(date);
+        updateShowPhotoDisplay({});
+        showDatePhotos(date);
+    };
+
+    // Helper function to get photo count for a date
+    const getPhotoCount = (year, month, day) => {
+        const date = new Date(year + '/' + month + '/' + day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        const key = date.replace(/\//g, "-");
+        return dateNum[key] || 0;
+    };
+
+    // Toggle year expansion
+    const toggleYearExpansion = (year) => {
+        const newExpanded = new Set(expandedYears);
+        if (newExpanded.has(year)) {
+            newExpanded.delete(year);
+            // Also collapse all months in this year
+            const newExpandedMonths = new Set(expandedMonths);
+            hierarchicalData.find(y => y.year === year)?.months.forEach(m => {
+                newExpandedMonths.delete(`${year}-${m.month}`);
+            });
+            setExpandedMonths(newExpandedMonths);
+        } else {
+            newExpanded.add(year);
+        }
+        setExpandedYears(newExpanded);
+    };
+
+    // Toggle month expansion
+    const toggleMonthExpansion = (year, month) => {
+        const key = `${year}-${month}`;
+        const newExpanded = new Set(expandedMonths);
+        if (newExpanded.has(key)) {
+            newExpanded.delete(key);
+        } else {
+            newExpanded.add(key);
+        }
+        setExpandedMonths(newExpanded);
+    };
+
+    // Get total photo count for a year
+    const getYearPhotoCount = (yearData) => {
+        return yearData.months.reduce((total, monthData) => {
+            return total + monthData.days.reduce((monthTotal, day) => {
+                return monthTotal + getPhotoCount(yearData.year, monthData.month, day);
+            }, 0);
+        }, 0);
+    };
+
+    // Get total photo count for a month
+    const getMonthPhotoCount = (yearData, monthData) => {
+        return monthData.days.reduce((total, day) => {
+            return total + getPhotoCount(yearData.year, monthData.month, day);
+        }, 0);
+    };
 
     return (
         <>
-            <p className="dateListTitle">List of Date <a href="#" onClick={() => props.getDates()}>⟳</a></p>
+            {/* Fixed Controls - Outside Scroll Area */}
+            <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '5px', marginBottom: '5px' }}>
+                {/* Recent Photos */}
+                <div style={{ marginBottom: '3px' }}>
+                    <a href="#" 
+                       style={{ 
+                           color: recentPhotosMode ? "#ccc" : "#646cff",
+                           textDecoration: recentPhotosMode ? "underline" : "none"
+                       }} 
+                       onClick={(e) => {
+                           e.preventDefault();
+                           logger.info('DateList', 'recent_photos_click', 'Recent Photos clicked - starting navigation');
+                           setSelectedStyle({});
+                           updateRecentPhotosMode(true);
+                           updateShowPhotoDisplay({});
+                           showRecentPhotos();
+                       }}>
+                        Recent Photos
+                    </a>
+                </div>
+            </div>
+
+            <p className="dateListTitle">
+                List of Date <a href="#" onClick={() => props.getDates()}>⟳</a>
+            </p>
+            
+            {/* Loading indicator */}
             <div style={{ display: hideLoading ? "none" : "inline-block" }}>
                 <div className="dateListLoading-crub" style={{ display: hideLoading ? "none" : "inline-block" }}>
                     &#129408;
@@ -44,49 +213,217 @@ function DateList(props) {
                     &#129408;
                 </div>
             </div>
+
+            {/* Date Controls - Outside Scroll Area */}
+            <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '3px', marginBottom: '3px' }}>
+                {/* Filter Controls */}
+                <div style={{ margin: "3px 0", textAlign: "center" }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                            <span style={{ fontSize: '10px' }}>📅</span>
+                            <select 
+                                value={filterYear} 
+                                onChange={(e) => {
+                                    setFilterYear(e.target.value);
+                                    setFilterMonth('all'); // Reset month when year changes
+                                }}
+                                style={{ 
+                                    fontSize: '9px', 
+                                    padding: '1px 2px',
+                                    width: '50px',
+                                    height: '18px',
+                                    backgroundColor: 'var(--bg-elevated)',
+                                    color: 'var(--text)',
+                                    border: '1px solid var(--border)',
+                                    borderRadius: '2px'
+                                }}
+                            >
+                                <option value="all">All</option>
+                                {availableYears.map(year => (
+                                    <option key={year} value={year}>{year}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                            <span style={{ fontSize: '10px' }}>🗓️</span>
+                            <select 
+                                value={filterMonth} 
+                                onChange={(e) => setFilterMonth(e.target.value)}
+                                style={{ 
+                                    fontSize: '9px', 
+                                    padding: '1px 2px',
+                                    width: '60px',
+                                    height: '18px',
+                                    backgroundColor: 'var(--bg-elevated)',
+                                    color: 'var(--text)',
+                                    border: '1px solid var(--border)',
+                                    borderRadius: '2px'
+                                }}
+                            >
+                                <option value="all">All</option>
+                                {availableMonths.map(month => {
+                                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                    return (
+                                        <option key={month} value={month}>
+                                            {monthNames[month - 1]}
+                                        </option>
+                                    );
+                                })}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {/* View Mode Toggle */}
+                <div style={{ margin: "3px 0", textAlign: "center" }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '2px' }}>
+                        <button 
+                            onClick={() => setViewMode('flat')}
+                            style={{ 
+                                fontSize: '10px', 
+                                padding: '2px 6px',
+                                backgroundColor: viewMode === 'flat' ? 'var(--accent)' : 'var(--bg-elevated)',
+                                color: viewMode === 'flat' ? 'white' : 'var(--text)',
+                                border: '1px solid var(--border)',
+                                borderRadius: '3px 0 0 3px',
+                                cursor: 'pointer',
+                                borderRight: 'none'
+                            }}
+                        >
+                            List
+                        </button>
+                        <button 
+                            onClick={() => setViewMode('hierarchical')}
+                            style={{ 
+                                fontSize: '10px', 
+                                padding: '2px 6px',
+                                backgroundColor: viewMode === 'hierarchical' ? 'var(--accent)' : 'var(--bg-elevated)',
+                                color: viewMode === 'hierarchical' ? 'white' : 'var(--text)',
+                                border: '1px solid var(--border)',
+                                borderRadius: '0 3px 3px 0',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Tree
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            {/* Scrollable Date List */}
             <div className="dateList">
                 <Scrollable>
                     <ul>
-                        <li style={{ listStyle: recentPhotosMode ? "square" : "none" }}>
-                            <a href="#" 
-                               style={{ 
-                                   color: recentPhotosMode ? "#ccc" : "#646cff",
-                                   fontWeight: "bold"
-                               }} 
-                               onClick={(e) => {
-                                   e.preventDefault();
-                                   logger.info('DateList', 'recent_photos_click', 'Recent Photos clicked - starting navigation');
-                                   setSelectedStyle({});
-                                   updateRecentPhotosMode(true);
-                                   updateShowPhotoDisplay({});
-                                   // Use showRecentPhotos to properly transition to RECENT mode
-                                   logger.info('DateList', 'recent_photos_click', 'About to call showRecentPhotos()');
-                                   showRecentPhotos();
-                                   logger.info('DateList', 'recent_photos_click', 'showRecentPhotos() called');
-                               }}>
-                                Recent Photos
-                            </a>
-                        </li>
-                        {dateList.map((l, i) => {
-                            let date = new Date(l.year + '/' + l.month + '/' + l.day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
-                            return (dateNum[date.replace(/\//g, "-")]) > 0 && (<li key={i} style={{ listStyle: selectedStyle["li-" + date] || "none" }}>
-                                <a href="#" style={{ color: selectedStyle["a-" + date] || "#646cff" }} onClick={(e) => {
-                                    e.preventDefault();
-                                    setSelectedStyle({ ["a-" + date]: "#ccc", ["li-" + date]: "square" }); //  outside url('...')
-                                    logger.info('DateList', 'date_click', 'Date clicked - starting navigation', { date });
-                                    updateRecentPhotosMode(false);
-                                    updateCurrentDate(date);
-                                    updateShowPhotoDisplay({});
-                                    // Use showDatePhotos to properly transition to DATE mode
-                                    logger.info('DateList', 'date_click', 'About to call showDatePhotos()', { date });
-                                    showDatePhotos(date);
-                                    logger.info('DateList', 'date_click', 'showDatePhotos() called', { date });
-                                }
-                                } data-date={date} data-page={datePage[date]}>
-                                    {date}
-                                    {dateNum[date.replace(/\//g, "-")] !== undefined ? " (" + dateNum[date.replace(/\//g, "-")] + ")" : ""}
-                                </a></li>);
-                        })
+
+                        {/* Flat View */}
+                        {viewMode === 'flat' && 
+                            filteredDateList.map((l, i) => {
+                                const date = new Date(l.year + '/' + l.month + '/' + l.day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                                const photoCount = getPhotoCount(l.year, l.month, l.day);
+                                return photoCount > 0 && (
+                                    <li key={i} style={{ listStyle: selectedStyle["li-" + date] || "none" }}>
+                                        <a href="#" 
+                                           style={{ 
+                                               color: selectedStyle["a-" + date] || "#646cff",
+                                               fontSize: "inherit"
+                                           }} 
+                                           onClick={(e) => {
+                                               e.preventDefault();
+                                               handleDateClick(l.year, l.month, l.day);
+                                           }}
+                                           data-date={date} 
+                                           data-page={datePage[date]}>
+                                            {date}
+                                            {photoCount !== undefined ? " (" + photoCount + ")" : ""}
+                                        </a>
+                                    </li>
+                                );
+                            })
+                        }
+
+                        {/* Hierarchical View - Clean & Simple */}
+                        {viewMode === 'hierarchical' && 
+                            hierarchicalData.map((yearData, yearIndex) => {
+                                const yearPhotoCount = getYearPhotoCount(yearData);
+                                const isYearExpanded = expandedYears.has(yearData.year);
+                                return yearPhotoCount > 0 && (
+                                    <li key={`year-${yearData.year}`} style={{ listStyle: "none", marginBottom: "1px" }}>
+                                        {/* Year Header */}
+                                        <div 
+                                            style={{ 
+                                                cursor: "pointer",
+                                                fontSize: "inherit",
+                                                color: "#646cff",
+                                                padding: "1px 0"
+                                            }}
+                                            onClick={() => toggleYearExpansion(yearData.year)}
+                                        >
+                                            <span style={{ fontSize: "8px", marginRight: "4px" }}>
+                                                {isYearExpanded ? '▼' : '▶'}
+                                            </span>
+                                            {yearData.year} ({yearPhotoCount})
+                                        </div>
+
+                                        {/* Months Container */}
+                                        {isYearExpanded && (
+                                            <div style={{ marginLeft: "12px" }}>
+                                                {yearData.months.map((monthData, monthIndex) => {
+                                                    const monthPhotoCount = getMonthPhotoCount(yearData, monthData);
+                                                    const monthKey = `${yearData.year}-${monthData.month}`;
+                                                    const isMonthExpanded = expandedMonths.has(monthKey);
+                                                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                                    return monthPhotoCount > 0 && (
+                                                        <div key={`month-${yearData.year}-${monthData.month}`}>
+                                                            {/* Month Header */}
+                                                            <div 
+                                                                style={{ 
+                                                                    cursor: "pointer",
+                                                                    fontSize: "inherit",
+                                                                    color: "#aaa",
+                                                                    padding: "1px 0"
+                                                                }}
+                                                                onClick={() => toggleMonthExpansion(yearData.year, monthData.month)}
+                                                            >
+                                                                <span style={{ fontSize: "8px", marginRight: "4px" }}>
+                                                                    {isMonthExpanded ? '▼' : '▶'}
+                                                                </span>
+                                                                {monthNames[monthData.month - 1]} ({monthPhotoCount})
+                                                            </div>
+
+                                                            {/* Days */}
+                                                            {isMonthExpanded && (
+                                                                <div style={{ marginLeft: "12px" }}>
+                                                                    {monthData.days.map((day, dayIndex) => {
+                                                                        const date = new Date(yearData.year + '/' + monthData.month + '/' + day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                                                                        const photoCount = getPhotoCount(yearData.year, monthData.month, day);
+                                                                        const isSelected = selectedStyle["a-" + date];
+                                                                        return photoCount > 0 && (
+                                                                            <div key={`day-${yearData.year}-${monthData.month}-${day}`} style={{ listStyle: isSelected ? "square" : "none" }}>
+                                                                                <a href="#" 
+                                                                                   style={{ 
+                                                                                       color: isSelected ? "#ccc" : "#646cff",
+                                                                                       fontSize: "inherit",
+                                                                                       textDecoration: "none"
+                                                                                   }} 
+                                                                                   onClick={(e) => {
+                                                                                       e.preventDefault();
+                                                                                       handleDateClick(yearData.year, monthData.month, day);
+                                                                                   }}>
+                                                                                    {date} ({photoCount})
+                                                                                </a>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </li>
+                                );
+                            })
                         }
                     </ul>
                 </Scrollable>

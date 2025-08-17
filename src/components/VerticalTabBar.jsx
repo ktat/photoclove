@@ -1,0 +1,98 @@
+import React from 'react';
+import { VIEW_MODES } from '../constants/viewModes.js';
+
+/**
+ * Vertical tab bar component for side panel navigation
+ * Shows different tabs based on current view mode
+ */
+function VerticalTabBar({
+    viewMode,
+    isSearchMode,
+    showSideMenu,
+    tabClass,
+    changeTab,
+    setShowSideMenu,
+    closeRightColumn
+}) {
+    // Define tab configurations based on view mode
+    const getAvailableTabs = () => {
+        const tabs = [];
+        
+        // Directory tab - only in import mode
+        if (viewMode === VIEW_MODES.IMPORT) {
+            tabs.push({
+                id: 'directory',
+                label: 'Directory',
+                title: 'Directory Navigation',
+                targetTab: '#tab-directory'
+            });
+        }
+        
+        // Search tab - only in search mode
+        if (isSearchMode) {
+            tabs.push({
+                id: 'search',
+                label: 'Search',
+                title: 'Search Tools',
+                targetTab: '#tab-search'
+            });
+        }
+        
+        // Selection tab - always available
+        tabs.push({
+            id: 'selection',
+            label: 'Selection',
+            title: 'Photo Selection',
+            targetTab: '#tab-selection'
+        });
+        
+        // Maintenance tab - only when not in search mode
+        if (!isSearchMode) {
+            tabs.push({
+                id: 'maintenance',
+                label: 'Maintenance',
+                title: 'Maintenance Tools',
+                targetTab: '#tab-maintenance'
+            });
+        }
+        
+        return tabs;
+    };
+    
+    const handleTabClick = (e, targetTab) => {
+        changeTab(e, targetTab);
+        setShowSideMenu(true);
+    };
+    
+    const availableTabs = getAvailableTabs();
+    
+    return (
+        <div className={`directory-vertical-tabs ${showSideMenu ? 'menu-open' : 'menu-closed'}`}>
+            {availableTabs.map(tab => (
+                <button
+                    key={tab.id}
+                    className={tabClass[tab.id] ? "directory-vertical-tab-button active" : "directory-vertical-tab-button"}
+                    onClick={(e) => handleTabClick(e, tab.targetTab)}
+                    title={tab.title}
+                    aria-label={tab.title}
+                    aria-pressed={tabClass[tab.id]}
+                >
+                    <span className="directory-vertical-text">{tab.label}</span>
+                </button>
+            ))}
+            
+            {showSideMenu && (
+                <button
+                    className="directory-vertical-tab-button directory-close-tab"
+                    onClick={closeRightColumn}
+                    title="Close Panel"
+                    aria-label="Close side panel"
+                >
+                    ×
+                </button>
+            )}
+        </div>
+    );
+}
+
+export default VerticalTabBar;

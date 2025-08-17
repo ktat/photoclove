@@ -4,6 +4,7 @@ import PhotoDisplay from "./PhotosListMini/PhotoDisplay.jsx";
 import { ImgCacheContext, AllPhotosContext } from "../ImgCacheContext.jsx";
 import ContextualDeleteModal from "../../components/ContextualDeleteModal.jsx";
 import { logger } from "../../services/LoggerService.js";
+import { Photo } from "../../domain/Photo.js";
 
 const NUM_OF_PHOTO_LIST = 9;
 
@@ -15,6 +16,17 @@ function PhotosListMini(props) {
     // Context
     const { imgCacheMap, setImgCacheMap } = useContext(ImgCacheContext);
     const { photosListMiniAllPhotos, setPhotosListMiniAllPhotos } = useContext(AllPhotosContext);
+    
+    // Convert JSON back to Photo entities for all photos operations
+    const photosWithMethods = useMemo(() => {
+        if (!Array.isArray(photosListMiniAllPhotos)) return [];
+        return photosListMiniAllPhotos.map(photoJson => {
+            if (photoJson && typeof photoJson === 'object' && photoJson.originalPath) {
+                return Photo.fromJSON(photoJson);
+            }
+            return null;
+        }).filter(photo => photo !== null);
+    }, [photosListMiniAllPhotos]);
     
     // Search mode props
     const isSearchMode = props.searchMode || false;
@@ -32,8 +44,6 @@ function PhotosListMini(props) {
     const [imgStyle, setImgStyle] = useState({
         transition: 'opacity 0.1s',
         opacity: 0.5,
-        maxWith: "100%",
-        maxHeight: "100%",
         overflow: "hidden"
     });
     const [thumbnailStore, setThumbnailStore] = useState("");
@@ -48,6 +58,7 @@ function PhotosListMini(props) {
     // Delete modal state
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteOperation, setDeleteOperation] = useState(null); // 'removeFromAlbum' | 'deleteFile'
+    
 
     const navigateLock = useRef(false);
     
@@ -92,26 +103,31 @@ function PhotosListMini(props) {
         });
     }, [])
 
+    // Set initial focus for keyboard navigation
+    useEffect(() => {
+        // Focus the dummy element when component mounts or when photo display is shown
+        const dummyFocus = document.querySelector("#dummy-for-focus");
+        if (dummyFocus) {
+            dummyFocus.focus();
+        }
+    }, [props.showPhotoDisplay])
+
     // Handle date changes - clear thumbnail cache and reset state
     useEffect(() => {
-        // console.log(`[DATE_CHANGE] Date changed to: ${props.currentDate}`);
         // Clear cached thumbnail sources when date changes
         setPhotosListImgSrc({});
     }, [props.currentDate]);
 
     useEffect(() => {
         const currentPhotoIndex = props.currentIndex; // Use the corrected global index
-        const loadedCount = photosListMiniAllPhotos.length;
+        const loadedCount = photosWithMethods.length;
         
-        // console.log(`[INIT] UseEffect - PhotoIndex: ${currentPhotoIndex}, Loaded: ${loadedCount}, Date: ${props.currentDate}`);
         
         if (loadedCount > 0 && currentPhotoIndex >= 0) {
-            // console.log(`[INIT] Using existing photos data (${loadedCount} photos) for adjustment`);
             adjustCurrentIndex();
         } else {
-            // console.log(`[INIT] No photos data available yet or invalid index`);
         }
-    }, [props.currentIndex, props.reread, photosListMiniAllPhotos.length, props.currentDate]);
+    }, [props.currentIndex, props.reread, photosWithMethods.length, props.currentDate]);
 
     // Note: Removed redundant useEffect to prevent conflicts
     // Thumbnail display adjustment is now handled in the main useEffect above
@@ -119,34 +135,34 @@ function PhotosListMini(props) {
     // Note: hasNext is no longer needed since we load all photos at once
 
     function backwardPhotos() {
-        const totalPhotos = photosListMiniAllPhotos.length;
-        const { showPrev, startIndex } = calculateSimpleThumbnailDisplay(photosListMiniAllPhotos, props.currentIndex);
+        const totalPhotos = photosWithMethods.length;
+        const { showPrev, startIndex } = calculateSimpleThumbnailDisplay(photosWithMethods, props.currentIndex);
         if (!showPrev) return;
         
         // Shift window backward by recalculating with simple logic
         const newSelectedIndex = Math.max(0, startIndex - 1);
         
         // Navigate to a photo that would shift the window
-        if (photosListMiniAllPhotos[newSelectedIndex]) {
+        if (photosWithMethods[newSelectedIndex]) {
             props.setCurrentIndex(newSelectedIndex);
-            props.setCurrentPhotoPath(photosListMiniAllPhotos[newSelectedIndex].file.path);
+            props.setCurrentPhotoPath(photosWithMethods[newSelectedIndex].originalPath);
             setImageCache(newSelectedIndex, -1);
             // adjustCurrentIndex will be called by useEffect when props.currentIndex changes
         }
     }
 
     function forwardPhotos() {
-        const totalPhotos = photosListMiniAllPhotos.length;
-        const { showNext, endIndex } = calculateSimpleThumbnailDisplay(photosListMiniAllPhotos, props.currentIndex);
+        const totalPhotos = photosWithMethods.length;
+        const { showNext, endIndex } = calculateSimpleThumbnailDisplay(photosWithMethods, props.currentIndex);
         if (!showNext) return;
         
         // Shift window forward by recalculating with simple logic
         const newSelectedIndex = Math.min(totalPhotos - 1, endIndex + 1);
         
         // Navigate to a photo that would shift the window
-        if (photosListMiniAllPhotos[newSelectedIndex]) {
+        if (photosWithMethods[newSelectedIndex]) {
             props.setCurrentIndex(newSelectedIndex);
-            props.setCurrentPhotoPath(photosListMiniAllPhotos[newSelectedIndex].file.path);
+            props.setCurrentPhotoPath(photosWithMethods[newSelectedIndex].originalPath);
             setImageCache(newSelectedIndex, 1);
             // adjustCurrentIndex will be called by useEffect when props.currentIndex changes
         }
@@ -158,21 +174,25 @@ function PhotosListMini(props) {
         const cacheCandidates = []
         const thisTimeCacheMap = {}
         if (minIndex < 0) minIndex = 0;
-        if (maxIndex >= photosListMiniAllPhotos.length) maxIndex = photosListMiniAllPhotos.length - 1;
+        if (maxIndex >= photosWithMethods.length) maxIndex = photosWithMethods.length - 1;
 
         for (let j = minIndex; j <= maxIndex; j++) {
-            if (!photosListMiniAllPhotos[j].file || !photosListMiniAllPhotos[j].file.path.match(/\.jpe?g/i)) {
+            if (!photosWithMethods[j] || !photosWithMethods[j].originalPath?.match(/\.jpe?g/i)) {
                 continue
             }
-            const f = photosListMiniAllPhotos[j].file.path
+            const f = photosWithMethods[j].originalPath
             thisTimeCacheMap[f] = true
             if (!imgCacheMap[f]) {
-                cacheCandidates.push(f)
+                cacheCandidates.push(j) // Store index instead of just path
             }
         }
         for (let j = 0; j < cacheCandidates.length; j++) {
-            const f = cacheCandidates[j]
-            const response = await fetch(convertFileSrc(f), { cache: "force-cache" })
+            const photoIndex = cacheCandidates[j]
+            const photo = photosWithMethods[photoIndex]
+            const f = photo.originalPath
+            // Use Photo entity displayPath method
+            const displayPath = photo.displayPath()
+            const response = await fetch(convertFileSrc(displayPath), { cache: "force-cache" })
             const blob = await response.blob();
             const objectURL = URL.createObjectURL(blob);
             imgCacheMap[f] = [objectURL];
@@ -191,13 +211,12 @@ function PhotosListMini(props) {
         props.setCurrentIndex(index);
         
         // Use the new simple thumbnail display logic
-        const { startIndex, endIndex, borderPosition } = calculateSimpleThumbnailDisplay(photosListMiniAllPhotos, index);
+        const { startIndex, endIndex, borderPosition } = calculateSimpleThumbnailDisplay(photosWithMethods, index);
         
-        // console.log(`[_MOVE_PHOTOS] Moving to index ${index}, calculated range: ${startIndex}-${endIndex}, border: ${borderPosition}`);
         
         const photosIndex = [];
-        for (let i = startIndex; i <= endIndex && i < photosListMiniAllPhotos.length; i++) {
-            if (photosListMiniAllPhotos[i]) {
+        for (let i = startIndex; i <= endIndex && i < photosWithMethods.length; i++) {
+            if (photosWithMethods[i]) {
                 photosIndex.push(i);
             }
         }
@@ -216,7 +235,6 @@ function PhotosListMini(props) {
         }
         setBorderStyle(newBorderStyle);
         
-        // console.log(`[_MOVE_PHOTOS] Set photosIndex:`, photosIndex, `borderPosition: ${borderPosition}`);
     }
 
     // Note: loadAllPhotosMetadata function removed - PhotosList should provide all photos data
@@ -226,11 +244,13 @@ function PhotosListMini(props) {
         const totalPhotos = allPhotos.length;
         const t = selectedIndex; // 0-indexed全体位置
         
-        // console.log(`[SIMPLE_CALC] Input - totalPhotos: ${totalPhotos}, selectedIndex: ${t}`);
         
         // Handle edge case: no photos or invalid index
         if (totalPhotos === 0 || t < 0 || t >= totalPhotos) {
-            console.warn(`[SIMPLE_CALC] Invalid input - totalPhotos: ${totalPhotos}, selectedIndex: ${t}`);
+            logger.warn('PhotosListMini', 'simple_calc_invalid', 'Invalid input for thumbnail calculation', {
+                totalPhotos: totalPhotos,
+                selectedIndex: t
+            });
             return {
                 startIndex: 0,
                 endIndex: 0,
@@ -249,7 +269,6 @@ function PhotosListMini(props) {
                 showPrev: false,
                 showNext: false
             };
-            // console.log(`[SIMPLE_CALC] Small set (${totalPhotos} photos):`, result);
             return result;
         }
         
@@ -264,7 +283,6 @@ function PhotosListMini(props) {
                 showPrev: false,
                 showNext: true
             };
-            // console.log(`[SIMPLE_CALC] First 5 case (t=${t}):`, result);
         } else if (t > totalPhotos - 5) {
             // 最後の5枚以内：末尾9枚表示
             result = {
@@ -274,7 +292,6 @@ function PhotosListMini(props) {
                 showPrev: true,
                 showNext: false
             };
-            // console.log(`[SIMPLE_CALC] Last 5 case (t=${t}, totalPhotos=${totalPhotos}):`, result);
         } else {
             // 中央：選択写真を5番目（index 4）に配置
             result = {
@@ -284,24 +301,22 @@ function PhotosListMini(props) {
                 showPrev: true,
                 showNext: true
             };
-            // console.log(`[SIMPLE_CALC] Center case (t=${t}):`, result);
         }
         
-        // console.log(`[SIMPLE_CALC] Final result - Will show indices ${result.startIndex} to ${result.endIndex} (${result.endIndex - result.startIndex + 1} photos)`);
-        // console.log(`[SIMPLE_CALC] Selected photo ${t} will be at position ${result.borderPosition + 1} (1-indexed)`);
-        // console.log(`[SIMPLE_CALC] Buttons - showPrev: ${result.showPrev}, showNext: ${result.showNext}`);
         
         return result;
     }
 
     function adjustCurrentIndex() {
-        const totalPhotos = photosListMiniAllPhotos.length;
+        const totalPhotos = photosWithMethods.length;
         const selectedIndex = props.currentIndex;
         
-        // console.log(`[ADJUST] Photos: ${totalPhotos}, Selected: ${selectedIndex}`);
         
         if (totalPhotos === 0 || selectedIndex === undefined || selectedIndex === null || selectedIndex < 0 || selectedIndex >= totalPhotos) {
-            console.warn(`[ADJUST] Invalid state - totalPhotos: ${totalPhotos}, selectedIndex: ${selectedIndex}`);
+            logger.warn('PhotosListMini', 'adjust_invalid_state', 'Invalid state for index adjustment', {
+                totalPhotos: totalPhotos,
+                selectedIndex: selectedIndex
+            });
             // Reset to safe state
             setShowPhotosIndex([]);
             setBorderStyle([]);
@@ -310,20 +325,16 @@ function PhotosListMini(props) {
         
         
         // Use the new simple thumbnail display logic
-        const { startIndex, endIndex, borderPosition, showPrev, showNext } = calculateSimpleThumbnailDisplay(photosListMiniAllPhotos, selectedIndex);
+        const { startIndex, endIndex, borderPosition, showPrev, showNext } = calculateSimpleThumbnailDisplay(photosWithMethods, selectedIndex);
         
-        // console.log(`[ADJUST] Simple Logic Result - Range: ${startIndex}-${endIndex}, Border: ${borderPosition}`);
-        // console.log(`[ADJUST] Button visibility - showPrev: ${showPrev}, showNext: ${showNext}`);
         
         const photosIndex = [];
         for (let i = startIndex; i <= endIndex && i < totalPhotos; i++) {
-            if (photosListMiniAllPhotos[i]) {
+            if (photosWithMethods[i]) {
                 photosIndex.push(i);
             }
         }
         
-        // console.log(`[ADJUST] PhotosIndex array:`, photosIndex);
-        // console.log(`[ADJUST] BorderPosition should be: ${borderPosition} (selected photo at position ${borderPosition + 1})`);
         
         // Update both at the same time to ensure consistency
         setShowPhotosIndex(photosIndex);
@@ -339,7 +350,6 @@ function PhotosListMini(props) {
         }
         setBorderStyle(newBorderStyle);
         
-        // console.log(`[ADJUST] Border styles created for ${photosIndex.length} photos, selected at position ${borderPosition}`);
     }
 
     // Note: resetSelectedBorder function removed - border styles are now created directly in adjustCurrentIndex
@@ -351,46 +361,6 @@ function PhotosListMini(props) {
         }
     }
 
-    function getThumbnailSrc(photo) {
-        if (!photo || !photo.has_thumbnail) return "";
-
-        let thumbnailSrc = "";
-        const pathParts = photo.file.path.split('/');
-        let uuid = null;
-        
-        const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-        for (let i = 0; i < pathParts.length - 1; i++) {
-            if (datePattern.test(pathParts[i]) && pathParts[i + 2] !== undefined) {
-                uuid = pathParts[i + 1];
-                break;
-            }
-        }
-        
-        // Always extract date from photo path for thumbnail generation
-        let photoDate = null;
-        // Extract date from the photo's path
-        for (let i = 0; i < pathParts.length; i++) {
-            if (datePattern.test(pathParts[i])) {
-                photoDate = pathParts[i];
-                break;
-            }
-        }
-        
-        if (uuid && photoDate) {
-            if (photo.file.name.match(/(mp4|webm)$/i)) {
-                thumbnailSrc = thumbnailStore + '/' + photoDate.replace(/\//g, '-') + '/' + uuid + '/' + photo.file.name + ".jpg";
-            } else {
-                thumbnailSrc = (thumbnailStore + '/' + photoDate.replace(/\//g, '-') + '/' + uuid + '/' + photo.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
-            }
-        } else if (photoDate) {
-            if (photo.file.name.match(/(mp4|webm)$/i)) {
-                thumbnailSrc = thumbnailStore + '/' + photoDate.replace(/\//g, '-') + '/' + photo.file.name + ".jpg";
-            } else {
-                thumbnailSrc = (thumbnailStore + '/' + photoDate.replace(/\//g, '-') + '/' + photo.file.name).replace(/\.([a-zA-Z]+)$/, '.') + RegExp.$1.toLowerCase();
-            }
-        }
-        return thumbnailSrc;
-    }
 
     // Navigation functions
     const lockNavigate = (fn) => {
@@ -405,9 +375,8 @@ function PhotosListMini(props) {
     function nextPhoto() {
         const nextIndex = props.currentIndex + 1;
         
-        // console.log(`[NAVIGATION] NextPhoto - Index: ${nextIndex}, Total: ${photosListMiniAllPhotos.length}`);
         
-        if (nextIndex < photosListMiniAllPhotos.length) {
+        if (nextIndex < photosWithMethods.length) {
             _nextOrPrevPhoto(nextIndex);
             setImageCache(nextIndex, 1);
             // adjustCurrentIndex will be called by useEffect when props.currentIndex changes
@@ -417,7 +386,6 @@ function PhotosListMini(props) {
     function prevPhoto() {
         const prevIndex = props.currentIndex - 1;
         
-        // console.log(`[NAVIGATION] PrevPhoto - Index: ${prevIndex}`);
         
         if (prevIndex >= 0) {
             _nextOrPrevPhoto(prevIndex);
@@ -436,9 +404,10 @@ function PhotosListMini(props) {
         } else {
             SetImgStyle({ opacity: 0 });
         }
-        setPhotoZoom("auto");
-        if (photosListMiniAllPhotos[index]) {
-            props.setCurrentPhotoPath(photosListMiniAllPhotos[index].file.path);
+        // Don't reset zoom when navigating photos
+        // setPhotoZoom("auto");
+        if (photosWithMethods[index]) {
+            props.setCurrentPhotoPath(photosWithMethods[index].originalPath);
             props.datePage[getDateKey()] = Math.trunc((index) / props.num) + 1;
             props.setCurrentIndex(index);
         }
@@ -519,29 +488,29 @@ function PhotosListMini(props) {
     };
 
     const handleConfirmAction = async () => {
-        const currentPhoto = photosListMiniAllPhotos[props.currentIndex];
+        const currentPhoto = photosWithMethods[props.currentIndex];
         if (!currentPhoto) return;
 
         try {
             if (deleteOperation === 'removeFromAlbum') {
                 await invoke('remove_photo_from_album', {
                     albumId: props.albumId,
-                    photoPath: currentPhoto.file.path
+                    photoPath: currentPhoto.originalPath
                 });
                 
                 logger.info('PhotosListMini', 'photo_removed_from_album', 'Photo removed from album', {
                     albumId: props.albumId,
-                    photoPath: currentPhoto.file.path
+                    photoPath: currentPhoto.originalPath
                 });
                 
                 // Remove from current view
                 props.removePhotoFromList?.(props.currentIndex);
                 props.addFooterMessage?.('Photo removed from album');
             } else {
-                await props.moveToTrashCan(currentPhoto.file.path);
+                await props.moveToTrashCan(currentPhoto.originalPath);
                 
                 logger.info('PhotosListMini', 'photo_deleted', 'Photo moved to trash', {
-                    photoPath: currentPhoto.file.path
+                    photoPath: currentPhoto.originalPath
                 });
                 
                 // Photo removal is handled by moveToTrashCan
@@ -563,12 +532,16 @@ function PhotosListMini(props) {
     function photoNavigation(e) {
         let f = props.currentPhotoPath;
         if (e.keyCode === 39) { // right arrow
+            e.preventDefault();
             nextPhoto();
         } else if (e.keyCode === 37) { // left arrow
+            e.preventDefault();
             prevPhoto();
         } else if (e.keyCode === 38) { // up arrow ... open mini list
+            e.preventDefault();
             setPhotosListMiniClosed(false);
         } else if (e.keyCode === 40) { // down arrow ... close mini list
+            e.preventDefault();
             setPhotosListMiniClosed(true);
         } else if (e.keyCode === 67) { // c ... choose as selected
             togglePhotoSelected();
@@ -614,9 +587,17 @@ function PhotosListMini(props) {
                 });
                 showDeleteFileModal();
             }
-        } else if (photoZoomReady && e.keyCode === 48) { // ctrl+0
+        } else if (e.ctrlKey && e.keyCode === 48) { // ctrl+0
             setPhotoZoom("auto");
-            SetImgStyle({ opacity: '100%' });
+            // Reset to wrapper size using fixed pixel sizes
+            const wrapperDiv = document.querySelector('#imageWrapper');
+            if (wrapperDiv) {
+                const wrapperWidth = parseFloat(wrapperDiv.style.width);
+                const wrapperHeight = parseFloat(wrapperDiv.style.height);
+                SetImgStyle({ width: wrapperWidth + 'px', height: wrapperHeight + 'px', opacity: '100%' });
+            } else {
+                SetImgStyle({ width: '100%', height: '100%', opacity: '100%' });
+            }
             document.querySelector("#dummy-for-focus").focus();
         } else if (!photoZoomReady && e.ctrlKey) {
             setPhotoZoomReady(true);
@@ -630,12 +611,15 @@ function PhotosListMini(props) {
                 <div
                     className={"photoDisplay" + (photosListMiniClosed ? " photosListMiniClosed" : "")}
                     id="photoDisplay"
-                    autoFocus={true}
-                    onKeyDown={(e) => photoNavigation(e)}
-                    onKeyUp={(e) => photoNavigationUp(e)}
                     onClick={handleClick}
                 >
-                    <a href="#" id="dummy-for-focus">{/* Dummy */}</a>
+                    <a 
+                        href="#" 
+                        id="dummy-for-focus"
+                        onKeyDown={(e) => photoNavigation(e)}
+                        onKeyUp={(e) => photoNavigationUp(e)}
+                        style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px' }}
+                    >{/* Dummy for keyboard focus */}</a>
                     {props.currentIndex > 0 ? 
                         <><a href="#" onClick={() => lockNavigate(prevPhoto)}>&lt;&lt; prev</a>&nbsp;&nbsp;|| </> : 
                         <>&lt;&lt; <s>prev</s>&nbsp;&nbsp;|| </>
@@ -652,70 +636,104 @@ function PhotosListMini(props) {
                         setPhotoZoom={setPhotoZoom}
                         photoZoom={photoZoom}
                         photoZoomReady={photoZoomReady}
-                        currentPhotoPath={props.currentPhotoPath}
+                        currentPhotoPath={props.isTrashMode && photosWithMethods[props.currentIndex] 
+                            ? photosWithMethods[props.currentIndex].displayPath()
+                            : (props.currentPhotoPath || (photosWithMethods[props.currentIndex] && photosWithMethods[props.currentIndex].displayPath()))}
                         currentPhotoSize={currentPhotoSize}
                         imgCacheMap={imgCacheMap}
-                        thumbnailSrc={getThumbnailSrc(photosListMiniAllPhotos[props.currentIndex])}
+                        thumbnailSrc={photosWithMethods[props.currentIndex]?.hasThumbnail
+                            ? photosWithMethods[props.currentIndex].thumbnailPath()
+                            : ""}
                         photosListMiniClosed={photosListMiniClosed}
                         selectedInfoHidden={selectedInfoHidden}
                         unselectedInfoHidden={unselectedInfoHidden}
                         selectedContent={selectedContent}
                         unselectedContent={unselectedContent}
-                        currentPhotoCssStyle={photosListMiniAllPhotos[props.currentIndex]?.css_style}
+                        currentPhotoCssStyle={photosWithMethods[props.currentIndex]?.cssStyle}
                     />
                 </div>
                 
                 <div id="photos-list-mini" className={photosListMiniClosed ? "photosListMiniClosed" : "photosListMini"}>
                     <div className="row1">
-                        <a style={{ display: calculateSimpleThumbnailDisplay(photosListMiniAllPhotos, props.currentIndex).showPrev ? "" : "none" }} onClick={() => { backwardPhotos() }}>◁</a>
+                        <a style={{ display: calculateSimpleThumbnailDisplay(photosWithMethods, props.currentIndex).showPrev ? "" : "none" }} onClick={() => { backwardPhotos() }}>◁</a>
                     </div>
                     {showPhotosIndex.map((vIndex, i) => {
                         // Strict validation to prevent rendering invalid photos
-                        if (typeof vIndex !== 'number' || vIndex < 0 || vIndex >= photosListMiniAllPhotos.length) {
-                            console.warn(`[THUMBNAIL] Invalid vIndex: ${vIndex} (array length: ${photosListMiniAllPhotos.length})`);
+                        if (typeof vIndex !== 'number' || vIndex < 0 || vIndex >= photosWithMethods.length) {
+                            logger.warn('PhotosListMini', 'thumbnail_invalid_index', 'Invalid index for thumbnail', {
+                                vIndex: vIndex,
+                                arrayLength: photosWithMethods.length
+                            });
                             return null;
                         }
                         
-                        let v = photosListMiniAllPhotos[vIndex];
+                        let v = photosWithMethods[vIndex];
                         
                         // Skip if photo doesn't exist at this index
-                        if (!v || !v.file || !v.file.path) {
-                            console.warn(`[THUMBNAIL] Photo at index ${vIndex} is undefined or missing file property`);
+                        if (!v || !v.originalPath) {
+                            logger.warn('PhotosListMini', 'thumbnail_invalid_photo', 'Photo at index is undefined or missing originalPath', {
+                                vIndex: vIndex,
+                                hasPhoto: !!v,
+                                hasOriginalPath: !!(v && v.originalPath)
+                            });
                             return null; // Don't render anything for missing photos
                         }
                         
                         const clientHeight = document.querySelector('#photos-list-mini')?.clientHeight - 20 || 80;
-                        const thumbnailSrc = getThumbnailSrc(v);
                         
-                        if (thumbnailSrc !== "") {
-                            photosListImgSrc[v.file.path] = convertFileSrc(thumbnailSrc);
-                        } else {
-                            photosListImgSrc[v.file.path] = convertFileSrc(v.file.path);
+                        // Use Photo entity methods for thumbnail path
+                        // Initialize image source if not already set
+                        if (!photosListImgSrc[v.originalPath]) {
+                            if (v.hasThumbnail) {
+                                const thumbnailSrc = v.thumbnailPath();
+                                photosListImgSrc[v.originalPath] = convertFileSrc(thumbnailSrc);
+                            } else {
+                                // Use Photo entity display path method for fallback
+                                const displayPath = v.displayPath();
+                                photosListImgSrc[v.originalPath] = convertFileSrc(displayPath);
+                            }
                         }
                         
-                        return <div className="row2" key={`${vIndex}-${v.file.path}`} style={{ position: "relative" }}>
+                        return <div className="row2" key={`${vIndex}-${v.originalPath}`} style={{ position: "relative" }}>
                             <a onClick={(e) => {
                                 props.setCurrentIndex(vIndex);
-                                props.setCurrentPhotoPath(v.file.path);
+                                props.setCurrentPhotoPath(v.originalPath);
                                 props.datePage[getDateKey()] = Math.trunc((vIndex) / props.num) + 1;
                                 setImageCache(vIndex, 0);
                                 
                                 // adjustCurrentIndex will be called by useEffect when props.currentIndex changes
                             }}>
-                                {!v.has_thumbnail && v.file.path.match(/\.(mp4|webm)$/i)
+                                {!v.hasThumbnail && v.originalPath?.match(/\.(mp4|webm)$/i)
                                     ? <div className="photo-list-movie" style={{ border: borderStyle[i], maxHeight: clientHeight + "px" }}>
                                         <span>🎬</span>
                                     </div>
                                     : <>
-                                        <img src={photosListImgSrc[v.file.path]} 
+                                        <img src={photosListImgSrc[v.originalPath]} 
                                             style={{ 
                                                 border: borderStyle[i], 
                                                 maxHeight: clientHeight + "px",
-                                                ...parseCssStyle(v.css_style)
+                                                ...parseCssStyle(v.cssStyle)
                                             }} 
                                             alt={"photo-" + i}
-                                            onError={(e) => { e.target.src = "/img_error.png" }} />
-                                        {v.file.path.match(/\.(mp4|webm)$/i) && <div style={{ color: "white", position: "relative", top: clientHeight / -4 }}>▶</div>}
+                                            onError={(e) => {
+                                                // Only handle error if not already showing error image
+                                                if (e.target.src.includes('/img_error.png')) {
+                                                    return;
+                                                }
+                                                
+                                                // If we have a thumbnail and it's failing, try original as fallback
+                                                if (v.hasThumbnail && !e.target.dataset.triedOriginal) {
+                                                    // Mark that we've tried original to prevent infinite loop
+                                                    e.target.dataset.triedOriginal = "true";
+                                                    // Try original image as fallback
+                                                    const originalSrc = convertFileSrc(v.displayPath());
+                                                    e.target.src = originalSrc;
+                                                } else {
+                                                    // Final fallback: show error image
+                                                    e.target.src = "/img_error.png";
+                                                }
+                                            }} />
+                                        {v.originalPath?.match(/\.(mp4|webm)$/i) && <div style={{ color: "white", position: "relative", top: clientHeight / -4 }}>▶</div>}
                                     </>
                                 }
                             </a>
@@ -747,7 +765,7 @@ function PhotosListMini(props) {
                         </div>
                     })}
                     <div className="row1">
-                        <a style={{ display: calculateSimpleThumbnailDisplay(photosListMiniAllPhotos, props.currentIndex).showNext ? "" : "none" }} onClick={() => { forwardPhotos() }}>▷</a>
+                        <a style={{ display: calculateSimpleThumbnailDisplay(photosWithMethods, props.currentIndex).showNext ? "" : "none" }} onClick={() => { forwardPhotos() }}>▷</a>
                     </div>
                 </div >
                 
@@ -801,7 +819,7 @@ function PhotosListMini(props) {
             <ContextualDeleteModal
                 isOpen={showDeleteModal}
                 operation={deleteOperation}
-                photoPath={photosListMiniAllPhotos[props.currentIndex]?.file?.path}
+                photoPath={photosWithMethods[props.currentIndex]?.originalPath}
                 albumName={props.albumName}
                 onConfirm={handleConfirmAction}
                 onCancel={() => {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { logger } from '../../../services/LoggerService.js';
 
 function PhotoInfo(props) {
     const [photoInfo, setPhotoInfo] = useState({});
@@ -78,7 +79,11 @@ function PhotoInfo(props) {
         }
         
         const newStarRate = getStarRate(newStar);
-        console.log(`Star clicked: index ${i}, current rate: ${currentStarRate}, new rate: ${newStarRate}`);
+        logger.info('PhotoInfo', 'star_clicked', 'Star rating changed', {
+            index: i,
+            currentRate: currentStarRate,
+            newRate: newStarRate
+        });
         
         invoke("save_star", { pathStr: props.currentPhotoPath, starNum: newStarRate });
         props.setStar(newStar);

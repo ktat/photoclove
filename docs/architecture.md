@@ -38,6 +38,10 @@ PhotoClove is a photo management application built with a desktop-native archite
 │  │ PhotoOption │ │ PhotoEditor │ │  DateList   │ │  JobQueue   │ │
 │  │   (Meta)    │ │   (Edit)    │ │ (Calendar)  │ │ (Background)│ │
 │  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
+│  │TagManager   │ │UnifiedPhoto │ │ LogViewer   │ │SearchTools  │ │
+│  │(Collection) │ │Collection   │ │  (Debug)    │ │ (Filter)    │ │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │
 ├─────────────────────────────────────────────────────────────────┤
 │                        Tauri Bridge                             │
 ├─────────────────────────────────────────────────────────────────┤
@@ -48,11 +52,19 @@ PhotoClove is a photo management application built with a desktop-native archite
 │  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐  │   │
 │  │  │PhotoService │ │ FileService │ │  JobQueueService    │  │   │
 │  │  └─────────────┘ └─────────────┘ └─────────────────────┘  │   │
+│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐  │   │
+│  │  │TokenStorage │ │ LoggingServ │ │  CollectionService  │  │   │
+│  │  │   Service   │ │    ice      │ │     (Unified)       │  │   │
+│  │  └─────────────┘ └─────────────┘ └─────────────────────┘  │   │
 │  └───────────────────────────────────────────────────────────┘   │
 │  ┌───────────────────────────────────────────────────────────┐   │
 │  │                     Entities                              │   │
 │  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐  │   │
 │  │  │    Photo    │ │   Config    │ │      Importer       │  │   │
+│  │  └─────────────┘ └─────────────┘ └─────────────────────┘  │   │
+│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐  │   │
+│  │  │PhotoCollect │ │  JobQueue   │ │    GooglePhotos     │  │   │
+│  │  │    ion      │ │             │ │                     │  │   │
 │  │  └─────────────┘ └─────────────┘ └─────────────────────┘  │   │
 │  └───────────────────────────────────────────────────────────┘   │
 │  ┌───────────────────────────────────────────────────────────┐   │
@@ -105,7 +117,9 @@ PhotoClove is a photo management application built with a desktop-native archite
 #### 1. Domain-Driven Design Structure
 
 **Entities** (Core business objects):
-- `Photo`: Represents a photo with metadata
+- `Photo`: Represents a photo with metadata and transformations
+- `PhotoCollection`: Unified domain entity for albums and tags
+- `UnifiedPhotoCollection`: Frontend domain model for collections
 - `Config`: Application configuration
 - `Importer`: Import operation state
 - `JobQueue`: Background job management
@@ -114,11 +128,18 @@ PhotoClove is a photo management application built with a desktop-native archite
 - `PhotoService`: Photo processing operations
 - `FileService`: File system operations
 - `JobQueueService`: Asynchronous job processing
+- `UnifiedCollectionService`: Collection management with caching
+- `LoggingService`: Structured logging and correlation tracking
 
 **Repositories** (Data access):
 - `RepoDB` (Directory): Filesystem-based photo storage
-- `MetaDB` (SQLite): Metadata and search indices
+- `MetaDB` (SQLite): Metadata, collections, and search indices
 - `ConfigDB` (JSON): Application settings
+
+**Performance Optimizations**:
+- Single-query date operations using `date_summary` table
+- Cached collection service to reduce redundant database calls
+- Unified collection architecture eliminating code duplication
 
 #### 2. Data Storage Strategy
 
@@ -144,9 +165,21 @@ thumbnail_store/
 ```
 
 **SQLite Database Schema**:
-- `photos` - Photo metadata (path, EXIF, timestamps)
-- `stars` - User ratings
-- `comments` - User annotations
+
+*Core Tables:*
+- `photo_metadata` - Photo metadata (path, EXIF, timestamps, stars, comments)
+- `date_summary` - Performance optimization table for date-based queries
+
+*Unified Collection System:*
+- `photo_collections` - Albums and tags unified (type, name, metadata)
+- `photo_collection_items` - Many-to-many photo-collection relationships
+
+*Legacy Tables (Backward Compatibility):*
+- `tags`, `photo_tags` - Original tag system
+- `albums`, `album_photos` - Original album system
+
+*Job Management:*
+- `jobs`, `job_units` - Background job processing system
 - `photo_styles` - CSS transformations
 - `job_queue` - Background tasks
 - `job_units` - Job groupings
@@ -176,56 +209,59 @@ thumbnail_store/
 - **Search**: Metadata-based search capabilities
 - **Batch operations**: Multi-select for mass actions
 
-### 4. State Management Architecture (Refactored)
+### 4. Unified Collection System Architecture
 
-#### Custom Hooks Architecture
+#### Collection Management
 
-The application uses a modular hook-based state management system:
+PhotoClove implements a unified collection system that treats albums and tags as different types of collections:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                 usePhotosListState                      │
-│  ┌─────────────┬─────────────┬─────────────┐          │
-│  │Display Hook │Filters Hook │Selection Hook│          │
-│  └─────────────┴─────────────┴─────────────┘          │
+│                  Unified Collections                    │
+├─────────────────────────────────────────────────────────┤
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐ │
+│  │   Albums    │ │    Tags     │ │   Future Types      │ │
+│  │ (with meta) │ │ (with color)│ │   (extensible)      │ │
+│  └─────────────┘ └─────────────┘ └─────────────────────┘ │
 └─────────────────────────────────────────────────────────┘
 ```
 
-#### View Mode State Machine
+#### State Management Architecture
 
-Navigation is managed through a centralized state machine in UIContext:
+The application uses a Domain-Driven Design approach with ViewMode value objects:
 
 ```
-HOME ──→ DATE ──→ ALBUM
-  ↓       ↓        ↓
-SEARCH  RECENT  IMPORT
-  ↓               ↓
-ADVANCED    PREFERENCES
+┌─────────────────────────────────────────────────────────┐
+│                    ViewMode DDD                         │
+├─────────────────────────────────────────────────────────┤
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐ │
+│  │   ViewMode  │ │ Collection  │ │ UnifiedCollection   │ │
+│  │(Value Object│ │  Service    │ │     Service         │ │
+│  │     60+     │ │  (Cache)    │ │    (Frontend)       │ │
+│  │  methods)   │ │             │ │                     │ │
+│  └─────────────┘ └─────────────┘ └─────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
 ```
 
-#### Cache Service
+#### Performance Optimizations
 
-Unified caching with automatic management:
-- **LRU Eviction**: Memory-efficient caching
-- **TTL Support**: 30-minute automatic expiration
-- **Statistics**: Hit rate and performance monitoring
-
-#### React Query Integration
-
-Custom React Query-like implementation for server state management:
-- **Query Caching**: Automatic caching with configurable stale time
-- **Background Refetching**: Auto-refresh on window focus/reconnect
-- **Mutation Support**: Optimistic updates with cache invalidation
-- **Retry Logic**: Exponential backoff for failed requests
-- **Loading States**: Comprehensive loading/error state management
+- **Unified Database Queries**: Single queries for all collection types
+- **Cache Management**: UnifiedCollectionService with automatic invalidation
+- **Date Summary Table**: Pre-computed photo counts for fast date navigation
+- **Query Optimization**: Reduced database calls from N to 1 for common operations
+- **Single Request Pattern**: Eliminated batching in frontend for optimized backend
 
 ### 5. Performance Optimizations
-- **Thumbnail caching**: PhotoCacheService with LRU eviction
-- **Lazy loading**: Photos loaded as needed
+- **Unified Collection System**: Eliminated code duplication between albums and tags
+- **Database Query Optimization**: Single queries instead of multiple for collection operations
+- **Date Summary Table**: Pre-computed photo counts using `date_summary` table (10x faster)
+- **Cache Management**: UnifiedCollectionService with LRU eviction and automatic invalidation
+- **Thumbnail caching**: PhotoCacheService with memory-efficient storage
+- **Lazy loading**: Photos loaded as needed with infinite scroll
 - **Virtual scrolling**: Efficient large dataset rendering
-- **Async operations**: Non-blocking file operations
-- **Job queue**: Background processing for heavy tasks
-- **Unified caching**: Centralized cache management across components
+- **Async operations**: Non-blocking file operations with job queue
+- **Frontend Request Optimization**: Removed batching logic, single requests to optimized backend
+- **Structured Logging**: Replaced eprintln! with structured logging for better performance
 
 ## Security Considerations
 

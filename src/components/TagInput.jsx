@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { UnifiedPhotoCollection } from '../domain/UnifiedPhotoCollection.js';
 import { logger } from '../services/LoggerService.js';
 import './TagInput.css';
 
@@ -30,23 +31,21 @@ const TagInput = ({ onTagCreated, placeholder = "Create new tag..." }) => {
         }
 
         setIsCreating(true);
-        logger.info('TagInput', 'create_tag_attempt', 'Creating new tag', { 
+        logger.info('TagInput', 'create_tag_attempt', 'Creating new tag using unified collections', { 
             name: tagName, 
             color: selectedColor 
         });
 
         try {
-            const tagId = await invoke('create_tag', {
+            const newTag = await UnifiedPhotoCollection.create('tag', {
                 name: tagName,
                 color: selectedColor
             });
 
-            logger.info('TagInput', 'create_tag_success', 'Tag created successfully', { 
-                id: tagId, 
-                name: tagName 
+            logger.info('TagInput', 'create_tag_success', 'Tag created successfully via unified collection', { 
+                id: newTag.id, 
+                name: newTag.name 
             });
-
-            const newTag = { id: tagId, name: tagName, color: selectedColor };
             
             if (onTagCreated) {
                 onTagCreated(newTag);

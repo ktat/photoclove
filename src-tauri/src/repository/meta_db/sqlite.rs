@@ -157,6 +157,160 @@ impl SQLite {
         sqlite
     }
 
+    /// Migrate existing albums and tags to unified photo_collections tables
+    fn migrate_to_unified_collections(conn: &Connection) -> Result<()> {
+        log::info!(target: "photo_collections", "migration; status=starting_unified_migration");
+        
+        // Check if legacy tables exist before migration
+        let legacy_tables_exist = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('albums', 'tags', 'album_photos', 'photo_tags')")
+            .and_then(|mut stmt| {
+                let rows = stmt.query_map([], |row| {
+                    let name: String = row.get(0)?;
+                    Ok(name)
+                })?;
+                let mut count = 0;
+                for _ in rows {
+                    count += 1;
+                }
+                Ok(count >= 2) // At least albums/tags or related tables exist
+            })
+            .unwrap_or(false);
+
+        if !legacy_tables_exist {
+            log::info!(target: "photo_collections", "migration; status=no_legacy_tables_found");
+            return Ok(());
+        }
+
+        // Start transaction for atomic migration
+        let transaction = conn.unchecked_transaction()?;
+        
+        // Step 1: Migrate existing albums to photo_collections
+        let albums_migrated = transaction.execute(
+            "INSERT OR IGNORE INTO photo_collections (type, name, description, cover_photo_path, created_at, updated_at)
+             SELECT 'album', 
+                    a.name, 
+                    COALESCE(a.description, ''), 
+                    a.cover_photo_path,
+                    COALESCE(a.created_at, '1970-01-01 00:00:00'),
+                    COALESCE(a.updated_at, a.created_at, CURRENT_TIMESTAMP)
+             FROM albums a
+             WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='albums')",
+            [],
+        )?;
+        
+        log::info!(target: "photo_collections", "migration; status=albums_migrated; count={}", albums_migrated);
+        
+        // Step 2: Migrate existing tags to photo_collections
+        let tags_migrated = transaction.execute(
+            "INSERT OR IGNORE INTO photo_collections (type, name, color, created_at, updated_at)
+             SELECT 'tag', 
+                    t.name, 
+                    t.color,
+                    COALESCE(t.created_at, '1970-01-01 00:00:00'),
+                    COALESCE(t.created_at, CURRENT_TIMESTAMP)
+             FROM tags t
+             WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='tags')",
+            [],
+        )?;
+        
+        log::info!(target: "photo_collections", "migration; status=tags_migrated; count={}", tags_migrated);
+        
+        // Step 3: Migrate album_photos to photo_collection_items
+        let album_items_migrated = transaction.execute(
+            "INSERT OR IGNORE INTO photo_collection_items (collection_id, photo_path, order_index, added_at, metadata)
+             SELECT pc.id, 
+                    ap.photo_path, 
+                    COALESCE(ap.order_index, 0),
+                    COALESCE(ap.added_at, '1970-01-01 00:00:00'),
+                    json_object('original_album_id', a.id, 'migrated_from', 'album_photos')
+             FROM album_photos ap
+             INNER JOIN albums a ON ap.album_id = a.id
+             INNER JOIN photo_collections pc ON pc.name = a.name AND pc.type = 'album'
+             WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='album_photos')
+               AND EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='albums')
+               AND EXISTS (SELECT 1 FROM photo_metadata pm WHERE pm.path = ap.photo_path)",
+            [],
+        )?;
+        
+        log::info!(target: "photo_collections", "migration; status=album_items_migrated; count={}", album_items_migrated);
+        
+        // Step 4: Migrate photo_tags to photo_collection_items
+        let tag_items_migrated = transaction.execute(
+            "INSERT OR IGNORE INTO photo_collection_items (collection_id, photo_path, order_index, added_at, metadata)
+             SELECT pc.id, 
+                    pt.photo_path, 
+                    0,
+                    COALESCE(pt.created_at, '1970-01-01 00:00:00'),
+                    json_object('original_tag_id', t.id, 'migrated_from', 'photo_tags')
+             FROM photo_tags pt
+             INNER JOIN tags t ON pt.tag_id = t.id
+             INNER JOIN photo_collections pc ON pc.name = t.name AND pc.type = 'tag'
+             WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='photo_tags')
+               AND EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='tags')
+               AND EXISTS (SELECT 1 FROM photo_metadata pm WHERE pm.path = pt.photo_path)",
+            [],
+        )?;
+        
+        log::info!(target: "photo_collections", "migration; status=tag_items_migrated; count={}", tag_items_migrated);
+        
+        // Step 5: Update photo counts in photo_collections
+        let photo_counts_updated = transaction.execute(
+            "UPDATE photo_collections 
+             SET settings = json_set(COALESCE(settings, '{}'), '$.photo_count', 
+                 (SELECT COUNT(*) FROM photo_collection_items pci WHERE pci.collection_id = photo_collections.id)
+             )",
+            [],
+        )?;
+        
+        log::info!(target: "photo_collections", "migration; status=photo_counts_updated; count={}", photo_counts_updated);
+        
+        // Step 6: Verify migration integrity
+        let album_verification = transaction.prepare("SELECT COUNT(*) FROM albums WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='albums')")
+            .and_then(|mut stmt| stmt.query_row([], |row| row.get::<_, i32>(0)))
+            .unwrap_or(0);
+            
+        let migrated_albums = transaction.prepare("SELECT COUNT(*) FROM photo_collections WHERE type = 'album'")
+            .and_then(|mut stmt| stmt.query_row([], |row| row.get::<_, i32>(0)))
+            .unwrap_or(0);
+            
+        let tag_verification = transaction.prepare("SELECT COUNT(*) FROM tags WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='tags')")
+            .and_then(|mut stmt| stmt.query_row([], |row| row.get::<_, i32>(0)))
+            .unwrap_or(0);
+            
+        let migrated_tags = transaction.prepare("SELECT COUNT(*) FROM photo_collections WHERE type = 'tag'")
+            .and_then(|mut stmt| stmt.query_row([], |row| row.get::<_, i32>(0)))
+            .unwrap_or(0);
+
+        log::info!(target: "photo_collections", "migration; status=verification; original_albums={}; migrated_albums={}; original_tags={}; migrated_tags={}", 
+                  album_verification, migrated_albums, tag_verification, migrated_tags);
+
+        // Commit transaction
+        transaction.commit()?;
+        
+        log::info!(target: "photo_collections", "migration; status=completed; albums_migrated={}; tags_migrated={}; album_items={}; tag_items={}", 
+                  albums_migrated, tags_migrated, album_items_migrated, tag_items_migrated);
+        
+        Ok(())
+    }
+
+    pub fn migrate_to_unified_collections_manual(&self) -> Result<String, String> {
+        log::info!(target: "photo_collections", "manual_migration; status=requested");
+        
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        match Self::migrate_to_unified_collections(&conn) {
+            Ok(()) => {
+                log::info!(target: "photo_collections", "manual_migration; status=completed_successfully");
+                Ok("Migration completed successfully".to_string())
+            }
+            Err(e) => {
+                log::error!(target: "photo_collections", "manual_migration; status=failed; error={}", e);
+                Err(format!("Migration failed: {}", e))
+            }
+        }
+    }
+
     pub fn init_db(&self) -> Result<()> {
         let conn = Connection::open(&self.db_path)?;
         
@@ -719,6 +873,101 @@ impl SQLite {
             log::info!(target: "albums", "table_creation; status=album_photos_table_completed");
         }
         
+        // Check if photo_collections table exists, create if not (unified albums/tags)
+        let photo_collections_exists = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='photo_collections'")
+            .and_then(|mut stmt| {
+                stmt.query_row([], |row| {
+                    let _name: String = row.get(0)?;
+                    Ok(true)
+                })
+            })
+            .unwrap_or(false);
+
+        if !photo_collections_exists {
+            log::info!(target: "photo_collections", "table_creation; status=creating_photo_collections_table");
+            
+            // Create unified photo_collections table
+            conn.execute(
+                "CREATE TABLE photo_collections (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    type TEXT NOT NULL CHECK (type IN ('album', 'tag')),
+                    name TEXT NOT NULL,
+                    color TEXT,
+                    description TEXT,
+                    cover_photo_path TEXT,
+                    settings TEXT DEFAULT '{}',
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(name, type),
+                    FOREIGN KEY (cover_photo_path) REFERENCES photo_metadata(path) ON DELETE SET NULL
+                )",
+                [],
+            )?;
+            
+            // Create indexes for photo_collections
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_collections_type ON photo_collections(type)",
+                [],
+            )?;
+            
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_collections_name ON photo_collections(name)",
+                [],
+            )?;
+            
+            log::info!(target: "photo_collections", "table_creation; status=photo_collections_table_completed");
+        }
+        
+        // Check if photo_collection_items table exists, create if not
+        let photo_collection_items_exists = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='photo_collection_items'")
+            .and_then(|mut stmt| {
+                stmt.query_row([], |row| {
+                    let _name: String = row.get(0)?;
+                    Ok(true)
+                })
+            })
+            .unwrap_or(false);
+
+        if !photo_collection_items_exists {
+            log::info!(target: "photo_collections", "table_creation; status=creating_photo_collection_items_table");
+            
+            // Create unified photo_collection_items table
+            conn.execute(
+                "CREATE TABLE photo_collection_items (
+                    collection_id INTEGER,
+                    photo_path TEXT,
+                    order_index INTEGER DEFAULT 0,
+                    added_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    metadata TEXT DEFAULT '{}',
+                    PRIMARY KEY (collection_id, photo_path),
+                    FOREIGN KEY (collection_id) REFERENCES photo_collections(id) ON DELETE CASCADE,
+                    FOREIGN KEY (photo_path) REFERENCES photo_metadata(path) ON DELETE CASCADE
+                )",
+                [],
+            )?;
+            
+            // Create indexes for photo_collection_items
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_collection_items_collection_id ON photo_collection_items(collection_id)",
+                [],
+            )?;
+            
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_collection_items_photo_path ON photo_collection_items(photo_path)",
+                [],
+            )?;
+            
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_collection_items_order ON photo_collection_items(collection_id, order_index)",
+                [],
+            )?;
+            
+            log::info!(target: "photo_collections", "table_creation; status=photo_collection_items_table_completed");
+            
+            // Migrate existing albums and tags to unified photo_collections
+            Self::migrate_to_unified_collections(&conn)?;
+        }
+        
         // Check if delete_flg column exists in photo_metadata table, add if not
         let delete_flg_exists = conn.prepare("PRAGMA table_info(photo_metadata)")
             .and_then(|mut stmt| {
@@ -825,7 +1074,65 @@ impl SQLite {
             comment,
             css_style,
             google_photo_url,
+            tags: None,
         }
+    }
+
+    fn photo_info_from_row_with_tags(
+        path: String,
+        date: String,
+        star: i32,
+        comment: String,
+        css_style: Option<String>,
+        google_photo_url: Option<String>,
+        tags_str: Option<String>,
+    ) -> meta_db::PhotoInfo {
+        let tags = if let Some(tags_str) = tags_str {
+            if tags_str.is_empty() {
+                None
+            } else {
+                // Parse the GROUP_CONCAT result: "id:name:color,id:name:color,..."
+                let parsed_tags: Vec<(i32, String, Option<String>)> = tags_str
+                    .split(',')
+                    .filter_map(|tag_str| {
+                        let parts: Vec<&str> = tag_str.split(':').collect();
+                        if parts.len() >= 3 {
+                            if let Ok(id) = parts[0].parse::<i32>() {
+                                let name = parts[1].to_string();
+                                let color = if parts[2].is_empty() { None } else { Some(parts[2].to_string()) };
+                                Some((id, name, color))
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+                
+                if parsed_tags.is_empty() { None } else { Some(parsed_tags) }
+            }
+        } else {
+            None
+        };
+
+        let photo_info = meta_db::PhotoInfo {
+            path: path.clone(),
+            date,
+            star,
+            comment,
+            css_style,
+            google_photo_url,
+            tags: tags.clone(),
+        };
+        
+        log::info!(target: "database", "photo_info_created; path={}; tags_count={}; tags_data={:?}", 
+            path, 
+            tags.as_ref().map_or(0, |t| t.len()), 
+            tags
+        );
+        
+        photo_info
     }
 
 
@@ -855,7 +1162,7 @@ impl SQLite {
         log::debug!(target: "date_summary", "get_available_dates; connection=successful");
 
         // Try to get dates directly from date_summary table
-        let mut stmt = match conn.prepare("SELECT date, photo_count FROM date_summary ORDER BY date") {
+        let mut stmt = match conn.prepare("SELECT date, photo_count FROM date_summary WHERE date IS NOT NULL ORDER BY date desc") {
             Ok(stmt) => stmt,
             Err(_) => {
                 // Table doesn't exist, fall back to GROUP BY
@@ -973,13 +1280,8 @@ impl SQLite {
         );
 
         // Remove duplicates (in case same date appears multiple times)
+        // Note: SQL already returns sorted results, so we don't need to sort here
         let original_count = dates.len();
-        dates.sort_by(|a, b| {
-            a.year
-                .cmp(&b.year)
-                .then(a.month.cmp(&b.month))
-                .then(a.day.cmp(&b.day))
-        });
         dates.dedup_by(|a, b| a.year == b.year && a.month == b.month && a.day == b.day);
 
         println!(
@@ -1009,7 +1311,7 @@ impl SQLite {
         log::info!(target: "date_summary", "fallback_get_available_dates; using_group_by=true");
 
         let mut stmt = conn
-            .prepare("SELECT DISTINCT date(photo_date) FROM photo_metadata WHERE (delete_flg = 0 OR delete_flg IS NULL) ORDER BY photo_date")
+            .prepare("SELECT DISTINCT date(photo_date) FROM photo_metadata WHERE (delete_flg = 0 OR delete_flg IS NULL) ORDER BY photo_date DESC")
             .map_err(|e| {
                 log::error!(target: "date_summary", "fallback_get_available_dates; prepare_failed; error={}", e);
                 format!("Failed to prepare fallback statement: {}", e)
@@ -1063,13 +1365,8 @@ impl SQLite {
 
         log::info!(target: "date_summary", "process_date_rows_from_iter; processed={}; parsed={}", row_count, parsed_count);
 
-        // Remove duplicates and sort
-        dates.sort_by(|a, b| {
-            a.year
-                .cmp(&b.year)
-                .then(a.month.cmp(&b.month))
-                .then(a.day.cmp(&b.day))
-        });
+        // Remove duplicates
+        // Note: SQL already returns sorted results, so we don't need to sort here
         dates.dedup_by(|a, b| a.year == b.year && a.month == b.month && a.day == b.day);
 
         log::info!(target: "date_summary", "process_date_rows_from_iter; final_count={}", dates.len());
@@ -1482,7 +1779,7 @@ impl MetaInfoDB for SQLite {
         }
 
         // Update date_summary for newly inserted photos
-        println!("SQLite::record_photos_meta_data() - Rebuilding date_summary after batch insert");
+        log::info!(target: "date_summary", "batch_insert_completed; rebuilding_summary=true");
         let _ = self.rebuild_date_summary();
 
         Ok(true)
@@ -1542,19 +1839,30 @@ impl MetaInfoDB for SQLite {
         let conn = self
             .get_connection()
             .map_err(|e| format!("Failed to connect to database: {}", e))?;
+        let query_sql = "SELECT pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url, 
+                            GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags
+                     FROM photo_metadata pm
+                     LEFT JOIN photo_tags pt ON pm.path = pt.photo_path
+                     LEFT JOIN tags t ON pt.tag_id = t.id
+                     WHERE date(pm.photo_date) = ?1 AND (pm.delete_flg = 0 OR pm.delete_flg IS NULL)
+                     GROUP BY pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url";
+        
+        log::info!(target: "database", "get_photo_meta_data_in_date_query; query={}; date={}", query_sql, date.to_string());
+        
         let mut stmt = conn
-            .prepare("SELECT path, photo_date, star, comment, css_style, google_photos_url FROM photo_metadata WHERE date(photo_date) = ?1 AND (delete_flg = 0 OR delete_flg IS NULL)")
+            .prepare(query_sql)
             .map_err(|e| format!("Failed to prepare statement: {}", e))?;
 
         let rows = stmt
             .query_map(params![date.to_string()], |row| {
-                Ok(Self::photo_info_from_row(
+                Ok(Self::photo_info_from_row_with_tags(
                     row.get(0)?,
                     row.get(1)?,
                     row.get(2)?,
                     row.get(3)?,
                     row.get(4)?,
                     row.get(5)?,
+                    row.get(6)?,
                 ))
             })
             .map_err(|e| format!("Failed to execute query: {}", e))?;
@@ -1765,30 +2073,45 @@ impl MetaInfoDB for SQLite {
             ).unwrap_or(0);
             
             if summary_count > 0 {
-                println!("SQLite::get_photo_count_per_dates() - Using optimized date_summary table");
+                log::debug!(target: "sqlite", "get_photo_count_per_dates; using_optimized_date_summary=true");
                 
-                // Use optimized queries from date_summary table
+                // Use optimized single query from date_summary table
+                let date_counts: HashMap<String, i32> = match conn.prepare("SELECT date, photo_count FROM date_summary WHERE date IS NOT NULL") {
+                    Ok(mut stmt) => {
+                        match stmt.query_map([], |row| {
+                            let date: String = row.get(0)?;
+                            let count: i32 = row.get(1)?;
+                            Ok((date, count))
+                        }) {
+                            Ok(mapped) => mapped.filter_map(Result::ok).collect(),
+                            Err(e) => {
+                                log::error!(target: "sqlite", "get_photo_count_per_dates; error={}; falling_back_to_empty", e);
+                                HashMap::new()
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        log::error!(target: "sqlite", "get_photo_count_per_dates; prepare_error={}; falling_back_to_empty", e);
+                        HashMap::new()
+                    }
+                };
+                
+                // Fill in the requested dates from the cached results
                 for date in dates.dates {
                     let date_string = date.to_string();
+                    let count = date_counts.get(&date_string).copied().unwrap_or(0);
                     
-                    let count = conn.query_row(
-                        "SELECT photo_count FROM date_summary WHERE date = ?1",
-                        params![date_string],
-                        |row| {
-                            let count: i32 = row.get(0)?;
-                            Ok(count)
-                        }
-                    ).unwrap_or(0);
-                    
-                    println!(
-                        "SQLite::get_photo_count_per_dates() - Optimized query: date '{}' has {} photos",
+                    log::debug!(
+                        target: "sqlite", 
+                        "get_photo_count_per_dates; date={}; count={}", 
                         date_string, count
                     );
                     dates_num.data.insert(date_string, count);
                 }
                 
-                println!(
-                    "SQLite::get_photo_count_per_dates() - Optimized result: {}",
+                log::debug!(
+                    target: "sqlite", 
+                    "get_photo_count_per_dates_complete; optimized_result={}", 
                     dates_num.to_json()
                 );
                 return dates_num;
@@ -1892,8 +2215,9 @@ impl MetaInfoDB for SQLite {
             .unwrap_or(0);
         log::info!(target: "recent_photos", "database_total_count; total_records={}", total_count);
         
-        let query = "SELECT * FROM photo_metadata WHERE (delete_flg = 0 OR delete_flg IS NULL) ORDER BY created_at DESC LIMIT ?";
+        let query = "SELECT pm.*, GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags FROM photo_metadata pm LEFT JOIN photo_tags pt ON pm.path = pt.photo_path LEFT JOIN tags t ON pt.tag_id = t.id WHERE (pm.delete_flg = 0 OR pm.delete_flg IS NULL) GROUP BY pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.created_at ORDER BY pm.created_at DESC LIMIT ?";
         log::info!(target: "recent_photos", "executing_sql_query; query={}; limit={}", query, limit);
+        log::info!(target: "database", "get_recent_photos_metadata_query; query={}; limit={}", query, limit);
         
         let mut stmt = conn
             .prepare(query)
@@ -1970,6 +2294,10 @@ impl MetaInfoDB for SQLite {
         SQLite::remove_tag_from_photo(self, photo_path, tag_id)
     }
 
+    fn remove_all_tags_from_photo(&self, photo_path: &str) -> Result<i32, String> {
+        SQLite::remove_all_tags_from_photo(self, photo_path)
+    }
+
     fn get_tags_for_photo(&self, photo_path: &str) -> Result<Vec<(i32, String, Option<String>)>, String> {
         SQLite::get_tags_for_photo(self, photo_path)
     }
@@ -2013,6 +2341,35 @@ impl MetaInfoDB for SQLite {
 
     fn reorder_album_photos(&self, album_id: i32, photo_order: Vec<String>) -> Result<(), String> {
         SQLite::reorder_album_photos(self, album_id, photo_order)
+    }
+
+    // Unified PhotoCollection trait implementations
+    fn create_collection(&self, collection_type: &str, name: &str, description: Option<&str>, color: Option<&str>) -> Result<i32, String> {
+        SQLite::create_collection(self, collection_type, name, description, color)
+    }
+
+    fn get_all_collections(&self, collection_type: Option<&str>) -> Result<Vec<serde_json::Value>, String> {
+        SQLite::get_all_collections(self, collection_type)
+    }
+
+    fn update_collection(&self, id: i32, name: Option<&str>, description: Option<&str>, color: Option<&str>, cover_photo_path: Option<&str>) -> Result<(), String> {
+        SQLite::update_collection(self, id, name, description, color, cover_photo_path)
+    }
+
+    fn delete_collection(&self, id: i32) -> Result<bool, String> {
+        SQLite::delete_collection(self, id)
+    }
+
+    fn add_photo_to_collection(&self, collection_id: i32, photo_path: &str) -> Result<(), String> {
+        SQLite::add_photo_to_collection(self, collection_id, photo_path)
+    }
+
+    fn remove_photo_from_collection(&self, collection_id: i32, photo_path: &str) -> Result<(), String> {
+        SQLite::remove_photo_from_collection(self, collection_id, photo_path)
+    }
+
+    fn get_collection_photos(&self, collection_id: i32, ordered: bool) -> Result<Vec<photo::Photo>, String> {
+        SQLite::get_collection_photos(self, collection_id, ordered)
     }
 }
 
@@ -2419,6 +2776,10 @@ impl SQLite {
     }
 
     pub fn search_photos(&self, query: &str, search_type: &str, filters: &str, sort_field: &str, sort_order: &str, max_photos_per_fetch: u32) -> Result<String, String> {
+        use crate::entity::photo::Photos;
+        use crate::entity::photo::Photo;
+        use crate::value::file::File;
+        use crate::value::exif::ExifData;
         let start_time = std::time::Instant::now();
         
         log::debug!(
@@ -2438,8 +2799,10 @@ impl SQLite {
             filter_params.as_object().map_or(0, |obj| obj.len())
         );
         
-        // Build search query based on search_type
-        let mut sql_query = String::from("SELECT * FROM photo_metadata WHERE (delete_flg = 0 OR delete_flg IS NULL)");
+        // Build search query based on search_type with tags
+        let mut sql_query = String::from("SELECT pm.*, GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags FROM photo_metadata pm LEFT JOIN photo_tags pt ON pm.path = pt.photo_path LEFT JOIN tags t ON pt.tag_id = t.id WHERE (pm.delete_flg = 0 OR pm.delete_flg IS NULL)");
+        
+        log::info!(target: "database", "search_photos_base_query; query={}", sql_query);
         let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
         
         // Add search condition based on search_type (only if query is not empty)
@@ -2609,32 +2972,35 @@ impl SQLite {
             }
         }
         
+        // Add GROUP BY clause for tag aggregation
+        sql_query.push_str(" GROUP BY pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url, pm.exif_date_time_original, pm.exif_make, pm.exif_model, pm.exif_lens_model");
+        
         // Add ORDER BY clause with primary and secondary sort fields
         let order_direction = if sort_order.to_lowercase() == "asc" { "ASC" } else { "DESC" };
         let secondary_direction = "DESC"; // Default secondary sort direction
         
         match sort_field {
             "exif_date_time_original" => {
-                sql_query.push_str(&format!(" ORDER BY exif_date_time_original {}, photo_date {}, path {}", 
+                sql_query.push_str(&format!(" ORDER BY pm.exif_date_time_original {}, pm.photo_date {}, pm.path {}", 
                     order_direction, secondary_direction, secondary_direction));
             }
             "photo_date" => {
-                sql_query.push_str(&format!(" ORDER BY photo_date {}, exif_date_time_original {}, path {}", 
+                sql_query.push_str(&format!(" ORDER BY pm.photo_date {}, pm.exif_date_time_original {}, pm.path {}", 
                     order_direction, secondary_direction, secondary_direction));
             }
             "path" => {
-                sql_query.push_str(&format!(" ORDER BY path {}, exif_date_time_original {}, photo_date {}", 
+                sql_query.push_str(&format!(" ORDER BY pm.path {}, pm.exif_date_time_original {}, pm.photo_date {}", 
                     order_direction, secondary_direction, secondary_direction));
             }
             "star" => {
                 // For star rating, we need to handle NULLs - put them at the end for DESC, beginning for ASC
                 let null_handling = if sort_order.to_lowercase() == "desc" { "NULLS LAST" } else { "NULLS FIRST" };
-                sql_query.push_str(&format!(" ORDER BY star {} {}, exif_date_time_original {}, photo_date {}, path {}", 
+                sql_query.push_str(&format!(" ORDER BY pm.star {} {}, pm.exif_date_time_original {}, pm.photo_date {}, pm.path {}", 
                     order_direction, null_handling, secondary_direction, secondary_direction, secondary_direction));
             }
             _ => {
                 // Default fallback to exif_date_time_original with secondary sorts
-                sql_query.push_str(&format!(" ORDER BY exif_date_time_original {}, photo_date {}, path {}", 
+                sql_query.push_str(&format!(" ORDER BY pm.exif_date_time_original {}, pm.photo_date {}, pm.path {}", 
                     order_direction, secondary_direction, secondary_direction));
             }
         }
@@ -2658,38 +3024,71 @@ impl SQLite {
         
         // Execute query
         let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+        
+        log::info!(target: "database", "search_photos_final_query; query={}; param_count={}", sql_query, param_refs.len());
+        
         let mut stmt = conn.prepare(&sql_query).map_err(|e| e.to_string())?;
         let photo_iter = stmt.query_map(&param_refs[..], |row| {
             let photo_path = row.get::<_, String>("path").unwrap_or_default();
             
-            // Check if thumbnail exists (similar to Photo::set_has_thumbnail)
-            let has_thumbnail = self.check_thumbnail_exists(&photo_path);
+            // Create Photo entity from file path
+            let file_result = File::new_if_exists(photo_path.clone());
+            if file_result.is_none() {
+                return Err(rusqlite::Error::InvalidPath(photo_path.into()));
+            }
+            let file = file_result.unwrap();
             
-            Ok(serde_json::json!({
-                "file": {
-                    "path": photo_path,
-                    "name": photo_path.split('/').last().unwrap_or("")
-                },
-                "has_thumbnail": has_thumbnail,
-                "css_style": "",
-                "search_relevance": 1.0,
-                "comment": row.get::<_, Option<String>>("comment").unwrap_or_default(),
-                "star_rating": row.get::<_, i32>("star").unwrap_or(0),
-                "camera_make": row.get::<_, Option<String>>("exif_make").unwrap_or_default(),
-                "camera_model": row.get::<_, Option<String>>("exif_model").unwrap_or_default(),
-                "lens_model": row.get::<_, Option<String>>("exif_lens_model").unwrap_or_default(),
-                "date_taken": row.get::<_, Option<String>>("exif_date_time_original").unwrap_or_default()
-            }))
+            // Get config for thumbnail checking
+            let config = crate::entity::config::Config::new();
+            let mut photo = Photo::new(file, Some(config));
+            
+            // Set thumbnail status
+            photo.set_has_thumbnail();
+            
+            // Set metadata from database
+            let star = row.get::<_, i32>("star").unwrap_or(0);
+            photo.set_star(star);
+            
+            let comment = row.get::<_, Option<String>>("comment").unwrap_or_default().unwrap_or_default();
+            photo.set_comment(comment);
+            
+            // Set EXIF data
+            let mut exif_data = ExifData::empty();
+            if let Some(date_time) = row.get::<_, Option<String>>("exif_date_time_original").unwrap_or_default() {
+                exif_data.date_time = date_time;
+            }
+            photo.embed_exif(exif_data);
+            
+            // Process tags from concatenated string: "id:name:color,id:name:color"
+            let tags_string = row.get::<_, Option<String>>("tags").unwrap_or_default();
+            
+            log::info!(target: "database", "search_photos_row_tags; path={}; raw_tags={:?}", photo_path, tags_string);
+            
+            photo.set_tags_from_string(tags_string);
+            
+            Ok(photo)
         }).map_err(|e| e.to_string())?;
         
-        let mut results: Vec<serde_json::Value> = Vec::new();
-        for photo in photo_iter {
-            results.push(photo.map_err(|e| e.to_string())?);
+        let mut photos = Photos::new();
+        for photo_result in photo_iter {
+            match photo_result {
+                Ok(photo) => {
+                    log::info!(target: "database", "search_photos_photo_added; path={}; has_tags={}", 
+                        photo.file.path, photo.tags.is_some());
+                    photos.photos.push(photo);
+                },
+                Err(e) => {
+                    log::error!(target: "database", "search_photos_photo_error; error={}", e);
+                    return Err(e.to_string());
+                }
+            }
         }
         
         // Results are already limited by SQL LIMIT clause
-        let final_count = results.len();
+        let final_count = photos.photos.len();
         let duration = start_time.elapsed();
+        
+        let json_response = photos.to_json();
         
         log::info!(
             target: "database",
@@ -2699,7 +3098,15 @@ impl SQLite {
             duration.as_millis()
         );
         
-        Ok(serde_json::to_string(&results).map_err(|e| e.to_string())?)
+        // Log first photo with tags for debugging
+        if let Some(first_photo) = photos.photos.first() {
+            if let Some(tags) = &first_photo.tags {
+                log::info!(target: "database", "search_photos_response_sample; first_photo_tags={:?}; path={:?}", 
+                    tags, first_photo.file.path);
+            }
+        }
+        
+        Ok(json_response)
     }
     
     fn check_thumbnail_exists(&self, photo_path: &str) -> bool {
@@ -2923,6 +3330,18 @@ impl SQLite {
         ).map_err(|e| format!("Failed to remove tag from photo: {}", e))?;
         
         Ok(rows_affected > 0)
+    }
+
+    pub fn remove_all_tags_from_photo(&self, photo_path: &str) -> Result<i32, String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let rows_affected = conn.execute(
+            "DELETE FROM photo_tags WHERE photo_path = ?1",
+            params![photo_path],
+        ).map_err(|e| format!("Failed to remove all tags from photo: {}", e))?;
+        
+        Ok(rows_affected as i32)
     }
 
     pub fn get_tags_for_photo(&self, photo_path: &str) -> Result<Vec<(i32, String, Option<String>)>, String> {
@@ -3210,5 +3629,201 @@ impl SQLite {
         
         Ok(())
     }
+
+    // Unified PhotoCollection Methods
+
+    pub fn create_collection(&self, collection_type: &str, name: &str, description: Option<&str>, color: Option<&str>) -> Result<i32, String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        
+        conn.execute(
+            "INSERT INTO photo_collections (type, name, description, color, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![collection_type, name, description, color, now, now],
+        ).map_err(|e| format!("Failed to create collection: {}", e))?;
+        
+        let collection_id = conn.last_insert_rowid() as i32;
+        Ok(collection_id)
+    }
+
+    pub fn get_all_collections(&self, collection_type: Option<&str>) -> Result<Vec<serde_json::Value>, String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let (query, params): (String, Vec<Box<dyn rusqlite::ToSql>>) = match collection_type {
+            Some(ctype) => (
+                "SELECT id, type, name, color, description, cover_photo_path, settings, created_at, updated_at,
+                        (SELECT COUNT(*) FROM photo_collection_items WHERE collection_id = photo_collections.id) as photo_count
+                 FROM photo_collections WHERE type = ?1 ORDER BY name".to_string(),
+                vec![Box::new(ctype.to_string())]
+            ),
+            None => (
+                "SELECT id, type, name, color, description, cover_photo_path, settings, created_at, updated_at,
+                        (SELECT COUNT(*) FROM photo_collection_items WHERE collection_id = photo_collections.id) as photo_count
+                 FROM photo_collections ORDER BY type, name".to_string(),
+                vec![]
+            )
+        };
+        
+        let mut stmt = conn.prepare(&query)
+            .map_err(|e| format!("Failed to prepare query: {}", e))?;
+        
+        let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+        let rows = stmt.query_map(param_refs.as_slice(), |row| {
+            Ok(serde_json::json!({
+                "id": row.get::<_, i32>(0)?,
+                "type": row.get::<_, String>(1)?,
+                "name": row.get::<_, String>(2)?,
+                "color": row.get::<_, Option<String>>(3)?,
+                "description": row.get::<_, Option<String>>(4)?,
+                "coverPhotoPath": row.get::<_, Option<String>>(5)?,
+                "settings": row.get::<_, String>(6).unwrap_or("{}".to_string()),
+                "createdAt": row.get::<_, String>(7)?,
+                "updatedAt": row.get::<_, String>(8)?,
+                "photoCount": row.get::<_, i32>(9)?
+            }))
+        }).map_err(|e| format!("Failed to query collections: {}", e))?;
+        
+        let mut collections = Vec::new();
+        for row in rows {
+            collections.push(row.map_err(|e| format!("Failed to process row: {}", e))?);
+        }
+        
+        Ok(collections)
+    }
+
+    pub fn update_collection(&self, id: i32, name: Option<&str>, description: Option<&str>, color: Option<&str>, cover_photo_path: Option<&str>) -> Result<(), String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        
+        // Build separate updates for each field to avoid borrow checker issues
+        if let Some(n) = name {
+            conn.execute("UPDATE photo_collections SET name = ?, updated_at = ? WHERE id = ?", 
+                        &[&n as &dyn rusqlite::ToSql, &now, &id])
+                .map_err(|e| format!("Failed to update collection name: {}", e))?;
+        }
+        
+        if let Some(d) = description {
+            conn.execute("UPDATE photo_collections SET description = ?, updated_at = ? WHERE id = ?", 
+                        &[&d as &dyn rusqlite::ToSql, &now, &id])
+                .map_err(|e| format!("Failed to update collection description: {}", e))?;
+        }
+        
+        if let Some(c) = color {
+            conn.execute("UPDATE photo_collections SET color = ?, updated_at = ? WHERE id = ?", 
+                        &[&c as &dyn rusqlite::ToSql, &now, &id])
+                .map_err(|e| format!("Failed to update collection color: {}", e))?;
+        }
+        
+        if let Some(cp) = cover_photo_path {
+            conn.execute("UPDATE photo_collections SET cover_photo_path = ?, updated_at = ? WHERE id = ?", 
+                        &[&cp as &dyn rusqlite::ToSql, &now, &id])
+                .map_err(|e| format!("Failed to update collection cover photo: {}", e))?;
+        }
+        
+        Ok(())
+    }
+
+    pub fn delete_collection(&self, id: i32) -> Result<bool, String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let rows_affected = conn.execute(
+            "DELETE FROM photo_collections WHERE id = ?1",
+            params![id],
+        ).map_err(|e| format!("Failed to delete collection: {}", e))?;
+        
+        Ok(rows_affected > 0)
+    }
+
+    pub fn add_photo_to_collection(&self, collection_id: i32, photo_path: &str) -> Result<(), String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        
+        // Get the next order_index for albums
+        let order_index: i32 = conn.query_row(
+            "SELECT COALESCE(MAX(order_index), -1) + 1 FROM photo_collection_items WHERE collection_id = ?1",
+            params![collection_id],
+            |row| row.get(0)
+        ).unwrap_or(0);
+        
+        conn.execute(
+            "INSERT OR IGNORE INTO photo_collection_items (collection_id, photo_path, order_index, added_at) VALUES (?1, ?2, ?3, ?4)",
+            params![collection_id, photo_path, order_index, now],
+        ).map_err(|e| format!("Failed to add photo to collection: {}", e))?;
+        
+        Ok(())
+    }
+
+    pub fn remove_photo_from_collection(&self, collection_id: i32, photo_path: &str) -> Result<(), String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        conn.execute(
+            "DELETE FROM photo_collection_items WHERE collection_id = ?1 AND photo_path = ?2",
+            params![collection_id, photo_path],
+        ).map_err(|e| format!("Failed to remove photo from collection: {}", e))?;
+        
+        Ok(())
+    }
+
+    pub fn get_collection_photos(&self, collection_id: i32, ordered: bool) -> Result<Vec<photo::Photo>, String> {
+        let conn = self.get_connection()
+            .map_err(|_| "Failed to connect to database".to_string())?;
+        
+        let order_clause = if ordered {
+            "ORDER BY pci.order_index ASC, pci.added_at ASC"
+        } else {
+            "ORDER BY pci.added_at DESC"
+        };
+        
+        let query = format!(
+            "SELECT pm.path, pm.photo_date, pm.star, pm.comment, pm.created_at, pm.updated_at,
+                    pm.google_photos_url, pm.exif_iso, pm.exif_fnumber, pm.exif_date_time,
+                    pm.exif_date_time_original, pm.exif_lens_model, pm.exif_make, pm.exif_lens_make,
+                    pm.exif_model, pm.exif_xresolution, pm.exif_yresolution, pm.exif_resolution_unit,
+                    pm.exif_copyright, pm.exif_exposure_time, pm.exif_shutter_speed_value,
+                    pm.exif_focal_length, pm.exif_focal_length_in35mm_film, pm.exif_digital_zoom_ratio,
+                    pm.exif_exposure_mode, pm.exif_white_balance_mode, pm.exif_orientation, pm.css_style,
+                    pci.order_index, pci.added_at
+             FROM photo_collection_items pci 
+             JOIN photo_metadata pm ON pci.photo_path = pm.path 
+             WHERE pci.collection_id = ?1 
+             {}",
+            order_clause
+        );
+        
+        let mut stmt = conn.prepare(&query)
+            .map_err(|e| format!("Failed to prepare query: {}", e))?;
+        
+        let photos = stmt.query_map(params![collection_id], |row| {
+            let path: String = row.get("path")?;
+            let _photo_date: String = row.get("photo_date")?;
+            let star: i32 = row.get("star")?;
+            let comment: String = row.get("comment")?;
+            
+            // Create a file from the path
+            let file = file::File::new(path);
+            
+            // Create photo with the file and no config
+            let mut photo = photo::Photo::new(file, None);
+            
+            // Set the star and comment from database
+            photo.star = if star > 0 { Some(star) } else { None };
+            photo.comment = if !comment.is_empty() { Some(comment) } else { None };
+            
+            Ok(photo)
+        }).map_err(|e| format!("Failed to query collection photos: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect collection photos: {}", e))?;
+        
+        Ok(photos)
+    }
+
 
 }

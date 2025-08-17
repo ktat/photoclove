@@ -17,7 +17,13 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
     setIsLoading(true);
     try {
       logger.info('AlbumSelectorModal', 'load_albums_start', 'Loading albums for selection', { selectedPhotosCount });
-      const albumList = await invoke('get_all_albums');
+      const albumsResult = await invoke('get_photos_unified', {
+        request: {
+          type: 'search',
+          search_type: 'all_albums'
+        }
+      });
+      const albumList = JSON.parse(albumsResult);
       
       // Convert tuple format to object format: [id, name, description, cover_photo_path, photo_count]
       const processedAlbums = albumList.map(album => ({

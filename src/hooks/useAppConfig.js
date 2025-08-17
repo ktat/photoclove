@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { invoke } from "@tauri-apps/api/core";
 import { useUI } from '../context/UIContext.jsx';
 import { useError } from '../context/ErrorContext.jsx';
@@ -6,11 +6,13 @@ import { useError } from '../context/ErrorContext.jsx';
 export const useAppConfig = () => {
   const { useCount, setUseCount } = useUI();
   const { handleTauriError } = useError();
+  const [config, setConfig] = useState(null);
 
   const loadConfig = useCallback(() => {
     invoke("get_config", {}).then((e) => {
       const json = JSON.parse(e);
       setUseCount(json.use_count);
+      setConfig(json); // Store full config
     }).catch((error) => {
       handleTauriError(error, "Getting configuration");
     });
@@ -22,6 +24,7 @@ export const useAppConfig = () => {
 
   return {
     useCount,
+    config,
     loadConfig
   };
 };

@@ -67,10 +67,15 @@ export const usePhotosListFilters = () => {
   
   // Apply frontend filters to photos array
   const applyFrontendFilters = useCallback((photos) => {
-    logger.debug('usePhotosListFilters', 'apply_filters_start', 'Applying frontend filters', {
-      inputPhotosCount: photos.length,
-      filters
-    });
+    // Check if any filters are actually active to avoid unnecessary logging
+    const hasActiveFilters = filters.star > 0 || filters.hasComment || filters.extension !== 'all';
+    
+    if (hasActiveFilters) {
+      logger.debug('usePhotosListFilters', 'apply_filters_start', 'Applying frontend filters', {
+        inputPhotosCount: photos.length,
+        filters
+      });
+    }
     
     const filtered = photos.filter(photo => {
       // Apply star filter
@@ -95,11 +100,13 @@ export const usePhotosListFilters = () => {
       return true;
     });
     
-    logger.debug('usePhotosListFilters', 'apply_filters_complete', 'Frontend filters applied', {
-      inputCount: photos.length,
-      filteredCount: filtered.length,
-      filtersApplied: filters
-    });
+    if (hasActiveFilters) {
+      logger.debug('usePhotosListFilters', 'apply_filters_complete', 'Frontend filters applied', {
+        inputCount: photos.length,
+        filteredCount: filtered.length,
+        filtersApplied: filters
+      });
+    }
     
     return filtered;
   }, [filters]);

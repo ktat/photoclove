@@ -63,25 +63,74 @@ The database schema automatically migrates when new columns are added. Migration
 
 See [Job Queue System Documentation](job-queue-system.md) for job queue related tables.
 
-## Tag Tables
+## Unified Collection System (Albums & Tags)
 
-PhotoClove includes a comprehensive tagging system for organizing and categorizing photos.
+PhotoClove uses a unified collection system that treats albums and tags as different types of collections.
 
-### Tags Table
+### Photo Collections Table
+- `id` (INTEGER PRIMARY KEY AUTOINCREMENT): Unique collection identifier
+- `type` (TEXT NOT NULL): Collection type ('album' or 'tag')
+- `name` (TEXT NOT NULL): Collection name
+- `description` (TEXT): Description (albums only)
+- `color` (TEXT): Hex color code (tags only)
+- `cover_photo_path` (TEXT): Path to cover photo (albums only)
+- `settings` (TEXT): JSON settings object
+- `created_at` (TEXT NOT NULL): Creation timestamp
+- `updated_at` (TEXT NOT NULL): Last update timestamp
+
+### Photo Collection Items Table (Many-to-Many Relationship)
+- `collection_id` (INTEGER): Foreign key to photo_collections.id
+- `photo_path` (TEXT): Foreign key to photo_metadata.path
+- `order_index` (INTEGER): Display order (albums only)
+- `added_at` (TEXT NOT NULL): Timestamp when photo was added
+- Primary key: (collection_id, photo_path)
+- Cascading deletes: When collection or photo is deleted, associations are automatically removed
+
+### Date Summary Table (Performance Optimization)
+- `date` (TEXT PRIMARY KEY): Date in YYYY-MM-DD format
+- `photo_count` (INTEGER NOT NULL): Number of photos for this date
+- `created_at` (TEXT NOT NULL): Creation timestamp
+- `updated_at` (TEXT NOT NULL): Last update timestamp
+
+## Legacy Tables (Backward Compatibility)
+
+### Tags Table (Legacy)
 - `id` (INTEGER PRIMARY KEY AUTOINCREMENT): Unique tag identifier
 - `name` (TEXT NOT NULL UNIQUE): Tag name (e.g., "vacation", "family")
 - `color` (TEXT): Optional hex color code for visual organization
 - `created_at` (TEXT NOT NULL): Timestamp when tag was created
 
-### Photo Tags Table (Many-to-Many Relationship)
+### Photo Tags Table (Legacy)
 - `photo_path` (TEXT): Foreign key to photo_metadata.path
 - `tag_id` (INTEGER): Foreign key to tags.id
 - `created_at` (TEXT NOT NULL): Timestamp when tag was assigned
 - Primary key: (photo_path, tag_id)
-- Cascading deletes: When photo or tag is deleted, associations are automatically removed
+
+### Albums Table (Legacy)
+- `id` (INTEGER PRIMARY KEY AUTOINCREMENT): Unique album identifier
+- `name` (TEXT NOT NULL): Album name
+- `description` (TEXT): Album description
+- `cover_photo_path` (TEXT): Path to album cover photo
+- `created_at` (TEXT NOT NULL): Creation timestamp
+- `updated_at` (TEXT NOT NULL): Last update timestamp
+
+### Album Photos Table (Legacy)
+- `album_id` (INTEGER): Foreign key to albums.id
+- `photo_path` (TEXT): Foreign key to photo_metadata.path
+- `order_index` (INTEGER): Display order in album
+- `added_at` (TEXT NOT NULL): Timestamp when photo was added
+- Primary key: (album_id, photo_path)
 
 ## Indexes
 
+### Performance Indexes
 - `idx_photo_date`: Index on photo_date column for fast date-based queries
+- `idx_collection_type`: Index on photo_collections.type for fast collection type filtering
+- `idx_collection_items_photo`: Index on photo_collection_items.photo_path for fast photo lookups
+- `idx_collection_items_collection`: Index on photo_collection_items.collection_id for fast collection lookups
+
+### Legacy Indexes (Backward Compatibility)
 - `idx_photo_tags_photo_path`: Index on photo_tags.photo_path for fast tag lookups by photo
 - `idx_photo_tags_tag_id`: Index on photo_tags.tag_id for fast photo lookups by tag
+- `idx_album_photos_album`: Index on album_photos.album_id for fast album photo lookups
+- `idx_album_photos_photo`: Index on album_photos.photo_path for fast photo album lookups
