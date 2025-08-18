@@ -1,0 +1,170 @@
+/* Left Menu Styles */
+.leftMenu,
+.selectedPhoto,
+.rightMenu {
+  flex: 1;
+  height: calc(100vh - 30px);
+  overflow-y: hidden;
+  padding-top: 10px;
+}
+
+.leftMenu {
+  max-width: 230px;
+  min-width: 230px;
+  border: none;
+  background-color: #1f1f1f;
+  flex-shrink: 0;
+}
+
+.leftMenu .navigation-icons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.leftMenu .navigation-icons a {
+  font-size: 16px;
+  text-decoration: none;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 28px;
+}
+
+.leftMenu .navigation-icons a:hover {
+  background-color: var(--bg-elevated);
+}
+
+.leftMenu .dateList {
+  height: calc(100vh - 110px);
+  overflow-y: auto;
+}
+
+.leftMenu ul {
+  margin-left: 10px;
+  text-align: left;
+  list-style: none;
+}
+
+/* DateList Styles */
+p.dateListTitle {
+  padding: 0px 0px 5px 0px;
+  margin: 0px 0px 0px 0px;
+}
+
+div.dateList,
+div.dateList ul {
+  padding-top: 10px;
+  margin-top: 0px;
+}
+
+@keyframes date-list-loader {
+  0% {
+    transform: rotate(-45deg);
+  }
+
+  50% {
+    transform: rotate(45deg);
+  }
+
+  100% {
+    transform: rotate(-45deg);
+  }
+}
+
+.dateListLoading-container {
+  display: inline-block;
+  padding: 0px 0px 0px 2px;
+}
+
+div.dateListLoading {
+  color: gray;
+  display: inline-block;
+  animation: date-list-loader 2s linear infinite;
+  padding: 0px 0px 0px 2px;
+}
+
+div.dateListLoading-crub {
+  padding-left: 5px;
+  display: inline-block;
+  font-size: 7px;
+  animation: date-list-loader 0.8s linear infinite;
+}
+
+/* Date List Filter Controls */
+.dateListFilters select {
+  background-color: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 11px;
+  padding: 2px 4px;
+}
+
+.dateListFilters select:focus {
+  outline: none;
+  border-color: #646cff;
+}
+
+.dateListFilters button {
+  background-color: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.dateListFilters button:hover {
+  background-color: var(--bg);
+  border-color: #646cff;
+}
+
+/* Hierarchical date view styling */
+.dateList .hierarchical-year {
+  font-weight: bold;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.dateList .hierarchical-month {
+  font-weight: 600;
+  color: #aaa;
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+
+.dateList .hierarchical-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-left: 0;
+  padding-left: 0;
+}
+
+.dateList .hierarchical-day {
+  font-size: 11px;
+  padding: 2px 4px;
+  display: inline-block;
+  border-radius: 3px;
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+}
+
+.dateList .hierarchical-day:hover {
+  background-color: var(--bg-elevated);
+}
+
+/* Responsive styles for left menu */
+@media screen and (max-width: 1000px) {
+  .leftMenu {
+    display: none;
+  }
+}
