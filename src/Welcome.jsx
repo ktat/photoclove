@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import React, { useState, useEffect } from "react";
 import WelcomeImage from "./WelcomeImage.jsx";
+import './Welcome.css';
 
 function Welcome(props) {
     const [showWelcome, setShowWelcome] = useState(false);

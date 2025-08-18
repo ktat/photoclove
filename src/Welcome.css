@@ -1,0 +1,48 @@
+/* Welcome Component Styles */
+#welcome-container {
+  min-height: calc(100vh - 55px);
+  height: calc(100% - 15px)
+}
+
+#login-container,
+#welcome,
+#welcome div.introduction,
+#welcome ol.tutorial {
+  margin-left: 30px;
+  font-size: 30px;
+}
+
+#welcome-container .welcome-splash {
+  text-align: center;
+  overflow-y: hidden;
+  max-height: calc(100vh - 150px);
+  width: calc(var(--vw) - 100px);
+  padding: 0px 50px 50px 50px;
+}
+
+#login-container {
+  width: 100%;
+  text-align: left;
+}
+
+#login-container h1 {
+  font-size: 1em;
+}
+
+#login-container ul li {
+  list-style: none;
+  font-size: 0.8em;
+}
+
+#welcome ol li {
+  padding-top: 1em;
+  line-height: 1.5em;
+}
+
+#welcome ol span.useCount-1 {
+  text-decoration: line-through;
+}
+
+#welcome ol span.useCount-2 {
+  text-decoration: line-through;
+}
