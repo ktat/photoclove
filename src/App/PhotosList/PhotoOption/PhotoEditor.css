@@ -1,0 +1,232 @@
+/* Editor styles */
+.editor-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.editor-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.editor-control label {
+    min-width: 120px;
+    font-weight: bold;
+    color: #f0f0f0;
+}
+
+.editor-control input[type="range"] {
+    flex: 1;
+    height: 5px;
+    background: #333;
+    border-radius: 3px;
+    outline: none;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.editor-control input[type="range"]:hover {
+    opacity: 1;
+}
+
+.editor-control input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #4CAF50;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.editor-control input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: #4CAF50;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+}
+
+.editor-control span {
+    min-width: 40px;
+    text-align: center;
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+.editor-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.editor-buttons button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background: #4CAF50;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+
+.editor-buttons button:hover {
+    background: #45a049;
+}
+
+.editor-buttons button:nth-child(2) {
+    background: #2196F3;
+}
+
+.editor-buttons button:nth-child(2):hover {
+    background: #1976D2;
+}
+
+.editor-buttons button:nth-child(3) {
+    background: #ff9800;
+}
+
+.editor-buttons button:nth-child(3):hover {
+    background: #f57c00;
+}
+
+.editor-buttons button:nth-child(4) {
+    background: #9c27b0;
+}
+
+.editor-buttons button:nth-child(4):hover {
+    background: #7b1fa2;
+}
+
+.css-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.css-preview label {
+    font-weight: bold;
+    color: #f0f0f0;
+}
+
+.css-preview textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 10px;
+    border: 1px solid #333;
+    border-radius: 5px;
+    background: #2a2a2a;
+    color: #f0f0f0;
+    font-family: monospace;
+    font-size: 12px;
+    resize: vertical;
+    box-sizing: border-box;
+    overflow-x: auto;
+    word-wrap: break-word;
+}
+
+/* Enhanced Editor Controls */
+.control-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.control-row span {
+    min-width: 35px;
+    text-align: center;
+    font-weight: bold;
+    color: #4CAF50;
+    font-size: 12px;
+}
+
+.reset-btn {
+    background: #666 !important;
+    color: white !important;
+    border: 1px solid #888 !important;
+    border-radius: 3px !important;
+    padding: 4px 6px !important;
+    cursor: pointer;
+    font-size: 14px;
+    min-width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 !important;
+    transition: background-color 0.2s;
+}
+
+.reset-btn:hover {
+    background: #777 !important;
+}
+
+.rotation-shortcuts {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.shortcut-btn {
+    background: #4a4a4a !important;
+    color: #ccc !important;
+    border: 1px solid #666 !important;
+    border-radius: 3px !important;
+    padding: 4px 8px !important;
+    cursor: pointer;
+    font-size: 11px;
+    transition: background-color 0.2s;
+    margin: 0 !important;
+}
+
+.shortcut-btn:hover {
+    background: #555 !important;
+    color: #fff !important;
+}
+
+.action-btn {
+    background: #4CAF50 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 4px !important;
+    padding: 6px 12px !important;
+    cursor: pointer;
+    font-size: 11px !important;
+    font-weight: 500;
+    transition: background 0.2s;
+    margin: 0 4px 0 0 !important;
+    min-width: auto;
+}
+
+.action-btn:hover {
+    background: #45a049 !important;
+}
+
+.action-btn:nth-child(2) {
+    background: #2196F3 !important;
+}
+
+.action-btn:nth-child(2):hover {
+    background: #1976D2 !important;
+}
+
+.action-btn:nth-child(3) {
+    background: #ff9800 !important;
+}
+
+.action-btn:nth-child(3):hover {
+    background: #f57c00 !important;
+}
+
+.action-btn:nth-child(4) {
+    background: #9c27b0 !important;
+}
+
+.action-btn:nth-child(4):hover {
+    background: #7b1fa2 !important;
+}

@@ -5,6 +5,7 @@ import { isPermissionGranted, requestPermission, sendNotification } from '@tauri
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { logger } from '../../../services/LoggerService.js';
 import fileUrl from '../../../PathUtil.jsx';
+import './PhotoEditor.css';
 
 // TODO: This file is too large (1284 lines) and should be refactored into smaller modules:
 // - PhotoEditor/cssUtils.js: CSS parsing and generation utilities
