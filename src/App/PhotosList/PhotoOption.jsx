@@ -4,6 +4,7 @@ import PhotoEditor from "./PhotoOption/PhotoEditor.jsx";
 import PhotoTags from "./PhotoOption/PhotoTags.jsx";
 import AlbumTab from "./AlbumTab.jsx";
 import { useUI } from "../../context/UIContext.jsx";
+import './PhotoOption.css';
 
 function PhotoOption(props) {
     const [activeTab, setActiveTab] = useState("info");
