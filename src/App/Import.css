@@ -1,0 +1,179 @@
+/* Import Components Styles */
+
+.importDisplay {
+  flex: 1;
+  display: block;
+  min-width: calc(var(--vw) - 562px);
+  max-height: calc(100vh - 30px);
+  min-height: calc(100vh - 30px);
+  padding: 20px 20px 10px 20px;
+  margin: 0 0 0 0px;
+}
+
+.importDisplay {
+  overflow-y: hidden;
+}
+
+.importDisplayHidden {
+  display: none;
+}
+
+.importDisplay div.photos,
+.centerDisplay div.photos {
+  text-align: left;
+  min-width: 100%;
+}
+
+.centerDisplay li .importDisplay li {
+  display: inline;
+  padding-right: 20px;
+  margin-right: 10px;
+}
+
+#import-container {
+  display: flex;
+  flex-direction: row;
+  max-width: calc(var(--vw) - 662px);
+  height: calc(100vh - 80px);
+}
+
+#importPhotosDisplay {
+  overflow-x: hidden;
+}
+
+#importer-directories-list {
+  min-width: 200px;
+  max-width: 200px;
+  flex: 0 0 200px;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  text-align: left;
+  margin-bottom: 0px;
+  padding-bottom: 0px;
+}
+
+#importer-directories-list ul {
+  margin-left: -40px;
+}
+
+#importer-directories-list li {
+  display: block;
+  white-space: nowrap;
+}
+
+#importer-files-list {
+  min-width: calc(var(--vw) - 800px);
+  max-width: calc(var(--vw) - 800px);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+#importer-files-list .row0,
+#importer-files-list .row0-center {
+  flex: 0 0 auto;
+  margin: 0px;
+  width: 100%;
+}
+
+#importer-files-list .row1-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 0 0 auto;
+  margin: 0px 10px 5px 10px;
+  width: calc(100% - 20px);
+}
+
+#importer-files-list .row1,
+#importer-files-list .row1-right {
+  flex: 0 0 auto;
+  margin: 0px;
+  white-space: nowrap;
+}
+
+#importer-files-list .row1-right {
+  min-width: 400px;
+  max-width: 400px;
+}
+
+#importer-files-list .row1 {
+  text-align: left;
+  max-width: calc(var(--vw) - 850px);
+}
+
+#importer-files-list .row0-center {
+  text-align: center;
+  margin-bottom: 10px;
+  flex: 0 0 auto;
+}
+
+#importer-files-list .navigation {
+  width: 100%;
+  text-align: center;
+  flex: 0 0 auto;
+  margin-bottom: 10px;
+}
+
+.importer-photos {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, max-content));
+  gap: 10px;
+  overflow-y: hidden;
+  overflow-x: hidden;
+  margin-top: 0px;
+  min-width: 100%;
+  max-width: 100%;
+  min-height: 0;
+  padding: 5px 10px 10px 10px;
+  justify-content: start;
+  align-content: start;
+}
+
+.importer-photos .row {
+  margin: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: flex-start;
+  height: auto;
+}
+
+.list-of-import-path {
+  overflow-y: hidden;
+  overflow-x: auto;
+  height: 50px;
+  white-space: nowrap;
+  padding: 10px 0px 10px 0px;
+  margin: 0px;
+}
+
+/* Media queries for import styles */
+@media screen and (max-width: 1000px) {
+  div#importer-files-list,
+  div.importer-photos {
+    min-width: calc(var(--vw) - 200px);
+    max-width: calc(var(--vw) - 200px);
+    width: calc(var(--vw) - 200px);
+  }
+}
+
+@media screen and (max-width: 1400px) {
+  #importPhotosDisplay,
+  #import-container {
+    min-width: 100%;
+    max-width: 100%;
+    width: calc(var(--vw) - 230px);
+  }
+
+  div#importer-files-list,
+  div.importer-photos {
+    min-width: calc(var(--vw) - 250px);
+    max-width: calc(var(--vw) - 250px);
+    width: calc(var(--vw) - 250px);
+  }
+}

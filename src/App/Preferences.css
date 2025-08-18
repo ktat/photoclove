@@ -1,0 +1,58 @@
+/* Preferences Component Styles */
+.preferences {
+  flex: 1;
+  display: block;
+  min-width: calc(var(--vw) - 562px);
+  max-height: calc(100vh - 30px);
+  min-height: calc(100vh - 30px);
+  padding: 20px 20px 10px 20px;
+  margin: 0 0 0 0px;
+  order: 2;
+  overflow: scroll;
+}
+
+.preferences-input {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  text-align: left;
+  text-align: left;
+}
+
+.preferences-input .row0 {
+  flex: 100%;
+  min-width: 100%;
+  padding-bottom: 10px;
+}
+
+.preferences-input .row1 {
+  flex: 110px;
+  padding-bottom: 10px;
+}
+
+.preferences-input .row2 {
+  flex: 100px;
+  padding-bottom: 10px;
+}
+
+.preferences-input .row3 {
+  flex: calc(100% - 100px);
+  padding-bottom: 10px;
+}
+
+.preferences-input .row4 {
+  flex: calc(100% - 250px);
+  padding-bottom: 10px;
+}
+
+.preferences-input input[type=text] {
+  width: 400px;
+}
+
+.restartRequired {
+  color: #ff5555;
+}
+
+.create_db {
+  color: #55ff55;
+}

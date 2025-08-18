@@ -6,6 +6,9 @@ import { ask, message } from '@tauri-apps/plugin-dialog';
 import "./App.css";
 import "./components/search.css";
 import "./App/LeftMenu.css";
+import "./App/Import.css";
+import "./components/HelpDialog.css";
+import "./components/FormControls.css";
 import PhotosList from "./App/PhotosList.jsx"
 import DateList from "./App/DateList.jsx"
 import Preferences from "./App/Preferences.jsx"
