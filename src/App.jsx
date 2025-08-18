@@ -9,6 +9,9 @@ import "./App/LeftMenu.css";
 import "./App/Import.css";
 import "./components/HelpDialog.css";
 import "./components/FormControls.css";
+import "./App/Footer.css";
+import "./components/Splash.css";
+import "./components/PhotoLoading.css";
 import PhotosList from "./App/PhotosList.jsx"
 import DateList from "./App/DateList.jsx"
 import Preferences from "./App/Preferences.jsx"

@@ -1,0 +1,20 @@
+/* Splash Screen Component Styles */
+
+.splash-container {
+  text-align: center;
+  vertical-align: middle;
+  width: 100%;
+  padding: 0px 0px 0px 0px;
+  margin: 0px 0px 0px 0px;
+  height: calc(100vh - 150px);
+  border-radius: 10px;
+}
+
+img.splash {
+  overflow-y: hidden;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 90%;
+  border-radius: 10px;
+}
