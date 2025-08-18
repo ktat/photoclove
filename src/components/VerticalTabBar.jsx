@@ -1,5 +1,6 @@
 import React from 'react';
 import { VIEW_MODES } from '../constants/viewModes.js';
+import './VerticalTabBar.css';
 
 /**
  * Vertical tab bar component for side panel navigation
