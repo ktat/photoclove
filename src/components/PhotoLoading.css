@@ -1,0 +1,85 @@
+/* Photo Loading States and Animation Styles */
+
+.photoLoadingOnParent {
+  width: 100%;
+  min-height: calc(100vh - 30px)
+}
+
+.centerDisplay,
+.photoLoadingOn {
+  flex: 1;
+  display: block;
+  min-height: calc(100vh - 30px);
+  padding: 20px 20px 10px 20px;
+  margin: 0 0 0 0px;
+}
+
+.photoLoadingOn,
+.centerDisplay {
+  min-width: calc(var(--vw) - 560px);
+  max-width: calc(100vw - 320px - 230px);
+  min-height: calc(100vh - 30px);
+  text-align: center;
+  overflow: hidden;
+  transition: max-width 0.3s ease;
+}
+
+.inner-container.menu-closed .centerDisplay,
+.inner-container.menu-closed .photoLoadingOn {
+  max-width: calc(100vw - 230px);
+}
+
+.photoLoadingOff {
+  display: none;
+}
+
+/* Loading spinner animation */
+.lds-dual-ring {
+  display: inline-block;
+  width: 80px;
+  height: 80px;
+}
+
+.lds-dual-ring:after {
+  font-size: 1.5em;
+  content: '\1f980';
+  display: block;
+  padding-top: 15px;
+  width: 65px;
+  height: 64px;
+  margin: 8px;
+  border-radius: 45%;
+  border: 6px solid #fff;
+  border-color: #fff transparent #fff transparent;
+  animation: lds-dual-ring 1.2s linear infinite;
+}
+
+@keyframes lds-dual-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Media queries for photo loading */
+@media screen and (max-width: 1000px) {
+  .photoLoadingOn h1 {
+    white-space: nowrap;
+  }
+
+  .photoLoadingOn {
+    flex: 1;
+    text-align: center;
+    display: block;
+    width: 100%;
+    max-width: calc(var(--vw) - 60px);
+    min-width: calc(var(--vw) - 60px);
+    max-height: calc(100vh - 30px);
+    min-height: calc(100vh - 30px);
+    padding: 20px 20px 10px 20px;
+    margin: 0 0 0 0px;
+  }
+}
