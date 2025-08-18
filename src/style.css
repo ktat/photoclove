@@ -9,7 +9,6 @@
   height: calc(100vh - 30px);
 }
 
-
 .inner-container {
   display: flex;
   flex-direction: row;
@@ -27,7 +26,6 @@
 .inner-container.menu-closed {
   width: 100%;
 }
-
 
 .row {
   flex: 1;
@@ -48,37 +46,17 @@ h1 {
   text-align: center;
 }
 
-
-
 @media screen and (max-width: 1000px) {
   #home-container {
     width: var(--vw);
     height: calc(100vh - 30px);
   }
-
 }
-
-@media screen and (max-width: 1400px) {
-
-}
-
-
-
-
 
 
 .closePhotoInfo {
   float: right;
 }
-
-
-
-
-
-
-
-
-
 
 #directory-maintenance {
   position: relative;
@@ -90,16 +68,11 @@ h1 {
   text-align: left;
 }
 
-
-
 /* Ensure wrapper respects container constraints */
 #imageWrapper {
   max-width: 100%;
   max-height: 100%;
 }
-
-
-
 
 div.selected:after {
   margin-left: -27px;
@@ -121,9 +94,6 @@ ul.list-of-selected li {
   display: list-item;
   list-style: none;
 }
-
-
-
 
 .scroll-indicator-text {
   font-size: 16px;
@@ -167,10 +137,6 @@ ul.list-of-selected li {
   }
 }
 
-
-
-
-
 .imageInSelectedPhotos {
   flex: 1;
   max-width: 100%;
@@ -178,7 +144,6 @@ ul.list-of-selected li {
   overflow-y: hidden;
   overflow-y: scroll;
 }
-
 
 .inner-container:after {
   content: "";
@@ -195,10 +160,7 @@ ul.list-of-selected li {
   a:hover {
     color: #24c8db;
   }
-
 }
-
-
 
 #photo img {
   opacity: 0.1;
@@ -208,7 +170,6 @@ ul.list-of-selected li {
 img.photo_dragging {
   cursor: grabbing;
 }
-
 
 .rigthMenu table td {
   overflow: hidden;
@@ -250,8 +211,6 @@ div.photo-clove {
   text-align: center;
   padding: 50px;
 }
-
-
 
 .video-on {
   width: 100%;
@@ -389,9 +348,6 @@ div#tab-selection img {
   padding: 10px;
 }
 
-
-
-
 a.run-app {
   color: gray;
   font-size: 0.7em;
@@ -402,9 +358,3 @@ a.run-app {
   margin: 0px 0px 0px 0px;
   padding: 0px 0px 0px 0px;
 }
-
-
-
-
-
-
