@@ -99,25 +99,6 @@ h1 {
   text-align: center;
 }
 
-input,
-button {
-  border-radius: 8px;
-  padding: 0.5em 0.8em;
-}
-
-button {
-  cursor: pointer;
-}
-
-button:hover {
-  border-color: #396cd8;
-}
-
-#search-input {
-  margin-bottom: 5px;
-  margin-right: 5px;
-  max-width: 70%;
-}
 
 .selectedPhoto,
 .rightMenu {
@@ -182,18 +163,6 @@ button:hover {
     width: calc(var(--vw) - 60px);
   }
 
-  /*
-  #importer-directories-list {
-    display: none;
-  }
-  */
-
-  div#importer-files-list,
-  div.importer-photos {
-    min-width: calc(var(--vw) - 200px);
-    max-width: calc(var(--vw) - 200px);
-    width: calc(var(--vw) - 200px);
-  }
 
   .photos {
     min-width: calc(var(--vw) - 60px);
@@ -206,19 +175,6 @@ button:hover {
     display: none;
   }
 
-  #importPhotosDisplay,
-  #import-container {
-    min-width: 100%;
-    max-width: 100%;
-    width: calc(var(--vw) - 230px);
-  }
-
-  div#importer-files-list,
-  div.importer-photos {
-    min-width: calc(var(--vw) - 250px);
-    max-width: calc(var(--vw) - 250px);
-    width: calc(var(--vw) - 250px);
-  }
 }
 
 
@@ -271,16 +227,6 @@ button:hover {
   height: calc(100vh - 250px);
 }
 
-.importDisplay,
-.preferences {
-  flex: 1;
-  display: block;
-  min-width: calc(var(--vw) - 562px);
-  max-height: calc(100vh - 30px);
-  min-height: calc(100vh - 30px);
-  padding: 20px 20px 10px 20px;
-  margin: 0 0 0 0px;
-}
 
 .centerDisplayMax {
   max-width: calc(var(--vw) - 100px);
@@ -290,9 +236,7 @@ button:hover {
   margin: 0 0 0 0px;
 }
 
-.centerDisplay,
-.importDisplay,
-.preferences {
+.centerDisplay {
   flex: 1;
   order: 2;
 }
@@ -328,13 +272,7 @@ button:hover {
   overflow-y: auto;
 }
 
-.preferences {
-  overflow: scroll;
-}
 
-.importDisplay {
-  overflow-y: hidden;
-}
 
 .photo-list-header {
   display: flex;
@@ -414,22 +352,15 @@ button:hover {
 .selectedPhotosHidden,
 .centerDisplayHidden,
 .photoDisplayHidden,
-.rightMenuHidden,
-.importDisplayHidden {
+.rightMenuHidden {
   display: none;
 }
 
-.importDisplay div.photos,
 .centerDisplay div.photos {
   text-align: left;
   min-width: 100%;
 }
 
-.centerDisplay li .importDisplay li {
-  display: inline;
-  padding-right: 20px;
-  margin-right: 10px;
-}
 
 div.selected:after {
   margin-left: -27px;
@@ -452,109 +383,6 @@ ul.list-of-selected li {
   list-style: none;
 }
 
-#import-container {
-  display: flex;
-  flex-direction: row;
-  max-width: calc(var(--vw) - 662px);
-  height: calc(100vh - 80px);
-}
-
-#importPhotosDisplay {
-  overflow-x: hidden;
-}
-
-#importer-directories-list {
-  min-width: 200px;
-  max-width: 200px;
-  flex: 0 0 200px;
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  text-align: left;
-  margin-bottom: 0px;
-  padding-bottom: 0px;
-}
-
-#importer-directories-list ul {
-  margin-left: -40px;
-}
-
-#importer-directories-list li {
-  display: block;
-  white-space: nowrap;
-}
-
-#importer-files-list {
-  min-width: calc(var(--vw) - 800px);
-  max-width: calc(var(--vw) - 800px);
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-}
-
-#importer-files-list .row0,
-#importer-files-list .row0-center {
-  flex: 0 0 auto;
-  margin: 0px;
-  width: 100%;
-}
-
-#importer-files-list .row1-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex: 0 0 auto;
-  margin: 0px 10px 5px 10px;
-  width: calc(100% - 20px);
-}
-
-#importer-files-list .row1,
-#importer-files-list .row1-right {
-  flex: 0 0 auto;
-  margin: 0px;
-  white-space: nowrap;
-}
-
-#importer-files-list .row1-right {
-  min-width: 400px;
-  max-width: 400px;
-}
-
-#importer-files-list .row1 {
-  text-align: left;
-  max-width: calc(var(--vw) - 850px);
-}
-
-#importer-files-list .row0-center {
-  text-align: center;
-  margin-bottom: 10px;
-  flex: 0 0 auto;
-}
-
-#importer-files-list .navigation {
-  width: 100%;
-  text-align: center;
-  flex: 0 0 auto;
-  margin-bottom: 10px;
-}
-
-.importer-photos {
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, max-content));
-  gap: 10px;
-  overflow-y: hidden;
-  overflow-x: hidden;
-  margin-top: 0px;
-  min-width: 100%;
-  max-width: 100%;
-  min-height: 0;
-  padding: 5px 10px 10px 10px;
-  justify-content: start;
-  align-content: start;
-}
 
 .photos {
   display: grid;
@@ -570,8 +398,7 @@ ul.list-of-selected li {
   align-content: start;
 }
 
-.photos .row,
-.importer-photos .row {
+.photos .row {
   margin: 0;
   display: flex;
   flex-direction: row;
@@ -655,10 +482,6 @@ ul.list-of-selected li {
   min-width: 25px;
 }
 
-.photo-list-menu input {
-  background-color: var(--bg-elevated);
-  margin: 0;
-}
 
 .photo-list-menu a {
   text-decoration: none;
@@ -715,12 +538,6 @@ ul.list-of-selected li {
     color: #24c8db;
   }
 
-  input,
-  button {
-    margin: 0 5px 0 5px;
-    color: #ffffff;
-    background-color: #0f0f0f98;
-  }
 }
 
 .photoLoadingOff {
@@ -757,51 +574,6 @@ img.photo_dragging {
   cursor: grabbing;
 }
 
-.preferences-input {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  text-align: left;
-  text-align: left;
-}
-
-.preferences-input .row0 {
-  flex: 100%;
-  min-width: 100%;
-  padding-bottom: 10px;
-}
-
-.preferences-input .row1 {
-  flex: 110px;
-  padding-bottom: 10px;
-}
-
-.preferences-input .row2 {
-  flex: 100px;
-  padding-bottom: 10px;
-}
-
-.preferences-input .row3 {
-  flex: calc(100% - 100px);
-  padding-bottom: 10px;
-}
-
-.preferences-input .row4 {
-  flex: calc(100% - 250px);
-  padding-bottom: 10px;
-}
-
-.preferences-input input[type=text] {
-  width: 400px;
-}
-
-.restartRequired {
-  color: #ff5555;
-}
-
-.create_db {
-  color: #55ff55;
-}
 
 .rigthMenu table td {
   overflow: hidden;
@@ -1020,72 +792,6 @@ div#tab-selection img {
   object-fit: contain;
 }
 
-/* checkbox */
-input[type=checkbox] {
-  display: none;
-}
-
-label.checkbox {
-  position: relative;
-  margin-left: 5px;
-}
-
-label.checkbox-normal {
-  padding: 0px 0 0 15px;
-}
-
-label.checkbox-photo {
-  padding: 0 0 0 0;
-  margin: 0 0 0 0;
-}
-
-label.checkbox:hover:after {
-  border-color: #0171bd;
-}
-
-label.checkbox:after,
-label.checkbox:before {
-  padding: 0 0 0 0;
-  margin: 0 0 0 0;
-  position: absolute;
-  content: "";
-  display: block;
-  top: 50%;
-}
-
-label.checkbox:after {
-  left: -7px;
-  margin-top: -8px;
-  width: 12px;
-  height: 12px;
-  border: 2px solid #535bf2;
-  border-radius: 6px;
-}
-
-label.checkbox:before {
-  left: 0px;
-  margin-top: -8px;
-  width: 3px;
-  height: 7px;
-  border-right: 2px solid #ccc;
-  border-bottom: 2px solid #ccc;
-  transform: rotate(45deg);
-  opacity: 0;
-}
-
-input[type=checkbox]:checked+label.checkbox:before {
-  opacity: 1;
-}
-
-label.hover {
-  padding: 0px;
-  margin: 0px;
-  width: 12px;
-}
-
-label.hover:hover {
-  cursor: pointer;
-}
 
 .rightMenu img {
   width: auto;
@@ -1120,96 +826,8 @@ a.run-app {
   max-height: calc(100vh - 150px);
 }
 
-#selectedInfo.hidden,
-#unselectedInfo.hidden {
-  display: none;
-}
 
-#help {
-  border-width: 1px;
-  border-style: solid;
-  border-color: var(--border);
-  z-index: 100;
-  display: block;
-  position: absolute;
-  top: calc(100vh / 2 - 257px);
-  left: calc(var(--vw) / 2 - 275px);
-  width: 550px;
-  font-size: 20px;
-  padding-top: 10px;
-  background-color: #333;
-  text-align: left;
-  border-radius: 10px;
-  padding: 5px 20px 20px 20px;
-}
 
-#help table tr th,
-#help table tr td,
-#help table {
-  border-color: var(--border);
-}
-
-#help h1 {
-  font-size: 25px;
-  text-align: center;
-  padding: 0 0 5px 0px;
-}
-
-#help table {
-  width: 100%;
-}
-
-#help table tr th {
-  width: 200px;
-}
-
-#help.hidden {
-  display: none;
-}
-
-#selectedInfo,
-#unselectedInfo {
-  border-width: 1px;
-  border-style: solid;
-  border-color: #fff;
-  z-index: 110;
-  display: block;
-  position: absolute;
-  top: calc(100vh / 3);
-  left: calc(var(--vw) / 2 - 150px);
-  width: 300px;
-  min-height: 45px;
-  max-height: 90px;
-  font-size: 20px;
-  padding-top: 10px;
-  background-color: #444;
-  text-align: center;
-  font-weight: bold;
-  border-radius: 10px;
-}
-
-#selectedInfo {
-  color: #dd8;
-}
-
-#unselectedInfo {
-  color: #e77;
-}
-
-#preferences {
-  overflow-y: auto;
-  overflow-x: auto;
-  height: calc(100vh - 50px);
-}
-
-.list-of-import-path {
-  overflow-y: hidden;
-  overflow-x: auto;
-  height: 50px;
-  white-space: nowrap;
-  padding: 10px 0px 10px 0px;
-  margin: 0px;
-}
 
 .big-photo-in-selection {
   display: none;
@@ -1239,116 +857,9 @@ a.run-app {
 
 
 
-/* Input field styles for precise value control */
-.value-input {
-    width: 50px !important;
-    height: 24px !important;
-    padding: 2px 6px !important;
-    font-size: 11px !important;
-    text-align: center !important;
-    background: #1a1a1a !important;
-    color: #ccc !important;
-    border: 1px solid #555 !important;
-    border-radius: 3px !important;
-    margin: 0 2px !important;
-    flex: none !important;
-}
-
-.value-input:focus {
-    border-color: #007acc !important;
-    outline: none !important;
-    background: #2a2a2a !important;
-}
 
 
-/* Manual search button styles (improvement #46) */
-.manual-search-button {
-    background-color: #007acc;
-    color: #ffffff;
-    font-weight: bold;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 14px;
-    margin-top: 10px;
-    transition: background-color 0.2s, color 0.2s;
-}
-
-.manual-search-button:hover:not(:disabled) {
-    background-color: #005a99;
-    color: #ffffff;
-}
-
-.manual-search-button:disabled {
-    background-color: #555;
-    cursor: not-allowed;
-    color: #cccccc;
-}
-
-.manual-search-controls {
-    margin-top: 15px;
-    padding: 10px;
-    border-top: 1px solid #eee;
-    text-align: center;
-}
-
-.manual-search-hint {
-    margin: 8px 0 0 0;
-    font-size: 12px;
-    color: #666;
-    font-style: italic;
-}
 
 
-/* Search input with inline clear button */
-.search-input-wrapper {
-    position: relative;
-    flex: 1;
-    display: flex;
-    align-items: center;
-}
-
-.search-input {
-    width: 100%;
-    padding-right: 30px; /* Space for clear button */
-}
-
-.input-clear-button {
-    position: absolute;
-    right: 5px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 5px;
-    color: #666;
-    font-size: 14px;
-    line-height: 1;
-    opacity: 0.7;
-    transition: opacity 0.2s;
-}
-
-.input-clear-button:hover {
-    opacity: 1;
-    color: #333;
-}
-
-/* Date input wrapper styles */
-.date-input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.date-input-wrapper input[type="date"] {
-    width: 100%;
-    padding-right: 30px; /* Space for clear button */
-}
-
-.search-input-container {
-    display: flex;
-    gap: 5px;
-    align-items: center;
-}
 
 

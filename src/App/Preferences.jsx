@@ -5,6 +5,7 @@ import { relaunch } from "@tauri-apps/plugin-process";
 import PickFolderSingle from "../FolderPicker.jsx";
 import { logger } from "../services/LoggerService.js";
 import TagManager from "../components/TagManager.jsx";
+import './Preferences.css';
 
 
 function Preferences(props) {
