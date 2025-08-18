@@ -8,6 +8,7 @@
 // - PhotosList/PhotosListViewModel.js: State management and business logic
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import './PhotosList.css';
 import PhotosListMini from "./PhotosList/PhotosListMini.jsx";
 import PhotoOption from "./PhotosList/PhotoOption.jsx";
 import { invoke } from "@tauri-apps/api/core";
