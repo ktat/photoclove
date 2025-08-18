@@ -284,30 +284,6 @@
   max-height: calc(100vh - 150px);
 }
 
-/* Big photo selection */
-.big-photo-in-selection {
-  display: none;
-  text-align: center;
-  vertical-align: middle;
-  position: absolute;
-  max-width: calc(var(--vw) - 200px);
-  max-height: calc(100vh - 200px);
-  min-width: calc(var(--vw) - 200px);
-  min-height: calc(100vh - 200px);
-  top: 50px;
-  left: calc(var(--vw) / 2 - (var(--vw) - 200px) / 2);
-  padding: 0px 0px 0px 0px;
-  margin: 0px 0px 0px 0px;
-  text-align: center;
-}
-
-.big-photo-in-selection img {
-  max-width: calc(var(--vw) - 200px);
-  max-height: calc(100vh - 200px);
-  border-width: 1px;
-  border-style: solid;
-  border-color: #fff;
-}
 
 /* Grid size variations */
 .pict-50 {
