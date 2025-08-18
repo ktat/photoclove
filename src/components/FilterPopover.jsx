@@ -37,11 +37,17 @@ const FilterPopover = ({
     
     // Calculate position based on anchor element
     const getPosition = () => {
-        if (!anchorRef?.current) return { top: 0, right: 0 };
+        if (!anchorRef?.current) return { top: 60, right: 0 };
         const rect = anchorRef.current.getBoundingClientRect();
+        
+        // Use fixed top position to ensure it's below the toolbar
+        const topPosition = 60;
+        // Align right edge of popover with right edge of button
+        const rightPosition = window.innerWidth - rect.right;
+        
         return {
-            top: rect.bottom + 5,
-            right: window.innerWidth - rect.right
+            top: topPosition,
+            right: rightPosition
         };
     };
     
@@ -51,7 +57,7 @@ const FilterPopover = ({
         <div 
             ref={popoverRef}
             style={{
-                position: 'absolute',
+                position: 'fixed',
                 top: `${position.top}px`,
                 right: `${position.right}px`,
                 backgroundColor: 'var(--bg-elevated)',
@@ -61,7 +67,7 @@ const FilterPopover = ({
                 padding: '12px 16px',
                 minWidth: '280px',
                 maxWidth: '350px',
-                zIndex: 1000,
+                zIndex: 10000,
                 color: 'var(--text)'
             }}
         >
