@@ -325,6 +325,27 @@ function PhotosList(props) {
         appConfig
     });
 
+    // closePhotoDisplay function (needed by usePhotoOperations)
+    function closePhotoDisplay() {
+        setShowSideMenu(false);
+
+        // Calculate the correct key for showPhotoDisplay based on current mode
+        const displayKey = viewModeObj.isRecentMode() ? "recent" : viewModeObj.getDataAttribute();
+
+        // Use togglePhotoDisplay with the correct key
+        compatProps.togglePhotoDisplay(displayKey, false);
+        setCurrentPhotoPath("");
+
+        // Cancel any existing photo loading before starting new request
+        if (currentPhotoLoadingController) {
+            currentPhotoLoadingController.abort();
+            setCurrentPhotoLoadingController(null);
+        }
+
+        const fetchPhotos = async () => getPhotos();
+        fetchPhotos().catch(error => handleError(error, 'Refresh photos after closing display'))
+    }
+
     // Photo operations hook - handles photo-related actions
     const {
         handleAddToAlbum,
@@ -338,7 +359,8 @@ function PhotosList(props) {
         handleAlbumDelete,
         handleTagSelection,
         clearTagSelection,
-        deleteSelectedTags
+        deleteSelectedTags,
+        removePhotoFromList
     } = usePhotoOperations({
         selectedAlbums,
         setSelectedAlbums,
@@ -358,7 +380,17 @@ function PhotosList(props) {
         loadTags,
         currentAlbumId,
         toggleAlbumListMode,
-        isTrashMode
+        isTrashMode,
+        // Photo list state
+        photosListMiniAllPhotos,
+        setPhotosListMiniAllPhotos,
+        allPhotosForCurrentFetch,
+        setAllPhotosForCurrentFetch,
+        photosListMiniCurrentIndex,
+        setPhotosListMiniCurrentIndex,
+        setCurrentPhotoPath,
+        setCurrentPhotoIndex,
+        closePhotoDisplay
     });
 
     // Clear all active filters
@@ -1030,43 +1062,7 @@ function PhotosList(props) {
         setPhotosList
     });
 
-    // Remove photo from current view (for album removal)
-    const removePhotoFromList = (indexToRemove) => {
-        logger.info('PhotosList', 'remove_photo_from_list', 'Removing photo from current view', {
-            index: indexToRemove,
-            totalPhotos: photosListMiniAllPhotos.length
-        });
-
-        // Remove from photosListMiniAllPhotos
-        const newAllPhotos = [...photosListMiniAllPhotos];
-        newAllPhotos.splice(indexToRemove, 1);
-        setPhotosListMiniAllPhotos(newAllPhotos);
-
-        // Also remove from allPhotosForCurrentFetch and filteredPhotos
-        const removedPath = photosListMiniAllPhotos[indexToRemove]?.file?.path;
-        if (removedPath) {
-            const newAllPhotosForFetch = allPhotosForCurrentFetch.filter(photo => photo.originalPath !== removedPath);
-            setAllPhotosForCurrentFetch(newAllPhotosForFetch);
-        }
-
-        // Adjust current index if needed
-        if (indexToRemove >= newAllPhotos.length && newAllPhotos.length > 0) {
-            // Last photo was removed, go to previous
-            const newIndex = newAllPhotos.length - 1;
-            setPhotosListMiniCurrentIndex(newIndex);
-            setCurrentPhotoPath(newAllPhotos[newIndex].file.path);
-            setCurrentPhotoIndex(newIndex);
-        } else if (newAllPhotos.length > 0) {
-            // Stay at same index (now showing next photo)
-            const newIndex = Math.min(indexToRemove, newAllPhotos.length - 1);
-            setPhotosListMiniCurrentIndex(newIndex);
-            setCurrentPhotoPath(newAllPhotos[newIndex].file.path);
-            setCurrentPhotoIndex(newIndex);
-        } else {
-            // No photos left
-            closePhotoDisplay();
-        }
-    };
+    // removePhotoFromList now provided by usePhotoOperations hook
 
     function moveToTrashCan(f) {
 
@@ -1492,25 +1488,7 @@ function PhotosList(props) {
         }
     }, [isSearchMode, searchResults, searchQuery]);
 
-    function closePhotoDisplay() {
-        setShowSideMenu(false);
-
-        // Calculate the correct key for showPhotoDisplay based on current mode
-        const displayKey = viewModeObj.isRecentMode() ? "recent" : viewModeObj.getDataAttribute();
-
-        // Use togglePhotoDisplay with the correct key
-        compatProps.togglePhotoDisplay(displayKey, false);
-        setCurrentPhotoPath("");
-
-        // Cancel any existing photo loading before starting new request
-        if (currentPhotoLoadingController) {
-            currentPhotoLoadingController.abort();
-            setCurrentPhotoLoadingController(null);
-        }
-
-        const fetchPhotos = async () => getPhotos();
-        fetchPhotos().catch(error => handleError(error, 'Refresh photos after closing display'))
-    }
+    // closePhotoDisplay now defined earlier (needed by usePhotoOperations hook)
 
     function closeRightColumn() {
         setShowSideMenu(false);
