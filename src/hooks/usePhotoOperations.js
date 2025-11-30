@@ -161,12 +161,58 @@ export function usePhotoOperations({
         }
         // Refresh albums list
         loadAlbums();
-        
-        logger.info('PhotosList', 'album_deleted_navigation', 'Navigated after album deletion', { 
-            deletedAlbumId, 
-            currentAlbumId 
+
+        logger.info('PhotosList', 'album_deleted_navigation', 'Navigated after album deletion', {
+            deletedAlbumId,
+            currentAlbumId
         });
     }, [currentAlbumId, toggleAlbumListMode, loadAlbums]);
+
+    // Album-photo relationship operations
+    const handleAddToAlbum = useCallback(async (photoPath, albumId) => {
+        try {
+            logger.info('usePhotoOperations', 'add_photo_to_album_start', 'Adding photo to album', {
+                photoPath,
+                albumId
+            });
+
+            await invoke("add_photo_to_album", { albumId, photoPath });
+
+            logger.info('usePhotoOperations', 'add_photo_to_album_success', 'Photo added to album successfully', {
+                photoPath,
+                albumId
+            });
+
+            addFooterMessage('Photo added to album');
+            return true;
+        } catch (error) {
+            handleError(error, 'Add photo to album', { photoPath, albumId });
+            return false;
+        }
+    }, [handleError, addFooterMessage]);
+
+    const removePhotoFromAlbum = useCallback(async (photoPath, albumId) => {
+        try {
+            logger.info('usePhotoOperations', 'remove_photo_from_album_start', 'Removing photo from album', {
+                photoPath,
+                albumId
+            });
+
+            const result = await invoke("remove_photo_from_album", { albumId, photoPath });
+
+            logger.info('usePhotoOperations', 'remove_photo_from_album_success', 'Photo removed from album successfully', {
+                photoPath,
+                albumId,
+                result
+            });
+
+            addFooterMessage('Photo removed from album');
+            return true;
+        } catch (error) {
+            handleError(error, 'Remove photo from album', { photoPath, albumId });
+            return false;
+        }
+    }, [handleError, addFooterMessage]);
 
     // Photo deletion operations
     const permanentlyDeletePhoto = useCallback((photoPath) => {
@@ -199,16 +245,20 @@ export function usePhotoOperations({
         clearAlbumSelection,
         deleteSelectedAlbums,
         handleAlbumDelete,
-        
+
+        // Album-photo operations
+        handleAddToAlbum,
+        removePhotoFromAlbum,
+
         // Tag operations
         handleTagSelection,
         clearTagSelection,
         deleteSelectedTags,
-        
+
         // Photo operations
         permanentlyDeletePhoto,
         deletePhoto,
-        
+
         // Selection state (for convenience)
         selectedAlbumsCount: selectedAlbums.length,
         selectedTagsCount: selectedTags.length,
