@@ -120,14 +120,9 @@ export function useImportModeLifecycle({
     }, [
         viewMode,
         isSearchMode,
-        importState,
-        setImportState,
-        setTabClass,
-        setShowSideMenu,
-        setAllPhotosForCurrentFetch,
-        setPhotosListMiniAllPhotos,
-        setPhotosList,
-        clearSelection
+        importState
+        // Note: Intentionally excluding setter functions to prevent infinite loops
+        // These functions are stable and don't need to trigger re-runs
     ]);
 }
 
