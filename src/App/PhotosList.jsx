@@ -45,6 +45,7 @@ import PhotosToolbar from "./PhotosList/PhotosToolbar.jsx";
 import StatusBar from "./PhotosList/StatusBar.jsx";
 import ListViewHeader from "./PhotosList/ListViewHeader.jsx";
 import { usePhotosState } from "../hooks/usePhotosState.js";
+import { usePhotoSelection } from "../hooks/usePhotoSelection.js";
 import { convertPhotosToEntities, applyFrontendFilters, convertJSONToPhotoEntities } from "../utils/PhotoProcessingUtils.js";
 import { hasActiveFilters, getFilterSummary, getSortConfig, getCurrentSortConfig } from "../utils/UIStateUtils.js";
 
@@ -143,6 +144,18 @@ function PhotosList(props) {
         addFooterMessage: addFooterMessage,
         ...props
     };
+    // Use new photo selection hook (extracted for better modularity)
+    const {
+        photoSelection,
+        photoSelectionDict,
+        togglePhotoSelection,
+        isPhotoSelected,
+        clearSelection: clearPhotoSelection,
+        selectAllPhotos,
+        setSelection,
+        getSelectionStats
+    } = usePhotoSelection();
+
     // Replace all individual useState calls with centralized state management hook
     const {
         // Core photo data
@@ -151,16 +164,12 @@ function PhotosList(props) {
         allPhotosForCurrentFetch, setAllPhotosForCurrentFetch,
         currentPhotoPath, setCurrentPhotoPath,
         currentPhotoIndex, setCurrentPhotoIndex,
-        
+
         // UI state
         iconSize, setIconSize,
         numOfPhoto, setNumOfPhoto,
         photoLoading, setPhotoLoading,
         showSideMenu, setShowSideMenu,
-        
-        // Selection state
-        photoSelection, setPhotoSelection,
-        photoSelectionDict, setPhotoSelectionDict,
         
         // Infinite scroll - now handled by useInfiniteScroll hook
         
@@ -1000,60 +1009,36 @@ function PhotosList(props) {
 
     }
 
+    // Selection functions - now using usePhotoSelection hook
     function addSelection(t, f) {
-        const selection = photoSelection.concat();
         if (t) {
             if (!photoSelectionDict[f]) {
-                selection.push(f);
-                photoSelectionDict[f] = true;
+                togglePhotoSelection(f);
             }
             changeTab(undefined, "#tab-selection");
         } else {
-            delete photoSelectionDict[f];
-            const i = selection.indexOf(f)
-            if (i >= 0) {
-                selection.splice(i, 1);
+            if (photoSelectionDict[f]) {
+                togglePhotoSelection(f);
             }
         }
-        setPhotoSelectionDict(photoSelectionDict);
-        setPhotoSelection(selection);
     }
 
     function toggleSelection(f) {
-        let t = true;
-        if (photoSelectionDict[f]) {
-            t = false;
-        }
-        addSelection(t, f);
-        return t;
+        const wasSelected = photoSelectionDict[f];
+        togglePhotoSelection(f);
+        return !wasSelected;
     }
 
     function isSelected(f) {
-        return photoSelectionDict[f];
+        return isPhotoSelected(f);
     }
 
-    function clearPhotoSelection() {
-        setPhotoSelectionDict({});
-        setPhotoSelection([]);
-    }
+    // clearPhotoSelection now comes from usePhotoSelection hook
 
     function selectAllPhotoToSelection() {
-        const selection = photoSelection.concat();
-        const newSelectionDict = { ...photoSelectionDict };
-
         // For infinite scroll, select only displayed photos to avoid confusion
         const targetPhotos = infiniteScrollEnabled ? displayedPhotos : filteredPhotos;
-
-        targetPhotos.forEach((photo) => {
-            const path = photo.originalPath;
-            if (!newSelectionDict[path]) {
-                selection.push(path);
-                newSelectionDict[path] = true;
-            }
-        });
-
-        setPhotoSelectionDict(newSelectionDict);
-        setPhotoSelection(selection);
+        selectAllPhotos(targetPhotos);
     }
 
     const [tabClass, setTabClass] = useState(() => {
