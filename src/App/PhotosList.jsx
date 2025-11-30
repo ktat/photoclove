@@ -1026,8 +1026,7 @@ function PhotosList(props) {
         setShowSideMenu,
         setAllPhotosForCurrentFetch,
         setPhotosListMiniAllPhotos,
-        setPhotosList,
-        clearSelection: clearPhotoSelection
+        setPhotosList
     });
 
     // Remove photo from current view (for album removal)
@@ -1271,8 +1270,7 @@ function PhotosList(props) {
                 .filter(photo => photo !== null);
             setAllPhotosForCurrentFetch(photoEntities);
 
-            // Clear photo selection and related states
-            clearPhotoSelection();
+            // Clear related states (but NOT selection - it should persist across mode changes)
             setPhotosListImgSrc({});
             setCurrentPhotoPath("");
             setCurrentPhotoIndex(undefined);
