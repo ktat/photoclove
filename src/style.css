@@ -368,8 +368,8 @@ a.run-app {
   position: fixed;
   max-width: calc(100vw - 200px);
   max-height: calc(100vh - 200px);
-  min-width: calc(100vw - 200px);
-  min-height: calc(100vh - 200px);
+ /* min-width: calc(100vw - 200px); */
+ /* min-height: calc(100vh - 200px);*/
   top: 50px;
   left: 50%;
   transform: translateX(-50%);
@@ -383,6 +383,7 @@ a.run-app {
 .big-photo-in-selection img {
   max-width: calc(100vw - 200px);
   max-height: calc(100vh - 200px);
+  min-width: calc(100vw / 2);
   border-width: 1px;
   border-style: solid;
   border-color: #fff;

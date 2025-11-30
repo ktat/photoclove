@@ -14,7 +14,7 @@ export class Photo {
         this.originalPath = data.file?.path || data.path;
         this.name = data.file?.name || this.originalPath?.split('/').pop() || 'unknown';
         this.hasThumbnail = data.has_thumbnail || false;
-        console.log(this.name + " === " + data.has_thumbnail)
+        // console.log(this.name + " === " + data.has_thumbnail)
         this.star = data.star || 0;
         this.comment = data.comment || '';
         this.cssStyle = data.css_style || '';
@@ -24,6 +24,7 @@ export class Photo {
         this.inTrashBin = data.inTrashBin || false;
         this.inAlbum = data.inAlbum || false;
         this.albumId = data.albumId || null;
+        this.import_source = data.import_source || false;
 
         // Configuration (injected dependency)
         this.config = config;
@@ -178,7 +179,8 @@ export class Photo {
             tags: this.tags,
             inTrashBin: this.inTrashBin,
             inAlbum: this.inAlbum,
-            albumId: this.albumId
+            albumId: this.albumId,
+            import_source: this.import_source
         };
         return new Photo(newData, this.config);
     }
@@ -199,7 +201,8 @@ export class Photo {
             tags: this.tags,
             inTrashBin: this.inTrashBin,
             inAlbum: this.inAlbum,
-            albumId: this.albumId
+            albumId: this.albumId,
+            import_source: this.import_source
         };
         return new Photo(newData, this.config);
     }
@@ -219,7 +222,8 @@ export class Photo {
             tags: this.tags,
             inTrashBin: true,
             inAlbum: this.inAlbum,
-            albumId: this.albumId
+            albumId: this.albumId,
+            import_source: this.import_source
         };
         return new Photo(newData, this.config);
     }
@@ -239,7 +243,8 @@ export class Photo {
             tags: this.tags,
             inTrashBin: false,
             inAlbum: this.inAlbum,
-            albumId: this.albumId
+            albumId: this.albumId,
+            import_source: this.import_source
         };
         return new Photo(newData, this.config);
     }
@@ -260,6 +265,7 @@ export class Photo {
             inTrashBin: this.inTrashBin,
             inAlbum: this.inAlbum,
             albumId: this.albumId,
+            import_source: this.import_source,
             // Store config data needed for path generation
             configData: this.config ? {
                 thumbnail_store: this.config.thumbnail_store,
@@ -425,12 +431,14 @@ export class Photo {
             tags: jsonData.tags || [],
             inTrashBin: jsonData.inTrashBin || false,
             inAlbum: jsonData.inAlbum || false,
-            albumId: jsonData.albumId || null
+            albumId: jsonData.albumId || null,
+            import_source: jsonData.import_source || false
         };
 
         // Restore config from stored configData
         const config = jsonData.configData || null;
 
+        /*
         logger.info('Photo', 'fromjson_created', 'Creating Photo from JSON', {
             originalPath: jsonData.originalPath,
             name: jsonData.name,
@@ -441,7 +449,7 @@ export class Photo {
             jsonTagsData: jsonData.tags,
             photoDataTagsCount: photoData.tags ? photoData.tags.length : 0
         });
-
+        */
         return new Photo(photoData, config);
     }
 }

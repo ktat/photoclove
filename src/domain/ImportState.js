@@ -194,11 +194,11 @@ export class ImportState {
                 toPath: newPath
             });
 
-            // Load directory contents
+            // Load directory contents with pagination (reduced from 1000 to 100 for performance)
             const result = await invoke('show_importer', {
                 pathStr: newPath,
                 page: 1,
-                num: 1000,
+                num: 100,  // Reduced to prevent loading too many full-size images at once
                 dateStr: this.importFilter
             });
             
