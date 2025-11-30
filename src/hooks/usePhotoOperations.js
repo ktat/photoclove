@@ -20,7 +20,7 @@ export function usePhotoOperations({
     currentAlbumId,
     toggleAlbumListMode,
     isTrashMode,
-    // Photo list state (for removePhotoFromList)
+    // Photo list state
     photosListMiniAllPhotos,
     setPhotosListMiniAllPhotos,
     allPhotosForCurrentFetch,
@@ -29,7 +29,18 @@ export function usePhotoOperations({
     setPhotosListMiniCurrentIndex,
     setCurrentPhotoPath,
     setCurrentPhotoIndex,
-    closePhotoDisplay
+    currentPhotoIndex,
+    closePhotoDisplay,
+    // Trash operations state
+    setTrashPhotos,
+    setPhotosListMiniReread,
+    photosListMiniReread,
+    // Date state (for moveToTrash)
+    dateNum,
+    setDateNum,
+    dateList,
+    setDateList,
+    sortOfPhotos
 }) {
     
     // Album selection handlers
@@ -276,18 +287,182 @@ export function usePhotoOperations({
         closePhotoDisplay
     ]);
 
-    // Photo deletion operations
+    // Photo deletion and trash operations
     const permanentlyDeletePhoto = useCallback((photoPath) => {
         invoke("delete_permanently", { pathStr: photoPath }).then((result) => {
-            logger.info('PhotosList', 'permanent_delete_success', 'Photo permanently deleted', { 
-                path: photoPath, 
-                result 
+            logger.info('usePhotoOperations', 'permanent_delete_success', 'Photo permanently deleted', {
+                path: photoPath,
+                result
             });
-            // Note: Caller should handle UI updates (remove from list, etc.)
+
+            // Remove from trash photos list
+            if (setTrashPhotos) {
+                setTrashPhotos(prevPhotos => prevPhotos.filter(photo => photo.path !== photoPath));
+            }
+
+            // Update thumbnail list when photo is deleted from current view
+            if (photosListMiniAllPhotos && photosListMiniAllPhotos.length > 0 && setPhotosListMiniAllPhotos) {
+                const allPhotos = photosListMiniAllPhotos;
+                // Create a new array instead of mutating the existing one to trigger React state update
+                const newAllPhotos = [...allPhotos];
+                newAllPhotos.splice(currentPhotoIndex, 1);
+                setPhotosListMiniAllPhotos(newAllPhotos);
+
+                // Adjust navigation
+                if (currentPhotoIndex >= newAllPhotos.length) {
+                    // Last photo was removed, go to previous
+                    const ci = currentPhotoIndex - 1;
+                    if (newAllPhotos[ci]) {
+                        if (setPhotosListMiniCurrentIndex) setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
+                        if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[ci].file.path);
+                        if (setCurrentPhotoIndex) setCurrentPhotoIndex(ci);
+                    }
+                } else {
+                    // Not last photo - stay at same index (shows next photo)
+                    const ci = currentPhotoIndex;
+                    if (setPhotosListMiniReread) setPhotosListMiniReread(!photosListMiniReread);
+                    if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[ci].file.path);
+                }
+
+                // Close display if no photos left
+                if (newAllPhotos.length === 0 && closePhotoDisplay) {
+                    closePhotoDisplay();
+                }
+            }
         }).catch((error) => {
+            logger.error('usePhotoOperations', 'permanent_delete_error', 'Failed to permanently delete photo', {
+                path: photoPath,
+                error: error.message
+            });
             handleError(error, 'Permanently delete photo', { path: photoPath });
         });
-    }, [handleError]);
+    }, [
+        handleError,
+        setTrashPhotos,
+        photosListMiniAllPhotos,
+        setPhotosListMiniAllPhotos,
+        currentPhotoIndex,
+        photosListMiniCurrentIndex,
+        setPhotosListMiniCurrentIndex,
+        setCurrentPhotoPath,
+        setCurrentPhotoIndex,
+        setPhotosListMiniReread,
+        photosListMiniReread,
+        closePhotoDisplay
+    ]);
+
+    const moveToTrash = useCallback(async (photoPath, sortValue) => {
+        // If in trash mode, permanently delete instead
+        if (isTrashMode) {
+            permanentlyDeletePhoto(photoPath);
+            return;
+        }
+
+        try {
+            logger.info('usePhotoOperations', 'move_to_trash_start', 'Moving photo to trash', {
+                path: photoPath,
+                sortValue
+            });
+
+            const resultDate = await invoke("move_to_trash", { pathStr: photoPath, sortValue: parseInt(sortValue) });
+
+            if (resultDate) {
+                logger.info('usePhotoOperations', 'move_to_trash_success', 'Photo moved to trash', {
+                    path: photoPath,
+                    date: resultDate
+                });
+
+                // Update date counts
+                if (dateNum && dateNum[resultDate] > 0 && setDateNum && setDateList) {
+                    dateNum[resultDate] -= 1;
+                    setDateNum(dateNum);
+                    setDateList(dateList.concat());
+                }
+
+                // Update thumbnail list
+                if (photosListMiniAllPhotos && photosListMiniAllPhotos.length > 0 && setPhotosListMiniAllPhotos) {
+                    const allPhotos = photosListMiniAllPhotos;
+                    const newAllPhotos = [...allPhotos];
+                    newAllPhotos.splice(currentPhotoIndex, 1);
+                    setPhotosListMiniAllPhotos(newAllPhotos);
+
+                    // Adjust navigation
+                    if (currentPhotoIndex >= newAllPhotos.length) {
+                        // Last photo
+                        const ci = currentPhotoIndex - 1;
+                        if (newAllPhotos[ci]) {
+                            if (setPhotosListMiniCurrentIndex) setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
+                            if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[ci].file.path);
+                            if (setCurrentPhotoIndex) setCurrentPhotoIndex(ci);
+                        }
+                    } else {
+                        // Not last photo
+                        const ci = currentPhotoIndex;
+                        if (setPhotosListMiniReread) setPhotosListMiniReread(!photosListMiniReread);
+                        if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[ci].file.path);
+                    }
+
+                    // Close display if no photos left
+                    if (newAllPhotos.length === 0 && closePhotoDisplay) {
+                        closePhotoDisplay();
+                    }
+                }
+            }
+        } catch (error) {
+            logger.error('usePhotoOperations', 'move_to_trash_error', 'Failed to move photo to trash', {
+                path: photoPath,
+                error: error.message
+            });
+            handleError(error, 'Move photo to trash', { path: photoPath });
+        }
+    }, [
+        isTrashMode,
+        permanentlyDeletePhoto,
+        handleError,
+        dateNum,
+        setDateNum,
+        dateList,
+        setDateList,
+        photosListMiniAllPhotos,
+        setPhotosListMiniAllPhotos,
+        currentPhotoIndex,
+        photosListMiniCurrentIndex,
+        setPhotosListMiniCurrentIndex,
+        setCurrentPhotoPath,
+        setCurrentPhotoIndex,
+        setPhotosListMiniReread,
+        photosListMiniReread,
+        closePhotoDisplay
+    ]);
+
+    const restorePhoto = useCallback(async (photoPath) => {
+        try {
+            logger.info('usePhotoOperations', 'restore_photo_start', 'Restoring photo from trash', {
+                path: photoPath
+            });
+
+            await invoke("restore_from_trash", { pathStr: photoPath });
+
+            logger.info('usePhotoOperations', 'restore_photo_success', 'Photo restored from trash successfully', {
+                path: photoPath
+            });
+
+            // Remove from trash photos list
+            if (setTrashPhotos) {
+                setTrashPhotos(prevPhotos => prevPhotos.filter(photo => photo.path !== photoPath));
+            }
+
+            addFooterMessage('Photo restored from trash');
+            return true;
+        } catch (error) {
+            logger.error('usePhotoOperations', 'restore_photo_error', 'Failed to restore photo from trash', {
+                path: photoPath,
+                error: error.message
+            });
+            handleError(error, 'Restore photo from trash', { path: photoPath });
+            return false;
+        }
+    }, [handleError, addFooterMessage, setTrashPhotos]);
 
     const deletePhoto = useCallback((photoPath) => {
         // If in trash mode, permanently delete instead of moving to trash
@@ -296,10 +471,9 @@ export function usePhotoOperations({
             return;
         }
 
-        // Otherwise move to trash (implementation would be here)
-        logger.info('PhotosList', 'move_to_trash', 'Moving photo to trash', { path: photoPath });
-        // Note: This would need the actual trash implementation
-    }, [isTrashMode, permanentlyDeletePhoto]);
+        // Otherwise move to trash
+        moveToTrash(photoPath, parseInt(sortOfPhotos || 0));
+    }, [isTrashMode, permanentlyDeletePhoto, moveToTrash, sortOfPhotos]);
 
     return {
         // Album operations
@@ -323,6 +497,8 @@ export function usePhotoOperations({
         // Photo operations
         permanentlyDeletePhoto,
         deletePhoto,
+        moveToTrash,
+        restorePhoto,
 
         // Selection state (for convenience)
         selectedAlbumsCount: selectedAlbums.length,

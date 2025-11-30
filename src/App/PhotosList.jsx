@@ -352,7 +352,8 @@ function PhotosList(props) {
         removePhotoFromAlbum,
         deletePhoto,
         restorePhoto,
-        permanentlyDeletePhoto: hookPermanentlyDeletePhoto,
+        permanentlyDeletePhoto,
+        moveToTrash,
         handleAlbumSelection,
         clearAlbumSelection,
         deleteSelectedAlbums,
@@ -390,7 +391,18 @@ function PhotosList(props) {
         setPhotosListMiniCurrentIndex,
         setCurrentPhotoPath,
         setCurrentPhotoIndex,
-        closePhotoDisplay
+        currentPhotoIndex,
+        closePhotoDisplay,
+        // Trash operations state
+        setTrashPhotos,
+        setPhotosListMiniReread,
+        photosListMiniReread,
+        // Date state
+        dateNum,
+        setDateNum: updateDateNum,
+        dateList,
+        setDateList: updateDateList,
+        sortOfPhotos
     });
 
     // Clear all active filters
@@ -1062,94 +1074,10 @@ function PhotosList(props) {
         setPhotosList
     });
 
-    // removePhotoFromList now provided by usePhotoOperations hook
+    // removePhotoFromList, moveToTrash, permanentlyDeletePhoto now provided by usePhotoOperations hook
 
-    function moveToTrashCan(f) {
-
-        // If in trash mode, permanently delete instead of moving to trash
-        if (isTrashMode) {
-            permanentlyDeletePhoto(f);
-            return;
-        }
-
-        invoke("move_to_trash", { pathStr: f, sortValue: parseInt(sortOfPhotos) }).then((d) => {
-            if (d) {
-                const date = d
-                if (compatProps.dateNum[date] > 0) {
-                    compatProps.dateNum[date] -= 1;
-                    compatProps.setDateNum(compatProps.dateNum);
-                    compatProps.setDateList(compatProps.dateList.concat());
-                }
-
-                // Always update thumbnail list when photo is deleted from current view
-                if (photosListMiniAllPhotos.length > 0) {
-                    const allPhotos = photosListMiniAllPhotos
-                    // Create a new array instead of mutating the existing one to trigger React state update
-                    const newAllPhotos = [...allPhotos];
-                    newAllPhotos.splice(currentPhotoIndex, 1);
-                    setPhotosListMiniAllPhotos(newAllPhotos);
-                    // no photos are remaining after the deleted photo
-                    // last photo
-                    if (currentPhotoIndex >= newAllPhotos.length) {
-                        const ci = currentPhotoIndex - 1;
-                        if (newAllPhotos[ci]) {
-                            setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
-                            setCurrentPhotoPath(newAllPhotos[ci].file.path);
-                            setCurrentPhotoIndex(ci);
-                        }
-                    }
-                    // not last photo
-                    else {
-                        const ci = currentPhotoIndex;
-                        setPhotosListMiniReread(!photosListMiniReread);
-                        setCurrentPhotoPath(newAllPhotos[ci].file.path);
-                    }
-                    if (newAllPhotos.length == 0) {
-                        closePhotoDisplay();
-                    }
-                }
-            }
-        });
-    }
-
-    function permanentlyDeletePhoto(f) {
-        invoke("delete_permanently", { pathStr: f }).then((result) => {
-            logger.info('PhotosList', 'permanent_delete_success', 'Photo permanently deleted', { path: f, result });
-
-            // Remove from trash photos list
-            setTrashPhotos(prevPhotos => prevPhotos.filter(photo => photo.path !== f));
-
-            // Update thumbnail list when photo is deleted from current view
-            if (photosListMiniAllPhotos.length > 0) {
-                const allPhotos = photosListMiniAllPhotos
-                // Create a new array instead of mutating the existing one to trigger React state update
-                const newAllPhotos = [...allPhotos];
-                newAllPhotos.splice(currentPhotoIndex, 1);
-                setPhotosListMiniAllPhotos(newAllPhotos);
-                // no photos are remaining after the deleted photo
-                // last photo
-                if (currentPhotoIndex >= newAllPhotos.length) {
-                    const ci = currentPhotoIndex - 1;
-                    if (newAllPhotos[ci]) {
-                        setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
-                        setCurrentPhotoPath(newAllPhotos[ci].file.path);
-                        setCurrentPhotoIndex(ci);
-                    }
-                }
-                // not last photo
-                else {
-                    const ci = currentPhotoIndex;
-                    setPhotosListMiniReread(!photosListMiniReread);
-                    setCurrentPhotoPath(newAllPhotos[ci].file.path);
-                }
-                if (newAllPhotos.length == 0) {
-                    closePhotoDisplay();
-                }
-            }
-        }).catch((error) => {
-            logger.error('PhotosList', 'permanent_delete_error', 'Failed to permanently delete photo', { path: f, error });
-        });
-    }
+    // Alias for backward compatibility with existing code
+    const moveToTrashCan = (photoPath) => moveToTrash(photoPath, parseInt(sortOfPhotos));
 
     /**
      * Load photos using PhotoCollection (new approach)
