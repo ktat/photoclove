@@ -64,7 +64,8 @@
         "scope": [
           "**",
           "**/.photoclove/**",
-          "**/.photoclove_trash/**"
+          "**/.photoclove_trash/**",
+          "**/.cache/**"
         ],
         "enable": true
       },
