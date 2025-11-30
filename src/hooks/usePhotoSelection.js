@@ -10,15 +10,32 @@
  * - Clear all selections
  * - Check if photo is selected
  * - Track selection state with both array and dictionary for performance
+ * - Separate selection state for import mode vs library mode
  */
 
 import { useState, useCallback } from 'react';
 import { logger } from '../services/LoggerService.js';
+import { VIEW_MODES } from '../constants/viewModes.js';
 
-export function usePhotoSelection() {
-    // Selection state - use both array and dict for different access patterns
-    const [photoSelection, setPhotoSelection] = useState([]);
-    const [photoSelectionDict, setPhotoSelectionDict] = useState({});
+export function usePhotoSelection(viewMode) {
+    // Separate selection state for import mode and library mode
+    // Import mode: photos from external sources (not yet in library)
+    // Library mode: photos in the library (date, album, tag, recent, trash, search)
+    const [importSelection, setImportSelection] = useState([]);
+    const [importSelectionDict, setImportSelectionDict] = useState({});
+    const [librarySelection, setLibrarySelection] = useState([]);
+    const [librarySelectionDict, setLibrarySelectionDict] = useState({});
+
+    // Determine if current mode is import mode
+    const isImportMode = viewMode === VIEW_MODES.IMPORT;
+
+    // Get current selection based on mode
+    const photoSelection = isImportMode ? importSelection : librarySelection;
+    const photoSelectionDict = isImportMode ? importSelectionDict : librarySelectionDict;
+
+    // Get setters based on mode
+    const setPhotoSelection = isImportMode ? setImportSelection : setLibrarySelection;
+    const setPhotoSelectionDict = isImportMode ? setImportSelectionDict : setLibrarySelectionDict;
 
     /**
      * Toggle photo selection
@@ -64,14 +81,34 @@ export function usePhotoSelection() {
 
     /**
      * Clear all selections
+     * @param {string} mode - Optional: 'import', 'library', or 'all'. Defaults to current mode.
      */
-    const clearSelection = useCallback(() => {
-        logger.debug('usePhotoSelection', 'clear_selection', 'Clearing all photo selections', {
-            previousCount: photoSelection.length
-        });
-        setPhotoSelectionDict({});
-        setPhotoSelection([]);
-    }, [photoSelection.length]);
+    const clearSelection = useCallback((mode = 'current') => {
+        if (mode === 'all' || mode === 'import') {
+            logger.debug('usePhotoSelection', 'clear_import_selection', 'Clearing import mode selections', {
+                previousCount: importSelection.length
+            });
+            setImportSelectionDict({});
+            setImportSelection([]);
+        }
+
+        if (mode === 'all' || mode === 'library') {
+            logger.debug('usePhotoSelection', 'clear_library_selection', 'Clearing library mode selections', {
+                previousCount: librarySelection.length
+            });
+            setLibrarySelectionDict({});
+            setLibrarySelection([]);
+        }
+
+        if (mode === 'current') {
+            logger.debug('usePhotoSelection', 'clear_current_selection', 'Clearing current mode selections', {
+                mode: isImportMode ? 'import' : 'library',
+                previousCount: photoSelection.length
+            });
+            setPhotoSelectionDict({});
+            setPhotoSelection([]);
+        }
+    }, [photoSelection.length, importSelection.length, librarySelection.length, isImportMode]);
 
     /**
      * Select all photos from a given list
