@@ -1043,6 +1043,46 @@ fn show_importer(
     return json;
 }
 
+// Clean up old cache files keeping only the most recent max_files
+fn cleanup_cache(cache_dir: &path::Path, max_files: usize) {
+    use std::time::SystemTime;
+
+    // Get all cache files
+    let mut cache_files: Vec<(PathBuf, SystemTime)> = Vec::new();
+
+    if let Ok(entries) = fs::read_dir(cache_dir) {
+        for entry in entries.filter_map(|e| e.ok()) {
+            if let Ok(metadata) = entry.metadata() {
+                if metadata.is_file() {
+                    if let Ok(modified) = metadata.modified() {
+                        cache_files.push((entry.path(), modified));
+                    }
+                }
+            }
+        }
+    }
+
+    // If we're under the limit, no need to clean up
+    if cache_files.len() <= max_files {
+        return;
+    }
+
+    // Sort by modification time (oldest first)
+    cache_files.sort_by(|a, b| a.1.cmp(&b.1));
+
+    // Remove oldest files
+    let files_to_remove = cache_files.len() - max_files;
+    for (file_path, _) in cache_files.iter().take(files_to_remove) {
+        if let Err(e) = fs::remove_file(file_path) {
+            log::warn!(target: "image", "cache_cleanup_failed; file={}; error={}", file_path.display(), e);
+        } else {
+            log::debug!(target: "image", "cache_file_removed; file={}", file_path.display());
+        }
+    }
+
+    log::info!(target: "image", "cache_cleanup_complete; removed={}; remaining={}", files_to_remove, max_files);
+}
+
 #[tauri::command]
 fn get_resized_image(
     path_str: &str,
@@ -1056,9 +1096,52 @@ fn get_resized_image(
     use std::time::Instant;
     use std::fs::File;
     use std::io::BufReader;
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+    use std::io::Write;
 
     let start_time = Instant::now();
     log::debug!(target: "image", "resize_request; path={}; max_size={}", path_str, max_size);
+
+    // Check cache first
+    let cache_dir = dirs::cache_dir()
+        .ok_or_else(|| "Failed to get cache directory".to_string())?
+        .join("photoclove")
+        .join("thumbnails");
+
+    // Create cache directory if it doesn't exist
+    if !cache_dir.exists() {
+        fs::create_dir_all(&cache_dir)
+            .map_err(|e| format!("Failed to create cache directory: {}", e))?;
+    }
+
+    // Generate cache filename from path hash
+    let mut hasher = DefaultHasher::new();
+    path_str.hash(&mut hasher);
+    let hash = hasher.finish();
+    let cache_filename = format!("{:x}.jpg", hash);
+    let cache_path = cache_dir.join(&cache_filename);
+
+    // Check if cached file exists and is newer than source
+    if cache_path.exists() {
+        if let Ok(cache_metadata) = fs::metadata(&cache_path) {
+            if let Ok(source_metadata) = fs::metadata(path_str) {
+                if let (Ok(cache_modified), Ok(source_modified)) = (cache_metadata.modified(), source_metadata.modified()) {
+                    if cache_modified >= source_modified {
+                        // Cache is valid, return convertFileSrc path
+                        log::info!(target: "image", "cache_hit; cache_path={}", cache_path.display());
+
+                        // Return the cache file path for convertFileSrc
+                        let cache_path_str = cache_path.to_str()
+                            .ok_or_else(|| "Failed to convert cache path to string".to_string())?;
+                        return Ok(cache_path_str.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    log::debug!(target: "image", "cache_miss; generating_thumbnail");
 
     // First, try to extract EXIF embedded thumbnail using kamadak-exif (much faster!)
     let exif_start = Instant::now();
@@ -1087,12 +1170,26 @@ fn get_resized_image(
                                         };
 
                                         let exif_time = exif_start.elapsed();
+
+                                        // Save to cache file
+                                        if let Ok(mut cache_file) = File::create(&cache_path) {
+                                            if cache_file.write_all(jpeg_data).is_ok() {
+                                                log::info!(target: "image", "exif_thumbnail_cached; cache_path={}; jpeg_start_offset={}; exif_ms={}; total_ms={}",
+                                                    cache_path.display(), jpeg_start.unwrap_or(0), exif_time.as_millis(), start_time.elapsed().as_millis());
+
+                                                // Clean up old cache files if needed
+                                                cleanup_cache(&cache_dir, 200);
+
+                                                // Return cache file path
+                                                let cache_path_str = cache_path.to_str()
+                                                    .ok_or_else(|| "Failed to convert cache path to string".to_string())?;
+                                                return Ok(cache_path_str.to_string());
+                                            }
+                                        }
+
+                                        // If cache write failed, fall through to return data URL
                                         let base64_string = general_purpose::STANDARD.encode(jpeg_data);
-                                        let total_time = start_time.elapsed();
-
-                                        log::info!(target: "image", "exif_thumbnail_used; base64_length={}; jpeg_start_offset={}; exif_ms={}; total_ms={}",
-                                            base64_string.len(), jpeg_start.unwrap_or(0), exif_time.as_millis(), total_time.as_millis());
-
+                                        log::warn!(target: "image", "cache_write_failed; returning_data_url");
                                         return Ok(format!("data:image/jpeg;base64,{}", base64_string));
                                     }
                                 }
@@ -1150,14 +1247,29 @@ fn get_resized_image(
         .write_to(&mut buffer, ImageFormat::Jpeg)
         .map_err(|e| format!("Failed to encode image: {}", e))?;
 
-    // Convert to base64
-    let base64_string = general_purpose::STANDARD.encode(buffer.into_inner());
+    let jpeg_data = buffer.into_inner();
     let encode_time = encode_start.elapsed();
 
-    let total_time = start_time.elapsed();
-    log::info!(target: "image", "resize_complete; base64_length={}; exif_ms={}; load_ms={}; resize_ms={}; encode_ms={}; total_ms={}",
-        base64_string.len(), exif_time.as_millis(), load_time.as_millis(), resize_time.as_millis(), encode_time.as_millis(), total_time.as_millis());
+    // Save to cache file
+    if let Ok(mut cache_file) = File::create(&cache_path) {
+        if cache_file.write_all(&jpeg_data).is_ok() {
+            let total_time = start_time.elapsed();
+            log::info!(target: "image", "resize_cached; cache_path={}; exif_ms={}; load_ms={}; resize_ms={}; encode_ms={}; total_ms={}",
+                cache_path.display(), exif_time.as_millis(), load_time.as_millis(), resize_time.as_millis(), encode_time.as_millis(), total_time.as_millis());
 
+            // Clean up old cache files if needed
+            cleanup_cache(&cache_dir, 200);
+
+            // Return cache file path
+            let cache_path_str = cache_path.to_str()
+                .ok_or_else(|| "Failed to convert cache path to string".to_string())?;
+            return Ok(cache_path_str.to_string());
+        }
+    }
+
+    // If cache write failed, return data URL
+    let base64_string = general_purpose::STANDARD.encode(jpeg_data);
+    log::warn!(target: "image", "cache_write_failed_resize; returning_data_url");
     Ok(format!("data:image/jpeg;base64,{}", base64_string))
 }
 

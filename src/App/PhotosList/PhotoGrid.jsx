@@ -6,6 +6,64 @@ import TagChip from "../../components/TagChip.jsx";
 import fileUrl from "../../PathUtil.jsx";
 import { logger } from "../../services/LoggerService.js";
 
+// Cache for EXIF thumbnails (data URLs) - persists across component re-renders
+const thumbnailCache = {};
+
+// Function to get or create EXIF thumbnail data URL
+async function convertThumbnailDataSrc(photoPath) {
+    // Return cached value if available
+    if (thumbnailCache[photoPath]) {
+        logger.debug('PhotoGrid', 'thumbnail_cache_hit', 'Using cached thumbnail', {
+            photoPath
+        });
+        return thumbnailCache[photoPath];
+    }
+
+    // Try to extract EXIF thumbnail (now returns cache file path from Rust)
+    try {
+        logger.debug('PhotoGrid', 'thumbnail_extract_start', 'Extracting EXIF thumbnail', {
+            photoPath
+        });
+
+        const result = await invoke('get_resized_image', {
+            pathStr: photoPath,
+            maxSize: 200
+        });
+
+        // Rust now returns either a file path (for cache) or data URL (fallback)
+        let thumbnailSrc;
+        if (result.startsWith('data:image/')) {
+            // Data URL (fallback when cache write fails)
+            thumbnailSrc = result;
+            logger.info('PhotoGrid', 'thumbnail_data_url', 'Using data URL (cache write may have failed)', {
+                photoPath,
+                dataUrlLength: result.length
+            });
+        } else {
+            // File path - convert to Tauri asset protocol
+            thumbnailSrc = convertFileSrc(result);
+            logger.info('PhotoGrid', 'thumbnail_cached', 'Using cached thumbnail file', {
+                photoPath,
+                cachePath: result,
+                convertedSrc: thumbnailSrc.substring(0, 50)
+            });
+        }
+
+        // Cache the thumbnail src
+        thumbnailCache[photoPath] = thumbnailSrc;
+        return thumbnailSrc;
+    } catch (error) {
+        logger.error('PhotoGrid', 'thumbnail_extract_error', 'Failed to extract EXIF thumbnail', {
+            photoPath,
+            error: error.message
+        });
+        // Fallback to original file
+        const fallbackSrc = convertFileSrc(photoPath);
+        thumbnailCache[photoPath] = fallbackSrc;
+        return fallbackSrc;
+    }
+}
+
 function PhotoGrid({
     displayedPhotos,
     totalPhotosCount,
@@ -24,13 +82,9 @@ function PhotoGrid({
     showSideMenu,
     setShowSideMenu
 }) {
-    const [photosListImgSrc, setPhotosListImgSrc] = useState({});
 
-    // Memoize displayedPhotos paths to prevent infinite loops in import useEffect
-    const displayedPhotosPaths = useMemo(() =>
-        displayedPhotos?.map(p => p.originalPath).join(',') || '',
-        [displayedPhotos]
-    );
+    // State to trigger re-render when thumbnails are loaded
+    const [, forceUpdate] = useState({});
 
     // Helper function to parse CSS style string
     const parseCssStyle = useCallback((cssString) => {
@@ -51,29 +105,6 @@ function PhotoGrid({
         return styles;
     }, []);
 
-    // Load resized images for import mode photos
-    /*
-    useEffect(() => {
-        if (!displayedPhotos || displayedPhotos.length === 0) return;
-
-        // Strict filtering: only photos with import_source === true
-        const importPhotos = displayedPhotos.filter(p => p.import_source === true);
-
-        logger.debug('PhotoGrid', 'import_photos_check', 'Checking for import photos', {
-            totalPhotos: displayedPhotos.length,
-            importPhotosCount: importPhotos.length,
-            nonImportPhotosCount: displayedPhotos.filter(p => p.import_source !== true).length,
-            firstPhotoImportSource: displayedPhotos[0]?.import_source,
-            firstPhotoPath: displayedPhotos[0]?.originalPath
-        });
-
-        if (importPhotos.length === 0) {
-            logger.debug('PhotoGrid', 'no_import_photos', 'No import photos found, skipping load');
-            return;
-        }
-
-    }, [displayedPhotosPaths, displayedPhotos]);
-    */
 
     // Check if any filters are active
     const hasActiveFilters = useMemo(() => {
@@ -90,30 +121,26 @@ function PhotoGrid({
         return `Filters applied: ${filters.join(', ')}`;
     }, [starFilter, hasCommentFilter, hasTagFilter, extensionFilter]);
 
-    const renderPhotoTile = useCallback((photo, index) => {
+    const renderPhotoTile = (photo, index) => {
         const image_for_not_found = "/img_error.png";
 
-        // Calculate image source without modifying state
-        let imgSrc = photosListImgSrc[photo.originalPath];
+        // Calculate image source
+        let imgSrc = null;
 
-        async function fetchResizedImage(photo) {
-            try {
-                const resizedImage = await invoke('get_resized_image', {
-                    pathStr: photo.originalPath,
-                    maxSize: 200
+        if (photo.import_source === true) {
+            // Import photos: check cache first
+            if (thumbnailCache[photo.originalPath]) {
+                imgSrc = thumbnailCache[photo.originalPath];
+            } else {
+                // Not in cache yet - start loading on-demand
+                convertThumbnailDataSrc(photo.originalPath).then(() => {
+                    // Trigger re-render when thumbnail is loaded
+                    forceUpdate({});
                 });
-                return resizedImage;
-            } catch (error) {
-                logger.error('PhotoGrid', 'fetch_resized_image_error', 'Error fetching resized image', {
-                    photoPath: photo.originalPath,
-                    error: error.message
-                });
-                return null;
+                // Show placeholder while loading
+                imgSrc = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%2337415140" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%23999" font-size="14"%3ELoading...%3C/text%3E%3C/svg%3E';
             }
-        }
-
-        // If not in state, calculate source on-demand
-        if (!photo.import_source && !imgSrc) {
+        } else {
             // Non-import photos: use thumbnail if available
             if (photo.hasThumbnail && photo.thumbnailPath && typeof photo.thumbnailPath === 'function') {
                 imgSrc = convertFileSrc(photo.thumbnailPath());
@@ -124,8 +151,11 @@ function PhotoGrid({
             }
         }
 
+        // Generate unique key
+        const uniqueKey = `${photo.originalPath}-${index}`;
+
         return (
-            <div key={index} className={"row pict-" + iconSize} style={{ flex: "0 0 " + ((iconSize / 1) + 41) + "px", textAlign: "center", verticalAlign: "middle", position: "relative" }} >
+            <div key={uniqueKey} className={"row pict-" + iconSize} style={{ flex: "0 0 " + ((iconSize / 1) + 41) + "px", textAlign: "center", verticalAlign: "middle", position: "relative" }} >
                 <div style={{ flexShrink: 0 }}>
                     <a href="#" onClick={() => onDisplayPhoto(photo.originalPath, index)}>
                         {!photo.hasThumbnail && photo.originalPath?.match(/\.(mp4|webm)$/i)
@@ -133,14 +163,18 @@ function PhotoGrid({
                                 <span style={{ fontSize: (iconSize / 3) + 'px' }}>&#127909;</span>
                             </div>
                             : <div style={{ width: iconSize + 'px', height: iconSize + 'px', flexShrink: 0 }} >
-                                <img loading={photo.hasThumbnail ? "eager" : "lazy"}
+                                <img
                                     alt={photo.originalPath}
                                     style={{
-                                        width: "97%",
-                                        ...parseCssStyle(photo.cssStyle)
+                                        ...(photo.import_source ? { width: iconSize + 'px', height: iconSize + 'px', objectFit: 'cover' } : { width: "97%", ...parseCssStyle(photo.cssStyle) })
                                     }}
                                     src={imgSrc}
                                     onLoad={(e) => {
+                                        // For import photos, size is already set, skip adjustment
+                                        if (photo.import_source === true) {
+                                            return;
+                                        }
+
                                         let w = e.currentTarget.width;
                                         let h = e.currentTarget.height;
                                         if (w > h) {
@@ -156,13 +190,14 @@ function PhotoGrid({
                                         if (e.currentTarget.src.includes('/img_error.png') || e.currentTarget.src === image_for_not_found) {
                                             return;
                                         }
+
+                                        // For import mode photos, show error image (don't load full-size original)
                                         if (photo.import_source === true) {
-                                            // For import mode photos, try to fetch resized image
-                                            fetchResizedImage(photo).then(resizedImage => {
-                                                alert(resizedImage);
-                                                photosListImgSrc[photo.originalPath] = resizedImage;
-                                                e.currentTarget.src = resizedImage;
+                                            logger.warn('PhotoGrid', 'import_photo_error', 'EXIF thumbnail not available for import photo', {
+                                                photoPath: photo.originalPath
                                             });
+                                            e.currentTarget.src = image_for_not_found;
+                                            return;
                                         }
 
                                         // If we have a thumbnail and it's failing, try original as fallback
@@ -178,12 +213,10 @@ function PhotoGrid({
                                                 originalSrc = convertFileSrc(photo.originalPath);
                                             }
 
-                                            photosListImgSrc[photo.originalPath] = originalSrc;
                                             e.currentTarget.src = originalSrc;
 
                                         } else {
                                             // Final fallback: show error image
-                                            photosListImgSrc[photo.originalPath] = image_for_not_found;
                                             e.currentTarget.src = image_for_not_found;
                                         }
                                     }
@@ -280,7 +313,7 @@ function PhotoGrid({
                 </div>
             </div>
         );
-    }, [iconSize, photosListImgSrc, photoSelectionDict, onAddSelection, onDisplayPhoto, setShowSideMenu, parseCssStyle]);
+    };
 
     return (
         <div className="photo-grid-container">
