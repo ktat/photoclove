@@ -8,10 +8,10 @@ import { unifiedCollectionService } from '../services/UnifiedCollectionService.j
  * Custom hook for managing photo operations (albums, tags, deletion)
  * Extracted from PhotosList.jsx to reduce component complexity
  */
-export function usePhotoOperations({ 
-    selectedAlbums, 
-    setSelectedAlbums, 
-    selectedTags, 
+export function usePhotoOperations({
+    selectedAlbums,
+    setSelectedAlbums,
+    selectedTags,
     setSelectedTags,
     handleError,
     addFooterMessage,
@@ -19,7 +19,17 @@ export function usePhotoOperations({
     loadTags,
     currentAlbumId,
     toggleAlbumListMode,
-    isTrashMode
+    isTrashMode,
+    // Photo list state (for removePhotoFromList)
+    photosListMiniAllPhotos,
+    setPhotosListMiniAllPhotos,
+    allPhotosForCurrentFetch,
+    setAllPhotosForCurrentFetch,
+    photosListMiniCurrentIndex,
+    setPhotosListMiniCurrentIndex,
+    setCurrentPhotoPath,
+    setCurrentPhotoIndex,
+    closePhotoDisplay
 }) {
     
     // Album selection handlers
@@ -214,6 +224,58 @@ export function usePhotoOperations({
         }
     }, [handleError, addFooterMessage]);
 
+    // Photo list management
+    const removePhotoFromList = useCallback((indexToRemove) => {
+        if (!photosListMiniAllPhotos || !setPhotosListMiniAllPhotos) {
+            logger.warn('usePhotoOperations', 'remove_photo_from_list_missing_deps', 'Missing photo list dependencies');
+            return;
+        }
+
+        logger.info('usePhotoOperations', 'remove_photo_from_list', 'Removing photo from current view', {
+            index: indexToRemove,
+            totalPhotos: photosListMiniAllPhotos.length
+        });
+
+        // Remove from photosListMiniAllPhotos
+        const newAllPhotos = [...photosListMiniAllPhotos];
+        newAllPhotos.splice(indexToRemove, 1);
+        setPhotosListMiniAllPhotos(newAllPhotos);
+
+        // Also remove from allPhotosForCurrentFetch if available
+        const removedPath = photosListMiniAllPhotos[indexToRemove]?.file?.path;
+        if (removedPath && allPhotosForCurrentFetch && setAllPhotosForCurrentFetch) {
+            const newAllPhotosForFetch = allPhotosForCurrentFetch.filter(photo => photo.originalPath !== removedPath);
+            setAllPhotosForCurrentFetch(newAllPhotosForFetch);
+        }
+
+        // Adjust current index if needed
+        if (indexToRemove >= newAllPhotos.length && newAllPhotos.length > 0) {
+            // Last photo was removed, go to previous
+            const newIndex = newAllPhotos.length - 1;
+            if (setPhotosListMiniCurrentIndex) setPhotosListMiniCurrentIndex(newIndex);
+            if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[newIndex].file.path);
+            if (setCurrentPhotoIndex) setCurrentPhotoIndex(newIndex);
+        } else if (newAllPhotos.length > 0) {
+            // Stay at same index (now showing next photo)
+            const newIndex = Math.min(indexToRemove, newAllPhotos.length - 1);
+            if (setPhotosListMiniCurrentIndex) setPhotosListMiniCurrentIndex(newIndex);
+            if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[newIndex].file.path);
+            if (setCurrentPhotoIndex) setCurrentPhotoIndex(newIndex);
+        } else {
+            // No photos left
+            if (closePhotoDisplay) closePhotoDisplay();
+        }
+    }, [
+        photosListMiniAllPhotos,
+        setPhotosListMiniAllPhotos,
+        allPhotosForCurrentFetch,
+        setAllPhotosForCurrentFetch,
+        setPhotosListMiniCurrentIndex,
+        setCurrentPhotoPath,
+        setCurrentPhotoIndex,
+        closePhotoDisplay
+    ]);
+
     // Photo deletion operations
     const permanentlyDeletePhoto = useCallback((photoPath) => {
         invoke("delete_permanently", { pathStr: photoPath }).then((result) => {
@@ -254,6 +316,9 @@ export function usePhotoOperations({
         handleTagSelection,
         clearTagSelection,
         deleteSelectedTags,
+
+        // Photo list management
+        removePhotoFromList,
 
         // Photo operations
         permanentlyDeletePhoto,
