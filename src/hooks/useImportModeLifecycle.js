@@ -27,8 +27,7 @@ export function useImportModeLifecycle({
     setShowSideMenu,
     setAllPhotosForCurrentFetch,
     setPhotosListMiniAllPhotos,
-    setPhotosList,
-    clearSelection // From usePhotoSelection hook
+    setPhotosList
 }) {
     useEffect(() => {
         if (viewMode === VIEW_MODES.IMPORT) {
@@ -47,7 +46,7 @@ export function useImportModeLifecycle({
             setAllPhotosForCurrentFetch([]);
             setPhotosListMiniAllPhotos([]);
             setPhotosList({ photos: [], has_next: false, has_prev: false });
-            clearSelection(); // Use hook function instead of direct state setters
+            // Note: Selection is intentionally NOT cleared - it should persist across view mode changes
 
             // Initialize ImportState if not already initialized
             if (!importState) {
