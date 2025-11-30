@@ -148,6 +148,7 @@ function PhotosList(props) {
         ...props
     };
     // Use new photo selection hook (extracted for better modularity)
+    // Pass viewMode to enable separate selection state for import vs library modes
     const {
         photoSelection,
         photoSelectionDict,
@@ -157,7 +158,7 @@ function PhotosList(props) {
         selectAllPhotos,
         setSelection,
         getSelectionStats
-    } = usePhotoSelection();
+    } = usePhotoSelection(viewMode);
 
     // Replace all individual useState calls with centralized state management hook
     const {
