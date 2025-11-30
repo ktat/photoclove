@@ -5,6 +5,8 @@ import { ImgCacheContext, AllPhotosContext } from "../ImgCacheContext.jsx";
 import ContextualDeleteModal from "../../components/ContextualDeleteModal.jsx";
 import { logger } from "../../services/LoggerService.js";
 import { Photo } from "../../domain/Photo.js";
+import { parseCssStyle, calculateSimpleThumbnailDisplay, getDateKey as utilGetDateKey, createBorderStyles } from "./PhotosListMini/photoUtils.js";
+import { useKeyboardShortcuts } from "./PhotosListMini/useKeyboardShortcuts.js";
 
 const NUM_OF_PHOTO_LIST = 9;
 
@@ -67,26 +69,7 @@ function PhotosListMini(props) {
 
     // Helper function to get the correct date key for pagination
     const getDateKey = () => {
-        return recentPhotosMode ? "recent" : (isSearchMode ? "search_results" : props.currentDate);
-    };
-
-    // Function to parse CSS style string and convert to style object
-    const parseCssStyle = (cssString) => {
-        if (!cssString) return {};
-
-        const styles = {};
-        const declarations = cssString.split(';').filter(decl => decl.trim());
-
-        declarations.forEach(declaration => {
-            const [property, value] = declaration.split(':').map(s => s.trim());
-            if (property && value) {
-                // Convert CSS property names to camelCase for React
-                const camelCaseProperty = property.replace(/-([a-z])/g, (match, letter) => letter.toUpperCase());
-                styles[camelCaseProperty] = value;
-            }
-        });
-
-        return styles;
+        return utilGetDateKey(recentPhotosMode, isSearchMode, props.currentDate);
     };
 
     const handleClick = useCallback((e) => {
@@ -224,88 +207,14 @@ function PhotosListMini(props) {
         // Update both at the same time to ensure consistency
         setShowPhotosIndex(photosIndex);
 
-        // Create border styles based on the new photosIndex length and borderPosition
-        const newBorderStyle = [];
-        for (let i = 0; i < photosIndex.length; i++) {
-            if (i === borderPosition) {
-                newBorderStyle[i] = '3px solid #4a9eff';
-            } else {
-                newBorderStyle[i] = '1px solid #444';
-            }
-        }
+        // Create border styles using extracted utility
+        const newBorderStyle = createBorderStyles(photosIndex.length, borderPosition);
         setBorderStyle(newBorderStyle);
 
     }
 
     // Note: loadAllPhotosMetadata function removed - PhotosList should provide all photos data
-
-    // Simple Thumbnail Display Logic - based on user's specification
-    function calculateSimpleThumbnailDisplay(allPhotos, selectedIndex) {
-        const totalPhotos = allPhotos.length;
-        const t = selectedIndex; // 0-indexed全体位置
-
-
-        // Handle edge case: no photos or invalid index
-        if (totalPhotos === 0 || t < 0 || t >= totalPhotos) {
-            logger.warn('PhotosListMini', 'simple_calc_invalid', 'Invalid input for thumbnail calculation', {
-                totalPhotos: totalPhotos,
-                selectedIndex: t
-            });
-            return {
-                startIndex: 0,
-                endIndex: 0,
-                borderPosition: 0,
-                showPrev: false,
-                showNext: false
-            };
-        }
-
-        // Handle case where total photos <= 9
-        if (totalPhotos <= NUM_OF_PHOTO_LIST) {
-            const result = {
-                startIndex: 0,
-                endIndex: totalPhotos - 1,
-                borderPosition: t,
-                showPrev: false,
-                showNext: false
-            };
-            return result;
-        }
-
-        let result;
-
-        if (t < 5) {
-            // 最初の5枚以内：1-9番目表示
-            result = {
-                startIndex: 0,
-                endIndex: 8, // Always show first 9 photos
-                borderPosition: t, // 1-5番目位置に表示
-                showPrev: false,
-                showNext: true
-            };
-        } else if (t > totalPhotos - 5) {
-            // 最後の5枚以内：末尾9枚表示
-            result = {
-                startIndex: totalPhotos - 9,
-                endIndex: totalPhotos - 1,
-                borderPosition: t - (totalPhotos - 9), // 5-9番目位置に表示
-                showPrev: true,
-                showNext: false
-            };
-        } else {
-            // 中央：選択写真を5番目（index 4）に配置
-            result = {
-                startIndex: t - 4,
-                endIndex: t + 4,
-                borderPosition: 4, // 常に5番目位置
-                showPrev: true,
-                showNext: true
-            };
-        }
-
-
-        return result;
-    }
+    // Note: calculateSimpleThumbnailDisplay moved to photoUtils.js
 
     function adjustCurrentIndex() {
         const totalPhotos = photosWithMethods.length;
@@ -339,15 +248,8 @@ function PhotosListMini(props) {
         // Update both at the same time to ensure consistency
         setShowPhotosIndex(photosIndex);
 
-        // Create border styles based on the new photosIndex length and borderPosition
-        const newBorderStyle = [];
-        for (let i = 0; i < photosIndex.length; i++) {
-            if (i === borderPosition) {
-                newBorderStyle[i] = '3px solid #4a9eff';
-            } else {
-                newBorderStyle[i] = '1px solid #444';
-            }
-        }
+        // Create border styles using extracted utility
+        const newBorderStyle = createBorderStyles(photosIndex.length, borderPosition);
         setBorderStyle(newBorderStyle);
 
     }
