@@ -1272,7 +1272,7 @@ function PhotosList(props) {
             setAllPhotosForCurrentFetch(photoEntities);
 
             // Clear photo selection and related states
-            setPhotoSelection([]);
+            clearPhotoSelection();
             setPhotosListImgSrc({});
             setCurrentPhotoPath("");
             setCurrentPhotoIndex(undefined);
