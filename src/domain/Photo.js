@@ -14,7 +14,6 @@ export class Photo {
         this.originalPath = data.file?.path || data.path;
         this.name = data.file?.name || this.originalPath?.split('/').pop() || 'unknown';
         this.hasThumbnail = data.has_thumbnail || false;
-        // console.log(this.name + " === " + data.has_thumbnail)
         this.star = data.star || 0;
         this.comment = data.comment || '';
         this.cssStyle = data.css_style || '';

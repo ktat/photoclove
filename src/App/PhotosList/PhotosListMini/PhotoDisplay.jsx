@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 // import ReactPlayer from 'react-player';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import fileUrl from "../../../PathUtil.jsx";
+import { logger } from "../../../services/LoggerService.js";
 
 let currentFile = "";
 let width = 0;
@@ -256,7 +257,11 @@ function PhotoDisplay(props) {
                     wrapperDiv.style.maxWidth = '100%';
                     wrapperDiv.style.maxHeight = '100%';
                     wrapperDiv.style.overflow = 'hidden';
-                    console.log('Using fallback wrapper size (retry ' + (retryCount + 1) + '):', { fallbackWidth, fallbackHeight });
+                    logger.debug('PhotoDisplay', 'fallback_wrapper_size', 'Using fallback wrapper size', {
+                        retryCount: retryCount + 1,
+                        fallbackWidth,
+                        fallbackHeight
+                    });
                     return;
                 }
                 
@@ -264,7 +269,10 @@ function PhotoDisplay(props) {
                 if (availableWidth <= 0 || availableHeight <= 0) {
                     availableWidth = 800;
                     availableHeight = 600;
-                    console.log('Using emergency fallback dimensions:', { availableWidth, availableHeight });
+                    logger.debug('PhotoDisplay', 'emergency_fallback_dimensions', 'Using emergency fallback dimensions', {
+                        availableWidth,
+                        availableHeight
+                    });
                 }
                 
                 const imageAspectRatio = imgWidth / imgHeight;
@@ -286,8 +294,15 @@ function PhotoDisplay(props) {
                 wrapperDiv.style.width = fittedWidth + 'px';
                 wrapperDiv.style.height = fittedHeight + 'px';
                 wrapperDiv.style.overflow = 'hidden';
-                
-                console.log('Calculated wrapper size:', { fittedWidth, fittedHeight, imgWidth, imgHeight, availableWidth, availableHeight });
+
+                logger.debug('PhotoDisplay', 'wrapper_size_calculated', 'Calculated wrapper size', {
+                    fittedWidth,
+                    fittedHeight,
+                    imgWidth,
+                    imgHeight,
+                    availableWidth,
+                    availableHeight
+                });
             }
             
             // Always apply styling immediately - no container dimension checks needed
