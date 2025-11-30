@@ -46,6 +46,9 @@ import StatusBar from "./PhotosList/StatusBar.jsx";
 import ListViewHeader from "./PhotosList/ListViewHeader.jsx";
 import { usePhotosState } from "../hooks/usePhotosState.js";
 import { usePhotoSelection } from "../hooks/usePhotoSelection.js";
+import { useViewModeSync, useImportStateSync } from "../hooks/useViewModeSync.js";
+import { useImportModeLifecycle } from "../hooks/useImportModeLifecycle.js";
+import { usePhotoDataSync } from "../hooks/usePhotoDataSync.js";
 import { convertPhotosToEntities, applyFrontendFilters, convertJSONToPhotoEntities } from "../utils/PhotoProcessingUtils.js";
 import { hasActiveFilters, getFilterSummary, getSortConfig, getCurrentSortConfig } from "../utils/UIStateUtils.js";
 
@@ -871,73 +874,32 @@ function PhotosList(props) {
         };
     }, [iconSize])
 
-    // Load photos when ViewMode changes
-    useEffect(() => {
-        if (!viewMode) {
-            logger.debug('PhotosList', 'useEffect_skip_no_viewmode', 'Skipping photo reload - no viewMode');
-            return;
-        }
+    // Use extracted hooks for view mode and photo data synchronization
+    useViewModeSync({
+        viewMode,
+        currentDate,
+        currentAlbumId,
+        currentTagId,
+        searchQuery,
+        currentSearchParams,
+        isSearchMode,
+        photoLoading,
+        currentPhotoLoadingController,
+        setCurrentPhotoLoadingController,
+        setShowSideMenu,
+        setPhotosList,
+        setCurrentPhotoIndex,
+        setPhotosListMiniCurrentIndex,
+        setCurrentPhotoPath,
+        loadPhotosWithCollection,
+        appConfig
+    });
 
-        setShowSideMenu(isSearchMode);
-
-        // Cancel current photo loading if in progress
-        if (currentPhotoLoadingController) {
-            currentPhotoLoadingController.abort();
-            setCurrentPhotoLoadingController(null);
-        }
-
-        // Create ViewMode object
-        const viewModeObj = new ViewMode(viewMode, {
-            date: currentDate,
-            albumId: currentAlbumId,
-            tagId: currentTagId,
-            searchQuery: searchQuery,
-            searchParams: currentSearchParams
-        });
-
-        // Skip photo loading if in album or tag mode - these photos are managed separately
-        if (viewModeObj.isAlbumMode()) {
-            logger.debug('PhotosList', 'useEffect_skip_album', 'Skipping photo reload - in album mode');
-            return;
-        }
-        if (viewModeObj.isTagMode()) {
-            logger.debug('PhotosList', 'useEffect_skip_tag', 'Skipping photo reload - in tag mode');
-            return;
-        }
-
-        // Reset photo list state and clear currentPhotoPath when changing modes
-        setPhotosList({ "photos": [] });
-        setCurrentPhotoIndex(0);
-        setPhotosListMiniCurrentIndex(0);
-        setCurrentPhotoPath("");
-
-        // Skip if already loading to prevent race conditions
-        if (photoLoading) {
-            return;
-        }
-
-        // Load all photos based on ViewMode
-        logger.debug('PhotosList', 'useEffect_load', 'Calling loadPhotosWithCollection (ViewMode approach)');
-        loadPhotosWithCollection(viewModeObj);
-
-    }, [viewMode, currentDate, currentAlbumId, currentTagId, searchQuery, currentSearchParams, appConfig]);
-
-    // Handle import state changes  
-    useEffect(() => {
-        if (viewMode === VIEW_MODES.IMPORT && importState) {
-            logger.info('PhotosList', 'import_state_changed', 'Import state changed, reloading photos', {
-                currentPath: importState.currentImportPath,
-                filter: importState.importFilter,
-                importStateId: importState._stateId // Add unique identifier to track state changes
-            });
-            
-            const viewModeObj = new ViewMode(VIEW_MODES.IMPORT, {
-                currentImportPath: importState.currentImportPath,
-                importFilter: importState.importFilter
-            });
-            loadPhotosWithCollection(viewModeObj);
-        }
-    }, [importState, viewMode]);
+    useImportStateSync({
+        viewMode,
+        importState,
+        loadPhotosWithCollection
+    });
 
 
 
@@ -949,37 +911,16 @@ function PhotosList(props) {
         }
     }, [isAdvancedSearchMode, filterOptions, isFilterOptionsLoading, loadFilterOptions]);
 
-    // Apply filters when filter settings change (infinite scroll version)
-    useEffect(() => {
-        if (filteredPhotos.length > 0 || allPhotosForCurrentFetch.length > 0) {
-            // Convert Photo entities to JSON for PhotosListMini (with safety check)
-            const photosAsJSON = filteredPhotos
-                .filter(photo => photo && typeof photo.toJSON === 'function')
-                .map(photo => photo.toJSON());
-            
-            logger.debug('PhotosList', 'photos_json_conversion', 'Converting photos to JSON', {
-                totalPhotos: filteredPhotos.length,
-                validPhotos: photosAsJSON.length,
-                skippedPhotos: filteredPhotos.length - photosAsJSON.length,
-                firstPhotoType: filteredPhotos.length > 0 ? filteredPhotos[0].constructor.name : 'none',
-                hasToJSONMethod: filteredPhotos.length > 0 ? typeof filteredPhotos[0].toJSON : 'none'
-            });
-            
-            setPhotosListMiniAllPhotos(photosAsJSON);
-
-            // Reset display count for infinite scroll when filters change
-            if (infiniteScrollEnabled) {
-                setDisplayedPhotoCount(Math.min(50, filteredPhotos.length));
-            }
-        }
-    }, [filteredPhotos, infiniteScrollEnabled, allPhotosForCurrentFetch]);
-
-    // Update photos list when displayedPhotos changes (for infinite scroll)
-    useEffect(() => {
-        if (displayedPhotos.length > 0) {
-            setPhotosList({ photos: displayedPhotos, has_next: false, has_prev: false });
-        }
-    }, [displayedPhotos]);
+    // Use extracted hook for photo data synchronization
+    usePhotoDataSync({
+        filteredPhotos,
+        displayedPhotos,
+        allPhotosForCurrentFetch,
+        infiniteScrollEnabled,
+        setPhotosListMiniAllPhotos,
+        setDisplayedPhotoCount,
+        setPhotosList
+    });
 
     function displayPhoto(f, i) {
         const photoToFind = photosListMiniAllPhotos[i];
@@ -1075,87 +1016,19 @@ function PhotosList(props) {
         setTabClass(c);
     }
 
-    // Update tab state when view mode changes
-    useEffect(() => {
-        if (viewMode === VIEW_MODES.IMPORT) {
-            setTabClass({
-                'directory': true,  // Default to directory tab in import mode
-                'selection': false,
-                'filter': false,
-                'maintenance': false,
-                'search': false,
-            });
-            setShowSideMenu(true);  // Automatically open side menu in import mode
-
-            // Clear existing photo data when entering import mode
-            logger.info('PhotosList', 'import_mode_entered', 'Clearing existing photo data for import mode');
-            setAllPhotosForCurrentFetch([]);
-            setPhotosListMiniAllPhotos([]);
-            setPhotosList({ photos: [], has_next: false, has_prev: false });
-            setPhotoSelection([]);
-            setPhotoSelectionDict({});
-
-            // Initialize ImportState if not already initialized
-            if (!importState) {
-                ImportState.create().then((newImportState) => {
-                    // Set up callbacks
-                    newImportState.onDirectoryChange = (updatedState) => {
-                        logger.info('PhotosList', 'import_directory_changed', 'Directory changed in import mode', {
-                            currentPath: updatedState.currentImportPath,
-                            importPaths: updatedState.importPaths
-                        });
-                        // Create a new object with updated timestamp to ensure React detects change
-                        const newState = Object.assign(Object.create(Object.getPrototypeOf(updatedState)), updatedState);
-                        newState._stateId = Date.now(); // Add unique identifier
-                        setImportState(newState);
-                    };
-
-                    newImportState.onImportFilterChange = (updatedState) => {
-                        logger.info('PhotosList', 'import_filter_changed', 'Filter changed in import mode', {
-                            filter: updatedState.importFilter
-                        });
-                        // Create a new object with updated timestamp to ensure React detects change
-                        const newState = Object.assign(Object.create(Object.getPrototypeOf(updatedState)), updatedState);
-                        newState._stateId = Date.now(); // Add unique identifier
-                        setImportState(newState);
-                    };
-
-                    newImportState._stateId = Date.now(); // Add initial state ID
-                    setImportState(newImportState);
-                }).catch((error) => {
-                    logger.error('PhotosList', 'import_state_init_failed', 'Failed to initialize ImportState', {
-                        error: error.message
-                    });
-                });
-            }
-        } else if (isSearchMode) {
-            setTabClass({
-                'directory': false,
-                'selection': false,
-                'filter': false,
-                'maintenance': false,
-                'search': true,
-            });
-            setShowSideMenu(true);  // Automatically open side menu in search mode
-        } else {
-            // For other modes, default to no active tab (or maintenance/selection as needed)
-            setTabClass({
-                'directory': false,
-                'selection': false,
-                'filter': false,
-                'maintenance': false,
-                'search': false,
-            });
-            setShowSideMenu(false);  // Close side menu for other modes
-
-            // Clean up ImportState when leaving import mode
-            if (importState && viewMode !== VIEW_MODES.IMPORT) {
-                logger.info('PhotosList', 'import_mode_exited', 'Cleaning up ImportState');
-                importState.cleanup();
-                setImportState(null);
-            }
-        }
-    }, [viewMode, isSearchMode, importState]);
+    // Use extracted hook for import mode lifecycle management
+    useImportModeLifecycle({
+        viewMode,
+        isSearchMode,
+        importState,
+        setImportState,
+        setTabClass,
+        setShowSideMenu,
+        setAllPhotosForCurrentFetch,
+        setPhotosListMiniAllPhotos,
+        setPhotosList,
+        clearSelection: clearPhotoSelection
+    });
 
     // Remove photo from current view (for album removal)
     const removePhotoFromList = (indexToRemove) => {
