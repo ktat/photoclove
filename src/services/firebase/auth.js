@@ -18,16 +18,23 @@ const openBrowserToConsent = (port) => {
   const randomString = Array.from({ length: 50 }, () => chars[parseInt(Math.random() * chars.length)]).join('');
   const url = 'https://www.rwds.net/cgi-bin/token.cgi?state=' + randomString + '&url=http%3A%2F%2Flocalhost%3A' + port;
   return axios.get(url).then(() => {
-    return open('https://accounts.google.com/o/oauth2/auth?',
-      'response_type=code&',
-      'access_type=offline&',
-      'state=' + randomString + '&',
-      'client_id=' + GoogleAuthConfig.clientId + '&',
-      'redirect_uri=https%3A//rwds.net/cgi-bin/token.cgi&',
-      'scope=https:%2F%2Fwww.googleapis.com%2Fauth%2Fphotoslibrary.readonly%20',
-      'https:%2F%2Fwww.googleapis.com%2Fauth%2Fphotoslibrary.appendonly&',
-      'prompt=consent'
-    );
+    // Build complete OAuth URL as a single string
+    const oauthUrl = 'https://accounts.google.com/o/oauth2/auth?' +
+      'response_type=code&' +
+      'access_type=offline&' +
+      'state=' + randomString + '&' +
+      'client_id=' + GoogleAuthConfig.clientId + '&' +
+      'redirect_uri=https%3A//rwds.net/cgi-bin/token.cgi&' +
+      'scope=https:%2F%2Fwww.googleapis.com%2Fauth%2Fphotoslibrary.readonly%20' +
+      'https:%2F%2Fwww.googleapis.com%2Fauth%2Fphotoslibrary.appendonly&' +
+      'prompt=consent';
+
+    logger.debug('GoogleAuth', 'open_browser', 'Opening browser with OAuth URL', {
+      randomString,
+      port
+    });
+
+    return open(oauthUrl);
   });
 };
 
