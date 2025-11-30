@@ -1,5 +1,6 @@
 import React from 'react';
 import { ViewMode } from '../domain/ViewMode.js';
+import { logger } from '../services/LoggerService.js';
 
 /**
  * Back navigation link component for empty states
@@ -35,7 +36,9 @@ function BackNavigationLink({
                 toggleHome();
                 break;
             default:
-                console.warn('Unknown back navigation action:', backNavInfo.action);
+                logger.warn('BackNavigationLink', 'unknown_action', 'Unknown back navigation action', {
+                    action: backNavInfo.action
+                });
         }
     };
     
