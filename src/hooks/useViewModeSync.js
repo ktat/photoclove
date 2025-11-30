@@ -49,13 +49,6 @@ export function useViewModeSync({
         // Set side menu visibility based on search mode
         setShowSideMenu(isSearchMode);
 
-        // Cancel current photo loading if in progress
-        if (currentPhotoLoadingController) {
-            logger.debug('useViewModeSync', 'cancel_loading', 'Cancelling current photo loading');
-            currentPhotoLoadingController.abort();
-            setCurrentPhotoLoadingController(null);
-        }
-
         // Create ViewMode object from current state
         const viewModeObj = new ViewMode(viewMode, {
             date: currentDate,
@@ -72,23 +65,6 @@ export function useViewModeSync({
         }
         if (viewModeObj.isTagMode()) {
             logger.debug('useViewModeSync', 'skip_tag', 'Skipping photo reload - in tag mode');
-            return;
-        }
-
-        // Reset photo list state and clear currentPhotoPath when changing modes
-        logger.debug('useViewModeSync', 'reset_state', 'Resetting photo state for new view mode', {
-            viewMode,
-            isInitialMount: isInitialMount.current
-        });
-
-        setPhotosList({ "photos": [] });
-        setCurrentPhotoIndex(0);
-        setPhotosListMiniCurrentIndex(0);
-        setCurrentPhotoPath("");
-
-        // Skip if already loading to prevent race conditions
-        if (photoLoading) {
-            logger.debug('useViewModeSync', 'skip_loading', 'Skipping - photo loading already in progress');
             return;
         }
 
@@ -115,17 +91,9 @@ export function useViewModeSync({
         currentTagId,
         searchQuery,
         currentSearchParams,
-        appConfig,
-        isSearchMode,
-        photoLoading,
-        currentPhotoLoadingController,
-        setCurrentPhotoLoadingController,
-        setShowSideMenu,
-        setPhotosList,
-        setCurrentPhotoIndex,
-        setPhotosListMiniCurrentIndex,
-        setCurrentPhotoPath,
-        loadPhotosWithCollection
+        appConfig
+        // Note: Intentionally excluding setter functions and callbacks to prevent infinite loops
+        // These functions are stable and don't need to trigger re-runs
     ]);
 }
 
@@ -155,7 +123,7 @@ export function useImportStateSync({
 
             loadPhotosWithCollection(viewModeObj);
         }
-    }, [importState, viewMode, loadPhotosWithCollection]);
+    }, [importState, viewMode]);
 }
 
 export default useViewModeSync;

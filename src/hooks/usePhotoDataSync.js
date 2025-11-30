@@ -49,9 +49,8 @@ export function useFilteredPhotosSync({
     }, [
         filteredPhotos,
         infiniteScrollEnabled,
-        allPhotosForCurrentFetch,
-        setPhotosListMiniAllPhotos,
-        setDisplayedPhotoCount
+        allPhotosForCurrentFetch
+        // Note: Intentionally excluding setter functions to prevent infinite loops
     ]);
 }
 
@@ -66,7 +65,7 @@ export function useDisplayedPhotosSync({
         if (displayedPhotos.length > 0) {
             setPhotosList({ photos: displayedPhotos, has_next: false, has_prev: false });
         }
-    }, [displayedPhotos, setPhotosList]);
+    }, [displayedPhotos]);
 }
 
 /**
