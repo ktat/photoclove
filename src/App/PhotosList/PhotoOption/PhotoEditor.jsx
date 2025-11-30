@@ -7,12 +7,23 @@ import { logger } from '../../../services/LoggerService.js';
 import fileUrl from '../../../PathUtil.jsx';
 import './PhotoEditor.css';
 
-// TODO: This file is too large (1284 lines) and should be refactored into smaller modules:
-// - PhotoEditor/cssUtils.js: CSS parsing and generation utilities
-// - PhotoEditor/cropUtils.js: Crop functionality and preset handling
-// - PhotoEditor/styleUtils.js: Style application and transformation utilities
-// - PhotoEditor/ToolBar.jsx: Editor controls and UI components
-// - PhotoEditor/CropOverlay.jsx: Crop selection overlay component
+// Extracted utilities (improvement #88)
+import {
+    DEFAULT_EDITOR_VALUES,
+    parseCssToEditorValues,
+    generateCSSFromValues
+} from './PhotoEditor/cssUtils.js';
+import {
+    CROP_PRESETS,
+    calculateCropFromPreset,
+    calculateCropPosition,
+    calculateCropDrag
+} from './PhotoEditor/cropUtils.js';
+import {
+    applyTempStyles,
+    rotateValue,
+    normalizeRotationValue
+} from './PhotoEditor/styleUtils.js';
 
 function PhotoEditor(props) {
     const [originalStyles, setOriginalStyles] = useState(new Map());
@@ -31,16 +42,6 @@ function PhotoEditor(props) {
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const [dragMode, setDragMode] = useState('create');
-    const [cropPresets] = useState([
-        { name: 'Original', ratio: null },
-        { name: 'Square', ratio: 1 },
-        { name: 'Portrait 4:3', ratio: 4/3 },
-        { name: 'Landscape 3:4', ratio: 3/4 },
-        { name: 'Portrait 3:2', ratio: 3/2 },
-        { name: 'Landscape 2:3', ratio: 2/3 },
-        { name: 'Wide 16:9', ratio: 16/9 },
-        { name: 'Tall 9:16', ratio: 9/16 }
-    ]);
 
     // Load saved CSS styles when photo changes
     useEffect(() => {
@@ -64,38 +65,20 @@ function PhotoEditor(props) {
                         }, 200);
                     } else {
                         // No saved CSS, use default values
-                        const defaultValues = {
-                            rotate: 0,
-                            brightness: 100,
-                            contrast: 100,
-                            saturation: 100,
-                            hue: 0,
-                            scale: 100,
-                            crop: { x: 0, y: 0, width: 100, height: 100 }
-                        };
-                        setEditorStyles(defaultValues);
-                        
+                        setEditorStyles({ ...DEFAULT_EDITOR_VALUES });
+
                         setTimeout(() => {
-                            updateUIElementsWithValues(defaultValues, '');
+                            updateUIElementsWithValues(DEFAULT_EDITOR_VALUES, '');
                         }, 100);
                     }
                 })
                 .catch((error) => {
                     logger.error('PhotoEditor', 'css_load_failed', 'Failed to load CSS style', { photoPath: props.currentPhotoPath, error: error.message });
                     // Fallback to reset editor styles
-                    const defaultValues = {
-                        rotate: 0,
-                        brightness: 100,
-                        contrast: 100,
-                        saturation: 100,
-                        hue: 0,
-                        scale: 100,
-                        crop: { x: 0, y: 0, width: 100, height: 100 }
-                    };
-                    setEditorStyles(defaultValues);
-                    
+                    setEditorStyles({ ...DEFAULT_EDITOR_VALUES });
+
                     setTimeout(() => {
-                        updateUIElementsWithValues(defaultValues, '');
+                        updateUIElementsWithValues(DEFAULT_EDITOR_VALUES, '');
                     }, 100);
                 });
         }
@@ -134,7 +117,7 @@ function PhotoEditor(props) {
     // Helper function to update CSS preview
     function updateUIElementsWithValues(editorValues, cssStyle) {
         logger.debug('PhotoEditor', 'update_css_preview', 'Updating CSS preview with values', { editorValues });
-        
+
         // Update CSS preview with the actual saved CSS
         const previewTextarea = document.getElementById('css-preview-text');
         if (previewTextarea) {
@@ -144,305 +127,53 @@ function PhotoEditor(props) {
             logger.warn('PhotoEditor', 'css_preview_not_found', 'CSS preview textarea not found');
         }
     }
-    
-    // Function to parse CSS string and extract editor values
-    function parseCssToEditorValues(cssString) {
-        logger.debug('PhotoEditor', 'parse_css_start', 'Parsing CSS string', { cssString });
-        
-        const defaultValues = {
-            rotate: 0,
-            brightness: 100,
-            contrast: 100,
-            saturation: 100,
-            hue: 0,
-            scale: 100,
-            crop: { x: 0, y: 0, width: 100, height: 100 }
-        };
-
-        if (!cssString || cssString.trim() === '') {
-            logger.debug('PhotoEditor', 'parse_css_empty', 'CSS string is empty, returning defaults');
-            return defaultValues;
-        }
-
-        const values = { ...defaultValues };
-        
-        // Parse transform property
-        const transformMatch = cssString.match(/transform:\s*([^;]+)/);
-        if (transformMatch) {
-            const transformValue = transformMatch[1];
-            
-            // Parse rotation: rotate(90deg)
-            const rotateMatch = transformValue.match(/rotate\((-?\d+(?:\.\d+)?)deg\)/);
-            if (rotateMatch) {
-                values.rotate = parseInt(rotateMatch[1]);
-            }
-            
-            // Parse scale: scale(1.5)
-            const scaleMatch = transformValue.match(/scale\((\d+(?:\.\d+)?)\)/);
-            if (scaleMatch) {
-                values.scale = Math.round(parseFloat(scaleMatch[1]) * 100);
-            }
-        }
-        
-        // Parse filter property
-        const filterMatch = cssString.match(/filter:\s*([^;]+)/);
-        if (filterMatch) {
-            const filterValue = filterMatch[1];
-            
-            // Parse brightness: brightness(150%)
-            const brightnessMatch = filterValue.match(/brightness\((\d+(?:\.\d+)?)%\)/);
-            if (brightnessMatch) {
-                values.brightness = parseInt(brightnessMatch[1]);
-            }
-            
-            // Parse contrast: contrast(120%)
-            const contrastMatch = filterValue.match(/contrast\((\d+(?:\.\d+)?)%\)/);
-            if (contrastMatch) {
-                values.contrast = parseInt(contrastMatch[1]);
-            }
-            
-            // Parse saturation: saturate(80%)
-            const saturationMatch = filterValue.match(/saturate\((\d+(?:\.\d+)?)%\)/);
-            if (saturationMatch) {
-                values.saturation = parseInt(saturationMatch[1]);
-            }
-            
-            // Parse hue rotation: hue-rotate(45deg)
-            const hueMatch = filterValue.match(/hue-rotate\((-?\d+(?:\.\d+)?)deg\)/);
-            if (hueMatch) {
-                values.hue = parseInt(hueMatch[1]);
-            }
-        }
-        
-        // Parse clip-path property for crop
-        const clipPathMatch = cssString.match(/clip-path:\s*inset\((\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%\)/);
-        if (clipPathMatch) {
-            const top = parseFloat(clipPathMatch[1]);
-            const right = parseFloat(clipPathMatch[2]);
-            const bottom = parseFloat(clipPathMatch[3]);
-            const left = parseFloat(clipPathMatch[4]);
-            
-            values.crop = {
-                x: left,
-                y: top,
-                width: 100 - left - right,
-                height: 100 - top - bottom
-            };
-        }
-        
-        logger.debug('PhotoEditor', 'parse_css_complete', 'CSS parsing complete', { values });
-        return values;
-    }
 
     // Editor functions
     function updateStyle(property, value) {
         // Handle rotation 360 = 0 case
-        if ((property === 'rotate' || property === 'hue')  && parseInt(value) === 360) {
-            value = 0;
+        if (property === 'rotate' || property === 'hue') {
+            value = normalizeRotationValue(value);
         }
-        
+
         // Update state
         setEditorStyles(prev => {
             const newStyles = {
                 ...prev,
                 [property]: parseInt(value)
             };
-            
+
             // Generate CSS with the new values immediately
             const css = generateCSSFromValues(newStyles);
-            
+
             // Update CSS preview with the generated CSS
             const previewTextarea = document.getElementById('css-preview-text');
             if (previewTextarea) {
                 previewTextarea.value = css;
                 logger.debug('PhotoEditor', 'update_style_preview', 'CSS preview updated in updateStyle', { css });
             }
-            
+
             // Apply to current image immediately with new values
-            applyTempStyleWithValues(newStyles);
-            
+            applyTempStyles(newStyles, originalStyles, setOriginalStyles, props.currentPhotoPath);
+
             return newStyles;
         });
     }
 
     function resetSingleControl(property) {
-        const defaultValues = {
-            rotate: 0,
-            brightness: 100,
-            contrast: 100,
-            saturation: 100,
-            hue: 0,
-            scale: 100,
-            crop: { x: 0, y: 0, width: 100, height: 100 }
-        };
-        updateStyle(property, defaultValues[property]);
+        updateStyle(property, DEFAULT_EDITOR_VALUES[property]);
     }
 
     function rotateBy(degrees) {
-        const currentRotation = editorStyles.rotate;
-        const newRotation = (currentRotation + degrees) % 360;
-        updateStyle('rotate', newRotation < 0 ? newRotation + 360 : newRotation);
+        const newRotation = rotateValue(editorStyles.rotate, degrees);
+        updateStyle('rotate', newRotation);
     }
 
     function generateCSS() {
         return generateCSSFromValues(editorStyles);
     }
 
-    function generateCSSFromValues(styles) {
-        const { rotate, brightness, contrast, saturation, hue, scale, crop } = styles;
-        
-        let transform = [];
-        let filter = [];
-        
-        if (rotate !== 0) transform.push(`rotate(${rotate}deg)`);
-        if (scale !== 100) transform.push(`scale(${scale / 100})`);
-        
-        if (brightness !== 100) filter.push(`brightness(${brightness}%)`);
-        if (contrast !== 100) filter.push(`contrast(${contrast}%)`);
-        if (saturation !== 100) filter.push(`saturate(${saturation}%)`);
-        if (hue !== 0) filter.push(`hue-rotate(${hue}deg)`);
-        
-        let css = '';
-        if (transform.length > 0) {
-            css += `transform: ${transform.join(' ')}; `;
-        }
-        if (filter.length > 0) {
-            css += `filter: ${filter.join(' ')}; `;
-        }
-        
-        // Add crop as clip-path if it's not the default (full image)
-        if (crop && (crop.x !== 0 || crop.y !== 0 || crop.width !== 100 || crop.height !== 100)) {
-            const top = crop.y;
-            const right = 100 - crop.x - crop.width;
-            const bottom = 100 - crop.y - crop.height;
-            const left = crop.x;
-            css += `clip-path: inset(${top}% ${right}% ${bottom}% ${left}%); `;
-        }
-        
-        return css.trim();
-    }
-
     function applyTempStyle(css) {
-        applyTempStyleWithValues(editorStyles);
-    }
-
-    function applyTempStyleWithValues(styles) {
-        logger.debug('PhotoEditor', 'apply_temp_styles', 'Applying temporary styles', { styles });
-        const { rotate, brightness, contrast, saturation, hue, scale, crop } = styles;
-        
-        // Store and apply styles to main image
-        const mainImage = document.querySelector('#photoImgTag');
-        logger.debug('PhotoEditor', 'main_image_check', 'Main image element found', { found: !!mainImage });
-        if (mainImage) {
-            // Store original styles immediately if not stored
-            if (!originalStyles.has('main-image')) {
-                const originalStyle = {
-                    transform: mainImage.style.transform || '',
-                    filter: mainImage.style.filter || '',
-                    clipPath: mainImage.style.clipPath || '',
-                    cssText: mainImage.style.cssText || ''
-                };
-                setOriginalStyles(prev => new Map(prev.set('main-image', originalStyle)));
-                originalStyles.set('main-image', originalStyle);
-            }
-            
-            // Get the stored original values
-            const original = originalStyles.get('main-image') || { transform: '', filter: '' };
-            
-            // Build combined styles directly
-            const transforms = [];
-            const filters = [];
-            
-            // Add original styles first
-            if (original.transform && original.transform !== 'none') {
-                transforms.push(original.transform);
-            }
-            if (original.filter && original.filter !== 'none') {
-                filters.push(original.filter);
-            }
-            
-            // Add editor styles
-            if (rotate !== 0) transforms.push(`rotate(${rotate}deg)`);
-            if (scale !== 100) transforms.push(`scale(${scale / 100})`);
-            
-            if (brightness !== 100) filters.push(`brightness(${brightness}%)`);
-            if (contrast !== 100) filters.push(`contrast(${contrast}%)`);
-            if (saturation !== 100) filters.push(`saturate(${saturation}%)`);
-            if (hue !== 0) filters.push(`hue-rotate(${hue}deg)`);
-            
-            // Apply styles immediately
-            mainImage.style.transform = transforms.length > 0 ? transforms.join(' ') : '';
-            mainImage.style.filter = filters.length > 0 ? filters.join(' ') : '';
-            
-            // Apply crop as clip-path if it's not the default (full image)
-            if (crop && (crop.x !== 0 || crop.y !== 0 || crop.width !== 100 || crop.height !== 100)) {
-                const top = crop.y;
-                const right = 100 - crop.x - crop.width;
-                const bottom = 100 - crop.y - crop.height;
-                const left = crop.x;
-                mainImage.style.clipPath = `inset(${top}% ${right}% ${bottom}% ${left}%)`;
-            } else {
-                mainImage.style.clipPath = '';
-            }
-        }
-        
-        // Apply to thumbnails with same immediate approach
-        const applyToThumbnails = (selector, keyPrefix) => {
-            const thumbnails = document.querySelectorAll(selector);
-            thumbnails.forEach((img, index) => {
-                if (img.src && props.currentPhotoPath && img.src.includes(props.currentPhotoPath.split('/').pop())) {
-                    const key = `${keyPrefix}-${index}`;
-                    
-                    if (!originalStyles.has(key)) {
-                        const originalStyle = {
-                            transform: img.style.transform || '',
-                            filter: img.style.filter || '',
-                            clipPath: img.style.clipPath || '',
-                            cssText: img.style.cssText || ''
-                        };
-                        setOriginalStyles(prev => new Map(prev.set(key, originalStyle)));
-                        originalStyles.set(key, originalStyle);
-                    }
-                    
-                    const original = originalStyles.get(key) || { transform: '', filter: '' };
-                    
-                    const transforms = [];
-                    const filters = [];
-                    
-                    if (original.transform && original.transform !== 'none') {
-                        transforms.push(original.transform);
-                    }
-                    if (original.filter && original.filter !== 'none') {
-                        filters.push(original.filter);
-                    }
-                    
-                    if (rotate !== 0) transforms.push(`rotate(${rotate}deg)`);
-                    if (scale !== 100) transforms.push(`scale(${scale / 100})`);
-                    
-                    if (brightness !== 100) filters.push(`brightness(${brightness}%)`);
-                    if (contrast !== 100) filters.push(`contrast(${contrast}%)`);
-                    if (saturation !== 100) filters.push(`saturate(${saturation}%)`);
-                    if (hue !== 0) filters.push(`hue-rotate(${hue}deg)`);
-                    
-                    img.style.transform = transforms.length > 0 ? transforms.join(' ') : '';
-                    img.style.filter = filters.length > 0 ? filters.join(' ') : '';
-                    
-                    // Apply crop as clip-path if it's not the default (full image)
-                    if (crop && (crop.x !== 0 || crop.y !== 0 || crop.width !== 100 || crop.height !== 100)) {
-                        const top = crop.y;
-                        const right = 100 - crop.x - crop.width;
-                        const bottom = 100 - crop.y - crop.height;
-                        const left = crop.x;
-                        img.style.clipPath = `inset(${top}% ${right}% ${bottom}% ${left}%)`;
-                    } else {
-                        img.style.clipPath = '';
-                    }
-                }
-            });
-        };
-        
-        applyToThumbnails('.photos .row img', 'grid-thumb');
-        applyToThumbnails('#photos-list-mini img', 'mini-thumb');
+        applyTempStyles(editorStyles, originalStyles, setOriginalStyles, props.currentPhotoPath);
     }
 
     async function applyStyle() {
@@ -721,21 +452,13 @@ function PhotoEditor(props) {
         
         // Clear stored original styles BEFORE resetting state
         setOriginalStyles(new Map());
-        
-        // Reset state (this will trigger applyTempStyleWithValues)
-        setEditorStyles({
-            rotate: 0,
-            brightness: 100,
-            contrast: 100,
-            saturation: 100,
-            hue: 0,
-            scale: 100,
-            crop: { x: 0, y: 0, width: 100, height: 100 }
-        });
-        
+
+        // Reset state (this will trigger applyTempStyles)
+        setEditorStyles({ ...DEFAULT_EDITOR_VALUES });
+
         // Reset crop mode
         setCropMode(false);
-        setCropSelection({ x: 0, y: 0, width: 100, height: 100 });
+        setCropSelection({ ...DEFAULT_EDITOR_VALUES.crop });
         
         // Clear CSS preview
         setTimeout(() => {
@@ -981,53 +704,28 @@ function PhotoEditor(props) {
             ...editorStyles,
             crop: { ...cropSelection }
         };
-        applyTempStyleWithValues(newStyles);
+        applyTempStyles(newStyles, originalStyles, setOriginalStyles, props.currentPhotoPath);
     }
 
     function setCropPreset(preset) {
-        if (!preset.ratio) {
-            // Original size
-            setCropSelection({ x: 0, y: 0, width: 100, height: 100 });
-            return;
-        }
-
-        // Calculate crop area to maintain aspect ratio
-        const ratio = preset.ratio;
-        let width = 100;
-        let height = 100;
-        let x = 0;
-        let y = 0;
-
-        if (ratio > 1) {
-            // Landscape: limit by height
-            height = 100 / ratio;
-            y = (100 - height) / 2;
-        } else {
-            // Portrait: limit by width
-            width = 100 * ratio;
-            x = (100 - width) / 2;
-        }
-
-        setCropSelection({ x, y, width, height });
+        const cropSelection = calculateCropFromPreset(preset);
+        setCropSelection(cropSelection);
     }
 
     function handleImageMouseDown(e) {
         if (!cropMode) return;
-        
+
         logger.debug('PhotoEditor', 'crop_mouse_down', 'Mouse down event in crop mode');
-        
+
         // Get position relative to the overlay element (which covers the image)
         const rect = e.currentTarget.getBoundingClientRect();
-        const x = ((e.clientX - rect.left) / rect.width) * 100;
-        const y = ((e.clientY - rect.top) / rect.height) * 100;
-        
-        logger.debug('PhotoEditor', 'crop_position', 'Calculated crop position', { x, y });
+        const position = calculateCropPosition(e, rect);
 
         setIsDragging(true);
-        setDragStart({ x, y });
+        setDragStart(position);
         setDragMode('create');
-        setCropSelection({ x, y, width: 0, height: 0 });
-        
+        setCropSelection({ ...position, width: 0, height: 0 });
+
         // Prevent default to avoid any interference
         e.preventDefault();
         e.stopPropagation();
@@ -1038,23 +736,13 @@ function PhotoEditor(props) {
 
         // Get position relative to the overlay element
         const rect = e.currentTarget.getBoundingClientRect();
-        const x = ((e.clientX - rect.left) / rect.width) * 100;
-        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        const position = calculateCropPosition(e, rect);
 
         if (dragMode === 'create') {
-            const width = Math.abs(x - dragStart.x);
-            const height = Math.abs(y - dragStart.y);
-            const startX = Math.min(x, dragStart.x);
-            const startY = Math.min(y, dragStart.y);
-
-            setCropSelection({
-                x: Math.max(0, Math.min(startX, 100)),
-                y: Math.max(0, Math.min(startY, 100)),
-                width: Math.max(0, Math.min(width, 100 - Math.max(0, startX))),
-                height: Math.max(0, Math.min(height, 100 - Math.max(0, startY)))
-            });
+            const newCropSelection = calculateCropDrag(position, dragStart);
+            setCropSelection(newCropSelection);
         }
-        
+
         // Prevent default to avoid any interference
         e.preventDefault();
         e.stopPropagation();
@@ -1258,7 +946,7 @@ function PhotoEditor(props) {
                                 <div className="crop-presets">
                                     <label>Presets:</label>
                                     <div className="preset-buttons">
-                                        {cropPresets.map((preset, index) => (
+                                        {CROP_PRESETS.map((preset, index) => (
                                             <button
                                                 key={index}
                                                 className="preset-btn"
