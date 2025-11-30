@@ -1718,18 +1718,18 @@ function PhotosList(props) {
                     </div>
                     :
                     <>
-                        <div id="photos-display-wrapper" style={{
-                            display: (() => {
-                                const displayKey = viewModeObj.isRecentMode() ? "recent" : viewModeObj.getDataAttribute();
-                                const shouldDisplay = !photoLoading && compatProps.showPhotoDisplay[displayKey] && currentPhotoPath;
+                        {(() => {
+                            const displayKey = viewModeObj.isRecentMode() ? "recent" : viewModeObj.getDataAttribute();
+                            const shouldDisplay = !photoLoading && compatProps.showPhotoDisplay[displayKey] && currentPhotoPath;
 
-                                return shouldDisplay ? "block" : "none";
-                            })()
-                        }}>
-                            <AllPhotosContext.Provider value={{ photosListMiniAllPhotos, setPhotosListMiniAllPhotos }}>
-                                <ImgCacheContext.Provider value={{ imgCacheMap, setImgCacheMap }}>
-                                    <div className="photo-display">
-                                        <PhotosListMini
+                            if (!shouldDisplay) return null;
+
+                            return (
+                                <div id="photos-display-wrapper">
+                                    <AllPhotosContext.Provider value={{ photosListMiniAllPhotos, setPhotosListMiniAllPhotos }}>
+                                        <ImgCacheContext.Provider value={{ imgCacheMap, setImgCacheMap }}>
+                                            <div className="photo-display">
+                                                <PhotosListMini
                                             moveToTrashCan={moveToTrashCan}
                                             closePhotoDisplay={closePhotoDisplay}
                                             toggleSelection={toggleSelection}
@@ -1774,11 +1774,13 @@ function PhotosList(props) {
                                             removePhotoFromList={removePhotoFromList}
                                             addFooterMessage={compatProps.addFooterMessage}
                                             handleTauriError={handleTauriError}
-                                        />
-                                    </div>
-                                </ImgCacheContext.Provider>
-                            </AllPhotosContext.Provider>
-                        </div>
+                                                />
+                                            </div>
+                                        </ImgCacheContext.Provider>
+                                    </AllPhotosContext.Provider>
+                                </div>
+                            );
+                        })()}
                         <div className={(props.showSideMenu || !currentPhotoPath) ? "centerDisplay" : "centerDisplayMax"} id="photoList"
                             style={{ display: (!photoLoading && (!compatProps.showPhotoDisplay[viewModeObj.isRecentMode() ? "recent" : viewModeObj.getDataAttribute()] || !currentPhotoPath)) ? "block" : "none" }}
                             data-date={viewModeObj.isRecentMode() ? "recent" : viewModeObj.getDataAttribute()}

@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { convertFileSrc } from "@tauri-apps/api/core";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { openUrl } from '@tauri-apps/plugin-opener';
 import Scrollable from "../../Scrollable.jsx";
 import TagChip from "../../components/TagChip.jsx";
@@ -26,6 +26,12 @@ function PhotoGrid({
 }) {
     const [photosListImgSrc, setPhotosListImgSrc] = useState({});
 
+    // Memoize displayedPhotos paths to prevent infinite loops in import useEffect
+    const displayedPhotosPaths = useMemo(() =>
+        displayedPhotos?.map(p => p.originalPath).join(',') || '',
+        [displayedPhotos]
+    );
+
     // Helper function to parse CSS style string
     const parseCssStyle = useCallback((cssString) => {
         if (!cssString) return {};
@@ -45,6 +51,30 @@ function PhotoGrid({
         return styles;
     }, []);
 
+    // Load resized images for import mode photos
+    /*
+    useEffect(() => {
+        if (!displayedPhotos || displayedPhotos.length === 0) return;
+
+        // Strict filtering: only photos with import_source === true
+        const importPhotos = displayedPhotos.filter(p => p.import_source === true);
+
+        logger.debug('PhotoGrid', 'import_photos_check', 'Checking for import photos', {
+            totalPhotos: displayedPhotos.length,
+            importPhotosCount: importPhotos.length,
+            nonImportPhotosCount: displayedPhotos.filter(p => p.import_source !== true).length,
+            firstPhotoImportSource: displayedPhotos[0]?.import_source,
+            firstPhotoPath: displayedPhotos[0]?.originalPath
+        });
+
+        if (importPhotos.length === 0) {
+            logger.debug('PhotoGrid', 'no_import_photos', 'No import photos found, skipping load');
+            return;
+        }
+
+    }, [displayedPhotosPaths, displayedPhotos]);
+    */
+
     // Check if any filters are active
     const hasActiveFilters = useMemo(() => {
         return starFilter > 0 || hasCommentFilter || hasTagFilter || extensionFilter !== 'all';
@@ -63,24 +93,34 @@ function PhotoGrid({
     const renderPhotoTile = useCallback((photo, index) => {
         const image_for_not_found = "/img_error.png";
 
-        // Use Photo entity methods for clean path resolution
-        if (photo.hasThumbnail && photo.thumbnailPath && typeof photo.thumbnailPath === 'function') {
-            const thumbPath = photo.thumbnailPath();
-            photosListImgSrc[photo.originalPath] = convertFileSrc(thumbPath);
-        } else {
-            // Use Photo entity's display path method (handles trash mode automatically)
-            if (photo.displayPath && typeof photo.displayPath === 'function') {
-                const dispPath = photo.displayPath();
-                photosListImgSrc[photo.originalPath] = convertFileSrc(dispPath);
-            } else {
-                // Fallback - this should not happen if Photo entities are properly recreated
-                logger.warn('PhotoGrid', 'photo_entity_fallback', 'Photo entity methods not available, using original path', {
-                    originalPath: photo.originalPath,
-                    hasDisplayPath: !!photo.displayPath,
-                    hasThumbnailPath: !!photo.thumbnailPath,
-                    hasConfig: !!photo.config
+        // Calculate image source without modifying state
+        let imgSrc = photosListImgSrc[photo.originalPath];
+
+        async function fetchResizedImage(photo) {
+            try {
+                const resizedImage = await invoke('get_resized_image', {
+                    pathStr: photo.originalPath,
+                    maxSize: 200
                 });
-                photosListImgSrc[photo.originalPath] = convertFileSrc(photo.originalPath);
+                return resizedImage;
+            } catch (error) {
+                logger.error('PhotoGrid', 'fetch_resized_image_error', 'Error fetching resized image', {
+                    photoPath: photo.originalPath,
+                    error: error.message
+                });
+                return null;
+            }
+        }
+
+        // If not in state, calculate source on-demand
+        if (!photo.import_source && !imgSrc) {
+            // Non-import photos: use thumbnail if available
+            if (photo.hasThumbnail && photo.thumbnailPath && typeof photo.thumbnailPath === 'function') {
+                imgSrc = convertFileSrc(photo.thumbnailPath());
+            } else if (photo.displayPath && typeof photo.displayPath === 'function') {
+                imgSrc = convertFileSrc(photo.displayPath());
+            } else {
+                imgSrc = convertFileSrc(photo.originalPath);
             }
         }
 
@@ -93,13 +133,13 @@ function PhotoGrid({
                                 <span style={{ fontSize: (iconSize / 3) + 'px' }}>&#127909;</span>
                             </div>
                             : <div style={{ width: iconSize + 'px', height: iconSize + 'px', flexShrink: 0 }} >
-                                <img loading="eager"
+                                <img loading={photo.hasThumbnail ? "eager" : "lazy"}
                                     alt={photo.originalPath}
                                     style={{
                                         width: "97%",
                                         ...parseCssStyle(photo.cssStyle)
                                     }}
-                                    src={photosListImgSrc[photo.originalPath]}
+                                    src={imgSrc}
                                     onLoad={(e) => {
                                         let w = e.currentTarget.width;
                                         let h = e.currentTarget.height;
@@ -115,6 +155,14 @@ function PhotoGrid({
                                         // Only handle error if not already showing error image
                                         if (e.currentTarget.src.includes('/img_error.png') || e.currentTarget.src === image_for_not_found) {
                                             return;
+                                        }
+                                        if (photo.import_source === true) {
+                                            // For import mode photos, try to fetch resized image
+                                            fetchResizedImage(photo).then(resizedImage => {
+                                                alert(resizedImage);
+                                                photosListImgSrc[photo.originalPath] = resizedImage;
+                                                e.currentTarget.src = resizedImage;
+                                            });
                                         }
 
                                         // If we have a thumbnail and it's failing, try original as fallback
@@ -138,7 +186,8 @@ function PhotoGrid({
                                             photosListImgSrc[photo.originalPath] = image_for_not_found;
                                             e.currentTarget.src = image_for_not_found;
                                         }
-                                    }}
+                                    }
+                                    }
                                 />
                                 {photo.originalPath?.match(/\.(mp4|webm)$/i) && <div style={{ color: "white", position: "relative", top: iconSize / -3, fontSize: (iconSize / 6) + 'px' }}>&#x25b6;</div>}
                             </div>
@@ -174,47 +223,47 @@ function PhotoGrid({
                         const tags = photo.getTags ? photo.getTags() : (photo.tags || []);
                         return tags.length > 0;
                     })() && (
-                        <div style={{
-                            position: "absolute",
-                            bottom: "4px",
-                            left: "4px",
-                            right: "4px",
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: "2px",
-                            maxHeight: "40px",
-                            overflow: "hidden"
-                        }}>
-                            {(() => {
-                                const tags = photo.getTags ? photo.getTags() : (photo.tags || []);
-                                return tags.slice(0, 3).map(tag => (
-                                    <TagChip
-                                        key={tag.id}
-                                        tag={tag}
-                                        style={{
+                            <div style={{
+                                position: "absolute",
+                                bottom: "4px",
+                                left: "4px",
+                                right: "4px",
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: "2px",
+                                maxHeight: "40px",
+                                overflow: "hidden"
+                            }}>
+                                {(() => {
+                                    const tags = photo.getTags ? photo.getTags() : (photo.tags || []);
+                                    return tags.slice(0, 3).map(tag => (
+                                        <TagChip
+                                            key={tag.id}
+                                            tag={tag}
+                                            style={{
+                                                fontSize: "8px",
+                                                padding: "1px 4px",
+                                                maxWidth: "60px"
+                                            }}
+                                        />
+                                    ));
+                                })()}
+                                {(() => {
+                                    const tags = photo.getTags ? photo.getTags() : (photo.tags || []);
+                                    return tags.length > 3 && (
+                                        <span style={{
                                             fontSize: "8px",
+                                            backgroundColor: "rgba(0, 0, 0, 0.5)",
+                                            color: "white",
                                             padding: "1px 4px",
-                                            maxWidth: "60px"
-                                        }}
-                                    />
-                                ));
-                            })()}
-                            {(() => {
-                                const tags = photo.getTags ? photo.getTags() : (photo.tags || []);
-                                return tags.length > 3 && (
-                                    <span style={{
-                                        fontSize: "8px",
-                                        backgroundColor: "rgba(0, 0, 0, 0.5)",
-                                        color: "white",
-                                        padding: "1px 4px",
-                                        borderRadius: "8px"
-                                    }}>
-                                        +{tags.length - 3}
-                                    </span>
-                                );
-                            })()}
-                        </div>
-                    )}
+                                            borderRadius: "8px"
+                                        }}>
+                                            +{tags.length - 3}
+                                        </span>
+                                    );
+                                })()}
+                            </div>
+                        )}
                 </div>
                 <div className="photo-list-menu">
                     <input type="checkbox"

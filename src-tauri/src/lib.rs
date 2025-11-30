@@ -7,6 +7,8 @@
 // - app_state.rs: AppState struct and related initialization
 // Keep only main app setup and command registration in lib.rs
 
+extern crate kexif;
+
 use crate::domain_service::{
     file_service, job_queue_service, logging_service, photo_service, thumbnail_service,
 };
@@ -1039,6 +1041,124 @@ fn show_importer(
     let json = serde_json::to_string(&importer).unwrap();
     // println!("{:?}", &json);
     return json;
+}
+
+#[tauri::command]
+fn get_resized_image(
+    path_str: &str,
+    max_size: u32,
+) -> Result<String, String> {
+    use image::imageops::FilterType;
+    use image::io::Reader as ImageReader;
+    use image::{GenericImageView, ImageFormat};
+    use std::io::Cursor;
+    use base64::{Engine as _, engine::general_purpose};
+    use std::time::Instant;
+    use std::fs::File;
+    use std::io::BufReader;
+
+    let start_time = Instant::now();
+    log::debug!(target: "image", "resize_request; path={}; max_size={}", path_str, max_size);
+
+    // First, try to extract EXIF embedded thumbnail using kamadak-exif (much faster!)
+    let exif_start = Instant::now();
+    if let Ok(file) = File::open(path_str) {
+        let mut bufreader = BufReader::new(&file);
+
+        if let Ok(exif_reader) = kexif::Reader::new().read_from_container(&mut bufreader) {
+            // Try to get the thumbnail
+            if let Some(thumbnail_field) = exif_reader.get_field(kexif::Tag::JPEGInterchangeFormat, kexif::In::THUMBNAIL) {
+                if let Some(length_field) = exif_reader.get_field(kexif::Tag::JPEGInterchangeFormatLength, kexif::In::THUMBNAIL) {
+                    if let (kexif::Value::Long(ref offset_vec), kexif::Value::Long(ref length_vec)) = (&thumbnail_field.value, &length_field.value) {
+                        if let (Some(&offset), Some(&length)) = (offset_vec.get(0), length_vec.get(0)) {
+                            // Read the thumbnail data
+                            use std::io::{Seek, SeekFrom, Read};
+                            drop(bufreader);
+                            if let Ok(mut file) = File::open(path_str) {
+                                if file.seek(SeekFrom::Start(offset as u64)).is_ok() {
+                                    let mut thumbnail_data = vec![0u8; length as usize];
+                                    if file.read_exact(&mut thumbnail_data).is_ok() {
+                                        // Find JPEG start marker (FFD8FF) and trim any leading data
+                                        let jpeg_start = thumbnail_data.windows(2).position(|w| w[0] == 0xFF && w[1] == 0xD8);
+                                        let jpeg_data = if let Some(start_pos) = jpeg_start {
+                                            &thumbnail_data[start_pos..]
+                                        } else {
+                                            &thumbnail_data[..]
+                                        };
+
+                                        let exif_time = exif_start.elapsed();
+                                        let base64_string = general_purpose::STANDARD.encode(jpeg_data);
+                                        let total_time = start_time.elapsed();
+
+                                        log::info!(target: "image", "exif_thumbnail_used; base64_length={}; jpeg_start_offset={}; exif_ms={}; total_ms={}",
+                                            base64_string.len(), jpeg_start.unwrap_or(0), exif_time.as_millis(), total_time.as_millis());
+
+                                        return Ok(format!("data:image/jpeg;base64,{}", base64_string));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // EXIF thumbnail not found, log and proceed to fallback
+    let exif_time = exif_start.elapsed();
+    log::debug!(target: "image", "no_exif_thumbnail; exif_check_ms={}; falling_back_to_resize", exif_time.as_millis());
+
+    // Fallback: Load and resize the full image
+    let load_start = Instant::now();
+    let img = ImageReader::open(path_str)
+        .map_err(|e| format!("Failed to open image: {}", e))?
+        .decode()
+        .map_err(|e| format!("Failed to decode image: {}", e))?;
+    let load_time = load_start.elapsed();
+
+    let (width, height) = img.dimensions();
+    log::debug!(target: "image", "image_loaded; width={}; height={}; load_ms={}", width, height, load_time.as_millis());
+
+    // Calculate new dimensions maintaining aspect ratio
+    let (new_width, new_height) = if width > height {
+        if width > max_size {
+            let ratio = max_size as f32 / width as f32;
+            (max_size, (height as f32 * ratio) as u32)
+        } else {
+            (width, height)
+        }
+    } else {
+        if height > max_size {
+            let ratio = max_size as f32 / height as f32;
+            ((width as f32 * ratio) as u32, max_size)
+        } else {
+            (width, height)
+        }
+    };
+
+    log::debug!(target: "image", "resizing; new_width={}; new_height={}", new_width, new_height);
+
+    // Resize the image using Triangle (bilinear) filter - much faster than Lanczos3
+    let resize_start = Instant::now();
+    let resized = img.resize(new_width, new_height, FilterType::Triangle);
+    let resize_time = resize_start.elapsed();
+
+    // Encode as JPEG
+    let encode_start = Instant::now();
+    let mut buffer = Cursor::new(Vec::new());
+    resized
+        .write_to(&mut buffer, ImageFormat::Jpeg)
+        .map_err(|e| format!("Failed to encode image: {}", e))?;
+
+    // Convert to base64
+    let base64_string = general_purpose::STANDARD.encode(buffer.into_inner());
+    let encode_time = encode_start.elapsed();
+
+    let total_time = start_time.elapsed();
+    log::info!(target: "image", "resize_complete; base64_length={}; exif_ms={}; load_ms={}; resize_ms={}; encode_ms={}; total_ms={}",
+        base64_string.len(), exif_time.as_millis(), load_time.as_millis(), resize_time.as_millis(), encode_time.as_millis(), total_time.as_millis());
+
+    Ok(format!("data:image/jpeg;base64,{}", base64_string))
 }
 
 #[tauri::command]
@@ -2600,6 +2720,7 @@ pub fn run() {
             get_next_photo,
             get_prev_photo,
             show_importer,
+            get_resized_image,
             import_photos,
             get_import_progress,
             get_job_progress,

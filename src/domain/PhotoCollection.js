@@ -237,9 +237,9 @@ export class PhotoCollection {
     }
 
     static createImportCollection(photos, currentImportPath, importPaths = [], importFilter = '', config, sortValue = 0) {
-        return new PhotoCollection(photos, 'import', { 
-            currentImportPath, 
-            importPaths, 
+        return new PhotoCollection(photos, 'import', {
+            currentImportPath,
+            importPaths,
             importFilter,
             config,
             sortValue,
@@ -291,9 +291,9 @@ export class PhotoCollection {
                 extension: filters.extension || "all"
             }
         });
-        
+
         const data = JSON.parse(result);
-        
+
         logger.debug('PhotoCollection', '_fetchDatePhotos_parsed', 'Date mode JSON parsed', {
             dataType: typeof data,
             hasPhotos: !!data?.photos,
@@ -303,7 +303,7 @@ export class PhotoCollection {
             firstPhotoFile: data?.photos?.[0]?.file,
             firstPhotoPath: data?.photos?.[0]?.file?.path || data?.photos?.[0]?.path
         });
-        
+
         // Convert raw photos to Photo entities
         const config = this.metadata.config;
         logger.debug('PhotoCollection', 'fetch_date_photos_creating', 'Creating Photo entities from date backend data', {
@@ -314,18 +314,18 @@ export class PhotoCollection {
             configThumbnailStore: config?.thumbnail_store,
             configTrashPath: config?.trash_path
         });
-        
+
         const photoEntities = (data.photos || [])
             .map(photoData => Photo.fromBackendData(photoData, config, false)) // isFromTrash = false
             .filter(photo => photo !== null); // Remove null entries from invalid data
-        
+
         return this.withPhotos(photoEntities)
-                   .withMetadata({
-                       hasNext: data.has_next || false,
-                       hasPrev: false,  // Since we're getting all data, no pagination at API level
-                       currentPage: page,
-                       totalCount: data.total_count || photoEntities.length
-                   });
+            .withMetadata({
+                hasNext: data.has_next || false,
+                hasPrev: false,  // Since we're getting all data, no pagination at API level
+                currentPage: page,
+                totalCount: data.total_count || photoEntities.length
+            });
     }
 
     /**
@@ -343,23 +343,23 @@ export class PhotoCollection {
                 extension: filters.extension || "all"
             }
         });
-        
+
         const data = JSON.parse(result);
-        
+
         // Convert raw photos to Photo entities
         const config = this.metadata.config;
         const photoEntities = (data.photos || [])
             .map(photoData => Photo.fromBackendData(photoData, config, false)) // isFromTrash = false
             .filter(photo => photo !== null); // Remove null entries from invalid data
-        
-        
+
+
         return this.withPhotos(photoEntities)
-                   .withMetadata({
-                       hasNext: false, // Recent mode typically doesn't paginate
-                       hasPrev: false,
-                       currentPage: 1,
-                       totalCount: photoEntities.length
-                   });
+            .withMetadata({
+                hasNext: false, // Recent mode typically doesn't paginate
+                hasPrev: false,
+                currentPage: 1,
+                totalCount: photoEntities.length
+            });
     }
 
     /**
@@ -371,16 +371,16 @@ export class PhotoCollection {
             const startIndex = (page - 1) * pageSize;
             const endIndex = startIndex + pageSize;
             const pagePhotos = this.metadata.searchResults.slice(startIndex, endIndex);
-            
+
             return this.withPhotos(pagePhotos)
-                       .withMetadata({
-                           hasNext: endIndex < this.metadata.searchResults.length,
-                           hasPrev: page > 1,
-                           currentPage: page,
-                           totalCount: this.metadata.searchResults.length
-                       });
+                .withMetadata({
+                    hasNext: endIndex < this.metadata.searchResults.length,
+                    hasPrev: page > 1,
+                    currentPage: page,
+                    totalCount: this.metadata.searchResults.length
+                });
         }
-        
+
         // Fallback to date-based search if no search results
         const result = await invoke("get_photos_unified", {
             request: {
@@ -396,22 +396,22 @@ export class PhotoCollection {
                 extension: filters.extension || "all"
             }
         });
-        
+
         const data = JSON.parse(result);
-        
+
         // Convert raw photos to Photo entities (same as other modes)
         const config = this.metadata.config;
         const photoEntities = (data.photos || [])
             .map(photoData => Photo.fromBackendData(photoData, config, false))
             .filter(photo => photo !== null);
-        
+
         return this.withPhotos(photoEntities)
-                   .withMetadata({
-                       hasNext: data.has_next || false,
-                       hasPrev: page > 1,
-                       currentPage: page,
-                       totalCount: data.total_count || photoEntities.length
-                   });
+            .withMetadata({
+                hasNext: data.has_next || false,
+                hasPrev: page > 1,
+                currentPage: page,
+                totalCount: data.total_count || photoEntities.length
+            });
     }
 
     /**
@@ -430,22 +430,22 @@ export class PhotoCollection {
                 extension: filters.extension || "all"
             }
         });
-        
+
         const data = JSON.parse(result);
-        
+
         // Convert raw photos to Photo entities  
         const config = this.metadata.config;
         const photoEntities = (data.photos || [])
             .map(photoData => Photo.fromBackendData(photoData, config, false))
             .filter(photo => photo !== null);
-        
+
         return this.withPhotos(photoEntities)
-                   .withMetadata({
-                       hasNext: data.has_next || false,
-                       hasPrev: false,
-                       currentPage: page,
-                       totalCount: data.total_count || photoEntities.length
-                   });
+            .withMetadata({
+                hasNext: data.has_next || false,
+                hasPrev: false,
+                currentPage: page,
+                totalCount: data.total_count || photoEntities.length
+            });
     }
 
     /**
@@ -462,29 +462,29 @@ export class PhotoCollection {
                 extension: filters.extension || "all"
             }
         });
-        
+
         const data = JSON.parse(result);
-        
+
         // Convert raw photos to Photo entities
         const config = this.metadata.config;
         const photoEntities = (data.photos || [])
             .map(photoData => Photo.fromBackendData(photoData, config, false))
             .filter(photo => photo !== null);
-        
+
         return this.withPhotos(photoEntities)
-                   .withMetadata({
-                       hasNext: data.has_next || false,
-                       hasPrev: false,
-                       currentPage: page,
-                       totalCount: data.total_count || photoEntities.length
-                   });
+            .withMetadata({
+                hasNext: data.has_next || false,
+                hasPrev: false,
+                currentPage: page,
+                totalCount: data.total_count || photoEntities.length
+            });
     }
 
     /**
      * Fetch photos for trash mode
      */
     async _fetchTrashPhotos(page, pageSize, filters) {
-        
+
         const result = await invoke("get_photos_unified", {
             request: {
                 type: "search",
@@ -494,15 +494,15 @@ export class PhotoCollection {
                 extension: filters.extension || "all"
             }
         });
-        
-        
+
+
         const data = JSON.parse(result);
-        
-        
+
+
         // Convert raw photos to Photo entities
         const config = this.metadata.config;
-        
-        
+
+
         const photoEntities = (data.photos || [])
             .map((photoData, index) => {
                 try {
@@ -513,15 +513,15 @@ export class PhotoCollection {
                 }
             })
             .filter(photo => photo !== null);
-        
-        
+
+
         return this.withPhotos(photoEntities)
-                   .withMetadata({
-                       hasNext: data.has_next || false,
-                       hasPrev: false,
-                       currentPage: page,
-                       totalCount: data.total_count || photoEntities.length
-                   });
+            .withMetadata({
+                hasNext: data.has_next || false,
+                hasPrev: false,
+                currentPage: page,
+                totalCount: data.total_count || photoEntities.length
+            });
     }
 
     /**
@@ -533,39 +533,57 @@ export class PhotoCollection {
             page: page,
             num: pageSize,
             dateStr: this.metadata.importFilter
-        });
-        
+        })
+
         const importerData = JSON.parse(result);
-        
+        logger.debug('PhotoCollection', '_fetchImportPhotos_parsed', 'Import mode JSON parsed', {
+            dataType: typeof importerData,
+            hasDirsFiles: !!importerData?.dirs_files,
+            dirsFilesKeys: importerData?.dirs_files ? Object.keys(importerData.dirs_files) : 'null',
+            filesLength: importerData?.dirs_files?.files?.files ? importerData.dirs_files.files.files.length : 'no files',
+            firstFileStructure: importerData?.dirs_files?.files?.files?.[0] ? Object.keys(importerData.dirs_files.files.files[0]) : 'no files'
+        });
         // Normalize import photos to match standard photo structure
         const rawPhotos = importerData.dirs_files.files.files || [];
-        const normalizedPhotos = rawPhotos.map(photo => ({
-            // Standard photo structure
-            file: {
+        const config = this.metadata.config;
+        const normalizedPhotos = rawPhotos.map(photo => {
+            const photoEntity = new Photo({
+                // Standard photo structure
+                file: {
+                    path: photo.path,
+                    name: photo.path.split('/').pop() || '',
+                    size: photo.size || 0
+                },
                 path: photo.path,
-                name: photo.path.split('/').pop() || '',
-                size: photo.size || 0
-            },
-            // Copy other properties that might exist
-            has_thumbnail: photo.has_thumbnail || false,
-            created_at: photo.created_at,
-            star: photo.star || 0,
-            comment: photo.comment || '',
-            // Additional import-specific properties
-            import_source: true,
-            original_path: photo.path
-        }));
-        
+                // Copy other properties that might exist
+                has_thumbnail: false,  // Set to false for simplicity
+                created_at: photo.created_at,
+                star: 0,
+                comment: '',
+                // Additional import-specific properties
+                import_source: true,
+                original_path: photo.path,
+            }, config);
+
+            return photoEntity;
+        });
+
+        logger.debug('PhotoCollection', '_fetchImportPhotos_normalized', 'Import mode photos normalized', {
+            originalFileCount: rawPhotos.length,
+            normalizedPhotoCount: normalizedPhotos.length,
+            firstNormalizedPhoto: normalizedPhotos[0] || null
+        });
+
         return this.withPhotos(normalizedPhotos)
-                   .withMetadata({
-                       hasNext: importerData.dirs_files.has_next_file || false,
-                       hasPrev: importerData.dirs_files.has_prev_file || false,
-                       currentPage: importerData.page || page,
-                       directories: importerData.dirs_files.dirs.dirs || [],
-                       importPaths: importerData.paths || this.metadata.importPaths,
-                       currentImportPath: importerData.dirs_files.dir.path || this.metadata.currentImportPath,
-                       totalCount: normalizedPhotos.length
-                   });
+            .withMetadata({
+                hasNext: importerData.dirs_files.has_next_file || false,
+                hasPrev: importerData.dirs_files.has_prev_file || false,
+                currentPage: importerData.page || page,
+                directories: importerData.dirs_files.dirs.dirs || [],
+                importPaths: importerData.paths || this.metadata.importPaths,
+                currentImportPath: importerData.dirs_files.dir.path || this.metadata.currentImportPath,
+                totalCount: normalizedPhotos.length
+            });
     }
 
 
@@ -576,7 +594,7 @@ export class PhotoCollection {
         if (this.mode !== 'import') {
             throw new Error('getImportMetadata() can only be called on import mode collections');
         }
-        
+
         return {
             currentImportPath: this.metadata.currentImportPath || '',
             importPaths: this.metadata.importPaths || [],

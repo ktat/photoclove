@@ -25,6 +25,7 @@ tauri = { version = "2", features = [ "protocol-asset"] }
 chrono = { version = "0.4", features = ["unstable-locales", "serde"] }
 rusqlite = { version = "*", features = ["bundled"] }
 rexif = "0.7.3"
+kexif = { package = "kamadak-exif", version = "0.5" }
 linked-hash-map = "0.5.6"
 regex = "1.7.0"
 filetime = "*"
