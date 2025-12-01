@@ -1043,6 +1043,31 @@ fn show_importer(
     return json;
 }
 
+// Generate deterministic thumbnail path for a given photo path
+// This allows frontend to know the thumbnail path without async call
+fn get_thumbnail_path_for_photo(photo_path: &str) -> Result<String, String> {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    // Get cache directory
+    let cache_dir = dirs::cache_dir()
+        .ok_or_else(|| "Failed to get cache directory".to_string())?
+        .join("photoclove")
+        .join("thumbnails");
+
+    // Generate cache filename from path hash (same algorithm as get_resized_image)
+    let mut hasher = DefaultHasher::new();
+    photo_path.hash(&mut hasher);
+    let hash = hasher.finish();
+    let cache_filename = format!("{:x}.jpg", hash);
+    let cache_path = cache_dir.join(&cache_filename);
+
+    // Return the cache file path
+    cache_path.to_str()
+        .ok_or_else(|| "Failed to convert cache path to string".to_string())
+        .map(|s| s.to_string())
+}
+
 // Clear all import thumbnail cache files
 fn clear_import_thumbnail_cache(cache_dir: &path::Path) -> Result<usize, String> {
     let mut removed_count = 0;
@@ -1248,6 +1273,11 @@ fn get_resized_image(
     let base64_string = general_purpose::STANDARD.encode(jpeg_data);
     log::warn!(target: "image", "cache_write_failed_resize; returning_data_url");
     Ok(format!("data:image/jpeg;base64,{}", base64_string))
+}
+
+#[tauri::command]
+fn get_thumbnail_path(photo_path: &str) -> Result<String, String> {
+    get_thumbnail_path_for_photo(photo_path)
 }
 
 #[tauri::command]
@@ -2824,6 +2854,7 @@ pub fn run() {
             get_prev_photo,
             show_importer,
             get_resized_image,
+            get_thumbnail_path,
             clear_import_cache,
             import_photos,
             get_import_progress,
