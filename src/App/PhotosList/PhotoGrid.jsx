@@ -163,8 +163,18 @@ function PhotoGrid({
                                                 }).then(() => {
                                                     // Retry with the same thumbnail path
                                                     getThumbnailPath(photo.originalPath).then(thumbnailPath => {
-                                                        if (thumbnailPath) {
+                                                        if (thumbnailPath && e.currentTarget) {
                                                             e.currentTarget.src = convertFileSrc(thumbnailPath) + '?retry=' + Date.now();
+                                                        } else if (e.currentTarget) {
+                                                            // If path retrieval failed, try original
+                                                            e.currentTarget.dataset.triedOriginal = "true";
+                                                            e.currentTarget.src = convertFileSrc(photo.originalPath);
+                                                        }
+                                                    }).catch(() => {
+                                                        // getThumbnailPath failed, try original
+                                                        if (e.currentTarget) {
+                                                            e.currentTarget.dataset.triedOriginal = "true";
+                                                            e.currentTarget.src = convertFileSrc(photo.originalPath);
                                                         }
                                                     });
                                                 }).catch(err => {
@@ -172,6 +182,11 @@ function PhotoGrid({
                                                         photoPath: photo.originalPath,
                                                         error: err.message
                                                     });
+                                                    // Generation failed, try original
+                                                    if (e.currentTarget) {
+                                                        e.currentTarget.dataset.triedOriginal = "true";
+                                                        e.currentTarget.src = convertFileSrc(photo.originalPath);
+                                                    }
                                                 });
                                                 return;
                                             } else if (!e.currentTarget.dataset.triedOriginal) {
