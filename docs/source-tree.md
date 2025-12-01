@@ -65,15 +65,49 @@ src/
 │       ├── 📄 PhotoLoading.jsx      # Loading indicator
 │       ├── 📄 PhotoOption.jsx       # Photo metadata panel
 │       ├── 📄 PhotosListMini.jsx    # Full-screen photo viewer
+│       ├── 📄 PhotoGrid.jsx         # Photo grid display component
 │       │
 │       ├── 📁 PhotoOption/
-│       │   ├── 📄 PhotoEditor.jsx   # Image editing controls
-│       │   └── 📄 PhotoInfo.jsx     # Photo metadata display
+│       │   ├── 📄 PhotoEditor.jsx   # Image editing controls (980 lines)
+│       │   ├── 📄 PhotoInfo.jsx     # Photo metadata display with external app launcher
+│       │   │
+│       │   └── 📁 PhotoEditor/      # PhotoEditor utility modules
+│       │       ├── 📄 cssUtils.js   # CSS parsing/generation (218 lines)
+│       │       ├── 📄 cropUtils.js  # Crop calculations (144 lines)
+│       │       └── 📄 styleUtils.js # Style application (199 lines)
 │       │
 │       └── 📁 PhotosListMini/
-│           └── 📄 PhotoDisplay.jsx  # Individual photo display
+│           ├── 📄 PhotoDisplay.jsx  # Individual photo display
+│           ├── 📄 photoUtils.js     # Thumbnail display calculations (128 lines)
+│           └── 📄 useKeyboardShortcuts.js # Keyboard navigation hook (124 lines)
+│
+├── 📁 hooks/                   # Custom React hooks
+│   ├── 📄 useAppConfig.js           # Application configuration hook
+│   ├── 📄 useDateNavigation.js      # Date navigation logic
+│   ├── 📄 useImportModeLifecycle.js # Import mode lifecycle management
+│   ├── 📄 useInfiniteScroll.js      # Infinite scroll pagination
+│   ├── 📄 usePhotoDataLoader.js     # Photo data loading logic
+│   ├── 📄 usePhotoDataSync.js       # Photo data synchronization
+│   ├── 📄 usePhotoDisplay.js        # Photo display state management
+│   ├── 📄 usePhotoMetadata.js       # Photo metadata operations
+│   ├── 📄 usePhotoOperations.js     # Photo operations (510 lines: album, trash, list management)
+│   ├── 📄 usePhotoSelection.js      # Photo selection logic
+│   ├── 📄 usePhotosListDisplay.js   # PhotosList display state
+│   ├── 📄 usePhotosListFilters.js   # Filter state management
+│   ├── 📄 usePhotosListSelection.js # PhotosList selection operations
+│   ├── 📄 usePhotosListState.js     # Main PhotosList state hook
+│   ├── 📄 usePhotosQuery.js         # Photo query logic
+│   ├── 📄 usePhotosState.js         # Photos state management
+│   ├── 📄 useSearch.js              # Search functionality
+│   ├── 📄 useSearchHistory.js       # Search history management
+│   ├── 📄 useThumbnailGeneration.js # Thumbnail generation logic
+│   ├── 📄 useTutorial.js            # Tutorial state management
+│   ├── 📄 useViewMode.js            # View mode state machine
+│   ├── 📄 useViewModeObject.js      # ViewMode DDD value object integration
+│   └── 📄 useViewModeSync.js        # ViewMode synchronization
 │
 ├── 📁 services/                # External service integrations
+│   ├── 📄 LoggerService.js     # Structured logging service
 │   └── 📁 firebase/            # Firebase authentication
 │       ├── 📄 app.js           # Firebase app configuration
 │       ├── 📄 auth.js          # Authentication methods
@@ -96,10 +130,17 @@ src/
 
 #### Photo Management Components
 - **`PhotosList.jsx`**: Main photo grid with filtering, sorting, pagination, and selection
-- **`PhotosListMini.jsx`**: Full-screen photo viewer with navigation and editing capabilities
+- **`PhotoGrid.jsx`**: Photo grid display component with thumbnail rendering
+- **`PhotosListMini.jsx`**: Full-screen photo viewer with navigation and editing capabilities (735 lines)
+  - **`photoUtils.js`**: Thumbnail display calculations and border styles (128 lines)
+  - **`useKeyboardShortcuts.js`**: Keyboard navigation hook for photo browsing (124 lines)
 - **`PhotoDisplay.jsx`**: Individual photo rendering with transformation support
 - **`PhotoOption.jsx`**: Right sidebar panel for photo metadata and actions
-- **`PhotoEditor.jsx`**: Image editing interface with filters, transforms, and crop tools
+- **`PhotoEditor.jsx`**: Image editing interface with filters, transforms, and crop tools (980 lines)
+  - **`cssUtils.js`**: CSS parsing and generation utilities (218 lines)
+  - **`cropUtils.js`**: Crop calculation utilities and aspect ratio presets (144 lines)
+  - **`styleUtils.js`**: Style application utilities for DOM elements (199 lines)
+- **`PhotoInfo.jsx`**: Photo metadata display with EXIF data and external app launcher (🚀 button)
 
 #### Import System Components
 - **`Importer.jsx`**: Directory browser and photo selection interface
@@ -111,6 +152,42 @@ src/
 - **`DirectoryMenu.jsx`**: Right sidebar with filters, maintenance, and selection tools
 - **`FolderPicker.jsx`**: Cross-platform directory selection dialog
 - **`Scrollable.jsx`**: Custom scrollable container with lazy loading support
+
+#### Custom React Hooks
+- **State Management Hooks**:
+  - **`usePhotosListState.js`**: Main PhotosList state management
+  - **`usePhotosState.js`**: Photos state management
+  - **`useViewMode.js`**: View mode state machine
+  - **`useViewModeObject.js`**: ViewMode DDD value object integration
+  - **`useViewModeSync.js`**: ViewMode synchronization
+- **Photo Operation Hooks**:
+  - **`usePhotoOperations.js`**: Centralized photo operations (510 lines)
+    - Album operations: `handleAddToAlbum`, `removePhotoFromAlbum`
+    - Trash operations: `moveToTrash`, `restorePhoto`, `permanentlyDeletePhoto`
+    - List management: `removePhotoFromList`
+  - **`usePhotoSelection.js`**: Photo selection logic
+  - **`usePhotoMetadata.js`**: Photo metadata operations
+  - **`usePhotoDisplay.js`**: Photo display state management
+- **Data Management Hooks**:
+  - **`usePhotoDataLoader.js`**: Photo data loading logic
+  - **`usePhotoDataSync.js`**: Photo data synchronization
+  - **`usePhotosQuery.js`**: Photo query logic
+  - **`useInfiniteScroll.js`**: Infinite scroll pagination
+- **Feature-Specific Hooks**:
+  - **`useImportModeLifecycle.js`**: Import mode lifecycle management
+  - **`useSearch.js`**: Search functionality
+  - **`useSearchHistory.js`**: Search history management
+  - **`useDateNavigation.js`**: Date navigation logic
+  - **`useThumbnailGeneration.js`**: Thumbnail generation logic
+  - **`useTutorial.js`**: Tutorial state management
+  - **`useAppConfig.js`**: Application configuration hook
+- **PhotosList Sub-Hooks**:
+  - **`usePhotosListDisplay.js`**: PhotosList display state
+  - **`usePhotosListFilters.js`**: Filter state management
+  - **`usePhotosListSelection.js`**: PhotosList selection operations
+
+#### Services
+- **`LoggerService.js`**: Structured logging service for frontend and backend correlation
 
 ## Backend Source Code (`src-tauri/`)
 

@@ -40,14 +40,40 @@ This document helps you quickly find the relevant documentation when working on 
 - **Sequences**: [Photo Viewing Feature](feature-sequences.md#photo-viewing-feature)
 - **Components**: [Photo Grid View](component-structure.md#photo-grid-view), [Full-Screen Photo Display](component-structure.md#full-screen-photo-display)
 - **Features**: Infinite scroll pagination, batch loading (50 photos), configuration limit detection, smooth browsing experience
-- **Related Files**: `src/App/PhotosList.jsx`, `src/App/PhotosList/PhotosListMini.jsx`, `src/App/PhotosList/PhotoDisplay.jsx`
+- **Full-Screen Viewer**: Refactored modular architecture (Improvement #90)
+  - **PhotosListMini.jsx** (735 lines, reduced from 833 lines)
+  - **Utility Modules**:
+    - `photoUtils.js` (128 lines): Thumbnail display calculations, border styles
+    - `useKeyboardShortcuts.js` (124 lines): Keyboard navigation hook (arrows, c/s/d/i/f, Del, Ctrl+0)
+- **Photo Operations**: Centralized in usePhotoOperations hook (Improvement #84)
+  - Album operations: Add to album, remove from album
+  - Trash operations: Move to trash, restore, permanent delete
+  - List management: Remove from list with proper navigation
+- **Related Files**:
+  - `src/App/PhotosList.jsx`
+  - `src/App/PhotosList/PhotosListMini.jsx`
+  - `src/App/PhotosList/PhotosListMini/photoUtils.js`
+  - `src/App/PhotosList/PhotosListMini/useKeyboardShortcuts.js`
+  - `src/App/PhotosList/PhotoDisplay.jsx`
+  - `src/hooks/usePhotoOperations.js` (510 lines)
 
 ### 🎨 Photo Editing & Transformations
 **When you need to understand**: Image filters, cropping, CSS transformations, save-as-copy
 - **Architecture**: [Key Features → Photo Organization](architecture.md#3-photo-organization)
 - **Sequences**: [Photo Editing Feature](feature-sequences.md#photo-editing-feature)
 - **Components**: [Photo Editor Panel](component-structure.md#photo-editor-panel)
-- **Related Files**: `src/App/PhotosList/PhotoOption/PhotoEditor.jsx`, `src-tauri/src/lib.rs` (save_styled_copy_from_frontend)
+- **Implementation**: Refactored modular architecture (Improvement #88)
+  - **PhotoEditor.jsx** (980 lines, reduced from 1,292 lines)
+  - **Utility Modules**:
+    - `cssUtils.js` (218 lines): CSS parsing/generation, default values
+    - `cropUtils.js` (144 lines): Crop calculations, 8 aspect ratio presets
+    - `styleUtils.js` (199 lines): Style application to DOM elements
+- **Related Files**:
+  - `src/App/PhotosList/PhotoOption/PhotoEditor.jsx`
+  - `src/App/PhotosList/PhotoOption/PhotoEditor/cssUtils.js`
+  - `src/App/PhotosList/PhotoOption/PhotoEditor/cropUtils.js`
+  - `src/App/PhotosList/PhotoOption/PhotoEditor/styleUtils.js`
+  - `src-tauri/src/lib.rs` (save_styled_copy_from_frontend)
 
 ### 📅 Date-Based Organization & Recent Photos
 **When you need to understand**: Calendar navigation, date filtering, photo organization by date, recent photos access
@@ -92,12 +118,19 @@ This document helps you quickly find the relevant documentation when working on 
     - Operation groups: `shouldShowImportOperations()`, `shouldShowAlbumOperations()`, `shouldShowStandardOperations()`
     - Section display: `shouldShowPhotoSelection()`, `shouldShowAlbumSelection()`, `shouldShowTagSelection()`
     - Individual operations: `showImportSelected()`, `showRemoveFromAlbum()`, `showUploadToGooglePhotos()`, etc.
-- **Custom Hooks**: 
-  - `usePhotosListState` - Main PhotosList state management hook
-  - `usePhotosListDisplay` - Photo display and navigation state
-  - `usePhotosListFilters` - Filter logic and state management
-  - `usePhotosListSelection` - Photo selection operations
-  - `useViewMode` - View navigation state machine with transition validation
+- **Custom Hooks**:
+  - **State Management**: `usePhotosListState`, `usePhotosState`, `useViewMode`, `useViewModeObject`, `useViewModeSync`
+  - **Photo Display**: `usePhotosListDisplay`, `usePhotoDisplay`
+  - **Filtering & Selection**: `usePhotosListFilters`, `usePhotosListSelection`, `usePhotoSelection`
+  - **Photo Operations** (510 lines): `usePhotoOperations` - Centralized photo operations
+    - Album: `handleAddToAlbum`, `removePhotoFromAlbum`
+    - Trash: `moveToTrash`, `restorePhoto`, `permanentlyDeletePhoto`
+    - List: `removePhotoFromList` with smart navigation
+  - **Metadata**: `usePhotoMetadata`
+  - **Data Management**: `usePhotoDataLoader`, `usePhotoDataSync`, `usePhotosQuery`, `useInfiniteScroll`
+  - **Import Mode**: `useImportModeLifecycle` - Import mode lifecycle management
+  - **Search**: `useSearch`, `useSearchHistory`
+  - **Other**: `useDateNavigation`, `useThumbnailGeneration`, `useTutorial`, `useAppConfig`
 - **React Query Hooks**:
   - `usePhotosQuery` - Custom React Query implementation with caching
   - `usePhotosWithFilter` - Photo fetching with automatic caching
