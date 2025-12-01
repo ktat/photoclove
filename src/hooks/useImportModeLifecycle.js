@@ -14,9 +14,11 @@
  */
 
 import { useEffect } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { VIEW_MODES } from '../constants/viewModes.js';
 import { ImportState } from '../domain/ImportState.js';
 import { logger } from '../services/LoggerService.js';
+import { clearThumbnailCache } from '../App/PhotosList/PhotoGrid.jsx';
 
 export function useImportModeLifecycle({
     viewMode,
@@ -114,6 +116,25 @@ export function useImportModeLifecycle({
                 logger.info('useImportModeLifecycle', 'import_mode_exited', 'Cleaning up ImportState');
                 importState.cleanup();
                 setImportState(null);
+
+                // Clear frontend thumbnail cache
+                const frontendClearedCount = clearThumbnailCache();
+                logger.info('useImportModeLifecycle', 'frontend_cache_cleared', 'Frontend thumbnail cache cleared', {
+                    clearedCount: frontendClearedCount
+                });
+
+                // Clear backend import thumbnail cache when exiting import mode
+                invoke('clear_import_cache')
+                    .then(removedCount => {
+                        logger.info('useImportModeLifecycle', 'backend_cache_cleared', 'Backend thumbnail cache cleared on mode exit', {
+                            removedFiles: removedCount
+                        });
+                    })
+                    .catch(error => {
+                        logger.warn('useImportModeLifecycle', 'backend_cache_clear_failed', 'Failed to clear backend cache on mode exit', {
+                            error: error.message
+                        });
+                    });
             }
         }
     }, [

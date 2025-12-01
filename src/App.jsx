@@ -89,6 +89,21 @@ function App() {
       }
     };
     initializeLogging();
+
+    // Clear import thumbnail cache on startup
+    const clearImportCache = async () => {
+      try {
+        const removedCount = await invoke('clear_import_cache');
+        logger.info('App', 'startup_cache_cleared', 'Import thumbnail cache cleared on startup', {
+          removedFiles: removedCount
+        });
+      } catch (error) {
+        logger.warn('App', 'startup_cache_clear_failed', 'Failed to clear import cache on startup', {
+          error: error.message
+        });
+      }
+    };
+    clearImportCache();
   }, []);
 
   // Add keyboard shortcut for LogViewer (Ctrl+Shift+L)

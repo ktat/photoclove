@@ -1043,44 +1043,27 @@ fn show_importer(
     return json;
 }
 
-// Clean up old cache files keeping only the most recent max_files
-fn cleanup_cache(cache_dir: &path::Path, max_files: usize) {
-    use std::time::SystemTime;
-
-    // Get all cache files
-    let mut cache_files: Vec<(PathBuf, SystemTime)> = Vec::new();
+// Clear all import thumbnail cache files
+fn clear_import_thumbnail_cache(cache_dir: &path::Path) -> Result<usize, String> {
+    let mut removed_count = 0;
 
     if let Ok(entries) = fs::read_dir(cache_dir) {
         for entry in entries.filter_map(|e| e.ok()) {
             if let Ok(metadata) = entry.metadata() {
                 if metadata.is_file() {
-                    if let Ok(modified) = metadata.modified() {
-                        cache_files.push((entry.path(), modified));
+                    if let Err(e) = fs::remove_file(entry.path()) {
+                        log::warn!(target: "image", "cache_clear_failed; file={}; error={}", entry.path().display(), e);
+                    } else {
+                        removed_count += 1;
+                        log::debug!(target: "image", "cache_file_removed; file={}", entry.path().display());
                     }
                 }
             }
         }
     }
 
-    // If we're under the limit, no need to clean up
-    if cache_files.len() <= max_files {
-        return;
-    }
-
-    // Sort by modification time (oldest first)
-    cache_files.sort_by(|a, b| a.1.cmp(&b.1));
-
-    // Remove oldest files
-    let files_to_remove = cache_files.len() - max_files;
-    for (file_path, _) in cache_files.iter().take(files_to_remove) {
-        if let Err(e) = fs::remove_file(file_path) {
-            log::warn!(target: "image", "cache_cleanup_failed; file={}; error={}", file_path.display(), e);
-        } else {
-            log::debug!(target: "image", "cache_file_removed; file={}", file_path.display());
-        }
-    }
-
-    log::info!(target: "image", "cache_cleanup_complete; removed={}; remaining={}", files_to_remove, max_files);
+    log::info!(target: "image", "import_cache_cleared; removed_files={}", removed_count);
+    Ok(removed_count)
 }
 
 #[tauri::command]
@@ -1177,9 +1160,6 @@ fn get_resized_image(
                                                 log::info!(target: "image", "exif_thumbnail_cached; cache_path={}; jpeg_start_offset={}; exif_ms={}; total_ms={}",
                                                     cache_path.display(), jpeg_start.unwrap_or(0), exif_time.as_millis(), start_time.elapsed().as_millis());
 
-                                                // Clean up old cache files if needed
-                                                cleanup_cache(&cache_dir, 200);
-
                                                 // Return cache file path
                                                 let cache_path_str = cache_path.to_str()
                                                     .ok_or_else(|| "Failed to convert cache path to string".to_string())?;
@@ -1257,9 +1237,6 @@ fn get_resized_image(
             log::info!(target: "image", "resize_cached; cache_path={}; exif_ms={}; load_ms={}; resize_ms={}; encode_ms={}; total_ms={}",
                 cache_path.display(), exif_time.as_millis(), load_time.as_millis(), resize_time.as_millis(), encode_time.as_millis(), total_time.as_millis());
 
-            // Clean up old cache files if needed
-            cleanup_cache(&cache_dir, 200);
-
             // Return cache file path
             let cache_path_str = cache_path.to_str()
                 .ok_or_else(|| "Failed to convert cache path to string".to_string())?;
@@ -1271,6 +1248,20 @@ fn get_resized_image(
     let base64_string = general_purpose::STANDARD.encode(jpeg_data);
     log::warn!(target: "image", "cache_write_failed_resize; returning_data_url");
     Ok(format!("data:image/jpeg;base64,{}", base64_string))
+}
+
+#[tauri::command]
+fn clear_import_cache() -> Result<usize, String> {
+    log::info!(target: "image", "clear_import_cache_request");
+
+    // Get cache directory
+    let cache_dir = dirs::cache_dir()
+        .ok_or_else(|| "Failed to get cache directory".to_string())?
+        .join("photoclove")
+        .join("thumbnails");
+
+    // Clear all cache files
+    clear_import_thumbnail_cache(&cache_dir)
 }
 
 #[tauri::command]
@@ -2833,6 +2824,7 @@ pub fn run() {
             get_prev_photo,
             show_importer,
             get_resized_image,
+            clear_import_cache,
             import_photos,
             get_import_progress,
             get_job_progress,

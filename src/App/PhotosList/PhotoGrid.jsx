@@ -9,6 +9,16 @@ import { logger } from "../../services/LoggerService.js";
 // Cache for EXIF thumbnails (data URLs) - persists across component re-renders
 const thumbnailCache = {};
 
+// Clear thumbnail cache (exported for use by import mode lifecycle)
+export function clearThumbnailCache() {
+    const keys = Object.keys(thumbnailCache);
+    keys.forEach(key => delete thumbnailCache[key]);
+    logger.info('PhotoGrid', 'thumbnail_cache_cleared', 'Thumbnail cache cleared', {
+        clearedCount: keys.length
+    });
+    return keys.length;
+}
+
 // Function to get or create EXIF thumbnail data URL
 async function convertThumbnailDataSrc(photoPath) {
     // Return cached value if available
