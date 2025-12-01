@@ -83,8 +83,8 @@ function PhotoGrid({
     setShowSideMenu
 }) {
 
-    // State to trigger re-render when thumbnails are loaded
-    const [, forceUpdate] = useState({});
+    // Track which thumbnails have been loaded to trigger re-render only for loaded photos
+    const [loadedThumbnails, setLoadedThumbnails] = useState(new Set());
 
     // Helper function to parse CSS style string
     const parseCssStyle = useCallback((cssString) => {
@@ -133,10 +133,16 @@ function PhotoGrid({
                 imgSrc = thumbnailCache[photo.originalPath];
             } else {
                 // Not in cache yet - start loading on-demand
-                convertThumbnailDataSrc(photo.originalPath).then(() => {
-                    // Trigger re-render when thumbnail is loaded
-                    forceUpdate({});
-                });
+                if (!loadedThumbnails.has(photo.originalPath)) {
+                    convertThumbnailDataSrc(photo.originalPath).then(() => {
+                        // Mark this thumbnail as loaded to trigger re-render
+                        setLoadedThumbnails(prev => new Set([...prev, photo.originalPath]));
+                        logger.debug('PhotoGrid', 'thumbnail_loaded', 'Thumbnail loaded and cached', {
+                            photoPath: photo.originalPath,
+                            totalLoaded: loadedThumbnails.size + 1
+                        });
+                    });
+                }
                 // Show placeholder while loading
                 imgSrc = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%2337415140" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%23999" font-size="14"%3ELoading...%3C/text%3E%3C/svg%3E';
             }
@@ -151,8 +157,8 @@ function PhotoGrid({
             }
         }
 
-        // Generate unique key
-        const uniqueKey = `${photo.originalPath}-${index}`;
+        // Generate unique key - use path only (index changes on scroll causing unmount/remount)
+        const uniqueKey = photo.originalPath;
 
         return (
             <div key={uniqueKey} className={"row pict-" + iconSize} style={{ flex: "0 0 " + ((iconSize / 1) + 41) + "px", textAlign: "center", verticalAlign: "middle", position: "relative" }} >
