@@ -6,32 +6,10 @@ import TagChip from "../../components/TagChip.jsx";
 import fileUrl from "../../PathUtil.jsx";
 import { logger } from "../../services/LoggerService.js";
 
-// Cache for EXIF thumbnails (data URLs) - persists across component re-renders
-const thumbnailCache = {};
-
-// Clear thumbnail cache (exported for use by import mode lifecycle)
-export function clearThumbnailCache() {
-    const keys = Object.keys(thumbnailCache);
-    keys.forEach(key => delete thumbnailCache[key]);
-    logger.info('PhotoGrid', 'thumbnail_cache_cleared', 'Thumbnail cache cleared', {
-        clearedCount: keys.length
-    });
-    return keys.length;
-}
-
-// Function to get or create EXIF thumbnail data URL
-async function convertThumbnailDataSrc(photoPath) {
-    // Return cached value if available
-    if (thumbnailCache[photoPath]) {
-        logger.debug('PhotoGrid', 'thumbnail_cache_hit', 'Using cached thumbnail', {
-            photoPath
-        });
-        return thumbnailCache[photoPath];
-    }
-
-    // Try to extract EXIF thumbnail (now returns cache file path from Rust)
+// Get thumbnail source from Rust backend (which handles caching)
+async function getThumbnailSrc(photoPath) {
     try {
-        logger.debug('PhotoGrid', 'thumbnail_extract_start', 'Extracting EXIF thumbnail', {
+        logger.debug('PhotoGrid', 'thumbnail_request', 'Requesting thumbnail from backend', {
             photoPath
         });
 
@@ -40,37 +18,30 @@ async function convertThumbnailDataSrc(photoPath) {
             maxSize: 200
         });
 
-        // Rust now returns either a file path (for cache) or data URL (fallback)
-        let thumbnailSrc;
+        // Rust returns either a file path (for cache) or data URL (fallback)
         if (result.startsWith('data:image/')) {
             // Data URL (fallback when cache write fails)
-            thumbnailSrc = result;
-            logger.info('PhotoGrid', 'thumbnail_data_url', 'Using data URL (cache write may have failed)', {
+            logger.debug('PhotoGrid', 'thumbnail_data_url', 'Using data URL from backend', {
                 photoPath,
                 dataUrlLength: result.length
             });
+            return result;
         } else {
             // File path - convert to Tauri asset protocol
-            thumbnailSrc = convertFileSrc(result);
-            logger.info('PhotoGrid', 'thumbnail_cached', 'Using cached thumbnail file', {
+            const thumbnailSrc = convertFileSrc(result);
+            logger.debug('PhotoGrid', 'thumbnail_file_path', 'Using cached thumbnail file', {
                 photoPath,
-                cachePath: result,
-                convertedSrc: thumbnailSrc.substring(0, 50)
+                cachePath: result
             });
+            return thumbnailSrc;
         }
-
-        // Cache the thumbnail src
-        thumbnailCache[photoPath] = thumbnailSrc;
-        return thumbnailSrc;
     } catch (error) {
-        logger.error('PhotoGrid', 'thumbnail_extract_error', 'Failed to extract EXIF thumbnail', {
+        logger.error('PhotoGrid', 'thumbnail_error', 'Failed to get thumbnail from backend', {
             photoPath,
             error: error.message
         });
         // Fallback to original file
-        const fallbackSrc = convertFileSrc(photoPath);
-        thumbnailCache[photoPath] = fallbackSrc;
-        return fallbackSrc;
+        return convertFileSrc(photoPath);
     }
 }
 
@@ -92,9 +63,6 @@ function PhotoGrid({
     showSideMenu,
     setShowSideMenu
 }) {
-
-    // Track which thumbnails have been loaded to trigger re-render only for loaded photos
-    const [loadedThumbnails, setLoadedThumbnails] = useState(new Set());
 
     // Helper function to parse CSS style string
     const parseCssStyle = useCallback((cssString) => {
@@ -134,28 +102,15 @@ function PhotoGrid({
     const renderPhotoTile = (photo, index) => {
         const image_for_not_found = "/img_error.png";
 
-        // Calculate image source
+        // Placeholder image for loading state
+        const placeholderSrc = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%2337415140" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%23999" font-size="14"%3ELoading...%3C/text%3E%3C/svg%3E';
+
+        // Calculate initial image source
         let imgSrc = null;
 
         if (photo.import_source === true) {
-            // Import photos: check cache first
-            if (thumbnailCache[photo.originalPath]) {
-                imgSrc = thumbnailCache[photo.originalPath];
-            } else {
-                // Not in cache yet - start loading on-demand
-                if (!loadedThumbnails.has(photo.originalPath)) {
-                    convertThumbnailDataSrc(photo.originalPath).then(() => {
-                        // Mark this thumbnail as loaded to trigger re-render
-                        setLoadedThumbnails(prev => new Set([...prev, photo.originalPath]));
-                        logger.debug('PhotoGrid', 'thumbnail_loaded', 'Thumbnail loaded and cached', {
-                            photoPath: photo.originalPath,
-                            totalLoaded: loadedThumbnails.size + 1
-                        });
-                    });
-                }
-                // Show placeholder while loading
-                imgSrc = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%2337415140" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%23999" font-size="14"%3ELoading...%3C/text%3E%3C/svg%3E';
-            }
+            // Import photos: start with placeholder, will be loaded asynchronously
+            imgSrc = placeholderSrc;
         } else {
             // Non-import photos: use thumbnail if available
             if (photo.hasThumbnail && photo.thumbnailPath && typeof photo.thumbnailPath === 'function') {
@@ -185,6 +140,20 @@ function PhotoGrid({
                                         ...(photo.import_source ? { width: iconSize + 'px', height: iconSize + 'px', objectFit: 'cover' } : { width: "97%", ...parseCssStyle(photo.cssStyle) })
                                     }}
                                     src={imgSrc}
+                                    ref={(imgElement) => {
+                                        // For import photos, load thumbnail asynchronously
+                                        if (imgElement && photo.import_source === true) {
+                                            // Skip if already loaded
+                                            if (imgElement.dataset.thumbnailLoaded === 'true') {
+                                                return;
+                                            }
+
+                                            getThumbnailSrc(photo.originalPath).then(thumbnailSrc => {
+                                                imgElement.src = thumbnailSrc;
+                                                imgElement.dataset.thumbnailLoaded = 'true';
+                                            });
+                                        }
+                                    }}
                                     onLoad={(e) => {
                                         // For import photos, size is already set, skip adjustment
                                         if (photo.import_source === true) {
