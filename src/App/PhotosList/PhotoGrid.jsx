@@ -6,13 +6,17 @@ import TagChip from "../../components/TagChip.jsx";
 import fileUrl from "../../PathUtil.jsx";
 import { logger } from "../../services/LoggerService.js";
 
-// Get deterministic thumbnail path for a photo (returns filesystem path, not converted)
+// Get deterministic thumbnail path for a photo
 async function getThumbnailPath(photoPath) {
     try {
         const cachePath = await invoke('get_thumbnail_path', { photoPath });
-        // Don't use convertFileSrc here - we need the raw filesystem path
-        // convertFileSrc will be applied later when setting img.src
-        return cachePath;
+        logger.debug('PhotoGrid', 'thumbnail_path_received', 'Received thumbnail path from backend', {
+            photoPath,
+            cachePath,
+            cachePathType: typeof cachePath
+        });
+        // Convert filesystem path to asset URL
+        return convertFileSrc(cachePath);
     } catch (error) {
         logger.error('PhotoGrid', 'thumbnail_path_error', 'Failed to get thumbnail path', {
             photoPath,
@@ -120,7 +124,7 @@ function PhotoGrid({
                                         if (imgElement && photo.import_source === true && !imgElement.src) {
                                             getThumbnailPath(photo.originalPath).then(thumbnailPath => {
                                                 if (thumbnailPath) {
-                                                    imgElement.src = convertFileSrc(thumbnailPath);
+                                                    imgElement.src = thumbnailPath;  // Already converted in getThumbnailPath
                                                 }
                                             });
                                         }
@@ -164,7 +168,7 @@ function PhotoGrid({
                                                     // Retry with the same thumbnail path
                                                     getThumbnailPath(photo.originalPath).then(thumbnailPath => {
                                                         if (thumbnailPath && e.currentTarget) {
-                                                            e.currentTarget.src = convertFileSrc(thumbnailPath) + '?retry=' + Date.now();
+                                                            e.currentTarget.src = thumbnailPath + '?retry=' + Date.now();  // Already converted
                                                         } else if (e.currentTarget) {
                                                             // If path retrieval failed, try original
                                                             e.currentTarget.dataset.triedOriginal = "true";
