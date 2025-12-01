@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { openUrl } from '@tauri-apps/plugin-opener';
+import fileUrl from "../../../PathUtil.jsx";
 import { logger } from '../../../services/LoggerService.js';
 
 function PhotoInfo(props) {
@@ -109,6 +111,10 @@ function PhotoInfo(props) {
                                     writeText(props.currentPhotoPath);
                                     props.addFooterMessage("clipboard", "Copy file path to clipboard", false, 5000);
                                 }}>📋</a>
+                                <a href="#" onClick={(e) => {
+                                    e.preventDefault();
+                                    openUrl(fileUrl(props.currentPhotoPath));
+                                }}>🚀</a>
                                 <a
                                     onMouseEnter={() => { props.addFooterMessage("current_phtoo_path", "File Path: " + props.currentPhotoPath, false, 10000) }}>
                                     {props.currentPhotoPath.replace(/^.+\//, '')}
