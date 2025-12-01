@@ -6,11 +6,13 @@ import TagChip from "../../components/TagChip.jsx";
 import fileUrl from "../../PathUtil.jsx";
 import { logger } from "../../services/LoggerService.js";
 
-// Get deterministic thumbnail path for a photo
+// Get deterministic thumbnail path for a photo (returns filesystem path, not converted)
 async function getThumbnailPath(photoPath) {
     try {
         const cachePath = await invoke('get_thumbnail_path', { photoPath });
-        return convertFileSrc(cachePath);
+        // Don't use convertFileSrc here - we need the raw filesystem path
+        // convertFileSrc will be applied later when setting img.src
+        return cachePath;
     } catch (error) {
         logger.error('PhotoGrid', 'thumbnail_path_error', 'Failed to get thumbnail path', {
             photoPath,
@@ -118,7 +120,7 @@ function PhotoGrid({
                                         if (imgElement && photo.import_source === true && !imgElement.src) {
                                             getThumbnailPath(photo.originalPath).then(thumbnailPath => {
                                                 if (thumbnailPath) {
-                                                    imgElement.src = thumbnailPath;
+                                                    imgElement.src = convertFileSrc(thumbnailPath);
                                                 }
                                             });
                                         }
@@ -162,7 +164,7 @@ function PhotoGrid({
                                                     // Retry with the same thumbnail path
                                                     getThumbnailPath(photo.originalPath).then(thumbnailPath => {
                                                         if (thumbnailPath) {
-                                                            e.currentTarget.src = thumbnailPath + '?retry=' + Date.now();
+                                                            e.currentTarget.src = convertFileSrc(thumbnailPath) + '?retry=' + Date.now();
                                                         }
                                                     });
                                                 }).catch(err => {
