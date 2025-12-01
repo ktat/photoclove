@@ -111,14 +111,14 @@ function PhotoInfo(props) {
                                     writeText(props.currentPhotoPath);
                                     props.addFooterMessage("clipboard", "Copy file path to clipboard", false, 5000);
                                 }}>📋</a>
-                                <a href="#" onClick={(e) => {
-                                    e.preventDefault();
-                                    openUrl(fileUrl(props.currentPhotoPath));
-                                }}>🚀</a>
                                 <a
                                     onMouseEnter={() => { props.addFooterMessage("current_phtoo_path", "File Path: " + props.currentPhotoPath, false, 10000) }}>
                                     {props.currentPhotoPath.replace(/^.+\//, '')}
                                 </a>
+                                <a href="#" onClick={(e) => {
+                                    e.preventDefault();
+                                    openUrl(fileUrl(props.currentPhotoPath));
+                                }}>🚀</a>
                             </td></tr>
                         <tr><th>ISO</th><td>{photoInfo.exif ? photoInfo.exif.iso : ""}</td></tr>
                         <tr><th>FNumber</th><td>{photoInfo.exif ? photoInfo.exif.fnumber : ""}</td></tr>
