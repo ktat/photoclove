@@ -194,6 +194,77 @@ Manages photo selection operations.
 - Selection dictionary for O(1) lookups
 - Bulk operations support
 
+### usePhotoOperations
+
+Centralized photo operations hook combining album, trash, and list management operations.
+
+**Location**: `src/hooks/usePhotoOperations.js` (510 lines)
+
+**Features**:
+- **Album Operations** (Improvement #84-01):
+  - `handleAddToAlbum(photoPath, albumId)`: Add photo to album
+  - `removePhotoFromAlbum(photoPath, albumId)`: Remove photo from album
+- **Trash Operations** (Improvement #84-02):
+  - `moveToTrash(photoPath, sortValue)`: Move photo to trash with date count updates
+  - `restorePhoto(photoPath)`: Restore photo from trash
+  - `permanentlyDeletePhoto(photoPath)`: Permanent deletion with confirmation
+- **List Management** (Improvement #84-03):
+  - `removePhotoFromList(indexToRemove)`: Remove photo from thumbnail list with smart navigation
+- **Features**:
+  - Automatic thumbnail list updates
+  - Date count synchronization
+  - Smart navigation after operations
+  - Trash mode detection
+  - Structured logging throughout
+
+### useImportModeLifecycle
+
+Manages import mode lifecycle and state transitions.
+
+**Location**: `src/hooks/useImportModeLifecycle.js`
+
+**Purpose**: Handles mounting, unmounting, and state cleanup for import mode
+
+**Features**:
+- Import mode initialization and cleanup
+- State synchronization with ImportState entity
+- Lifecycle event logging
+
+### usePhotoDataSync
+
+Manages photo data synchronization between different data sources.
+
+**Location**: `src/hooks/usePhotoDataSync.js`
+
+**Purpose**: Keeps photo data in sync across components and contexts
+
+**Features**:
+- Photo metadata synchronization
+- Cache invalidation on updates
+- Cross-component data consistency
+
+### useKeyboardShortcuts (PhotosListMini)
+
+Keyboard navigation hook for full-screen photo viewer.
+
+**Location**: `src/App/PhotosList/PhotosListMini/useKeyboardShortcuts.js` (124 lines)
+
+**Keyboard Shortcuts**:
+- Arrow keys: Navigate between photos
+- `c`: Toggle crop mode
+- `s`: Toggle star rating
+- `d`: Delete photo
+- `i`: Show photo info
+- `f`: Toggle favorite
+- `?`: Show help
+- `Del`: Delete photo
+- `Ctrl+0`: Reset zoom
+
+**Features**:
+- Event handler composition
+- Prevent default scroll behavior
+- Structured logging for debugging
+
 ## Context Structure
 
 ### PhotoContext
