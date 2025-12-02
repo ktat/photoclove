@@ -6,23 +6,36 @@ import TagChip from "../../components/TagChip.jsx";
 import fileUrl from "../../PathUtil.jsx";
 import { logger } from "../../services/LoggerService.js";
 
-// Get deterministic thumbnail path for a photo
-async function getThumbnailPath(photoPath) {
+// Get or generate thumbnail (uses Rust cache, will generate if missing)
+async function getThumbnailSrc(photoPath) {
     try {
-        const cachePath = await invoke('get_thumbnail_path', { photoPath });
-        logger.debug('PhotoGrid', 'thumbnail_path_received', 'Received thumbnail path from backend', {
-            photoPath,
-            cachePath,
-            cachePathType: typeof cachePath
+        const result = await invoke('get_resized_image', {
+            pathStr: photoPath,
+            maxSize: 200
         });
-        // Convert filesystem path to asset URL
-        return convertFileSrc(cachePath);
+
+        // Rust returns either a file path (for cache) or data URL (fallback)
+        if (result.startsWith('data:image/')) {
+            logger.debug('PhotoGrid', 'thumbnail_data_url', 'Using data URL from backend', {
+                photoPath
+            });
+            return result;
+        } else {
+            const assetUrl = convertFileSrc(result);
+            logger.debug('PhotoGrid', 'thumbnail_file_path', 'Using cached thumbnail file', {
+                photoPath,
+                cachePath: result,
+                assetUrl
+            });
+            return assetUrl;
+        }
     } catch (error) {
-        logger.error('PhotoGrid', 'thumbnail_path_error', 'Failed to get thumbnail path', {
+        logger.error('PhotoGrid', 'thumbnail_error', 'Failed to get thumbnail from backend', {
             photoPath,
             error: error.message
         });
-        return null;
+        // Fallback to original file
+        return convertFileSrc(photoPath);
     }
 }
 
@@ -120,11 +133,11 @@ function PhotoGrid({
                                     }}
                                     src={imgSrc}
                                     ref={(imgElement) => {
-                                        // For import photos, set thumbnail path
+                                        // For import photos, get thumbnail from Rust (cached or generate)
                                         if (imgElement && photo.import_source === true && !imgElement.src) {
-                                            getThumbnailPath(photo.originalPath).then(thumbnailPath => {
-                                                if (thumbnailPath) {
-                                                    imgElement.src = thumbnailPath;  // Already converted in getThumbnailPath
+                                            getThumbnailSrc(photo.originalPath).then(thumbnailSrc => {
+                                                if (thumbnailSrc && imgElement) {
+                                                    imgElement.src = thumbnailSrc;
                                                 }
                                             });
                                         }
@@ -151,52 +164,12 @@ function PhotoGrid({
                                             return;
                                         }
 
-                                        // For import mode photos: thumbnail → generate+retry → original → error
+                                        // For import mode photos: try original on error (thumbnail already attempted in ref)
                                         if (photo.import_source === true) {
-                                            if (!e.currentTarget.dataset.generatedThumbnail) {
-                                                // First error: thumbnail doesn't exist yet, generate it
-                                                e.currentTarget.dataset.generatedThumbnail = "true";
-                                                logger.info('PhotoGrid', 'generating_thumbnail', 'Generating thumbnail for import photo', {
-                                                    photoPath: photo.originalPath
-                                                });
-
-                                                // Trigger thumbnail generation and retry
-                                                invoke('get_resized_image', {
-                                                    pathStr: photo.originalPath,
-                                                    maxSize: 200
-                                                }).then(() => {
-                                                    // Retry with the same thumbnail path
-                                                    getThumbnailPath(photo.originalPath).then(thumbnailPath => {
-                                                        if (thumbnailPath && e.currentTarget) {
-                                                            e.currentTarget.src = thumbnailPath + '?retry=' + Date.now();  // Already converted
-                                                        } else if (e.currentTarget) {
-                                                            // If path retrieval failed, try original
-                                                            e.currentTarget.dataset.triedOriginal = "true";
-                                                            e.currentTarget.src = convertFileSrc(photo.originalPath);
-                                                        }
-                                                    }).catch(() => {
-                                                        // getThumbnailPath failed, try original
-                                                        if (e.currentTarget) {
-                                                            e.currentTarget.dataset.triedOriginal = "true";
-                                                            e.currentTarget.src = convertFileSrc(photo.originalPath);
-                                                        }
-                                                    });
-                                                }).catch(err => {
-                                                    logger.error('PhotoGrid', 'thumbnail_generation_failed', 'Failed to generate thumbnail', {
-                                                        photoPath: photo.originalPath,
-                                                        error: err.message
-                                                    });
-                                                    // Generation failed, try original
-                                                    if (e.currentTarget) {
-                                                        e.currentTarget.dataset.triedOriginal = "true";
-                                                        e.currentTarget.src = convertFileSrc(photo.originalPath);
-                                                    }
-                                                });
-                                                return;
-                                            } else if (!e.currentTarget.dataset.triedOriginal) {
-                                                // Second error: generation failed, try original
+                                            if (!e.currentTarget.dataset.triedOriginal) {
+                                                // Try original file
                                                 e.currentTarget.dataset.triedOriginal = "true";
-                                                logger.warn('PhotoGrid', 'fallback_to_original', 'Falling back to original file', {
+                                                logger.warn('PhotoGrid', 'fallback_to_original', 'Thumbnail failed, falling back to original file', {
                                                     photoPath: photo.originalPath
                                                 });
                                                 e.currentTarget.src = convertFileSrc(photo.originalPath);
