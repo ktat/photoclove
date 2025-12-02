@@ -146,6 +146,7 @@ function PhotoGrid({
                                             // Step 1: First error - thumbnail doesn't exist, generate it
                                             if (!e.currentTarget.dataset.thumbnailGenerated) {
                                                 e.currentTarget.dataset.thumbnailGenerated = 'true';
+                                                const imgElement = e.currentTarget; // Capture reference before async
                                                 logger.debug('PhotoGrid', 'thumbnail_generation_started', 'Generating thumbnail on demand', {
                                                     photoPath: photo.originalPath
                                                 });
@@ -167,7 +168,9 @@ function PhotoGrid({
                                                             photoPath: photo.originalPath,
                                                             thumbnailUrl
                                                         });
-                                                        e.currentTarget.src = thumbnailUrl;
+                                                        if (imgElement) {
+                                                            imgElement.src = thumbnailUrl;
+                                                        }
                                                     })
                                                     .catch(err => {
                                                         logger.error('PhotoGrid', 'thumbnail_generation_failed', 'Failed to generate thumbnail', {
@@ -175,9 +178,9 @@ function PhotoGrid({
                                                             error: err.message
                                                         });
                                                         // If generation fails, try original immediately
-                                                        if (!e.currentTarget.dataset.triedOriginal) {
-                                                            e.currentTarget.dataset.triedOriginal = 'true';
-                                                            e.currentTarget.src = convertFileSrc(photo.originalPath);
+                                                        if (imgElement && !imgElement.dataset.triedOriginal) {
+                                                            imgElement.dataset.triedOriginal = 'true';
+                                                            imgElement.src = convertFileSrc(photo.originalPath);
                                                         }
                                                     });
                                                 return;

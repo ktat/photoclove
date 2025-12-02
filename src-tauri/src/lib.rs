@@ -1245,11 +1245,20 @@ fn get_resized_image(
     let resized = img.resize(new_width, new_height, FilterType::Triangle);
     let resize_time = resize_start.elapsed();
 
-    // Encode as JPEG
+    // Encode as JPEG with quality setting
     let encode_start = Instant::now();
     let mut buffer = Cursor::new(Vec::new());
-    resized
-        .write_to(&mut buffer, ImageFormat::Jpeg)
+
+    // Use JpegEncoder to set quality explicitly (85 is a good balance)
+    use image::codecs::jpeg::JpegEncoder;
+    let mut encoder = JpegEncoder::new_with_quality(&mut buffer, 85);
+    encoder
+        .encode(
+            resized.as_bytes(),
+            new_width,
+            new_height,
+            resized.color(),
+        )
         .map_err(|e| format!("Failed to encode image: {}", e))?;
 
     let jpeg_data = buffer.into_inner();
