@@ -96,22 +96,26 @@ function PhotoGrid({
     const renderPhotoTile = (photo, index) => {
         const image_for_not_found = "/img_error.png";
 
-        // Calculate initial image source
+        // Pre-generate thumbnails for import photos (async, cached in Rust)
+        if (photo.import_source === true && !photo._thumbnailRequested) {
+            photo._thumbnailRequested = true;
+            getThumbnailSrc(photo.originalPath).catch(err => {
+                logger.debug('PhotoGrid', 'thumbnail_prefetch_failed', 'Failed to prefetch thumbnail', {
+                    photoPath: photo.originalPath,
+                    error: err.message
+                });
+            });
+        }
+
+        // Calculate initial image source - same pattern for all photos
         let imgSrc = null;
 
-        if (photo.import_source === true) {
-            // Import photos: use deterministic thumbnail path
-            // Will load asynchronously in ref callback
-            imgSrc = null;  // Will be set in ref
+        if (photo.hasThumbnail && photo.thumbnailPath && typeof photo.thumbnailPath === 'function') {
+            imgSrc = convertFileSrc(photo.thumbnailPath());
+        } else if (photo.displayPath && typeof photo.displayPath === 'function') {
+            imgSrc = convertFileSrc(photo.displayPath());
         } else {
-            // Non-import photos: use thumbnail if available
-            if (photo.hasThumbnail && photo.thumbnailPath && typeof photo.thumbnailPath === 'function') {
-                imgSrc = convertFileSrc(photo.thumbnailPath());
-            } else if (photo.displayPath && typeof photo.displayPath === 'function') {
-                imgSrc = convertFileSrc(photo.displayPath());
-            } else {
-                imgSrc = convertFileSrc(photo.originalPath);
-            }
+            imgSrc = convertFileSrc(photo.originalPath);
         }
 
         // Generate unique key - use path only (index changes on scroll causing unmount/remount)
@@ -132,16 +136,6 @@ function PhotoGrid({
                                         ...(photo.import_source ? { width: iconSize + 'px', height: iconSize + 'px', objectFit: 'cover' } : { width: "97%", ...parseCssStyle(photo.cssStyle) })
                                     }}
                                     src={imgSrc}
-                                    ref={(imgElement) => {
-                                        // For import photos, get thumbnail from Rust (cached or generate)
-                                        if (imgElement && photo.import_source === true && !imgElement.src) {
-                                            getThumbnailSrc(photo.originalPath).then(thumbnailSrc => {
-                                                if (thumbnailSrc && imgElement) {
-                                                    imgElement.src = thumbnailSrc;
-                                                }
-                                            });
-                                        }
-                                    }}
                                     onLoad={(e) => {
                                         // For import photos, size is already set, skip adjustment
                                         if (photo.import_source === true) {
@@ -164,24 +158,13 @@ function PhotoGrid({
                                             return;
                                         }
 
-                                        // For import mode photos: try original on error (thumbnail already attempted in ref)
+                                        // For import mode photos: original already showing, just show error
                                         if (photo.import_source === true) {
-                                            if (!e.currentTarget.dataset.triedOriginal) {
-                                                // Try original file
-                                                e.currentTarget.dataset.triedOriginal = "true";
-                                                logger.warn('PhotoGrid', 'fallback_to_original', 'Thumbnail failed, falling back to original file', {
-                                                    photoPath: photo.originalPath
-                                                });
-                                                e.currentTarget.src = convertFileSrc(photo.originalPath);
-                                                return;
-                                            } else {
-                                                // Final error: show error image
-                                                logger.error('PhotoGrid', 'import_photo_error', 'All attempts failed for import photo', {
-                                                    photoPath: photo.originalPath
-                                                });
-                                                e.currentTarget.src = image_for_not_found;
-                                                return;
-                                            }
+                                            logger.error('PhotoGrid', 'import_photo_error', 'Failed to load import photo', {
+                                                photoPath: photo.originalPath
+                                            });
+                                            e.currentTarget.src = image_for_not_found;
+                                            return;
                                         }
 
                                         // If we have a thumbnail and it's failing, try original as fallback
