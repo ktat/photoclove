@@ -1171,17 +1171,33 @@ fn get_resized_image(
                                     if file.read_exact(&mut thumbnail_data).is_ok() {
                                         // Find JPEG start marker (FFD8FF) and trim any leading data
                                         let jpeg_start = thumbnail_data.windows(2).position(|w| w[0] == 0xFF && w[1] == 0xD8);
-                                        let jpeg_data = if let Some(start_pos) = jpeg_start {
+                                        let jpeg_data_slice = if let Some(start_pos) = jpeg_start {
                                             &thumbnail_data[start_pos..]
                                         } else {
                                             &thumbnail_data[..]
+                                        };
+
+                                        // Check if JPEG has proper EOI marker (FF D9)
+                                        let has_eoi = jpeg_data_slice.len() >= 2 &&
+                                            jpeg_data_slice[jpeg_data_slice.len() - 2] == 0xFF &&
+                                            jpeg_data_slice[jpeg_data_slice.len() - 1] == 0xD9;
+
+                                        // If EOI marker is missing, append it
+                                        let jpeg_data: Vec<u8> = if !has_eoi {
+                                            log::debug!(target: "image", "exif_thumbnail_missing_eoi; appending_marker");
+                                            let mut complete_jpeg = jpeg_data_slice.to_vec();
+                                            complete_jpeg.push(0xFF);
+                                            complete_jpeg.push(0xD9);
+                                            complete_jpeg
+                                        } else {
+                                            jpeg_data_slice.to_vec()
                                         };
 
                                         let exif_time = exif_start.elapsed();
 
                                         // Save to cache file
                                         if let Ok(mut cache_file) = File::create(&cache_path) {
-                                            if cache_file.write_all(jpeg_data).is_ok() {
+                                            if cache_file.write_all(&jpeg_data).is_ok() {
                                                 log::info!(target: "image", "exif_thumbnail_cached; cache_path={}; jpeg_start_offset={}; exif_ms={}; total_ms={}",
                                                     cache_path.display(), jpeg_start.unwrap_or(0), exif_time.as_millis(), start_time.elapsed().as_millis());
 
@@ -1193,7 +1209,7 @@ fn get_resized_image(
                                         }
 
                                         // If cache write failed, fall through to return data URL
-                                        let base64_string = general_purpose::STANDARD.encode(jpeg_data);
+                                        let base64_string = general_purpose::STANDARD.encode(&jpeg_data);
                                         log::warn!(target: "image", "cache_write_failed; returning_data_url");
                                         return Ok(format!("data:image/jpeg;base64,{}", base64_string));
                                     }
