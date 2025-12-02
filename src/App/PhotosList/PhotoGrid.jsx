@@ -116,15 +116,11 @@ function PhotoGrid({
                                     ref={(el) => { if (photo.import_source === true) imgRef = el; }}
                                     alt={photo.originalPath}
                                     style={{
-                                        ...(photo.import_source ? { width: iconSize + 'px', height: iconSize + 'px', objectFit: 'cover' } : { width: "97%", ...parseCssStyle(photo.cssStyle) })
+                                        width: "97%",
+                                        ...parseCssStyle(photo.cssStyle)
                                     }}
                                     src={imgSrc}
                                     onLoad={(e) => {
-                                        // For import photos, size is already set, skip adjustment
-                                        if (photo.import_source === true) {
-                                            return;
-                                        }
-
                                         let w = e.currentTarget.width;
                                         let h = e.currentTarget.height;
                                         if (w > h) {
