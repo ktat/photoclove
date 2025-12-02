@@ -782,11 +782,20 @@ function PhotosListMini(props) {
                         <tr><th>Ctrl + Mouse Wheel</th><td>zoom photo</td></tr>
                         <tr><th>Ctrl + Drag</th><td>drag photo while zooming</td></tr>
                         <tr><th>Ctrl + 0</th><td>reset zoom</td></tr>
-                        <tr><th>S</th><td>increase star</td></tr>
-                        <tr><th>D</th><td>decrease star</td></tr>
+                        <tr><th>C</th><td>toggle photo selection</td></tr>
+
+                        {/* Hide DB-related shortcuts in import mode */}
+                        {!props.isImportMode && (
+                            <>
+                                <tr><th>S</th><td>increase star</td></tr>
+                                <tr><th>D</th><td>decrease star</td></tr>
+                                <tr><th>F</th><td>favorite (select + 5 stars)</td></tr>
+                                <tr><th>Del</th><td>{isAlbumMode ? "remove from album" : "move to trash can"}</td></tr>
+                                {isAlbumMode && <tr><th>Ctrl + Del</th><td>delete file permanently</td></tr>}
+                            </>
+                        )}
+
                         <tr><th>I</th><td>toggle photo info</td></tr>
-                        <tr><th>Del</th><td>{isAlbumMode ? "remove from album" : "move to trash can"}</td></tr>
-                        {isAlbumMode && <tr><th>Ctrl + Del</th><td>delete file permanently</td></tr>}
                         <tr><th>?</th><td>toggle showing this help</td></tr>
                     </table>
                 </div>
