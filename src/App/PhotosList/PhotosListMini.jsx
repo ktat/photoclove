@@ -448,46 +448,58 @@ function PhotosListMini(props) {
         } else if (e.keyCode === 67) { // c ... choose as selected
             togglePhotoSelected();
         } else if (e.keyCode === 83) { // s ... increase star
-            changeStar(true);
-        } else if (e.keyCode === 68) { // d ... declease star
-            changeStar(false);
+            // Disable in import mode (DB operation)
+            if (!props.isImportMode) {
+                changeStar(true);
+            }
+        } else if (e.keyCode === 68) { // d ... decrease star
+            // Disable in import mode (DB operation)
+            if (!props.isImportMode) {
+                changeStar(false);
+            }
         } else if (e.keyCode === 73) { // i ... toggle show photo info
             props.setShowSideMenu(!props.showSideMenu);
-        } else if (e.keyCode === 70) { // f ... c & s
-            let additionalMessage = "Photo is selected";
-            if (props.isSelected(f)) {
-                additionalMessage = "Photo is already selected";
-            } else {
-                props.toggleSelection(props.currentPhotoPath);
+        } else if (e.keyCode === 70) { // f ... favorite (select & star)
+            // Disable in import mode (DB operation)
+            if (!props.isImportMode) {
+                let additionalMessage = "Photo is selected";
+                if (props.isSelected(f)) {
+                    additionalMessage = "Photo is already selected";
+                } else {
+                    props.toggleSelection(props.currentPhotoPath);
+                }
+                changeStar(true, additionalMessage);
             }
-            changeStar(true, additionalMessage);
         } else if (e.keyCode === 191) { // ? ... show help
             setShowHelp(!showHelp);
         } else if (e.keyCode === 46) { // Del
-            e.preventDefault(); // Prevent default behavior
+            // Disable in import mode (cannot delete import photos)
+            if (!props.isImportMode) {
+                e.preventDefault(); // Prevent default behavior
 
-            if (isAlbumMode) {
-                if (e.ctrlKey) {
-                    // Ctrl+DEL: Delete file AND remove from album
-                    logger.info('PhotosListMini', 'delete_key_pressed', 'Ctrl+DEL pressed in album mode', {
-                        albumId: props.albumId,
+                if (isAlbumMode) {
+                    if (e.ctrlKey) {
+                        // Ctrl+DEL: Delete file AND remove from album
+                        logger.info('PhotosListMini', 'delete_key_pressed', 'Ctrl+DEL pressed in album mode', {
+                            albumId: props.albumId,
+                            photoPath: f
+                        });
+                        showDeleteFileModal();
+                    } else {
+                        // DEL only: Remove from album (safer default)
+                        logger.info('PhotosListMini', 'delete_key_pressed', 'DEL pressed in album mode', {
+                            albumId: props.albumId,
+                            photoPath: f
+                        });
+                        showRemoveFromAlbumModal();
+                    }
+                } else {
+                    // Date/Search mode: DEL deletes file (current behavior)
+                    logger.info('PhotosListMini', 'delete_key_pressed', 'DEL pressed in library mode', {
                         photoPath: f
                     });
                     showDeleteFileModal();
-                } else {
-                    // DEL only: Remove from album (safer default)
-                    logger.info('PhotosListMini', 'delete_key_pressed', 'DEL pressed in album mode', {
-                        albumId: props.albumId,
-                        photoPath: f
-                    });
-                    showRemoveFromAlbumModal();
                 }
-            } else {
-                // Date/Search mode: DEL deletes file (current behavior)
-                logger.info('PhotosListMini', 'delete_key_pressed', 'DEL pressed in library mode', {
-                    photoPath: f
-                });
-                showDeleteFileModal();
             }
         } else if (e.ctrlKey && e.keyCode === 48) { // ctrl+0
             setPhotoZoom("auto");

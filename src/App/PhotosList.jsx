@@ -1537,6 +1537,9 @@ function PhotosList(props) {
                                             removePhotoFromList={removePhotoFromList}
                                             addFooterMessage={compatProps.addFooterMessage}
                                             handleTauriError={handleTauriError}
+
+                                            // Import mode flag for keyboard shortcuts
+                                            isImportMode={viewModeObj.isImportMode()}
                                                 />
                                             </div>
                                         </ImgCacheContext.Provider>
