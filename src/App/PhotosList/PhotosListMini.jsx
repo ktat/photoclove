@@ -585,11 +585,34 @@ function PhotosListMini(props) {
                         // Use Photo entity methods for thumbnail path
                         // Initialize image source if not already set
                         if (!photosListImgSrc[v.originalPath]) {
-                            if (v.hasThumbnail) {
+                            if (v.import_source === true) {
+                                // Import mode: Get cache thumbnail path (may not exist yet)
+                                if (!v._cachedThumbnailPath) {
+                                    invoke('get_thumbnail_path', { photoPath: v.originalPath })
+                                        .then(cachePath => {
+                                            v._cachedThumbnailPath = convertFileSrc(cachePath);
+                                            // Update if already rendered with empty string
+                                            if (photosListImgSrc[v.originalPath] === "") {
+                                                photosListImgSrc[v.originalPath] = v._cachedThumbnailPath;
+                                                // Trigger re-render
+                                                setPhotosListImgSrc({...photosListImgSrc});
+                                            }
+                                        })
+                                        .catch(err => {
+                                            logger.warn('PhotosListMini', 'thumbnail_path_failed', 'Failed to get thumbnail cache path', {
+                                                photoPath: v.originalPath,
+                                                error: err.message
+                                            });
+                                        });
+                                }
+                                // Set empty string initially (will trigger onError if not exists)
+                                photosListImgSrc[v.originalPath] = v._cachedThumbnailPath || "";
+                            } else if (v.hasThumbnail) {
+                                // Normal mode: Use existing thumbnail
                                 const thumbnailSrc = v.thumbnailPath();
                                 photosListImgSrc[v.originalPath] = convertFileSrc(thumbnailSrc);
                             } else {
-                                // Use Photo entity display path method for fallback
+                                // Normal mode without thumbnail: Use original
                                 const displayPath = v.displayPath();
                                 photosListImgSrc[v.originalPath] = convertFileSrc(displayPath);
                             }
@@ -622,7 +645,70 @@ function PhotosListMini(props) {
                                                     return;
                                                 }
 
-                                                // If we have a thumbnail and it's failing, try original as fallback
+                                                // Import mode: on-demand thumbnail generation
+                                                if (v.import_source === true) {
+                                                    // Step 1: Generate thumbnail
+                                                    if (!e.target.dataset.thumbnailGenerated) {
+                                                        e.target.dataset.thumbnailGenerated = 'true';
+                                                        const imgElement = e.target;
+
+                                                        logger.debug('PhotosListMini', 'thumbnail_generation_started', 'Generating thumbnail on demand', {
+                                                            photoPath: v.originalPath
+                                                        });
+
+                                                        invoke('get_resized_image', {
+                                                            pathStr: v.originalPath,
+                                                            maxSize: 200
+                                                        })
+                                                            .then(() => {
+                                                                logger.debug('PhotosListMini', 'thumbnail_generated', 'Thumbnail generated successfully', {
+                                                                    photoPath: v.originalPath
+                                                                });
+                                                                return invoke('get_thumbnail_path', { photoPath: v.originalPath });
+                                                            })
+                                                            .then(cachePath => {
+                                                                const thumbnailUrl = convertFileSrc(cachePath) + '?t=' + Date.now();
+                                                                logger.debug('PhotosListMini', 'thumbnail_retry', 'Retrying with generated thumbnail', {
+                                                                    photoPath: v.originalPath,
+                                                                    thumbnailUrl
+                                                                });
+                                                                if (imgElement) {
+                                                                    imgElement.src = thumbnailUrl;
+                                                                }
+                                                            })
+                                                            .catch(err => {
+                                                                logger.error('PhotosListMini', 'thumbnail_generation_failed', 'Failed to generate thumbnail', {
+                                                                    photoPath: v.originalPath,
+                                                                    error: err.message
+                                                                });
+                                                                // Fallback to original
+                                                                if (imgElement && !imgElement.dataset.triedOriginal) {
+                                                                    imgElement.dataset.triedOriginal = 'true';
+                                                                    imgElement.src = convertFileSrc(v.originalPath);
+                                                                }
+                                                            });
+                                                        return;
+                                                    }
+
+                                                    // Step 2: Thumbnail generation failed, try original
+                                                    if (!e.target.dataset.triedOriginal) {
+                                                        e.target.dataset.triedOriginal = 'true';
+                                                        logger.warn('PhotosListMini', 'thumbnail_failed_fallback_original', 'Falling back to original image', {
+                                                            photoPath: v.originalPath
+                                                        });
+                                                        e.target.src = convertFileSrc(v.originalPath);
+                                                        return;
+                                                    }
+
+                                                    // Step 3: Final fallback
+                                                    logger.error('PhotosListMini', 'import_photo_error', 'All fallbacks failed for import photo', {
+                                                        photoPath: v.originalPath
+                                                    });
+                                                    e.target.src = "/img_error.png";
+                                                    return;
+                                                }
+
+                                                // Normal mode: existing fallback logic
                                                 if (v.hasThumbnail && !e.target.dataset.triedOriginal) {
                                                     // Mark that we've tried original to prevent infinite loop
                                                     e.target.dataset.triedOriginal = "true";
