@@ -38,6 +38,10 @@ export const usePhotosState = () => {
     const [hasTagFilter, setHasTagFilter] = useState(false);
     const [extensionFilter, setExtensionFilter] = useState("all");
 
+    // Import mode独立フィルター・ソート
+    const [importExtensionFilter, setImportExtensionFilter] = useState("all");
+    const [importSortOfPhotos, setImportSort] = useState(2); // Default: Added Time (desc)
+
     // PhotosListMini state
     const [photosListMiniAllPhotos, setPhotosListMiniAllPhotos] = useState([]);
     const [photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex] = useState(0);
@@ -137,6 +141,12 @@ export const usePhotosState = () => {
         setHasTagFilter,
         extensionFilter,
         setExtensionFilter,
+
+        // Import mode独立フィルター・ソート
+        importExtensionFilter,
+        setImportExtensionFilter,
+        importSortOfPhotos,
+        setImportSort,
 
         // PhotosListMini
         photosListMiniAllPhotos,

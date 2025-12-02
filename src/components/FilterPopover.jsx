@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { logger } from '../services/LoggerService.js';
 
-const FilterPopover = ({ 
-    isOpen, 
-    onClose, 
+const FilterPopover = ({
+    isOpen,
+    onClose,
     anchorRef,
     starFilter,
     setStarFilter,
@@ -12,7 +12,8 @@ const FilterPopover = ({
     hasTagFilter,
     setHasTagFilter,
     extensionFilter,
-    setExtensionFilter
+    setExtensionFilter,
+    isImportMode
 }) => {
     const popoverRef = useRef(null);
     
@@ -71,137 +72,143 @@ const FilterPopover = ({
                 color: 'var(--text)'
             }}
         >
-            {/* Star Filter */}
-            <div style={{ marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span style={{ fontSize: '14px', color: 'var(--text)', minWidth: '50px' }}>Stars</span>
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                        {[0, 1, 2, 3, 4, 5].map((v) => (
-                            <span 
-                                key={v} 
-                                onClick={() => {
-                                    logger.debug('FilterPopover', 'filter_changed', 'User changed star filter', {
-                                        filterType: 'starFilter',
-                                        newValue: v,
-                                        previousValue: starFilter
-                                    });
-                                    setStarFilter(v);
-                                }}
-                                style={{
-                                    cursor: 'pointer',
-                                    fontSize: '16px',
-                                    padding: '2px 4px',
-                                    borderRadius: '4px',
-                                    backgroundColor: starFilter === v ? 'var(--accent)' : 'transparent',
-                                    color: starFilter >= v ? '#ffd700' : '#666',
-                                    transition: 'all 0.2s'
-                                }}
-                                title={v === 0 ? 'Show all' : `${v} stars or more`}
-                            >
-                                {v === 0 ? 'All' : `★${v}+`}
-                            </span>
-                        ))}
+            {/* Star Filter - Hide in import mode */}
+            {!isImportMode && (
+                <div style={{ marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontSize: '14px', color: 'var(--text)', minWidth: '50px' }}>Stars</span>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                            {[0, 1, 2, 3, 4, 5].map((v) => (
+                                <span
+                                    key={v}
+                                    onClick={() => {
+                                        logger.debug('FilterPopover', 'filter_changed', 'User changed star filter', {
+                                            filterType: 'starFilter',
+                                            newValue: v,
+                                            previousValue: starFilter
+                                        });
+                                        setStarFilter(v);
+                                    }}
+                                    style={{
+                                        cursor: 'pointer',
+                                        fontSize: '16px',
+                                        padding: '2px 4px',
+                                        borderRadius: '4px',
+                                        backgroundColor: starFilter === v ? 'var(--accent)' : 'transparent',
+                                        color: starFilter >= v ? '#ffd700' : '#666',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    title={v === 0 ? 'Show all' : `${v} stars or more`}
+                                >
+                                    {v === 0 ? 'All' : `★${v}+`}
+                                </span>
+                            ))}
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
             
-            {/* Comment Filter - Switch Style */}
-            <div style={{ marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '14px', color: 'var(--text)' }}>Has Comment</span>
-                    <label style={{ 
-                        position: 'relative',
-                        display: 'inline-block',
-                        width: '44px',
-                        height: '24px',
-                        cursor: 'pointer'
-                    }}>
-                        <input 
-                            type="checkbox" 
-                            checked={hasCommentFilter}
-                            onChange={(e) => { 
-                                logger.debug('FilterPopover', 'filter_changed', 'User changed comment filter', {
-                                    filterType: 'hasCommentFilter',
-                                    newValue: e.target.checked,
-                                    previousValue: hasCommentFilter
-                                });
-                                setHasCommentFilter(e.target.checked); 
-                            }}
-                            style={{ opacity: 0, width: 0, height: 0 }}
-                        />
-                        <span style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            backgroundColor: hasCommentFilter ? 'var(--accent)' : '#374151',
-                            borderRadius: '24px',
-                            transition: 'background-color 0.2s'
+            {/* Comment Filter - Switch Style - Hide in import mode */}
+            {!isImportMode && (
+                <div style={{ marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '14px', color: 'var(--text)' }}>Has Comment</span>
+                        <label style={{
+                            position: 'relative',
+                            display: 'inline-block',
+                            width: '44px',
+                            height: '24px',
+                            cursor: 'pointer'
                         }}>
+                            <input
+                                type="checkbox"
+                                checked={hasCommentFilter}
+                                onChange={(e) => {
+                                    logger.debug('FilterPopover', 'filter_changed', 'User changed comment filter', {
+                                        filterType: 'hasCommentFilter',
+                                        newValue: e.target.checked,
+                                        previousValue: hasCommentFilter
+                                    });
+                                    setHasCommentFilter(e.target.checked);
+                                }}
+                                style={{ opacity: 0, width: 0, height: 0 }}
+                            />
                             <span style={{
                                 position: 'absolute',
-                                left: hasCommentFilter ? '22px' : '2px',
-                                top: '2px',
-                                width: '20px',
-                                height: '20px',
-                                backgroundColor: 'white',
-                                borderRadius: '50%',
-                                transition: 'left 0.2s'
-                            }}></span>
-                        </span>
-                    </label>
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                backgroundColor: hasCommentFilter ? 'var(--accent)' : '#374151',
+                                borderRadius: '24px',
+                                transition: 'background-color 0.2s'
+                            }}>
+                                <span style={{
+                                    position: 'absolute',
+                                    left: hasCommentFilter ? '22px' : '2px',
+                                    top: '2px',
+                                    width: '20px',
+                                    height: '20px',
+                                    backgroundColor: 'white',
+                                    borderRadius: '50%',
+                                    transition: 'left 0.2s'
+                                }}></span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
-            </div>
+            )}
             
-            {/* Tag Filter - Switch Style */}
-            <div style={{ marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '14px', color: 'var(--text)' }}>Has Tag</span>
-                    <label style={{ 
-                        position: 'relative',
-                        display: 'inline-block',
-                        width: '44px',
-                        height: '24px',
-                        cursor: 'pointer'
-                    }}>
-                        <input 
-                            type="checkbox" 
-                            checked={hasTagFilter}
-                            onChange={(e) => { 
-                                logger.debug('FilterPopover', 'filter_changed', 'User changed tag filter', {
-                                    filterType: 'hasTagFilter',
-                                    newValue: e.target.checked,
-                                    previousValue: hasTagFilter
-                                });
-                                setHasTagFilter(e.target.checked); 
-                            }}
-                            style={{ opacity: 0, width: 0, height: 0 }}
-                        />
-                        <span style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            backgroundColor: hasTagFilter ? 'var(--accent)' : '#374151',
-                            borderRadius: '24px',
-                            transition: 'background-color 0.2s'
+            {/* Tag Filter - Switch Style - Hide in import mode */}
+            {!isImportMode && (
+                <div style={{ marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '14px', color: 'var(--text)' }}>Has Tag</span>
+                        <label style={{
+                            position: 'relative',
+                            display: 'inline-block',
+                            width: '44px',
+                            height: '24px',
+                            cursor: 'pointer'
                         }}>
+                            <input
+                                type="checkbox"
+                                checked={hasTagFilter}
+                                onChange={(e) => {
+                                    logger.debug('FilterPopover', 'filter_changed', 'User changed tag filter', {
+                                        filterType: 'hasTagFilter',
+                                        newValue: e.target.checked,
+                                        previousValue: hasTagFilter
+                                    });
+                                    setHasTagFilter(e.target.checked);
+                                }}
+                                style={{ opacity: 0, width: 0, height: 0 }}
+                            />
                             <span style={{
                                 position: 'absolute',
-                                left: hasTagFilter ? '22px' : '2px',
-                                top: '2px',
-                                width: '20px',
-                                height: '20px',
-                                backgroundColor: 'white',
-                                borderRadius: '50%',
-                                transition: 'left 0.2s'
-                            }}></span>
-                        </span>
-                    </label>
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                backgroundColor: hasTagFilter ? 'var(--accent)' : '#374151',
+                                borderRadius: '24px',
+                                transition: 'background-color 0.2s'
+                            }}>
+                                <span style={{
+                                    position: 'absolute',
+                                    left: hasTagFilter ? '22px' : '2px',
+                                    top: '2px',
+                                    width: '20px',
+                                    height: '20px',
+                                    backgroundColor: 'white',
+                                    borderRadius: '50%',
+                                    transition: 'left 0.2s'
+                                }}></span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
-            </div>
+            )}
             
             {/* Extension Filter */}
             <div style={{ marginBottom: '12px' }}>
@@ -289,19 +296,21 @@ const FilterPopover = ({
             </div>
             
             {/* Clear Filters Button */}
-            {(starFilter > 0 || hasCommentFilter || hasTagFilter || extensionFilter !== 'all') && (
+            {((!isImportMode && (starFilter > 0 || hasCommentFilter || hasTagFilter)) || extensionFilter !== 'all') && (
                 <div style={{ 
                     marginTop: '16px', 
                     paddingTop: '12px', 
                     borderTop: '1px solid var(--border)',
                     textAlign: 'center'
                 }}>
-                    <button 
+                    <button
                         onClick={() => {
                             logger.debug('FilterPopover', 'clear_filters', 'User cleared all filters');
-                            setStarFilter(0);
-                            setHasCommentFilter(false);
-                            setHasTagFilter(false);
+                            if (!isImportMode) {
+                                setStarFilter(0);
+                                setHasCommentFilter(false);
+                                setHasTagFilter(false);
+                            }
                             setExtensionFilter('all');
                         }}
                         style={{

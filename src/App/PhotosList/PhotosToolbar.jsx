@@ -17,7 +17,8 @@ function PhotosToolbar({
     hasCommentFilter,
     hasTagFilter,
     extensionFilter,
-    hasActiveFilters
+    hasActiveFilters,
+    isImportMode
 }) {
     // Calculate active filter count
     const activeFilterCount = [
@@ -40,17 +41,17 @@ function PhotosToolbar({
                 <option value={300}>huge</option>
             </select>
             
-            Sort:<select 
-                name="sort" 
-                value={sortOfPhotos} 
+            Sort:<select
+                name="sort"
+                value={sortOfPhotos}
                 onChange={(e) => setSort(parseInt(e.target.value))}
             >
-                <option value={0}>Shot Time (desc)</option>
-                <option value={1}>Shot Time (asc)</option>
+                {!isImportMode && <option value={0}>Shot Time (desc)</option>}
+                {!isImportMode && <option value={1}>Shot Time (asc)</option>}
                 <option value={2}>Added Time (desc)</option>
                 <option value={3}>Added Time (asc)</option>
-                <option value={4}>Star Rating (desc)</option>
-                <option value={5}>Star Rating (asc)</option>
+                {!isImportMode && <option value={4}>Star Rating (desc)</option>}
+                {!isImportMode && <option value={5}>Star Rating (asc)</option>}
                 <option value={6}>File Name (desc)</option>
                 <option value={7}>File Name (asc)</option>
             </select>
