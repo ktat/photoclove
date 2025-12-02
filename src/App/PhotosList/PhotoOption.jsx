@@ -31,27 +31,35 @@ function PhotoOption(props) {
         <>
             {/* Vertical tabs replacing the toggle */}
             <div className={`vertical-tabs ${props.showSideMenu ? 'menu-open' : 'menu-closed'}`}>
-                <button 
+                <button
                     className={activeTab === "info" ? "vertical-tab-button active" : "vertical-tab-button"}
                     onClick={() => handleTabClick("info")}
                     title="Photo Information"
                 >
                     <span className="vertical-text">Info</span>
                 </button>
-                <button 
-                    className={activeTab === "editor" ? "vertical-tab-button active" : "vertical-tab-button"}
-                    onClick={() => handleTabClick("editor")}
-                    title="Photo Editor"
-                >
-                    <span className="vertical-text">Editor</span>
-                </button>
-                <button 
-                    className={activeTab === "tags" ? "vertical-tab-button active" : "vertical-tab-button"}
-                    onClick={() => handleTabClick("tags")}
-                    title="Photo Tags"
-                >
-                    <span className="vertical-text">Tags</span>
-                </button>
+
+                {/* Hide Editor tab in import mode */}
+                {!props.isImportMode && (
+                    <button
+                        className={activeTab === "editor" ? "vertical-tab-button active" : "vertical-tab-button"}
+                        onClick={() => handleTabClick("editor")}
+                        title="Photo Editor"
+                    >
+                        <span className="vertical-text">Editor</span>
+                    </button>
+                )}
+
+                {/* Hide Tags tab in import mode */}
+                {!props.isImportMode && (
+                    <button
+                        className={activeTab === "tags" ? "vertical-tab-button active" : "vertical-tab-button"}
+                        onClick={() => handleTabClick("tags")}
+                        title="Photo Tags"
+                    >
+                        <span className="vertical-text">Tags</span>
+                    </button>
+                )}
                 {isAlbumMode && (
                     <button 
                         className={activeTab === "album" ? "vertical-tab-button active" : "vertical-tab-button"}
