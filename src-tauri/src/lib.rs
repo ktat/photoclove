@@ -1252,14 +1252,9 @@ fn get_resized_image(
     // Use JpegEncoder to set quality explicitly (85 is a good balance)
     use image::codecs::jpeg::JpegEncoder;
     {
-        let mut encoder = JpegEncoder::new_with_quality(&mut jpeg_data, 85);
-        encoder
-            .encode(
-                resized.as_bytes(),
-                new_width,
-                new_height,
-                resized.color(),
-            )
+        let encoder = JpegEncoder::new_with_quality(&mut jpeg_data, 85);
+        // Use encode_image instead of encode - this properly handles the entire DynamicImage
+        resized.write_with_encoder(encoder)
             .map_err(|e| format!("Failed to encode image: {}", e))?;
     } // encoder is dropped here, ensuring all data is flushed
 
