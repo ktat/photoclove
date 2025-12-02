@@ -187,6 +187,10 @@ function PhotosList(props) {
         hasCommentFilter, setHasCommentFilter,
         hasTagFilter, setHasTagFilter,
         extensionFilter, setExtensionFilter,
+
+        // Import mode独立フィルター・ソート
+        importExtensionFilter, setImportExtensionFilter,
+        importSortOfPhotos, setImportSort,
         
         // PhotosListMini
         photosListMiniAllPhotos, setPhotosListMiniAllPhotos,
@@ -416,13 +420,24 @@ function PhotosList(props) {
 
     // Frontend filtering function wrapper
     const applyFiltersWithConfig = useCallback((photos) => {
+        // Import modeではextensionフィルターのみ適用
+        if (viewModeObj.isImportMode()) {
+            return applyFrontendFilters(photos, {
+                starFilter: 0,
+                hasCommentFilter: false,
+                hasTagFilter: false,
+                extensionFilter: importExtensionFilter
+            });
+        }
+
+        // 通常モードでは全てのフィルターを適用
         return applyFrontendFilters(photos, {
             starFilter,
             hasCommentFilter,
             hasTagFilter,
             extensionFilter
         });
-    }, [starFilter, hasCommentFilter, hasTagFilter, extensionFilter]);
+    }, [viewModeObj, starFilter, hasCommentFilter, hasTagFilter, extensionFilter, importExtensionFilter]);
 
 
     // Initialize showSideMenu based on view mode
@@ -1627,16 +1642,17 @@ function PhotosList(props) {
                                                 <PhotosToolbar
                                                     iconSize={iconSize}
                                                     setIconSize={setIconSize}
-                                                    sortOfPhotos={sortOfPhotos}
-                                                    setSort={setSort}
+                                                    sortOfPhotos={viewModeObj.isImportMode() ? importSortOfPhotos : sortOfPhotos}
+                                                    setSort={viewModeObj.isImportMode() ? setImportSort : setSort}
                                                     showFilterPopover={showFilterPopover}
                                                     setShowFilterPopover={setShowFilterPopover}
                                                     filterButtonRef={filterButtonRef}
                                                     starFilter={starFilter}
                                                     hasCommentFilter={hasCommentFilter}
                                                     hasTagFilter={hasTagFilter}
-                                                    extensionFilter={extensionFilter}
+                                                    extensionFilter={viewModeObj.isImportMode() ? importExtensionFilter : extensionFilter}
                                                     hasActiveFilters={hasActiveFiltersState}
+                                                    isImportMode={viewModeObj.isImportMode()}
                                                 />
                                             </div>
                                             : <div>
@@ -1803,8 +1819,9 @@ function PhotosList(props) {
                     setHasCommentFilter={setHasCommentFilter}
                     hasTagFilter={hasTagFilter}
                     setHasTagFilter={setHasTagFilter}
-                    extensionFilter={extensionFilter}
-                    setExtensionFilter={setExtensionFilter}
+                    extensionFilter={viewModeObj.isImportMode() ? importExtensionFilter : extensionFilter}
+                    setExtensionFilter={viewModeObj.isImportMode() ? setImportExtensionFilter : setExtensionFilter}
+                    isImportMode={viewModeObj.isImportMode()}
                 />
             </>
         </ErrorBoundary>
