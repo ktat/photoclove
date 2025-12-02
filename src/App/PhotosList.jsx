@@ -1713,6 +1713,9 @@ function PhotosList(props) {
                         onCommentUpdate={updatePhotoComment}
                         onAlbumUpdate={handleAlbumUpdate}
                         onAlbumDelete={handleAlbumDelete}
+
+                        // Import mode flag for PhotoInfo
+                        isImportMode={viewModeObj.isImportMode()}
                     />
                 )}
 
