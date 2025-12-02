@@ -86,7 +86,7 @@ function PhotoOption(props) {
                     zIndex: 1001
                 }}>
                     {activeTab === "info" && (
-                        <PhotoInfo 
+                        <PhotoInfo
                             currentPhotoPath={props.currentPhotoPath}
                             showSideMenu={props.showSideMenu}
                             imgCacheMap={props.imgCacheMap}
@@ -94,6 +94,7 @@ function PhotoOption(props) {
                             setStar={props.setStar}
                             addFooterMessage={props.addFooterMessage}
                             onCommentUpdate={props.onCommentUpdate}
+                            isImportMode={props.isImportMode}
                         />
                     )}
                     {activeTab === "editor" && (

@@ -141,24 +141,38 @@ function PhotoInfo(props) {
                     </tbody>
                 </table>
             </div>
-            <div>
-                Stars:
-                <span className="star">
-                    {
-                        [0, 1, 2, 3, 4].map((v, i) => {
-                            return <a key={i} href="#" value={v} onClick={(e) => { e.preventDefault(); toggleStar(v) }}>{props.star[i] ? "★" : "☆"}</a>
-                        })
-                    }
-                </span>
-            </div>
-            <div className="comment">
-                Comment:<br />
-                <textarea
-                    onChange={(e) => setComment(e.target.value)}
-                    value={comment}>
-                </textarea>
-                <button onClick={() => saveComment()}>SAVE</button>
-            </div>
+
+            {/* Only show stars/comment forms for non-import photos */}
+            {!props.isImportMode && (
+                <>
+                    <div>
+                        Stars:
+                        <span className="star">
+                            {
+                                [0, 1, 2, 3, 4].map((v, i) => {
+                                    return <a key={i} href="#" value={v} onClick={(e) => { e.preventDefault(); toggleStar(v) }}>{props.star[i] ? "★" : "☆"}</a>
+                                })
+                            }
+                        </span>
+                    </div>
+                    <div className="comment">
+                        Comment:<br />
+                        <textarea
+                            onChange={(e) => setComment(e.target.value)}
+                            value={comment}>
+                        </textarea>
+                        <button onClick={() => saveComment()}>SAVE</button>
+                    </div>
+                </>
+            )}
+
+            {/* Show informational message for import mode */}
+            {props.isImportMode && (
+                <div style={{ padding: "10px", color: "var(--text-secondary, #999)", fontSize: "12px", fontStyle: "italic" }}>
+                    Note: Stars and comments are not available for photos in import mode.
+                    Import photos to your library to add metadata.
+                </div>
+            )}
         </div>
     );
 }
