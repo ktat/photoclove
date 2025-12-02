@@ -1247,21 +1247,22 @@ fn get_resized_image(
 
     // Encode as JPEG with quality setting
     let encode_start = Instant::now();
-    let mut buffer = Cursor::new(Vec::new());
+    let mut jpeg_data = Vec::new();
 
     // Use JpegEncoder to set quality explicitly (85 is a good balance)
     use image::codecs::jpeg::JpegEncoder;
-    let mut encoder = JpegEncoder::new_with_quality(&mut buffer, 85);
-    encoder
-        .encode(
-            resized.as_bytes(),
-            new_width,
-            new_height,
-            resized.color(),
-        )
-        .map_err(|e| format!("Failed to encode image: {}", e))?;
+    {
+        let mut encoder = JpegEncoder::new_with_quality(&mut jpeg_data, 85);
+        encoder
+            .encode(
+                resized.as_bytes(),
+                new_width,
+                new_height,
+                resized.color(),
+            )
+            .map_err(|e| format!("Failed to encode image: {}", e))?;
+    } // encoder is dropped here, ensuring all data is flushed
 
-    let jpeg_data = buffer.into_inner();
     let encode_time = encode_start.elapsed();
 
     // Save to cache file
