@@ -36,6 +36,9 @@ function PhotosListMini(props) {
     const onClearSearch = props.onClearSearch;
     const recentPhotosMode = props.recentPhotosMode || false;
 
+    // Import state for thumbnail caching
+    const importState = props.importState;
+
     // State from original implementation - simplified
     const [showPhotosIndex, setShowPhotosIndex] = useState([]);
     const [borderStyle, setBorderStyle] = useState([]);
@@ -600,7 +603,10 @@ function PhotosListMini(props) {
                             if (v.import_source === true) {
                                 // Import mode: Get cache thumbnail path (may not exist yet)
                                 if (!v._cachedThumbnailPath) {
-                                    invoke('get_thumbnail_path', { photoPath: v.originalPath })
+                                    invoke('get_thumbnail_path', {
+                                        photoPath: v.originalPath,
+                                        importDirectory: importState?.currentImportPath || null
+                                    })
                                         .then(cachePath => {
                                             v._cachedThumbnailPath = convertFileSrc(cachePath);
                                             // Update if already rendered with empty string
@@ -676,7 +682,10 @@ function PhotosListMini(props) {
                                                                 logger.debug('PhotosListMini', 'thumbnail_generated', 'Thumbnail generated successfully', {
                                                                     photoPath: v.originalPath
                                                                 });
-                                                                return invoke('get_thumbnail_path', { photoPath: v.originalPath });
+                                                                return invoke('get_thumbnail_path', {
+                                                                    photoPath: v.originalPath,
+                                                                    importDirectory: importState?.currentImportPath || null
+                                                                });
                                                             })
                                                             .then(cachePath => {
                                                                 const thumbnailUrl = convertFileSrc(cachePath) + '?t=' + Date.now();

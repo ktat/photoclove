@@ -22,7 +22,8 @@ function PhotoGrid({
     extensionFilter,
     onClearFilters,
     showSideMenu,
-    setShowSideMenu
+    setShowSideMenu,
+    importState
 }) {
 
     // Helper function to parse CSS style string
@@ -72,7 +73,11 @@ function PhotoGrid({
             // This will trigger onError if the file doesn't exist yet
             if (!photo._cachedThumbnailPath) {
                 // Get deterministic cache path and cache it on the photo object
-                invoke('get_thumbnail_path', { photoPath: photo.originalPath })
+                // Include import directory for import mode to avoid cache collisions
+                invoke('get_thumbnail_path', {
+                    photoPath: photo.originalPath,
+                    importDirectory: importState?.currentImportPath || null
+                })
                     .then(cachePath => {
                         photo._cachedThumbnailPath = convertFileSrc(cachePath);
                         // If we have an imgRef, update src immediately
@@ -156,7 +161,10 @@ function PhotoGrid({
                                                             photoPath: photo.originalPath
                                                         });
                                                         // Step 2: Retry with thumbnail path + timestamp to bust cache
-                                                        return invoke('get_thumbnail_path', { photoPath: photo.originalPath });
+                                                        return invoke('get_thumbnail_path', {
+                                                            photoPath: photo.originalPath,
+                                                            importDirectory: importState?.currentImportPath || null
+                                                        });
                                                     })
                                                     .then(cachePath => {
                                                         const thumbnailUrl = convertFileSrc(cachePath) + '?t=' + Date.now();

@@ -1589,6 +1589,7 @@ function PhotosList(props) {
 
                                             // Import mode flag for keyboard shortcuts
                                             isImportMode={viewModeObj.isImportMode()}
+                                            importState={importState}
                                                 />
                                             </div>
                                         </ImgCacheContext.Provider>
@@ -1717,6 +1718,7 @@ function PhotosList(props) {
                                                 setExtensionFilter('all');
                                             }}
                                             showSideMenu={showSideMenu}
+                                            importState={importState}
                                             setShowSideMenu={setShowSideMenu}
                                         />
                                         {/* Replaced photo grid with PhotoGrid component */}

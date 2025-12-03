@@ -1045,9 +1045,10 @@ fn show_importer(
 
 // Generate deterministic thumbnail path for a given photo path
 // This allows frontend to know the thumbnail path without async call
-fn get_thumbnail_path_for_photo(photo_path: &str) -> Result<String, String> {
+fn get_thumbnail_path_for_photo(photo_path: &str, import_directory: Option<&str>) -> Result<String, String> {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
+    use sha2::{Digest, Sha256};
 
     // Get cache directory
     let cache_dir = dirs::cache_dir()
@@ -1055,9 +1056,21 @@ fn get_thumbnail_path_for_photo(photo_path: &str) -> Result<String, String> {
         .join("photoclove")
         .join("thumbnails");
 
-    // Generate cache filename from path hash (same algorithm as get_resized_image)
+    // Generate cache filename from path + directory UUID hash
     let mut hasher = DefaultHasher::new();
     photo_path.hash(&mut hasher);
+
+    // If import_directory is provided, include it in hash to avoid collisions
+    if let Some(dir) = import_directory {
+        // Generate SHA256 hash of directory path (same as get_directory_sha256_hash in importer.rs)
+        let mut sha_hasher = Sha256::new();
+        sha_hasher.update(dir.as_bytes());
+        let dir_uuid = format!("{:x}", sha_hasher.finalize());
+        dir_uuid.hash(&mut hasher);
+
+        log::debug!(target: "image", "thumbnail_path_with_uuid; photo_path={}; import_directory={}; dir_uuid={}", photo_path, dir, dir_uuid);
+    }
+
     let hash = hasher.finish();
     let cache_filename = format!("{:x}.jpg", hash);
     let cache_path = cache_dir.join(&cache_filename);
@@ -1297,8 +1310,8 @@ fn get_resized_image(
 }
 
 #[tauri::command]
-fn get_thumbnail_path(photo_path: &str) -> Result<String, String> {
-    get_thumbnail_path_for_photo(photo_path)
+fn get_thumbnail_path(photo_path: &str, import_directory: Option<&str>) -> Result<String, String> {
+    get_thumbnail_path_for_photo(photo_path, import_directory)
 }
 
 #[tauri::command]
