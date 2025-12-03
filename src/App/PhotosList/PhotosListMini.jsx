@@ -605,7 +605,7 @@ function PhotosListMini(props) {
                                 if (!v._cachedThumbnailPath) {
                                     invoke('get_thumbnail_path', {
                                         photoPath: v.originalPath,
-                                        importDirectory: importState?.currentImportPath || null
+                                        importDirectory: (v.import_source === true && importState?.currentImportPath) ? importState.currentImportPath : null
                                     })
                                         .then(cachePath => {
                                             v._cachedThumbnailPath = convertFileSrc(cachePath);
@@ -684,7 +684,7 @@ function PhotosListMini(props) {
                                                                 });
                                                                 return invoke('get_thumbnail_path', {
                                                                     photoPath: v.originalPath,
-                                                                    importDirectory: importState?.currentImportPath || null
+                                                                    importDirectory: (v.import_source === true && importState?.currentImportPath) ? importState.currentImportPath : null
                                                                 });
                                                             })
                                                             .then(cachePath => {

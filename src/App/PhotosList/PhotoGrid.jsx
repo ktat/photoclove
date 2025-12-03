@@ -76,7 +76,7 @@ function PhotoGrid({
                 // Include import directory for import mode to avoid cache collisions
                 invoke('get_thumbnail_path', {
                     photoPath: photo.originalPath,
-                    importDirectory: importState?.currentImportPath || null
+                    importDirectory: (photo.import_source === true && importState?.currentImportPath) ? importState.currentImportPath : null
                 })
                     .then(cachePath => {
                         photo._cachedThumbnailPath = convertFileSrc(cachePath);
@@ -163,7 +163,7 @@ function PhotoGrid({
                                                         // Step 2: Retry with thumbnail path + timestamp to bust cache
                                                         return invoke('get_thumbnail_path', {
                                                             photoPath: photo.originalPath,
-                                                            importDirectory: importState?.currentImportPath || null
+                                                            importDirectory: (photo.import_source === true && importState?.currentImportPath) ? importState.currentImportPath : null
                                                         });
                                                     })
                                                     .then(cachePath => {
