@@ -1056,35 +1056,23 @@ fn get_thumbnail_path_for_photo(photo_path: &str, import_directory: Option<&str>
         .join("photoclove")
         .join("thumbnails");
 
-    // Generate cache filename: uuid.hash.jpg or hash.jpg (for backward compatibility)
-    let cache_filename = if let Some(dir) = import_directory {
+    // Generate cache filename from path hash (same algorithm as get_resized_image)
+    let mut hasher = DefaultHasher::new();
+    photo_path.hash(&mut hasher);
+
+    // If import_directory is provided, include it in hash to avoid collisions
+    if let Some(dir) = import_directory {
         // Generate SHA256 hash of directory path (same as get_directory_sha256_hash in importer.rs)
         let mut sha_hasher = Sha256::new();
         sha_hasher.update(dir.as_bytes());
         let dir_uuid = format!("{:x}", sha_hasher.finalize());
+        dir_uuid.hash(&mut hasher);
 
-        // Generate SHA256 hash from photo path for deterministic hashing
-        let mut path_hasher = Sha256::new();
-        path_hasher.update(photo_path.as_bytes());
-        let path_hash_full = format!("{:x}", path_hasher.finalize());
-        // Use first 16 chars of path hash for shorter filename
-        let path_hash = &path_hash_full[..16];
+        log::debug!(target: "image", "thumbnail_path_with_uuid; photo_path={}; import_directory={}; dir_uuid={}", photo_path, dir, dir_uuid);
+    }
 
-        // Format: uuid.hash.jpg (first 16 chars of each for readability)
-        let uuid_short = &dir_uuid[..16];
-        let filename = format!("{}.{}.jpg", uuid_short, path_hash);
-
-        log::debug!(target: "image", "thumbnail_path_with_uuid; photo_path={}; import_directory={}; dir_uuid={}; filename={}", photo_path, dir, dir_uuid, filename);
-
-        filename
-    } else {
-        // Normal mode: just use path hash (backward compatible)
-        let mut hasher = DefaultHasher::new();
-        photo_path.hash(&mut hasher);
-        let hash = hasher.finish();
-        format!("{:x}.jpg", hash)
-    };
-
+    let hash = hasher.finish();
+    let cache_filename = format!("{:x}.jpg", hash);
     let cache_path = cache_dir.join(&cache_filename);
 
     // Return the cache file path
