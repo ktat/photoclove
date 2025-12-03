@@ -720,7 +720,41 @@ function PhotosList(props) {
         const photosWithMethods = convertJSONToPhotoEntities(sourcePhotos, appConfig);
 
         // Apply frontend filters
-        const result = applyFiltersWithConfig(photosWithMethods);
+        let result = applyFiltersWithConfig(photosWithMethods);
+
+        // Apply frontend sorting for import mode
+        if (viewModeObj.isImportMode()) {
+            const sortComparator = {
+                2: (a, b) => {
+                    // Added Time (desc) - newest first
+                    const aTime = a.created_at || '';
+                    const bTime = b.created_at || '';
+                    return bTime.localeCompare(aTime);
+                },
+                3: (a, b) => {
+                    // Added Time (asc) - oldest first
+                    const aTime = a.created_at || '';
+                    const bTime = b.created_at || '';
+                    return aTime.localeCompare(bTime);
+                },
+                6: (a, b) => {
+                    // File Name (desc) - Z→A
+                    return (b.name || '').localeCompare(a.name || '');
+                },
+                7: (a, b) => {
+                    // File Name (asc) - A→Z
+                    return (a.name || '').localeCompare(b.name || '');
+                }
+            }[importSortOfPhotos];
+
+            if (sortComparator) {
+                result = [...result].sort(sortComparator);
+                logger.debug('PhotosList', 'import_photos_sorted', 'Applied frontend sort to import photos', {
+                    sortValue: importSortOfPhotos,
+                    photoCount: result.length
+                });
+            }
+        }
 
         logger.debug('PhotosList', 'filtered_photos_result', 'Filtering completed', {
             inputCount: sourcePhotos.length,
@@ -729,7 +763,7 @@ function PhotosList(props) {
         });
 
         return result;
-    }, [viewModeObj, albumPhotos, tagPhotos, photoCollection?.photos, allPhotosForCurrentFetch, applyFiltersWithConfig]);
+    }, [viewModeObj, albumPhotos, tagPhotos, photoCollection?.photos, allPhotosForCurrentFetch, applyFiltersWithConfig, importSortOfPhotos]);
 
     // Use infinite scroll hook
     const {

@@ -18,6 +18,7 @@ export class Photo {
         this.comment = data.comment || '';
         this.cssStyle = data.css_style || '';
         this.tags = data.tags || []; // Array of tag objects: [{id, name, color}]
+        this.created_at = data.created_at || ''; // File creation time from backend
 
         // State flags
         this.inTrashBin = data.inTrashBin || false;
@@ -261,6 +262,7 @@ export class Photo {
             comment: this.comment,
             cssStyle: this.cssStyle,
             tags: this.tags,
+            created_at: this.created_at,
             inTrashBin: this.inTrashBin,
             inAlbum: this.inAlbum,
             albumId: this.albumId,
@@ -300,7 +302,8 @@ export class Photo {
             star: this.star,
             comment: this.comment,
             css_style: this.cssStyle,
-            tags: this.tags
+            tags: this.tags,
+            created_at: this.created_at
         };
     }
 
@@ -349,6 +352,7 @@ export class Photo {
             comment: backendData.comment || '',
             css_style: backendData.css_style || '',
             tags: tags,
+            created_at: backendData.created_at || backendData.file?.created_at || '',
             inTrashBin: isFromTrash,
             inAlbum: false,
             albumId: null
@@ -399,6 +403,7 @@ export class Photo {
             comment: albumPhotoData.comment || '',
             css_style: albumPhotoData.css_style || '',
             tags: tags,
+            created_at: albumPhotoData.created_at || albumPhotoData.file?.created_at || '',
             inTrashBin: false,
             inAlbum: true,
             albumId: albumId
@@ -428,6 +433,7 @@ export class Photo {
             comment: jsonData.comment || '',
             css_style: jsonData.cssStyle || '',
             tags: jsonData.tags || [],
+            created_at: jsonData.created_at || '',
             inTrashBin: jsonData.inTrashBin || false,
             inAlbum: jsonData.inAlbum || false,
             albumId: jsonData.albumId || null,
