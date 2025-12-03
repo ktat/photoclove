@@ -1063,14 +1063,16 @@ fn get_thumbnail_path_for_photo(photo_path: &str, import_directory: Option<&str>
         sha_hasher.update(dir.as_bytes());
         let dir_uuid = format!("{:x}", sha_hasher.finalize());
 
-        // Generate hash from photo path only
-        let mut hasher = DefaultHasher::new();
-        photo_path.hash(&mut hasher);
-        let path_hash = hasher.finish();
+        // Generate SHA256 hash from photo path for deterministic hashing
+        let mut path_hasher = Sha256::new();
+        path_hasher.update(photo_path.as_bytes());
+        let path_hash_full = format!("{:x}", path_hasher.finalize());
+        // Use first 16 chars of path hash for shorter filename
+        let path_hash = &path_hash_full[..16];
 
-        // Format: uuid.hash.jpg (first 16 chars of UUID for readability)
+        // Format: uuid.hash.jpg (first 16 chars of each for readability)
         let uuid_short = &dir_uuid[..16];
-        let filename = format!("{}.{:x}.jpg", uuid_short, path_hash);
+        let filename = format!("{}.{}.jpg", uuid_short, path_hash);
 
         log::debug!(target: "image", "thumbnail_path_with_uuid; photo_path={}; import_directory={}; dir_uuid={}; filename={}", photo_path, dir, dir_uuid, filename);
 
