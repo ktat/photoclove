@@ -603,9 +603,12 @@ function PhotosListMini(props) {
                             if (v.import_source === true) {
                                 // Import mode: Get cache thumbnail path (may not exist yet)
                                 if (!v._cachedThumbnailPath) {
+                                    const importDir = (v.import_source === true && importState?.currentImportPath && importState.currentImportPath !== '')
+                                        ? importState.currentImportPath
+                                        : null;
                                     invoke('get_thumbnail_path', {
                                         photoPath: v.originalPath,
-                                        importDirectory: (v.import_source === true && importState?.currentImportPath) ? importState.currentImportPath : null
+                                        importDirectory: importDir
                                     })
                                         .then(cachePath => {
                                             v._cachedThumbnailPath = convertFileSrc(cachePath);
@@ -682,9 +685,12 @@ function PhotosListMini(props) {
                                                                 logger.debug('PhotosListMini', 'thumbnail_generated', 'Thumbnail generated successfully', {
                                                                     photoPath: v.originalPath
                                                                 });
+                                                                const importDir = (v.import_source === true && importState?.currentImportPath && importState.currentImportPath !== '')
+                                                                    ? importState.currentImportPath
+                                                                    : null;
                                                                 return invoke('get_thumbnail_path', {
                                                                     photoPath: v.originalPath,
-                                                                    importDirectory: (v.import_source === true && importState?.currentImportPath) ? importState.currentImportPath : null
+                                                                    importDirectory: importDir
                                                                 });
                                                             })
                                                             .then(cachePath => {

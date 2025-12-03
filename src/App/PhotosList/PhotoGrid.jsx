@@ -74,9 +74,20 @@ function PhotoGrid({
             if (!photo._cachedThumbnailPath) {
                 // Get deterministic cache path and cache it on the photo object
                 // Include import directory for import mode to avoid cache collisions
+                // Only pass importDirectory if it's a non-empty string
+                const importDir = (photo.import_source === true && importState?.currentImportPath && importState.currentImportPath !== '')
+                    ? importState.currentImportPath
+                    : null;
+                logger.debug('PhotoGrid', 'get_thumbnail_path_call', 'Calling get_thumbnail_path', {
+                    photoPath: photo.originalPath,
+                    importDirectory: importDir,
+                    hasImportState: !!importState,
+                    currentImportPath: importState?.currentImportPath,
+                    importSource: photo.import_source
+                });
                 invoke('get_thumbnail_path', {
                     photoPath: photo.originalPath,
-                    importDirectory: (photo.import_source === true && importState?.currentImportPath) ? importState.currentImportPath : null
+                    importDirectory: importDir
                 })
                     .then(cachePath => {
                         photo._cachedThumbnailPath = convertFileSrc(cachePath);
@@ -161,9 +172,12 @@ function PhotoGrid({
                                                             photoPath: photo.originalPath
                                                         });
                                                         // Step 2: Retry with thumbnail path + timestamp to bust cache
+                                                        const importDir = (photo.import_source === true && importState?.currentImportPath && importState.currentImportPath !== '')
+                                                            ? importState.currentImportPath
+                                                            : null;
                                                         return invoke('get_thumbnail_path', {
                                                             photoPath: photo.originalPath,
-                                                            importDirectory: (photo.import_source === true && importState?.currentImportPath) ? importState.currentImportPath : null
+                                                            importDirectory: importDir
                                                         });
                                                     })
                                                     .then(cachePath => {
