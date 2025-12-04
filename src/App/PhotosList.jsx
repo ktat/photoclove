@@ -99,10 +99,12 @@ function PhotosList(props) {
 
     const { handleTauriError, addError } = useError();
 
-    // Log viewMode changes
+    // Log viewMode changes and close filter modal
     useEffect(() => {
         logger.info('PhotosList', 'mode_change', 'View mode changed', { viewMode });
-    }, [viewMode]);
+        // Close filter popover when mode changes
+        setShowFilterPopover(false);
+    }, [viewMode, setShowFilterPopover]);
 
     // Use new search and filters hook
     const {
