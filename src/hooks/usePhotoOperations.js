@@ -305,29 +305,56 @@ export function usePhotoOperations({
                 const allPhotos = photosListMiniAllPhotos;
                 // Create a new array instead of mutating the existing one to trigger React state update
                 const newAllPhotos = [...allPhotos];
+
+                logger.debug('usePhotoOperations', 'permanent_delete_before_splice', 'Before removing photo', {
+                    currentPhotoIndex,
+                    totalPhotos: newAllPhotos.length
+                });
+
                 newAllPhotos.splice(currentPhotoIndex, 1);
                 setPhotosListMiniAllPhotos(newAllPhotos);
+
+                logger.debug('usePhotoOperations', 'permanent_delete_after_splice', 'After removing photo', {
+                    currentPhotoIndex,
+                    remainingPhotos: newAllPhotos.length,
+                    isLastPhoto: currentPhotoIndex >= newAllPhotos.length
+                });
 
                 // Adjust navigation
                 if (currentPhotoIndex >= newAllPhotos.length) {
                     // Last photo was removed, go to previous
                     const ci = currentPhotoIndex - 1;
+                    logger.debug('usePhotoOperations', 'permanent_delete_last_photo', 'Handling last photo case', {
+                        ci,
+                        hasPhoto: !!newAllPhotos[ci]
+                    });
+
                     if (newAllPhotos[ci]) {
                         if (setPhotosListMiniCurrentIndex) setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
                         if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[ci].file.path);
                         if (setCurrentPhotoIndex) setCurrentPhotoIndex(ci);
+                    } else {
+                        logger.warn('usePhotoOperations', 'permanent_delete_no_previous_photo', 'No previous photo available', { ci });
                     }
                 } else {
                     // Not last photo - stay at same index (shows next photo)
                     const ci = currentPhotoIndex;
+                    logger.debug('usePhotoOperations', 'permanent_delete_not_last_photo', 'Handling not-last photo case', {
+                        ci,
+                        hasPhoto: !!newAllPhotos[ci]
+                    });
+
                     if (newAllPhotos[ci]) {
                         if (setPhotosListMiniReread) setPhotosListMiniReread(!photosListMiniReread);
                         if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[ci].file.path);
+                    } else {
+                        logger.warn('usePhotoOperations', 'permanent_delete_no_next_photo', 'No next photo available', { ci });
                     }
                 }
 
                 // Close display if no photos left
                 if (newAllPhotos.length === 0 && closePhotoDisplay) {
+                    logger.info('usePhotoOperations', 'permanent_delete_closing_display', 'No photos left, closing display');
                     closePhotoDisplay();
                 }
             }
@@ -385,29 +412,56 @@ export function usePhotoOperations({
                 if (photosListMiniAllPhotos && photosListMiniAllPhotos.length > 0 && setPhotosListMiniAllPhotos) {
                     const allPhotos = photosListMiniAllPhotos;
                     const newAllPhotos = [...allPhotos];
+
+                    logger.debug('usePhotoOperations', 'move_to_trash_before_splice', 'Before removing photo', {
+                        currentPhotoIndex,
+                        totalPhotos: newAllPhotos.length
+                    });
+
                     newAllPhotos.splice(currentPhotoIndex, 1);
                     setPhotosListMiniAllPhotos(newAllPhotos);
+
+                    logger.debug('usePhotoOperations', 'move_to_trash_after_splice', 'After removing photo', {
+                        currentPhotoIndex,
+                        remainingPhotos: newAllPhotos.length,
+                        isLastPhoto: currentPhotoIndex >= newAllPhotos.length
+                    });
 
                     // Adjust navigation
                     if (currentPhotoIndex >= newAllPhotos.length) {
                         // Last photo
                         const ci = currentPhotoIndex - 1;
+                        logger.debug('usePhotoOperations', 'move_to_trash_last_photo', 'Handling last photo case', {
+                            ci,
+                            hasPhoto: !!newAllPhotos[ci]
+                        });
+
                         if (newAllPhotos[ci]) {
                             if (setPhotosListMiniCurrentIndex) setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
                             if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[ci].file.path);
                             if (setCurrentPhotoIndex) setCurrentPhotoIndex(ci);
+                        } else {
+                            logger.warn('usePhotoOperations', 'move_to_trash_no_previous_photo', 'No previous photo available', { ci });
                         }
                     } else {
                         // Not last photo
                         const ci = currentPhotoIndex;
+                        logger.debug('usePhotoOperations', 'move_to_trash_not_last_photo', 'Handling not-last photo case', {
+                            ci,
+                            hasPhoto: !!newAllPhotos[ci]
+                        });
+
                         if (newAllPhotos[ci]) {
                             if (setPhotosListMiniReread) setPhotosListMiniReread(!photosListMiniReread);
                             if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[ci].file.path);
+                        } else {
+                            logger.warn('usePhotoOperations', 'move_to_trash_no_next_photo', 'No next photo available', { ci });
                         }
                     }
 
                     // Close display if no photos left
                     if (newAllPhotos.length === 0 && closePhotoDisplay) {
+                        logger.info('usePhotoOperations', 'move_to_trash_closing_display', 'No photos left, closing display');
                         closePhotoDisplay();
                     }
                 }
