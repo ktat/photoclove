@@ -2,30 +2,37 @@ use crate::entity::trash;
 use crate::value::file;
 use std::{fs, path};
 
-pub fn move_to_trash(file: file::File, trash: trash::Trash) {
+pub fn move_to_trash(file: file::File, trash: trash::Trash) -> Result<(), std::io::Error> {
     let trash_path = path::Path::new(&trash.dir.path);
     let target_file = path::Path::new(&file.path);
-    let parent_path = target_file.parent().unwrap().strip_prefix("/").unwrap();
-    print!("pp {:?}", parent_path);
-    let target_trash_dir = trash_path.join(parent_path);
-    print!("tp {:?}", target_trash_dir);
 
-    // TODO: check directory exists.
-    fs::create_dir_all(target_trash_dir.clone());
+    // Check if source file exists
+    if !target_file.exists() {
+        log::warn!(target: "file_service", "move_to_trash_file_not_found; path={:?}; status=skipping_file_operation", target_file);
+        // File doesn't exist, but we still want to remove it from DB
+        // Return Ok to allow database cleanup to proceed
+        return Ok(());
+    }
+
+    let parent_path = target_file.parent().unwrap().strip_prefix("/").unwrap();
+    log::debug!(target: "file_service", "move_to_trash_path_info; parent_path={:?}", parent_path);
+    let target_trash_dir = trash_path.join(parent_path);
+    log::debug!(target: "file_service", "move_to_trash_path_info; trash_dir={:?}", target_trash_dir);
+
+    // Create trash directory structure
+    fs::create_dir_all(target_trash_dir.clone())?;
 
     let target_path = target_trash_dir.join(target_file.file_name().unwrap());
     log::info!(target: "file_service", "move_to_trash; source={:?}; destination={:?}", target_file, target_path);
-    match fs::copy(target_file, target_path) {
-        Ok(_) => match fs::remove_file(target_file) {
-            Ok(_) => (),
-            Err(err) => {
-                log::error!(target: "file_service", "move_to_trash_error; operation=remove_after_copy; error={:?}", err);
-            }
-        },
-        Err(err) => {
-            log::error!(target: "file_service", "move_to_trash_error; operation=copy_to_trash; error={:?}", err);
-        }
-    };
+
+    // Copy to trash
+    fs::copy(target_file, target_path)?;
+
+    // Remove original file
+    fs::remove_file(target_file)?;
+
+    log::info!(target: "file_service", "move_to_trash_success; status=completed");
+    Ok(())
 }
 
 pub fn restore_from_trash(file: file::File, trash: trash::Trash, library_path: String) -> Result<(), std::io::Error> {
