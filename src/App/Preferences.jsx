@@ -9,7 +9,7 @@ import './Preferences.css';
 
 
 function Preferences(props) {
-    const [config, setConfig] = useState({ 
+    const [config, setConfig] = useState({
         export_from: [],
         copy_parallel: '',
         thumbnail_parallel: '',
@@ -19,7 +19,8 @@ function Preferences(props) {
         max_photos_per_fetch: '',
         use_count: 0,
         logging_enabled: false,
-        logging_level: 'info'
+        logging_level: 'info',
+        use_exif_thumbnail: false
     });
     const [additionalExportFrom, setAdditionalExportFrom] = useState(0);
     const [configLoaded, setConfigLoaded] = useState(false);
@@ -216,7 +217,24 @@ function Preferences(props) {
                     </select>
                 </div>
                 <div className="row2"></div>
-                
+
+                {/* EXIF Thumbnail Option */}
+                <div className="row0">
+                    <input
+                        type="checkbox"
+                        id="use-exif-thumbnail-check"
+                        checked={config.use_exif_thumbnail || false}
+                        onChange={(e) => {
+                            config.use_exif_thumbnail = e.target.checked;
+                            setNewConfig(config);
+                        }}
+                    />
+                    <label className="checkbox checkbox-normal" htmlFor="use-exif-thumbnail-check">
+                        Use EXIF thumbnails when available (faster import)
+                    </label>
+                </div>
+                <div className="row2"></div>
+
                 {/* Tag Management Section */}
                 <div className="row0">Tag Management:</div>
                 <div className="row0" style={{ gridColumn: '1 / -1', marginTop: '16px' }}>
