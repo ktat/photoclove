@@ -1194,7 +1194,7 @@ fn get_resized_image(
                                 if file.seek(SeekFrom::Start(offset as u64)).is_ok() {
                                     let mut thumbnail_data = vec![0u8; length as usize];
                                     if file.read_exact(&mut thumbnail_data).is_ok() {
-                                        // Find JPEG start marker (FFD8FF) and trim any leading data
+                                        // Find JPEG start marker (FFD8) and trim any leading data
                                         let jpeg_start = thumbnail_data.windows(2).position(|w| w[0] == 0xFF && w[1] == 0xD8);
                                         let jpeg_data_slice = if let Some(start_pos) = jpeg_start {
                                             &thumbnail_data[start_pos..]
@@ -1202,20 +1202,20 @@ fn get_resized_image(
                                             &thumbnail_data[..]
                                         };
 
-                                        // Check if JPEG has proper EOI marker (FF D9)
-                                        let has_eoi = jpeg_data_slice.len() >= 2 &&
-                                            jpeg_data_slice[jpeg_data_slice.len() - 2] == 0xFF &&
-                                            jpeg_data_slice[jpeg_data_slice.len() - 1] == 0xD9;
+                                        // Find JPEG end marker (FFD9) and trim any trailing data
+                                        let jpeg_end = jpeg_data_slice.windows(2)
+                                            .rposition(|w| w[0] == 0xFF && w[1] == 0xD9);
 
-                                        // If EOI marker is missing, append it
-                                        let jpeg_data: Vec<u8> = if !has_eoi {
+                                        let jpeg_data: Vec<u8> = if let Some(end_pos) = jpeg_end {
+                                            // EOI marker found - extract valid JPEG data including the marker
+                                            jpeg_data_slice[..end_pos + 2].to_vec()
+                                        } else {
+                                            // No EOI marker found - append it
                                             log::debug!(target: "image", "exif_thumbnail_missing_eoi; appending_marker");
                                             let mut complete_jpeg = jpeg_data_slice.to_vec();
                                             complete_jpeg.push(0xFF);
                                             complete_jpeg.push(0xD9);
                                             complete_jpeg
-                                        } else {
-                                            jpeg_data_slice.to_vec()
                                         };
 
                                         let exif_time = exif_start.elapsed();
