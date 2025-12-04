@@ -677,9 +677,13 @@ function PhotosListMini(props) {
                                                             photoPath: v.originalPath
                                                         });
 
+                                                        const importDir = (v.import_source === true && importState?.currentImportPath && importState.currentImportPath !== '')
+                                                            ? importState.currentImportPath
+                                                            : null;
                                                         invoke('get_resized_image', {
                                                             pathStr: v.originalPath,
-                                                            maxSize: 200
+                                                            maxSize: 200,
+                                                            importDirectory: importDir
                                                         })
                                                             .then(() => {
                                                                 logger.debug('PhotosListMini', 'thumbnail_generated', 'Thumbnail generated successfully', {
