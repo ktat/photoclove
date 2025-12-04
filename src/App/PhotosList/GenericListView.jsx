@@ -126,14 +126,6 @@ function GenericListView({
                         backgroundColor: 'var(--bg-elevated)',
                         transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                     }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'scale(1.05)';
-                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.boxShadow = 'none';
-                    }}
                 >
                     <div className={currentConfig.coverClass} style={{
                         width: `${iconSize}px`,
@@ -191,16 +183,6 @@ function GenericListView({
                                 backgroundColor: selectedItems.includes(item.id) ? 'var(--accent)' : 'var(--bg-elevated)',
                                 transition: 'transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease, background-color 0.2s ease',
                                 position: 'relative'
-                            }}
-                            onMouseEnter={(e) => {
-                                if (!selectedItems.includes(item.id)) {
-                                    e.currentTarget.style.transform = 'scale(1.05)';
-                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = 'scale(1)';
-                                e.currentTarget.style.boxShadow = 'none';
                             }}
                         >
                             {/* Selection Checkbox */}
