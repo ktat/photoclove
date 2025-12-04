@@ -38,6 +38,10 @@ fn default_use_exif_thumbnail() -> bool {
     false
 }
 
+fn default_google_auth_auto_reauth() -> bool {
+    false
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub repository: RepositoryConfig,
@@ -62,6 +66,8 @@ pub struct Config {
     pub logging_level: String,
     #[serde(default = "default_use_exif_thumbnail")]
     pub use_exif_thumbnail: bool,
+    #[serde(default = "default_google_auth_auto_reauth")]
+    pub google_auth_auto_reauth: bool,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryConfig {
@@ -90,6 +96,7 @@ impl Config {
         self.logging_enabled = config.logging_enabled;
         self.logging_level = config.logging_level;
         self.use_exif_thumbnail = config.use_exif_thumbnail;
+        self.google_auth_auto_reauth = config.google_auth_auto_reauth;
     }
 
     pub fn config_path() -> String {
@@ -174,6 +181,7 @@ impl Config {
             logging_enabled: default_logging_enabled(),
             logging_level: default_logging_level(),
             use_exif_thumbnail: default_use_exif_thumbnail(),
+            google_auth_auto_reauth: default_google_auth_auto_reauth(),
         }
     }
 

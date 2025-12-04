@@ -1842,6 +1842,34 @@ async fn logout_google(state: tauri::State<'_, AppState>) -> Result<(), String> 
     }
 }
 
+#[derive(serde::Serialize)]
+struct GoogleAuthStatus {
+    authenticated: bool,
+    user_email: Option<String>,
+}
+
+#[tauri::command]
+async fn get_google_auth_status(state: tauri::State<'_, AppState>) -> Result<GoogleAuthStatus, String> {
+    let logging_service = &state.logging_service;
+    let correlation_id = logging_service.generate_correlation_id();
+
+    let authenticated =
+        crate::domain_service::token_storage_service::TokenStorageService::has_stored_tokens();
+
+    log::info!(
+        target: "token_storage",
+        "get_auth_status; correlation_id={}; authenticated={}",
+        correlation_id,
+        authenticated
+    );
+
+    // TODO: Optionally fetch user email from Google UserInfo API if needed
+    Ok(GoogleAuthStatus {
+        authenticated,
+        user_email: None,
+    })
+}
+
 #[tauri::command]
 async fn move_to_trash(
     path_str: &str,
@@ -2939,6 +2967,7 @@ pub fn run() {
             upload_to_google_photos,
             store_google_tokens,
             is_google_authenticated,
+            get_google_auth_status,
             logout_google,
             #[cfg(debug_assertions)]
             get_google_token_info,

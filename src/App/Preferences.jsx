@@ -20,7 +20,8 @@ function Preferences(props) {
         use_count: 0,
         logging_enabled: false,
         logging_level: 'info',
-        use_exif_thumbnail: false
+        use_exif_thumbnail: false,
+        google_auth_auto_reauth: false
     });
     const [additionalExportFrom, setAdditionalExportFrom] = useState(0);
     const [configLoaded, setConfigLoaded] = useState(false);
@@ -231,6 +232,23 @@ function Preferences(props) {
                     />
                     <label className="checkbox checkbox-normal" htmlFor="use-exif-thumbnail-check">
                         Use EXIF thumbnails when available (faster import)
+                    </label>
+                </div>
+                <div className="row2"></div>
+
+                {/* Google Photos Auto-Reauth Option */}
+                <div className="row0">
+                    <input
+                        type="checkbox"
+                        id="google-auth-auto-reauth-check"
+                        checked={config.google_auth_auto_reauth || false}
+                        onChange={(e) => {
+                            config.google_auth_auto_reauth = e.target.checked;
+                            setNewConfig(config);
+                        }}
+                    />
+                    <label className="checkbox checkbox-normal" htmlFor="google-auth-auto-reauth-check">
+                        Automatically prompt for Google Photos re-authentication on startup
                     </label>
                 </div>
                 <div className="row2"></div>
