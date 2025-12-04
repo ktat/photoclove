@@ -1108,6 +1108,7 @@ fn clear_import_thumbnail_cache(cache_dir: &path::Path) -> Result<usize, String>
 fn get_resized_image(
     path_str: &str,
     max_size: u32,
+    import_directory: Option<&str>,
 ) -> Result<String, String> {
     use image::imageops::FilterType;
     use image::io::Reader as ImageReader;
@@ -1120,9 +1121,10 @@ fn get_resized_image(
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
     use std::io::Write;
+    use sha2::{Digest, Sha256};
 
     let start_time = Instant::now();
-    log::debug!(target: "image", "resize_request; path={}; max_size={}", path_str, max_size);
+    log::debug!(target: "image", "resize_request; path={}; max_size={}; import_directory={:?}", path_str, max_size, import_directory);
 
     // Check cache first
     let cache_dir = dirs::cache_dir()
@@ -1136,9 +1138,19 @@ fn get_resized_image(
             .map_err(|e| format!("Failed to create cache directory: {}", e))?;
     }
 
-    // Generate cache filename from path hash
+    // Generate cache filename from path hash (same algorithm as get_thumbnail_path_for_photo)
     let mut hasher = DefaultHasher::new();
     path_str.hash(&mut hasher);
+
+    // If import_directory is provided, include it in hash to avoid collisions
+    if let Some(dir) = import_directory {
+        let mut sha_hasher = Sha256::new();
+        sha_hasher.update(dir.as_bytes());
+        let dir_uuid = format!("{:x}", sha_hasher.finalize());
+        dir_uuid.hash(&mut hasher);
+        log::debug!(target: "image", "resize_with_uuid; path={}; import_directory={}; dir_uuid={}", path_str, dir, dir_uuid);
+    }
+
     let hash = hasher.finish();
     let cache_filename = format!("{:x}.jpg", hash);
     let cache_path = cache_dir.join(&cache_filename);
