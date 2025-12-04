@@ -104,7 +104,7 @@ function PhotosList(props) {
         logger.info('PhotosList', 'mode_change', 'View mode changed', { viewMode });
         // Close filter popover when mode changes
         setShowFilterPopover(false);
-    }, [viewMode, setShowFilterPopover]);
+    }, [viewMode]);
 
     // Use new search and filters hook
     const {
