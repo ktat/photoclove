@@ -411,13 +411,19 @@ function PhotosList(props) {
         sortOfPhotos
     });
 
-    // Clear all active filters
+    // Clear all active filters (mode-aware)
     const clearAllFilters = useCallback(() => {
-        setStarFilter(0);
-        setHasCommentFilter(false);
-        setHasTagFilter(false);
-        setExtensionFilter('all');
-    }, [setStarFilter, setHasCommentFilter, setHasTagFilter, setExtensionFilter]);
+        if (viewModeObj.isImportMode()) {
+            // Import mode: only clear extension filter
+            setImportExtensionFilter('all');
+        } else {
+            // Normal mode: clear all filters
+            setStarFilter(0);
+            setHasCommentFilter(false);
+            setHasTagFilter(false);
+            setExtensionFilter('all');
+        }
+    }, [viewModeObj, setStarFilter, setHasCommentFilter, setHasTagFilter, setExtensionFilter, setImportExtensionFilter]);
 
 
     // Frontend filtering function wrapper
@@ -1709,16 +1715,11 @@ function PhotosList(props) {
                                             onInfiniteScroll={handleInfiniteScroll}
                                             isLimitedByConfig={isLimitedByConfig}
                                             configLimit={configLimit}
-                                            starFilter={starFilter}
-                                            hasCommentFilter={hasCommentFilter}
-                                            hasTagFilter={hasTagFilter}
-                                            extensionFilter={extensionFilter}
-                                            onClearFilters={() => {
-                                                setStarFilter(0);
-                                                setHasCommentFilter(false);
-                                                setHasTagFilter(false);
-                                                setExtensionFilter('all');
-                                            }}
+                                            starFilter={viewModeObj.isImportMode() ? 0 : starFilter}
+                                            hasCommentFilter={viewModeObj.isImportMode() ? false : hasCommentFilter}
+                                            hasTagFilter={viewModeObj.isImportMode() ? false : hasTagFilter}
+                                            extensionFilter={viewModeObj.isImportMode() ? importExtensionFilter : extensionFilter}
+                                            onClearFilters={clearAllFilters}
                                             showSideMenu={showSideMenu}
                                             importState={importState}
                                             setShowSideMenu={setShowSideMenu}
