@@ -34,6 +34,10 @@ fn default_logging_level() -> String {
     }
 }
 
+fn default_use_exif_thumbnail() -> bool {
+    false
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub repository: RepositoryConfig,
@@ -56,6 +60,8 @@ pub struct Config {
     pub logging_enabled: bool,
     #[serde(default = "default_logging_level")]
     pub logging_level: String,
+    #[serde(default = "default_use_exif_thumbnail")]
+    pub use_exif_thumbnail: bool,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryConfig {
@@ -83,6 +89,7 @@ impl Config {
         self.max_photos_per_fetch = config.max_photos_per_fetch;
         self.logging_enabled = config.logging_enabled;
         self.logging_level = config.logging_level;
+        self.use_exif_thumbnail = config.use_exif_thumbnail;
     }
 
     pub fn config_path() -> String {
@@ -166,6 +173,7 @@ impl Config {
             max_photos_per_fetch: 1000,
             logging_enabled: default_logging_enabled(),
             logging_level: default_logging_level(),
+            use_exif_thumbnail: default_use_exif_thumbnail(),
         }
     }
 

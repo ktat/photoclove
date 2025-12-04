@@ -1109,6 +1109,7 @@ fn get_resized_image(
     path_str: &str,
     max_size: u32,
     import_directory: Option<&str>,
+    state: tauri::State<AppState>,
 ) -> Result<String, String> {
     use image::imageops::FilterType;
     use image::io::Reader as ImageReader;
@@ -1177,8 +1178,10 @@ fn get_resized_image(
     log::debug!(target: "image", "cache_miss; generating_thumbnail");
 
     // First, try to extract EXIF embedded thumbnail using kamadak-exif (much faster!)
+    // Only if use_exif_thumbnail config is enabled
     let exif_start = Instant::now();
-    if let Ok(file) = File::open(path_str) {
+    if state.config.use_exif_thumbnail {
+        if let Ok(file) = File::open(path_str) {
         let mut bufreader = BufReader::new(&file);
 
         if let Ok(exif_reader) = kexif::Reader::new().read_from_container(&mut bufreader) {
@@ -1245,11 +1248,16 @@ fn get_resized_image(
                 }
             }
         }
+        }
     }
 
-    // EXIF thumbnail not found, log and proceed to fallback
+    // EXIF thumbnail not found or disabled, log and proceed to fallback
     let exif_time = exif_start.elapsed();
-    log::debug!(target: "image", "no_exif_thumbnail; exif_check_ms={}; falling_back_to_resize", exif_time.as_millis());
+    if state.config.use_exif_thumbnail {
+        log::debug!(target: "image", "no_exif_thumbnail; exif_check_ms={}; falling_back_to_resize", exif_time.as_millis());
+    } else {
+        log::debug!(target: "image", "exif_thumbnail_disabled; skipping_exif_extraction");
+    }
 
     // Fallback: Load and resize the full image
     let load_start = Instant::now();
