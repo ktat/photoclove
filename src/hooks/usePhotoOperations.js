@@ -263,15 +263,19 @@ export function usePhotoOperations({
         if (indexToRemove >= newAllPhotos.length && newAllPhotos.length > 0) {
             // Last photo was removed, go to previous
             const newIndex = newAllPhotos.length - 1;
-            if (setPhotosListMiniCurrentIndex) setPhotosListMiniCurrentIndex(newIndex);
-            if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[newIndex].file.path);
-            if (setCurrentPhotoIndex) setCurrentPhotoIndex(newIndex);
+            if (newAllPhotos[newIndex]) {
+                if (setPhotosListMiniCurrentIndex) setPhotosListMiniCurrentIndex(newIndex);
+                if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[newIndex].file.path);
+                if (setCurrentPhotoIndex) setCurrentPhotoIndex(newIndex);
+            }
         } else if (newAllPhotos.length > 0) {
             // Stay at same index (now showing next photo)
             const newIndex = Math.min(indexToRemove, newAllPhotos.length - 1);
-            if (setPhotosListMiniCurrentIndex) setPhotosListMiniCurrentIndex(newIndex);
-            if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[newIndex].file.path);
-            if (setCurrentPhotoIndex) setCurrentPhotoIndex(newIndex);
+            if (newAllPhotos[newIndex]) {
+                if (setPhotosListMiniCurrentIndex) setPhotosListMiniCurrentIndex(newIndex);
+                if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[newIndex].file.path);
+                if (setCurrentPhotoIndex) setCurrentPhotoIndex(newIndex);
+            }
         } else {
             // No photos left
             if (closePhotoDisplay) closePhotoDisplay();
