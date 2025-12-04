@@ -1875,24 +1875,32 @@ async fn move_to_trash(
     path_str: &str,
     sort_value: i32,
     state: tauri::State<'_, AppState>,
-) -> Result<String, ()> {
+) -> Result<String, String> {
     let photo = photo::Photo::new(file::File::new(path_str.to_string()), Option::None);
     let date = photo.get_imported_dir_date(state.config.import_to.clone());
-    let repo_db = &state.repo_db;
     let meta_db = &state.meta_db;
-    let meta_data = match meta_db.get_photo_meta_data_in_date(date) {
-        Ok(data) => data,
-        Err(_e) => photo_meta::PhotoMetas::new(),
-    };
+
     log::info!(target: "photo", "move_to_trash; path={:?}", path_str);
+
     let trash = trash::Trash::new(state.config.trash_path.to_string());
     let file = file::File::new(path_str.to_string());
-    file_service::move_to_trash(file, trash);
 
-    // Delete from database
+    // Move file to trash (or skip if file doesn't exist)
+    match file_service::move_to_trash(file, trash) {
+        Ok(_) => {
+            log::info!(target: "photo", "move_to_trash_file_operation_success; path={:?}", path_str);
+        }
+        Err(e) => {
+            log::error!(target: "photo", "move_to_trash_file_operation_failed; path={:?}; error={:?}", path_str, e);
+            // Continue to delete from database even if file operation failed
+        }
+    }
+
+    // Delete from database (always execute, even if file doesn't exist)
     meta_db.delete_photo(&photo);
+    log::info!(target: "photo", "move_to_trash_db_delete_success; path={:?}", path_str);
 
-    return Ok(date.to_string());
+    Ok(date.to_string())
 }
 
 
