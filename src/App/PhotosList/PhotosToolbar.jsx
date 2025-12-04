@@ -20,13 +20,10 @@ function PhotosToolbar({
     hasActiveFilters,
     isImportMode
 }) {
-    // Calculate active filter count
-    const activeFilterCount = [
-        starFilter > 0, 
-        hasCommentFilter, 
-        hasTagFilter, 
-        extensionFilter !== "all"
-    ].filter(Boolean).length;
+    // Calculate active filter count (mode-aware)
+    const activeFilterCount = isImportMode
+        ? [extensionFilter !== "all"].filter(Boolean).length  // Import mode: only extension filter
+        : [starFilter > 0, hasCommentFilter, hasTagFilter, extensionFilter !== "all"].filter(Boolean).length;  // Normal mode: all filters
 
     return (
         <div className="photo-operation">
