@@ -87,7 +87,8 @@ impl SQLite {
         CREATE INDEX IF NOT EXISTS idx_album_photos_album_id ON album_photos(album_id);
         CREATE INDEX IF NOT EXISTS idx_album_photos_photo_path ON album_photos(photo_path);
         CREATE INDEX IF NOT EXISTS idx_album_photos_order ON album_photos(album_id, order_index);
-        CREATE INDEX IF NOT EXISTS idx_photo_metadata_delete_flg ON photo_metadata(delete_flg)"
+        CREATE INDEX IF NOT EXISTS idx_photo_metadata_delete_flg ON photo_metadata(delete_flg);
+        CREATE INDEX IF NOT EXISTS idx_photo_date_delete_flg ON photo_metadata(photo_date, delete_flg)"
     }
 
     pub fn new(path: String) -> SQLite {
@@ -748,9 +749,18 @@ impl SQLite {
                 "CREATE INDEX IF NOT EXISTS idx_search_composite ON photo_metadata(exif_date_time_original, star, photo_date)",
                 [],
             )?;
-            
+
             log::info!("Database index idx_search_composite created successfully");
-            
+
+            // 日付フィルター用複合インデックス（最頻出クエリ最適化）
+            // WHERE date(photo_date) = ? AND delete_flg = 0 のようなクエリを高速化
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_photo_date_delete_flg ON photo_metadata(photo_date, delete_flg)",
+                [],
+            )?;
+
+            log::info!("Database index idx_photo_date_delete_flg created successfully");
+
             log::info!("All database indexes for search optimization created successfully");
         }
         
@@ -1001,7 +1011,13 @@ impl SQLite {
                 "CREATE INDEX IF NOT EXISTS idx_photo_metadata_delete_flg ON photo_metadata(delete_flg)",
                 [],
             )?;
-            
+
+            // Create composite index for efficient date + delete_flg filtering
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_photo_date_delete_flg ON photo_metadata(photo_date, delete_flg)",
+                [],
+            )?;
+
             log::info!(target: "trash_migration", "table_migration; status=delete_flg_column_added");
         }
         
@@ -1839,22 +1855,34 @@ impl MetaInfoDB for SQLite {
         let conn = self
             .get_connection()
             .map_err(|e| format!("Failed to connect to database: {}", e))?;
-        let query_sql = "SELECT pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url, 
+        // Use range query instead of date() function to utilize index
+        // photo_date format: "YYYY-MM-DD HH:MM:SS"
+        // Range: "YYYY-MM-DD 00:00:00" <= photo_date < "YYYY-MM-DD+1 00:00:00"
+        let date_str = date.to_string();
+        let next_date = format!("{} 00:00:00",
+            chrono::NaiveDate::parse_from_str(&date_str, "%Y-%m-%d")
+                .map(|d| d.succ_opt().unwrap_or(d))
+                .unwrap_or_else(|_| chrono::NaiveDate::from_ymd_opt(2099, 12, 31).unwrap())
+                .format("%Y-%m-%d")
+        );
+
+        let query_sql = "SELECT pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url,
                             GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags
                      FROM photo_metadata pm
                      LEFT JOIN photo_tags pt ON pm.path = pt.photo_path
                      LEFT JOIN tags t ON pt.tag_id = t.id
-                     WHERE date(pm.photo_date) = ?1 AND (pm.delete_flg = 0 OR pm.delete_flg IS NULL)
+                     WHERE pm.photo_date >= ?1 AND pm.photo_date < ?2 AND (pm.delete_flg = 0 OR pm.delete_flg IS NULL)
                      GROUP BY pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url";
-        
-        log::info!(target: "database", "get_photo_meta_data_in_date_query; query={}; date={}", query_sql, date.to_string());
-        
+
+        log::info!(target: "database", "get_photo_meta_data_in_date_query; query={}; date={}; next_date={}", query_sql, date_str, next_date);
+
         let mut stmt = conn
             .prepare(query_sql)
             .map_err(|e| format!("Failed to prepare statement: {}", e))?;
 
+        let date_start = format!("{} 00:00:00", date_str);
         let rows = stmt
-            .query_map(params![date.to_string()], |row| {
+            .query_map(params![date_start, next_date], |row| {
                 Ok(Self::photo_info_from_row_with_tags(
                     row.get(0)?,
                     row.get(1)?,
