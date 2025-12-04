@@ -320,8 +320,10 @@ export function usePhotoOperations({
                 } else {
                     // Not last photo - stay at same index (shows next photo)
                     const ci = currentPhotoIndex;
-                    if (setPhotosListMiniReread) setPhotosListMiniReread(!photosListMiniReread);
-                    if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[ci].file.path);
+                    if (newAllPhotos[ci]) {
+                        if (setPhotosListMiniReread) setPhotosListMiniReread(!photosListMiniReread);
+                        if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[ci].file.path);
+                    }
                 }
 
                 // Close display if no photos left
@@ -398,8 +400,10 @@ export function usePhotoOperations({
                     } else {
                         // Not last photo
                         const ci = currentPhotoIndex;
-                        if (setPhotosListMiniReread) setPhotosListMiniReread(!photosListMiniReread);
-                        if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[ci].file.path);
+                        if (newAllPhotos[ci]) {
+                            if (setPhotosListMiniReread) setPhotosListMiniReread(!photosListMiniReread);
+                            if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[ci].file.path);
+                        }
                     }
 
                     // Close display if no photos left
