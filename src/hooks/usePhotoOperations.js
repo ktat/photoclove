@@ -263,18 +263,28 @@ export function usePhotoOperations({
         if (indexToRemove >= newAllPhotos.length && newAllPhotos.length > 0) {
             // Last photo was removed, go to previous
             const newIndex = newAllPhotos.length - 1;
-            if (newAllPhotos[newIndex]) {
+            if (newAllPhotos[newIndex]?.file?.path) {
                 if (setPhotosListMiniCurrentIndex) setPhotosListMiniCurrentIndex(newIndex);
                 if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[newIndex].file.path);
                 if (setCurrentPhotoIndex) setCurrentPhotoIndex(newIndex);
+            } else {
+                logger.warn('usePhotoOperations', 'remove_photo_from_list_invalid_previous', 'Previous photo missing file.path', {
+                    newIndex,
+                    photo: newAllPhotos[newIndex]
+                });
             }
         } else if (newAllPhotos.length > 0) {
             // Stay at same index (now showing next photo)
             const newIndex = Math.min(indexToRemove, newAllPhotos.length - 1);
-            if (newAllPhotos[newIndex]) {
+            if (newAllPhotos[newIndex]?.file?.path) {
                 if (setPhotosListMiniCurrentIndex) setPhotosListMiniCurrentIndex(newIndex);
                 if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[newIndex].file.path);
                 if (setCurrentPhotoIndex) setCurrentPhotoIndex(newIndex);
+            } else {
+                logger.warn('usePhotoOperations', 'remove_photo_from_list_invalid_next', 'Next photo missing file.path', {
+                    newIndex,
+                    photo: newAllPhotos[newIndex]
+                });
             }
         } else {
             // No photos left
@@ -330,29 +340,39 @@ export function usePhotoOperations({
                     const ci = currentPhotoIndex - 1;
                     logger.debug('usePhotoOperations', 'permanent_delete_last_photo', 'Handling last photo case', {
                         ci,
-                        hasPhoto: !!newAllPhotos[ci]
+                        hasPhoto: !!newAllPhotos[ci],
+                        hasFile: !!(newAllPhotos[ci]?.file),
+                        hasPath: !!(newAllPhotos[ci]?.file?.path)
                     });
 
-                    if (newAllPhotos[ci]) {
+                    if (newAllPhotos[ci]?.file?.path) {
                         if (setPhotosListMiniCurrentIndex) setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
                         if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[ci].file.path);
                         if (setCurrentPhotoIndex) setCurrentPhotoIndex(ci);
                     } else {
-                        logger.warn('usePhotoOperations', 'permanent_delete_no_previous_photo', 'No previous photo available', { ci });
+                        logger.warn('usePhotoOperations', 'permanent_delete_no_previous_photo', 'No valid previous photo available', {
+                            ci,
+                            photo: newAllPhotos[ci]
+                        });
                     }
                 } else {
                     // Not last photo - stay at same index (shows next photo)
                     const ci = currentPhotoIndex;
                     logger.debug('usePhotoOperations', 'permanent_delete_not_last_photo', 'Handling not-last photo case', {
                         ci,
-                        hasPhoto: !!newAllPhotos[ci]
+                        hasPhoto: !!newAllPhotos[ci],
+                        hasFile: !!(newAllPhotos[ci]?.file),
+                        hasPath: !!(newAllPhotos[ci]?.file?.path)
                     });
 
-                    if (newAllPhotos[ci]) {
+                    if (newAllPhotos[ci]?.file?.path) {
                         if (setPhotosListMiniReread) setPhotosListMiniReread(!photosListMiniReread);
                         if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[ci].file.path);
                     } else {
-                        logger.warn('usePhotoOperations', 'permanent_delete_no_next_photo', 'No next photo available', { ci });
+                        logger.warn('usePhotoOperations', 'permanent_delete_no_next_photo', 'No valid next photo available', {
+                            ci,
+                            photo: newAllPhotos[ci]
+                        });
                     }
                 }
 
@@ -437,29 +457,39 @@ export function usePhotoOperations({
                         const ci = currentPhotoIndex - 1;
                         logger.debug('usePhotoOperations', 'move_to_trash_last_photo', 'Handling last photo case', {
                             ci,
-                            hasPhoto: !!newAllPhotos[ci]
+                            hasPhoto: !!newAllPhotos[ci],
+                            hasFile: !!(newAllPhotos[ci]?.file),
+                            hasPath: !!(newAllPhotos[ci]?.file?.path)
                         });
 
-                        if (newAllPhotos[ci]) {
+                        if (newAllPhotos[ci]?.file?.path) {
                             if (setPhotosListMiniCurrentIndex) setPhotosListMiniCurrentIndex(photosListMiniCurrentIndex - 1);
                             if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[ci].file.path);
                             if (setCurrentPhotoIndex) setCurrentPhotoIndex(ci);
                         } else {
-                            logger.warn('usePhotoOperations', 'move_to_trash_no_previous_photo', 'No previous photo available', { ci });
+                            logger.warn('usePhotoOperations', 'move_to_trash_no_previous_photo', 'No valid previous photo available', {
+                                ci,
+                                photo: newAllPhotos[ci]
+                            });
                         }
                     } else {
                         // Not last photo
                         const ci = currentPhotoIndex;
                         logger.debug('usePhotoOperations', 'move_to_trash_not_last_photo', 'Handling not-last photo case', {
                             ci,
-                            hasPhoto: !!newAllPhotos[ci]
+                            hasPhoto: !!newAllPhotos[ci],
+                            hasFile: !!(newAllPhotos[ci]?.file),
+                            hasPath: !!(newAllPhotos[ci]?.file?.path)
                         });
 
-                        if (newAllPhotos[ci]) {
+                        if (newAllPhotos[ci]?.file?.path) {
                             if (setPhotosListMiniReread) setPhotosListMiniReread(!photosListMiniReread);
                             if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[ci].file.path);
                         } else {
-                            logger.warn('usePhotoOperations', 'move_to_trash_no_next_photo', 'No next photo available', { ci });
+                            logger.warn('usePhotoOperations', 'move_to_trash_no_next_photo', 'No valid next photo available', {
+                                ci,
+                                photo: newAllPhotos[ci]
+                            });
                         }
                     }
 
