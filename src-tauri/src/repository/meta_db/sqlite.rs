@@ -794,12 +794,13 @@ impl SQLite {
                 [],
             )?;
             
-            // Populate from existing photo_metadata
+            // Populate from existing photo_metadata (exclude deleted photos)
             let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
             conn.execute(
                 "INSERT INTO date_summary (date, photo_count, created_at, updated_at)
                  SELECT date(photo_date) as date_only, COUNT(*) as count, ? as created_at, ? as updated_at
-                 FROM photo_metadata 
+                 FROM photo_metadata
+                 WHERE (delete_flg = 0 OR delete_flg IS NULL)
                  GROUP BY date(photo_date)",
                 params![now, now],
             )?;
@@ -3217,12 +3218,13 @@ impl SQLite {
         conn.execute("DELETE FROM date_summary", [])
             .map_err(|e| format!("Failed to clear date_summary: {}", e))?;
         
-        // Populate from photo_metadata using GROUP BY
+        // Populate from photo_metadata using GROUP BY (exclude deleted photos)
         let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
         conn.execute(
             "INSERT INTO date_summary (date, photo_count, created_at, updated_at)
              SELECT date(photo_date) as date_only, COUNT(*) as count, ? as created_at, ? as updated_at
-             FROM photo_metadata 
+             FROM photo_metadata
+             WHERE (delete_flg = 0 OR delete_flg IS NULL)
              GROUP BY date(photo_date)",
             params![now, now],
         ).map_err(|e| format!("Failed to populate date_summary: {}", e))?;
