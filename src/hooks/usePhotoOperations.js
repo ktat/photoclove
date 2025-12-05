@@ -427,9 +427,15 @@ export function usePhotoOperations({
 
                 // Update date counts
                 if (dateNum && dateNum[resultDate] > 0 && setDateNum && setDateList) {
-                    dateNum[resultDate] -= 1;
-                    setDateNum(dateNum);
+                    const newDateNum = { ...dateNum, [resultDate]: dateNum[resultDate] - 1 };
+                    setDateNum(newDateNum);
                     setDateList(dateList.concat());
+
+                    logger.debug('usePhotoOperations', 'move_to_trash_date_count_updated', 'Updated date count', {
+                        date: resultDate,
+                        oldCount: dateNum[resultDate],
+                        newCount: newDateNum[resultDate]
+                    });
                 }
 
                 // Update thumbnail list
