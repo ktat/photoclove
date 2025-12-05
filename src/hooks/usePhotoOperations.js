@@ -425,15 +425,6 @@ export function usePhotoOperations({
                     date: resultDate
                 });
 
-                // Diagnostic: Check if we have the required state for UI update
-                logger.info('usePhotoOperations', 'move_to_trash_state_check', 'Checking state availability for UI update', {
-                    hasPhotosListMiniAllPhotos: !!photosListMiniAllPhotos,
-                    photosListMiniAllPhotosLength: photosListMiniAllPhotos?.length || 0,
-                    hasSetPhotosListMiniAllPhotos: !!setPhotosListMiniAllPhotos,
-                    currentPhotoIndex,
-                    willUpdateUI: !!(photosListMiniAllPhotos && photosListMiniAllPhotos.length > 0 && setPhotosListMiniAllPhotos)
-                });
-
                 // Update date counts
                 if (dateNum && dateNum[resultDate] > 0 && setDateNum && setDateList) {
                     dateNum[resultDate] -= 1;
@@ -442,15 +433,7 @@ export function usePhotoOperations({
                 }
 
                 // Update thumbnail list
-                console.log('[DEBUG] moveToTrash UI update check:', {
-                    hasPhotosListMiniAllPhotos: !!photosListMiniAllPhotos,
-                    photosListMiniAllPhotosLength: photosListMiniAllPhotos?.length,
-                    hasSetPhotosListMiniAllPhotos: !!setPhotosListMiniAllPhotos,
-                    currentPhotoIndex,
-                    willUpdate: !!(photosListMiniAllPhotos && photosListMiniAllPhotos.length > 0 && setPhotosListMiniAllPhotos)
-                });
                 if (photosListMiniAllPhotos && photosListMiniAllPhotos.length > 0 && setPhotosListMiniAllPhotos) {
-                    console.log('[DEBUG] moveToTrash: Updating UI, removing photo at index', currentPhotoIndex);
                     const allPhotos = photosListMiniAllPhotos;
                     const newAllPhotos = [...allPhotos];
 
@@ -460,9 +443,20 @@ export function usePhotoOperations({
                     });
 
                     newAllPhotos.splice(currentPhotoIndex, 1);
-                    console.log('[DEBUG] moveToTrash: After splice, remaining photos:', newAllPhotos.length);
                     setPhotosListMiniAllPhotos(newAllPhotos);
-                    console.log('[DEBUG] moveToTrash: Called setPhotosListMiniAllPhotos with', newAllPhotos.length, 'photos');
+
+                    // Also update allPhotosForCurrentFetch (used for grid view)
+                    if (allPhotosForCurrentFetch && setAllPhotosForCurrentFetch) {
+                        const updatedAllPhotos = allPhotosForCurrentFetch.filter(
+                            photo => photo.originalPath !== photoPath
+                        );
+                        setAllPhotosForCurrentFetch(updatedAllPhotos);
+                        logger.info('usePhotoOperations', 'move_to_trash_grid_updated', 'Updated grid view photos', {
+                            beforeCount: allPhotosForCurrentFetch.length,
+                            afterCount: updatedAllPhotos.length,
+                            removedPath: photoPath
+                        });
+                    }
 
                     logger.debug('usePhotoOperations', 'move_to_trash_after_splice', 'After removing photo', {
                         currentPhotoIndex,
@@ -515,8 +509,6 @@ export function usePhotoOperations({
                         logger.info('usePhotoOperations', 'move_to_trash_closing_display', 'No photos left, closing display');
                         closePhotoDisplay();
                     }
-                } else {
-                    console.log('[DEBUG] moveToTrash: UI update SKIPPED - condition not met');
                 }
             }
         } catch (error) {
@@ -536,6 +528,8 @@ export function usePhotoOperations({
         setDateList,
         photosListMiniAllPhotos,
         setPhotosListMiniAllPhotos,
+        allPhotosForCurrentFetch,
+        setAllPhotosForCurrentFetch,
         currentPhotoIndex,
         photosListMiniCurrentIndex,
         setPhotosListMiniCurrentIndex,
