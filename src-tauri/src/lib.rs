@@ -1876,16 +1876,37 @@ async fn move_to_trash(
     sort_value: i32,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
-    let photo = photo::Photo::new(file::File::new(path_str.to_string()), Option::None);
+    log::info!(target: "photo", "move_to_trash; path={:?}", path_str);
+
+    // Early check: Does the file exist?
+    let path = std::path::Path::new(path_str);
+    let file_exists = path.exists();
+
+    // Create file object
+    // Note: File::new() will log warnings if file doesn't exist, but we handle that case
+    let file = file::File::new(path_str.to_string());
+
+    if !file_exists {
+        log::info!(target: "photo", "move_to_trash_file_already_deleted; path={:?}; status=skipping_file_operation", path_str);
+        // Still need to clean up database, so create minimal photo object
+        let photo = photo::Photo::new(file, Option::None);
+        let date = photo.get_imported_dir_date(state.config.import_to.clone());
+        let meta_db = &state.meta_db;
+
+        // Delete from database
+        meta_db.delete_photo(&photo);
+        log::info!(target: "photo", "move_to_trash_db_delete_success; path={:?}", path_str);
+
+        return Ok(date.to_string());
+    }
+
+    // File exists, proceed with normal trash operation
+    let photo = photo::Photo::new(file.clone(), Option::None);
     let date = photo.get_imported_dir_date(state.config.import_to.clone());
     let meta_db = &state.meta_db;
 
-    log::info!(target: "photo", "move_to_trash; path={:?}", path_str);
-
+    // Move file to trash
     let trash = trash::Trash::new(state.config.trash_path.to_string());
-    let file = file::File::new(path_str.to_string());
-
-    // Move file to trash (or skip if file doesn't exist)
     match file_service::move_to_trash(file, trash) {
         Ok(_) => {
             log::info!(target: "photo", "move_to_trash_file_operation_success; path={:?}", path_str);
@@ -1896,7 +1917,7 @@ async fn move_to_trash(
         }
     }
 
-    // Delete from database (always execute, even if file doesn't exist)
+    // Delete from database
     meta_db.delete_photo(&photo);
     log::info!(target: "photo", "move_to_trash_db_delete_success; path={:?}", path_str);
 
