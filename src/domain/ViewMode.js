@@ -569,23 +569,27 @@ export class ViewMode {
     }
 
     showUploadToGooglePhotos() {
-        return !this.isImportMode();
+        return !this.isImportMode() && !this.isTrashMode();
     }
 
     showDeleteFiles() {
-        return !this.isImportMode();
+        return !this.isImportMode() && !this.isTrashMode();
     }
 
     showPermanentDelete() {
-        return !this.isImportMode();
+        return this.isTrashMode();
+    }
+
+    showRestoreFromTrash() {
+        return this.isTrashMode();
     }
 
     showCreateAlbum() {
-        return !this.isImportMode();
+        return !this.isImportMode() && !this.isTrashMode();
     }
 
     showAddToAlbum() {
-        return !this.isImportMode();
+        return !this.isImportMode() && !this.isTrashMode();
     }
 
     showEditTags() {
