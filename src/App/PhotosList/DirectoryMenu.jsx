@@ -345,7 +345,11 @@ function DirectoryMenu(props) {
 
                 props.clearPhotoSelection();
                 props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} restored successfully`);
-                props.onPhotosRefresh?.(); // Refresh the trash view
+
+                // Refresh both trash view and date list
+                if (props.onPhotosRefresh) {
+                    props.onPhotosRefresh();
+                }
 
                 logger.info('DirectoryMenu', 'photos_restored', 'Photos restored from trash successfully', {
                     photoCount: count
@@ -384,7 +388,11 @@ function DirectoryMenu(props) {
 
                 props.clearPhotoSelection();
                 props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} permanently deleted`);
-                props.onPhotosRefresh?.(); // Refresh the trash view
+
+                // Refresh trash view
+                if (props.onPhotosRefresh) {
+                    props.onPhotosRefresh();
+                }
 
                 logger.info('DirectoryMenu', 'photos_permanently_deleted', 'Photos permanently deleted successfully', {
                     photoCount: count

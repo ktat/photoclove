@@ -1794,6 +1794,7 @@ function PhotosList(props) {
                                 dateNum={compatProps.dateNum}
                                 setCurrentDateNum={compatProps.setCurrentDateNum}
                                 moveToTrashCan={moveToTrashCan}
+                                onPhotosRefresh={getPhotos}
                                 setStarFilter={setStarFilter}
                                 setHasCommentFilter={setHasCommentFilter}
                                 starFilter={starFilter}
