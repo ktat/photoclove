@@ -18,24 +18,40 @@ import { logger } from '../services/LoggerService.js';
 import { VIEW_MODES } from '../constants/viewModes.js';
 
 export function usePhotoSelection(viewMode) {
-    // Separate selection state for import mode and library mode
+    // Separate selection state for different mode types
     // Import mode: photos from external sources (not yet in library)
-    // Library mode: photos in the library (date, album, tag, recent, trash, search)
+    // Trash mode: photos in trash (different operations available)
+    // Library mode: photos in the library (date, album, tag, recent, search)
     const [importSelection, setImportSelection] = useState([]);
     const [importSelectionDict, setImportSelectionDict] = useState({});
+    const [trashSelection, setTrashSelection] = useState([]);
+    const [trashSelectionDict, setTrashSelectionDict] = useState({});
     const [librarySelection, setLibrarySelection] = useState([]);
     const [librarySelectionDict, setLibrarySelectionDict] = useState({});
 
-    // Determine if current mode is import mode
+    // Determine current mode category
     const isImportMode = viewMode === VIEW_MODES.IMPORT;
+    const isTrashMode = viewMode === VIEW_MODES.TRASH;
 
     // Get current selection based on mode
-    const photoSelection = isImportMode ? importSelection : librarySelection;
-    const photoSelectionDict = isImportMode ? importSelectionDict : librarySelectionDict;
+    let photoSelection, photoSelectionDict, setPhotoSelection, setPhotoSelectionDict;
 
-    // Get setters based on mode
-    const setPhotoSelection = isImportMode ? setImportSelection : setLibrarySelection;
-    const setPhotoSelectionDict = isImportMode ? setImportSelectionDict : setLibrarySelectionDict;
+    if (isImportMode) {
+        photoSelection = importSelection;
+        photoSelectionDict = importSelectionDict;
+        setPhotoSelection = setImportSelection;
+        setPhotoSelectionDict = setImportSelectionDict;
+    } else if (isTrashMode) {
+        photoSelection = trashSelection;
+        photoSelectionDict = trashSelectionDict;
+        setPhotoSelection = setTrashSelection;
+        setPhotoSelectionDict = setTrashSelectionDict;
+    } else {
+        photoSelection = librarySelection;
+        photoSelectionDict = librarySelectionDict;
+        setPhotoSelection = setLibrarySelection;
+        setPhotoSelectionDict = setLibrarySelectionDict;
+    }
 
     /**
      * Toggle photo selection
@@ -81,7 +97,7 @@ export function usePhotoSelection(viewMode) {
 
     /**
      * Clear all selections
-     * @param {string} mode - Optional: 'import', 'library', or 'all'. Defaults to current mode.
+     * @param {string} mode - Optional: 'import', 'trash', 'library', or 'all'. Defaults to current mode.
      */
     const clearSelection = useCallback((mode = 'current') => {
         if (mode === 'all' || mode === 'import') {
@@ -90,6 +106,14 @@ export function usePhotoSelection(viewMode) {
             });
             setImportSelectionDict({});
             setImportSelection([]);
+        }
+
+        if (mode === 'all' || mode === 'trash') {
+            logger.debug('usePhotoSelection', 'clear_trash_selection', 'Clearing trash mode selections', {
+                previousCount: trashSelection.length
+            });
+            setTrashSelectionDict({});
+            setTrashSelection([]);
         }
 
         if (mode === 'all' || mode === 'library') {
@@ -101,14 +125,15 @@ export function usePhotoSelection(viewMode) {
         }
 
         if (mode === 'current') {
+            const modeType = isImportMode ? 'import' : (isTrashMode ? 'trash' : 'library');
             logger.debug('usePhotoSelection', 'clear_current_selection', 'Clearing current mode selections', {
-                mode: isImportMode ? 'import' : 'library',
+                mode: modeType,
                 previousCount: photoSelection.length
             });
             setPhotoSelectionDict({});
             setPhotoSelection([]);
         }
-    }, [photoSelection.length, importSelection.length, librarySelection.length, isImportMode]);
+    }, [photoSelection.length, importSelection.length, trashSelection.length, librarySelection.length, isImportMode, isTrashMode]);
 
     /**
      * Select all photos from a given list

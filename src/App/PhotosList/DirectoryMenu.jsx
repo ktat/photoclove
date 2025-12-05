@@ -143,6 +143,10 @@ function DirectoryMenu(props) {
             props.selectAllPhotosInDirectory?.();
         } else if (selected == "unselectAll") {
             props.clearPhotoSelection();
+        } else if (selected == "restoreFromTrash") {
+            restoreSelectedFromTrash();
+        } else if (selected == "permanentDelete") {
+            permanentDeleteSelected();
         }
         e.target.value = "";
     }
@@ -313,6 +317,85 @@ function DirectoryMenu(props) {
             });
             lockDelete = false;
             props.clearPhotoSelection()
+        }
+    }
+
+    // Trash operation functions
+    async function restoreSelectedFromTrash() {
+        if (props.photoSelection.length === 0) {
+            props.addFooterMessage('Please select photos first');
+            return;
+        }
+
+        const count = props.photoSelection.length;
+        const confirmed = await confirm(
+            `Restore ${count} photo${count > 1 ? 's' : ''} from trash to ${count > 1 ? 'their' : 'its'} original location?`,
+            "Restore from Trash"
+        );
+
+        if (confirmed) {
+            try {
+                logger.info('DirectoryMenu', 'restore_from_trash_start', 'Restoring photos from trash', {
+                    photoCount: count
+                });
+
+                for (const photoPath of props.photoSelection) {
+                    await invoke("restore_from_trash", { pathStr: photoPath });
+                }
+
+                props.clearPhotoSelection();
+                props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} restored successfully`);
+                props.onPhotosRefresh?.(); // Refresh the trash view
+
+                logger.info('DirectoryMenu', 'photos_restored', 'Photos restored from trash successfully', {
+                    photoCount: count
+                });
+            } catch (error) {
+                logger.error('DirectoryMenu', 'restore_failed', 'Failed to restore photos from trash', {
+                    photoCount: count,
+                    error: error.message
+                });
+                handleTauriError(error, 'Restore from trash');
+            }
+        }
+    }
+
+    async function permanentDeleteSelected() {
+        if (props.photoSelection.length === 0) {
+            props.addFooterMessage('Please select photos first');
+            return;
+        }
+
+        const count = props.photoSelection.length;
+        const confirmed = await confirm(
+            `⚠️ PERMANENTLY DELETE ${count} photo${count > 1 ? 's' : ''}?\n\nThis action CANNOT be undone!\n\nFiles will be completely removed from your system.`,
+            "⚠️ Permanent Delete"
+        );
+
+        if (confirmed) {
+            try {
+                logger.info('DirectoryMenu', 'permanent_delete_start', 'Permanently deleting photos', {
+                    photoCount: count
+                });
+
+                for (const photoPath of props.photoSelection) {
+                    await invoke("delete_permanently", { pathStr: photoPath });
+                }
+
+                props.clearPhotoSelection();
+                props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} permanently deleted`);
+                props.onPhotosRefresh?.(); // Refresh the trash view
+
+                logger.info('DirectoryMenu', 'photos_permanently_deleted', 'Photos permanently deleted successfully', {
+                    photoCount: count
+                });
+            } catch (error) {
+                logger.error('DirectoryMenu', 'permanent_delete_failed', 'Failed to permanently delete photos', {
+                    photoCount: count,
+                    error: error.message
+                });
+                handleTauriError(error, 'Permanently delete photos');
+            }
         }
     }
 
@@ -762,12 +845,20 @@ function DirectoryMenu(props) {
                                     </>
                                 )}
                                 
-                                {/* Standard operations (non-import modes) */}
-                                {props.viewModeObj?.shouldShowStandardOperations() && (
+                                {/* Trash mode operations */}
+                                {props.viewModeObj?.isTrashMode() && (
+                                    <>
+                                        {props.viewModeObj?.showRestoreFromTrash() && <option value="restoreFromTrash">Restore</option>}
+                                        {props.viewModeObj?.showPermanentDelete() && <option value="permanentDelete">Delete Permanently</option>}
+                                    </>
+                                )}
+
+                                {/* Standard operations (non-import, non-trash modes) */}
+                                {props.viewModeObj?.shouldShowStandardOperations() && !props.viewModeObj?.isTrashMode() && (
                                     <>
                                         {props.viewModeObj?.showUploadToGooglePhotos() && <option value="uploadToGooglePhotos">Upload to Google Photos</option>}
                                         {props.viewModeObj?.showDeleteFiles() && <option value="deleteFiles">Delete files</option>}
-                                        
+
                                         {/* Album operations (all modes) */}
                                         {props.viewModeObj?.showCreateAlbum() && <option value="createAlbum">Create Album</option>}
                                         {props.viewModeObj?.showAddToAlbum() && <option value="addToAlbum">Add to Existing Album</option>}
