@@ -39,18 +39,24 @@ This document provides API reference organized by use case for PhotoClove's back
 - **Legacy Support**: Legacy album/tag commands still supported for backward compatibility
 
 ### Photo Trash Operations
-- **Commands**: `move_to_trash`, `restore_from_trash`
+- **Commands**: `move_to_trash_batch`, `restore_from_trash_batch`, `delete_permanently_batch`
 - **Purpose**: Non-destructive photo deletion with restore capability
-- **Frontend**: `src/hooks/usePhotoOperations.js`
+- **Frontend**: `src/hooks/usePhotoOperations.js`, `src/App/PhotosList/DirectoryMenu.jsx`
   - `moveToTrash()`: Move photo to trash, update date counts and thumbnails
   - `restorePhoto()`: Restore photo from trash
   - `permanentlyDeletePhoto()`: Permanent deletion (enhanced with confirmation)
-- **Backend**: `src-tauri/src/domain_service/file_service.rs`
+  - Batch operations for efficient multi-photo deletion/restore
+- **Backend**: `src-tauri/src/lib.rs`, `src-tauri/src/domain_service/file_service.rs`
+  - `move_to_trash_batch`: Batch move with date_summary updates
+  - `restore_from_trash_batch`: Batch restore with proper date handling
+  - `delete_permanently_batch`: Permanent batch deletion
 - **Features**:
-  - Automatic date count updates
+  - Automatic date_summary updates (batched for efficiency)
   - Thumbnail list synchronization
   - Smart navigation after deletion
   - Trash mode detection (permanent delete vs move to trash)
+  - Trash-specific UI (Editor/Tags/Maintenance tabs hidden)
+  - Proper metadata retrieval for trashed photos (uses trash path)
 
 ## Feature Implementation Guides
 

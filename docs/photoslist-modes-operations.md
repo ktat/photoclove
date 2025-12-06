@@ -521,31 +521,30 @@ PhotoClove supports 11 distinct viewing modes, each with specific functionality 
 **PhotosListMini State**:
 - ✅ Single photo display
 - ✅ Navigation thumbnails
-- ✅ All tabs available
+- ❌ **Editor/Tags tabs hidden** (metadata editing disabled in trash)
 - ⚠️ **Special path handling** (uses trash_path for display)
 
 **Available Tabs in PhotosList (Grid View)**:
 - ✅ **Selection Tab** (left sidebar): Photo selection with trash-specific operations
   - ✅ Select All Photos
-  - ✅ Bulk Restore Photos
-  - ✅ Bulk Permanent Delete
+  - ✅ Bulk Restore Photos (batch operation with date_summary update)
+  - ✅ Bulk Permanent Delete (batch operation)
   - ✅ Clear Selection
+- ❌ **Maintenance Tab**: Hidden in trash mode (not applicable)
 - ❌ **Info/Editor/Tags/Album Tabs**: Not available (no single photo selected)
 
 **Available Tabs in PhotosListMini (Full-Screen View)**:
-- ✅ **Info Tab** (right sidebar): Photo metadata and rating
-  - ✅ Star rating (1-5 stars)
-  - ✅ Comment editing
-  - ✅ EXIF data viewing
+- ✅ **Info Tab** (right sidebar): Photo metadata viewing only
+  - ✅ View star rating
+  - ✅ View comments
+  - ✅ View EXIF data
   - ✅ Copy file path/photo information
-- ✅ **Editor Tab** (right sidebar): Full photo editing capabilities
-- ✅ **Tags Tab** (right sidebar): Tag assignment and management
-  - ✅ View assigned tags
-  - ✅ Add existing tags
-  - ✅ Create new tags
-  - ✅ Remove tags from photo
+  - ❌ **Editing disabled** (cannot modify metadata in trash)
+- ❌ **Editor Tab**: Hidden in trash mode (editing disabled)
+- ❌ **Tags Tab**: Hidden in trash mode (tag management disabled)
 - ❌ **Album Tab**: Not available (not in album mode)
 - ❌ **Selection Tab**: Not available (single photo focus)
+- ❌ **Maintenance Tab**: Hidden in trash mode (not applicable)
 
 **Individual Photo Operations**:
 - ✅ Restore photo
