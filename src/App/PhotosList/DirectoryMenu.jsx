@@ -633,13 +633,16 @@ function DirectoryMenu(props) {
                     </div>
                 </div>
             )}
-            <div id="tab-maintenance" className={props.tabClass['maintenance'] ? "tab-active" : "tab"}>
-                <ul>
-                    <li><a href="#" onClick={() => { createDbInDate() }}>(re)Create database of the date</a></li>
-                    <li><a href="#" onClick={() => { movePhotosToExifDate() }}>Move files according to Exif date</a></li>
-                    <li><a href="#" onClick={() => { createThumbnails() }}>Make thumbnails</a></li>
-                </ul>
-            </div>
+            {/* Maintenance tab - hidden in trash mode */}
+            {!props.viewModeObj?.isTrashMode() && (
+                <div id="tab-maintenance" className={props.tabClass['maintenance'] ? "tab-active" : "tab"}>
+                    <ul>
+                        <li><a href="#" onClick={() => { createDbInDate() }}>(re)Create database of the date</a></li>
+                        <li><a href="#" onClick={() => { movePhotosToExifDate() }}>Move files according to Exif date</a></li>
+                        <li><a href="#" onClick={() => { createThumbnails() }}>Make thumbnails</a></li>
+                    </ul>
+                </div>
+            )}
             
             {/* Directory Tab - Import Mode Only */}
             {props.viewModeObj?.shouldShowDirectoryTab() && props.importState && (
