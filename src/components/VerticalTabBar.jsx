@@ -47,8 +47,8 @@ function VerticalTabBar({
             targetTab: '#tab-selection'
         });
         
-        // Maintenance tab - only when not in search mode and not in import mode
-        if (!isSearchMode && viewMode !== VIEW_MODES.IMPORT) {
+        // Maintenance tab - only when not in search mode, not in import mode, and not in trash mode
+        if (!isSearchMode && viewMode !== VIEW_MODES.IMPORT && viewMode !== VIEW_MODES.TRASH) {
             tabs.push({
                 id: 'maintenance',
                 label: 'Maintenance',
