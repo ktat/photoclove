@@ -374,10 +374,11 @@ function DirectoryMenu(props) {
                 applyDateChanges(result.date_changes);
             }
 
-            // Remove deleted photos from current view
+            // Remove deleted photos from current view (must be before clearPhotoSelection)
+            const deletedPaths = [...props.photoSelection]; // Save selection before clearing
             if (props.allPhotosForCurrentFetch && props.setAllPhotosForCurrentFetch) {
                 const updatedPhotos = props.allPhotosForCurrentFetch.filter(
-                    photo => !props.photoSelection.includes(photo.originalPath)
+                    photo => !deletedPaths.includes(photo.originalPath)
                 );
                 props.setAllPhotosForCurrentFetch(updatedPhotos);
             }
@@ -437,10 +438,11 @@ function DirectoryMenu(props) {
                     applyDateChanges(result.date_changes);
                 }
 
-                // Remove restored photos from trash view
+                // Remove restored photos from trash view (must be before clearPhotoSelection)
+                const restoredPaths = [...props.photoSelection]; // Save selection before clearing
                 if (props.allPhotosForCurrentFetch && props.setAllPhotosForCurrentFetch) {
                     const updatedPhotos = props.allPhotosForCurrentFetch.filter(
-                        photo => !props.photoSelection.includes(photo.originalPath)
+                        photo => !restoredPaths.includes(photo.originalPath)
                     );
                     props.setAllPhotosForCurrentFetch(updatedPhotos);
                 }
@@ -490,10 +492,11 @@ function DirectoryMenu(props) {
                 const resultStr = await invoke("delete_permanently_batch", { paths: props.photoSelection });
                 const result = JSON.parse(resultStr);
 
-                // Remove deleted photos from trash view
+                // Remove deleted photos from trash view (must be before clearPhotoSelection)
+                const deletedPaths = [...props.photoSelection]; // Save selection before clearing
                 if (props.allPhotosForCurrentFetch && props.setAllPhotosForCurrentFetch) {
                     const updatedPhotos = props.allPhotosForCurrentFetch.filter(
-                        photo => !props.photoSelection.includes(photo.originalPath)
+                        photo => !deletedPaths.includes(photo.originalPath)
                     );
                     props.setAllPhotosForCurrentFetch(updatedPhotos);
                 }
