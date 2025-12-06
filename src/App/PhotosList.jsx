@@ -1822,8 +1822,9 @@ function PhotosList(props) {
                         onAlbumUpdate={handleAlbumUpdate}
                         onAlbumDelete={handleAlbumDelete}
 
-                        // Import mode flag for PhotoInfo
+                        // Mode flags for PhotoInfo/PhotoOption
                         isImportMode={viewModeObj.isImportMode()}
+                        isTrashMode={viewModeObj.isTrashMode()}
                     />
                 )}
 
