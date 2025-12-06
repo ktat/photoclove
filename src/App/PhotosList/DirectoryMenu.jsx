@@ -311,6 +311,7 @@ function DirectoryMenu(props) {
     }
 
     async function deleteFiles() {
+        console.log('[DEBUG] deleteFiles called, selection count:', props.photoSelection.length);
         if (lockDelete) return;
 
         if (props.photoSelection.length === 0) {
@@ -319,6 +320,7 @@ function DirectoryMenu(props) {
         }
 
         const count = props.photoSelection.length;
+        console.log('[DEBUG] About to show confirmation dialog for', count, 'photos');
         const confirmed = await confirm(
             `Move ${count} photo${count > 1 ? 's' : ''} to trash?`,
             "Move to Trash"
@@ -334,7 +336,9 @@ function DirectoryMenu(props) {
             });
 
             // Use batch command for efficient date_summary update
+            console.log('[DEBUG] Calling move_to_trash_batch for', props.photoSelection.length, 'photos');
             const result = await invoke("move_to_trash_batch", { paths: props.photoSelection });
+            console.log('[DEBUG] move_to_trash_batch result:', result);
 
             // Remove deleted photos from current view
             if (props.allPhotosForCurrentFetch && props.setAllPhotosForCurrentFetch) {
@@ -348,8 +352,12 @@ function DirectoryMenu(props) {
             props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} moved to trash`);
 
             // Reload current mode to refresh date list and photo counts
+            console.log('[DEBUG] Calling reloadCurrentModeData');
             if (props.reloadCurrentModeData) {
                 await props.reloadCurrentModeData();
+                console.log('[DEBUG] reloadCurrentModeData completed');
+            } else {
+                console.log('[DEBUG] reloadCurrentModeData is not available');
             }
 
             logger.info('DirectoryMenu', 'photos_moved_to_trash', 'Photos moved to trash successfully', {
@@ -369,6 +377,7 @@ function DirectoryMenu(props) {
 
     // Trash operation functions
     async function restoreSelectedFromTrash() {
+        console.log('[DEBUG] restoreSelectedFromTrash called, selection count:', props.photoSelection.length);
         if (props.photoSelection.length === 0) {
             props.addFooterMessage('Please select photos first');
             return;
@@ -387,14 +396,20 @@ function DirectoryMenu(props) {
                 });
 
                 // Use batch command for efficient date_summary update
+                console.log('[DEBUG] Calling restore_from_trash_batch for', props.photoSelection.length, 'photos');
                 const result = await invoke("restore_from_trash_batch", { paths: props.photoSelection });
+                console.log('[DEBUG] restore_from_trash_batch result:', result);
 
                 props.clearPhotoSelection();
                 props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} restored successfully`);
 
                 // Remove restored photos from trash view efficiently
+                console.log('[DEBUG] Calling updatePhotosAfterTrashOperation');
                 if (props.updatePhotosAfterTrashOperation) {
                     await props.updatePhotosAfterTrashOperation(props.photoSelection, 'restore');
+                    console.log('[DEBUG] updatePhotosAfterTrashOperation completed');
+                } else {
+                    console.log('[DEBUG] updatePhotosAfterTrashOperation is not available');
                 }
 
                 logger.info('DirectoryMenu', 'photos_restored', 'Photos restored from trash successfully', {
