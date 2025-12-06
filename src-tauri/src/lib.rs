@@ -1924,6 +1924,18 @@ async fn move_to_trash(
     Ok(date.to_string())
 }
 
+/// Parse photo date string to normalized date key (YYYY-MM-DD format)
+/// Handles both YYYY-MM-DD and YYYY/MM/DD formats
+fn parse_photo_date_to_key(photo_date: &String) -> String {
+    date::Date::try_from_string(photo_date, Some("-"))
+        .or_else(|_| date::Date::try_from_string(photo_date, Some("/")))
+        .map(|d| d.to_string())
+        .unwrap_or_else(|_| {
+            // Fallback: extract date part and normalize format
+            photo_date.replace('/', "-").split(' ').next().unwrap_or(photo_date).to_string()
+        })
+}
+
 #[tauri::command]
 async fn move_to_trash_batch(
     paths: Vec<String>,
@@ -1947,14 +1959,8 @@ async fn move_to_trash_batch(
         let photo_meta = meta_db.get_photo_meta(photo.clone());
         let photo_date = photo_meta.photo_time();
 
-        // Parse date using value object - handles both YYYY-MM-DD and YYYY/MM/DD formats
-        let date_key = date::Date::try_from_string(&photo_date, Some("-"))
-            .or_else(|_| date::Date::try_from_string(&photo_date, Some("/")))
-            .map(|d| d.to_string())
-            .unwrap_or_else(|_| {
-                // Fallback: extract date part and normalize format
-                photo_date.replace('/', "-").split(' ').next().unwrap_or(&photo_date).to_string()
-            });
+        // Parse date using helper function
+        let date_key = parse_photo_date_to_key(&photo_date);
 
         // Move file to trash
         match file_service::move_to_trash(file, trash.clone()) {
@@ -2041,14 +2047,8 @@ async fn restore_from_trash_batch(
         let photo_meta = meta_db.get_photo_meta_from_trash(photo.clone(), trash_path.clone(), library_path.clone());
         let photo_date = photo_meta.photo_time();
 
-        // Parse date using value object - handles both YYYY-MM-DD and YYYY/MM/DD formats
-        let date_key = date::Date::try_from_string(&photo_date, Some("-"))
-            .or_else(|_| date::Date::try_from_string(&photo_date, Some("/")))
-            .map(|d| d.to_string())
-            .unwrap_or_else(|_| {
-                // Fallback: extract date part and normalize format
-                photo_date.replace('/', "-").split(' ').next().unwrap_or(&photo_date).to_string()
-            });
+        // Parse date using helper function
+        let date_key = parse_photo_date_to_key(&photo_date);
 
         // Restore file from trash to library
         match file_service::restore_from_trash(file, trash.clone(), library_path.clone()) {
