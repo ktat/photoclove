@@ -311,7 +311,8 @@ export class ViewMode {
             showAlbumOperations: this.isAlbumMode(),
             showImportOperations: this.isImportMode(),
             enablePhotoNavigation: this.isPhotoViewingMode(),
-            showBulkOperations: this.isPhotoViewingMode() || this.isListMode()
+            showBulkOperations: this.isPhotoViewingMode() || this.isListMode(),
+            showEditor: !this.isTrashMode() && !this.isImportMode()
         };
     }
 

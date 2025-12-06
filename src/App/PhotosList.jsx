@@ -450,13 +450,13 @@ function PhotosList(props) {
 
     // Initialize showSideMenu based on view mode
     useEffect(() => {
-        // Hide Editor in trash mode
-        if (isTrashMode) {
+        const modeConfig = viewModeObj?.getModeConfig();
+        if (modeConfig && !modeConfig.showEditor) {
             setShowSideMenu(false);
         } else {
             setShowSideMenu(isSearchMode || viewMode === VIEW_MODES.IMPORT);
         }
-    }, [isSearchMode, viewMode, isTrashMode, setShowSideMenu]);
+    }, [isSearchMode, viewMode, viewModeObj, setShowSideMenu]);
 
     // Album loading functions
 
