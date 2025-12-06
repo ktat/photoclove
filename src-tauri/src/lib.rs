@@ -94,6 +94,15 @@ struct ExtensionInfo {
     count: u32,
 }
 
+// Batch operation result structure
+#[derive(serde::Serialize, Debug, Clone)]
+struct BatchOperationResult {
+    succeeded: usize,
+    failed: usize,
+    failed_paths: Vec<String>,
+    message: String,
+}
+
 // Search commands
 #[tauri::command]
 async fn search_photos(
@@ -1950,6 +1959,7 @@ async fn move_to_trash_batch(
     let mut date_counts: std::collections::HashMap<String, i32> = std::collections::HashMap::new();
     let mut succeeded = 0;
     let mut failed = 0;
+    let mut failed_paths = Vec::new();
 
     for path_str in paths {
         let photo = photo::Photo::new(file::File::new(path_str.clone()), Option::None);
@@ -1973,6 +1983,7 @@ async fn move_to_trash_batch(
             }
             Err(e) => {
                 failed += 1;
+                failed_paths.push(path_str.clone());
                 log::error!(target: "trash", "move_to_trash_batch; failed={}; error={}", path_str, e);
             }
         }
@@ -1991,7 +2002,16 @@ async fn move_to_trash_batch(
     }
 
     log::info!(target: "trash", "move_to_trash_batch; succeeded={}; failed={}", succeeded, failed);
-    Ok(format!("Moved {} photos to trash, {} failed", succeeded, failed))
+
+    let result = BatchOperationResult {
+        succeeded,
+        failed,
+        failed_paths,
+        message: format!("Moved {} photos to trash, {} failed", succeeded, failed),
+    };
+
+    Ok(serde_json::to_string(&result)
+        .map_err(|e| format!("Failed to serialize result: {}", e))?)
 }
 
 #[tauri::command]
@@ -2036,6 +2056,7 @@ async fn restore_from_trash_batch(
     let mut date_counts: std::collections::HashMap<String, i32> = std::collections::HashMap::new();
     let mut succeeded = 0;
     let mut failed = 0;
+    let mut failed_paths = Vec::new();
 
     for path_str in paths {
         let photo = photo::Photo::new(file::File::new(path_str.clone()), Option::None);
@@ -2061,6 +2082,7 @@ async fn restore_from_trash_batch(
             }
             Err(e) => {
                 failed += 1;
+                failed_paths.push(path_str.clone());
                 log::error!(target: "trash", "restore_from_trash_batch; failed={}; error={}", path_str, e);
             }
         }
@@ -2079,7 +2101,16 @@ async fn restore_from_trash_batch(
     }
 
     log::info!(target: "trash", "restore_from_trash_batch; succeeded={}; failed={}", succeeded, failed);
-    Ok(format!("Restored {} photos successfully, {} failed", succeeded, failed))
+
+    let result = BatchOperationResult {
+        succeeded,
+        failed,
+        failed_paths,
+        message: format!("Restored {} photos successfully, {} failed", succeeded, failed),
+    };
+
+    Ok(serde_json::to_string(&result)
+        .map_err(|e| format!("Failed to serialize result: {}", e))?)
 }
 
 #[tauri::command]
@@ -2122,6 +2153,7 @@ async fn delete_permanently_batch(
     // date_summary was already decremented when photos were moved to trash
     let mut succeeded = 0;
     let mut failed = 0;
+    let mut failed_paths = Vec::new();
 
     for path_str in paths {
         let photo = photo::Photo::new(file::File::new(path_str.clone()), Option::None);
@@ -2140,13 +2172,23 @@ async fn delete_permanently_batch(
             }
             Err(e) => {
                 failed += 1;
+                failed_paths.push(path_str.clone());
                 log::error!(target: "trash", "delete_permanently_batch; failed={}; error={}", path_str, e);
             }
         }
     }
 
     log::info!(target: "trash", "delete_permanently_batch; succeeded={}; failed={}", succeeded, failed);
-    Ok(format!("Deleted {} photos permanently, {} failed", succeeded, failed))
+
+    let result = BatchOperationResult {
+        succeeded,
+        failed,
+        failed_paths,
+        message: format!("Deleted {} photos permanently, {} failed", succeeded, failed),
+    };
+
+    Ok(serde_json::to_string(&result)
+        .map_err(|e| format!("Failed to serialize result: {}", e))?)
 }
 
 #[tauri::command]
