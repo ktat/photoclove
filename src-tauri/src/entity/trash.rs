@@ -1,4 +1,6 @@
 use crate::value::file;
+
+#[derive(Clone)]
 pub struct Trash {
     pub dir: file::Dir,
 }

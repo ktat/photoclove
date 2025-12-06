@@ -1517,14 +1517,6 @@ function PhotosList(props) {
                     afterCount: updatedPhotos.length
                 });
             }
-
-            // Update filtered photos
-            if (filteredPhotos && filteredPhotos.length > 0) {
-                const updatedFiltered = filteredPhotos.filter(
-                    p => !affectedPaths.includes(p.originalPath)
-                );
-                setFilteredPhotos(updatedFiltered);
-            }
         }
 
         // Refresh date list counts from backend
@@ -1847,8 +1839,6 @@ function PhotosList(props) {
                                 updatePhotosAfterTrashOperation={updatePhotosAfterTrashOperation}
                                 allPhotosForCurrentFetch={allPhotosForCurrentFetch}
                                 setAllPhotosForCurrentFetch={setAllPhotosForCurrentFetch}
-                                filteredPhotos={filteredPhotos}
-                                setFilteredPhotos={setFilteredPhotos}
                                 setStarFilter={setStarFilter}
                                 setHasCommentFilter={setHasCommentFilter}
                                 starFilter={starFilter}
