@@ -461,7 +461,10 @@ function PhotosListMini(props) {
                 changeStar(false);
             }
         } else if (e.keyCode === 73) { // i ... toggle show photo info
-            props.setShowSideMenu(!props.showSideMenu);
+            // Disable in trash mode (Editor not available)
+            if (!props.isTrashMode) {
+                props.setShowSideMenu(!props.showSideMenu);
+            }
         } else if (e.keyCode === 70) { // f ... favorite (select & star)
             // Disable in import mode (DB operation)
             if (!props.isImportMode) {
@@ -814,7 +817,8 @@ function PhotosListMini(props) {
                             </>
                         )}
 
-                        <tr><th>I</th><td>toggle photo info</td></tr>
+                        {/* Hide photo info toggle in trash mode */}
+                        {!props.isTrashMode && <tr><th>I</th><td>toggle photo info</td></tr>}
                         <tr><th>?</th><td>toggle showing this help</td></tr>
                     </table>
                 </div>
