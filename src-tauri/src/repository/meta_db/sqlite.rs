@@ -1911,14 +1911,18 @@ impl MetaInfoDB for SQLite {
     fn get_photo_meta(&self, photo: photo::Photo) -> photo_meta::PhotoMeta {
         let conn = match self.get_connection() {
             Ok(conn) => conn,
-            Err(_) => return photo_meta::PhotoMeta::new(photo.clone()),
+            Err(e) => {
+                return photo_meta::PhotoMeta::new(photo.clone());
+            }
         };
 
         let mut stmt = match conn
             .prepare("SELECT path, photo_date, star, comment, css_style, google_photos_url FROM photo_metadata WHERE path = ?1")
         {
             Ok(stmt) => stmt,
-            Err(_) => return photo_meta::PhotoMeta::new(photo.clone()),
+            Err(e) => {
+                return photo_meta::PhotoMeta::new(photo.clone());
+            }
         };
 
         let result = stmt.query_row(params![photo.file.path], |row| {
@@ -1940,7 +1944,51 @@ impl MetaInfoDB for SQLite {
                     photo_meta::PhotoMeta::new(photo.clone())
                 }
             }
-            Err(_) => photo_meta::PhotoMeta::new(photo.clone()),
+            Err(e) => {
+                photo_meta::PhotoMeta::new(photo.clone())
+            }
+        }
+    }
+
+    fn get_photo_meta_from_trash(&self, photo: photo::Photo, trash_path: String, library_path: String) -> photo_meta::PhotoMeta {
+        let conn = match self.get_connection() {
+            Ok(conn) => conn,
+            Err(e) => {
+                return photo_meta::PhotoMeta::new(photo.clone());
+            }
+        };
+
+        let mut stmt = match conn
+            .prepare("SELECT path, photo_date, star, comment, css_style, google_photos_url FROM photo_metadata WHERE path = ?1")
+        {
+            Ok(stmt) => stmt,
+            Err(e) => {
+                return photo_meta::PhotoMeta::new(photo.clone());
+            }
+        };
+
+        let result = stmt.query_row(params![photo.file.path], |row| {
+            Ok(Self::photo_info_from_row(
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+                row.get(3)?,
+                row.get(4)?,
+                row.get(5)?,
+            ))
+        });
+
+        match result {
+            Ok(record) => {
+                if let Some(photo_meta) = photo_meta::PhotoMeta::new_from_photo_info_from_trash(&record, &trash_path, &library_path) {
+                    photo_meta
+                } else {
+                    photo_meta::PhotoMeta::new(photo.clone())
+                }
+            }
+            Err(e) => {
+                photo_meta::PhotoMeta::new(photo.clone())
+            }
         }
     }
 

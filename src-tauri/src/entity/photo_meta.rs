@@ -116,6 +116,32 @@ impl PhotoMeta {
         });
     }
 
+    /// Create PhotoMeta from DB record for photos in trash
+    /// Uses DB info for photo date/metadata since file is in trash, not at original path
+    pub fn new_from_photo_info_from_trash(record: &meta_db::PhotoInfo, trash_path: &str, _library_path: &str) -> Option<PhotoMeta> {
+        // Photo is in trash with full path preserved
+        // Trash structure: trash_path + full_original_path
+        let original_path = &record.path;
+        let trash_file_path = format!("{}{}", trash_path.trim_end_matches('/'), original_path);
+
+
+        let f = file::File::new_if_exists(trash_file_path.clone());
+        if f.is_none() {
+            return None;
+        }
+
+        let mut photo = photo::Photo::new(f.unwrap(), Option::None);
+        photo.set_time(record.date.clone());
+        photo.set_css_style(record.css_style.clone());
+        Some(PhotoMeta {
+            photo: photo,
+            star: star::Star::new(record.star),
+            comment: comment::Comment::new(&record.comment),
+            google_photo_url: record.google_photo_url.clone(),
+            tags: record.tags.clone(),
+        })
+    }
+
     pub fn clone(&self) -> PhotoMeta {
         PhotoMeta {
             photo: self.photo.clone(),
