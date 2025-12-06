@@ -363,39 +363,61 @@ function DirectoryMenu(props) {
                 photoCount: count
             });
 
-            // Use batch command for efficient date_summary update
-            console.log('[DEBUG] Calling move_to_trash_batch for', props.photoSelection.length, 'photos');
-            const resultStr = await invoke("move_to_trash_batch", { paths: props.photoSelection });
-            const result = JSON.parse(resultStr);
-            console.log('[DEBUG] move_to_trash_batch result:', result);
+            // Backup current state for rollback on failure
+            const deletedPaths = [...props.photoSelection]; // Save before clearing
+            const photosBackup = props.allPhotosForCurrentFetch ? [...props.allPhotosForCurrentFetch] : null;
 
-            // Apply date changes locally instead of refetching
-            if (result.date_changes) {
-                applyDateChanges(result.date_changes);
-            }
-
-            // Remove deleted photos from current view (must be before clearPhotoSelection)
-            const deletedPaths = [...props.photoSelection]; // Save selection before clearing
+            // Optimistic UI update - remove deleted photos from view
             if (props.allPhotosForCurrentFetch && props.setAllPhotosForCurrentFetch) {
                 const updatedPhotos = props.allPhotosForCurrentFetch.filter(
                     photo => !deletedPaths.includes(photo.originalPath)
                 );
                 props.setAllPhotosForCurrentFetch(updatedPhotos);
             }
-
             props.clearPhotoSelection();
 
-            // Show result message with failure info if any
-            if (result.failed > 0) {
-                props.addFooterMessage(`${result.succeeded} photo${result.succeeded !== 1 ? 's' : ''} moved to trash, ${result.failed} failed`);
-            } else {
-                props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} moved to trash`);
-            }
+            try {
+                // Use batch command for efficient date_summary update
+                console.log('[DEBUG] Calling move_to_trash_batch for', deletedPaths.length, 'photos');
+                const resultStr = await invoke("move_to_trash_batch", { paths: deletedPaths });
+                const result = JSON.parse(resultStr);
+                console.log('[DEBUG] move_to_trash_batch result:', result);
 
-            logger.info('DirectoryMenu', 'photos_moved_to_trash', 'Photos moved to trash successfully', {
-                photoCount: count,
-                result
-            });
+                // Apply date changes locally instead of refetching
+                if (result.date_changes) {
+                    applyDateChanges(result.date_changes);
+                }
+
+                // Show result message with failure info if any
+                if (result.failed > 0) {
+                    props.addFooterMessage(`${result.succeeded} photo${result.succeeded !== 1 ? 's' : ''} moved to trash, ${result.failed} failed`);
+                } else {
+                    props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} moved to trash`);
+                }
+
+                logger.info('DirectoryMenu', 'photos_moved_to_trash', 'Photos moved to trash successfully', {
+                    photoCount: count,
+                    result
+                });
+            } catch (backendError) {
+                // Rollback UI changes on backend failure
+                logger.error('DirectoryMenu', 'move_to_trash_backend_failed', 'Backend operation failed, rolling back UI', {
+                    photoCount: count,
+                    error: backendError.message
+                });
+
+                if (photosBackup && props.setAllPhotosForCurrentFetch) {
+                    props.setAllPhotosForCurrentFetch(photosBackup);
+                }
+                props.addFooterMessage('Delete operation failed. Reloading...');
+
+                // Reload to ensure UI matches database state
+                if (props.reloadCurrentModeData) {
+                    await props.reloadCurrentModeData();
+                }
+
+                throw backendError; // Re-throw for outer catch
+            }
         } catch (error) {
             logger.error('DirectoryMenu', 'move_to_trash_failed', 'Failed to move photos to trash', {
                 photoCount: count,
@@ -427,37 +449,54 @@ function DirectoryMenu(props) {
                     photoCount: count
                 });
 
-                // Use batch command for efficient date_summary update
-                console.log('[DEBUG] Calling restore_from_trash_batch for', props.photoSelection.length, 'photos');
-                const resultStr = await invoke("restore_from_trash_batch", { paths: props.photoSelection });
-                const result = JSON.parse(resultStr);
-                console.log('[DEBUG] restore_from_trash_batch result:', result);
+                // Save paths before clearing selection
+                const restoredPaths = [...props.photoSelection];
 
-                // Apply date changes locally instead of refetching
-                if (result.date_changes) {
-                    applyDateChanges(result.date_changes);
-                }
-
-                // Remove restored photos from trash view (keep using updatePhotosAfterTrashOperation)
-                const restoredPaths = [...props.photoSelection]; // Save selection before clearing
+                // Optimistic UI update - remove from trash view
                 props.clearPhotoSelection();
-
-                // Use the existing updatePhotosAfterTrashOperation which updates photoCollection
                 if (props.updatePhotosAfterTrashOperation) {
                     await props.updatePhotosAfterTrashOperation(restoredPaths, 'restore');
                 }
 
-                // Show result message with failure info if any
-                if (result.failed > 0) {
-                    props.addFooterMessage(`${result.succeeded} photo${result.succeeded !== 1 ? 's' : ''} restored, ${result.failed} failed`);
-                } else {
-                    props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} restored successfully`);
-                }
+                try {
+                    // Use batch command for efficient date_summary update
+                    console.log('[DEBUG] Calling restore_from_trash_batch for', restoredPaths.length, 'photos');
+                    const resultStr = await invoke("restore_from_trash_batch", { paths: restoredPaths });
+                    const result = JSON.parse(resultStr);
+                    console.log('[DEBUG] restore_from_trash_batch result:', result);
 
-                logger.info('DirectoryMenu', 'photos_restored', 'Photos restored from trash successfully', {
-                    photoCount: count,
-                    result
-                });
+                    // Apply date changes locally instead of refetching
+                    if (result.date_changes) {
+                        applyDateChanges(result.date_changes);
+                    }
+
+                    // Show result message with failure info if any
+                    if (result.failed > 0) {
+                        props.addFooterMessage(`${result.succeeded} photo${result.succeeded !== 1 ? 's' : ''} restored, ${result.failed} failed`);
+                    } else {
+                        props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} restored successfully`);
+                    }
+
+                    logger.info('DirectoryMenu', 'photos_restored', 'Photos restored from trash successfully', {
+                        photoCount: count,
+                        result
+                    });
+                } catch (backendError) {
+                    // Rollback UI changes on backend failure
+                    logger.error('DirectoryMenu', 'restore_backend_failed', 'Backend operation failed, reloading trash view', {
+                        photoCount: count,
+                        error: backendError.message
+                    });
+
+                    props.addFooterMessage('Restore operation failed. Reloading...');
+
+                    // Reload trash view to restore UI state
+                    if (props.reloadCurrentModeData) {
+                        await props.reloadCurrentModeData();
+                    }
+
+                    throw backendError; // Re-throw for outer catch
+                }
             } catch (error) {
                 logger.error('DirectoryMenu', 'restore_failed', 'Failed to restore photos from trash', {
                     photoCount: count,
@@ -486,30 +525,47 @@ function DirectoryMenu(props) {
                     photoCount: count
                 });
 
-                // Use batch command for efficient processing
-                const resultStr = await invoke("delete_permanently_batch", { paths: props.photoSelection });
-                const result = JSON.parse(resultStr);
+                // Save paths before clearing selection
+                const deletedPaths = [...props.photoSelection];
 
-                // Remove deleted photos from trash view (keep using updatePhotosAfterTrashOperation)
-                const deletedPaths = [...props.photoSelection]; // Save selection before clearing
+                // Optimistic UI update - remove from trash view
                 props.clearPhotoSelection();
-
-                // Use the existing updatePhotosAfterTrashOperation which updates photoCollection
                 if (props.updatePhotosAfterTrashOperation) {
                     await props.updatePhotosAfterTrashOperation(deletedPaths, 'permanentDelete');
                 }
 
-                // Show result message with failure info if any
-                if (result.failed > 0) {
-                    props.addFooterMessage(`${result.succeeded} photo${result.succeeded !== 1 ? 's' : ''} permanently deleted, ${result.failed} failed`);
-                } else {
-                    props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} permanently deleted`);
-                }
+                try {
+                    // Use batch command for efficient processing
+                    const resultStr = await invoke("delete_permanently_batch", { paths: deletedPaths });
+                    const result = JSON.parse(resultStr);
 
-                logger.info('DirectoryMenu', 'photos_permanently_deleted', 'Photos permanently deleted successfully', {
-                    photoCount: count,
-                    result
-                });
+                    // Show result message with failure info if any
+                    if (result.failed > 0) {
+                        props.addFooterMessage(`${result.succeeded} photo${result.succeeded !== 1 ? 's' : ''} permanently deleted, ${result.failed} failed`);
+                    } else {
+                        props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} permanently deleted`);
+                    }
+
+                    logger.info('DirectoryMenu', 'photos_permanently_deleted', 'Photos permanently deleted successfully', {
+                        photoCount: count,
+                        result
+                    });
+                } catch (backendError) {
+                    // Rollback UI changes on backend failure
+                    logger.error('DirectoryMenu', 'permanent_delete_backend_failed', 'Backend operation failed, reloading trash view', {
+                        photoCount: count,
+                        error: backendError.message
+                    });
+
+                    props.addFooterMessage('Permanent delete operation failed. Reloading...');
+
+                    // Reload trash view to restore UI state
+                    if (props.reloadCurrentModeData) {
+                        await props.reloadCurrentModeData();
+                    }
+
+                    throw backendError; // Re-throw for outer catch
+                }
             } catch (error) {
                 logger.error('DirectoryMenu', 'permanent_delete_failed', 'Failed to permanently delete photos', {
                     photoCount: count,
