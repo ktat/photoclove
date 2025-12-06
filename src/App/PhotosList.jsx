@@ -1524,15 +1524,12 @@ function PhotosList(props) {
             }
         }
 
-        // Refresh date list counts from backend
-        console.log('[DEBUG] updatePhotosAfterTrashOperation: getDatesNum available?', !!props.getDatesNum);
-        if (props.getDatesNum) {
-            console.log('[DEBUG] Calling props.getDatesNum()');
-            await props.getDatesNum();
-            console.log('[DEBUG] props.getDatesNum() completed');
-        } else {
-            console.log('[DEBUG] props.getDatesNum is not available!');
-        }
+        // Note: Date counts are now updated locally in DirectoryMenu via applyDateChanges()
+        // No need to refetch from backend
+        logger.debug('PhotosList', 'trash_operation_complete', 'Trash operation UI update complete', {
+            operation,
+            pathCount: affectedPaths.length
+        });
     }
 
     async function getPhotos(e, isForward) {
