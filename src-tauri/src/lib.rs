@@ -1924,6 +1924,65 @@ async fn move_to_trash(
     Ok(date.to_string())
 }
 
+#[tauri::command]
+async fn move_to_trash_batch(
+    paths: Vec<String>,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    log::info!(target: "trash", "move_to_trash_batch; count={}", paths.len());
+
+    let meta_db = &state.meta_db;
+    let trash = trash::Trash::new(state.config.trash_path.to_string());
+
+    // Group photos by date for efficient date_summary update
+    let mut date_counts: std::collections::HashMap<String, i32> = std::collections::HashMap::new();
+    let mut succeeded = 0;
+    let mut failed = 0;
+
+    for path_str in paths {
+        let photo = photo::Photo::new(file::File::new(path_str.clone()), Option::None);
+        let file = file::File::new(path_str.clone());
+
+        // Get photo date before moving to trash
+        let photo_meta = meta_db.get_photo_meta(photo.clone());
+        let photo_date = photo_meta.photo_time();
+        let date_key = if let Ok(parsed) = chrono::NaiveDateTime::parse_from_str(&photo_date, "%Y-%m-%d %H:%M:%S") {
+            parsed.format("%Y-%m-%d").to_string()
+        } else {
+            photo_date.split(' ').next().unwrap_or(&photo_date).to_string()
+        };
+
+        // Move file to trash
+        match file_service::move_to_trash(file, trash.clone()) {
+            Ok(_) => {
+                // Mark as deleted in DB (set delete_flg = 1)
+                meta_db.delete_photo(&photo);
+                *date_counts.entry(date_key).or_insert(0) -= 1;
+                succeeded += 1;
+                log::debug!(target: "trash", "move_to_trash_batch; moved={}", path_str);
+            }
+            Err(e) => {
+                failed += 1;
+                log::error!(target: "trash", "move_to_trash_batch; failed={}; error={}", path_str, e);
+            }
+        }
+    }
+
+    // Batch update date_summary
+    for (date, count) in date_counts {
+        match meta_db.update_date_summary_for_date(&date, count) {
+            Ok(_) => {
+                log::info!(target: "trash", "move_to_trash_batch; date={}; count_delta={}; status=success", date, count);
+            }
+            Err(e) => {
+                log::error!(target: "trash", "move_to_trash_batch; date={}; count_delta={}; error={}; status=failed", date, count, e);
+            }
+        }
+    }
+
+    log::info!(target: "trash", "move_to_trash_batch; succeeded={}; failed={}", succeeded, failed);
+    Ok(format!("Moved {} photos to trash, {} failed", succeeded, failed))
+}
 
 #[tauri::command]
 async fn restore_from_trash(
@@ -1952,6 +2011,67 @@ async fn restore_from_trash(
 }
 
 #[tauri::command]
+async fn restore_from_trash_batch(
+    paths: Vec<String>,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    log::info!(target: "trash", "restore_from_trash_batch; count={}", paths.len());
+
+    let meta_db = &state.meta_db;
+    let trash = trash::Trash::new(state.config.trash_path.to_string());
+    let library_path = state.config.import_to.clone();
+
+    // Group photos by date for efficient date_summary update
+    let mut date_counts: std::collections::HashMap<String, i32> = std::collections::HashMap::new();
+    let mut succeeded = 0;
+    let mut failed = 0;
+
+    for path_str in paths {
+        let photo = photo::Photo::new(file::File::new(path_str.clone()), Option::None);
+        let file = file::File::new(path_str.clone());
+
+        // Get photo date before restoring
+        let photo_meta = meta_db.get_photo_meta(photo.clone());
+        let photo_date = photo_meta.photo_time();
+        let date_key = if let Ok(parsed) = chrono::NaiveDateTime::parse_from_str(&photo_date, "%Y-%m-%d %H:%M:%S") {
+            parsed.format("%Y-%m-%d").to_string()
+        } else {
+            photo_date.split(' ').next().unwrap_or(&photo_date).to_string()
+        };
+
+        // Restore file
+        match file_service::restore_from_trash(file, trash.clone(), library_path.clone()) {
+            Ok(_) => {
+                // Update database (set delete_flg = 0) without updating date_summary yet
+                meta_db.restore_photo_from_trash_no_summary(&photo);
+                *date_counts.entry(date_key).or_insert(0) += 1;
+                succeeded += 1;
+                log::debug!(target: "trash", "restore_from_trash_batch; restored={}", path_str);
+            }
+            Err(e) => {
+                failed += 1;
+                log::error!(target: "trash", "restore_from_trash_batch; failed={}; error={}", path_str, e);
+            }
+        }
+    }
+
+    // Batch update date_summary
+    for (date, count) in date_counts {
+        match meta_db.update_date_summary_for_date(&date, count) {
+            Ok(_) => {
+                log::info!(target: "trash", "restore_from_trash_batch; date={}; count_delta={}; status=success", date, count);
+            }
+            Err(e) => {
+                log::error!(target: "trash", "restore_from_trash_batch; date={}; count_delta={}; error={}; status=failed", date, count, e);
+            }
+        }
+    }
+
+    log::info!(target: "trash", "restore_from_trash_batch; succeeded={}; failed={}", succeeded, failed);
+    Ok(format!("Restored {} photos successfully, {} failed", succeeded, failed))
+}
+
+#[tauri::command]
 async fn delete_permanently(
     path_str: &str,
     state: tauri::State<'_, AppState>,
@@ -1975,6 +2095,47 @@ async fn delete_permanently(
         }
         Err(e) => Err(format!("Failed to delete file permanently: {}", e)),
     }
+}
+
+#[tauri::command]
+async fn delete_permanently_batch(
+    paths: Vec<String>,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    log::info!(target: "trash", "delete_permanently_batch; count={}", paths.len());
+
+    let meta_db = &state.meta_db;
+    let trash = trash::Trash::new(state.config.trash_path.to_string());
+
+    // Note: Permanent delete doesn't affect date_summary since photos are already marked as deleted
+    // date_summary was already decremented when photos were moved to trash
+    let mut succeeded = 0;
+    let mut failed = 0;
+
+    for path_str in paths {
+        let photo = photo::Photo::new(file::File::new(path_str.clone()), Option::None);
+        let file = file::File::new(path_str.clone());
+
+        // Remove file from trash permanently
+        match file_service::remove_from_trash_permanently(file, trash.clone()) {
+            Ok(_) => {
+                // Delete thumbnail if it exists
+                let _ = thumbnail_service::delete_thumbnail(&photo, &state.config);
+
+                // Permanently delete from database (no date_summary update needed)
+                meta_db.delete_photo_permanently_no_summary(&photo);
+                succeeded += 1;
+                log::debug!(target: "trash", "delete_permanently_batch; deleted={}", path_str);
+            }
+            Err(e) => {
+                failed += 1;
+                log::error!(target: "trash", "delete_permanently_batch; failed={}; error={}", path_str, e);
+            }
+        }
+    }
+
+    log::info!(target: "trash", "delete_permanently_batch; succeeded={}; failed={}", succeeded, failed);
+    Ok(format!("Deleted {} photos permanently, {} failed", succeeded, failed))
 }
 
 #[tauri::command]
@@ -2979,8 +3140,11 @@ pub fn run() {
             get_photos_to_import_under_directory,
             get_dates_num,
             move_to_trash,
+            move_to_trash_batch,
             restore_from_trash,
+            restore_from_trash_batch,
             delete_permanently,
+            delete_permanently_batch,
             empty_trash,
             lock,
             create_db,
