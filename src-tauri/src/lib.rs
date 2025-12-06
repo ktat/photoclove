@@ -1947,16 +1947,14 @@ async fn move_to_trash_batch(
         let photo_meta = meta_db.get_photo_meta(photo.clone());
         let photo_date = photo_meta.photo_time();
 
-        // Parse date and convert to YYYY-MM-DD format
-        let date_key = if let Ok(parsed) = chrono::NaiveDateTime::parse_from_str(&photo_date, "%Y-%m-%d %H:%M:%S") {
-            parsed.format("%Y-%m-%d").to_string()
-        } else if let Ok(parsed) = chrono::NaiveDateTime::parse_from_str(&photo_date, "%Y/%m/%d %H:%M:%S") {
-            // Handle slash format (2025/12/06 22:23:36)
-            parsed.format("%Y-%m-%d").to_string()
-        } else {
-            // Fallback: replace slashes with hyphens and extract date part
-            photo_date.replace('/', "-").split(' ').next().unwrap_or(&photo_date).to_string()
-        };
+        // Parse date using value object - handles both YYYY-MM-DD and YYYY/MM/DD formats
+        let date_key = date::Date::try_from_string(&photo_date, Some("-"))
+            .or_else(|_| date::Date::try_from_string(&photo_date, Some("/")))
+            .map(|d| d.to_string())
+            .unwrap_or_else(|_| {
+                // Fallback: extract date part and normalize format
+                photo_date.replace('/', "-").split(' ').next().unwrap_or(&photo_date).to_string()
+            });
 
         // Move file to trash
         match file_service::move_to_trash(file, trash.clone()) {
@@ -2043,16 +2041,14 @@ async fn restore_from_trash_batch(
         let photo_meta = meta_db.get_photo_meta_from_trash(photo.clone(), trash_path.clone(), library_path.clone());
         let photo_date = photo_meta.photo_time();
 
-        // Parse date and convert to YYYY-MM-DD format
-        let date_key = if let Ok(parsed) = chrono::NaiveDateTime::parse_from_str(&photo_date, "%Y-%m-%d %H:%M:%S") {
-            parsed.format("%Y-%m-%d").to_string()
-        } else if let Ok(parsed) = chrono::NaiveDateTime::parse_from_str(&photo_date, "%Y/%m/%d %H:%M:%S") {
-            // Handle slash format (2025/12/06 22:23:36)
-            parsed.format("%Y-%m-%d").to_string()
-        } else {
-            // Fallback: replace slashes with hyphens and extract date part
-            photo_date.replace('/', "-").split(' ').next().unwrap_or(&photo_date).to_string()
-        };
+        // Parse date using value object - handles both YYYY-MM-DD and YYYY/MM/DD formats
+        let date_key = date::Date::try_from_string(&photo_date, Some("-"))
+            .or_else(|_| date::Date::try_from_string(&photo_date, Some("/")))
+            .map(|d| d.to_string())
+            .unwrap_or_else(|_| {
+                // Fallback: extract date part and normalize format
+                photo_date.replace('/', "-").split(' ').next().unwrap_or(&photo_date).to_string()
+            });
 
         // Restore file from trash to library
         match file_service::restore_from_trash(file, trash.clone(), library_path.clone()) {
