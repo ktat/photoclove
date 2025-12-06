@@ -633,8 +633,8 @@ function DirectoryMenu(props) {
                     </div>
                 </div>
             )}
-            {/* Maintenance tab - hidden in trash mode */}
-            {!props.viewModeObj?.isTrashMode() && (
+            {/* Maintenance tab - hidden in trash and import modes */}
+            {!props.viewModeObj?.isTrashMode() && !props.viewModeObj?.isImportMode() && (
                 <div id="tab-maintenance" className={props.tabClass['maintenance'] ? "tab-active" : "tab"}>
                     <ul>
                         <li><a href="#" onClick={() => { createDbInDate() }}>(re)Create database of the date</a></li>

@@ -39,8 +39,8 @@ function PhotoOption(props) {
                     <span className="vertical-text">Info</span>
                 </button>
 
-                {/* Hide Editor tab in import mode */}
-                {!props.isImportMode && (
+                {/* Hide Editor tab in import and trash modes */}
+                {!props.isImportMode && !props.isTrashMode && (
                     <button
                         className={activeTab === "editor" ? "vertical-tab-button active" : "vertical-tab-button"}
                         onClick={() => handleTabClick("editor")}
@@ -50,8 +50,8 @@ function PhotoOption(props) {
                     </button>
                 )}
 
-                {/* Hide Tags tab in import mode */}
-                {!props.isImportMode && (
+                {/* Hide Tags tab in import and trash modes */}
+                {!props.isImportMode && !props.isTrashMode && (
                     <button
                         className={activeTab === "tags" ? "vertical-tab-button active" : "vertical-tab-button"}
                         onClick={() => handleTabClick("tags")}
