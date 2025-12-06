@@ -364,6 +364,7 @@ function App() {
               searchMode={showSearchPage}
               isAdvancedSearchMode={isAdvancedSearchMode}
               setShowJobQueueModal={setShowJobQueueModal}
+              getDatesNum={getDates}
             />
           </div>
         </div>
@@ -444,6 +445,7 @@ function App() {
             addFooterMessage={addFooterMessage}
             onRightMenuToggle={setRightMenuOpen}
             setShowJobQueueModal={setShowJobQueueModal}
+            getDatesNum={getDates}
           />
         </>
           :
