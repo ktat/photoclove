@@ -100,6 +100,7 @@ struct BatchOperationResult {
     succeeded: usize,
     failed: usize,
     failed_paths: Vec<String>,
+    date_changes: std::collections::HashMap<String, i32>,
     message: String,
 }
 
@@ -1990,8 +1991,8 @@ async fn move_to_trash_batch(
     }
 
     // Batch update date_summary
-    for (date, count) in date_counts {
-        match meta_db.update_date_summary_for_date(&date, count) {
+    for (date, count) in &date_counts {
+        match meta_db.update_date_summary_for_date(date, *count) {
             Ok(_) => {
                 log::info!(target: "trash", "move_to_trash_batch; date={}; count_delta={}; status=success", date, count);
             }
@@ -2007,6 +2008,7 @@ async fn move_to_trash_batch(
         succeeded,
         failed,
         failed_paths,
+        date_changes: date_counts,
         message: format!("Moved {} photos to trash, {} failed", succeeded, failed),
     };
 
@@ -2089,8 +2091,8 @@ async fn restore_from_trash_batch(
     }
 
     // Batch update date_summary
-    for (date, count) in date_counts {
-        match meta_db.update_date_summary_for_date(&date, count) {
+    for (date, count) in &date_counts {
+        match meta_db.update_date_summary_for_date(date, *count) {
             Ok(_) => {
                 log::info!(target: "trash", "restore_from_trash_batch; date={}; count_delta={}; status=success", date, count);
             }
@@ -2106,6 +2108,7 @@ async fn restore_from_trash_batch(
         succeeded,
         failed,
         failed_paths,
+        date_changes: date_counts,
         message: format!("Restored {} photos successfully, {} failed", succeeded, failed),
     };
 
@@ -2184,6 +2187,7 @@ async fn delete_permanently_batch(
         succeeded,
         failed,
         failed_paths,
+        date_changes: std::collections::HashMap::new(), // No date changes for permanent delete
         message: format!("Deleted {} photos permanently, {} failed", succeeded, failed),
     };
 
