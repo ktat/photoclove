@@ -1946,10 +1946,16 @@ async fn move_to_trash_batch(
         // Get photo date before moving to trash
         let photo_meta = meta_db.get_photo_meta(photo.clone());
         let photo_date = photo_meta.photo_time();
+
+        // Parse date and convert to YYYY-MM-DD format
         let date_key = if let Ok(parsed) = chrono::NaiveDateTime::parse_from_str(&photo_date, "%Y-%m-%d %H:%M:%S") {
             parsed.format("%Y-%m-%d").to_string()
+        } else if let Ok(parsed) = chrono::NaiveDateTime::parse_from_str(&photo_date, "%Y/%m/%d %H:%M:%S") {
+            // Handle slash format (2025/12/06 22:23:36)
+            parsed.format("%Y-%m-%d").to_string()
         } else {
-            photo_date.split(' ').next().unwrap_or(&photo_date).to_string()
+            // Fallback: replace slashes with hyphens and extract date part
+            photo_date.replace('/', "-").split(' ').next().unwrap_or(&photo_date).to_string()
         };
 
         // Move file to trash
@@ -2020,6 +2026,7 @@ async fn restore_from_trash_batch(
     let meta_db = &state.meta_db;
     let trash = trash::Trash::new(state.config.trash_path.to_string());
     let library_path = state.config.import_to.clone();
+    let trash_path = state.config.trash_path.clone();
 
     // Group photos by date for efficient date_summary update
     let mut date_counts: std::collections::HashMap<String, i32> = std::collections::HashMap::new();
@@ -2030,16 +2037,24 @@ async fn restore_from_trash_batch(
         let photo = photo::Photo::new(file::File::new(path_str.clone()), Option::None);
         let file = file::File::new(path_str.clone());
 
-        // Get photo date before restoring
-        let photo_meta = meta_db.get_photo_meta(photo.clone());
+        // IMPORTANT: Get photo date from database BEFORE restoring the file
+        // At this point, the photo is still in trash (delete_flg = 1)
+        // Use get_photo_meta_from_trash which checks file at trash location
+        let photo_meta = meta_db.get_photo_meta_from_trash(photo.clone(), trash_path.clone(), library_path.clone());
         let photo_date = photo_meta.photo_time();
+
+        // Parse date and convert to YYYY-MM-DD format
         let date_key = if let Ok(parsed) = chrono::NaiveDateTime::parse_from_str(&photo_date, "%Y-%m-%d %H:%M:%S") {
             parsed.format("%Y-%m-%d").to_string()
+        } else if let Ok(parsed) = chrono::NaiveDateTime::parse_from_str(&photo_date, "%Y/%m/%d %H:%M:%S") {
+            // Handle slash format (2025/12/06 22:23:36)
+            parsed.format("%Y-%m-%d").to_string()
         } else {
-            photo_date.split(' ').next().unwrap_or(&photo_date).to_string()
+            // Fallback: replace slashes with hyphens and extract date part
+            photo_date.replace('/', "-").split(' ').next().unwrap_or(&photo_date).to_string()
         };
 
-        // Restore file
+        // Restore file from trash to library
         match file_service::restore_from_trash(file, trash.clone(), library_path.clone()) {
             Ok(_) => {
                 // Update database (set delete_flg = 0) without updating date_summary yet

@@ -1520,8 +1520,13 @@ function PhotosList(props) {
         }
 
         // Refresh date list counts from backend
+        console.log('[DEBUG] updatePhotosAfterTrashOperation: getDatesNum available?', !!props.getDatesNum);
         if (props.getDatesNum) {
+            console.log('[DEBUG] Calling props.getDatesNum()');
             await props.getDatesNum();
+            console.log('[DEBUG] props.getDatesNum() completed');
+        } else {
+            console.log('[DEBUG] props.getDatesNum is not available!');
         }
     }
 

@@ -121,6 +121,7 @@ pub(crate) trait MetaInfoDB {
         date: date::Date,
     ) -> Result<photo_meta::PhotoMetas, String>;
     fn get_photo_meta(&self, photo: photo::Photo) -> photo_meta::PhotoMeta;
+    fn get_photo_meta_from_trash(&self, photo: photo::Photo, trash_path: String, library_path: String) -> photo_meta::PhotoMeta;
     fn save_star(&self, photo: &photo::Photo, star: star::Star);
     fn save_comment(&self, photo: &photo::Photo, comment: comment::Comment);
     fn delete_photo(&self, photo: &photo::Photo);
