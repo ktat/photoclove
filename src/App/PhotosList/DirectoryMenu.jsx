@@ -438,16 +438,14 @@ function DirectoryMenu(props) {
                     applyDateChanges(result.date_changes);
                 }
 
-                // Remove restored photos from trash view (must be before clearPhotoSelection)
+                // Remove restored photos from trash view (keep using updatePhotosAfterTrashOperation)
                 const restoredPaths = [...props.photoSelection]; // Save selection before clearing
-                if (props.allPhotosForCurrentFetch && props.setAllPhotosForCurrentFetch) {
-                    const updatedPhotos = props.allPhotosForCurrentFetch.filter(
-                        photo => !restoredPaths.includes(photo.originalPath)
-                    );
-                    props.setAllPhotosForCurrentFetch(updatedPhotos);
-                }
-
                 props.clearPhotoSelection();
+
+                // Use the existing updatePhotosAfterTrashOperation which updates photoCollection
+                if (props.updatePhotosAfterTrashOperation) {
+                    await props.updatePhotosAfterTrashOperation(restoredPaths, 'restore');
+                }
 
                 // Show result message with failure info if any
                 if (result.failed > 0) {
@@ -492,16 +490,14 @@ function DirectoryMenu(props) {
                 const resultStr = await invoke("delete_permanently_batch", { paths: props.photoSelection });
                 const result = JSON.parse(resultStr);
 
-                // Remove deleted photos from trash view (must be before clearPhotoSelection)
+                // Remove deleted photos from trash view (keep using updatePhotosAfterTrashOperation)
                 const deletedPaths = [...props.photoSelection]; // Save selection before clearing
-                if (props.allPhotosForCurrentFetch && props.setAllPhotosForCurrentFetch) {
-                    const updatedPhotos = props.allPhotosForCurrentFetch.filter(
-                        photo => !deletedPaths.includes(photo.originalPath)
-                    );
-                    props.setAllPhotosForCurrentFetch(updatedPhotos);
-                }
-
                 props.clearPhotoSelection();
+
+                // Use the existing updatePhotosAfterTrashOperation which updates photoCollection
+                if (props.updatePhotosAfterTrashOperation) {
+                    await props.updatePhotosAfterTrashOperation(deletedPaths, 'permanentDelete');
+                }
 
                 // Show result message with failure info if any
                 if (result.failed > 0) {
