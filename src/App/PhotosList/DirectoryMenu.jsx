@@ -344,14 +344,6 @@ function DirectoryMenu(props) {
                 props.setAllPhotosForCurrentFetch(updatedPhotos);
             }
 
-            // Update grid/list views
-            if (props.filteredPhotos && props.setFilteredPhotos) {
-                const updatedFiltered = props.filteredPhotos.filter(
-                    photo => !props.photoSelection.includes(photo.originalPath)
-                );
-                props.setFilteredPhotos(updatedFiltered);
-            }
-
             props.clearPhotoSelection();
             props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} moved to trash`);
 

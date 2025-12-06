@@ -2403,6 +2403,37 @@ impl MetaInfoDB for SQLite {
 }
 
 impl SQLite {
+    /// Delete photo permanently without updating date_summary (for batch operations)
+    /// Note: Permanent delete doesn't decrement date_summary because the photo was already
+    /// counted as deleted when it was moved to trash (delete_flg was set to 1)
+    pub fn delete_photo_permanently_no_summary(&self, photo: &photo::Photo) {
+        let conn = match self.get_connection() {
+            Ok(conn) => conn,
+            Err(_) => return,
+        };
+
+        // Hard delete: completely remove from database
+        let _ = conn.execute(
+            "DELETE FROM photo_metadata WHERE path = ?1",
+            params![photo.file.path],
+        );
+    }
+
+    /// Restore photo from trash without updating date_summary (for batch operations)
+    pub fn restore_photo_from_trash_no_summary(&self, photo: &photo::Photo) {
+        let conn = match self.get_connection() {
+            Ok(conn) => conn,
+            Err(_) => return,
+        };
+
+        // Restore: set delete_flg = 0
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        let _ = conn.execute(
+            "UPDATE photo_metadata SET delete_flg = 0, updated_at = ? WHERE path = ?",
+            params![now, photo.file.path],
+        );
+    }
+
     // Job Queue Methods
     pub fn create_job_unit(&self, job_unit: &crate::entity::job_queue::JobUnit) -> Result<(), String> {
         let conn = Connection::open(&self.db_path)
@@ -3260,6 +3291,40 @@ impl SQLite {
             []
         ).map_err(|e| format!("Failed to cleanup empty dates: {}", e))?;
         
+        tx.commit().map_err(|e| format!("Commit failed: {}", e))?;
+        Ok(())
+    }
+
+    pub fn update_date_summary_for_date(&self, date: &str, _delta: i32) -> Result<(), String> {
+        let conn = self.get_connection().map_err(|e| format!("Connection failed: {}", e))?;
+        let tx = conn.unchecked_transaction().map_err(|e| format!("Transaction failed: {}", e))?;
+
+        // Count actual non-deleted photos for this date
+        let actual_count: i32 = tx.query_row(
+            "SELECT COUNT(*) FROM photo_metadata
+             WHERE DATE(photo_date) = ?1
+             AND (delete_flg = 0 OR delete_flg IS NULL)",
+            params![date],
+            |row| row.get(0)
+        ).map_err(|e| format!("Failed to count photos: {}", e))?;
+
+        // Update or insert date summary with actual count
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+        if actual_count > 0 {
+            tx.execute(
+                "INSERT OR REPLACE INTO date_summary (date, photo_count, updated_at, created_at)
+                 VALUES (?1, ?2, ?3, COALESCE((SELECT created_at FROM date_summary WHERE date = ?1), ?3))",
+                params![date, actual_count, now]
+            ).map_err(|e| format!("Summary update failed: {}", e))?;
+        } else {
+            // Remove entry if no photos exist for this date
+            tx.execute(
+                "DELETE FROM date_summary WHERE date = ?1",
+                params![date]
+            ).map_err(|e| format!("Failed to cleanup empty date: {}", e))?;
+        }
+
         tx.commit().map_err(|e| format!("Commit failed: {}", e))?;
         Ok(())
     }
