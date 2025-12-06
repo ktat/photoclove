@@ -1843,6 +1843,7 @@ function PhotosList(props) {
                                 clearPhotoSelection={clearPhotoSelection}
                                 selectAllPhotoToSelection={selectAllPhotoToSelection}
                                 dateNum={compatProps.dateNum}
+                                setDateNum={updateDateNum}
                                 setCurrentDateNum={compatProps.setCurrentDateNum}
                                 moveToTrashCan={moveToTrashCan}
                                 onPhotosRefresh={getPhotos}
