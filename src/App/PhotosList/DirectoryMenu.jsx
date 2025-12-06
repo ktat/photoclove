@@ -311,12 +311,67 @@ function DirectoryMenu(props) {
     }
 
     async function deleteFiles() {
-        if (!lockDelete) {
-            props.photoSelection.map((v, i) => {
-                props.moveToTrashCan(v);
+        if (lockDelete) return;
+
+        if (props.photoSelection.length === 0) {
+            props.addFooterMessage('Please select photos first');
+            return;
+        }
+
+        const count = props.photoSelection.length;
+        const confirmed = await confirm(
+            `Move ${count} photo${count > 1 ? 's' : ''} to trash?`,
+            "Move to Trash"
+        );
+
+        if (!confirmed) return;
+
+        try {
+            lockDelete = true;
+
+            logger.info('DirectoryMenu', 'move_to_trash_batch_start', 'Moving photos to trash', {
+                photoCount: count
             });
+
+            // Use batch command for efficient date_summary update
+            const result = await invoke("move_to_trash_batch", { paths: props.photoSelection });
+
+            // Remove deleted photos from current view
+            if (props.allPhotosForCurrentFetch && props.setAllPhotosForCurrentFetch) {
+                const updatedPhotos = props.allPhotosForCurrentFetch.filter(
+                    photo => !props.photoSelection.includes(photo.originalPath)
+                );
+                props.setAllPhotosForCurrentFetch(updatedPhotos);
+            }
+
+            // Update grid/list views
+            if (props.filteredPhotos && props.setFilteredPhotos) {
+                const updatedFiltered = props.filteredPhotos.filter(
+                    photo => !props.photoSelection.includes(photo.originalPath)
+                );
+                props.setFilteredPhotos(updatedFiltered);
+            }
+
+            props.clearPhotoSelection();
+            props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} moved to trash`);
+
+            // Reload current mode to refresh date list and photo counts
+            if (props.reloadCurrentModeData) {
+                await props.reloadCurrentModeData();
+            }
+
+            logger.info('DirectoryMenu', 'photos_moved_to_trash', 'Photos moved to trash successfully', {
+                photoCount: count,
+                result
+            });
+        } catch (error) {
+            logger.error('DirectoryMenu', 'move_to_trash_failed', 'Failed to move photos to trash', {
+                photoCount: count,
+                error: error.message
+            });
+            handleTauriError(error, 'Move to trash');
+        } finally {
             lockDelete = false;
-            props.clearPhotoSelection()
         }
     }
 
@@ -339,20 +394,20 @@ function DirectoryMenu(props) {
                     photoCount: count
                 });
 
-                for (const photoPath of props.photoSelection) {
-                    await invoke("restore_from_trash", { pathStr: photoPath });
-                }
+                // Use batch command for efficient date_summary update
+                const result = await invoke("restore_from_trash_batch", { paths: props.photoSelection });
 
                 props.clearPhotoSelection();
                 props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} restored successfully`);
 
-                // Refresh both trash view and date list
-                if (props.onPhotosRefresh) {
-                    props.onPhotosRefresh();
+                // Remove restored photos from trash view efficiently
+                if (props.updatePhotosAfterTrashOperation) {
+                    await props.updatePhotosAfterTrashOperation(props.photoSelection, 'restore');
                 }
 
                 logger.info('DirectoryMenu', 'photos_restored', 'Photos restored from trash successfully', {
-                    photoCount: count
+                    photoCount: count,
+                    result
                 });
             } catch (error) {
                 logger.error('DirectoryMenu', 'restore_failed', 'Failed to restore photos from trash', {
@@ -382,20 +437,20 @@ function DirectoryMenu(props) {
                     photoCount: count
                 });
 
-                for (const photoPath of props.photoSelection) {
-                    await invoke("delete_permanently", { pathStr: photoPath });
-                }
+                // Use batch command for efficient processing
+                const result = await invoke("delete_permanently_batch", { paths: props.photoSelection });
 
                 props.clearPhotoSelection();
                 props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} permanently deleted`);
 
-                // Refresh trash view
-                if (props.onPhotosRefresh) {
-                    props.onPhotosRefresh();
+                // Remove deleted photos from trash view efficiently
+                if (props.updatePhotosAfterTrashOperation) {
+                    await props.updatePhotosAfterTrashOperation(props.photoSelection, 'permanentDelete');
                 }
 
                 logger.info('DirectoryMenu', 'photos_permanently_deleted', 'Photos permanently deleted successfully', {
-                    photoCount: count
+                    photoCount: count,
+                    result
                 });
             } catch (error) {
                 logger.error('DirectoryMenu', 'permanent_delete_failed', 'Failed to permanently delete photos', {

@@ -1485,6 +1485,54 @@ function PhotosList(props) {
         compatProps.togglePhotoDisplay(displayKey, false);
     }
 
+    // Reload current mode data (for trash, albums, tags, etc.)
+    async function reloadCurrentModeData() {
+        const loader = modeLoaders[viewMode];
+        if (loader) {
+            await loader();
+        }
+        // Also refresh date list if needed
+        if (props.getDatesNum) {
+            await props.getDatesNum();
+        }
+    }
+
+    // Efficient state update after trash operations (restore/delete)
+    async function updatePhotosAfterTrashOperation(affectedPaths, operation) {
+        logger.info('PhotosList', 'update_after_trash_op', 'Updating photos after trash operation', {
+            operation,
+            pathCount: affectedPaths.length
+        });
+
+        if (operation === 'restore' || operation === 'permanentDelete') {
+            // Remove from trash collection
+            if (photoCollection && photoCollection.photos) {
+                const updatedPhotos = photoCollection.photos.filter(
+                    p => !affectedPaths.includes(p.originalPath)
+                );
+                setPhotoCollection({...photoCollection, photos: updatedPhotos});
+
+                logger.debug('PhotosList', 'trash_collection_updated', 'Removed photos from trash view', {
+                    beforeCount: photoCollection.photos.length,
+                    afterCount: updatedPhotos.length
+                });
+            }
+
+            // Update filtered photos
+            if (filteredPhotos && filteredPhotos.length > 0) {
+                const updatedFiltered = filteredPhotos.filter(
+                    p => !affectedPaths.includes(p.originalPath)
+                );
+                setFilteredPhotos(updatedFiltered);
+            }
+        }
+
+        // Refresh date list counts from backend
+        if (props.getDatesNum) {
+            await props.getDatesNum();
+        }
+    }
+
     async function getPhotos(e, isForward) {
         // For paginated display, use memoized filtered data
         if (filteredPhotos.length === 0) {
@@ -1795,6 +1843,12 @@ function PhotosList(props) {
                                 setCurrentDateNum={compatProps.setCurrentDateNum}
                                 moveToTrashCan={moveToTrashCan}
                                 onPhotosRefresh={getPhotos}
+                                reloadCurrentModeData={reloadCurrentModeData}
+                                updatePhotosAfterTrashOperation={updatePhotosAfterTrashOperation}
+                                allPhotosForCurrentFetch={allPhotosForCurrentFetch}
+                                setAllPhotosForCurrentFetch={setAllPhotosForCurrentFetch}
+                                filteredPhotos={filteredPhotos}
+                                setFilteredPhotos={setFilteredPhotos}
                                 setStarFilter={setStarFilter}
                                 setHasCommentFilter={setHasCommentFilter}
                                 starFilter={starFilter}
