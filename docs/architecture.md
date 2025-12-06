@@ -239,9 +239,17 @@ The application uses a Domain-Driven Design approach with ViewMode value objects
 │  │(Value Object│ │  Service    │ │     Service         │ │
 │  │     60+     │ │  (Cache)    │ │    (Frontend)       │ │
 │  │  methods)   │ │             │ │                     │ │
+│  │ • UI Config │ │             │ │                     │ │
+│  │ • showEditor│ │             │ │                     │ │
 │  └─────────────┘ └─────────────┘ └─────────────────────┘ │
 └─────────────────────────────────────────────────────────┘
 ```
+
+**ViewMode UI Configuration** (`getModeConfig()`):
+- `showEditor`: Controls Editor/Tags visibility (false in trash/import modes)
+- `showMetadata`: Controls metadata display
+- `showTrashOperations`: Trash-specific operations
+- Centralized mode-specific UI logic following DDD principles
 
 #### Performance Optimizations
 
