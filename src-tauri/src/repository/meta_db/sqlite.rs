@@ -3740,6 +3740,9 @@ impl SQLite {
         let conn = self.get_connection()
             .map_err(|_| "Failed to connect to database".to_string())?;
 
+        log::info!(target: "albums", "get_album_photos_with_metadata; album_id={}; import_to={}; thumbnail_store={}",
+            album_id, config.import_to, config.thumbnail_store);
+
         let mut stmt = conn.prepare(
             "SELECT pm.path, pm.photo_date, pm.star, pm.comment, pm.created_at, pm.updated_at,
                     pm.google_photos_url, pm.exif_iso, pm.exif_fnumber, pm.exif_date_time,
@@ -3756,6 +3759,7 @@ impl SQLite {
         ).map_err(|e| format!("Failed to prepare query: {}", e))?;
 
         let config_clone = config.clone();
+        let mut photo_count = 0;
         let photos = stmt.query_map(params![album_id], |row| {
             let path: String = row.get("path")?;
             let _photo_date: String = row.get("photo_date")?;
@@ -3763,13 +3767,16 @@ impl SQLite {
             let comment: String = row.get("comment")?;
 
             // Create a file from the path
-            let file = file::File::new(path);
+            let file = file::File::new(path.clone());
 
             // Create photo with the file and config for thumbnail support
             let mut photo = photo::Photo::new(file, Some(config_clone.clone()));
 
             // Check if thumbnail exists and set has_thumbnail flag
             photo.set_has_thumbnail();
+
+            log::debug!(target: "albums", "album_photo_created; path={}; has_thumbnail={}",
+                path, photo.has_thumbnail);
 
             // Set the star and comment from database
             photo.star = if star > 0 { Some(star) } else { None };
@@ -3779,6 +3786,11 @@ impl SQLite {
         }).map_err(|e| format!("Failed to query album photos with metadata: {}", e))?
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| format!("Failed to collect album photos with metadata: {}", e))?;
+
+        photo_count = photos.len();
+        let thumbnail_count = photos.iter().filter(|p| p.has_thumbnail).count();
+        log::info!(target: "albums", "get_album_photos_with_metadata_complete; album_id={}; total_photos={}; photos_with_thumbnails={}",
+            album_id, photo_count, thumbnail_count);
 
         Ok(photos)
     }
