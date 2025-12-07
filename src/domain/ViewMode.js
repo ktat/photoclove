@@ -316,6 +316,15 @@ export class ViewMode {
         };
     }
 
+    /**
+     * Determine if side menu should be shown by default in this mode
+     * Side menu is shown by default in search and import modes (if editing is allowed)
+     */
+    shouldShowSideMenuByDefault() {
+        const config = this.getModeConfig();
+        return config.canEdit && (this.isSearchMode() || this.isImportMode());
+    }
+
     // Filter parameters for photo fetching
     getFilterParams(appConfig = null) {
         const baseParams = {};
