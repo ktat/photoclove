@@ -1790,6 +1790,7 @@ function PhotosList(props) {
                         changeTab={changeTab}
                         setShowSideMenu={setShowSideMenu}
                         closeRightColumn={closeRightColumn}
+                        viewModeObj={viewModeObj}
                     />
                 )}
 
