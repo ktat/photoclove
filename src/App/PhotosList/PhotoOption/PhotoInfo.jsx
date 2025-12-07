@@ -164,8 +164,8 @@ function PhotoInfo(props) {
                 </table>
             </div>
 
-            {/* Only show stars/comment forms for non-import photos */}
-            {!props.isImportMode && (
+            {/* Only show stars/comment forms for non-import and non-trash photos */}
+            {!props.isImportMode && !props.isTrashMode && (
                 <>
                     <div>
                         Stars:
@@ -193,6 +193,14 @@ function PhotoInfo(props) {
                 <div style={{ padding: "10px", color: "var(--text-secondary, #999)", fontSize: "12px", fontStyle: "italic" }}>
                     Note: Stars and comments are not available for photos in import mode.
                     Import photos to your library to add metadata.
+                </div>
+            )}
+
+            {/* Show informational message for trash mode */}
+            {props.isTrashMode && (
+                <div style={{ padding: "10px", color: "var(--text-secondary, #999)", fontSize: "12px", fontStyle: "italic" }}>
+                    Note: Stars and comments cannot be edited for photos in trash.
+                    Restore the photo to edit metadata.
                 </div>
             )}
         </div>
