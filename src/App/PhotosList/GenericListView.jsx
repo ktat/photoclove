@@ -166,7 +166,15 @@ function GenericListView({
                         {effectiveSearchTerm ? currentConfig.searchEmptyMessage : currentConfig.emptyMessage}
                     </div>
                 ) : (
-                    filteredItems.map((item) => (
+                    filteredItems.map((item) => {
+                        logger.debug('GenericListView', 'render_item', 'Rendering item', {
+                            itemId: item.id,
+                            itemName: item.name,
+                            itemType,
+                            hasCoverPhoto: !!item.coverPhoto,
+                            coverPhotoKeys: item.coverPhoto ? Object.keys(item.coverPhoto) : null
+                        });
+                        return (
                         <div
                             key={item.id}
                             className={currentConfig.tileClass}
@@ -229,17 +237,35 @@ function GenericListView({
                                     border: '1px solid var(--border)'
                                 }}>
                                     {currentConfig.showCoverImage && item.coverPhoto ? (
-                                        <img
-                                            src={convertFileSrc(
-                                                item.coverPhoto.thumbnail_path || item.coverPhoto.file?.path || ''
-                                            )}
-                                            alt={item.name}
-                                            style={{
-                                                width: '100%',
-                                                height: '100%',
-                                                objectFit: 'cover'
-                                            }}
-                                        />
+                                        (() => {
+                                            const imagePath = item.coverPhoto.thumbnail_path || item.coverPhoto.file?.path || '';
+                                            logger.debug('GenericListView', 'render_cover_photo', 'Rendering album cover', {
+                                                albumName: item.name,
+                                                hasThumbnailPath: !!item.coverPhoto.thumbnail_path,
+                                                thumbnailPath: item.coverPhoto.thumbnail_path,
+                                                hasFilePath: !!item.coverPhoto.file?.path,
+                                                filePath: item.coverPhoto.file?.path,
+                                                finalPath: imagePath
+                                            });
+                                            return (
+                                                <img
+                                                    src={convertFileSrc(imagePath)}
+                                                    alt={item.name}
+                                                    style={{
+                                                        width: '100%',
+                                                        height: '100%',
+                                                        objectFit: 'cover'
+                                                    }}
+                                                    onError={(e) => {
+                                                        logger.error('GenericListView', 'cover_image_load_error', 'Failed to load cover image', {
+                                                            albumName: item.name,
+                                                            imagePath,
+                                                            src: e.target.src
+                                                        });
+                                                    }}
+                                                />
+                                            );
+                                        })()
                                     ) : (
                                         <div style={{
                                             fontSize: `${iconSize * 0.3}px`,
@@ -266,7 +292,8 @@ function GenericListView({
                                 </div>
                             </div>
                         </div>
-                    ))
+                        );
+                    })
                 )}
             </Scrollable>
         );
