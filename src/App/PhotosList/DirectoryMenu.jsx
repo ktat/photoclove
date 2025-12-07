@@ -740,7 +740,7 @@ function DirectoryMenu(props) {
                     </div>
                 </div>
             )}
-            {/* Maintenance tab - only shown in date and recent photo modes */}
+            {/* Maintenance tab - only shown in date mode */}
             {props.viewModeObj?.shouldShowMaintenanceTab() && (
                 <div id="tab-maintenance" className={props.tabClass['maintenance'] ? "tab-active" : "tab"}>
                     <ul>
