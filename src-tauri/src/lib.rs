@@ -863,7 +863,7 @@ async fn get_photos_unified(
                 }
                 "all_albums" => {
                     log::info!(target: "get_photos", "all_albums_request; using_unified_collections=true");
-                    match meta_db.get_all_collections(Some("album")) {
+                    match meta_db.get_all_collections(Some("album"), state.config.clone()) {
                         Ok(albums) => {
                             Ok(serde_json::to_string(&albums).unwrap_or_else(|_| "[]".to_string()))
                         }
@@ -875,7 +875,7 @@ async fn get_photos_unified(
                 }
                 "all_tags" => {
                     log::info!(target: "get_photos", "all_tags_request; using_unified_collections=true");
-                    match meta_db.get_all_collections(Some("tag")) {
+                    match meta_db.get_all_collections(Some("tag"), state.config.clone()) {
                         Ok(tags) => {
                             Ok(serde_json::to_string(&tags).unwrap_or_else(|_| "[]".to_string()))
                         }
@@ -887,7 +887,7 @@ async fn get_photos_unified(
                 }
                 "all_tags_with_count" => {
                     log::info!(target: "get_photos", "all_tags_with_count_request; using_unified_collections=true");
-                    match meta_db.get_all_collections(Some("tag")) {
+                    match meta_db.get_all_collections(Some("tag"), state.config.clone()) {
                         Ok(tags) => {
                             Ok(serde_json::to_string(&tags).unwrap_or_else(|_| "[]".to_string()))
                         }
@@ -2961,11 +2961,12 @@ async fn get_all_collections(
 ) -> Result<String, String> {
     let meta_db = &state.meta_db;
     let logging_service = &state.logging_service;
+    let config = state.config.clone();
 
     let correlation_id = logging_service.generate_correlation_id();
     log::info!(target: "photo_collections", "get_all_collections_request; correlation_id={}; type={:?}", correlation_id, collection_type);
 
-    match meta_db.get_all_collections(collection_type.as_deref()) {
+    match meta_db.get_all_collections(collection_type.as_deref(), config) {
         Ok(collections) => {
             log::info!(target: "photo_collections", "get_all_collections_success; correlation_id={}; count={}", correlation_id, collections.len());
             serde_json::to_string(&collections).map_err(|e| e.to_string())

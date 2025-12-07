@@ -230,7 +230,14 @@ function GenericListView({
                                 }}>
                                     {currentConfig.showCoverImage && item.coverPhoto ? (
                                         <img
-                                            src={convertFileSrc(item.coverPhoto)}
+                                            src={convertFileSrc(
+                                                item.coverPhoto.has_thumbnail && item.coverPhoto.file?.path
+                                                    ? item.coverPhoto.file.path.replace(
+                                                        new RegExp('^' + item.coverPhoto.import_to.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+                                                        item.coverPhoto.thumbnail_store
+                                                      ).replace(/\.(?:jpe?g|JPE?G)$/i, '.jpg')
+                                                    : item.coverPhoto.file?.path || ''
+                                            )}
                                             alt={item.name}
                                             style={{
                                                 width: '100%',
