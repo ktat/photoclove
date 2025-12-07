@@ -84,14 +84,22 @@ impl Photo {
             let thumbnail_path = self.file.path.replace(&import_path, &thumbnail_store);
             let ext_regex = regex::Regex::new(r"\.(?i)jpe?g$").unwrap();
             let thumbnail_path_ext_changed = ext_regex.replace(&thumbnail_path, ".jpg").to_string();
+
+            log::debug!(target: "photo", "thumbnail_check; original_path={}; import_path={}; thumbnail_store={}; thumbnail_path={}",
+                self.file.path, import_path, thumbnail_store, thumbnail_path_ext_changed);
+
             if thumbnail_path == thumbnail_path_ext_changed {
                 // maybe movie files
                 let thumbnail_path_for_movie = format!("{}.jpg", thumbnail_path);
                 let p = std::path::Path::new(&thumbnail_path_for_movie);
                 self.has_thumbnail = p.exists();
+                log::debug!(target: "photo", "thumbnail_check_movie; thumbnail_path={}; exists={}",
+                    thumbnail_path_for_movie, self.has_thumbnail);
             } else {
                 let p = std::path::Path::new(&thumbnail_path_ext_changed);
                 self.has_thumbnail = p.exists();
+                log::debug!(target: "photo", "thumbnail_check_photo; thumbnail_path={}; exists={}",
+                    thumbnail_path_ext_changed, self.has_thumbnail);
             }
         } else {
             log::error!(target: "photo", "thumbnail_check_without_config; photo_path={:?}", self.file.path);
