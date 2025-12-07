@@ -216,6 +216,12 @@ export class ViewMode {
         return this.isTrashMode();
     }
 
+    shouldShowMaintenanceTab() {
+        // Maintenance tab should only be shown in date mode
+        // Operations like "create database of the date" are date-specific
+        return this.isDateMode();
+    }
+
     // Operations available in current mode
     getAvailableOperations() {
         const operations = {
