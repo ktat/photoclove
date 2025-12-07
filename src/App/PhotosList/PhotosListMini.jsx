@@ -803,8 +803,8 @@ function PhotosListMini(props) {
                         <tr><th>Ctrl + 0</th><td>reset zoom</td></tr>
                         <tr><th>C</th><td>toggle photo selection</td></tr>
 
-                        {/* Hide DB-related shortcuts in import mode */}
-                        {!props.isImportMode && (
+                        {/* Hide metadata shortcuts in import mode and trash mode */}
+                        {!props.isImportMode && !props.isTrashMode && (
                             <>
                                 <tr><th>S</th><td>increase star</td></tr>
                                 <tr><th>D</th><td>decrease star</td></tr>
@@ -812,6 +812,11 @@ function PhotosListMini(props) {
                                 <tr><th>Del</th><td>{isAlbumMode ? "remove from album" : "move to trash can"}</td></tr>
                                 {isAlbumMode && <tr><th>Ctrl + Del</th><td>delete file permanently</td></tr>}
                             </>
+                        )}
+
+                        {/* Trash mode specific shortcuts */}
+                        {props.isTrashMode && (
+                            <tr><th>Del</th><td>permanently delete</td></tr>
                         )}
 
                         <tr><th>I</th><td>toggle photo info</td></tr>
