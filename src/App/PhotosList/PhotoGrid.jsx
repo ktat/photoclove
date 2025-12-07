@@ -23,7 +23,8 @@ function PhotoGrid({
     onClearFilters,
     showSideMenu,
     setShowSideMenu,
-    importState
+    importState,
+    isLoading = false
 }) {
 
     // Helper function to parse CSS style string
@@ -362,17 +363,21 @@ function PhotoGrid({
                     </>
                 ) : (
                     <>
-                        <div>No Photo Found!</div>
-                        {hasActiveFilters && (
-                            <div style={{ fontSize: "12px", color: "#666", marginTop: "5px" }}>
-                                {getFilterSummary}
-                                <button
-                                    style={{ marginLeft: "10px", fontSize: "11px", padding: "2px 6px", cursor: "pointer" }}
-                                    onClick={onClearFilters}
-                                >
-                                    Clear Filters
-                                </button>
-                            </div>
+                        {!isLoading && (
+                            <>
+                                <div>No Photo Found!</div>
+                                {hasActiveFilters && (
+                                    <div style={{ fontSize: "12px", color: "#666", marginTop: "5px" }}>
+                                        {getFilterSummary}
+                                        <button
+                                            style={{ marginLeft: "10px", fontSize: "11px", padding: "2px 6px", cursor: "pointer" }}
+                                            onClick={onClearFilters}
+                                        >
+                                            Clear Filters
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </>
                 )}
