@@ -14,7 +14,33 @@ export class UnifiedPhotoCollection {
         this.name = data.name;
         this.color = data.color;
         this.description = data.description;
-        this.coverPhotoPath = data.coverPhotoPath;
+
+        // Handle both old format (coverPhotoPath string) and new format (coverPhoto object)
+        if (data.coverPhoto) {
+            // New format: Photo entity object
+            this.coverPhoto = data.coverPhoto;
+            this.coverPhotoPath = data.coverPhoto.file?.path || null;
+
+            logger.debug('UnifiedPhotoCollection', 'constructor_cover_photo', 'Processing cover photo', {
+                collectionId: this.id,
+                collectionName: this.name,
+                hasCoverPhoto: !!this.coverPhoto,
+                coverPhotoPath: this.coverPhotoPath,
+                hasThumbnailPath: !!data.coverPhoto.thumbnail_path,
+                thumbnailPath: data.coverPhoto.thumbnail_path
+            });
+        } else {
+            // Old format: direct path string (for backwards compatibility)
+            this.coverPhoto = null;
+            this.coverPhotoPath = data.coverPhotoPath || null;
+
+            logger.debug('UnifiedPhotoCollection', 'constructor_legacy_format', 'Using legacy cover photo format', {
+                collectionId: this.id,
+                collectionName: this.name,
+                coverPhotoPath: this.coverPhotoPath
+            });
+        }
+
         this.photoCount = data.photo_count || 0;
         this.settings = data.settings || {};
         this.createdAt = data.created_at;

@@ -66,19 +66,20 @@ export function usePhotoDataLoader({
     const loadAlbums = useCallback(async () => {
         try {
             logger.info('PhotosList', 'load_albums_start', 'Loading albums via unified collection service');
-            
+
             const unifiedAlbums = await unifiedCollectionService.getAlbums();
 
             const processedAlbums = unifiedAlbums.map(album => ({
                 id: album.id,
                 name: album.name,
                 description: album.description,
-                coverPhoto: album.coverPhotoPath,
+                coverPhoto: album.coverPhoto,  // Changed: use full Photo entity object, not just path
                 photoCount: album.photoCount
             }));
 
             logger.info('PhotosList', 'load_albums_complete', 'Albums loaded successfully', {
-                count: processedAlbums.length
+                count: processedAlbums.length,
+                albumsWithCoverPhotos: processedAlbums.filter(a => a.coverPhoto).length
             });
 
             updateAlbumsList(processedAlbums);
