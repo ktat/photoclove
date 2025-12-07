@@ -150,7 +150,7 @@ pub(crate) trait MetaInfoDB {
     fn add_photo_to_album(&self, album_id: i32, photo_path: &str) -> Result<(), String>;
     fn remove_photo_from_album(&self, album_id: i32, photo_path: &str) -> Result<bool, String>;
     fn get_album_photos(&self, album_id: i32) -> Result<Vec<String>, String>;
-    fn get_album_photos_with_metadata(&self, album_id: i32) -> Result<Vec<photo::Photo>, String>;
+    fn get_album_photos_with_metadata(&self, album_id: i32, config: config::Config) -> Result<Vec<photo::Photo>, String>;
     fn reorder_album_photos(&self, album_id: i32, photo_order: Vec<String>) -> Result<(), String>;
     
     // Unified PhotoCollection methods
