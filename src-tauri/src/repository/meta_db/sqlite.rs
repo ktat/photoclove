@@ -3768,6 +3768,9 @@ impl SQLite {
             // Create photo with the file and config for thumbnail support
             let mut photo = photo::Photo::new(file, Some(config_clone.clone()));
 
+            // Check if thumbnail exists and set has_thumbnail flag
+            photo.set_has_thumbnail();
+
             // Set the star and comment from database
             photo.star = if star > 0 { Some(star) } else { None };
             photo.comment = if !comment.is_empty() { Some(comment) } else { None };
