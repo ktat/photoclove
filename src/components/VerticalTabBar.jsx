@@ -13,7 +13,8 @@ function VerticalTabBar({
     tabClass,
     changeTab,
     setShowSideMenu,
-    closeRightColumn
+    closeRightColumn,
+    viewModeObj
 }) {
     // Define tab configurations based on view mode
     const getAvailableTabs = () => {
@@ -47,8 +48,8 @@ function VerticalTabBar({
             targetTab: '#tab-selection'
         });
         
-        // Maintenance tab - only when not in search mode, not in import mode, and not in trash mode
-        if (!isSearchMode && viewMode !== VIEW_MODES.IMPORT && viewMode !== VIEW_MODES.TRASH) {
+        // Maintenance tab - only in date mode
+        if (viewModeObj?.shouldShowMaintenanceTab()) {
             tabs.push({
                 id: 'maintenance',
                 label: 'Maintenance',
