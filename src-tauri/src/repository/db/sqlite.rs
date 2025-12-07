@@ -3,9 +3,9 @@ extern crate rusqlite;
 use crate::domain::photo;
 use crate::domain::photo_meta;
 use crate::repository::*;
+use crate::value::config;
 use crate::value::date;
 use crate::value::file;
-use crate::value::config;
 use async_trait::async_trait;
 use rusqlite::{params, Connection, Result};
 #[derive(Debug)]
@@ -141,18 +141,6 @@ impl SQLite {
             id int,
             photo_id varchar,
             comment text
-        );
-
-         CREATE TABLE photo_tags (
-            id int,
-            photo_id varchar,
-            tag_id int,
-            created_at datetime
-        );
-
-         CREATE TABLE tags (
-            id int,
-            name varchar,
         );
         "
         .to_string()
