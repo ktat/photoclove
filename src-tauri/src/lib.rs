@@ -580,22 +580,26 @@ async fn get_photos_unified(
                         log::error!(target: "get_photos", "album_prepare_failed; error={}", e);
                     })?;
 
+                    let config_for_closure = state.config.clone();
                     let photos = stmt.query_map(params![album_id], |row| {
                         let path: String = row.get("path")?;
                         let _photo_date: String = row.get("photo_date")?;
                         let star: i32 = row.get("star")?;
                         let comment: String = row.get("comment")?;
-                        
+
                         // Create a file from the path
                         let file = file::File::new(path);
-                        
-                        // Create photo with the file and no config
-                        let mut photo = photo::Photo::new(file, None);
-                        
+
+                        // Create photo with the file and config for thumbnail support
+                        let mut photo = photo::Photo::new(file, Some(config_for_closure.clone()));
+
+                        // Check if thumbnail exists and set has_thumbnail flag
+                        photo.set_has_thumbnail();
+
                         // Set the star and comment from database
                         photo.star = if star > 0 { Some(star) } else { None };
                         photo.comment = if !comment.is_empty() { Some(comment) } else { None };
-                        
+
                         Ok(photo)
                     }).map_err(|e| {
                         log::error!(target: "get_photos", "album_query_failed; error={}", e);
