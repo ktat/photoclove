@@ -22,8 +22,17 @@ function PhotoInfo(props) {
         } else if (props.showSideMenu) {
             await invoke("get_photo_info", { pathStr: path }).then((r) => {
                 let data = JSON.parse(r);
+
+                logger.debug('PhotoInfo', 'get_photo_info_response', 'Received photo info', {
+                    is_trashed: data.is_trashed,
+                    has_meta: !!data.meta,
+                    has_exif: !!data.exif,
+                    original_path: data.original_path,
+                    current_path: data.current_path
+                });
+
                 if (data.meta) {
-                    if (data.meta.star.data > 0) {
+                    if (data.meta.star && data.meta.star.data > 0) {
                         const newStar = [false, false, false, false, false];
                         for (let i = 0; i < data.meta.star.data; i++) {
                             newStar[i] = true;
@@ -108,16 +117,29 @@ function PhotoInfo(props) {
                         <tr><th>File Name</th>
                             <td>
                                 <a href="#" onClick={() => {
-                                    writeText(props.currentPhotoPath);
+                                    // Copy trash path if trashed, otherwise original path
+                                    const pathToCopy = photoInfo.is_trashed
+                                        ? photoInfo.current_path
+                                        : props.currentPhotoPath;
+                                    writeText(pathToCopy);
                                     props.addFooterMessage("clipboard", "Copy file path to clipboard", false, 5000);
                                 }}>📋</a>
                                 <a
-                                    onMouseEnter={() => { props.addFooterMessage("current_phtoo_path", "File Path: " + props.currentPhotoPath, false, 10000) }}>
+                                    onMouseEnter={() => {
+                                        const displayPath = photoInfo.is_trashed
+                                            ? `${photoInfo.current_path} (trashed)`
+                                            : props.currentPhotoPath;
+                                        props.addFooterMessage("current_phtoo_path", "File Path: " + displayPath, false, 10000)
+                                    }}>
                                     {props.currentPhotoPath.replace(/^.+\//, '')}
                                 </a>
                                 <a href="#" onClick={(e) => {
                                     e.preventDefault();
-                                    openUrl(fileUrl(props.currentPhotoPath));
+                                    // Open trash path if trashed, otherwise original path
+                                    const pathToOpen = photoInfo.is_trashed
+                                        ? photoInfo.current_path
+                                        : props.currentPhotoPath;
+                                    openUrl(fileUrl(pathToOpen));
                                 }}>🚀</a>
                             </td></tr>
                         <tr><th>ISO</th><td>{photoInfo.exif ? photoInfo.exif.iso : ""}</td></tr>

@@ -976,19 +976,75 @@ async fn get_prev_photo(
     }
 }
 
+#[derive(serde::Serialize)]
+struct PhotoInfoResponse {
+    original_path: String,
+    current_path: String,
+    is_trashed: bool,
+    meta: Option<serde_json::Value>,
+    exif: Option<serde_json::Value>,
+}
+
 #[tauri::command]
 fn get_photo_info(path_str: &str, window: tauri::Window, state: tauri::State<AppState>) -> String {
-    match file::File::new_if_exists(path_str.to_string()) {
+    log::debug!(target: "photo_info", "get_photo_info; path={}", path_str);
+
+    // Check if photo is in trash
+    let trash_path_opt = state.meta_db.get_trash_path_for_photo(path_str, &state.config.trash_path);
+    let is_trashed = trash_path_opt.is_some();
+
+    // Determine the actual file path to read
+    let actual_path = if let Some(ref trash_path) = trash_path_opt {
+        trash_path.clone()
+    } else {
+        path_str.to_string()
+    };
+
+    log::debug!(target: "photo_info", "get_photo_info; is_trashed={}; actual_path={}", is_trashed, actual_path);
+
+    // Try to read the file from the actual path
+    match file::File::new_if_exists(actual_path.clone()) {
         Some(f) => {
-            let photo = photo::Photo::new(f, Option::None);
-            let exif_data = exif::ExifData::new(photo.file.clone());
+            // File exists, read EXIF from file
+            let photo = photo::Photo::new(file::File::new(path_str.to_string()), Option::None);
+            let exif_data = exif::ExifData::new(f);
             let photo_meta = photo_meta::PhotoMeta::new_with_data(photo, &state.meta_db);
             let photo_meta_with_exif = photo_meta::PhotoMetaWithExif::new(photo_meta, exif_data);
-            let json = serde_json::to_string(&photo_meta_with_exif).unwrap();
-            return json;
+
+            // Serialize to get JSON values
+            let full_json = serde_json::to_value(&photo_meta_with_exif).unwrap();
+            let meta_value = full_json.get("meta").cloned();
+            let exif_value = full_json.get("exif").cloned();
+
+            let response = PhotoInfoResponse {
+                original_path: path_str.to_string(),
+                current_path: actual_path,
+                is_trashed,
+                meta: meta_value,
+                exif: exif_value,
+            };
+
+            serde_json::to_string(&response).unwrap()
         }
         None => {
-            return "{}".to_string();
+            // File doesn't exist, try to get metadata from database (for trashed photos with missing files)
+            log::warn!(target: "photo_info", "get_photo_info; file_not_found={}; attempting_db_lookup", actual_path);
+
+            let photo = photo::Photo::new(file::File::new(path_str.to_string()), Option::None);
+            let photo_meta = photo_meta::PhotoMeta::new_with_data(photo, &state.meta_db);
+
+            // Serialize photo_meta to get the meta JSON
+            let meta_json = serde_json::to_value(&photo_meta).ok();
+
+            let response = PhotoInfoResponse {
+                original_path: path_str.to_string(),
+                current_path: actual_path,
+                is_trashed,
+                meta: meta_json,
+                exif: None, // No EXIF if file doesn't exist
+            };
+
+            serde_json::to_string(&response).unwrap_or_else(|_| "{}".to_string())
         }
     }
 }

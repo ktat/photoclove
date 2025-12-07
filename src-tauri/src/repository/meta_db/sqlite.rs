@@ -2482,6 +2482,32 @@ impl SQLite {
         );
     }
 
+    /// Check if a photo is in trash (delete_flg = 1)
+    /// Returns the trash path if photo is trashed, None otherwise
+    pub fn get_trash_path_for_photo(&self, original_path: &str, trash_base_path: &str) -> Option<String> {
+        let conn = match self.get_connection() {
+            Ok(conn) => conn,
+            Err(_) => return None,
+        };
+
+        // Check if photo is marked as deleted
+        let is_trashed = conn.query_row(
+            "SELECT delete_flg FROM photo_metadata WHERE path = ?1",
+            params![original_path],
+            |row| row.get::<_, i32>(0)
+        ).unwrap_or(0);
+
+        if is_trashed == 1 {
+            // Calculate trash path: trash_base_path + original_path (without leading /)
+            let path_without_slash = original_path.strip_prefix('/').unwrap_or(original_path);
+            let trash_path = format!("{}/{}", trash_base_path.trim_end_matches('/'), path_without_slash);
+            log::debug!(target: "sqlite", "get_trash_path_for_photo; original_path={}; trash_path={}", original_path, trash_path);
+            Some(trash_path)
+        } else {
+            None
+        }
+    }
+
     // Job Queue Methods
     pub fn create_job_unit(&self, job_unit: &crate::entity::job_queue::JobUnit) -> Result<(), String> {
         let conn = Connection::open(&self.db_path)
