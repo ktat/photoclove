@@ -1248,9 +1248,12 @@ fn get_resized_image(
     log::debug!(target: "image", "cache_miss; generating_thumbnail");
 
     // First, try to extract EXIF embedded thumbnail using kamadak-exif (much faster!)
-    // Only if use_exif_thumbnail config is enabled
+    // For import mode (when import_directory is provided), always use EXIF thumbnail
+    // For library mode, use EXIF thumbnail only if use_exif_thumbnail config is enabled
     let exif_start = Instant::now();
-    if state.config.use_exif_thumbnail {
+    let should_use_exif = import_directory.is_some() || state.config.use_exif_thumbnail;
+
+    if should_use_exif {
         if let Ok(file) = File::open(path_str) {
         let mut bufreader = BufReader::new(&file);
 
@@ -1323,10 +1326,11 @@ fn get_resized_image(
 
     // EXIF thumbnail not found or disabled, log and proceed to fallback
     let exif_time = exif_start.elapsed();
-    if state.config.use_exif_thumbnail {
-        log::debug!(target: "image", "no_exif_thumbnail; exif_check_ms={}; falling_back_to_resize", exif_time.as_millis());
+    if should_use_exif {
+        log::debug!(target: "image", "no_exif_thumbnail; import_mode={}; exif_check_ms={}; falling_back_to_resize",
+            import_directory.is_some(), exif_time.as_millis());
     } else {
-        log::debug!(target: "image", "exif_thumbnail_disabled; skipping_exif_extraction");
+        log::debug!(target: "image", "exif_thumbnail_disabled; import_mode=false; use_exif_thumbnail=false");
     }
 
     // Fallback: Load and resize the full image
