@@ -3864,11 +3864,20 @@ impl SQLite {
                 let mut photo = photo::Photo::new(file, Some(config.clone()));
                 photo.set_has_thumbnail();
 
-                // Serialize photo to JSON
-                match serde_json::to_value(&photo) {
-                    Ok(json) => Some(json),
-                    Err(_) => None
+                // Get thumbnail path for the cover photo
+                let thumbnail_path = if photo.has_thumbnail {
+                    photo.get_thumbnail_path()
+                } else {
+                    None
+                };
+
+                // Create JSON with thumbnail_path field
+                let mut photo_json = serde_json::to_value(&photo).unwrap_or(serde_json::json!({}));
+                if let Some(obj) = photo_json.as_object_mut() {
+                    obj.insert("thumbnail_path".to_string(), serde_json::json!(thumbnail_path));
                 }
+
+                Some(photo_json)
             } else {
                 None
             };

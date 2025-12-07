@@ -77,6 +77,25 @@ impl Photo {
         self.is_exif_not_loaded = false;
     }
 
+    pub fn get_thumbnail_path(&self) -> Option<String> {
+        if !self.has_config {
+            return None;
+        }
+
+        let import_path = &self.import_to;
+        let thumbnail_store = &self.thumbnail_store;
+        let thumbnail_path = self.file.path.replace(import_path, thumbnail_store);
+        let ext_regex = regex::Regex::new(r"\.(?i)jpe?g$").unwrap();
+        let thumbnail_path_ext_changed = ext_regex.replace(&thumbnail_path, ".jpg").to_string();
+
+        if thumbnail_path == thumbnail_path_ext_changed {
+            // maybe movie files
+            Some(format!("{}.jpg", thumbnail_path))
+        } else {
+            Some(thumbnail_path_ext_changed)
+        }
+    }
+
     pub fn set_has_thumbnail(&mut self) {
         if self.has_config {
             let import_path = self.import_to.clone();
