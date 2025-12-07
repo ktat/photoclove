@@ -2879,12 +2879,13 @@ async fn get_album_photos_with_metadata(
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
     let meta_db = &state.meta_db;
+    let config = &state.config;
     let logging_service = &state.logging_service;
 
     let correlation_id = logging_service.generate_correlation_id();
     log::info!(target: "albums", "get_album_photos_with_metadata_request; correlation_id={}; album_id={}", correlation_id, album_id);
 
-    match meta_db.get_album_photos_with_metadata(album_id) {
+    match meta_db.get_album_photos_with_metadata(album_id, config.clone()) {
         Ok(photos) => {
             log::info!(target: "albums", "get_album_photos_with_metadata_success; correlation_id={}; count={}", correlation_id, photos.len());
             let photos_json = serde_json::to_string(&photos).map_err(|e| e.to_string())?;

@@ -1,4 +1,4 @@
-use crate::entity::{photo, photo_meta};
+use crate::entity::{config, photo, photo_meta};
 use crate::repository::{meta_db, DatesNum, MetaInfoDB};
 use crate::value::{comment, date, file, star};
 use rusqlite::{params, Connection, Result};
@@ -2412,8 +2412,8 @@ impl MetaInfoDB for SQLite {
         SQLite::get_album_photos(self, album_id)
     }
 
-    fn get_album_photos_with_metadata(&self, album_id: i32) -> Result<Vec<photo::Photo>, String> {
-        SQLite::get_album_photos_with_metadata(self, album_id)
+    fn get_album_photos_with_metadata(&self, album_id: i32, config: config::Config) -> Result<Vec<photo::Photo>, String> {
+        SQLite::get_album_photos_with_metadata(self, album_id, config)
     }
 
     fn reorder_album_photos(&self, album_id: i32, photo_order: Vec<String>) -> Result<(), String> {
@@ -3736,10 +3736,10 @@ impl SQLite {
         Ok(photos)
     }
 
-    pub fn get_album_photos_with_metadata(&self, album_id: i32) -> Result<Vec<photo::Photo>, String> {
+    pub fn get_album_photos_with_metadata(&self, album_id: i32, config: config::Config) -> Result<Vec<photo::Photo>, String> {
         let conn = self.get_connection()
             .map_err(|_| "Failed to connect to database".to_string())?;
-        
+
         let mut stmt = conn.prepare(
             "SELECT pm.path, pm.photo_date, pm.star, pm.comment, pm.created_at, pm.updated_at,
                     pm.google_photos_url, pm.exif_iso, pm.exif_fnumber, pm.exif_date_time,
@@ -3749,33 +3749,34 @@ impl SQLite {
                     pm.exif_focal_length, pm.exif_focal_length_in35mm_film, pm.exif_digital_zoom_ratio,
                     pm.exif_exposure_mode, pm.exif_white_balance_mode, pm.exif_orientation, pm.css_style,
                     ap.order_index, ap.added_at
-             FROM album_photos ap 
-             JOIN photo_metadata pm ON ap.photo_path = pm.path 
-             WHERE ap.album_id = ?1 
+             FROM album_photos ap
+             JOIN photo_metadata pm ON ap.photo_path = pm.path
+             WHERE ap.album_id = ?1
              ORDER BY ap.order_index, ap.added_at"
         ).map_err(|e| format!("Failed to prepare query: {}", e))?;
-        
+
+        let config_clone = config.clone();
         let photos = stmt.query_map(params![album_id], |row| {
             let path: String = row.get("path")?;
             let _photo_date: String = row.get("photo_date")?;
             let star: i32 = row.get("star")?;
             let comment: String = row.get("comment")?;
-            
+
             // Create a file from the path
             let file = file::File::new(path);
-            
-            // Create photo with the file and no config
-            let mut photo = photo::Photo::new(file, None);
-            
+
+            // Create photo with the file and config for thumbnail support
+            let mut photo = photo::Photo::new(file, Some(config_clone.clone()));
+
             // Set the star and comment from database
             photo.star = if star > 0 { Some(star) } else { None };
             photo.comment = if !comment.is_empty() { Some(comment) } else { None };
-            
+
             Ok(photo)
         }).map_err(|e| format!("Failed to query album photos with metadata: {}", e))?
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| format!("Failed to collect album photos with metadata: {}", e))?;
-        
+
         Ok(photos)
     }
 
