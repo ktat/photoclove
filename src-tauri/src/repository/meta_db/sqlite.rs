@@ -101,160 +101,6 @@ impl SQLite {
         sqlite
     }
 
-    /// Migrate existing albums and tags to unified photo_collections tables
-    fn migrate_to_unified_collections(conn: &Connection) -> Result<()> {
-        log::info!(target: "photo_collections", "migration; status=starting_unified_migration");
-        
-        // Check if legacy tables exist before migration
-        let legacy_tables_exist = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('albums', 'tags', 'album_photos', 'photo_tags')")
-            .and_then(|mut stmt| {
-                let rows = stmt.query_map([], |row| {
-                    let name: String = row.get(0)?;
-                    Ok(name)
-                })?;
-                let mut count = 0;
-                for _ in rows {
-                    count += 1;
-                }
-                Ok(count >= 2) // At least albums/tags or related tables exist
-            })
-            .unwrap_or(false);
-
-        if !legacy_tables_exist {
-            log::info!(target: "photo_collections", "migration; status=no_legacy_tables_found");
-            return Ok(());
-        }
-
-        // Start transaction for atomic migration
-        let transaction = conn.unchecked_transaction()?;
-        
-        // Step 1: Migrate existing albums to photo_collections
-        let albums_migrated = transaction.execute(
-            "INSERT OR IGNORE INTO photo_collections (type, name, description, cover_photo_path, created_at, updated_at)
-             SELECT 'album', 
-                    a.name, 
-                    COALESCE(a.description, ''), 
-                    a.cover_photo_path,
-                    COALESCE(a.created_at, '1970-01-01 00:00:00'),
-                    COALESCE(a.updated_at, a.created_at, CURRENT_TIMESTAMP)
-             FROM albums a
-             WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='albums')",
-            [],
-        )?;
-        
-        log::info!(target: "photo_collections", "migration; status=albums_migrated; count={}", albums_migrated);
-        
-        // Step 2: Migrate existing tags to photo_collections
-        let tags_migrated = transaction.execute(
-            "INSERT OR IGNORE INTO photo_collections (type, name, color, created_at, updated_at)
-             SELECT 'tag', 
-                    t.name, 
-                    t.color,
-                    COALESCE(t.created_at, '1970-01-01 00:00:00'),
-                    COALESCE(t.created_at, CURRENT_TIMESTAMP)
-             FROM tags t
-             WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='tags')",
-            [],
-        )?;
-        
-        log::info!(target: "photo_collections", "migration; status=tags_migrated; count={}", tags_migrated);
-        
-        // Step 3: Migrate album_photos to photo_collection_items
-        let album_items_migrated = transaction.execute(
-            "INSERT OR IGNORE INTO photo_collection_items (collection_id, photo_path, order_index, added_at, metadata)
-             SELECT pc.id, 
-                    ap.photo_path, 
-                    COALESCE(ap.order_index, 0),
-                    COALESCE(ap.added_at, '1970-01-01 00:00:00'),
-                    json_object('original_album_id', a.id, 'migrated_from', 'album_photos')
-             FROM album_photos ap
-             INNER JOIN albums a ON ap.album_id = a.id
-             INNER JOIN photo_collections pc ON pc.name = a.name AND pc.type = 'album'
-             WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='album_photos')
-               AND EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='albums')
-               AND EXISTS (SELECT 1 FROM photo_metadata pm WHERE pm.path = ap.photo_path)",
-            [],
-        )?;
-        
-        log::info!(target: "photo_collections", "migration; status=album_items_migrated; count={}", album_items_migrated);
-        
-        // Step 4: Migrate photo_tags to photo_collection_items
-        let tag_items_migrated = transaction.execute(
-            "INSERT OR IGNORE INTO photo_collection_items (collection_id, photo_path, order_index, added_at, metadata)
-             SELECT pc.id, 
-                    pt.photo_path, 
-                    0,
-                    COALESCE(pt.created_at, '1970-01-01 00:00:00'),
-                    json_object('original_tag_id', t.id, 'migrated_from', 'photo_tags')
-             FROM photo_tags pt
-             INNER JOIN tags t ON pt.tag_id = t.id
-             INNER JOIN photo_collections pc ON pc.name = t.name AND pc.type = 'tag'
-             WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='photo_tags')
-               AND EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='tags')
-               AND EXISTS (SELECT 1 FROM photo_metadata pm WHERE pm.path = pt.photo_path)",
-            [],
-        )?;
-        
-        log::info!(target: "photo_collections", "migration; status=tag_items_migrated; count={}", tag_items_migrated);
-        
-        // Step 5: Update photo counts in photo_collections
-        let photo_counts_updated = transaction.execute(
-            "UPDATE photo_collections 
-             SET settings = json_set(COALESCE(settings, '{}'), '$.photo_count', 
-                 (SELECT COUNT(*) FROM photo_collection_items pci WHERE pci.collection_id = photo_collections.id)
-             )",
-            [],
-        )?;
-        
-        log::info!(target: "photo_collections", "migration; status=photo_counts_updated; count={}", photo_counts_updated);
-        
-        // Step 6: Verify migration integrity
-        let album_verification = transaction.prepare("SELECT COUNT(*) FROM albums WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='albums')")
-            .and_then(|mut stmt| stmt.query_row([], |row| row.get::<_, i32>(0)))
-            .unwrap_or(0);
-            
-        let migrated_albums = transaction.prepare("SELECT COUNT(*) FROM photo_collections WHERE type = 'album'")
-            .and_then(|mut stmt| stmt.query_row([], |row| row.get::<_, i32>(0)))
-            .unwrap_or(0);
-            
-        let tag_verification = transaction.prepare("SELECT COUNT(*) FROM tags WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='tags')")
-            .and_then(|mut stmt| stmt.query_row([], |row| row.get::<_, i32>(0)))
-            .unwrap_or(0);
-            
-        let migrated_tags = transaction.prepare("SELECT COUNT(*) FROM photo_collections WHERE type = 'tag'")
-            .and_then(|mut stmt| stmt.query_row([], |row| row.get::<_, i32>(0)))
-            .unwrap_or(0);
-
-        log::info!(target: "photo_collections", "migration; status=verification; original_albums={}; migrated_albums={}; original_tags={}; migrated_tags={}", 
-                  album_verification, migrated_albums, tag_verification, migrated_tags);
-
-        // Commit transaction
-        transaction.commit()?;
-        
-        log::info!(target: "photo_collections", "migration; status=completed; albums_migrated={}; tags_migrated={}; album_items={}; tag_items={}", 
-                  albums_migrated, tags_migrated, album_items_migrated, tag_items_migrated);
-        
-        Ok(())
-    }
-
-    pub fn migrate_to_unified_collections_manual(&self) -> Result<String, String> {
-        log::info!(target: "photo_collections", "manual_migration; status=requested");
-        
-        let conn = self.get_connection()
-            .map_err(|_| "Failed to connect to database".to_string())?;
-        
-        match Self::migrate_to_unified_collections(&conn) {
-            Ok(()) => {
-                log::info!(target: "photo_collections", "manual_migration; status=completed_successfully");
-                Ok("Migration completed successfully".to_string())
-            }
-            Err(e) => {
-                log::error!(target: "photo_collections", "manual_migration; status=failed; error={}", e);
-                Err(format!("Migration failed: {}", e))
-            }
-        }
-    }
-
     pub fn init_db(&self) -> Result<()> {
         let conn = Connection::open(&self.db_path)?;
         
@@ -785,7 +631,6 @@ impl SQLite {
             log::info!(target: "photo_collections", "table_creation; status=photo_collection_items_table_completed");
             
             // Migrate existing albums and tags to unified photo_collections
-            Self::migrate_to_unified_collections(&conn)?;
         }
         
         // Check if delete_flg column exists in photo_metadata table, add if not
@@ -959,22 +804,6 @@ impl SQLite {
         );
         
         photo_info
-    }
-
-
-    pub fn clear_all_metadata(&self) -> Result<(), String> {
-        let conn = self
-            .get_connection()
-            .map_err(|e| format!("Failed to connect to database: {}", e))?;
-        
-        // Clear both photo_metadata and date_summary
-        conn.execute("DELETE FROM photo_metadata", [])
-            .map_err(|e| format!("Failed to clear metadata: {}", e))?;
-        
-        conn.execute("DELETE FROM date_summary", [])
-            .map_err(|e| format!("Failed to clear date_summary: {}", e))?;
-        
-        Ok(())
     }
 
     pub fn get_available_dates(&self) -> Result<Vec<date::Date>, String> {
@@ -1346,7 +1175,10 @@ impl SQLite {
                     let placeholders_str = placeholders.join(",");
                     
                     sql_query.push_str(&format!(
-                        " AND path IN (SELECT photo_path FROM photo_tags WHERE tag_id IN ({}) GROUP BY photo_path HAVING COUNT(DISTINCT tag_id) = ?)",
+                        " AND path IN (SELECT photo_path FROM photo_collection_items pci
+                          JOIN photo_collections pc ON pc.id = pci.collection_id and pc.type = 'tag'
+                          WHERE pci.collection_id IN ({})
+                          GROUP BY pci.photo_path HAVING COUNT(DISTINCT pci.collection_id) = ?)",
                         placeholders_str
                     ));
                     
@@ -1679,8 +1511,8 @@ impl MetaInfoDB for SQLite {
         let query_sql = "SELECT pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url,
                             GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags
                      FROM photo_metadata pm
-                     LEFT JOIN photo_tags pt ON pm.path = pt.photo_path
-                     LEFT JOIN tags t ON pt.tag_id = t.id
+                     LEFT JOIN photo_collection_items pt ON pm.path = pt.photo_path
+                     LEFT JOIN photo_collection t ON pt.collection = t.id
                      WHERE pm.photo_date >= ?1 AND pm.photo_date < ?2 AND (pm.delete_flg = 0 OR pm.delete_flg IS NULL)
                      GROUP BY pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url";
 
@@ -2101,7 +1933,13 @@ impl MetaInfoDB for SQLite {
             .unwrap_or(0);
         log::info!(target: "recent_photos", "database_total_count; total_records={}", total_count);
         
-        let query = "SELECT pm.*, GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags FROM photo_metadata pm LEFT JOIN photo_tags pt ON pm.path = pt.photo_path LEFT JOIN tags t ON pt.tag_id = t.id WHERE (pm.delete_flg = 0 OR pm.delete_flg IS NULL) GROUP BY pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.created_at ORDER BY pm.created_at DESC LIMIT ?";
+        let query = "SELECT pm.*, GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags
+        FROM photo_metadata pm
+        LEFT JOIN photo_collection_items pt ON pm.path = pt.photo_path
+        LEFT JOIN photo_collection t ON pt.collection_id = t.id
+         WHERE (pm.delete_flg = 0 OR pm.delete_flg IS NULL)
+         GROUP BY pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.created_at
+         ORDER BY pm.created_at DESC LIMIT ?";
         log::info!(target: "recent_photos", "executing_sql_query; query={}; limit={}", query, limit);
         log::info!(target: "database", "get_recent_photos_metadata_query; query={}; limit={}", query, limit);
         
@@ -2743,7 +2581,12 @@ impl SQLite {
         );
         
         // Build search query based on search_type with tags
-        let mut sql_query = String::from("SELECT pm.*, GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags FROM photo_metadata pm LEFT JOIN photo_tags pt ON pm.path = pt.photo_path LEFT JOIN tags t ON pt.tag_id = t.id WHERE (pm.delete_flg = 0 OR pm.delete_flg IS NULL)");
+        let mut sql_query = String::from("
+        SELECT pm.*, GROUP_CONCAT(pc.id || ':' || pc.name || ':' || COALESCE(pc.color, '')) as tags
+        FROM photo_metadata pm
+        LEFT JOIN photo_collection_items pci ON pm.path = pci.photo_path 
+        LEFT JOIN photo_collections pc ON pc.id = pci.collection_id AND pc.type = 'tag'
+        WHERE (pm.delete_flg = 0 OR pm.delete_flg IS NULL)");
         
         log::info!(target: "database", "search_photos_base_query; query={}", sql_query);
         let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
@@ -3052,29 +2895,6 @@ impl SQLite {
         Ok(json_response)
     }
     
-    fn check_thumbnail_exists(&self, photo_path: &str) -> bool {
-        // Get config to find thumbnail store path
-        let config = crate::entity::config::Config::new();
-        let import_path = config.import_to;
-        let thumbnail_store = config.thumbnail_store;
-        
-        // Replace import path with thumbnail store path
-        let thumbnail_path = photo_path.replace(&import_path, &thumbnail_store);
-        
-        // Handle JPG extension (convert to lowercase)
-        let ext_regex = regex::Regex::new(r"\.JPG$").unwrap();
-        let thumbnail_path_ext_changed = ext_regex.replace(&thumbnail_path, ".jpg").to_string();
-        
-        if thumbnail_path == thumbnail_path_ext_changed {
-            // Likely a movie file, check for .jpg thumbnail
-            let thumbnail_path_for_movie = format!("{}.jpg", thumbnail_path);
-            std::path::Path::new(&thumbnail_path_for_movie).exists()
-        } else {
-            // Regular image file
-            std::path::Path::new(&thumbnail_path_ext_changed).exists()
-        }
-    }
-    
     // Date Summary Helper Functions
     fn check_date_summary_currency(&self) -> Result<bool, String> {
         let conn = self.get_connection().map_err(|e| format!("Connection failed: {}", e))?;
@@ -3212,110 +3032,12 @@ impl SQLite {
         Ok(())
     }
 
-    // Tag management functions
-    pub fn get_all_tags(&self) -> Result<Vec<(i32, String, Option<String>)>, String> {
-        let conn = self.get_connection()
-            .map_err(|_| "Failed to connect to database".to_string())?;
-        
-        let mut stmt = conn.prepare("SELECT id, name, color FROM tags ORDER BY name")
-            .map_err(|e| format!("Failed to prepare query: {}", e))?;
-        
-        let tags = stmt.query_map([], |row| {
-            let id: i32 = row.get(0)?;
-            let name: String = row.get(1)?;
-            let color: Option<String> = row.get(2)?;
-            Ok((id, name, color))
-        }).map_err(|e| format!("Failed to query tags: {}", e))?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to collect tags: {}", e))?;
-        
-        Ok(tags)
-    }
-
-    pub fn get_all_tags_with_photo_count(&self) -> Result<Vec<(i32, String, Option<String>, i32)>, String> {
-        let conn = self.get_connection()
-            .map_err(|_| "Failed to connect to database".to_string())?;
-        
-        let mut stmt = conn.prepare(
-            "SELECT t.id, t.name, t.color, COUNT(pt.photo_path) as photo_count
-             FROM tags t 
-             LEFT JOIN photo_tags pt ON t.id = pt.tag_id 
-             GROUP BY t.id, t.name, t.color
-             ORDER BY t.name"
-        ).map_err(|e| format!("Failed to prepare query: {}", e))?;
-        
-        let tags = stmt.query_map([], |row| {
-            let id: i32 = row.get(0)?;
-            let name: String = row.get(1)?;
-            let color: Option<String> = row.get(2)?;
-            let photo_count: i32 = row.get(3)?;
-            Ok((id, name, color, photo_count))
-        }).map_err(|e| format!("Failed to query tags: {}", e))?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to collect tags: {}", e))?;
-        
-        Ok(tags)
-    }
-
-    pub fn create_tag(&self, name: &str, color: Option<&str>) -> Result<i32, String> {
-        let conn = self.get_connection()
-            .map_err(|_| "Failed to connect to database".to_string())?;
-        
-        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        
-        conn.execute(
-            "INSERT INTO tags (name, color, created_at) VALUES (?1, ?2, ?3)",
-            params![name, color, now],
-        ).map_err(|e| format!("Failed to create tag: {}", e))?;
-        
-        let tag_id = conn.last_insert_rowid() as i32;
-        Ok(tag_id)
-    }
-
-    pub fn delete_tag(&self, tag_id: i32) -> Result<bool, String> {
-        let conn = self.get_connection()
-            .map_err(|_| "Failed to connect to database".to_string())?;
-        
-        let rows_affected = conn.execute(
-            "DELETE FROM tags WHERE id = ?1",
-            params![tag_id],
-        ).map_err(|e| format!("Failed to delete tag: {}", e))?;
-        
-        Ok(rows_affected > 0)
-    }
-
-    pub fn add_tag_to_photo(&self, photo_path: &str, tag_id: i32) -> Result<(), String> {
-        let conn = self.get_connection()
-            .map_err(|_| "Failed to connect to database".to_string())?;
-        
-        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        
-        conn.execute(
-            "INSERT OR IGNORE INTO photo_tags (photo_path, tag_id, created_at) VALUES (?1, ?2, ?3)",
-            params![photo_path, tag_id, now],
-        ).map_err(|e| format!("Failed to add tag to photo: {}", e))?;
-        
-        Ok(())
-    }
-
-    pub fn remove_tag_from_photo(&self, photo_path: &str, tag_id: i32) -> Result<bool, String> {
-        let conn = self.get_connection()
-            .map_err(|_| "Failed to connect to database".to_string())?;
-        
-        let rows_affected = conn.execute(
-            "DELETE FROM photo_tags WHERE photo_path = ?1 AND tag_id = ?2",
-            params![photo_path, tag_id],
-        ).map_err(|e| format!("Failed to remove tag from photo: {}", e))?;
-        
-        Ok(rows_affected > 0)
-    }
-
     pub fn remove_all_tags_from_photo(&self, photo_path: &str) -> Result<i32, String> {
         let conn = self.get_connection()
             .map_err(|_| "Failed to connect to database".to_string())?;
         
         let rows_affected = conn.execute(
-            "DELETE FROM photo_tags WHERE photo_path = ?1",
+            "DELETE FROM photo_collection_items WHERE photo_path = ?1 AND type = 'tag'",
             params![photo_path],
         ).map_err(|e| format!("Failed to remove all tags from photo: {}", e))?;
         
@@ -3327,10 +3049,10 @@ impl SQLite {
             .map_err(|_| "Failed to connect to database".to_string())?;
         
         let mut stmt = conn.prepare(
-            "SELECT t.id, t.name, t.color FROM tags t 
-             JOIN photo_tags pt ON t.id = pt.tag_id 
-             WHERE pt.photo_path = ?1 
-             ORDER BY t.name"
+            "SELECT pc.id, pc.name, pc.color FROM photo_collections pc
+             JOIN photo_collection_items pci ON pc.id = pci.collection_id and pc.type='tag'
+             WHERE pci.photo_path = ?1 
+             ORDER BY pc.name"
         ).map_err(|e| format!("Failed to prepare query: {}", e))?;
         
         let tags = stmt.query_map(params![photo_path], |row| {
@@ -3355,10 +3077,10 @@ impl SQLite {
         
         let placeholders = tag_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
         let query = format!(
-            "SELECT DISTINCT pt.photo_path FROM photo_tags pt 
-             WHERE pt.tag_id IN ({}) 
+            "SELECT DISTINCT pt.photo_path FROM photo_cllections pt 
+             WHERE pt.collection_id IN ({}) 
              GROUP BY pt.photo_path 
-             HAVING COUNT(DISTINCT pt.tag_id) = ?",
+             HAVING COUNT(DISTINCT pt.collection_id) = ?",
             placeholders
         );
         
@@ -3377,154 +3099,6 @@ impl SQLite {
         .map_err(|e| format!("Failed to collect photos: {}", e))?;
         
         Ok(photos)
-    }
-
-    // Album management functions
-    pub fn get_all_albums(&self) -> Result<Vec<(i32, String, String, Option<String>, i32)>, String> {
-        let conn = self.get_connection()
-            .map_err(|_| "Failed to connect to database".to_string())?;
-        
-        let mut stmt = conn.prepare(
-            "SELECT a.id, a.name, a.description, a.cover_photo_path, COUNT(ap.photo_path) as photo_count
-             FROM albums a 
-             LEFT JOIN album_photos ap ON a.id = ap.album_id 
-             GROUP BY a.id, a.name, a.description, a.cover_photo_path
-             ORDER BY a.name"
-        ).map_err(|e| format!("Failed to prepare query: {}", e))?;
-        
-        let albums = stmt.query_map([], |row| {
-            let id: i32 = row.get(0)?;
-            let name: String = row.get(1)?;
-            let description: String = row.get(2)?;
-            let cover_photo_path: Option<String> = row.get(3)?;
-            let photo_count: i32 = row.get(4)?;
-            Ok((id, name, description, cover_photo_path, photo_count))
-        }).map_err(|e| format!("Failed to query albums: {}", e))?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to collect albums: {}", e))?;
-        
-        Ok(albums)
-    }
-
-    pub fn get_album_by_id(&self, id: i32) -> Result<Option<serde_json::Value>, String> {
-        let conn = self.get_connection()
-            .map_err(|_| "Failed to connect to database".to_string())?;
-        
-        let mut stmt = conn.prepare(
-            "SELECT a.id, a.name, a.description, a.cover_photo_path, a.created_at, a.updated_at, 
-                    COUNT(ap.photo_path) as photo_count
-             FROM albums a 
-             LEFT JOIN album_photos ap ON a.id = ap.album_id 
-             WHERE a.id = ?1 
-             GROUP BY a.id, a.name, a.description, a.cover_photo_path, a.created_at, a.updated_at"
-        ).map_err(|e| format!("Failed to prepare album query: {}", e))?;
-        
-        let result = stmt.query_row(params![id], |row| {
-            Ok(serde_json::json!({
-                "id": row.get::<_, i32>("id")?,
-                "name": row.get::<_, String>("name")?,
-                "description": row.get::<_, Option<String>>("description")?,
-                "cover_photo_path": row.get::<_, Option<String>>("cover_photo_path")?,
-                "created_at": row.get::<_, String>("created_at")?,
-                "updated_at": row.get::<_, String>("updated_at")?,
-                "photo_count": row.get::<_, i32>("photo_count")?
-            }))
-        });
-        
-        match result {
-            Ok(album) => Ok(Some(album)),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-            Err(e) => Err(format!("Failed to get album by id: {}", e))
-        }
-    }
-
-    pub fn update_album_cover(&self, album_id: i32, photo_path: &str) -> Result<bool, String> {
-        let conn = self.get_connection()
-            .map_err(|_| "Failed to connect to database".to_string())?;
-        
-        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        
-        let rows_affected = conn.execute(
-            "UPDATE albums SET cover_photo_path = ?1, updated_at = ?2 WHERE id = ?3",
-            params![photo_path, now, album_id],
-        ).map_err(|e| format!("Failed to update album cover: {}", e))?;
-        
-        Ok(rows_affected > 0)
-    }
-
-    pub fn create_album(&self, name: &str, description: &str) -> Result<i32, String> {
-        let conn = self.get_connection()
-            .map_err(|_| "Failed to connect to database".to_string())?;
-        
-        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        
-        conn.execute(
-            "INSERT INTO albums (name, description, created_at, updated_at) VALUES (?1, ?2, ?3, ?4)",
-            params![name, description, now, now],
-        ).map_err(|e| format!("Failed to create album: {}", e))?;
-        
-        let album_id = conn.last_insert_rowid() as i32;
-        Ok(album_id)
-    }
-
-    pub fn update_album(&self, id: i32, name: &str, description: &str, cover_photo_path: Option<&str>) -> Result<bool, String> {
-        let conn = self.get_connection()
-            .map_err(|_| "Failed to connect to database".to_string())?;
-        
-        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        
-        let rows_affected = conn.execute(
-            "UPDATE albums SET name = ?1, description = ?2, cover_photo_path = ?3, updated_at = ?4 WHERE id = ?5",
-            params![name, description, cover_photo_path, now, id],
-        ).map_err(|e| format!("Failed to update album: {}", e))?;
-        
-        Ok(rows_affected > 0)
-    }
-
-    pub fn delete_album(&self, id: i32) -> Result<bool, String> {
-        let conn = self.get_connection()
-            .map_err(|_| "Failed to connect to database".to_string())?;
-        
-        let rows_affected = conn.execute(
-            "DELETE FROM albums WHERE id = ?1",
-            params![id],
-        ).map_err(|e| format!("Failed to delete album: {}", e))?;
-        
-        Ok(rows_affected > 0)
-    }
-
-    pub fn add_photo_to_album(&self, album_id: i32, photo_path: &str) -> Result<(), String> {
-        let conn = self.get_connection()
-            .map_err(|_| "Failed to connect to database".to_string())?;
-        
-        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        
-        // Get the next order index for this album
-        let mut stmt = conn.prepare("SELECT COALESCE(MAX(order_index), 0) + 1 FROM album_photos WHERE album_id = ?1")
-            .map_err(|e| format!("Failed to prepare order query: {}", e))?;
-        
-        let next_order: i32 = stmt.query_row(params![album_id], |row| {
-            Ok(row.get(0)?)
-        }).map_err(|e| format!("Failed to get next order index: {}", e))?;
-        
-        conn.execute(
-            "INSERT OR IGNORE INTO album_photos (album_id, photo_path, added_at, order_index) VALUES (?1, ?2, ?3, ?4)",
-            params![album_id, photo_path, now, next_order],
-        ).map_err(|e| format!("Failed to add photo to album: {}", e))?;
-        
-        Ok(())
-    }
-
-    pub fn remove_photo_from_album(&self, album_id: i32, photo_path: &str) -> Result<bool, String> {
-        let conn = self.get_connection()
-            .map_err(|_| "Failed to connect to database".to_string())?;
-        
-        let rows_affected = conn.execute(
-            "DELETE FROM album_photos WHERE album_id = ?1 AND photo_path = ?2",
-            params![album_id, photo_path],
-        ).map_err(|e| format!("Failed to remove photo from album: {}", e))?;
-        
-        Ok(rows_affected > 0)
     }
 
     pub fn get_album_photos(&self, album_id: i32) -> Result<Vec<String>, String> {
