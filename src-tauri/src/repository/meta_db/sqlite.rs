@@ -3856,10 +3856,17 @@ impl SQLite {
 
         let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
         let rows = stmt.query_map(param_refs.as_slice(), |row| {
+            let collection_id: i32 = row.get(0)?;
+            let collection_name: String = row.get(2)?;
             let cover_photo_path: Option<String> = row.get(5)?;
+
+            log::debug!(target: "photo_collections", "get_all_collections_row; id={}; name={}; cover_photo_path={:?}",
+                collection_id, collection_name, cover_photo_path);
 
             // Create Photo entity for cover photo if path exists
             let cover_photo_json = if let Some(path) = cover_photo_path {
+                log::debug!(target: "photo_collections", "creating_cover_photo; id={}; path={}", collection_id, path);
+
                 let file = file::File::new(path.clone());
                 let mut photo = photo::Photo::new(file, Some(config.clone()));
                 photo.set_has_thumbnail();
@@ -3871,14 +3878,21 @@ impl SQLite {
                     None
                 };
 
+                log::debug!(target: "photo_collections", "cover_photo_created; id={}; has_thumbnail={}; thumbnail_path={:?}",
+                    collection_id, photo.has_thumbnail, thumbnail_path);
+
                 // Create JSON with thumbnail_path field
-                let mut photo_json = serde_json::to_value(&photo).unwrap_or(serde_json::json!({}));
+                let mut photo_json = serde_json::to_value(&photo).unwrap_or_else(|e| {
+                    log::error!(target: "photo_collections", "photo_json_serialize_failed; id={}; error={}", collection_id, e);
+                    serde_json::json!({})
+                });
                 if let Some(obj) = photo_json.as_object_mut() {
                     obj.insert("thumbnail_path".to_string(), serde_json::json!(thumbnail_path));
                 }
 
                 Some(photo_json)
             } else {
+                log::debug!(target: "photo_collections", "no_cover_photo; id={}", collection_id);
                 None
             };
 
