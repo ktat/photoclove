@@ -3854,6 +3854,9 @@ impl SQLite {
         let mut stmt = conn.prepare(&query)
             .map_err(|e| format!("Failed to prepare query: {}", e))?;
 
+        // Clone config outside the closure for proper capture
+        let config_for_closure = config.clone();
+
         let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
         let rows = stmt.query_map(param_refs.as_slice(), |row| {
             let collection_id: i32 = row.get(0)?;
@@ -3868,7 +3871,7 @@ impl SQLite {
                 log::debug!(target: "photo_collections", "creating_cover_photo; id={}; path={}", collection_id, path);
 
                 let file = file::File::new(path.clone());
-                let mut photo = photo::Photo::new(file, Some(config.clone()));
+                let mut photo = photo::Photo::new(file, Some(config_for_closure.clone()));
                 photo.set_has_thumbnail();
 
                 // Get thumbnail path for the cover photo
