@@ -779,12 +779,12 @@ async fn get_photos_unified(
                         log::error!(target: "get_photos", "trash_db_connection_failed; error={}", e);
                     })?;
                     
-                    let mut stmt = conn.prepare("SELECT pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url, 
-                                GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags
+                    let mut stmt = conn.prepare("SELECT pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url,
+                                GROUP_CONCAT(c.id || ':' || c.name || ':' || COALESCE(c.color, '')) as tags
                          FROM photo_metadata pm
-                         LEFT JOIN photo_tags pt ON pm.path = pt.photo_path
-                         LEFT JOIN tags t ON pt.tag_id = t.id
-                         WHERE pm.delete_flg = 1 
+                         LEFT JOIN photo_collection_items pci ON pm.path = pci.item_path
+                         LEFT JOIN photo_collections c ON pci.collection_id = c.id AND c.type = 'tag'
+                         WHERE pm.delete_flg = 1
                          GROUP BY pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url
                          ORDER BY pm.updated_at DESC").map_err(|e| {
                         log::error!(target: "get_photos", "trash_prepare_failed; error={}", e);
