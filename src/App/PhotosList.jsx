@@ -1767,6 +1767,7 @@ function PhotosList(props) {
                                             showSideMenu={showSideMenu}
                                             importState={importState}
                                             setShowSideMenu={setShowSideMenu}
+                                            isLoading={photoLoading}
                                         />
                                         {/* Replaced photo grid with PhotoGrid component */}
 
