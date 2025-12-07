@@ -1742,12 +1742,12 @@ function PhotosList(props) {
                                                     isImportMode={viewModeObj.isImportMode()}
                                                 />
                                             </div>
-                                            : <div>
+                                            : (!photoLoading && <div>
                                                 <>
                                                     <div>{viewModeObj.getEmptyStateMessage()}</div>
                                                     {renderFilterClearingUI()}
                                                 </>
-                                            </div>
+                                            </div>)
                                         }
                                         <PhotoGrid
                                             displayedPhotos={displayedPhotos}
