@@ -458,7 +458,7 @@ describe('ViewMode.getModeConfig()', () => {
                 const config = viewMode.getModeConfig();
                 
                 expect(config.allowSelection).toBe(true);
-                expect(config.showMetadata).toBe(true);
+                expect(config.canViewMetadata).toBe(true);
                 expect(config.enablePhotoNavigation).toBe(true);
                 expect(config.showBulkOperations).toBe(true);
             });
@@ -472,7 +472,7 @@ describe('ViewMode.getModeConfig()', () => {
             
             expect(config.showSearchBar).toBe(true);
             expect(config.allowSelection).toBe(true);
-            expect(config.showMetadata).toBe(true);
+            expect(config.canViewMetadata).toBe(true);
             expect(config.enablePhotoNavigation).toBe(true);
         });
 
@@ -482,7 +482,7 @@ describe('ViewMode.getModeConfig()', () => {
             
             expect(config.showSearchBar).toBe(true);
             expect(config.allowSelection).toBe(true);
-            expect(config.showMetadata).toBe(true);
+            expect(config.canViewMetadata).toBe(true);
             expect(config.enablePhotoNavigation).toBe(true);
         });
     });
@@ -494,7 +494,7 @@ describe('ViewMode.getModeConfig()', () => {
             
             expect(config.showTrashOperations).toBe(true);
             expect(config.allowSelection).toBe(true);
-            expect(config.showMetadata).toBe(true);
+            expect(config.canViewMetadata).toBe(true);
             expect(config.enablePhotoNavigation).toBe(true);
             expect(config.showBulkOperations).toBe(true);
         });
@@ -507,7 +507,7 @@ describe('ViewMode.getModeConfig()', () => {
             
             expect(config.showAlbumOperations).toBe(true);
             expect(config.allowSelection).toBe(true);
-            expect(config.showMetadata).toBe(true);
+            expect(config.canViewMetadata).toBe(true);
             expect(config.enablePhotoNavigation).toBe(true);
         });
     });
@@ -520,7 +520,7 @@ describe('ViewMode.getModeConfig()', () => {
             expect(config.showImportOperations).toBe(true);
             expect(config.showBulkOperations).toBe(false); // Import is not photoViewingMode nor listMode
             expect(config.allowSelection).toBe(false); // Import is not photoViewingMode
-            expect(config.showMetadata).toBe(false); // Import is not photoViewingMode
+            expect(config.canViewMetadata).toBe(false); // Import is not photoViewingMode
         });
     });
 
@@ -538,7 +538,7 @@ describe('ViewMode.getModeConfig()', () => {
                 const config = viewMode.getModeConfig();
                 
                 expect(config.allowSelection).toBe(false);
-                expect(config.showMetadata).toBe(false);
+                expect(config.canViewMetadata).toBe(false);
                 expect(config.enablePhotoNavigation).toBe(false);
                 expect(config.showCreateButton).toBe(false);
                 expect(config.showSearchBar).toBe(false);
@@ -558,7 +558,8 @@ describe('ViewMode.getModeConfig()', () => {
             expect(config).toHaveProperty('showCreateButton');
             expect(config).toHaveProperty('showSearchBar');
             expect(config).toHaveProperty('allowSelection');
-            expect(config).toHaveProperty('showMetadata');
+            expect(config).toHaveProperty('canViewMetadata');
+            expect(config).toHaveProperty('canEdit');
             expect(config).toHaveProperty('showTrashOperations');
             expect(config).toHaveProperty('showAlbumOperations');
             expect(config).toHaveProperty('showImportOperations');
@@ -581,7 +582,8 @@ describe('ViewMode.getModeConfig()', () => {
                 'showCreateButton',
                 'showSearchBar', 
                 'allowSelection',
-                'showMetadata',
+                'canViewMetadata',
+                'canEdit',
                 'showTrashOperations',
                 'showAlbumOperations',
                 'showImportOperations',
@@ -681,7 +683,7 @@ describe('ViewMode.getModeConfig()', () => {
                 const config = viewMode.getModeConfig();
                 
                 // These should be consistent
-                expect(config.showMetadata).toBe(config.enablePhotoNavigation);
+                expect(config.canViewMetadata).toBe(config.enablePhotoNavigation);
                 expect(config.allowSelection).toBe(true);
             });
         });
@@ -693,7 +695,7 @@ describe('ViewMode.getModeConfig()', () => {
                 const viewMode = new ViewMode(mode);
                 const config = viewMode.getModeConfig();
                 
-                if (!config.showMetadata) {
+                if (!config.canViewMetadata) {
                     expect(config.allowSelection).toBe(false);
                 }
             });
