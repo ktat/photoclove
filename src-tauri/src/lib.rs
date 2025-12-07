@@ -2969,6 +2969,14 @@ async fn get_all_collections(
     match meta_db.get_all_collections(collection_type.as_deref(), config) {
         Ok(collections) => {
             log::info!(target: "photo_collections", "get_all_collections_success; correlation_id={}; count={}", correlation_id, collections.len());
+
+            // Debug: log first collection with cover photo
+            if let Some(first_with_cover) = collections.iter().find(|c| c.get("coverPhoto").and_then(|v| v.as_object()).is_some()) {
+                log::debug!(target: "photo_collections", "sample_collection_with_cover; id={}; has_cover_photo={}",
+                    first_with_cover.get("id").and_then(|v| v.as_i64()).unwrap_or(0),
+                    first_with_cover.get("coverPhoto").is_some());
+            }
+
             serde_json::to_string(&collections).map_err(|e| e.to_string())
         }
         Err(e) => {
