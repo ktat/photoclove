@@ -49,44 +49,7 @@ impl SQLite {
             created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
             updated_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
         );
-        CREATE TABLE tags (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            color TEXT,
-            created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
-        );
-        CREATE TABLE photo_tags (
-            photo_path TEXT,
-            tag_id INTEGER,
-            created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
-            PRIMARY KEY (photo_path, tag_id),
-            FOREIGN KEY (photo_path) REFERENCES photo_metadata(path) ON DELETE CASCADE,
-            FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
-        );
-        CREATE TABLE albums (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            description TEXT DEFAULT '',
-            cover_photo_path TEXT,
-            created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
-            updated_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
-            FOREIGN KEY (cover_photo_path) REFERENCES photo_metadata(path) ON DELETE SET NULL
-        );
-        CREATE TABLE album_photos (
-            album_id INTEGER,
-            photo_path TEXT,
-            added_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
-            order_index INTEGER DEFAULT 0,
-            PRIMARY KEY (album_id, photo_path),
-            FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE,
-            FOREIGN KEY (photo_path) REFERENCES photo_metadata(path) ON DELETE CASCADE
-        );
         CREATE INDEX IF NOT EXISTS idx_date_summary_date ON date_summary(date);
-        CREATE INDEX IF NOT EXISTS idx_photo_tags_photo_path ON photo_tags(photo_path);
-        CREATE INDEX IF NOT EXISTS idx_photo_tags_tag_id ON photo_tags(tag_id);
-        CREATE INDEX IF NOT EXISTS idx_album_photos_album_id ON album_photos(album_id);
-        CREATE INDEX IF NOT EXISTS idx_album_photos_photo_path ON album_photos(photo_path);
-        CREATE INDEX IF NOT EXISTS idx_album_photos_order ON album_photos(album_id, order_index);
         CREATE INDEX IF NOT EXISTS idx_photo_metadata_delete_flg ON photo_metadata(delete_flg);
         CREATE INDEX IF NOT EXISTS idx_photo_date_delete_flg ON photo_metadata(photo_date, delete_flg)"
     }
@@ -114,26 +77,6 @@ impl SQLite {
                     } else if statement.contains("CREATE TABLE date_summary") {
                         let _ = conn.execute(
                             &format!("CREATE TABLE IF NOT EXISTS {}", statement.replace("CREATE TABLE date_summary", "date_summary")),
-                            [],
-                        );
-                    } else if statement.contains("CREATE TABLE tags") {
-                        let _ = conn.execute(
-                            &format!("CREATE TABLE IF NOT EXISTS {}", statement.replace("CREATE TABLE tags", "tags")),
-                            [],
-                        );
-                    } else if statement.contains("CREATE TABLE photo_tags") {
-                        let _ = conn.execute(
-                            &format!("CREATE TABLE IF NOT EXISTS {}", statement.replace("CREATE TABLE photo_tags", "photo_tags")),
-                            [],
-                        );
-                    } else if statement.contains("CREATE TABLE albums") {
-                        let _ = conn.execute(
-                            &format!("CREATE TABLE IF NOT EXISTS {}", statement.replace("CREATE TABLE albums", "albums")),
-                            [],
-                        );
-                    } else if statement.contains("CREATE TABLE album_photos") {
-                        let _ = conn.execute(
-                            &format!("CREATE TABLE IF NOT EXISTS {}", statement.replace("CREATE TABLE album_photos", "album_photos")),
                             [],
                         );
                     } else if statement.contains("CREATE INDEX") {
@@ -657,65 +600,6 @@ impl SQLite {
                 println!("CSS style column migration completed");
             }
             
-            // Check if tag tables exist and create them if they don't
-            let tags_table_exists = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='tags'")
-                .and_then(|mut stmt| {
-                    stmt.query_row([], |row| {
-                        let _name: String = row.get(0)?;
-                        Ok(true)
-                    })
-                })
-                .unwrap_or(false);
-                
-            let photo_tags_table_exists = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='photo_tags'")
-                .and_then(|mut stmt| {
-                    stmt.query_row([], |row| {
-                        let _name: String = row.get(0)?;
-                        Ok(true)
-                    })
-                })
-                .unwrap_or(false);
-                
-            if !tags_table_exists || !photo_tags_table_exists {
-                println!("Creating tag tables");
-                
-                // Create tags table
-                conn.execute(
-                    "CREATE TABLE IF NOT EXISTS tags (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT NOT NULL UNIQUE,
-                        color TEXT,
-                        created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
-                    )",
-                    [],
-                )?;
-                
-                // Create photo_tags table
-                conn.execute(
-                    "CREATE TABLE IF NOT EXISTS photo_tags (
-                        photo_path TEXT,
-                        tag_id INTEGER,
-                        created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
-                        PRIMARY KEY (photo_path, tag_id),
-                        FOREIGN KEY (photo_path) REFERENCES photo_metadata(path) ON DELETE CASCADE,
-                        FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
-                    )",
-                    [],
-                )?;
-                
-                // Create indexes for tag tables
-                conn.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_photo_tags_photo_path ON photo_tags(photo_path)",
-                    [],
-                )?;
-                
-                conn.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_photo_tags_tag_id ON photo_tags(tag_id)",
-                    [],
-                )?;
-                
-                println!("Tag tables migration completed");
-            }
         } else {
             // Create new table with full schema including EXIF columns
             conn.execute(
@@ -808,81 +692,6 @@ impl SQLite {
             log::info!(target: "date_summary", "table_creation; status=completed");
         }
         
-        // Check if albums table exists, create if not
-        let albums_exists = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='albums'")
-            .and_then(|mut stmt| {
-                stmt.query_row([], |row| {
-                    let _name: String = row.get(0)?;
-                    Ok(true)
-                })
-            })
-            .unwrap_or(false);
-        
-        if !albums_exists {
-            log::info!(target: "albums", "table_creation; status=creating_albums_table");
-            
-            // Create albums table
-            conn.execute(
-                "CREATE TABLE albums (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    description TEXT DEFAULT '',
-                    cover_photo_path TEXT,
-                    created_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
-                    updated_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
-                    FOREIGN KEY (cover_photo_path) REFERENCES photo_metadata(path) ON DELETE SET NULL
-                )",
-                [],
-            )?;
-            
-            log::info!(target: "albums", "table_creation; status=albums_table_completed");
-        }
-        
-        // Check if album_photos table exists, create if not
-        let album_photos_exists = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='album_photos'")
-            .and_then(|mut stmt| {
-                stmt.query_row([], |row| {
-                    let _name: String = row.get(0)?;
-                    Ok(true)
-                })
-            })
-            .unwrap_or(false);
-        
-        if !album_photos_exists {
-            log::info!(target: "albums", "table_creation; status=creating_album_photos_table");
-            
-            // Create album_photos table
-            conn.execute(
-                "CREATE TABLE album_photos (
-                    album_id INTEGER,
-                    photo_path TEXT,
-                    added_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
-                    order_index INTEGER DEFAULT 0,
-                    PRIMARY KEY (album_id, photo_path),
-                    FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE,
-                    FOREIGN KEY (photo_path) REFERENCES photo_metadata(path) ON DELETE CASCADE
-                )",
-                [],
-            )?;
-            
-            // Create indexes for album_photos
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_album_photos_album_id ON album_photos(album_id)",
-                [],
-            )?;
-            
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_album_photos_photo_path ON album_photos(photo_path)",
-                [],
-            )?;
-            
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_album_photos_order ON album_photos(album_id, order_index)",
-                [],
-            )?;
-            
-            log::info!(target: "albums", "table_creation; status=album_photos_table_completed");
-        }
         
         // Check if photo_collections table exists, create if not (unified albums/tags)
         let photo_collections_exists = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='photo_collections'")
