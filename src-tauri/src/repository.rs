@@ -155,7 +155,7 @@ pub(crate) trait MetaInfoDB {
     
     // Unified PhotoCollection methods
     fn create_collection(&self, collection_type: &str, name: &str, description: Option<&str>, color: Option<&str>) -> Result<i32, String>;
-    fn get_all_collections(&self, collection_type: Option<&str>) -> Result<Vec<serde_json::Value>, String>;
+    fn get_all_collections(&self, collection_type: Option<&str>, config: config::Config) -> Result<Vec<serde_json::Value>, String>;
     fn update_collection(&self, id: i32, name: Option<&str>, description: Option<&str>, color: Option<&str>, cover_photo_path: Option<&str>) -> Result<(), String>;
     fn delete_collection(&self, id: i32) -> Result<bool, String>;
     fn add_photo_to_collection(&self, collection_id: i32, photo_path: &str) -> Result<(), String>;

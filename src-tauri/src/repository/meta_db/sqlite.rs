@@ -2425,8 +2425,8 @@ impl MetaInfoDB for SQLite {
         SQLite::create_collection(self, collection_type, name, description, color)
     }
 
-    fn get_all_collections(&self, collection_type: Option<&str>) -> Result<Vec<serde_json::Value>, String> {
-        SQLite::get_all_collections(self, collection_type)
+    fn get_all_collections(&self, collection_type: Option<&str>, config: config::Config) -> Result<Vec<serde_json::Value>, String> {
+        SQLite::get_all_collections(self, collection_type, config)
     }
 
     fn update_collection(&self, id: i32, name: Option<&str>, description: Option<&str>, color: Option<&str>, cover_photo_path: Option<&str>) -> Result<(), String> {
@@ -3832,10 +3832,10 @@ impl SQLite {
         Ok(collection_id)
     }
 
-    pub fn get_all_collections(&self, collection_type: Option<&str>) -> Result<Vec<serde_json::Value>, String> {
+    pub fn get_all_collections(&self, collection_type: Option<&str>, config: config::Config) -> Result<Vec<serde_json::Value>, String> {
         let conn = self.get_connection()
             .map_err(|_| "Failed to connect to database".to_string())?;
-        
+
         let (query, params): (String, Vec<Box<dyn rusqlite::ToSql>>) = match collection_type {
             Some(ctype) => (
                 "SELECT id, type, name, color, description, cover_photo_path, settings, created_at, updated_at,
@@ -3850,31 +3850,48 @@ impl SQLite {
                 vec![]
             )
         };
-        
+
         let mut stmt = conn.prepare(&query)
             .map_err(|e| format!("Failed to prepare query: {}", e))?;
-        
+
         let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
         let rows = stmt.query_map(param_refs.as_slice(), |row| {
+            let cover_photo_path: Option<String> = row.get(5)?;
+
+            // Create Photo entity for cover photo if path exists
+            let cover_photo_json = if let Some(path) = cover_photo_path {
+                let file = file::File::new(path.clone());
+                let mut photo = photo::Photo::new(file, Some(config.clone()));
+                photo.set_has_thumbnail();
+
+                // Serialize photo to JSON
+                match serde_json::to_value(&photo) {
+                    Ok(json) => Some(json),
+                    Err(_) => None
+                }
+            } else {
+                None
+            };
+
             Ok(serde_json::json!({
                 "id": row.get::<_, i32>(0)?,
                 "type": row.get::<_, String>(1)?,
                 "name": row.get::<_, String>(2)?,
                 "color": row.get::<_, Option<String>>(3)?,
                 "description": row.get::<_, Option<String>>(4)?,
-                "coverPhotoPath": row.get::<_, Option<String>>(5)?,
+                "coverPhoto": cover_photo_json,
                 "settings": row.get::<_, String>(6).unwrap_or("{}".to_string()),
                 "createdAt": row.get::<_, String>(7)?,
                 "updatedAt": row.get::<_, String>(8)?,
                 "photoCount": row.get::<_, i32>(9)?
             }))
         }).map_err(|e| format!("Failed to query collections: {}", e))?;
-        
+
         let mut collections = Vec::new();
         for row in rows {
             collections.push(row.map_err(|e| format!("Failed to process row: {}", e))?);
         }
-        
+
         Ok(collections)
     }
 
