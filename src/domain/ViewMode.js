@@ -306,13 +306,13 @@ export class ViewMode {
             showCreateButton: this.isAlbumListMode() || this.isTagListMode(),
             showSearchBar: this.isSearchMode(),
             allowSelection: this.isPhotoViewingMode(),
-            showMetadata: this.isPhotoViewingMode(),
+            canViewMetadata: this.isPhotoViewingMode(),
             showTrashOperations: this.isTrashMode(),
             showAlbumOperations: this.isAlbumMode(),
             showImportOperations: this.isImportMode(),
             enablePhotoNavigation: this.isPhotoViewingMode(),
             showBulkOperations: this.isPhotoViewingMode() || this.isListMode(),
-            showEditor: !this.isTrashMode() && !this.isImportMode()
+            canEdit: !this.isTrashMode() && !this.isImportMode()
         };
     }
 
