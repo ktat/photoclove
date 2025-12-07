@@ -702,3 +702,91 @@ describe('ViewMode.getModeConfig()', () => {
         });
     });
 });
+
+describe('ViewMode.shouldShowSideMenuByDefault()', () => {
+    describe('Modes that should show side menu by default', () => {
+        it('should return true for SEARCH mode', () => {
+            const viewMode = new ViewMode(VIEW_MODES.SEARCH);
+            expect(viewMode.shouldShowSideMenuByDefault()).toBe(true);
+        });
+
+        it('should return true for ADVANCED_SEARCH mode', () => {
+            const viewMode = new ViewMode(VIEW_MODES.ADVANCED_SEARCH);
+            expect(viewMode.shouldShowSideMenuByDefault()).toBe(true);
+        });
+
+        it('should return true for IMPORT mode', () => {
+            const viewMode = new ViewMode(VIEW_MODES.IMPORT);
+            expect(viewMode.shouldShowSideMenuByDefault()).toBe(true);
+        });
+    });
+
+    describe('Modes that should not show side menu by default', () => {
+        it('should return false for DATE mode', () => {
+            const viewMode = new ViewMode(VIEW_MODES.DATE);
+            expect(viewMode.shouldShowSideMenuByDefault()).toBe(false);
+        });
+
+        it('should return false for RECENT mode', () => {
+            const viewMode = new ViewMode(VIEW_MODES.RECENT);
+            expect(viewMode.shouldShowSideMenuByDefault()).toBe(false);
+        });
+
+        it('should return false for ALBUM mode', () => {
+            const viewMode = new ViewMode(VIEW_MODES.ALBUM);
+            expect(viewMode.shouldShowSideMenuByDefault()).toBe(false);
+        });
+
+        it('should return false for TAG mode', () => {
+            const viewMode = new ViewMode(VIEW_MODES.TAG);
+            expect(viewMode.shouldShowSideMenuByDefault()).toBe(false);
+        });
+
+        it('should return false for TRASH mode (canEdit is false)', () => {
+            const viewMode = new ViewMode(VIEW_MODES.TRASH);
+            expect(viewMode.shouldShowSideMenuByDefault()).toBe(false);
+        });
+
+        it('should return false for ALBUM_LIST mode', () => {
+            const viewMode = new ViewMode(VIEW_MODES.ALBUM_LIST);
+            expect(viewMode.shouldShowSideMenuByDefault()).toBe(false);
+        });
+
+        it('should return false for TAG_LIST mode', () => {
+            const viewMode = new ViewMode(VIEW_MODES.TAG_LIST);
+            expect(viewMode.shouldShowSideMenuByDefault()).toBe(false);
+        });
+
+        it('should return false for HOME mode', () => {
+            const viewMode = new ViewMode(VIEW_MODES.HOME);
+            expect(viewMode.shouldShowSideMenuByDefault()).toBe(false);
+        });
+    });
+
+    describe('Logic verification', () => {
+        it('should respect canEdit permission', () => {
+            // TRASH mode: isSearchMode is false, but canEdit is also false
+            const trashMode = new ViewMode(VIEW_MODES.TRASH);
+            expect(trashMode.getModeConfig().canEdit).toBe(false);
+            expect(trashMode.shouldShowSideMenuByDefault()).toBe(false);
+        });
+
+        it('should only show for search and import modes when canEdit is true', () => {
+            const modes = [
+                { mode: VIEW_MODES.SEARCH, expected: true },
+                { mode: VIEW_MODES.ADVANCED_SEARCH, expected: true },
+                { mode: VIEW_MODES.IMPORT, expected: true },
+                { mode: VIEW_MODES.DATE, expected: false },
+                { mode: VIEW_MODES.RECENT, expected: false },
+                { mode: VIEW_MODES.ALBUM, expected: false },
+                { mode: VIEW_MODES.TAG, expected: false },
+                { mode: VIEW_MODES.TRASH, expected: false },
+            ];
+
+            modes.forEach(({ mode, expected }) => {
+                const viewMode = new ViewMode(mode);
+                expect(viewMode.shouldShowSideMenuByDefault()).toBe(expected);
+            });
+        });
+    });
+});
