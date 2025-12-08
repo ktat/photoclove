@@ -1509,7 +1509,7 @@ impl MetaInfoDB for SQLite {
         );
 
         let query_sql = "SELECT pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url,
-                            GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags
+                            GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags -- 3
                      FROM photo_metadata pm
                      LEFT JOIN photo_collection_items pt ON pm.path = pt.photo_path
                      LEFT JOIN photo_collection t ON pt.collection = t.id
@@ -1933,13 +1933,13 @@ impl MetaInfoDB for SQLite {
             .unwrap_or(0);
         log::info!(target: "recent_photos", "database_total_count; total_records={}", total_count);
         
-        let query = "SELECT pm.*, GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags
+        let query = "SELECT pm.*, GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags -- 1
         FROM photo_metadata pm
         LEFT JOIN photo_collection_items pt ON pm.path = pt.photo_path
         LEFT JOIN photo_collection t ON pt.collection_id = t.id
-         WHERE (pm.delete_flg = 0 OR pm.delete_flg IS NULL)
-         GROUP BY pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.created_at
-         ORDER BY pm.created_at DESC LIMIT ?";
+        WHERE (pm.delete_flg = 0 OR pm.delete_flg IS NULL)
+        GROUP BY pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.created_at
+        ORDER BY pm.created_at DESC LIMIT ?";
         log::info!(target: "recent_photos", "executing_sql_query; query={}; limit={}", query, limit);
         log::info!(target: "database", "get_recent_photos_metadata_query; query={}; limit={}", query, limit);
         
@@ -2582,13 +2582,12 @@ impl SQLite {
         
         // Build search query based on search_type with tags
         let mut sql_query = String::from("
-        SELECT pm.*, GROUP_CONCAT(pc.id || ':' || pc.name || ':' || COALESCE(pc.color, '')) as tags
+        SELECT pm.*, GROUP_CONCAT(pc.id || ':' || pc.name || ':' || COALESCE(pc.color, '')) as tags -- 2
         FROM photo_metadata pm
         LEFT JOIN photo_collection_items pci ON pm.path = pci.photo_path 
         LEFT JOIN photo_collections pc ON pc.id = pci.collection_id AND pc.type = 'tag'
         WHERE (pm.delete_flg = 0 OR pm.delete_flg IS NULL)");
         
-        log::info!(target: "database", "search_photos_base_query; query={}", sql_query);
         let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
         
         // Add search condition based on search_type (only if query is not empty)
@@ -2760,7 +2759,7 @@ impl SQLite {
         
         // Add GROUP BY clause for tag aggregation
         sql_query.push_str(" GROUP BY pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url, pm.exif_date_time_original, pm.exif_make, pm.exif_model, pm.exif_lens_model");
-        
+
         // Add ORDER BY clause with primary and secondary sort fields
         let order_direction = if sort_order.to_lowercase() == "asc" { "ASC" } else { "DESC" };
         let secondary_direction = "DESC"; // Default secondary sort direction
@@ -2793,13 +2792,7 @@ impl SQLite {
         
         // Add LIMIT clause
         sql_query.push_str(&format!(" LIMIT {}", max_photos_per_fetch));
-        
-        log::debug!(
-            target: "database",
-            "sql_query_final; query_length={}; param_count={}; sort_field={}; sort_order={}; limit={}",
-            sql_query.len(), params.len(), sort_field, sort_order, max_photos_per_fetch
-        );
-        
+                
         // Log the complete SQL with ORDER BY and LIMIT
         log::debug!(
             target: "database",
@@ -2865,7 +2858,7 @@ impl SQLite {
                 },
                 Err(e) => {
                     log::error!(target: "database", "search_photos_photo_error; error={}", e);
-                    return Err(e.to_string());
+                    // TODO: continue processing but remove problematic photo from results
                 }
             }
         }
