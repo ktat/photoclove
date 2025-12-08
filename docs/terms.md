@@ -196,10 +196,8 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 
 ### Core Tables
 - `photo_metadata`: Main photo information
-- `tags`: Tag definitions with colors
-- `photo_tags`: Photo-tag relationships
-- `albums`: Album definitions
-- `album_photos`: Album-photo relationships
+- `photo_collections`: Album/Tag definitions with colors
+- `photo_collection_items`: Photo-album/tag relationships
 - `date_summary`: Pre-computed photo counts by date
 - `job_queue`: Background job tracking
 - `saved_searches`: Stored search queries
