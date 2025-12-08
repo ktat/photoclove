@@ -174,10 +174,6 @@ thumbnail_store/
 - `photo_collections` - Albums and tags unified (type, name, metadata)
 - `photo_collection_items` - Many-to-many photo-collection relationships
 
-*Legacy Tables (Backward Compatibility):*
-- `tags`, `photo_tags` - Original tag system
-- `albums`, `album_photos` - Original album system
-
 *Job Management:*
 - `jobs`, `job_units` - Background job processing system
 - `photo_styles` - CSS transformations

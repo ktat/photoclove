@@ -128,9 +128,3 @@ PhotoClove uses a unified collection system that treats albums and tags as diffe
 - `idx_collection_type`: Index on photo_collections.type for fast collection type filtering
 - `idx_collection_items_photo`: Index on photo_collection_items.photo_path for fast photo lookups
 - `idx_collection_items_collection`: Index on photo_collection_items.collection_id for fast collection lookups
-
-### Legacy Indexes (Backward Compatibility)
-- `idx_photo_tags_photo_path`: Index on photo_tags.photo_path for fast tag lookups by photo
-- `idx_photo_tags_tag_id`: Index on photo_tags.tag_id for fast photo lookups by tag
-- `idx_album_photos_album`: Index on album_photos.album_id for fast album photo lookups
-- `idx_album_photos_photo`: Index on album_photos.photo_path for fast photo album lookups
