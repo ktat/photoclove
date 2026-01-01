@@ -34,15 +34,18 @@ export function useViewModeSync({
     setPhotosListMiniCurrentIndex,
     setCurrentPhotoPath,
     loadPhotosWithCollection,
-    appConfig
+    appConfig,
+    sortOfPhotos
 }) {
     // Track if this is the initial mount
     const isInitialMount = useRef(true);
 
+    // Stringify searchParams to use in dependency array (avoid reference changes)
+    const searchParamsStr = currentSearchParams ? JSON.stringify(currentSearchParams) : null;
+
     useEffect(() => {
         // Skip on initial mount if no viewMode
         if (!viewMode) {
-            logger.debug('useViewModeSync', 'skip_no_viewmode', 'Skipping photo reload - no viewMode');
             return;
         }
 
@@ -59,24 +62,11 @@ export function useViewModeSync({
         });
 
         // Skip photo loading if in album or tag mode - these photos are managed separately
-        if (viewModeObj.isAlbumMode()) {
-            logger.debug('useViewModeSync', 'skip_album', 'Skipping photo reload - in album mode');
-            return;
-        }
-        if (viewModeObj.isTagMode()) {
-            logger.debug('useViewModeSync', 'skip_tag', 'Skipping photo reload - in tag mode');
+        if (viewModeObj.isAlbumMode() || viewModeObj.isTagMode()) {
             return;
         }
 
         // Load all photos based on ViewMode
-        logger.info('useViewModeSync', 'load_photos', 'Loading photos for view mode', {
-            viewMode,
-            date: currentDate,
-            albumId: currentAlbumId,
-            tagId: currentTagId,
-            hasSearchQuery: !!searchQuery
-        });
-
         loadPhotosWithCollection(viewModeObj);
 
         // Mark that initial mount has completed
@@ -90,10 +80,13 @@ export function useViewModeSync({
         currentAlbumId,
         currentTagId,
         searchQuery,
-        currentSearchParams,
-        appConfig
+        searchParamsStr,
+        appConfig,
+        sortOfPhotos
         // Note: Intentionally excluding setter functions and callbacks to prevent infinite loops
         // These functions are stable and don't need to trigger re-runs
+        // Note: Using searchParamsStr (stringified) instead of currentSearchParams to avoid
+        // infinite loops from object reference changes while still detecting content changes
     ]);
 }
 

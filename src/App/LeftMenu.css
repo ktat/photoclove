@@ -14,6 +14,7 @@
   border: none;
   background-color: #1f1f1f;
   flex-shrink: 0;
+  position: relative;
 }
 
 .leftMenu .navigation-icons {
@@ -43,7 +44,7 @@
 }
 
 .leftMenu .dateList {
-  height: calc(100vh - 110px);
+  height: calc(100vh - 150px);
   overflow-y: auto;
 }
 
@@ -162,9 +163,223 @@ div.dateListLoading-crub {
   background-color: var(--bg-elevated);
 }
 
-/* Responsive styles for left menu */
+/* Sidebar collapse toggle button */
+.sidebar-collapse-toggle {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  background-color: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  z-index: 10;
+}
+
+.sidebar-collapse-toggle:hover {
+  background-color: var(--bg);
+  transform: scale(1.1);
+}
+
+.sidebar-collapse-toggle:active {
+  transform: scale(0.95);
+}
+
+/* Desktop collapsed state (non-overlay, stays in flow) */
+.leftMenu.collapsed {
+  min-width: 60px;
+  max-width: 60px;
+  transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
+}
+
+.leftMenu.collapsed .navigation-icons {
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.leftMenu.collapsed .navigation-icons a {
+  min-width: 36px;
+  min-height: 36px;
+}
+
+.leftMenu.collapsed .dateList-controls,
+.leftMenu.collapsed .date-list-title,
+.leftMenu.collapsed .date-filters-controls,
+.leftMenu.collapsed .dateListLoading-container,
+.leftMenu.collapsed .dateListLoading-crub {
+  display: none;
+}
+
+.leftMenu.collapsed .dateList {
+  display: none;
+}
+
+/* Show Recent Photos as icon-only in collapsed state */
+.leftMenu.collapsed .dateList-controls {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+  text-align: center;
+  gap: 8px;
+}
+
+.leftMenu.collapsed .dateList-controls > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+}
+
+.leftMenu.collapsed .recent-photos-link {
+  justify-content: center !important;
+}
+
+.leftMenu.collapsed .recent-photos-text {
+  display: none;
+}
+
+.leftMenu.collapsed .recent-photos-icon {
+  font-size: 16px !important;
+}
+
+/* Collapsed state - no automatic expansion */
+
+/* Responsive styles for left menu - collapsible sidebar */
 @media screen and (max-width: 1000px) {
+  /* Show toggle button on narrow screens */
+  .sidebar-collapse-toggle {
+    display: block;
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    z-index: 10;
+  }
+
+  /* Collapsed state - icon-only sidebar */
   .leftMenu {
+    min-width: 60px;
+    max-width: 60px;
+    transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s ease;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Vertical icon layout in collapsed state */
+  .leftMenu .navigation-icons {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 0;
+  }
+
+  .leftMenu .navigation-icons a {
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  /* Hide content in collapsed state */
+  .leftMenu .dateList,
+  .leftMenu .row,
+  .leftMenu .date-list-title,
+  .leftMenu .date-filters-controls,
+  .leftMenu .dateListLoading-container,
+  .leftMenu .dateListLoading-crub {
+    display: none !important;
+  }
+
+  /* Show Recent Photos as icon-only in collapsed state */
+  .leftMenu .dateList-controls {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+    text-align: center;
+  }
+
+  /* Center alignment is already set in JSX inline styles */
+
+  .leftMenu .recent-photos-text {
     display: none;
+  }
+
+  .leftMenu .recent-photos-icon {
+    font-size: 16px !important;
+  }
+
+  /* Expanded state - overlay when not collapsed */
+  .leftMenu:not(.collapsed) {
+    max-width: 230px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: calc(100vh - 30px);
+    z-index: 1000;
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Restore horizontal icon layout when expanded */
+  .leftMenu:not(.collapsed) .navigation-icons {
+    flex-direction: row;
+    gap: 8px;
+    padding: 6px 0;
+  }
+
+  .leftMenu:not(.collapsed) .navigation-icons a {
+    min-width: 28px;
+    min-height: 28px;
+  }
+
+  /* Show content when expanded */
+  .leftMenu:not(.collapsed) .dateList,
+  .leftMenu:not(.collapsed) .row {
+    display: block !important;
+    animation: fadeIn 0.2s ease-in;
+  }
+
+  /* Show text and controls when expanded */
+  .leftMenu:not(.collapsed) .recent-photos-text {
+    display: inline !important;
+  }
+
+  .leftMenu:not(.collapsed) .recent-photos-icon {
+    font-size: 16px !important;
+  }
+
+  .leftMenu:not(.collapsed) .date-list-title,
+  .leftMenu:not(.collapsed) .date-filters-controls,
+  .leftMenu:not(.collapsed) .dateListLoading-container,
+  .leftMenu:not(.collapsed) .dateListLoading-crub {
+    display: block !important;
+  }
+
+  /* Restore dateList-controls layout when expanded */
+  .leftMenu:not(.collapsed) .dateList-controls {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
+
+  /* Fade-in animation for content reveal */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 }

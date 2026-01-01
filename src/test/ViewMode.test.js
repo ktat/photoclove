@@ -136,19 +136,6 @@ describe('ViewMode.getUnifiedPhotoParams()', () => {
         });
     });
 
-    describe('ADVANCED_SEARCH mode', () => {
-        it('should generate correct params for advanced search mode', () => {
-            const viewMode = new ViewMode(VIEW_MODES.ADVANCED_SEARCH, { 
-                searchQuery: "family",
-                searchParams: { year: 2023, rating: 5 }
-            });
-            const params = viewMode.getUnifiedPhotoParams(mockAppConfig);
-            
-            expect(params.search_type).toBe("search");
-            expect(params.query).toBe("family");
-            expect(params.params).toEqual({ year: 2023, rating: 5 });
-        });
-    });
 
     describe('TRASH mode', () => {
         it('should generate correct params for trash mode', () => {
@@ -296,12 +283,7 @@ describe('ViewMode.getModeTitle()', () => {
 
         it('should return correct title for SEARCH mode', () => {
             const viewMode = new ViewMode(VIEW_MODES.SEARCH);
-            expect(viewMode.getModeTitle()).toBe('Search Results');
-        });
-
-        it('should return correct title for ADVANCED_SEARCH mode', () => {
-            const viewMode = new ViewMode(VIEW_MODES.ADVANCED_SEARCH);
-            expect(viewMode.getModeTitle()).toBe('Advanced Search');
+            expect(viewMode.getModeTitle()).toBe('Search');
         });
 
         it('should return correct title for RECENT mode', () => {
@@ -476,15 +458,6 @@ describe('ViewMode.getModeConfig()', () => {
             expect(config.enablePhotoNavigation).toBe(true);
         });
 
-        it('should enable search bar for ADVANCED_SEARCH mode', () => {
-            const viewMode = new ViewMode(VIEW_MODES.ADVANCED_SEARCH);
-            const config = viewMode.getModeConfig();
-            
-            expect(config.showSearchBar).toBe(true);
-            expect(config.allowSelection).toBe(true);
-            expect(config.canViewMetadata).toBe(true);
-            expect(config.enablePhotoNavigation).toBe(true);
-        });
     });
 
     describe('Trash mode configuration', () => {
@@ -624,14 +597,10 @@ describe('ViewMode.getModeConfig()', () => {
             });
         });
 
-        it('should show search bar only for search modes', () => {
-            const searchModes = [VIEW_MODES.SEARCH, VIEW_MODES.ADVANCED_SEARCH];
-            
-            searchModes.forEach(mode => {
-                const viewMode = new ViewMode(mode);
-                const config = viewMode.getModeConfig();
-                expect(config.showSearchBar).toBe(true);
-            });
+        it('should show search bar only for search mode', () => {
+            const viewMode = new ViewMode(VIEW_MODES.SEARCH);
+            const config = viewMode.getModeConfig();
+            expect(config.showSearchBar).toBe(true);
         });
 
         it('should show trash operations only for TRASH mode', () => {
@@ -710,11 +679,6 @@ describe('ViewMode.shouldShowSideMenuByDefault()', () => {
             expect(viewMode.shouldShowSideMenuByDefault()).toBe(true);
         });
 
-        it('should return true for ADVANCED_SEARCH mode', () => {
-            const viewMode = new ViewMode(VIEW_MODES.ADVANCED_SEARCH);
-            expect(viewMode.shouldShowSideMenuByDefault()).toBe(true);
-        });
-
         it('should return true for IMPORT mode', () => {
             const viewMode = new ViewMode(VIEW_MODES.IMPORT);
             expect(viewMode.shouldShowSideMenuByDefault()).toBe(true);
@@ -774,7 +738,6 @@ describe('ViewMode.shouldShowSideMenuByDefault()', () => {
         it('should only show for search and import modes when canEdit is true', () => {
             const modes = [
                 { mode: VIEW_MODES.SEARCH, expected: true },
-                { mode: VIEW_MODES.ADVANCED_SEARCH, expected: true },
                 { mode: VIEW_MODES.IMPORT, expected: true },
                 { mode: VIEW_MODES.DATE, expected: false },
                 { mode: VIEW_MODES.RECENT, expected: false },

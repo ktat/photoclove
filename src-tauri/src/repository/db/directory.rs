@@ -20,6 +20,7 @@ pub struct DatesNum {
     data: HashMap<String, i32>,
 }
 
+#[derive(Clone)]
 pub struct Directory {
     path: file::Dir,
 }
@@ -200,21 +201,105 @@ impl RepositoryDB for Directory {
                 photos.photos.push(p)
             }
         }
-        if sort == Sort::Name {
-            photos.photos.sort_by(|a, b| a.file.path.cmp(&b.file.path));
-        } else if sort == Sort::Time {
-            photos.photos.sort_by(
-                |a, b| match a.file.created_date().cmp(&b.file.created_date()) {
+        // Sort photos based on the specified sort type and direction
+        log::info!(target: "sorting", "sort_photos; sort_type={:?}; photo_count={}", sort, photos.photos.len());
+        match sort {
+            // Shot time (EXIF photo time) sorts
+            Sort::PhotoTimeDesc | Sort::PhotoTime => {
+                log::debug!(target: "sorting", "applying_photo_time_desc_sort");
+                // Log first 3 photos' time values for debugging
+                if photos.photos.len() > 0 {
+                    let sample_size = std::cmp::min(3, photos.photos.len());
+                    for i in 0..sample_size {
+                        log::debug!(target: "sorting", "before_sort_sample; index={}; time={}; path={}",
+                            i, photos.photos[i].time(), photos.photos[i].file.path);
+                    }
+                }
+                // Descending: newest photos first (reverse chronological)
+                photos.photos.sort_by(|a, b| match b.time().cmp(&a.time()) {
                     Ordering::Equal => a.file.path.cmp(&b.file.path),
                     other => other,
-                },
-            );
-        } else {
-            // photo time
-            photos.photos.sort_by(|a, b| match a.time().cmp(&b.time()) {
-                Ordering::Equal => a.file.path.cmp(&b.file.path),
-                other => other,
-            });
+                });
+                // Log after sorting
+                if photos.photos.len() > 0 {
+                    let sample_size = std::cmp::min(3, photos.photos.len());
+                    for i in 0..sample_size {
+                        log::debug!(target: "sorting", "after_sort_sample; index={}; time={}; path={}",
+                            i, photos.photos[i].time(), photos.photos[i].file.path);
+                    }
+                }
+            }
+            Sort::PhotoTimeAsc => {
+                // Ascending: oldest photos first (chronological)
+                photos.photos.sort_by(|a, b| match a.time().cmp(&b.time()) {
+                    Ordering::Equal => a.file.path.cmp(&b.file.path),
+                    other => other,
+                });
+            }
+
+            // Added time (created_at in database) sorts
+            Sort::AddedTimeDesc => {
+                // Descending: newest additions first
+                photos
+                    .photos
+                    .sort_by(|a, b| match b.file.created_at.cmp(&a.file.created_at) {
+                        Ordering::Equal => a.file.path.cmp(&b.file.path),
+                        other => other,
+                    });
+            }
+            Sort::AddedTimeAsc => {
+                // Ascending: oldest additions first
+                photos
+                    .photos
+                    .sort_by(|a, b| match a.file.created_at.cmp(&b.file.created_at) {
+                        Ordering::Equal => a.file.path.cmp(&b.file.path),
+                        other => other,
+                    });
+            }
+
+            // Star rating sorts
+            Sort::StarDesc => {
+                // Descending: 5 star → 0 star
+                photos.photos.sort_by(|a, b| {
+                    let star_a = a.star.unwrap_or(0);
+                    let star_b = b.star.unwrap_or(0);
+                    match star_b.cmp(&star_a) {
+                        Ordering::Equal => a.file.path.cmp(&b.file.path),
+                        other => other,
+                    }
+                });
+            }
+            Sort::StarAsc => {
+                // Ascending: 0 star → 5 star
+                photos.photos.sort_by(|a, b| {
+                    let star_a = a.star.unwrap_or(0);
+                    let star_b = b.star.unwrap_or(0);
+                    match star_a.cmp(&star_b) {
+                        Ordering::Equal => a.file.path.cmp(&b.file.path),
+                        other => other,
+                    }
+                });
+            }
+
+            // File name sorts
+            Sort::NameDesc => {
+                // Descending: Z→A
+                photos.photos.sort_by(|a, b| b.file.path.cmp(&a.file.path));
+            }
+            Sort::NameAsc | Sort::Name => {
+                // Ascending: A→Z
+                photos.photos.sort_by(|a, b| a.file.path.cmp(&b.file.path));
+            }
+
+            // Legacy Time (file created time)
+            Sort::Time => {
+                photos.photos.sort_by(|a, b| {
+                    match a.file.created_date().cmp(&b.file.created_date()) {
+                        Ordering::Equal => a.file.path.cmp(&b.file.path),
+                        other => other,
+                    }
+                });
+            }
         }
 
         let mut start_index = (num * (page - 1)) as usize;

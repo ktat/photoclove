@@ -1,9 +1,9 @@
 use crate::entity::photo;
 use crate::repository::meta_db;
 use crate::repository::{self, MetaInfoDB};
-use crate::value::{comment, exif, file, star};
+use crate::value::{comment, date, exif, file, star};
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
-use std::collections::{hash_map::Iter, hash_map::Keys, HashMap};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PhotoMeta {
@@ -15,7 +15,7 @@ pub struct PhotoMeta {
 }
 #[derive(Debug)]
 pub struct PhotoMetas {
-    data: HashMap<String, PhotoMeta>,
+    data: IndexMap<String, PhotoMeta>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -59,15 +59,15 @@ impl PhotoMeta {
 impl PhotoMetas {
     pub fn new() -> PhotoMetas {
         PhotoMetas {
-            data: HashMap::new(),
+            data: IndexMap::new(),
         }
     }
 
-    pub fn keys(&self) -> Keys<'_, String, PhotoMeta> {
+    pub fn keys(&self) -> indexmap::map::Keys<'_, String, PhotoMeta> {
         self.data.keys()
     }
 
-    pub fn iter(&self) -> Iter<'_, String, PhotoMeta> {
+    pub fn iter(&self) -> indexmap::map::Iter<'_, String, PhotoMeta> {
         self.data.iter()
     }
 
@@ -118,12 +118,15 @@ impl PhotoMeta {
 
     /// Create PhotoMeta from DB record for photos in trash
     /// Uses DB info for photo date/metadata since file is in trash, not at original path
-    pub fn new_from_photo_info_from_trash(record: &meta_db::PhotoInfo, trash_path: &str, _library_path: &str) -> Option<PhotoMeta> {
+    pub fn new_from_photo_info_from_trash(
+        record: &meta_db::PhotoInfo,
+        trash_path: &str,
+        _library_path: &str,
+    ) -> Option<PhotoMeta> {
         // Photo is in trash with full path preserved
         // Trash structure: trash_path + full_original_path
         let original_path = &record.path;
         let trash_file_path = format!("{}{}", trash_path.trim_end_matches('/'), original_path);
-
 
         let f = file::File::new_if_exists(trash_file_path.clone());
         if f.is_none() {
@@ -158,7 +161,8 @@ impl PhotoMeta {
                 None
             } else {
                 // Convert back to string format for directory mode
-                let tag_strings: Vec<String> = tags.iter()
+                let tag_strings: Vec<String> = tags
+                    .iter()
                     .map(|(id, name, color)| {
                         let color_str = color.as_ref().map_or("", |c| c.as_str());
                         format!("{}:{}:{}", id, name, color_str)
@@ -183,5 +187,9 @@ impl PhotoMeta {
         } else {
             return self.photo.time();
         }
+    }
+
+    pub fn date_key(&self) -> String {
+        return self.photo.get_imported_dir_date().to_string();
     }
 }

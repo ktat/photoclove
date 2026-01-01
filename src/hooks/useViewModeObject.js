@@ -121,8 +121,8 @@ export const useViewModeObject = (initialMode = VIEW_MODES.HOME, initialData = {
         showDate: (date) => transitionTo(VIEW_MODES.DATE, { date }),
         showRecent: () => transitionTo(VIEW_MODES.RECENT),
         showSearch: (searchQuery = "", isAdvanced = false) => {
-            const mode = isAdvanced ? VIEW_MODES.ADVANCED_SEARCH : VIEW_MODES.SEARCH;
-            return transitionTo(mode, { searchQuery, isAdvanced });
+            // Always use SEARCH mode - Advanced Search has been unified with regular Search
+            return transitionTo(VIEW_MODES.SEARCH, { searchQuery, isAdvanced });
         },
         showAlbum: (albumId) => transitionTo(VIEW_MODES.ALBUM, { albumId }),
         showAlbumList: () => transitionTo(VIEW_MODES.ALBUM_LIST),

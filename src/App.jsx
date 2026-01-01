@@ -66,6 +66,7 @@ function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
   const [rightMenuOpen, setRightMenuOpen] = useState(true);
+  const [leftMenuCollapsed, setLeftMenuCollapsed] = useState(false);
   const [showLogViewer, setShowLogViewer] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showTermsOfUse, setShowTermsOfUse] = useState(false);
@@ -117,6 +118,36 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Add keyboard shortcut for Job Queue (Ctrl+Shift+J)
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.ctrlKey && event.shiftKey && event.key === 'J') {
+        event.preventDefault();
+        setShowJobQueueModal(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Auto-collapse/expand left menu based on window width
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 1000) {
+        setLeftMenuCollapsed(true);
+      } else {
+        setLeftMenuCollapsed(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    // Check on mount
+    handleResize();
+
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
 
@@ -211,21 +242,10 @@ function App() {
             setShowJobQueueModal(true);
           } else if (e.payload == "login") {
             loginGoogle();
-          }
-          setTimeout(() => {
-            invoke("lock", { t: false });
-          }, 1000);
-        }
-      });
-      if (e.payload === "create_db") {
-        invoke("lock", { t: true }).then((le) => {
-          if (le) {
+          } else if (e.payload === "create_db") {
             // BUG: event is called twice in same time. I don't know the reason why.
             if (in_db_creation) {
               message("DB creation in progress");
-              setTimeout(() => {
-                invoke("lock", { t: false });
-              }, 1000);
             } else {
               ask("It may cost long time.\nAre you OK?", "Create DB?").then((e) => {
                 if (e) {
@@ -235,15 +255,15 @@ function App() {
                   });
                 }
               }).catch((e) => {
-                setTimeout(() => {
-                  invoke("lock", { t: false });
-                }, 1000);
-                logger.error('App', 'init_error', 'Initialization error', { error: e });
+                logger.error('App', 'create_db_error', 'Create DB error', { error: e });
               })
             }
           }
-        })
-      }
+          setTimeout(() => {
+            invoke("lock", { t: false });
+          }, 1000);
+        }
+      });
     });
     };
 
@@ -311,8 +331,8 @@ function App() {
     return (
       <>
         <div className="container">
-          <div className={`inner-container ${rightMenuOpen ? 'menu-open' : 'menu-closed'}`}>
-            <div id="leftMenu" className="leftMenu">
+          <div className={`inner-container ${rightMenuOpen ? 'menu-open' : 'menu-closed'} ${leftMenuCollapsed ? 'left-menu-collapsed' : ''}`}>
+            <div id="leftMenu" className={`leftMenu ${leftMenuCollapsed ? 'collapsed' : ''}`} aria-label="Main navigation sidebar" role="navigation">
               <div className="navigation-icons">
                 <a href="#" onClick={() => {
                   updateCurrentDate("");
@@ -354,6 +374,8 @@ function App() {
                 getDates={getDates}
                 toggleImporter={toggleImporter}
                 toggleSearchPage={toggleSearchPage}
+                leftMenuCollapsed={leftMenuCollapsed}
+                setLeftMenuCollapsed={setLeftMenuCollapsed}
               />
             </div>
             <PhotosList
@@ -382,8 +404,8 @@ function App() {
     // onKeyDown={(e) => { shortCutNavigation.onKeyDown(e) }}
     // onKeyUp={(e) => { shortCutNavigation.onKeyUp(e) }}
     >
-      <div className={`inner-container ${rightMenuOpen ? 'menu-open' : 'menu-closed'}`}>
-        <div id="leftMenu" className="leftMenu">
+      <div className={`inner-container ${rightMenuOpen ? 'menu-open' : 'menu-closed'} ${leftMenuCollapsed ? 'left-menu-collapsed' : ''}`}>
+        <div id="leftMenu" className={`leftMenu ${leftMenuCollapsed ? 'collapsed' : ''}`} aria-label="Main navigation sidebar" role="navigation">
           <div className="navigation-icons">
             <a href="#" onClick={() => {
               updateCurrentDate("");
@@ -425,6 +447,8 @@ function App() {
             getDates={getDates}
             toggleImporter={toggleImporter}
             toggleSearchPage={toggleSearchPage}
+            leftMenuCollapsed={leftMenuCollapsed}
+            setLeftMenuCollapsed={setLeftMenuCollapsed}
           />
         </div>
         {(() => {

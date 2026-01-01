@@ -1,9 +1,9 @@
+use crate::repository::meta_db::sqlite::SQLite;
 use reqwest;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fs::File;
 use std::io::Read;
-use crate::repository::meta_db::sqlite::SQLite;
 
 static USER_AGENT: &str = "photoclove/1.0";
 
@@ -141,11 +141,11 @@ impl GooglePhotos {
 
     pub async fn upload_photo(&self, files: Vec<&str>) -> Result<(), String> {
         log::info!(target: "google_photos", "upload_start; files_count={}", files.len());
-        
+
         // Step 1: Upload all files in parallel to collect upload tokens (Google Photos API allows parallel uploads)
         let upload_uri = API_END_POINT_URL.to_string() + "uploads";
         let auth = "Bearer ".to_string() + &self.access_token;
-        
+
         // Create parallel upload tasks
         let upload_tasks: Vec<_> = files.iter().map(|&file_path| {
             let upload_uri = upload_uri.clone();
@@ -184,7 +184,7 @@ impl GooglePhotos {
                 }
             })
         }).collect();
-        
+
         // Wait for all upload tasks to complete and collect results
         let mut upload_tokens = Vec::new();
         for task in upload_tasks {
@@ -200,21 +200,21 @@ impl GooglePhotos {
                 }
             }
         }
-        
+
         // Step 2: Batch the upload tokens into groups of 50 and create media items
         const BATCH_SIZE: usize = 50;
         let batches: Vec<&[(String, String)]> = upload_tokens.chunks(BATCH_SIZE).collect();
-        
+
         log::info!(target: "google_photos", "batching_tokens; total_tokens={}; batches={}", upload_tokens.len(), batches.len());
-        
+
         for (batch_index, batch) in batches.iter().enumerate() {
             log::info!(target: "google_photos", "processing_batch; batch={}/{}", batch_index + 1, batches.len());
-            
+
             // Add delay between batches to reduce API load
             if batch_index > 0 {
                 tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
             }
-            
+
             let mut items = Vec::new();
             for (file_name, upload_token) in batch.iter() {
                 let item = GoogleSimpleMediaItem {
@@ -227,11 +227,11 @@ impl GooglePhotos {
                 };
                 items.push(media_item);
             }
-            
+
             let data = GoogleAlbumData {
                 new_media_items: items.clone(),
             };
-            
+
             // Call batchCreate API
             let res_post_request = self
                 .post_request(
@@ -239,31 +239,37 @@ impl GooglePhotos {
                     serde_json::to_string(&data).unwrap(),
                 )
                 .await;
-            
+
             // Parse the response and store URLs in database
             match res_post_request {
                 Ok(response_text) => {
                     log::info!(target: "google_photos", "batch_create_response; batch={}", batch_index + 1);
                     log::debug!(target: "google_photos", "batch_create_raw_response; response={}", response_text);
-                    
+
                     match serde_json::from_str::<GoogleBatchCreateResponse>(&response_text) {
                         Ok(batch_response) => {
                             let sqlite_db = SQLite::new(self.db_path.clone());
-                            
+
                             // Create a mapping from upload_token to file_name
-                            let mut token_to_filename: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+                            let mut token_to_filename: std::collections::HashMap<String, String> =
+                                std::collections::HashMap::new();
                             for item in &items {
                                 token_to_filename.insert(
                                     item.simple_media_item.upload_token.clone(),
-                                    item.simple_media_item.file_name.clone()
+                                    item.simple_media_item.file_name.clone(),
                                 );
                             }
-                            
+
                             // Process each result
                             for result in batch_response.new_media_item_results {
                                 if let Some(media_item) = result.media_item {
-                                    if let Some(file_path) = token_to_filename.get(&result.upload_token) {
-                                        match sqlite_db.save_google_photos_url(file_path, &media_item.product_url) {
+                                    if let Some(file_path) =
+                                        token_to_filename.get(&result.upload_token)
+                                    {
+                                        match sqlite_db.save_google_photos_url(
+                                            file_path,
+                                            &media_item.product_url,
+                                        ) {
                                             Ok(()) => {
                                                 log::info!(target: "google_photos", "url_saved; file={}; url={}", file_path, media_item.product_url);
                                             }
@@ -278,7 +284,8 @@ impl GooglePhotos {
                             }
                         }
                         Err(e) => {
-                            let error_msg = format!("Failed to parse Google Photos API response: {}", e);
+                            let error_msg =
+                                format!("Failed to parse Google Photos API response: {}", e);
                             log::error!(target: "google_photos", "batch_create_parse_error; error={}", e);
                             return Err(error_msg);
                         }
@@ -291,11 +298,10 @@ impl GooglePhotos {
                 }
             }
         }
-        
+
         log::info!(target: "google_photos", "upload_complete; files_processed={}", upload_tokens.len());
         Ok(())
     }
-
 
     async fn get_request(&self, path: &str) -> Result<String, reqwest::Error> {
         let uri = API_END_POINT_URL.to_string() + path;
@@ -333,17 +339,22 @@ impl GooglePhotos {
             .send()
             .await
             .map_err(|e| format!("Network error: {}", e))?;
-        
+
         let status = response.status();
-        let response_text = response.text().await
+        let response_text = response
+            .text()
+            .await
             .map_err(|e| format!("Failed to read response: {}", e))?;
-        
+
         // Check for API errors in the response
         if !status.is_success() || response_text.contains("\"error\"") {
             log::error!(target: "google_photos", "api_error; status={}; response={}", status, response_text);
-            return Err(format!("Google Photos API error: {} - {}", status, response_text));
+            return Err(format!(
+                "Google Photos API error: {} - {}",
+                status, response_text
+            ));
         }
-        
+
         Ok(response_text)
     }
 }

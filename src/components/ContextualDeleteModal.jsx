@@ -1,37 +1,96 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { logger } from '../services/LoggerService.js';
 
-const ContextualDeleteModal = ({ 
-  isOpen, 
-  operation, // 'removeFromAlbum' | 'deleteFile'
-  photoPath,
+const ContextualDeleteModal = ({
+  isOpen,
+  operation, // 'removeFromAlbum' | 'deleteFile' | 'moveToTrash' | 'restoreFromTrash' | 'permanentDelete'
+  photoPath, // Single file path (for single file operations)
+  photoCount, // Number of files (for batch operations)
   albumName,
   onConfirm,
-  onCancel 
+  onCancel
 }) => {
+  // Keyboard event handler for ESC and Enter
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        e.preventDefault();
+        logger.debug('ContextualDeleteModal', 'esc_pressed', 'User pressed ESC to cancel');
+        onCancel();
+      } else if (e.key === 'Enter' || e.keyCode === 13) {
+        e.preventDefault();
+        logger.debug('ContextualDeleteModal', 'enter_pressed', 'User pressed Enter to confirm');
+        onConfirm();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onConfirm, onCancel]);
+
   if (!isOpen) return null;
 
   const getModalContent = () => {
+    // Determine if this is a batch operation
+    const isBatch = photoCount !== undefined && photoCount !== null;
+    const count = isBatch ? photoCount : 1;
     const filename = photoPath?.split('/').pop() || 'photo';
-    
-    if (operation === 'removeFromAlbum') {
-      return {
-        title: 'Remove from Album',
-        message: `Remove '${filename}' from album '${albumName}'?`,
-        description: 'The photo will remain in your library and other albums.',
-        confirmText: 'Remove from Album',
-        confirmStyle: { backgroundColor: '#F59E0B' } // Orange
-      };
-    } else {
-      return {
-        title: 'Delete Photo File',
-        message: `Permanently delete '${filename}'?`,
-        description: albumName 
-          ? `This will delete the file from your computer AND remove it from album '${albumName}'.`
-          : 'This will permanently remove the photo from your library.',
-        confirmText: 'Delete Permanently',
-        confirmStyle: { backgroundColor: '#DC2626' } // Red
-      };
+
+    // For batch operations, show count-based message
+    const fileLabel = isBatch
+      ? `${count} selected file${count !== 1 ? 's' : ''}`
+      : `'${filename}'`;
+
+    switch (operation) {
+      case 'removeFromAlbum':
+        return {
+          title: 'Remove from Album',
+          message: `Remove ${fileLabel} from album "${albumName}"?`,
+          description: 'Files will remain in your library and other albums.',
+          confirmText: 'Remove from Album',
+          confirmStyle: { backgroundColor: '#F59E0B' } // Orange
+        };
+
+      case 'deleteFile':
+      case 'moveToTrash':
+        return {
+          title: 'Move to Trash',
+          message: `Move ${fileLabel} to trash?`,
+          description: 'Files will be removed from library and moved to trash.',
+          confirmText: 'Move to Trash',
+          confirmStyle: { backgroundColor: '#DC2626' } // Red
+        };
+
+      case 'restoreFromTrash':
+        return {
+          title: 'Restore from Trash',
+          message: `Restore ${fileLabel} to original location?`,
+          description: 'Files will be restored from trash to library.',
+          confirmText: 'Restore',
+          confirmStyle: { backgroundColor: '#10B981' } // Green
+        };
+
+      case 'permanentDelete':
+        return {
+          title: '⚠️ Permanent Delete',
+          message: `Permanently delete ${fileLabel}?`,
+          description: '⚠️ This action CANNOT be undone!\nFiles will be completely removed from your system.',
+          confirmText: 'Delete Permanently',
+          confirmStyle: { backgroundColor: '#DC2626' } // Red
+        };
+
+      default:
+        return {
+          title: 'Confirm',
+          message: `Process ${fileLabel}?`,
+          description: '',
+          confirmText: 'Confirm',
+          confirmStyle: { backgroundColor: '#3B82F6' } // Blue
+        };
     }
   };
 
@@ -41,6 +100,7 @@ const ContextualDeleteModal = ({
     logger.info('ContextualDeleteModal', 'action_confirmed', 'User confirmed action', {
       operation,
       photoPath,
+      photoCount,
       albumName
     });
     onConfirm();
@@ -49,7 +109,8 @@ const ContextualDeleteModal = ({
   const handleCancel = () => {
     logger.info('ContextualDeleteModal', 'action_cancelled', 'User cancelled action', {
       operation,
-      photoPath
+      photoPath,
+      photoCount
     });
     onCancel();
   };
@@ -76,7 +137,7 @@ const ContextualDeleteModal = ({
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
       }} onClick={(e) => e.stopPropagation()}>
         <h2 style={{ margin: '0 0 16px 0', fontSize: '20px' }}>{content.title}</h2>
-        
+
         <p style={{
           fontWeight: 'bold',
           margin: '16px 0',
@@ -85,7 +146,7 @@ const ContextualDeleteModal = ({
         }}>
           {content.message}
         </p>
-        
+
         <p style={{
           color: '#6B7280',
           marginBottom: '20px',
@@ -94,13 +155,13 @@ const ContextualDeleteModal = ({
         }}>
           {content.description}
         </p>
-        
+
         <div style={{
           display: 'flex',
           gap: '12px',
           justifyContent: 'center'
         }}>
-          <button 
+          <button
             onClick={handleCancel}
             style={{
               padding: '10px 20px',
@@ -115,7 +176,7 @@ const ContextualDeleteModal = ({
           >
             Cancel
           </button>
-          <button 
+          <button
             onClick={handleConfirm}
             style={{
               padding: '10px 20px',

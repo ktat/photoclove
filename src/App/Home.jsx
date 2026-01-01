@@ -52,11 +52,11 @@ function Home(props) {
                         >
                             Search
                         </button>
-                        <button 
+                        <button
                             onClick={handleAdvancedSearch}
                             className="home-advanced-search-button"
                         >
-                            Advanced Search
+                            Detailed Search
                         </button>
                     </div>
                 </div>

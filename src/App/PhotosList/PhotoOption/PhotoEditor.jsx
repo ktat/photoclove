@@ -868,7 +868,7 @@ function PhotoEditor(props) {
                     <div className="editor-controls">
                         <div className="editor-control">
                             <div className="control-row">
-                                <label>Rotation (deg):</label>
+                                <label>Rotation<br />(deg):</label>
                                 <input type="range" min="0" max="360" value={editorStyles.rotate}
                                        className="editor-slider" onChange={(e) => updateStyle('rotate', e.target.value)} />
                                 <input type="number" min="0" max="360" value={editorStyles.rotate}

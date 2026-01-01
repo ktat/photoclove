@@ -42,7 +42,7 @@ export function usePhotoOperations({
     setDateList,
     sortOfPhotos
 }) {
-    
+
     // Album selection handlers
     const handleAlbumSelection = useCallback((albumId, isSelected) => {
         logger.debug('PhotosList', 'album_selection_changed', 'Album selection changed', {
@@ -95,7 +95,7 @@ export function usePhotoOperations({
             // Show async confirmation dialog before proceeding
             const confirmMessage = `Are you sure you want to delete ${selectedAlbums.length} album${selectedAlbums.length > 1 ? 's' : ''}?\n\nThis will remove ${selectedAlbums.length > 1 ? 'them' : 'it'} but keep all photos in your library.`;
             const confirmed = await confirm(confirmMessage, 'Delete Albums');
-            
+
             if (!confirmed) {
                 logger.info('PhotosList', 'delete_albums_cancelled', 'Album deletion cancelled by user', {
                     albumIds: selectedAlbums,
@@ -115,7 +115,7 @@ export function usePhotoOperations({
 
             // Clear the unified collection service cache to ensure other components refresh
             unifiedCollectionService.clearCache();
-            
+
             // Refresh albums list and clear selection
             loadAlbums();
             clearAlbumSelection();
@@ -138,7 +138,7 @@ export function usePhotoOperations({
             // Show async confirmation dialog before proceeding
             const confirmMessage = `Are you sure you want to delete ${selectedTags.length} tag${selectedTags.length > 1 ? 's' : ''}?\n\nThis will remove ${selectedTags.length > 1 ? 'them' : 'it'} from all photos.`;
             const confirmed = await confirm(confirmMessage, 'Delete Tags');
-            
+
             if (!confirmed) {
                 logger.info('PhotosList', 'delete_tags_cancelled', 'Tag deletion cancelled by user', {
                     tagIds: selectedTags,
@@ -158,7 +158,7 @@ export function usePhotoOperations({
 
             // Clear the unified collection service cache to ensure other components refresh
             unifiedCollectionService.clearCache();
-            
+
             // Refresh tags list and clear selection
             loadTags();
             clearTagSelection();
@@ -303,7 +303,8 @@ export function usePhotoOperations({
 
     // Photo deletion and trash operations
     const permanentlyDeletePhoto = useCallback((photoPath) => {
-        invoke("delete_permanently", { pathStr: photoPath }).then((result) => {
+        invoke("delete_permanently_batch", { paths: [photoPath] }).then((resultStr) => {
+            const result = JSON.parse(resultStr);
             logger.info('usePhotoOperations', 'permanent_delete_success', 'Photo permanently deleted', {
                 path: photoPath,
                 result
@@ -404,6 +405,19 @@ export function usePhotoOperations({
         closePhotoDisplay
     ]);
 
+    const updateDateList = (title, photoPath, dateNum, resultDate, setDateNum, setDateList) => {
+        logger.info('usePhotoOperations', title, "List of Date update", {
+            path: photoPath,
+            date: resultDate
+        });
+        // Update date counts
+        if (dateNum && dateNum[resultDate] > 0 && setDateNum && setDateList) {
+            const newDateNum = { ...dateNum, [resultDate]: dateNum[resultDate] - 1 };
+            setDateNum(newDateNum);
+            setDateList(dateList.concat());
+        }
+    };
+
     const moveToTrash = useCallback(async (photoPath, sortValue) => {
         // If in trash mode, permanently delete instead
         if (isTrashMode) {
@@ -416,21 +430,15 @@ export function usePhotoOperations({
                 path: photoPath,
                 sortValue
             });
-
             const resultDate = await invoke("move_to_trash", { pathStr: photoPath, sortValue: parseInt(sortValue) });
 
-            if (resultDate) {
-                logger.info('usePhotoOperations', 'move_to_trash_success', 'Photo moved to trash', {
-                    path: photoPath,
-                    date: resultDate
-                });
+            logger.info('usePhotoOperations', 'move_to_trash_result', 'Moving photo to trash', {
+                path: photoPath,
+                resultDate
+            });
 
-                // Update date counts
-                if (dateNum && dateNum[resultDate] > 0 && setDateNum && setDateList) {
-                    const newDateNum = { ...dateNum, [resultDate]: dateNum[resultDate] - 1 };
-                    setDateNum(newDateNum);
-                    setDateList(dateList.concat());
-                }
+            if (resultDate) {
+                updateDateList("move_to_trash", photoPath, dateNum, resultDate, setDateNum, setDateList);
 
                 // Update thumbnail list
                 if (photosListMiniAllPhotos && photosListMiniAllPhotos.length > 0 && setPhotosListMiniAllPhotos) {
@@ -494,8 +502,10 @@ export function usePhotoOperations({
                         });
 
                         if (newAllPhotos[ci]?.originalPath) {
-                            if (setPhotosListMiniReread) setPhotosListMiniReread(!photosListMiniReread);
+                            // Update all state consistently (same as last photo case)
                             if (setCurrentPhotoPath) setCurrentPhotoPath(newAllPhotos[ci].originalPath);
+                            if (setCurrentPhotoIndex) setCurrentPhotoIndex(ci);
+                            // Note: photosListMiniCurrentIndex stays the same since we're at the same position in the list
                         } else {
                             logger.warn('usePhotoOperations', 'move_to_trash_no_next_photo', 'No valid next photo available', {
                                 ci,
@@ -546,11 +556,14 @@ export function usePhotoOperations({
                 path: photoPath
             });
 
-            await invoke("restore_from_trash", { pathStr: photoPath });
+            const resultDate = await invoke("restore_from_trash", { pathStr: photoPath });
 
-            logger.info('usePhotoOperations', 'restore_photo_success', 'Photo restored from trash successfully', {
-                path: photoPath
+            logger.info('usePhotoOperations', 'restore_photo_result', 'Restoring photo from trash', {
+                path: photoPath,
+                resultDate
             });
+
+            updateDateList("restore photo from trash", photoPath, dateNum, resultDate, setDateNum, setDateList);
 
             // Remove from trash photos list
             if (setTrashPhotos) {
@@ -567,7 +580,7 @@ export function usePhotoOperations({
             handleError(error, 'Restore photo from trash', { path: photoPath });
             return false;
         }
-    }, [handleError, addFooterMessage, setTrashPhotos]);
+    }, [handleError, addFooterMessage, setTrashPhotos, dateNum, setDateNum, dateList, setDateList]);
 
     const deletePhoto = useCallback((photoPath) => {
         // If in trash mode, permanently delete instead of moving to trash

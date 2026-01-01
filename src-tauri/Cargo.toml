@@ -27,6 +27,7 @@ rusqlite = { version = "*", features = ["bundled"] }
 rexif = "0.7.3"
 kexif = { package = "kamadak-exif", version = "0.5" }
 linked-hash-map = "0.5.6"
+indexmap = "2.0"
 regex = "1.7.0"
 filetime = "*"
 fs2 = "0.4"

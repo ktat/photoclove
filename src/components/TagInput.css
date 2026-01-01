@@ -13,10 +13,10 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--border);
     border-radius: 6px;
     padding: 4px;
-    background: white;
+    background: var(--bg-elevated);
     transition: border-color 0.2s ease;
 }
 
@@ -32,6 +32,7 @@
     padding: 6px 8px;
     font-size: 14px;
     background: transparent;
+    color: var(--text);
 }
 
 .tag-input-field::placeholder {
@@ -45,12 +46,12 @@
 .tag-color-button {
     width: 24px;
     height: 24px;
-    border: 2px solid white;
+    border: 2px solid var(--border);
     border-radius: 50%;
     cursor: pointer;
     transition: transform 0.2s ease;
     position: relative;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .tag-color-button:hover {
@@ -73,10 +74,10 @@
 .tag-create-button {
     width: 32px;
     height: 32px;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--border);
     border-radius: 4px;
-    background: #f9fafb;
-    color: #374151;
+    background: var(--bg-elevated);
+    color: var(--text);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -101,8 +102,8 @@
     display: flex;
     gap: 6px;
     padding: 8px;
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
     border-radius: 6px;
     flex-wrap: wrap;
 }
@@ -118,11 +119,11 @@
 
 .tag-color-option:hover {
     transform: scale(1.1);
-    border-color: white;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    border-color: var(--text);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 .tag-color-option.selected {
-    border-color: white;
+    border-color: var(--text);
     box-shadow: 0 0 0 2px #3b82f6;
 }

@@ -52,11 +52,12 @@ export class ViewMode {
     }
 
     isSearchMode() {
-        return this._mode === VIEW_MODES.SEARCH || this._mode === VIEW_MODES.ADVANCED_SEARCH;
+        return this._mode === VIEW_MODES.SEARCH;
     }
 
     isAdvancedSearchMode() {
-        return this._mode === VIEW_MODES.ADVANCED_SEARCH;
+        // Kept for backward compatibility - now same as isSearchMode()
+        return this._mode === VIEW_MODES.SEARCH;
     }
 
     isTrashMode() {
@@ -97,7 +98,6 @@ export class ViewMode {
             VIEW_MODES.DATE,
             VIEW_MODES.RECENT,
             VIEW_MODES.SEARCH,
-            VIEW_MODES.ADVANCED_SEARCH,
             VIEW_MODES.ALBUM,
             VIEW_MODES.TAG,
             VIEW_MODES.TRASH
@@ -131,7 +131,6 @@ export class ViewMode {
     getDataAttribute() {
         switch (this._mode) {
             case VIEW_MODES.SEARCH:
-            case VIEW_MODES.ADVANCED_SEARCH:
                 return "search_results";
             case VIEW_MODES.ALBUM_LIST:
                 return "albums";
@@ -203,6 +202,46 @@ export class ViewMode {
         return this.isSearchMode() ? this._data.searchQuery || "" : "";
     }
 
+    // Collection abstraction (Album or Tag)
+    /**
+     * Get current collection ID (album or tag)
+     * Returns the ID of the currently viewed collection
+     * @returns {string|null} Collection ID or null if not in collection mode
+     */
+    getCollectionId() {
+        if (this.isAlbumMode()) {
+            return this._data.albumId || null;
+        }
+        if (this.isTagMode()) {
+            return this._data.tagId || null;
+        }
+        return null;
+    }
+
+    /**
+     * Get current collection name (album or tag)
+     * @returns {string|null} Collection name or null if not in collection mode
+     */
+    getCollectionName() {
+        if (this.isAlbumMode()) {
+            return this._data.albumName || null;
+        }
+        if (this.isTagMode()) {
+            return this._data.tagName || null;
+        }
+        return null;
+    }
+
+    /**
+     * Get collection type
+     * @returns {'album'|'tag'|null}
+     */
+    getCollectionType() {
+        if (this.isAlbumMode()) return 'album';
+        if (this.isTagMode()) return 'tag';
+        return null;
+    }
+
     // UI state methods
     shouldShowAlbumTab() {
         return this.isAlbumMode();
@@ -272,10 +311,13 @@ export class ViewMode {
             case VIEW_MODES.TAG_LIST:
                 return { ...baseParams, search_type: "all_tags_with_count" };
             case VIEW_MODES.SEARCH:
-            case VIEW_MODES.ADVANCED_SEARCH:
                 return { ...baseParams, search_type: "search", query: this._data.searchQuery, params: this._data.searchParams };
             case VIEW_MODES.TRASH:
                 return { ...baseParams, search_type: "trash" };
+            case VIEW_MODES.IMPORT:
+                // IMPORT mode uses separate loading mechanism (ImportState + show_importer)
+                // and should not call get_photos_unified
+                throw new Error(`IMPORT mode uses ImportState.changeDirectory(), not get_photos_unified`);
             default:
                 throw new Error(`No photo params defined for mode: ${this._mode}`);
         }
@@ -289,8 +331,7 @@ export class ViewMode {
             case VIEW_MODES.ALBUM_LIST: return 'Albums';
             case VIEW_MODES.TAG_LIST: return 'Tags';
             case VIEW_MODES.TRASH: return 'Trash';
-            case VIEW_MODES.SEARCH: return 'Search Results';
-            case VIEW_MODES.ADVANCED_SEARCH: return 'Advanced Search';
+            case VIEW_MODES.SEARCH: return 'Search';
             case VIEW_MODES.DATE: return this._data.date || 'Photos';
             case VIEW_MODES.RECENT: return 'Recent Photos';
             case VIEW_MODES.ALBUM: return this._data.albumName || 'Album';
@@ -352,13 +393,8 @@ export class ViewMode {
                 return {
                     ...baseParams,
                     search_query: this._data.searchQuery,
-                    fetch_method: 'search'
-                };
-            case VIEW_MODES.ADVANCED_SEARCH:
-                return {
-                    ...baseParams,
                     ...this._data.filters,
-                    fetch_method: 'advanced_search'
+                    fetch_method: 'search'
                 };
             case VIEW_MODES.ALBUM:
                 return {
@@ -446,8 +482,8 @@ export class ViewMode {
     }
 
     static search(searchQuery = "", isAdvanced = false) {
-        const mode = isAdvanced ? VIEW_MODES.ADVANCED_SEARCH : VIEW_MODES.SEARCH;
-        return new ViewMode(mode, { searchQuery, isAdvanced });
+        // Always use SEARCH mode - Advanced Search has been unified with regular Search
+        return new ViewMode(VIEW_MODES.SEARCH, { searchQuery, isAdvanced });
     }
 
     static album(albumId) {
@@ -514,7 +550,6 @@ export class ViewMode {
     getEmptyStateMessage() {
         switch (this._mode) {
             case VIEW_MODES.SEARCH:
-            case VIEW_MODES.ADVANCED_SEARCH:
                 return "No Search Result";
             case VIEW_MODES.ALBUM:
                 const albumName = this._data.albumName || 'Unknown Album';
@@ -542,7 +577,6 @@ export class ViewMode {
     getBackNavigationInfo() {
         switch (this._mode) {
             case VIEW_MODES.SEARCH:
-            case VIEW_MODES.ADVANCED_SEARCH:
                 return {
                     label: "Back to HOME",
                     action: "clearSearch"

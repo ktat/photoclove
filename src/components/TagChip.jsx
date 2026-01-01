@@ -16,12 +16,13 @@ const TagChip = ({ tag, onRemove, isRemovable = false, onClick }) => {
         }
     };
 
-    const chipStyle = tag.color ? { backgroundColor: tag.color } : {};
+    // Color feature removed - tags now use default styling
+    // const chipStyle = tag.color ? { backgroundColor: tag.color } : {};
 
     return (
-        <span 
-            className={`tag-chip ${onClick ? 'tag-chip-clickable' : ''}`} 
-            style={chipStyle}
+        <span
+            className={`tag-chip ${onClick ? 'tag-chip-clickable' : ''}`}
+            // style={chipStyle}
             onClick={handleClick}
             title={tag.name}
         >

@@ -17,8 +17,8 @@
 }
 
 .dateList .scroll-wrapper {
-    height: calc(100vh - 200px);
-    max-height: calc(100vh - 200px);
+    height: calc(100vh - 220px);
+    max-height: calc(100vh - 220px);
 }
 
 /* スクロール領域 ── スクロールバーを完全に隠す */

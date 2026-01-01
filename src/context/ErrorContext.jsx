@@ -121,8 +121,16 @@ export const ErrorProvider = ({ children }) => {
 
   // Enhanced Tauri error handler that can handle PhotoClove errors
   const handleTauriError = useCallback((error, operation = 'Operation') => {
-    logger.error('ErrorContext', 'tauri_operation_failed', `${operation} failed`, { operation, error: error.message, stack: error.stack });
-    
+    const errorMessage = error?.message || error?.toString() || String(error) || 'Unknown error';
+    const errorStack = error?.stack || '';
+
+    logger.error('ErrorContext', 'tauri_operation_failed', `${operation} failed`, {
+      operation,
+      error: errorMessage,
+      stack: errorStack,
+      errorType: typeof error
+    });
+
     // Try to parse as PhotoClove error first
     let parsedError = error;
     if (typeof error === 'string') {
@@ -132,7 +140,7 @@ export const ErrorProvider = ({ children }) => {
         // Not JSON, treat as plain string
       }
     }
-    
+
     addError(parsedError, operation);
   }, [addError]);
 

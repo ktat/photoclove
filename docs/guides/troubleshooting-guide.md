@@ -68,6 +68,16 @@ This document provides comprehensive troubleshooting guidance for common issues 
 ### First-Click Photo Loading Bug
 **Fixed 2025-07-20**: Null reference error in PhotosList.jsx logging code prevented photo state updates on first date/Recent Photos click after startup. Fixed with optional chaining in logging code
 
+### Recent Photos Not Displaying
+**Fixed 2025-12-23**: Recent Photos feature was broken due to two issues:
+1. **Wrong table name**: SQL query used `photo_collection` (singular) instead of `photo_collections` (plural), causing "no such table" errors
+2. **Lost sort order**: PhotoMetas used HashMap which doesn't preserve insertion order, causing photos to appear in random order instead of by `created_at DESC`
+
+**Solution**:
+- Changed PhotoMetas from HashMap to IndexMap to preserve SQL query order
+- Fixed SQL table name in JOIN clause from `photo_collection` to `photo_collections`
+- Added error logging for metadata retrieval failures
+
 ### Startup State Issue
 **Fixed**: Changed UIContext showPhotosList initial state from true to false, prevents "No Photo Found!" at startup, properly shows Welcome/Home screen
 

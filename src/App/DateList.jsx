@@ -14,7 +14,6 @@ function DateList(props) {
         dateNum,
         hideLoading,
         updateCurrentDate,
-        updateShowPhotoDisplay,
         recentPhotosMode,
         updateRecentPhotosMode
     } = usePhoto();
@@ -115,7 +114,6 @@ function DateList(props) {
         logger.info('DateList', 'date_click', 'Date clicked - starting navigation', { date });
         updateRecentPhotosMode(false);
         updateCurrentDate(date);
-        updateShowPhotoDisplay({});
         showDatePhotos(date);
     };
 
@@ -174,28 +172,48 @@ function DateList(props) {
     return (
         <>
             {/* Fixed Controls - Outside Scroll Area */}
-            <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '5px', marginBottom: '5px' }}>
+            <div className="dateList-controls" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '5px', marginBottom: '5px' }}>
                 {/* Recent Photos */}
                 <div style={{ marginBottom: '3px' }}>
-                    <a href="#" 
-                       style={{ 
+                    <a href="#"
+                       className="recent-photos-link"
+                       style={{
                            color: recentPhotosMode ? "#ccc" : "#646cff",
-                           textDecoration: recentPhotosMode ? "underline" : "none"
-                       }} 
+                           textDecoration: "none",
+                           display: 'flex',
+                           alignItems: 'center',
+                           justifyContent: 'center',
+                           gap: '4px'
+                       }}
                        onClick={(e) => {
                            e.preventDefault();
                            logger.info('DateList', 'recent_photos_click', 'Recent Photos clicked - starting navigation');
                            setSelectedStyle({});
                            updateRecentPhotosMode(true);
-                           updateShowPhotoDisplay({});
                            showRecentPhotos();
                        }}>
-                        Recent Photos
+                        <span className="recent-photos-icon" style={{ fontSize: '16px' }}>⏱️</span>
+                        <span className="recent-photos-text">Recent Photos</span>
                     </a>
+                </div>
+
+                {/* Calendar Icon - Click to expand sidebar */}
+                <div
+                    className="calendar-expand-trigger"
+                    style={{
+                        textAlign: 'center',
+                        fontSize: '16px',
+                        padding: '8px 0',
+                        cursor: 'pointer',
+                        display: props.leftMenuCollapsed ? 'block' : 'none'
+                    }}
+                    onClick={() => props.setLeftMenuCollapsed(false)}
+                >
+                    📅
                 </div>
             </div>
 
-            <p className="dateListTitle">
+            <p className="dateListTitle date-list-title">
                 List of Date <a href="#" onClick={() => props.getDates()}>⟳</a>
             </p>
             
@@ -215,9 +233,9 @@ function DateList(props) {
             </div>
 
             {/* Date Controls - Outside Scroll Area */}
-            <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '3px', marginBottom: '3px' }}>
+            <div className="date-filters-controls" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '3px', marginBottom: '3px' }}>
                 {/* Filter Controls */}
-                <div style={{ margin: "3px 0", textAlign: "center" }}>
+                <div className="date-filters" style={{ margin: "3px 0", textAlign: "center" }}>
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                             <span style={{ fontSize: '10px' }}>📅</span>
@@ -275,7 +293,7 @@ function DateList(props) {
                 </div>
 
                 {/* View Mode Toggle */}
-                <div style={{ margin: "3px 0", textAlign: "center" }}>
+                <div className="view-mode-toggle" style={{ margin: "3px 0", textAlign: "center" }}>
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '2px' }}>
                         <button 
                             onClick={() => setViewMode('flat')}
@@ -428,6 +446,16 @@ function DateList(props) {
                     </ul>
                 </Scrollable>
             </div>
+
+            {/* Sidebar collapse toggle button */}
+            <button
+                className="sidebar-collapse-toggle"
+                onClick={() => props.setLeftMenuCollapsed(!props.leftMenuCollapsed)}
+                title={props.leftMenuCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                aria-label={props.leftMenuCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+                {props.leftMenuCollapsed ? '▶' : '◀'}
+            </button>
         </>
     );
 }

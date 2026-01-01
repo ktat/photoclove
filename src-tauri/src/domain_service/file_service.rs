@@ -35,14 +35,20 @@ pub fn move_to_trash(file: file::File, trash: trash::Trash) -> Result<(), std::i
     Ok(())
 }
 
-pub fn restore_from_trash(file: file::File, trash: trash::Trash, library_path: String) -> Result<(), std::io::Error> {
+pub fn restore_from_trash(
+    file: file::File,
+    trash: trash::Trash,
+    library_path: String,
+) -> Result<(), std::io::Error> {
     let trash_path = path::Path::new(&trash.dir.path);
     let target_file = path::Path::new(&file.path);
 
     // Find the file in trash directory structure
     // The trash preserves the full path structure, so we need to strip the leading slash
     let parent_path = target_file.parent().unwrap().strip_prefix("/").unwrap();
-    let trash_file_path = trash_path.join(parent_path).join(target_file.file_name().unwrap());
+    let trash_file_path = trash_path
+        .join(parent_path)
+        .join(target_file.file_name().unwrap());
 
     // Restore to original location (target_file.parent() already contains the full path)
     let restore_dir = target_file.parent().unwrap();
@@ -61,18 +67,23 @@ pub fn restore_from_trash(file: file::File, trash: trash::Trash, library_path: S
     Ok(())
 }
 
-pub fn remove_from_trash_permanently(file: file::File, trash: trash::Trash) -> Result<(), std::io::Error> {
+pub fn remove_from_trash_permanently(
+    file: file::File,
+    trash: trash::Trash,
+) -> Result<(), std::io::Error> {
     let trash_path = path::Path::new(&trash.dir.path);
     let target_file = path::Path::new(&file.path);
-    
+
     // Find the file in trash directory structure
     let parent_path = target_file.parent().unwrap().strip_prefix("/").unwrap();
-    let trash_file_path = trash_path.join(parent_path).join(target_file.file_name().unwrap());
-    
+    let trash_file_path = trash_path
+        .join(parent_path)
+        .join(target_file.file_name().unwrap());
+
     log::info!(target: "file_service", "remove_from_trash_permanently; path={:?}", trash_file_path);
-    
+
     // Permanently delete from trash directory
     fs::remove_file(&trash_file_path)?;
-    
+
     Ok(())
 }

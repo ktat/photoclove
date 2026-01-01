@@ -30,13 +30,6 @@ body {
   max-width: 100%;
 }
 
-.centerDisplay,
-.photoLoadingOn,
-.photos {
-  min-width: calc(var(--vw) - 560px);
-  overflow: hidden;
-}
-
 :root {
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
   font-size: 16px;
@@ -160,12 +153,8 @@ button {
   border: 1px solid var(--border);
 }
 
-.inner-container,
 body {
   overflow: hidden;
-}
-
-body {
   max-width: var(--vw);
   min-width: var(--vw);
 }

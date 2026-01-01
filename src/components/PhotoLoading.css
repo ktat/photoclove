@@ -5,26 +5,19 @@
   min-height: calc(100vh - 30px)
 }
 
-.centerDisplay,
 .photoLoadingOn {
   flex: 1;
   display: block;
   min-height: calc(100vh - 30px);
   padding: 20px 20px 10px 20px;
   margin: 0 0 0 0px;
-}
-
-.photoLoadingOn,
-.centerDisplay {
   min-width: calc(var(--vw) - 560px);
   max-width: calc(100vw - 320px - 230px);
-  min-height: calc(100vh - 30px);
   text-align: center;
   overflow: hidden;
   transition: max-width 0.3s ease;
 }
 
-.inner-container.menu-closed .centerDisplay,
 .inner-container.menu-closed .photoLoadingOn {
   max-width: calc(100vw - 230px);
 }

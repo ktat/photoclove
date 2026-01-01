@@ -4,14 +4,17 @@ import PhotoEditor from "./PhotoOption/PhotoEditor.jsx";
 import PhotoTags from "./PhotoOption/PhotoTags.jsx";
 import AlbumTab from "./AlbumTab.jsx";
 import { useUI } from "../../context/UIContext.jsx";
+import { VIEW_MODES } from "../../constants/viewModes.js";
 import './PhotoOption.css';
 
 function PhotoOption(props) {
     const [activeTab, setActiveTab] = useState("info");
     const { viewMode, currentAlbumId } = useUI();
-    
-    // Check if we're in album mode
-    const isAlbumMode = viewMode === 'album' && currentAlbumId;
+
+    // Determine modes from viewMode
+    const isAlbumMode = viewMode === VIEW_MODES.ALBUM && currentAlbumId;
+    const isTrashMode = viewMode === VIEW_MODES.TRASH;
+    const isImportMode = viewMode === VIEW_MODES.IMPORT;
 
     const handleTabClick = (tab) => {
         setActiveTab(tab);
@@ -40,7 +43,7 @@ function PhotoOption(props) {
                 </button>
 
                 {/* Hide Editor tab in import and trash modes */}
-                {!props.isImportMode && !props.isTrashMode && (
+                {!isImportMode && !isTrashMode && (
                     <button
                         className={activeTab === "editor" ? "vertical-tab-button active" : "vertical-tab-button"}
                         onClick={() => handleTabClick("editor")}
@@ -51,7 +54,7 @@ function PhotoOption(props) {
                 )}
 
                 {/* Hide Tags tab in import and trash modes */}
-                {!props.isImportMode && !props.isTrashMode && (
+                {!isImportMode && !isTrashMode && (
                     <button
                         className={activeTab === "tags" ? "vertical-tab-button active" : "vertical-tab-button"}
                         onClick={() => handleTabClick("tags")}
@@ -102,7 +105,8 @@ function PhotoOption(props) {
                             setStar={props.setStar}
                             addFooterMessage={props.addFooterMessage}
                             onCommentUpdate={props.onCommentUpdate}
-                            isImportMode={props.isImportMode}
+                            isImportMode={isImportMode}
+                            isTrashMode={isTrashMode}
                         />
                     )}
                     {activeTab === "editor" && (

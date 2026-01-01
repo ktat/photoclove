@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import TagChip from './TagChip.jsx';
 import { logger } from '../services/LoggerService.js';
 import './AdvancedFilters.css';
@@ -57,7 +59,23 @@ const AdvancedFilters = ({
           }
         });
         const tags = JSON.parse(tagsResult);
-        const formattedTags = tags.map(([id, name, color]) => ({ id, name, color }));
+        logger.debug('AdvancedFilters', 'tags_loaded', 'Tags loaded from backend', {
+          tagCount: tags.length,
+          sampleTag: tags[0]
+        });
+
+        // Backend returns array of objects: [{id, type, name, color, ...}, ...]
+        // Convert to format expected by TagChip: [{id, name, color}, ...]
+        const formattedTags = tags.map(tag => ({
+          id: tag.id,
+          name: tag.name,
+          color: tag.color || null
+        }));
+
+        logger.info('AdvancedFilters', 'tags_formatted', 'Tags formatted for display', {
+          count: formattedTags.length
+        });
+
         setAvailableTags(formattedTags);
       } catch (error) {
         logger.error('AdvancedFilters', 'load_tags_failed', 'Failed to load tags for filter', {
@@ -269,50 +287,47 @@ const AdvancedFilters = ({
           <div className="filter-group">
             <label>From:</label>
             <div className="date-input-wrapper">
-              <input
-                type="date"
-                value={filters.dateRange.start}
-                onChange={(e) => {
-                  updateRangeFilter('dateRange', 'start', e.target.value);
-                  // Close calendar after date selection
-                  setTimeout(() => e.target.blur(), 100);
+              <DatePicker
+                selected={filters.dateRange.start ? new Date(filters.dateRange.start) : null}
+                onChange={(date) => {
+                  const dateStr = date ? date.toISOString().split('T')[0] : '';
+                  updateRangeFilter('dateRange', 'start', dateStr);
                 }}
+                dateFormat="yyyy-MM-dd"
+                dateFormatCalendar="MMMM yyyy"
+                placeholderText="Select start date"
+                isClearable
+                showYearDropdown
+                showMonthDropdown
+                dropdownMode="select"
+                yearDropdownItemNumber={100}
+                scrollableYearDropdown
+                className="date-picker-input"
               />
-              {filters.dateRange.start && (
-                <button
-                  onClick={() => updateRangeFilter('dateRange', 'start', '')}
-                  className="input-clear-button"
-                  title="Clear start date"
-                  type="button"
-                >
-                  ✕
-                </button>
-              )}
             </div>
           </div>
 
           <div className="filter-group">
             <label>To:</label>
             <div className="date-input-wrapper">
-              <input
-                type="date"
-                value={filters.dateRange.end}
-                onChange={(e) => {
-                  updateRangeFilter('dateRange', 'end', e.target.value);
-                  // Close calendar after date selection
-                  setTimeout(() => e.target.blur(), 100);
+              <DatePicker
+                selected={filters.dateRange.end ? new Date(filters.dateRange.end) : null}
+                onChange={(date) => {
+                  const dateStr = date ? date.toISOString().split('T')[0] : '';
+                  updateRangeFilter('dateRange', 'end', dateStr);
                 }}
+                dateFormat="yyyy-MM-dd"
+                dateFormatCalendar="MMMM yyyy"
+                placeholderText="Select end date"
+                isClearable
+                showYearDropdown
+                showMonthDropdown
+                dropdownMode="select"
+                yearDropdownItemNumber={100}
+                scrollableYearDropdown
+                minDate={filters.dateRange.start ? new Date(filters.dateRange.start) : null}
+                className="date-picker-input"
               />
-              {filters.dateRange.end && (
-                <button
-                  onClick={() => updateRangeFilter('dateRange', 'end', '')}
-                  className="input-clear-button"
-                  title="Clear end date"
-                  type="button"
-                >
-                  ✕
-                </button>
-              )}
             </div>
           </div>
         </div>

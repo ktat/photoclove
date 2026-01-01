@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+mod migrations;
 pub mod sqlite;
 #[derive(Debug, Deserialize, Serialize)]
 pub struct PhotoInfo {
