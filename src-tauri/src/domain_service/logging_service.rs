@@ -1,12 +1,12 @@
 use chrono::{DateTime, Utc};
-use log::{info, warn, error, debug};
-use std::fs::{File, OpenOptions, create_dir_all};
-use std::io::{Write, BufRead, BufReader};
+use dirs;
+use log::{debug, error, info, warn};
+use std::fs::{create_dir_all, File, OpenOptions};
+use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 use uuid::Uuid;
-use dirs;
 
 pub struct LoggingService {
     correlation_counter: AtomicU64,
@@ -29,7 +29,7 @@ pub struct FrontendLogEntry {
 impl LoggingService {
     pub fn new() -> Result<Self, String> {
         let log_directory = Self::get_log_directory()?;
-        
+
         // Ensure log directory exists
         create_dir_all(&log_directory)
             .map_err(|e| format!("Failed to create log directory: {}", e))?;
@@ -61,7 +61,7 @@ impl LoggingService {
         // Store in memory for retrieval
         if let Ok(mut stored_logs) = self.frontend_logs.lock() {
             stored_logs.extend(frontend_logs.clone());
-            
+
             // Keep only last 1000 logs to prevent memory issues
             let current_len = stored_logs.len();
             if current_len > 1000 {
@@ -79,7 +79,9 @@ impl LoggingService {
 
     fn write_frontend_logs_to_file(&self, logs: &[FrontendLogEntry]) -> Result<(), String> {
         let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
-        let frontend_log_file = self.log_directory.join(format!("photoclove-frontend-{}.log", today));
+        let frontend_log_file = self
+            .log_directory
+            .join(format!("photoclove-frontend-{}.log", today));
 
         let mut file = OpenOptions::new()
             .create(true)
@@ -109,26 +111,35 @@ impl LoggingService {
         Ok(())
     }
 
-    pub fn get_logs(&self, log_type: &str, lines: Option<usize>, since: Option<&str>) -> Result<String, String> {
+    pub fn get_logs(
+        &self,
+        log_type: &str,
+        lines: Option<usize>,
+        since: Option<&str>,
+    ) -> Result<String, String> {
         match log_type {
             "frontend" => self.get_frontend_logs(lines, since),
             "backend" => self.get_backend_logs(lines, since),
             "all" => {
                 let frontend = self.get_frontend_logs(lines, since)?;
                 let backend = self.get_backend_logs(lines, since)?;
-                
+
                 let combined = serde_json::json!({
                     "frontend": frontend,
                     "backend": backend
                 });
-                
+
                 Ok(combined.to_string())
             }
-            _ => Err(format!("Unknown log type: {}", log_type))
+            _ => Err(format!("Unknown log type: {}", log_type)),
         }
     }
 
-    fn get_frontend_logs(&self, _lines: Option<usize>, _since: Option<&str>) -> Result<String, String> {
+    fn get_frontend_logs(
+        &self,
+        _lines: Option<usize>,
+        _since: Option<&str>,
+    ) -> Result<String, String> {
         if let Ok(logs) = self.frontend_logs.lock() {
             serde_json::to_string(&*logs)
                 .map_err(|e| format!("Failed to serialize frontend logs: {}", e))
@@ -137,7 +148,11 @@ impl LoggingService {
         }
     }
 
-    fn get_backend_logs(&self, lines: Option<usize>, _since: Option<&str>) -> Result<String, String> {
+    fn get_backend_logs(
+        &self,
+        lines: Option<usize>,
+        _since: Option<&str>,
+    ) -> Result<String, String> {
         // For now, return recent backend logs from the current log file
         let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
         let backend_log_file = self.log_directory.join(format!("photoclove-{}.log", today));
@@ -150,7 +165,8 @@ impl LoggingService {
             .map_err(|e| format!("Failed to open backend log file: {}", e))?;
 
         let reader = BufReader::new(file);
-        let mut log_lines: Vec<String> = reader.lines()
+        let mut log_lines: Vec<String> = reader
+            .lines()
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| format!("Failed to read backend log file: {}", e))?;
 
@@ -174,7 +190,7 @@ impl LoggingService {
                 .create(true)
                 .append(true)
                 .open(&log_file_path)
-                .map_err(|e| format!("Failed to open log file: {}", e))?
+                .map_err(|e| format!("Failed to open log file: {}", e))?,
         );
 
         env_logger::Builder::from_default_env()
@@ -218,8 +234,7 @@ impl LoggingService {
                 for entry in entries {
                     if let Ok(entry) = entry {
                         let path = entry.path();
-                        if path.is_file() && 
-                           path.extension().map_or(false, |ext| ext == "log") {
+                        if path.is_file() && path.extension().map_or(false, |ext| ext == "log") {
                             match std::fs::remove_file(&path) {
                                 Ok(()) => {
                                     info!(
@@ -271,12 +286,14 @@ impl LoggingService {
                 for entry in entries {
                     if let Ok(entry) = entry {
                         let path = entry.path();
-                        if path.is_file() && 
-                           path.extension().map_or(false, |ext| ext == "log") &&
-                           path.file_name().map_or(false, |name| {
-                               let name_str = name.to_string_lossy();
-                               name_str.starts_with("photoclove-") && !name_str.contains("frontend")
-                           }) {
+                        if path.is_file()
+                            && path.extension().map_or(false, |ext| ext == "log")
+                            && path.file_name().map_or(false, |name| {
+                                let name_str = name.to_string_lossy();
+                                name_str.starts_with("photoclove-")
+                                    && !name_str.contains("frontend")
+                            })
+                        {
                             match std::fs::remove_file(&path) {
                                 Ok(()) => {
                                     info!(
@@ -329,11 +346,12 @@ impl LoggingService {
                 for entry in entries {
                     if let Ok(entry) = entry {
                         let path = entry.path();
-                        if path.is_file() && 
-                           path.extension().map_or(false, |ext| ext == "log") &&
-                           path.file_name().map_or(false, |name| {
-                               name.to_string_lossy().contains("frontend")
-                           }) {
+                        if path.is_file()
+                            && path.extension().map_or(false, |ext| ext == "log")
+                            && path
+                                .file_name()
+                                .map_or(false, |name| name.to_string_lossy().contains("frontend"))
+                        {
                             match std::fs::remove_file(&path) {
                                 Ok(()) => {
                                     info!(
@@ -368,7 +386,12 @@ impl LoggingService {
         Ok(())
     }
 
-    pub fn export_logs_to_file(&self, export_path: &str, log_type: &str, filtered_logs: Option<String>) -> Result<String, String> {
+    pub fn export_logs_to_file(
+        &self,
+        export_path: &str,
+        log_type: &str,
+        filtered_logs: Option<String>,
+    ) -> Result<String, String> {
         info!(
             target: "logging",
             "export_logs_requested; export_path={}; log_type={}",
@@ -389,44 +412,44 @@ impl LoggingService {
                 "all" => {
                     let frontend = self.get_frontend_logs(None, None)?;
                     let backend = self.get_backend_logs(None, None)?;
-                    
+
                     let combined = serde_json::json!({
                         "frontend": serde_json::from_str::<Vec<FrontendLogEntry>>(&frontend).unwrap_or_default(),
                         "backend": backend,
                         "export_timestamp": chrono::Utc::now().to_rfc3339(),
                         "export_type": "all_logs"
                     });
-                    
+
                     serde_json::to_string_pretty(&combined)
                         .map_err(|e| format!("Failed to serialize logs: {}", e))?
                 }
                 "frontend" => {
                     let frontend_logs = self.get_frontend_logs(None, None)?;
-                    let parsed_logs: Vec<FrontendLogEntry> = serde_json::from_str(&frontend_logs)
-                        .unwrap_or_default();
-                    
+                    let parsed_logs: Vec<FrontendLogEntry> =
+                        serde_json::from_str(&frontend_logs).unwrap_or_default();
+
                     let export_data = serde_json::json!({
                         "frontend": parsed_logs,
                         "export_timestamp": chrono::Utc::now().to_rfc3339(),
                         "export_type": "frontend_logs"
                     });
-                    
+
                     serde_json::to_string_pretty(&export_data)
                         .map_err(|e| format!("Failed to serialize frontend logs: {}", e))?
                 }
                 "backend" => {
                     let backend_logs = self.get_backend_logs(None, None)?;
-                    
+
                     let export_data = serde_json::json!({
                         "backend": backend_logs,
                         "export_timestamp": chrono::Utc::now().to_rfc3339(),
                         "export_type": "backend_logs"
                     });
-                    
+
                     serde_json::to_string_pretty(&export_data)
                         .map_err(|e| format!("Failed to serialize backend logs: {}", e))?
                 }
-                _ => return Err(format!("Unknown log type: {}", log_type))
+                _ => return Err(format!("Unknown log type: {}", log_type)),
             }
         };
 

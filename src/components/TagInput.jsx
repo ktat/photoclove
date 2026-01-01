@@ -6,21 +6,13 @@ import './TagInput.css';
 
 const TagInput = ({ onTagCreated, placeholder = "Create new tag..." }) => {
     const [inputValue, setInputValue] = useState('');
-    const [selectedColor, setSelectedColor] = useState('#3b82f6');
     const [isCreating, setIsCreating] = useState(false);
-    const [showColorPicker, setShowColorPicker] = useState(false);
     const inputRef = useRef(null);
 
-    const predefinedColors = [
-        '#3b82f6', // blue
-        '#ef4444', // red  
-        '#10b981', // green
-        '#f59e0b', // yellow
-        '#8b5cf6', // purple
-        '#f97316', // orange
-        '#ec4899', // pink
-        '#6b7280', // gray
-    ];
+    // Color feature removed - tags now use default styling
+    // const [selectedColor, setSelectedColor] = useState('#3b82f6');
+    // const [showColorPicker, setShowColorPicker] = useState(false);
+    // const predefinedColors = [...];
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -31,15 +23,14 @@ const TagInput = ({ onTagCreated, placeholder = "Create new tag..." }) => {
         }
 
         setIsCreating(true);
-        logger.info('TagInput', 'create_tag_attempt', 'Creating new tag using unified collections', { 
-            name: tagName, 
-            color: selectedColor 
+        logger.info('TagInput', 'create_tag_attempt', 'Creating new tag using unified collections', {
+            name: tagName
         });
 
         try {
             const newTag = await UnifiedPhotoCollection.create('tag', {
-                name: tagName,
-                color: selectedColor
+                name: tagName
+                // color field removed - tags now use default styling
             });
 
             logger.info('TagInput', 'create_tag_success', 'Tag created successfully via unified collection', { 
@@ -52,7 +43,7 @@ const TagInput = ({ onTagCreated, placeholder = "Create new tag..." }) => {
             }
 
             setInputValue('');
-            setShowColorPicker(false);
+            // setShowColorPicker(false);
             inputRef.current?.focus();
 
         } catch (error) {
@@ -70,7 +61,7 @@ const TagInput = ({ onTagCreated, placeholder = "Create new tag..." }) => {
             handleSubmit(e);
         } else if (e.key === 'Escape') {
             setInputValue('');
-            setShowColorPicker(false);
+            // setShowColorPicker(false);
         }
     };
 
@@ -89,18 +80,12 @@ const TagInput = ({ onTagCreated, placeholder = "Create new tag..." }) => {
                         className="tag-input-field"
                         maxLength={50}
                     />
-                    
-                    <button
-                        type="button"
-                        onClick={() => setShowColorPicker(!showColorPicker)}
-                        className="tag-color-button"
-                        style={{ backgroundColor: selectedColor }}
-                        title="Choose tag color"
-                        disabled={isCreating}
-                    >
+
+                    {/* Color button removed - tags now use default styling */}
+                    {/* <button type="button" onClick={() => setShowColorPicker(!showColorPicker)} ... >
                         <span className="tag-color-indicator"></span>
-                    </button>
-                    
+                    </button> */}
+
                     <button
                         type="submit"
                         disabled={!inputValue.trim() || isCreating}
@@ -111,23 +96,14 @@ const TagInput = ({ onTagCreated, placeholder = "Create new tag..." }) => {
                     </button>
                 </div>
 
-                {showColorPicker && (
+                {/* Color picker removed - tags now use default styling */}
+                {/* {showColorPicker && (
                     <div className="tag-color-picker">
                         {predefinedColors.map(color => (
-                            <button
-                                key={color}
-                                type="button"
-                                className={`tag-color-option ${selectedColor === color ? 'selected' : ''}`}
-                                style={{ backgroundColor: color }}
-                                onClick={() => {
-                                    setSelectedColor(color);
-                                    setShowColorPicker(false);
-                                }}
-                                title={`Select ${color}`}
-                            />
+                            <button ... />
                         ))}
                     </div>
-                )}
+                )} */}
             </form>
         </div>
     );

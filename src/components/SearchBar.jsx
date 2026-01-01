@@ -104,13 +104,6 @@ const SearchBar = ({ onSearch, onClear, searchResults, initialQuery = '' }) => {
           </select>
         </div>
       )}
-
-      {searchResults && (
-        <div className="search-results-summary">
-          Found {searchResults.length} photo{searchResults.length !== 1 ? 's' : ''}
-          {query && ` for "${query}"`}
-        </div>
-      )}
     </div>
   );
 };

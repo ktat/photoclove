@@ -15,7 +15,7 @@ pub fn find_files(dir: &file::Dir) -> file::Files {
             if file_name.to_string_lossy().chars().next().unwrap() == '.' {
                 continue;
             }
-            
+
             if entry_path.display().to_string() != ".".to_string() && entry_path.is_file() {
                 f.files
                     .push(file::File::new(entry_path.display().to_string()));

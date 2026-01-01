@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { message, confirm } from "@tauri-apps/plugin-dialog";
 import { emit } from "@tauri-apps/api/event";
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { localForage } from "../../storage/forage";
 import { logger } from "../../services/LoggerService.js";
 import { UnifiedPhotoCollection } from "../../domain/UnifiedPhotoCollection.js";
@@ -11,49 +13,49 @@ import { VIEW_MODES } from "../../constants/viewModes.js";
 import { useTutorial } from "../../hooks/useTutorial.js";
 import AlbumCreationModal from "../../components/AlbumCreationModal.jsx";
 import AlbumSelectorModal from "../../components/AlbumSelectorModal.jsx";
+import ContextualDeleteModal from "../../components/ContextualDeleteModal.jsx";
 import TutorialTooltip from "../../components/TutorialTooltip.jsx";
 import Scrollable from "../../Scrollable.jsx";
+import SelectionTab from "./DirectoryMenu/SelectionTab.jsx";
+import FilterTab from "./DirectoryMenu/FilterTab.jsx";
+import { getTutorialContent } from "./DirectoryMenu/tutorialContent.jsx";
 
 function DirectoryMenu(props) {
     const { handleTauriError } = useError();
 
-    const [photoIndex, setPhotoIndex] = useState(-1);
-    const [showBigPhoto, setShowBigPhoto] = useState(false);
     const [showAlbumCreationModal, setShowAlbumCreationModal] = useState(false);
     const [showAlbumSelectorModal, setShowAlbumSelectorModal] = useState(false);
-    
+
+    // Delete confirmation modal state
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteModalConfig, setDeleteModalConfig] = useState({
+        operation: null,
+        count: 0,
+        onConfirm: null
+    });
+
     // Tutorial state
     const [showTutorial, setShowTutorial] = useState(false);
     const [tutorialContent, setTutorialContent] = useState('');
     const dropdownRef = useRef(null);
-    
-    // Use ViewMode value object methods instead of const checks
-    // Assumes props.viewModeObj is passed from parent component
-    
-    // Tutorial hooks
+
     const {
         shouldShowTutorial,
         markTutorialShown,
         dismissTutorial,
         disableTutorial
     } = useTutorial();
-    
-
-    useEffect(() => {
-        let l = props.photoSelection.length;
-        setPhotoIndex(l - 1)
-    }, [props.photoSelection])
 
     // Tutorial trigger effect
     useEffect(() => {
         if (props.photoSelection.length > 0) {
             const context = props.viewModeObj?.isAlbumMode() ? 'albumMode' : 'dateMode';
-            
+
             if (shouldShowTutorial('selectionTutorial', context)) {
                 setTutorialContent(getTutorialContent(context, props.photoSelection.length));
                 setShowTutorial(true);
                 markTutorialShown('selectionTutorial', context);
-                
+
                 logger.info('DirectoryMenu', 'tutorial_triggered', 'Selection tutorial shown', {
                     context,
                     photoCount: props.photoSelection.length
@@ -64,50 +66,11 @@ function DirectoryMenu(props) {
         }
     }, [props.photoSelection.length, props.viewModeObj, shouldShowTutorial, markTutorialShown]);
 
-    // Generate tutorial content based on context
-    const getTutorialContent = (context, photoCount) => {
-        const photoText = `${photoCount} photo${photoCount !== 1 ? 's' : ''}`;
-        
-        if (context === 'albumMode') {
-            return (
-                <div>
-                    <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
-                        💡 Selected {photoText} from this album
-                    </div>
-                    <div>You can now:</div>
-                    <ul style={{ margin: '8px 0', paddingLeft: '16px' }}>
-                        <li>📚 Create Album - Make a new album</li>
-                        <li>📚 Add to Album - Add to a different album</li>
-                        <li>❌ Remove from Album - Remove from current album</li>
-                        <li>⬆️ Upload to Google Photos - Sync with Google</li>
-                        <li>🗑️ Delete Files - Permanently remove files</li>
-                    </ul>
-                </div>
-            );
-        } else {
-            return (
-                <div>
-                    <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
-                        💡 Selected {photoText}
-                    </div>
-                    <div>You can now:</div>
-                    <ul style={{ margin: '8px 0', paddingLeft: '16px' }}>
-                        <li>📚 Create Album - Make a new album</li>
-                        <li>📚 Add to Album - Add to existing album</li>
-                        <li>⬆️ Upload to Google Photos - Sync with Google</li>
-                        <li>🗑️ Delete Files - Permanently remove files</li>
-                    </ul>
-                </div>
-            );
-        }
-    };
-
-    // Tutorial event handlers
     const handleTutorialDismiss = () => {
         setShowTutorial(false);
         const context = props.viewModeObj?.isAlbumMode() ? 'albumMode' : 'dateMode';
         dismissTutorial('selectionTutorial', context);
-        
+
         logger.info('DirectoryMenu', 'tutorial_dismissed', 'User dismissed selection tutorial', { context });
     };
 
@@ -115,15 +78,15 @@ function DirectoryMenu(props) {
         setShowTutorial(false);
         const context = props.viewModeObj?.isAlbumMode() ? 'albumMode' : 'dateMode';
         disableTutorial('selectionTutorial', context);
-        
+
         logger.info('DirectoryMenu', 'tutorial_disabled', 'User disabled selection tutorial', { context });
     };
 
-    let lock = false;
-    let lockThumbnail = false;
-    let lockUpload = false;
-    let lockDelete = false;
-    
+    // Use useRef for lock flags to persist across re-renders
+    const lockRef = useRef(false);
+    const lockThumbnailRef = useRef(false);
+    const lockUploadRef = useRef(false);
+    const lockDeleteRef = useRef(false);
 
     function doOperation(e) {
         const selected = e.target.value;
@@ -170,12 +133,11 @@ function DirectoryMenu(props) {
                     currentPath: props.importState.currentImportPath
                 });
 
-                // Use ImportState to handle import
                 await props.importState.importPhotos(props.photoSelection);
-                
+
                 props.clearPhotoSelection();
                 props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} imported successfully`);
-                
+
                 logger.info('DirectoryMenu', 'photos_imported', 'Photos imported successfully', {
                     photoCount: count
                 });
@@ -190,14 +152,14 @@ function DirectoryMenu(props) {
     }
 
     async function createDbInDate() {
-        if (lock) {
+        if (lockRef.current) {
             message("Currently, this operation is locked. Pelase wait for a while", "This operation is locked");
         } else {
             confirm("This takes long time if you have many photos.", "Warning").then((answer) => {
                 if (answer) {
-                    lock = true;
+                    lockRef.current = true;
                     invoke("create_db_in_date", { dateStr: props.currentDate }).then((r) => {
-                        lock = false;
+                        lockRef.current = false;
                         let data = JSON.parse(r);
                         props.setCurrentDateNum(data[props.currentDate.replace(/\//g, "-")]);
                     })
@@ -207,14 +169,14 @@ function DirectoryMenu(props) {
     }
 
     async function movePhotosToExifDate() {
-        if (lock) {
+        if (lockRef.current) {
             message("Currently, this operation is locked. Pelase wait for a while", "This operation is locked");
         } else {
             confirm("This takes long time if you have many photos.", "Warning").then((answer) => {
                 if (answer) {
-                    lock = true;
+                    lockRef.current = true;
                     invoke("move_photos_to_exif_date", { dateStr: props.currentDate }).then(() => {
-                        lock = false;
+                        lockRef.current = false;
                     })
                 }
             });
@@ -222,45 +184,44 @@ function DirectoryMenu(props) {
     }
 
     async function createThumbnails() {
-        if (lockThumbnail) {
+        if (lockThumbnailRef.current) {
             message("Currently, this operation is locked. Pelase wait for a while", "This operation is locked");
         } else {
             confirm("This takes long time if you have many photos.", "Warning").then((answer) => {
                 if (answer) {
-                    lockThumbnail = true;
+                    lockThumbnailRef.current = true;
                     invoke("create_thumbnails_in_date", { dateStr: props.currentDate }).then((r) => {
-                        lockThumbnail = false;
+                        lockThumbnailRef.current = false;
                     })
                 }
             });
         }
     }
 
-
     async function uploadToGooglePhotos() {
-        if (lockUpload) {
+        if (lockUploadRef.current) {
             message("Currently uploading. Please wait for the current upload to complete.", "Upload in Progress");
             return;
         }
-        
+
         const files = props.photoSelection;
         const BATCH_SIZE = 50;
         const numBatches = Math.ceil(files.length / BATCH_SIZE);
-        
+
         let answer = true;
         if (files.length > BATCH_SIZE) {
             answer = await confirm(
                 `Upload ${files.length} photos to Google Photos?\n` +
-                `This will create ${numBatches} upload jobs (max ${BATCH_SIZE} photos per job).`, 
+                `This will create ${numBatches} upload jobs (max ${BATCH_SIZE} photos per job).`,
                 "Confirm Upload"
             );
         } else {
             answer = await confirm(
-                `Upload ${files.length} photos to Google Photos?`, 
+                `Upload ${files.length} photos to Google Photos?`,
                 "Confirm Upload"
             );
         }
-        
+
         if (answer) {
             try {
                 const tokens = await localForage.getItem("GoogleOAuthTokens");
@@ -268,39 +229,38 @@ function DirectoryMenu(props) {
                     message("Please sign in to Google Photos first", "Authentication Required");
                     return;
                 }
-                
-                lockUpload = true;
-                
+
+                lockUploadRef.current = true;
+
                 logger.info('DirectoryMenu', 'google_photos_upload_start', 'User initiated Google Photos upload', {
                     filesCount: files.length,
                     batchesExpected: numBatches
                 });
-                
+
                 const jobUnitIds = await invoke("upload_to_google_photos", {
                     selectedFiles: files,
                     accessToken: tokens.accessToken,
                     refreshToken: tokens.refreshToken
                 });
-                
+
                 props.clearPhotoSelection();
-                lockUpload = false;
-                
+                lockUploadRef.current = false;
+
                 message(
                     `Created ${jobUnitIds.length} upload job${jobUnitIds.length > 1 ? 's' : ''}. ` +
                     `Check Job Queue for progress.`,
                     "Upload Started"
                 );
-                
+
                 logger.info('DirectoryMenu', 'google_photos_jobs_created', 'Google Photos upload jobs created', {
                     jobUnitsCreated: jobUnitIds.length,
                     jobUnitIds: jobUnitIds
                 });
-                
-                // Show job queue to display progress
+
                 props.setShowJobQueue(true);
-                
+
             } catch (e) {
-                lockUpload = false;
+                lockUploadRef.current = false;
                 logger.error('DirectoryMenu', 'google_photos_upload_error', 'Failed to start Google Photos upload', {
                     error: e.toString(),
                     filesCount: files.length
@@ -332,179 +292,95 @@ function DirectoryMenu(props) {
 
         props.setDateNum(updatedDateNum);
 
+        if (props.setDateList && props.dateList) {
+            const newDateList = [...props.dateList];
+            props.setDateList(newDateList);
+        }
+
         logger.info('DirectoryMenu', 'date_counts_updated', 'Applied date changes from batch operation', {
             changedDates: Object.keys(dateChanges).length,
             dateChanges
         });
     }
 
+    /**
+     * Deletes selected photos - wrapper that handles confirmation and calls the handler
+     */
     async function deleteFiles() {
-        console.log('[DEBUG] deleteFiles called, selection count:', props.photoSelection.length);
-        if (lockDelete) return;
+        if (lockDeleteRef.current) return false;
 
-        if (props.photoSelection.length === 0) {
+        if (!props.photoSelection || props.photoSelection.length === 0) {
             props.addFooterMessage('Please select photos first');
-            return;
+            return false;
         }
 
         const count = props.photoSelection.length;
-        console.log('[DEBUG] About to show confirmation dialog for', count, 'photos');
-        const confirmed = await confirm(
-            `Move ${count} photo${count > 1 ? 's' : ''} to trash?`,
-            "Move to Trash"
-        );
 
-        if (!confirmed) return;
+        console.log('[DirectoryMenu.deleteFiles] Starting deletion', {
+            count,
+            hasDeletePhotos: !!props.deletePhotos,
+            photoSelection: props.photoSelection
+        });
 
-        try {
-            lockDelete = true;
+        // Show ContextualDeleteModal
+        setDeleteModalConfig({
+            operation: 'moveToTrash',
+            count: count,
+            onConfirm: async () => {
+                setShowDeleteModal(false);
 
-            logger.info('DirectoryMenu', 'move_to_trash_batch_start', 'Moving photos to trash', {
-                photoCount: count
-            });
+                try {
+                    lockDeleteRef.current = true;
 
-            // Backup current state for rollback on failure
-            const deletedPaths = [...props.photoSelection]; // Save before clearing
-            const photosBackup = props.allPhotosForCurrentFetch ? [...props.allPhotosForCurrentFetch] : null;
+                    console.log('[DirectoryMenu.deleteFiles] Calling props.deletePhotos');
 
-            // Optimistic UI update - remove deleted photos from view
-            if (props.allPhotosForCurrentFetch && props.setAllPhotosForCurrentFetch) {
-                const updatedPhotos = props.allPhotosForCurrentFetch.filter(
-                    photo => !deletedPaths.includes(photo.originalPath)
-                );
-                props.setAllPhotosForCurrentFetch(updatedPhotos);
+                    // Call the handler from PhotosList which handles date updates
+                    const result = await props.deletePhotos(props.photoSelection, {
+                        skipConfirmation: true,  // Already confirmed
+                        clearSelection: true
+                    });
+
+                    console.log('[DirectoryMenu.deleteFiles] Result:', result);
+                    return result;
+                } finally {
+                    lockDeleteRef.current = false;
+                }
             }
-            props.clearPhotoSelection();
-
-            try {
-                // Use batch command for efficient date_summary update
-                console.log('[DEBUG] Calling move_to_trash_batch for', deletedPaths.length, 'photos');
-                const resultStr = await invoke("move_to_trash_batch", { paths: deletedPaths });
-                const result = JSON.parse(resultStr);
-                console.log('[DEBUG] move_to_trash_batch result:', result);
-
-                // Apply date changes locally instead of refetching
-                if (result.date_changes) {
-                    applyDateChanges(result.date_changes);
-                }
-
-                // Show result message with failure info if any
-                if (result.failed > 0) {
-                    props.addFooterMessage(`${result.succeeded} photo${result.succeeded !== 1 ? 's' : ''} moved to trash, ${result.failed} failed`);
-                } else {
-                    props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} moved to trash`);
-                }
-
-                logger.info('DirectoryMenu', 'photos_moved_to_trash', 'Photos moved to trash successfully', {
-                    photoCount: count,
-                    result
-                });
-            } catch (backendError) {
-                // Rollback UI changes on backend failure
-                logger.error('DirectoryMenu', 'move_to_trash_backend_failed', 'Backend operation failed, rolling back UI', {
-                    photoCount: count,
-                    error: backendError.message
-                });
-
-                if (photosBackup && props.setAllPhotosForCurrentFetch) {
-                    props.setAllPhotosForCurrentFetch(photosBackup);
-                }
-                props.addFooterMessage('Delete operation failed. Reloading...');
-
-                // Reload to ensure UI matches database state
-                if (props.reloadCurrentModeData) {
-                    await props.reloadCurrentModeData();
-                }
-
-                throw backendError; // Re-throw for outer catch
-            }
-        } catch (error) {
-            logger.error('DirectoryMenu', 'move_to_trash_failed', 'Failed to move photos to trash', {
-                photoCount: count,
-                error: error.message
-            });
-            handleTauriError(error, 'Move to trash');
-        } finally {
-            lockDelete = false;
-        }
+        });
+        setShowDeleteModal(true);
+        return false; // Will be handled by modal confirmation
     }
 
     // Trash operation functions
+    /**
+     * Restores selected photos from trash - wrapper that handles confirmation and calls the handler
+     */
     async function restoreSelectedFromTrash() {
-        console.log('[DEBUG] restoreSelectedFromTrash called, selection count:', props.photoSelection.length);
-        if (props.photoSelection.length === 0) {
+        if (!props.photoSelection || props.photoSelection.length === 0) {
             props.addFooterMessage('Please select photos first');
-            return;
+            return false;
         }
 
         const count = props.photoSelection.length;
-        const confirmed = await confirm(
-            `Restore ${count} photo${count > 1 ? 's' : ''} from trash to ${count > 1 ? 'their' : 'its'} original location?`,
-            "Restore from Trash"
-        );
 
-        if (confirmed) {
-            try {
-                logger.info('DirectoryMenu', 'restore_from_trash_start', 'Restoring photos from trash', {
-                    photoCount: count
+        // Show ContextualDeleteModal
+        setDeleteModalConfig({
+            operation: 'restoreFromTrash',
+            count: count,
+            onConfirm: async () => {
+                setShowDeleteModal(false);
+
+                // Call the handler from PhotosList which handles date updates
+                const result = await props.restorePhotos(props.photoSelection, {
+                    skipConfirmation: true,  // Already confirmed
+                    clearSelection: true
                 });
 
-                // Save paths before clearing selection
-                const restoredPaths = [...props.photoSelection];
-
-                // Optimistic UI update - remove from trash view
-                props.clearPhotoSelection();
-                if (props.updatePhotosAfterTrashOperation) {
-                    await props.updatePhotosAfterTrashOperation(restoredPaths, 'restore');
-                }
-
-                try {
-                    // Use batch command for efficient date_summary update
-                    console.log('[DEBUG] Calling restore_from_trash_batch for', restoredPaths.length, 'photos');
-                    const resultStr = await invoke("restore_from_trash_batch", { paths: restoredPaths });
-                    const result = JSON.parse(resultStr);
-                    console.log('[DEBUG] restore_from_trash_batch result:', result);
-
-                    // Apply date changes locally instead of refetching
-                    if (result.date_changes) {
-                        applyDateChanges(result.date_changes);
-                    }
-
-                    // Show result message with failure info if any
-                    if (result.failed > 0) {
-                        props.addFooterMessage(`${result.succeeded} photo${result.succeeded !== 1 ? 's' : ''} restored, ${result.failed} failed`);
-                    } else {
-                        props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} restored successfully`);
-                    }
-
-                    logger.info('DirectoryMenu', 'photos_restored', 'Photos restored from trash successfully', {
-                        photoCount: count,
-                        result
-                    });
-                } catch (backendError) {
-                    // Rollback UI changes on backend failure
-                    logger.error('DirectoryMenu', 'restore_backend_failed', 'Backend operation failed, reloading trash view', {
-                        photoCount: count,
-                        error: backendError.message
-                    });
-
-                    props.addFooterMessage('Restore operation failed. Reloading...');
-
-                    // Reload trash view to restore UI state
-                    if (props.reloadCurrentModeData) {
-                        await props.reloadCurrentModeData();
-                    }
-
-                    throw backendError; // Re-throw for outer catch
-                }
-            } catch (error) {
-                logger.error('DirectoryMenu', 'restore_failed', 'Failed to restore photos from trash', {
-                    photoCount: count,
-                    error: error.message
-                });
-                handleTauriError(error, 'Restore from trash');
+                return result;
             }
-        }
+        });
+        setShowDeleteModal(true);
+        return false; // Will be handled by modal confirmation
     }
 
     async function permanentDeleteSelected() {
@@ -514,96 +390,104 @@ function DirectoryMenu(props) {
         }
 
         const count = props.photoSelection.length;
-        const confirmed = await confirm(
-            `⚠️ PERMANENTLY DELETE ${count} photo${count > 1 ? 's' : ''}?\n\nThis action CANNOT be undone!\n\nFiles will be completely removed from your system.`,
-            "⚠️ Permanent Delete"
-        );
 
-        if (confirmed) {
-            try {
-                logger.info('DirectoryMenu', 'permanent_delete_start', 'Permanently deleting photos', {
-                    photoCount: count
-                });
-
-                // Save paths before clearing selection
-                const deletedPaths = [...props.photoSelection];
-
-                // Optimistic UI update - remove from trash view
-                props.clearPhotoSelection();
-                if (props.updatePhotosAfterTrashOperation) {
-                    await props.updatePhotosAfterTrashOperation(deletedPaths, 'permanentDelete');
-                }
+        // Show ContextualDeleteModal
+        setDeleteModalConfig({
+            operation: 'permanentDelete',
+            count: count,
+            onConfirm: async () => {
+                setShowDeleteModal(false);
 
                 try {
-                    // Use batch command for efficient processing
-                    const resultStr = await invoke("delete_permanently_batch", { paths: deletedPaths });
-                    const result = JSON.parse(resultStr);
-
-                    // Show result message with failure info if any
-                    if (result.failed > 0) {
-                        props.addFooterMessage(`${result.succeeded} photo${result.succeeded !== 1 ? 's' : ''} permanently deleted, ${result.failed} failed`);
-                    } else {
-                        props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} permanently deleted`);
-                    }
-
-                    logger.info('DirectoryMenu', 'photos_permanently_deleted', 'Photos permanently deleted successfully', {
-                        photoCount: count,
-                        result
-                    });
-                } catch (backendError) {
-                    // Rollback UI changes on backend failure
-                    logger.error('DirectoryMenu', 'permanent_delete_backend_failed', 'Backend operation failed, reloading trash view', {
-                        photoCount: count,
-                        error: backendError.message
+                    logger.info('DirectoryMenu', 'permanent_delete_start', 'Permanently deleting photos', {
+                        photoCount: count
                     });
 
-                    props.addFooterMessage('Permanent delete operation failed. Reloading...');
+                    // Save paths before clearing selection
+                    const deletedPaths = [...props.photoSelection];
 
-                    // Reload trash view to restore UI state
-                    if (props.reloadCurrentModeData) {
-                        await props.reloadCurrentModeData();
+                    // Optimistic UI update - remove from trash view
+                    props.clearPhotoSelection();
+                    if (props.updatePhotosAfterTrashOperation) {
+                        await props.updatePhotosAfterTrashOperation(deletedPaths, 'permanentDelete');
                     }
 
-                    throw backendError; // Re-throw for outer catch
+                    try {
+                        // Use batch command for efficient processing
+                        const resultStr = await invoke("delete_permanently_batch", { paths: deletedPaths });
+                        const result = JSON.parse(resultStr);
+
+                        // Show result message with failure info if any
+                        if (result.failed > 0) {
+                            props.addFooterMessage(`${result.succeeded} photo${result.succeeded !== 1 ? 's' : ''} permanently deleted, ${result.failed} failed`);
+                        } else {
+                            props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} permanently deleted`);
+                        }
+
+                        logger.info('DirectoryMenu', 'photos_permanently_deleted', 'Photos permanently deleted successfully', {
+                            photoCount: count,
+                            result
+                        });
+                    } catch (backendError) {
+                        // Rollback UI changes on backend failure
+                        logger.error('DirectoryMenu', 'permanent_delete_backend_failed', 'Backend operation failed, reloading trash view', {
+                            photoCount: count,
+                            error: backendError.message
+                        });
+
+                        props.addFooterMessage('Permanent delete operation failed. Reloading...');
+
+                        // Reload trash view to restore UI state
+                        if (props.reloadCurrentModeData) {
+                            await props.reloadCurrentModeData();
+                        }
+
+                        throw backendError; // Re-throw for outer catch
+                    }
+                } catch (error) {
+                    logger.error('DirectoryMenu', 'permanent_delete_failed', 'Failed to permanently delete photos', {
+                        photoCount: count,
+                        error: error.message
+                    });
+                    handleTauriError(error, 'Permanently delete photos');
                 }
-            } catch (error) {
-                logger.error('DirectoryMenu', 'permanent_delete_failed', 'Failed to permanently delete photos', {
-                    photoCount: count,
-                    error: error.message
-                });
-                handleTauriError(error, 'Permanently delete photos');
             }
-        }
+        });
+        setShowDeleteModal(true);
     }
 
-    // Album operation functions
     async function removeFromCurrentAlbum() {
+        const currentAlbumId = props.viewModeObj?.getCurrentAlbumId();
+
         if (!currentAlbumId || props.photoSelection.length === 0) return;
-        
+
         const count = props.photoSelection.length;
         const confirmed = await confirm(
             `Remove ${count} photo${count > 1 ? 's' : ''} from this album?\n\nPhotos will remain in your library.`,
             "Remove from Album"
         );
-        
+
         if (confirmed) {
             try {
                 logger.info('DirectoryMenu', 'remove_from_album_start', 'Removing photos from album', {
                     albumId: currentAlbumId,
                     photoCount: count
                 });
-                
+
+                // Remove each photo from album and update UI
                 for (const photoPath of props.photoSelection) {
                     await invoke("remove_photo_from_album", {
                         albumId: currentAlbumId,
                         photoPath: photoPath
                     });
+
+                    // Remove photo from UI immediately after successful backend deletion
+                    props.removePhotoFromList(photoPath);
                 }
-                
+
                 props.clearPhotoSelection();
                 props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} removed from album`);
-                props.onPhotosRefresh?.(); // Refresh the album view
-                
+
                 logger.info('DirectoryMenu', 'photos_removed_from_album', 'Photos removed from album successfully', {
                     albumId: currentAlbumId,
                     photoCount: count
@@ -624,7 +508,7 @@ function DirectoryMenu(props) {
             props.addFooterMessage('Please select photos first');
             return;
         }
-        
+
         logger.debug('DirectoryMenu', 'show_create_album_modal', 'Opening album creation modal', {
             selectedPhotosCount: props.photoSelection.length
         });
@@ -636,7 +520,7 @@ function DirectoryMenu(props) {
             props.addFooterMessage('Please select photos first');
             return;
         }
-        
+
         logger.debug('DirectoryMenu', 'show_add_to_album_modal', 'Opening album selector modal', {
             selectedPhotosCount: props.photoSelection.length
         });
@@ -649,17 +533,17 @@ function DirectoryMenu(props) {
                 albumName: albumData.name,
                 photoCount: props.photoSelection.length
             });
-            
+
             const album = await UnifiedPhotoCollection.create('album', {
                 name: albumData.name,
                 description: albumData.description
             });
-            
+
             // Add all selected photos to the new album
             for (const photoPath of props.photoSelection) {
                 await album.addPhoto(photoPath);
             }
-            
+
             // Automatically set the first selected photo as the cover photo
             if (props.photoSelection.length > 0) {
                 const firstPhotoPath = props.photoSelection[0];
@@ -667,23 +551,23 @@ function DirectoryMenu(props) {
                     albumId: album.id,
                     coverPhotoPath: firstPhotoPath
                 });
-                
+
                 await album.update({
                     coverPhotoPath: firstPhotoPath
                 });
             }
-            
+
             const photoCount = props.photoSelection.length;
             props.clearPhotoSelection();
             props.addFooterMessage(`Album "${albumData.name}" created with ${photoCount} photos`);
-            
+
             logger.info('DirectoryMenu', 'album_created_from_selection', 'Album created from selected photos', {
                 albumName: albumData.name,
-                albumId,
+                albumId: album.id,
                 photoCount,
                 coverPhotoSet: props.photoSelection.length > 0
             });
-            
+
             setShowAlbumCreationModal(false);
         } catch (error) {
             logger.error('DirectoryMenu', 'create_album_failed', 'Failed to create album from selection', {
@@ -701,23 +585,23 @@ function DirectoryMenu(props) {
                 albumId,
                 photoCount: props.photoSelection.length
             });
-            
+
             for (const photoPath of props.photoSelection) {
                 await invoke("add_photo_to_album", {
                     albumId: albumId,
                     photoPath: photoPath
                 });
             }
-            
+
             const photoCount = props.photoSelection.length;
             props.clearPhotoSelection();
             props.addFooterMessage(`${photoCount} photo${photoCount > 1 ? 's' : ''} added to album`);
-            
+
             logger.info('DirectoryMenu', 'photos_added_to_album', 'Photos added to album successfully', {
                 albumId,
                 photoCount
             });
-            
+
             setShowAlbumSelectorModal(false);
         } catch (error) {
             logger.error('DirectoryMenu', 'add_to_album_failed', 'Failed to add photos to album', {
@@ -728,8 +612,6 @@ function DirectoryMenu(props) {
             handleTauriError(error, 'Add to album');
         }
     }
-
-
 
     return (
         <div id="directory-maintenance">
@@ -750,11 +632,11 @@ function DirectoryMenu(props) {
                     </ul>
                 </div>
             )}
-            
+
             {/* Directory Tab - Import Mode Only */}
             {props.viewModeObj?.shouldShowDirectoryTab() && props.importState && (
-                <div 
-                    id="tab-directory" 
+                <div
+                    id="tab-directory"
                     className={props.tabClass['directory'] ? "tab-active" : "tab"}
                     style={{
                         height: 'calc(-10px + 100vh)',
@@ -764,11 +646,11 @@ function DirectoryMenu(props) {
                     {/* Import paths dropdown */}
                     <div style={{ marginBottom: '10px' }}>
                         <label><strong>Import Photos From</strong>: </label>
-                        <select 
-                            value={props.importState.currentImportPath || ''} 
+                        <select
+                            value={props.importState.currentImportPath || ''}
                             onChange={(e) => props.importState.changeDirectory(e.target.value)}
-                            style={{ 
-                                width: '100%', 
+                            style={{
+                                width: '100%',
                                 maxWidth: '200px',
                                 padding: '4px',
                                 marginTop: '4px'
@@ -780,33 +662,45 @@ function DirectoryMenu(props) {
                             ))}
                         </select>
                     </div>
-                    
+
                     {/* Current directory - show only if different from root paths */}
-                    {props.importState.currentImportPath && 
-                     !props.importState.importPaths?.includes(props.importState.currentImportPath) && (
-                        <p style={{ 
-                            fontSize: '0.9em', 
-                            color: '#888', 
-                            marginBottom: '10px',
-                            fontStyle: 'italic'
-                        }}>
-                            Currently browsing: {props.importState.currentImportPath}
-                        </p>
-                    )}
-                    
+                    {props.importState.currentImportPath &&
+                        !props.importState.importPaths?.includes(props.importState.currentImportPath) && (
+                            <p style={{
+                                fontSize: '0.9em',
+                                color: '#888',
+                                marginBottom: '10px',
+                                fontStyle: 'italic'
+                            }}>
+                                Currently browsing: {props.importState.currentImportPath}
+                            </p>
+                        )}
+
                     {/* Date filter - integrated with directory selection */}
                     <div style={{ marginBottom: '10px' }}>
                         <label>Created Date: after </label>
-                        <input 
-                            type="date" 
-                            value={props.importState.importFilter || ''} 
-                            onChange={(e) => props.importState.updateImportFilter(e.target.value)} 
+                        <DatePicker
+                            selected={props.importState.importFilter ? new Date(props.importState.importFilter) : null}
+                            onChange={(date) => {
+                                const dateStr = date ? date.toISOString().split('T')[0] : '';
+                                props.importState.updateImportFilter(dateStr);
+                            }}
+                            dateFormat="yyyy-MM-dd"
+                            dateFormatCalendar="MMMM yyyy"
+                            placeholderText="Select date"
+                            isClearable
+                            showYearDropdown
+                            showMonthDropdown
+                            dropdownMode="select"
+                            yearDropdownItemNumber={100}
+                            scrollableYearDropdown
+                            className="date-picker-input"
                         />
                     </div>
-                    
+
                     {/* Directory navigation */}
-                    <Scrollable 
-                        style={{ 
+                    <Scrollable
+                        style={{
                             maxHeight: '250px',
                             border: '1px solid var(--border)',
                             borderRadius: '4px',
@@ -822,7 +716,7 @@ function DirectoryMenu(props) {
                                     </a>
                                 </li>
                             )}
-                            
+
                             {/* Subdirectories */}
                             {props.importState.directories?.map((dir, i) => (
                                 <li key={i} style={{ padding: '4px 0' }}>
@@ -833,378 +727,44 @@ function DirectoryMenu(props) {
                     </Scrollable>
                 </div>
             )}
-            
-            <div id="tab-filter" className={props.tabClass['filter'] ? "tab-active" : "tab"}>
-                <ul>
-                    <li>
-                        Stars:
-                        {[0, 1, 2, 3, 4, 5].map((v, i) => {
-                            return <span key={i} onClick={() => {
-                                logger.debug('DirectoryMenu', 'filter_changed', 'User changed star filter', {
-                                    filterType: 'starFilter',
-                                    newValue: v,
-                                    previousValue: props.starFilter
-                                });
-                                props.setStarFilter(v);
-                            }}>{props.starFilter >= v ? " ★" + i : " ☆" + i}</span>
-                        })}
-                    </li>
-                    <li>
-                        <input type="checkbox" value="1" id="filter-has-comment-check"
-                            onChange={(e) => { 
-                                logger.debug('DirectoryMenu', 'filter_changed', 'User changed comment filter', {
-                                    filterType: 'hasCommentFilter',
-                                    newValue: e.target.checked,
-                                    previousValue: props.hasCommentFilter
-                                });
-                                props.setHasCommentFilter(e.target.checked); 
-                            }}
-                        />
-                        <label className="checkbox checkbox-normal" htmlFor="filter-has-comment-check">Has comment</label>
-                    </li>
-                    <li>
-                        Extensions:
-                        <div style={{ marginTop: '5px' }}>
-                            {/* Image Extensions Group */}
-                            <div style={{ marginBottom: '10px' }}>
-                                <div>
-                                    <input 
-                                        type="checkbox" 
-                                        id="filter-extension-image-group-check"
-                                        onChange={(e) => {
-                                            const checked = e.target.checked;
-                                            const currentFilters = props.extensionFilter === "all" ? [] : props.extensionFilter.split(',').filter(f => f.trim() !== '');
-                                            const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'];
-                                            
-                                            let newFilters;
-                                            if (checked) {
-                                                // Add all image extensions
-                                                newFilters = [...currentFilters.filter(f => !imageExtensions.includes(f)), ...imageExtensions];
-                                            } else {
-                                                // Remove all image extensions
-                                                newFilters = currentFilters.filter(f => !imageExtensions.includes(f));
-                                            }
-                                            
-                                            const filterString = newFilters.length === 0 ? "all" : newFilters.join(',');
-                                            props.setExtensionFilter(filterString);
-                                        }}
-                                        checked={props.extensionFilter !== "all" && ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'].some(ext => props.extensionFilter.split(',').includes(ext))}
-                                    />
-                                    <label className="checkbox checkbox-normal" htmlFor="filter-extension-image-group-check"><strong>Image</strong></label>
-                                </div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '5px', marginLeft: '20px' }}>
-                                    {[
-                                        { value: 'jpeg', label: 'jpeg(jpg)', extensions: ['jpg', 'jpeg'] },
-                                        { value: 'png', label: 'png', extensions: ['png'] },
-                                        { value: 'gif', label: 'gif', extensions: ['gif'] },
-                                        { value: 'bmp', label: 'bmp', extensions: ['bmp'] },
-                                        { value: 'tiff', label: 'tiff', extensions: ['tiff'] }
-                                    ].map(item => (
-                                        <div key={item.value}>
-                                            <input 
-                                                type="checkbox" 
-                                                value={item.value}
-                                                id={`filter-extension-${item.value}-check`}
-                                                onChange={(e) => {
-                                                    const checked = e.target.checked;
-                                                    const currentFilters = props.extensionFilter === "all" ? [] : props.extensionFilter.split(',').filter(f => f.trim() !== '');
-                                                    
-                                                    let newFilters;
-                                                    if (checked) {
-                                                        // Add all extensions for this item
-                                                        newFilters = [...currentFilters, ...item.extensions];
-                                                    } else {
-                                                        // Remove all extensions for this item
-                                                        newFilters = currentFilters.filter(f => !item.extensions.includes(f));
-                                                    }
-                                                    
-                                                    const filterString = newFilters.length === 0 ? "all" : newFilters.join(',');
-                                                    props.setExtensionFilter(filterString);
-                                                }}
-                                                checked={props.extensionFilter !== "all" && item.extensions.some(ext => props.extensionFilter.split(',').includes(ext))}
-                                            />
-                                            <label className="checkbox checkbox-normal" htmlFor={`filter-extension-${item.value}-check`}>{item.label}</label>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            
-                            {/* Movie Extensions Group */}
-                            <div>
-                                <div>
-                                    <input 
-                                        type="checkbox" 
-                                        id="filter-extension-movie-group-check"
-                                        onChange={(e) => {
-                                            const checked = e.target.checked;
-                                            const currentFilters = props.extensionFilter === "all" ? [] : props.extensionFilter.split(',').filter(f => f.trim() !== '');
-                                            const movieExtensions = ['mp4', 'webm'];
-                                            
-                                            let newFilters;
-                                            if (checked) {
-                                                // Add all movie extensions
-                                                newFilters = [...currentFilters.filter(f => !movieExtensions.includes(f)), ...movieExtensions];
-                                            } else {
-                                                // Remove all movie extensions
-                                                newFilters = currentFilters.filter(f => !movieExtensions.includes(f));
-                                            }
-                                            
-                                            const filterString = newFilters.length === 0 ? "all" : newFilters.join(',');
-                                            props.setExtensionFilter(filterString);
-                                        }}
-                                        checked={props.extensionFilter !== "all" && ['mp4', 'webm'].some(ext => props.extensionFilter.split(',').includes(ext))}
-                                    />
-                                    <label className="checkbox checkbox-normal" htmlFor="filter-extension-movie-group-check"><strong>Movie</strong></label>
-                                </div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '5px', marginLeft: '20px' }}>
-                                    {[
-                                        { value: 'mp4', label: 'mp4', extensions: ['mp4'] },
-                                        { value: 'webm', label: 'webm', extensions: ['webm'] }
-                                    ].map(item => (
-                                        <div key={item.value}>
-                                            <input 
-                                                type="checkbox" 
-                                                value={item.value}
-                                                id={`filter-extension-${item.value}-check`}
-                                                onChange={(e) => {
-                                                    const checked = e.target.checked;
-                                                    const currentFilters = props.extensionFilter === "all" ? [] : props.extensionFilter.split(',').filter(f => f.trim() !== '');
-                                                    
-                                                    let newFilters;
-                                                    if (checked) {
-                                                        // Add all extensions for this item
-                                                        newFilters = [...currentFilters, ...item.extensions];
-                                                    } else {
-                                                        // Remove all extensions for this item
-                                                        newFilters = currentFilters.filter(f => !item.extensions.includes(f));
-                                                    }
-                                                    
-                                                    const filterString = newFilters.length === 0 ? "all" : newFilters.join(',');
-                                                    props.setExtensionFilter(filterString);
-                                                }}
-                                                checked={props.extensionFilter !== "all" && item.extensions.some(ext => props.extensionFilter.split(',').includes(ext))}
-                                            />
-                                            <label className="checkbox checkbox-normal" htmlFor={`filter-extension-${item.value}-check`}>{item.label}</label>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </li>
-                </ul>
-            </div>
-            <div id="tab-selection" className={props.tabClass['selection'] ? "tab-active" : "tab"}>
-                {/* Photo Selection (default mode) */}
-                {props.viewModeObj?.shouldShowPhotoSelection() && (
-                    <>
-                        <div>
-                            <button onClick={() => props.selectAllPhotoToSelection()}>Select all photos in page</button>
-                        </div>
-                        {props.photoSelection.length == 0
-                            ?
-                            <div><br />Photos are not selected.</div>
-                            :
-                            <div>
-                        <div className="operation">
-                            <select ref={dropdownRef} onChange={(e) => doOperation(e)}>
-                                <option value="select">Select an Operation</option>
-                                
-                                {/* Import-specific operations (only in import mode) */}
-                                {props.viewModeObj?.shouldShowImportOperations() && (
-                                    <>
-                                        {props.viewModeObj?.showImportSelected() && <option value="importSelected">Import Selected Photos</option>}
-                                        {props.viewModeObj?.showSelectAllInDirectory() && <option value="selectAllInDirectory">Select All in This Directory</option>}
-                                        <option value="unselectAll">Unselect All</option>
-                                    </>
-                                )}
-                                
-                                {/* Album-specific operations (only in album mode) */}
-                                {props.viewModeObj?.shouldShowAlbumOperations() && (
-                                    <>
-                                        {props.viewModeObj?.showRemoveFromAlbum() && <option value="removeFromAlbum">Remove from Album</option>}
-                                    </>
-                                )}
-                                
-                                {/* Trash mode operations */}
-                                {props.viewModeObj?.isTrashMode() && (
-                                    <>
-                                        {props.viewModeObj?.showRestoreFromTrash() && <option value="restoreFromTrash">Restore</option>}
-                                        {props.viewModeObj?.showPermanentDelete() && <option value="permanentDelete">Delete Permanently</option>}
-                                    </>
-                                )}
 
-                                {/* Standard operations (non-import, non-trash modes) */}
-                                {props.viewModeObj?.shouldShowStandardOperations() && !props.viewModeObj?.isTrashMode() && (
-                                    <>
-                                        {props.viewModeObj?.showUploadToGooglePhotos() && <option value="uploadToGooglePhotos">Upload to Google Photos</option>}
-                                        {props.viewModeObj?.showDeleteFiles() && <option value="deleteFiles">Delete files</option>}
+            <FilterTab
+                viewModeObj={props.viewModeObj}
+                filterState={{
+                    starFilter: props.starFilter,
+                    setStarFilter: props.setStarFilter,
+                    hasCommentFilter: props.hasCommentFilter,
+                    setHasCommentFilter: props.setHasCommentFilter,
+                    hasTagFilter: props.hasTagFilter,
+                    setHasTagFilter: props.setHasTagFilter,
+                    extensionFilter: props.extensionFilter,
+                    setExtensionFilter: props.setExtensionFilter
+                }}
+                tabClass={props.tabClass}
+            />
+            <SelectionTab
+                viewModeObj={props.viewModeObj}
+                selectionState={{
+                    photoSelection: props.photoSelection,
+                    selectedAlbums: props.selectedAlbums,
+                    selectedTags: props.selectedTags
+                }}
+                handlers={{
+                    doOperation,
+                    selectAllPhotoToSelection: props.selectAllPhotoToSelection,
+                    clearPhotoSelection: props.clearPhotoSelection,
+                    deleteSelectedAlbums: props.deleteSelectedAlbums,
+                    clearAlbumSelection: props.clearAlbumSelection,
+                    deleteSelectedTags: props.deleteSelectedTags,
+                    clearTagSelection: props.clearTagSelection
+                }}
+                importState={props.importState}
+                albumsList={props.albumsList}
+                tagsList={props.tagsList}
+                dropdownRef={dropdownRef}
+                tabClass={props.tabClass}
+            />
 
-                                        {/* Album operations (all modes) */}
-                                        {props.viewModeObj?.showCreateAlbum() && <option value="createAlbum">Create Album</option>}
-                                        {props.viewModeObj?.showAddToAlbum() && <option value="addToAlbum">Add to Existing Album</option>}
-                                    </>
-                                )}
-                            </select>
-                        </div>
-                        <ul className="list-of-selected">
-                            {props.photoSelection.map((v, i) => {
-                                return <li key={v}><a href="#" onClick={() => setPhotoIndex(i)}>{v.replace(/^.+\//, "")}</a></li>
-                            })}
-                        </ul>
-                        <button onClick={() => props.clearPhotoSelection()}>Clear Selection</button>
-                        
-                        {/* Import Progress Display - Import Mode Only */}
-                        {props.viewModeObj?.shouldShowImportProgress() && props.importState?.importProgress && (
-                            <div className="import-progress" style={{ 
-                                marginTop: '15px', 
-                                padding: '10px', 
-                                backgroundColor: 'var(--bg-elevated)', 
-                                border: '1px solid var(--border)', 
-                                borderRadius: '4px' 
-                            }}>
-                                <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Import Progress</div>
-                                <div>Progress: {props.importState.importProgress.progress}%</div>
-                                <div>Current: {props.importState.importProgress.current_file}</div>
-                                {props.importState.importProgress.error && (
-                                    <div style={{ color: '#dc2626', marginTop: '5px' }}>
-                                        Error: {props.importState.importProgress.error}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                }
-                {photoIndex >= 0 &&
-                    <img
-                        onMouseOver={() => setShowBigPhoto(true)}
-                        src={convertFileSrc(props.photoSelection[photoIndex])}
-                    />}
-                    </>
-                )}
-                
-                {/* Album Selection (album list mode) */}
-                {props.viewModeObj?.shouldShowAlbumSelection() && (
-                    <div>
-                        <div style={{ marginBottom: '15px' }}>
-                            <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>Selected Albums</h3>
-                        </div>
-                        {props.selectedAlbums.length === 0 ? (
-                            <div><br />No albums selected.</div>
-                        ) : (
-                            <div>
-                                <div className="operation" style={{ marginBottom: '15px' }}>
-                                    <button 
-                                        onClick={props.deleteSelectedAlbums}
-                                        style={{
-                                            padding: '8px 12px',
-                                            backgroundColor: '#dc2626',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '4px',
-                                            cursor: 'pointer',
-                                            marginRight: '10px'
-                                        }}
-                                    >
-                                        Delete Selected Albums
-                                    </button>
-                                    <button 
-                                        onClick={() => props.clearAlbumSelection()}
-                                        style={{
-                                            padding: '8px 12px',
-                                            backgroundColor: 'var(--bg-elevated)',
-                                            color: 'var(--text)',
-                                            border: '1px solid var(--border)',
-                                            borderRadius: '4px',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        Clear Selection
-                                    </button>
-                                </div>
-                                <ul className="list-of-selected">
-                                    {props.selectedAlbums.map((albumId) => {
-                                        const album = props.albumsList.find(a => a.id === albumId);
-                                        return album ? (
-                                            <li key={albumId}>
-                                                <span>{album.name} ({album.photoCount} photos)</span>
-                                            </li>
-                                        ) : null;
-                                    })}
-                                </ul>
-                            </div>
-                        )}
-                    </div>
-                )}
-                
-                {/* Tag Selection (tag list mode) */}
-                {props.viewModeObj?.shouldShowTagSelection() && (
-                    <div>
-                        <div style={{ marginBottom: '15px' }}>
-                            <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>Selected Tags</h3>
-                        </div>
-                        {props.selectedTags.length === 0 ? (
-                            <div><br />No tags selected.</div>
-                        ) : (
-                            <div>
-                                <div className="operation" style={{ marginBottom: '15px' }}>
-                                    <button 
-                                        onClick={props.deleteSelectedTags}
-                                        style={{
-                                            padding: '8px 12px',
-                                            backgroundColor: '#dc2626',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '4px',
-                                            cursor: 'pointer',
-                                            marginRight: '10px'
-                                        }}
-                                    >
-                                        Delete Selected Tags
-                                    </button>
-                                    <button 
-                                        onClick={() => props.clearTagSelection()}
-                                        style={{
-                                            padding: '8px 12px',
-                                            backgroundColor: 'var(--bg-elevated)',
-                                            color: 'var(--text)',
-                                            border: '1px solid var(--border)',
-                                            borderRadius: '4px',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        Clear Selection
-                                    </button>
-                                </div>
-                                <ul className="list-of-selected">
-                                    {props.selectedTags.map((tagId) => {
-                                        const tag = props.tagsList.find(t => t.id === tagId);
-                                        return tag ? (
-                                            <li key={tagId}>
-                                                <span style={{ 
-                                                    display: 'inline-block',
-                                                    width: '12px',
-                                                    height: '12px',
-                                                    backgroundColor: tag.color || '#374151',
-                                                    borderRadius: '50%',
-                                                    marginRight: '8px'
-                                                }}></span>
-                                                <span>{tag.name} ({tag.photoCount} photos)</span>
-                                            </li>
-                                        ) : null;
-                                    })}
-                                </ul>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-            <div className="big-photo-in-selection" style={{ display: showBigPhoto ? "block" : "none" }}
-                onMouseLeave={() => setShowBigPhoto(false)}
-                onClick={() => setShowBigPhoto(false)}
-            >
-                <img src={convertFileSrc(props.photoSelection[photoIndex])} />
-            </div>
-            
             {/* Album Creation Modal */}
             <AlbumCreationModal
                 isOpen={showAlbumCreationModal}
@@ -1212,7 +772,7 @@ function DirectoryMenu(props) {
                 onConfirm={createAlbumFromSelection}
                 selectedPhotosCount={props.photoSelection.length}
             />
-            
+
             {/* Album Selector Modal */}
             <AlbumSelectorModal
                 isOpen={showAlbumSelectorModal}
@@ -1220,7 +780,16 @@ function DirectoryMenu(props) {
                 onConfirm={addPhotosToAlbum}
                 selectedPhotosCount={props.photoSelection.length}
             />
-            
+
+            {/* Contextual Delete Modal */}
+            <ContextualDeleteModal
+                isOpen={showDeleteModal}
+                operation={deleteModalConfig.operation}
+                photoCount={deleteModalConfig.count}
+                onConfirm={deleteModalConfig.onConfirm}
+                onCancel={() => setShowDeleteModal(false)}
+            />
+
             {/* Tutorial Tooltip */}
             <TutorialTooltip
                 isVisible={showTutorial}

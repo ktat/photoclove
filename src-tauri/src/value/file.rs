@@ -112,7 +112,8 @@ impl Dir {
 
     pub fn to_date(&mut self) -> Option<date::Date> {
         // First try the original pattern for backward compatibility (date at end)
-        let re_end = Regex::new(r"([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)/?$").unwrap();
+        let re_end =
+            Regex::new(r"([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)/?$").unwrap();
         if let Some(cap) = re_end.captures(self.path.as_str()) {
             return Option::Some(
                 date::Date::new(
@@ -123,10 +124,11 @@ impl Dir {
                 .unwrap(),
             );
         }
-        
+
         // If not found at end, search for date pattern anywhere in the path (for UUID subdirectories)
         // This handles paths like /path/to/2025-01-15/abc123-def456-789
-        let re_anywhere = Regex::new(r"/([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)(/|$)").unwrap();
+        let re_anywhere =
+            Regex::new(r"/([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)(/|$)").unwrap();
         if let Some(cap) = re_anywhere.captures(self.path.as_str()) {
             return Option::Some(
                 date::Date::new(
@@ -137,7 +139,7 @@ impl Dir {
                 .unwrap(),
             );
         }
-        
+
         print!("capture error: {}", self.path);
         return Option::None;
     }
@@ -196,7 +198,8 @@ impl File {
                     is_link: false,
                 };
             }
-            let file_name = p.file_name()
+            let file_name = p
+                .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("unknown")
                 .to_string();

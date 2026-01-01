@@ -133,7 +133,12 @@ impl Photo {
         }
     }
 
-    pub fn get_imported_dir_date(&self, import_path: String) -> date::Date {
+    pub fn get_imported_dir_date(&self) -> date::Date {
+        let import_path = self.import_to.clone();
+        if import_path.is_empty() {
+            log::error!(target: "photo", "get_imported_dir_date_error_no_import_path; path={}, import_path={}", self.file.path, import_path);
+            panic!("Import path is not set in Photo entity");
+        }
         let path = self.file.path.clone();
         let reg = regex::Regex::new(r"/?[^/]+$").unwrap();
         let date_file_string = path.replace(&import_path, "");

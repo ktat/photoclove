@@ -1,4 +1,6 @@
 import React from 'react';
+import { useUI } from '../../context/UIContext.jsx';
+import { VIEW_MODES } from '../../constants/viewModes.js';
 
 /**
  * PhotosToolbar Component
@@ -17,9 +19,12 @@ function PhotosToolbar({
     hasCommentFilter,
     hasTagFilter,
     extensionFilter,
-    hasActiveFilters,
-    isImportMode
+    hasActiveFilters
 }) {
+    // Determine mode from viewMode
+    const { viewMode } = useUI();
+    const isImportMode = viewMode === VIEW_MODES.IMPORT;
+
     // Calculate active filter count (mode-aware)
     const activeFilterCount = isImportMode
         ? [extensionFilter !== "all"].filter(Boolean).length  // Import mode: only extension filter

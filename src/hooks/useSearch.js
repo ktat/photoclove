@@ -93,13 +93,6 @@ export const useSearch = () => {
   }, []);
 
   const performSearch = useCallback(async (query, type = 'all', filters = {}, sortField = 'exif_date_time_original', sortOrder = 'desc') => {
-    const correlationId = logger.generateCorrelationId();
-    const startTime = performance.now();
-    
-    logger.debug('useSearch', 'search_initiated', 'Search function called', {
-      query, type, filters, sortField, sortOrder, correlationId
-    });
-    
     // Check if we have any active filters
     const hasActiveFilters = Object.keys(filters).some(key => {
       const value = filters[key];
@@ -113,31 +106,8 @@ export const useSearch = () => {
       return false;
     });
 
-    logger.debug('useSearch', 'filter_analysis', 'Analyzed filter state', {
-      hasActiveFilters, 
-      filterCount: Object.keys(filters).length,
-      filtersDetailed: Object.entries(filters).map(([key, value]) => ({
-        key,
-        value,
-        type: typeof value,
-        isActive: (() => {
-          if (typeof value === 'boolean') return value;
-          if (typeof value === 'number') return value > 0;
-          if (typeof value === 'string') return value.length > 0;
-          if (typeof value === 'object' && value !== null) {
-            return Object.values(value).some(v => v && v.toString().trim().length > 0);
-          }
-          return false;
-        })()
-      })),
-      correlationId
-    });
-
     // If no query and no filters, clear results
     if (!query.trim() && !hasActiveFilters) {
-      logger.info('useSearch', 'search_cleared', 'No query or filters, clearing results', {
-        correlationId
-      });
       setSearchResults([]);
       setSearchQuery('');
       return;
@@ -168,52 +138,24 @@ export const useSearch = () => {
         tag_ids: filters.selectedTags?.map(tag => tag.id) || []
       };
       
-      logger.debug('useSearch', 'filter_transformed', 'Filters transformed for backend', {
-        originalFilters: filters,
-        transformedFilters,
-        starRatingHandling: {
-          original: filters.starRating,
-          transformed: filters.starRating > 0 ? filters.starRating : '',
-          condition: filters.starRating > 0 ? 'included' : 'excluded'
-        },
-        correlationId
+      const result = await invoke('get_photos_unified', {
+        request: {
+          type: "search",
+          search_type: type,
+          query: query.trim(),
+          params: {
+            filters: JSON.stringify(transformedFilters),
+            sort_field: sortField,
+            sort_order: sortOrder
+          },
+          sort_value: 0,
+          page: 1,
+          limit: 9999,
+          offset: 0
+        }
       });
-      
-      logger.info('useSearch', 'tauri_invoke_start', 'Calling search_photos command', {
-        query: query.trim(), 
-        searchType: type, 
-        filterCount: Object.keys(transformedFilters).filter(key => transformedFilters[key]).length,
-        correlationId
-      });
-      
-      const result = await invoke('search_photos', {
-        query: query.trim(),
-        searchType: type,
-        filters: JSON.stringify(transformedFilters),
-        sortField,
-        sortOrder
-      });
-      
-      const endTime = performance.now();
-      
-      logger.info('useSearch', 'raw_result_received', 'Raw search result from backend', {
-        resultType: typeof result,
-        resultLength: result.length,
-        resultSample: result.substring(0, 200),
-        correlationId
-      });
-      
+
       const searchData = JSON.parse(result);
-      
-      logger.info('useSearch', 'search_data_parsed', 'Search data after JSON parse', {
-        searchDataType: typeof searchData,
-        isArray: Array.isArray(searchData),
-        searchDataKeys: searchData && typeof searchData === 'object' && !Array.isArray(searchData) ? Object.keys(searchData) : null,
-        hasPhotos: searchData && searchData.photos !== undefined,
-        photosLength: searchData && searchData.photos ? searchData.photos.length : null,
-        firstPhotoKeys: searchData && searchData.photos && searchData.photos[0] ? Object.keys(searchData.photos[0]) : null,
-        correlationId
-      });
 
       // Handle both array and object formats
       let photos = [];
@@ -223,12 +165,6 @@ export const useSearch = () => {
         photos = searchData.photos;
       }
 
-      logger.info('useSearch', 'search_completed', 'Search completed successfully', {
-        resultCount: photos.length,
-        duration_ms: Math.round(endTime - startTime),
-        correlationId
-      });
-
       setSearchResults(photos);
       
       // Save to history with filters and sort information
@@ -236,15 +172,10 @@ export const useSearch = () => {
       
       return photos;
     } catch (error) {
-      const endTime = performance.now();
-      
       logger.error('useSearch', 'search_failed', 'Search operation failed', {
-        error: error.message,
-        errorType: typeof error,
-        duration_ms: Math.round(endTime - startTime),
-        correlationId
+        error: error.message
       });
-      
+
       setSearchResults([]);
       throw error;
     } finally {

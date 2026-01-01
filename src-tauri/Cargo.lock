@@ -3947,6 +3947,7 @@ dependencies = [
  "futures",
  "image 0.24.9",
  "image_compressor",
+ "indexmap 2.10.0",
  "kamadak-exif",
  "keyring",
  "linked-hash-map",

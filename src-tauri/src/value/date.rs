@@ -26,17 +26,21 @@ impl Date {
         if date_str.trim().is_empty() {
             return false;
         }
-        
+
         let del = delimitor.unwrap_or("/");
         let expected_pattern = match del {
             "-" => regex::Regex::new(r"^\d{4}-\d{1,2}-\d{1,2}").unwrap(),
             "/" => regex::Regex::new(r"^\d{4}/\d{1,2}/\d{1,2}").unwrap(),
-            _ => match regex::Regex::new(&format!(r"^\d{{4}}\{}\d{{1,2}}\{}\d{{1,2}}", regex::escape(del), regex::escape(del))) {
+            _ => match regex::Regex::new(&format!(
+                r"^\d{{4}}\{}\d{{1,2}}\{}\d{{1,2}}",
+                regex::escape(del),
+                regex::escape(del)
+            )) {
                 Ok(regex) => regex,
                 Err(_) => return false,
             },
         };
-        
+
         expected_pattern.is_match(date_str)
     }
 
@@ -69,21 +73,24 @@ impl Date {
         if date_str.trim().is_empty() {
             return Err("empty date string".to_string());
         }
-        
+
         let mut del = "/";
         if delimitor.is_some() {
             del = delimitor.unwrap();
         }
-        
+
         // Validate basic date format before processing
         if !Self::is_valid_date_format(date_str, delimitor) {
-            return Err(format!("invalid date format: {} (expected format with delimiter '{}')", date_str, del));
+            return Err(format!(
+                "invalid date format: {} (expected format with delimiter '{}')",
+                date_str, del
+            ));
         }
-        
+
         let re = regex::Regex::new(r" .+$").unwrap();
         let replaced = re.replace(&date_str, "").to_string();
         let mut splitted = replaced.split(del);
-        
+
         let year = match splitted.next().unwrap().parse::<i32>() {
             Ok(year) => year,
             _ => return Err(format!("invalid year in date string: {}", date_str)),
@@ -96,17 +103,22 @@ impl Date {
             Ok(day) => day,
             _ => return Err(format!("invalid day in date string: {}", date_str)),
         };
-        
+
         match Date::new(year, month, day) {
             Some(date) => Ok(date),
             None => Err(format!("invalid date: {}-{}-{}", year, month, day)),
         }
     }
 
-    pub fn from_string(date_str: &String, delimitor: Option<&str>) -> Date {
-        match Self::try_from_string(date_str, delimitor) {
+    pub fn from_string(date_str: &String, delimiter: Option<&str>) -> Date {
+        match Self::try_from_string(date_str, delimiter) {
             Ok(date) => date,
-            Err(err) => panic!("Date parsing failed: {}", err),
+            Err(err) => panic!(
+                "Date parsing failed: {}, delimiter: {}, error: {}",
+                date_str,
+                delimiter.unwrap_or("/"),
+                err
+            ),
         }
     }
 }

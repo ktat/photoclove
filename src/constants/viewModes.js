@@ -9,7 +9,6 @@ export const VIEW_MODES = {
   DATE: 'date',
   RECENT: 'recent',
   SEARCH: 'search',
-  ADVANCED_SEARCH: 'advanced_search',
   ALBUM_LIST: 'album_list',
   ALBUM: 'album',
   TAG_LIST: 'tag_list',
@@ -27,7 +26,6 @@ export const isPhotoViewingMode = (mode) => {
     VIEW_MODES.DATE,
     VIEW_MODES.RECENT,
     VIEW_MODES.SEARCH,
-    VIEW_MODES.ADVANCED_SEARCH,
     VIEW_MODES.ALBUM,
     VIEW_MODES.TAG,
     VIEW_MODES.TRASH

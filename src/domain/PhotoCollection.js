@@ -220,8 +220,8 @@ export class PhotoCollection {
         return new PhotoCollection(photos, 'date', { date, config, sortValue });
     }
 
-    static createSearchCollection(photos, query, config, searchResults = null, sortValue = 0) {
-        return new PhotoCollection(photos, 'search', { query, searchResults, config, sortValue });
+    static createSearchCollection(photos, query, config, searchParams = null, sortValue = 0) {
+        return new PhotoCollection(photos, 'search', { query, searchParams, config, sortValue });
     }
 
     static createTrashCollection(photos, config, sortValue = 0) {
@@ -363,43 +363,156 @@ export class PhotoCollection {
     }
 
     /**
+     * Check if filters have any active/meaningful values
+     */
+    _hasActiveFilters(filters) {
+        if (!filters) return false;
+
+        return !!(
+            filters.camera ||
+            filters.lens ||
+            (filters.isoRange?.min) || (filters.isoRange?.max) ||
+            (filters.apertureRange?.min) || (filters.apertureRange?.max) ||
+            (filters.shutterSpeedRange?.min) || (filters.shutterSpeedRange?.max) ||
+            (filters.focalLengthRange?.min) || (filters.focalLengthRange?.max) ||
+            filters.dateRange?.start || filters.dateRange?.end ||
+            filters.hasComment ||
+            (filters.starRating && filters.starRating > 0) ||
+            (filters.fileExtension && filters.fileExtension !== '') ||
+            (filters.selectedTags && filters.selectedTags.length > 0)
+        );
+    }
+
+    /**
      * Fetch photos for search mode
      */
     async _fetchSearchPhotos(page, pageSize, filters) {
-        // If we have cached search results, use them
-        if (this.metadata.searchResults && Array.isArray(this.metadata.searchResults)) {
-            const startIndex = (page - 1) * pageSize;
-            const endIndex = startIndex + pageSize;
-            const pagePhotos = this.metadata.searchResults.slice(startIndex, endIndex);
+        // If no search params, return empty
+        // Allow search with either query OR filters
+        const hasQuery = this.metadata.searchParams?.query?.trim();
+        const hasFilters = this._hasActiveFilters(this.metadata.searchParams?.filters);
 
-            return this.withPhotos(pagePhotos)
+        if (!this.metadata.searchParams || (!hasQuery && !hasFilters)) {
+            logger.info('PhotoCollection', '_fetchSearchPhotos_no_params', 'No search params or all empty', {
+                hasSearchParams: !!this.metadata.searchParams,
+                hasQuery: !!hasQuery,
+                hasFilters: !!hasFilters,
+                filters: this.metadata.searchParams?.filters
+            });
+            return this.withPhotos([])
                 .withMetadata({
-                    hasNext: endIndex < this.metadata.searchResults.length,
-                    hasPrev: page > 1,
+                    hasNext: false,
+                    hasPrev: false,
                     currentPage: page,
-                    totalCount: this.metadata.searchResults.length
+                    totalCount: 0
                 });
         }
 
-        // Fallback to date-based search if no search results
-        const result = await invoke("get_photos_unified", {
+        logger.info('PhotoCollection', '_fetchSearchPhotos_start', 'Starting search', {
+            query: this.metadata.searchParams.query,
+            searchType: this.metadata.searchParams.searchType,
+            hasFilters: !!this.metadata.searchParams.filters,
+            filters: this.metadata.searchParams.filters
+        });
+
+        // Transform frontend filter format to backend format
+        const transformFiltersToBackend = (frontendFilters) => {
+            if (!frontendFilters) return null;
+
+            const backendFilters = {};
+
+            // Camera and lens (already matching)
+            if (frontendFilters.camera) backendFilters.camera = frontendFilters.camera;
+            if (frontendFilters.lens) backendFilters.lens = frontendFilters.lens;
+
+            // ISO range: isoRange.min/max -> iso_min/iso_max
+            if (frontendFilters.isoRange?.min) backendFilters.iso_min = parseInt(frontendFilters.isoRange.min);
+            if (frontendFilters.isoRange?.max) backendFilters.iso_max = parseInt(frontendFilters.isoRange.max);
+
+            // Aperture range: apertureRange.min/max -> aperture_min/aperture_max
+            if (frontendFilters.apertureRange?.min) backendFilters.aperture_min = parseFloat(frontendFilters.apertureRange.min);
+            if (frontendFilters.apertureRange?.max) backendFilters.aperture_max = parseFloat(frontendFilters.apertureRange.max);
+
+            // Focal length range: focalLengthRange.min/max -> focal_length_min/focal_length_max
+            if (frontendFilters.focalLengthRange?.min) backendFilters.focal_length_min = parseFloat(frontendFilters.focalLengthRange.min);
+            if (frontendFilters.focalLengthRange?.max) backendFilters.focal_length_max = parseFloat(frontendFilters.focalLengthRange.max);
+
+            // Date range: dateRange.start/end -> start_date/end_date
+            if (frontendFilters.dateRange?.start) backendFilters.start_date = frontendFilters.dateRange.start;
+            if (frontendFilters.dateRange?.end) backendFilters.end_date = frontendFilters.dateRange.end;
+
+            // Star rating: starRating -> min_rating
+            if (frontendFilters.starRating && frontendFilters.starRating > 0) {
+                backendFilters.min_rating = frontendFilters.starRating;
+            }
+
+            // Has comment: hasComment -> has_comments
+            if (frontendFilters.hasComment) backendFilters.has_comments = frontendFilters.hasComment;
+
+            // File extension: fileExtension -> extension
+            if (frontendFilters.fileExtension && frontendFilters.fileExtension !== '') {
+                backendFilters.extension = frontendFilters.fileExtension;
+            }
+
+            // Tags: selectedTags (array of tag objects) -> tag_ids (array of integers)
+            if (frontendFilters.selectedTags && frontendFilters.selectedTags.length > 0) {
+                backendFilters.tag_ids = frontendFilters.selectedTags.map(tag => tag.id);
+            }
+
+            return Object.keys(backendFilters).length > 0 ? backendFilters : null;
+        };
+
+        const transformedFilters = transformFiltersToBackend(this.metadata.searchParams.filters);
+
+        logger.debug('PhotoCollection', '_fetchSearchPhotos_filters_transformed', 'Filters transformed', {
+            frontendFilters: this.metadata.searchParams.filters,
+            backendFilters: transformedFilters
+        });
+
+        // Perform search using unified search API (same as other modes)
+        const requestParams = {
             request: {
                 type: "search",
-                search_type: "date",
-                query: this.metadata.query || this.metadata.date,
+                search_type: this.metadata.searchParams.searchType || "all",
+                query: this.metadata.searchParams.query || "",  // Empty string if no query
+                params: transformedFilters ? {
+                    filters: JSON.stringify(transformedFilters)
+                } : undefined,
                 sort_value: this.metadata.sortValue || 0,
-                page: 1,  // Match original behavior
-                limit: Math.min(9999, pageSize || 1000),  // Match original behavior
-                offset: 0,  // Match original behavior
+                page: 1,
+                limit: 9999,
+                offset: 0,
                 star: filters.star || -1,
                 has_comment: filters.hasComment || false,
                 extension: filters.extension || "all"
             }
+        };
+
+        logger.info('PhotoCollection', '_fetchSearchPhotos_request', 'Request params', {
+            requestParams: JSON.stringify(requestParams)
         });
 
-        const data = JSON.parse(result);
+        let result;
+        try {
+            result = await invoke("get_photos_unified", requestParams);
+            logger.info('PhotoCollection', '_fetchSearchPhotos_result', 'Search completed', {
+                resultLength: result?.length,
+                resultSample: result?.substring(0, 100)
+            });
+        } catch (error) {
+            logger.error('PhotoCollection', '_fetchSearchPhotos_error', 'Search failed', {
+                error: error?.message || String(error)
+            });
+            throw error;
+        }
 
-        // Convert raw photos to Photo entities (same as other modes)
+        const data = JSON.parse(result);
+        logger.info('PhotoCollection', '_fetchSearchPhotos_parsed', 'Result parsed', {
+            hasPhotos: !!data.photos,
+            photoCount: data.photos?.length || 0
+        });
+
+        // Convert raw photos to Photo entities
         const config = this.metadata.config;
         const photoEntities = (data.photos || [])
             .map(photoData => Photo.fromBackendData(photoData, config, false))
@@ -407,10 +520,10 @@ export class PhotoCollection {
 
         return this.withPhotos(photoEntities)
             .withMetadata({
-                hasNext: data.has_next || false,
-                hasPrev: page > 1,
+                hasNext: false,
+                hasPrev: false,
                 currentPage: page,
-                totalCount: data.total_count || photoEntities.length
+                totalCount: photoEntities.length
             });
     }
 

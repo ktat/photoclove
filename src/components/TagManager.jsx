@@ -94,18 +94,31 @@ const TagManager = () => {
 
     const handleTagSearch = async (tagIds) => {
         try {
-            const photoIds = await invoke('search_photos_by_tags', { tagIds });
-            logger.info('TagManager', 'tag_search', 'Photos found with tags', { 
-                tagIds,
-                photoCount: photoIds.length 
+            const result = await invoke('get_photos_unified', {
+                request: {
+                    type: "search",
+                    search_type: "tag",
+                    query: tagIds.join(','),
+                    page: 1,
+                    limit: 9999,
+                    offset: 0
+                }
             });
-            
-            // You could emit an event here or use a callback to show search results
-            alert(`Found ${photoIds.length} photos with the selected tag${tagIds.length > 1 ? 's' : ''}`);
-        } catch (error) {
-            logger.error('TagManager', 'tag_search_error', 'Failed to search photos by tags', { 
+
+            const data = JSON.parse(result);
+            const photos = data.photos || [];
+
+            logger.info('TagManager', 'tag_search', 'Photos found with tags', {
                 tagIds,
-                error: error.toString() 
+                photoCount: photos.length
+            });
+
+            // You could emit an event here or use a callback to show search results
+            alert(`Found ${photos.length} photos with the selected tag${tagIds.length > 1 ? 's' : ''}`);
+        } catch (error) {
+            logger.error('TagManager', 'tag_search_error', 'Failed to search photos by tags', {
+                tagIds,
+                error: error.toString()
             });
         }
     };

@@ -11,7 +11,7 @@ fn default_download_dir() -> String {
             return "Downloads".to_string();
         }
     };
-    
+
     dirs::download_dir()
         .unwrap_or_else(|| home.join("Downloads"))
         .display()

@@ -7,6 +7,8 @@ import { logger } from "../../services/LoggerService.js";
 import { Photo } from "../../domain/Photo.js";
 import { parseCssStyle, calculateSimpleThumbnailDisplay, getDateKey as utilGetDateKey, createBorderStyles } from "./PhotosListMini/photoUtils.js";
 import { useKeyboardShortcuts } from "./PhotosListMini/useKeyboardShortcuts.js";
+import { useUI } from "../../context/UIContext.jsx";
+import { VIEW_MODES } from "../../constants/viewModes.js";
 
 const NUM_OF_PHOTO_LIST = 9;
 
@@ -18,6 +20,11 @@ function PhotosListMini(props) {
     // Context
     const { imgCacheMap, setImgCacheMap } = useContext(ImgCacheContext);
     const { photosListMiniAllPhotos, setPhotosListMiniAllPhotos } = useContext(AllPhotosContext);
+    const { viewMode } = useUI();
+
+    // Determine modes from viewMode
+    const isImportMode = viewMode === VIEW_MODES.IMPORT;
+    const isTrashMode = viewMode === VIEW_MODES.TRASH;
 
     // Convert JSON back to Photo entities for all photos operations
     const photosWithMethods = useMemo(() => {
@@ -393,9 +400,24 @@ function PhotosListMini(props) {
     };
 
     const handleConfirmAction = async () => {
-        const currentPhoto = photosWithMethods[props.currentIndex];
-        if (!currentPhoto) return;
+        console.log('[PhotosListMini.handleConfirmAction] Called', {
+            deleteOperation,
+            currentIndex: props.currentIndex,
+            hasDeletePhotos: !!props.deletePhotos
+        });
 
+        const currentPhoto = photosWithMethods[props.currentIndex];
+        if (!currentPhoto) {
+            console.log('[PhotosListMini.handleConfirmAction] No current photo');
+            return;
+        }
+
+        // Close modal immediately for better UX
+        console.log('[PhotosListMini.handleConfirmAction] Closing modal immediately');
+        setShowDeleteModal(false);
+        setDeleteOperation(null);
+
+        // Perform operation asynchronously in background
         try {
             if (deleteOperation === 'removeFromAlbum') {
                 await invoke('remove_photo_from_album', {
@@ -412,24 +434,27 @@ function PhotosListMini(props) {
                 props.removePhotoFromList?.(props.currentIndex);
                 props.addFooterMessage?.('Photo removed from album');
             } else {
-                await props.moveToTrashCan(currentPhoto.originalPath);
+                console.log('[PhotosListMini.handleConfirmAction] Calling deletePhotos');
+                await props.deletePhotos([currentPhoto.originalPath], {
+                    skipConfirmation: true,  // PhotosListMini has its own confirmation
+                    clearSelection: false    // Don't clear selection in main list
+                });
+                console.log('[PhotosListMini.handleConfirmAction] deletePhotos completed');
 
                 logger.info('PhotosListMini', 'photo_deleted', 'Photo moved to trash', {
                     photoPath: currentPhoto.originalPath
                 });
 
-                // Photo removal is handled by moveToTrashCan
+                // Photo removal is handled by deletePhotos
                 props.addFooterMessage?.('Photo deleted');
             }
         } catch (error) {
+            console.log('[PhotosListMini.handleConfirmAction] Error occurred:', error);
             logger.error('PhotosListMini', 'action_failed', 'Failed to perform action', {
                 operation: deleteOperation,
                 error: error.message
             });
             props.handleTauriError?.(error, deleteOperation === 'removeFromAlbum' ? 'Remove from album' : 'Delete photo');
-        } finally {
-            setShowDeleteModal(false);
-            setDeleteOperation(null);
         }
     };
 
@@ -451,20 +476,20 @@ function PhotosListMini(props) {
         } else if (e.keyCode === 67) { // c ... choose as selected
             togglePhotoSelected();
         } else if (e.keyCode === 83) { // s ... increase star
-            // Disable in import mode (DB operation)
-            if (!props.isImportMode) {
+            // Disable in import and trash modes (DB operation / read-only)
+            if (!isImportMode && !isTrashMode) {
                 changeStar(true);
             }
         } else if (e.keyCode === 68) { // d ... decrease star
-            // Disable in import mode (DB operation)
-            if (!props.isImportMode) {
+            // Disable in import and trash modes (DB operation / read-only)
+            if (!isImportMode && !isTrashMode) {
                 changeStar(false);
             }
         } else if (e.keyCode === 73) { // i ... toggle show photo info
             props.setShowSideMenu(!props.showSideMenu);
         } else if (e.keyCode === 70) { // f ... favorite (select & star)
-            // Disable in import mode (DB operation)
-            if (!props.isImportMode) {
+            // Disable in import and trash modes (DB operation / read-only)
+            if (!isImportMode && !isTrashMode) {
                 let additionalMessage = "Photo is selected";
                 if (props.isSelected(f)) {
                     additionalMessage = "Photo is already selected";
@@ -477,10 +502,16 @@ function PhotosListMini(props) {
             setShowHelp(!showHelp);
         } else if (e.keyCode === 46) { // Del
             // Disable in import mode (cannot delete import photos)
-            if (!props.isImportMode) {
+            if (!isImportMode) {
                 e.preventDefault(); // Prevent default behavior
 
-                if (isAlbumMode) {
+                if (isTrashMode) {
+                    // Trash mode: DEL permanently deletes
+                    logger.info('PhotosListMini', 'delete_key_pressed', 'DEL pressed in trash mode - permanent delete', {
+                        photoPath: f
+                    });
+                    showDeleteFileModal();
+                } else if (isAlbumMode) {
                     if (e.ctrlKey) {
                         // Ctrl+DEL: Delete file AND remove from album
                         logger.info('PhotosListMini', 'delete_key_pressed', 'Ctrl+DEL pressed in album mode', {
@@ -497,7 +528,7 @@ function PhotosListMini(props) {
                         showRemoveFromAlbumModal();
                     }
                 } else {
-                    // Date/Search mode: DEL deletes file (current behavior)
+                    // Date/Search mode: DEL moves to trash
                     logger.info('PhotosListMini', 'delete_key_pressed', 'DEL pressed in library mode', {
                         photoPath: f
                     });
@@ -683,7 +714,8 @@ function PhotosListMini(props) {
                                                         invoke('get_resized_image', {
                                                             pathStr: v.originalPath,
                                                             maxSize: 200,
-                                                            importDirectory: importDir
+                                                            importDirectory: importDir,
+                                                            skipResizeFallback: v.import_source === true  // Import modeではリサイズをスキップ
                                                         })
                                                             .then(() => {
                                                                 logger.debug('PhotosListMini', 'thumbnail_generated', 'Thumbnail generated successfully', {
@@ -804,7 +836,7 @@ function PhotosListMini(props) {
                         <tr><th>C</th><td>toggle photo selection</td></tr>
 
                         {/* Hide metadata shortcuts in import mode and trash mode */}
-                        {!props.isImportMode && !props.isTrashMode && (
+                        {!isImportMode && !isTrashMode && (
                             <>
                                 <tr><th>S</th><td>increase star</td></tr>
                                 <tr><th>D</th><td>decrease star</td></tr>
@@ -815,7 +847,7 @@ function PhotosListMini(props) {
                         )}
 
                         {/* Trash mode specific shortcuts */}
-                        {props.isTrashMode && (
+                        {isTrashMode && (
                             <tr><th>Del</th><td>permanently delete</td></tr>
                         )}
 

@@ -16,6 +16,7 @@
   text-align: center;
   width: 100%;
   height: calc(100vh - 30px);
+  overflow: hidden;
   transition: width 0.3s ease;
 }
 
@@ -64,8 +65,7 @@ h1 {
   height: 100%;
 }
 
-#directory-maintenance ul,
-.sleectedPhotos ul {
+#directory-maintenance ul {
   text-align: left;
 }
 

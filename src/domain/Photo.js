@@ -274,6 +274,7 @@ export class Photo {
             } : null
         };
 
+        /*
         logger.info('Photo', 'tojson_created', 'Converting Photo to JSON', {
             originalPath: this.originalPath,
             name: this.name,
@@ -283,6 +284,7 @@ export class Photo {
             tagsCount: this.tags ? this.tags.length : 0,
             tagsData: this.tags
         });
+        */
 
         return jsonData;
     }

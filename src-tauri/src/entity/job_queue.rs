@@ -126,7 +126,7 @@ impl JobUnit {
     pub fn new(jobs: Vec<String>) -> Self {
         let uuid = Uuid::new_v4().to_string();
         let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        
+
         JobUnit {
             id: uuid,
             jobs,
@@ -139,7 +139,7 @@ impl JobUnit {
 impl Job {
     pub fn new(job_unit_id: String, job_type: JobType, target: Vec<String>) -> Self {
         let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        
+
         Job {
             job_unit_id,
             job_type,
@@ -152,7 +152,7 @@ impl Job {
 impl QueuedJob {
     pub fn new(job_unit_id: String, job: Job) -> Self {
         let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        
+
         QueuedJob {
             id: None,
             job_unit_id,
@@ -187,7 +187,7 @@ impl JobProgress {
             queue_position: None,
         }
     }
-    
+
     pub fn update_progress(&mut self, completed_jobs: usize, current_job: Option<String>) {
         self.completed_jobs = completed_jobs;
         self.current_job = current_job;

@@ -1,47 +1,5 @@
 # CLAUDE.md - PhotoClove Development Guidelines
 
-## 🎯 Priority Commands (Always Check First)
-
-### `do improvement`
-If I say "do improvement", do the following.
-
-Read files under `improvement/*.md` order by file name as int.
-And then do the task in the file.
-Before starting task, do current steps
-
-1. create branch `improvement-#-summary` (ex. `improvement-10-improve-ui`) from current branch
-2. read the docs/feature-documentation-index.md. and read related document and source code.
-3. rename the `$num.md` to `$num-summary.md`.
-
-When you finished task, `*.md` file which you did should be moved to `improvement/done` directory.
-At last commit your changes to the branch.
-
-If `improvement/*.md` are left, repeat this step and clear context if "keep context" is not written at the last line of `*.md` file.
-
-### `update docs`
-If I say "update docs", do the following.
-
-Read "docs/.current-docs-sha" and get commit sha hash.
-Check difference from it to latest, update document under docs and README\*.md.
-After finishing document update, commit your changes and update "docs/.current-docs-sha" with latest commit sha hash and then commit "docs/.current-docs-sha" at last.
-
-Note that: You carefully check whether the update of docs/feature-documentation-index.md is required or not.
-
-### `compile check`
-If I say `compile check`, do the following.
-
-You should check `cd src-tauri/src/` and `cargo check` when you change `*.rs` files.
-
-### `discussion`
-When I say `discussion`, create new `improvement/$number.md` file.
-`$number` is determined from the file under improvement/done/.
-
-I suggest to you new feature. do discussion about it.
-
-- carefully consider about the influence of the new feature to existing features.
-- How do you implement the task?
-- Which source code you will change
-
 ## 📋 General Development Rules (Apply to ALL Tasks)
 
 ### 1. Logging Standards
@@ -112,7 +70,7 @@ When working on features:
 ### 4. Code Quality Standards
 - **DDD Architecture**: Prioritize Domain-Driven Design - separate business logic into domain layers, use repositories for data access, and maintain clear boundaries between layers
 - **DRY Principle**: Don't Repeat Yourself - extract common logic into reusable functions, components, or modules
-- **File Length Limit**: Keep each file under 1000 lines - split large files into smaller, focused modules
+- **File Length Limit**: Keep each file under 600 lines - split large files into smaller, focused modules
 - **Task Verification**: After implementing code changes, compare the implementation with the original task requirements. If any features are missing or incomplete, create subtasks to address them
 
 ### 5. Important Reminders
@@ -211,3 +169,81 @@ fetchMethod: config?.fetch_method || fetchConfig?.fetch_method || 'unknown',
 2. **Trace data flow**: User Action → State → Backend → Response → UI
 3. **Use optional chaining** for null-safe property access
 4. **Investigate systematically**, avoid repeated fixes
+
+### Debugging Full-Stack Issues
+
+#### Key Principles (Learned from Date Count Bug - 2025-12-22)
+
+When debugging issues that span frontend and backend:
+
+##### 1. **Don't Assume One Side is Correct**
+- ❌ BAD: "Backend works, fix the frontend"
+- ✅ GOOD: Investigate both frontend AND backend
+- **Example**: Date count update issue was in backend date calculation, not frontend state management
+
+##### 2. **Compare Working vs Non-Working Code**
+- If user says "X works but Y doesn't", **compare their implementations carefully**
+- **Example**: `move_to_trash` (single, working) vs `move_to_trash_batch` (batch, broken)
+- Look for differences in:
+  - How data is retrieved
+  - How dates/values are calculated
+  - What parameters are passed
+
+##### 3. **Pay Attention to Log Inconsistencies**
+- Date/time format mismatches (e.g., `2025-12-22` vs `2023/05/04`)
+- Value type differences (string vs number, different delimiters)
+- **These are red flags pointing to the real problem**
+
+##### 4. **Prefer Simplification Over Addition**
+- ❌ BAD: Add more handlers, props, state management
+- ✅ GOOD: Find and fix the root cause
+- **Before adding code, ask**: "Can I fix this by simplifying existing code?"
+
+##### 5. **Check Entity/Domain Logic First**
+- Issues with data often originate in domain entities (Photo, Date, etc.)
+- Check how entities calculate/derive their properties
+- **Example**: Photo's date calculation method had inconsistencies
+
+#### Debugging Checklist for "Feature X Not Working"
+
+1. **Identify Working vs Non-Working Scenarios**
+   - What works? What doesn't?
+   - Compare their code paths
+
+2. **Check Both Ends**
+   ```
+   Frontend: State → Handler → API Call
+   Backend: Command → Entity → Repository → Database
+   ```
+
+3. **Look for Format/Type Mismatches**
+   - Check logs for inconsistent data formats
+   - Verify data types match expectations
+
+4. **Find the Simplest Fix**
+   - Can you fix it in the entity/domain layer?
+   - Can you unify duplicated logic?
+   - Can you remove code instead of adding?
+
+5. **Test the Theory**
+   - Add targeted console.log/log::debug to verify hypothesis
+   - Compare actual vs expected values at each step
+
+#### When to Check Backend vs Frontend
+
+**Check Backend When:**
+- Data format inconsistencies in logs
+- Single operation works but batch doesn't (or vice versa)
+- Issue involves dates, calculations, or data transformations
+- Same frontend code worked before (backend might have changed)
+
+**Check Frontend When:**
+- UI doesn't update despite correct API responses
+- State management issues (useEffect, deps arrays)
+- Event handlers not firing
+- Props not passed correctly
+
+**Check Both When:**
+- Complete feature not working
+- Unclear where the problem originates
+- Logs show data flowing but results are wrong
