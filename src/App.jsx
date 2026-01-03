@@ -25,6 +25,8 @@ import WelcomeImage from "./WelcomeImage.jsx";
 import ErrorDisplay from "./components/ErrorDisplay.jsx";
 import LogViewer from "./App/LogViewer.jsx";
 import DocumentViewer from "./components/DocumentViewer.jsx";
+import Tooltip from "./components/Tooltip.jsx";
+import NavigationIcons from "./App/NavigationIcons.jsx";
 import { useError } from "./context/ErrorContext.jsx";
 import { logger } from "./services/LoggerService.js";
 import { useUI } from "./context/UIContext.jsx";
@@ -71,6 +73,9 @@ function App() {
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showTermsOfUse, setShowTermsOfUse] = useState(false);
   const [showJobQueueModal, setShowJobQueueModal] = useState(false);
+  const [tooltipText, setTooltipText] = useState("");
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0 });
 
   const [shortCutNavigation, setShortCutNavigation] = useState({
     onKeyDown: (e) => { logger.debug('App', 'key_down', 'Key down event', { key: e.key, code: e.code }) },
@@ -78,6 +83,22 @@ function App() {
   });
 
   let in_db_creation = false;
+
+  // Tooltip handlers
+  const handleMouseEnter = (text, event) => {
+    if (leftMenuCollapsed && event && event.currentTarget) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const top = rect.top + (rect.height / 2);
+      setTooltipPosition({ top });
+      setTooltipText(text);
+      setShowTooltip(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setShowTooltip(false);
+    setTooltipText("");
+  };
 
   // Initialize logger from config on app start
   useEffect(() => {
@@ -322,6 +343,7 @@ function App() {
         {showLogViewer && (
           <LogViewer onClose={() => setShowLogViewer(false)} />
         )}
+        <Tooltip show={leftMenuCollapsed && showTooltip} text={tooltipText} position={tooltipPosition} />
       </>
     );
   }
@@ -333,30 +355,19 @@ function App() {
         <div className="container">
           <div className={`inner-container ${rightMenuOpen ? 'menu-open' : 'menu-closed'} ${leftMenuCollapsed ? 'left-menu-collapsed' : ''}`}>
             <div id="leftMenu" className={`leftMenu ${leftMenuCollapsed ? 'collapsed' : ''}`} aria-label="Main navigation sidebar" role="navigation">
-              <div className="navigation-icons">
-                <a href="#" onClick={() => {
-                  updateCurrentDate("");
-                  resetPhotoState();
-                  toggleHome();
-                  setWelcomeImage(WelcomeImage());
-                }} title="HOME">🏠</a>
-                <a href="#" onClick={() => {
-                  toggleSearchPage(true, "", true);
-                }} title="Search">🔍</a>
-                <a href="#" onClick={() => toggleImporter(true)} title="Import">📥</a>
-                <a href="#" onClick={() => {
-                  resetPhotoState();
-                  toggleAlbumListMode();
-                }} title="Albums">📚</a>
-                <a href="#" onClick={() => {
-                  resetPhotoState();
-                  openTagsList();
-                }} title="Tags">🏷️</a>
-                <a href="#" onClick={() => {
-                  resetPhotoState();
-                  openTrash();
-                }} title="Trash">🗑️</a>
-              </div>
+              <NavigationIcons
+                updateCurrentDate={updateCurrentDate}
+                resetPhotoState={resetPhotoState}
+                toggleHome={toggleHome}
+                setWelcomeImage={setWelcomeImage}
+                toggleSearchPage={toggleSearchPage}
+                toggleImporter={toggleImporter}
+                toggleAlbumListMode={toggleAlbumListMode}
+                openTagsList={openTagsList}
+                openTrash={openTrash}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
+              />
               <div className="row">
                 <div style={{ display: "none" }}>
                   <input
@@ -376,6 +387,11 @@ function App() {
                 toggleSearchPage={toggleSearchPage}
                 leftMenuCollapsed={leftMenuCollapsed}
                 setLeftMenuCollapsed={setLeftMenuCollapsed}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
+                showTooltip={showTooltip}
+                tooltipText={tooltipText}
+                tooltipPosition={tooltipPosition}
               />
             </div>
             <PhotosList
@@ -395,6 +411,7 @@ function App() {
         {showLogViewer && (
           <LogViewer onClose={() => setShowLogViewer(false)} />
         )}
+        <Tooltip show={leftMenuCollapsed && showTooltip} text={tooltipText} position={tooltipPosition} />
       </>
     );
   }
@@ -406,30 +423,19 @@ function App() {
     >
       <div className={`inner-container ${rightMenuOpen ? 'menu-open' : 'menu-closed'} ${leftMenuCollapsed ? 'left-menu-collapsed' : ''}`}>
         <div id="leftMenu" className={`leftMenu ${leftMenuCollapsed ? 'collapsed' : ''}`} aria-label="Main navigation sidebar" role="navigation">
-          <div className="navigation-icons">
-            <a href="#" onClick={() => {
-              updateCurrentDate("");
-              resetPhotoState();
-              toggleHome();
-              setWelcomeImage(WelcomeImage());
-            }} title="HOME">🏠</a>
-            <a href="#" onClick={() => {
-              toggleSearchPage(true, "", true);
-            }} title="Search">🔍</a>
-            <a href="#" onClick={() => toggleImporter(true)} title="Import">📥</a>
-            <a href="#" onClick={() => {
-              resetPhotoState();
-              toggleAlbumListMode();
-            }} title="Albums">📚</a>
-            <a href="#" onClick={() => {
-              resetPhotoState();
-              openTagsList();
-            }} title="Tags">🏷️</a>
-            <a href="#" onClick={() => {
-              resetPhotoState();
-              openTrash();
-            }} title="Trash">🗑️</a>
-          </div>
+          <NavigationIcons
+            updateCurrentDate={updateCurrentDate}
+            resetPhotoState={resetPhotoState}
+            toggleHome={toggleHome}
+            setWelcomeImage={setWelcomeImage}
+            toggleSearchPage={toggleSearchPage}
+            toggleImporter={toggleImporter}
+            toggleAlbumListMode={toggleAlbumListMode}
+            openTagsList={openTagsList}
+            openTrash={openTrash}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+          />
           <div className="row">
             <div style={{ display: "none" }}>
               <input
@@ -449,6 +455,11 @@ function App() {
             toggleSearchPage={toggleSearchPage}
             leftMenuCollapsed={leftMenuCollapsed}
             setLeftMenuCollapsed={setLeftMenuCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            showTooltip={showTooltip}
+            tooltipText={tooltipText}
+            tooltipPosition={tooltipPosition}
           />
         </div>
         {(() => {
@@ -521,6 +532,7 @@ function App() {
       {showJobQueueModal && (
         <JobQueue onClose={() => setShowJobQueueModal(false)} addFooterMessage={addFooterMessage} />
       )}
+      <Tooltip show={leftMenuCollapsed && showTooltip} text={tooltipText} position={tooltipPosition} />
     </div >
   );
 }

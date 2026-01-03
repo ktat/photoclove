@@ -191,7 +191,9 @@ function DateList(props) {
                            setSelectedStyle({});
                            updateRecentPhotosMode(true);
                            showRecentPhotos();
-                       }}>
+                       }}
+                       onMouseEnter={(e) => props.handleMouseEnter && props.handleMouseEnter("Recent Photos", e)}
+                       onMouseLeave={() => props.handleMouseLeave && props.handleMouseLeave()}>
                         <span className="recent-photos-icon" style={{ fontSize: '16px' }}>⏱️</span>
                         <span className="recent-photos-text">Recent Photos</span>
                     </a>
@@ -208,6 +210,8 @@ function DateList(props) {
                         display: props.leftMenuCollapsed ? 'block' : 'none'
                     }}
                     onClick={() => props.setLeftMenuCollapsed(false)}
+                    onMouseEnter={(e) => props.handleMouseEnter && props.handleMouseEnter("Calendar", e)}
+                    onMouseLeave={() => props.handleMouseLeave && props.handleMouseLeave()}
                 >
                     📅
                 </div>
