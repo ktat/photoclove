@@ -204,7 +204,7 @@ function Preferences(props) {
                                 <label>Compress Quality:</label>
                                 <select
                                     value={config.thumbnail_compression_quality || ''}
-                                    onChange={(e) => setConfig(prev => ({ ...prev, thumbnail_compression_quality: parseFloat(e.currentTarget.value) }))}
+                                    onChange={(e) => setConfig(prev => ({ ...prev, thumbnail_compression_quality: parseFloat(e.target.value) }))}
                                 >
                                     {[1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50].map((v, i) => (
                                         <option key={i} value={v / 100}>{v}%</option>
@@ -215,7 +215,7 @@ function Preferences(props) {
                                 <label>Minimize Ratio:</label>
                                 <select
                                     value={config.thumbnail_ratio || ''}
-                                    onChange={(e) => setConfig(prev => ({ ...prev, thumbnail_ratio: parseFloat(e.currentTarget.value) }))}
+                                    onChange={(e) => setConfig(prev => ({ ...prev, thumbnail_ratio: parseFloat(e.target.value) }))}
                                 >
                                     {[1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50].map((v, i) => (
                                         <option key={i} value={v / 100}>{v}%</option>
@@ -226,7 +226,7 @@ function Preferences(props) {
                                 <label>Ignore File Size:</label>
                                 <select
                                     value={config.thumbnail_ignore_file_size || ''}
-                                    onChange={(e) => setConfig(prev => ({ ...prev, thumbnail_ignore_file_size: parseFloat(e.currentTarget.value) }))}
+                                    onChange={(e) => setConfig(prev => ({ ...prev, thumbnail_ignore_file_size: parseFloat(e.target.value) }))}
                                 >
                                     {[0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((v, i) => (
                                         <option key={i} value={1024 * 1024 * v}>{v}MB</option>
@@ -248,7 +248,7 @@ function Preferences(props) {
                                     value={config.copy_parallel || ''}
                                     type="number"
                                     step="1"
-                                    onChange={(e) => setConfig(prev => ({ ...prev, copy_parallel: e.currentTarget.value }))}
+                                    onChange={(e) => setConfig(prev => ({ ...prev, copy_parallel: e.target.value }))}
                                 />
                             </div>
                             <div className="setting-row">
@@ -257,7 +257,7 @@ function Preferences(props) {
                                     value={config.thumbnail_parallel || ''}
                                     type="number"
                                     step="1"
-                                    onChange={(e) => setConfig(prev => ({ ...prev, thumbnail_parallel: e.currentTarget.value }))}
+                                    onChange={(e) => setConfig(prev => ({ ...prev, thumbnail_parallel: e.target.value }))}
                                 />
                             </div>
                         </div>
@@ -271,7 +271,7 @@ function Preferences(props) {
                                     type="number"
                                     step="100"
                                     min="100"
-                                    onChange={(e) => setConfig(prev => ({ ...prev, max_photos_per_fetch: e.currentTarget.value }))}
+                                    onChange={(e) => setConfig(prev => ({ ...prev, max_photos_per_fetch: e.target.value }))}
                                 />
                             </div>
                         </div>
@@ -298,7 +298,7 @@ function Preferences(props) {
                                 <label>Log Level:</label>
                                 <select
                                     value={config.logging_level || 'info'}
-                                    onChange={(e) => setConfig(prev => ({ ...prev, logging_level: e.currentTarget.value }))}
+                                    onChange={(e) => setConfig(prev => ({ ...prev, logging_level: e.target.value }))}
                                     disabled={!config.logging_enabled}
                                 >
                                     <option value="debug">Debug</option>
