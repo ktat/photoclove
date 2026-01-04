@@ -249,8 +249,8 @@ function PhotosList({
     const {
         loadUnifiedData,
         loadAlbums,
-        loadAlbumPhotos,
-        handleAlbumClick,
+        loadAlbumPhotos: loadAlbumPhotosOriginal,
+        handleAlbumClick: handleAlbumClickOriginal,
         loadTags,
         loadTagPhotos,
         loadTrashPhotos,
@@ -423,6 +423,19 @@ function PhotosList({
         addFooterMessage: addFooterMessage
     });
 
+    // Wrap album photo loading with loading state management
+    const loadAlbumPhotos = useCallback(async (albumId) => {
+        setPhotoLoading(true);
+        try {
+            await loadAlbumPhotosOriginal(albumId);
+        } finally {
+            setPhotoLoading(false);
+        }
+    }, [loadAlbumPhotosOriginal, setPhotoLoading]);
+
+    const handleAlbumClick = useCallback((album) => {
+        handleAlbumClickOriginal(album);
+    }, [handleAlbumClickOriginal]);
 
     // Use photo display management hook (Phase 4) - Must be before usePhotoOperations
     const {
@@ -786,6 +799,7 @@ function PhotosList({
         updatePhotosAfterTrashOperation,
         deletePhotos: deletePhotosHandler,
         restorePhotos: restorePhotosHandler,
+        permanentlyDeletePhoto,
         setStarWithUpdate,
         updatePhotoComment,
         removePhotoFromList,
@@ -827,6 +841,7 @@ function PhotosList({
         toggleSelection, isPhotoSelected, addSelection, clearPhotoSelection, selectAllPhotoToSelection,
         getPhotos, handleInfiniteScroll, reloadCurrentModeData,
         moveToTrashCan, updatePhotosAfterTrashOperation, deletePhotosHandler, restorePhotosHandler,
+        permanentlyDeletePhoto,
         setStarWithUpdate, updatePhotoComment, removePhotoFromList,
         handleAlbumClick, handleAlbumSelection, handleNewAlbumClick, handleAlbumUpdate, handleAlbumDelete, clearAlbumSelection, deleteSelectedAlbums,
         handleTagClick, handleTagSelection, handleNewTagClick, clearTagSelection, deleteSelectedTags,

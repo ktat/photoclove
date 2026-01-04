@@ -66,6 +66,8 @@ function PhotoDisplayWrapper({
         setCurrentPhotoIndex,
         setStarWithUpdate,
         removePhotoFromList,
+        permanentlyDeletePhoto,
+        updatePhotosAfterTrashOperation,
         addFooterMessage,
         handleTauriError,
         setShowSideMenu,
@@ -117,6 +119,8 @@ function PhotoDisplayWrapper({
                             albumId={currentAlbumId}
                             albumName={currentAlbumName}
                             removePhotoFromList={removePhotoFromList}
+                            permanentlyDeletePhoto={permanentlyDeletePhoto}
+                            updatePhotosAfterTrashOperation={updatePhotosAfterTrashOperation}
                             addFooterMessage={addFooterMessage}
                             handleTauriError={handleTauriError}
                             importState={importState}

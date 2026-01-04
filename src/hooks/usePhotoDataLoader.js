@@ -7,7 +7,7 @@ import { unifiedCollectionService } from '../services/UnifiedCollectionService.j
  * Custom hook for managing data loading operations
  * Extracted from PhotosList.jsx to reduce component complexity
  */
-export function usePhotoDataLoader({ 
+export function usePhotoDataLoader({
     handleError,
     convertPhotosToEntities,
     updateAlbumsList,
@@ -91,10 +91,10 @@ export function usePhotoDataLoader({
 
     const loadAlbumPhotos = useCallback(async (albumId) => {
         try {
-            const data = await loadUnifiedData('album_photos', 
-                { params: { album_id: albumId } }, 
+            const data = await loadUnifiedData('album_photos',
+                { params: { album_id: albumId } },
                 { operation: 'album photos', albumId });
-            
+
             // Handle both array and object formats
             const albumPhotosData = data.photos || data;
 
