@@ -36,16 +36,7 @@ function StatusBar({
 
     // Render navigation and title based on current mode
     const renderTitleAndNavigation = () => {
-        if (isSearchMode) {
-            return (
-                <>
-                    <a className="back-to-home" href="#" onClick={(e) => { e.preventDefault(); clearSearch(); }}>
-                        Back to HOME
-                    </a>
-                    <span style={{ marginLeft: "10px" }}>{title} ({photoCount} photos)</span>
-                </>
-            );
-        } else if (viewMode === VIEW_MODES.ALBUM) {
+        if (viewMode === VIEW_MODES.ALBUM) {
             return (
                 <>
                     <a className="back-to-home" href="#" onClick={(e) => { e.preventDefault(); toggleAlbumListMode(); }}>
@@ -63,16 +54,8 @@ function StatusBar({
                     <span style={{ marginLeft: "10px" }}>{title} ({photoCount} photos)</span>
                 </>
             );
-        } else if (viewMode === VIEW_MODES.TRASH) {
-            return (
-                <>
-                    <a className="back-to-home" href="#" onClick={(e) => { e.preventDefault(); toggleHome(); }}>
-                        Back to HOME
-                    </a>
-                    <span style={{ marginLeft: "10px" }}>{title} ({photoCount} photos)</span>
-                </>
-            );
         } else {
+            // For SEARCH, TRASH, and other modes - no back link
             return <span>{title} ({photoCount} photos)</span>;
         }
     };

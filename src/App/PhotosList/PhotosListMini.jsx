@@ -399,6 +399,11 @@ function PhotosListMini(props) {
         setShowDeleteModal(true);
     };
 
+    const showPermanentDeleteModal = () => {
+        setDeleteOperation('permanentDelete');
+        setShowDeleteModal(true);
+    };
+
     const handleConfirmAction = async () => {
         console.log('[PhotosListMini.handleConfirmAction] Called', {
             deleteOperation,
@@ -433,6 +438,58 @@ function PhotosListMini(props) {
                 // Remove from current view
                 props.removePhotoFromList?.(props.currentIndex);
                 props.addFooterMessage?.('Photo removed from album');
+            } else if (deleteOperation === 'permanentDelete') {
+                // Permanently delete from trash
+                const currentIndex = props.currentIndex;
+                const allPhotos = photosListMiniAllPhotos;
+
+                // Remove from thumbnail list
+                const newAllPhotos = [...allPhotos];
+                newAllPhotos.splice(currentIndex, 1);
+                setPhotosListMiniAllPhotos(newAllPhotos);
+
+                // Handle navigation to next/previous photo
+                if (newAllPhotos.length > 0) {
+                    let newIndex;
+                    if (currentIndex >= newAllPhotos.length) {
+                        // Last photo was removed, go to previous
+                        newIndex = newAllPhotos.length - 1;
+                    } else {
+                        // Not last photo - stay at same index (shows next photo)
+                        newIndex = currentIndex;
+                    }
+
+                    // Get the path - use originalPath for trash photos, fallback to file.path
+                    const nextPhoto = newAllPhotos[newIndex];
+                    const nextPhotoPath = nextPhoto?.originalPath || nextPhoto?.file?.path;
+
+                    if (nextPhotoPath) {
+                        if (props.setCurrentIndex) props.setCurrentIndex(newIndex);
+                        if (props.setCurrentPhotoPath) props.setCurrentPhotoPath(nextPhotoPath);
+                        if (props.setCurrentPhotoIndex) props.setCurrentPhotoIndex(newIndex);
+                    }
+                } else {
+                    // No photos left, close display
+                    if (props.closePhotoDisplay) {
+                        props.closePhotoDisplay();
+                    }
+                }
+
+                // Update grid view (removes from photoCollection)
+                if (props.updatePhotosAfterTrashOperation) {
+                    await props.updatePhotosAfterTrashOperation([currentPhoto.originalPath], 'permanentDelete');
+                }
+
+                // Perform backend deletion
+                await invoke('delete_permanently_batch', {
+                    paths: [currentPhoto.originalPath]
+                });
+
+                logger.info('PhotosListMini', 'photo_permanently_deleted', 'Photo permanently deleted from trash', {
+                    photoPath: currentPhoto.originalPath
+                });
+
+                props.addFooterMessage?.('Photo permanently deleted');
             } else {
                 console.log('[PhotosListMini.handleConfirmAction] Calling deletePhotos');
                 await props.deletePhotos([currentPhoto.originalPath], {
@@ -454,7 +511,9 @@ function PhotosListMini(props) {
                 operation: deleteOperation,
                 error: error.message
             });
-            props.handleTauriError?.(error, deleteOperation === 'removeFromAlbum' ? 'Remove from album' : 'Delete photo');
+            const errorContext = deleteOperation === 'removeFromAlbum' ? 'Remove from album' :
+                                 deleteOperation === 'permanentDelete' ? 'Permanently delete photo' : 'Delete photo';
+            props.handleTauriError?.(error, errorContext);
         }
     };
 
@@ -510,7 +569,7 @@ function PhotosListMini(props) {
                     logger.info('PhotosListMini', 'delete_key_pressed', 'DEL pressed in trash mode - permanent delete', {
                         photoPath: f
                     });
-                    showDeleteFileModal();
+                    showPermanentDeleteModal();
                 } else if (isAlbumMode) {
                     if (e.ctrlKey) {
                         // Ctrl+DEL: Delete file AND remove from album
