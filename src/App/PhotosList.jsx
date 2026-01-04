@@ -252,7 +252,7 @@ function PhotosList({
         loadAlbumPhotos: loadAlbumPhotosOriginal,
         handleAlbumClick: handleAlbumClickOriginal,
         loadTags,
-        loadTagPhotos,
+        loadTagPhotos: loadTagPhotosOriginal,
         loadTrashPhotos,
         loadFilterOptions,
         logOperation
@@ -436,6 +436,16 @@ function PhotosList({
     const handleAlbumClick = useCallback((album) => {
         handleAlbumClickOriginal(album);
     }, [handleAlbumClickOriginal]);
+
+    // Wrap tag photo loading with loading state management
+    const loadTagPhotos = useCallback(async (tagId) => {
+        setPhotoLoading(true);
+        try {
+            await loadTagPhotosOriginal(tagId);
+        } finally {
+            setPhotoLoading(false);
+        }
+    }, [loadTagPhotosOriginal, setPhotoLoading]);
 
     // Use photo display management hook (Phase 4) - Must be before usePhotoOperations
     const {
