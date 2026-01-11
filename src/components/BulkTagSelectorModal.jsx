@@ -28,12 +28,15 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
       const tagList = JSON.parse(tagsResult);
 
       // Convert tuple format to object format: [id, name, color, photo_count]
-      const processedTags = tagList.map(tag => ({
-        id: tag[0],
-        name: tag[1],
-        color: tag[2] || null,
-        photo_count: tag[3] || 0
-      }));
+      // Filter out invalid entries
+      const processedTags = (Array.isArray(tagList) ? tagList : [])
+        .filter(tag => Array.isArray(tag) && tag[0] && tag[1]) // Ensure valid tag with id and name
+        .map(tag => ({
+          id: tag[0],
+          name: tag[1],
+          color: tag[2] || null,
+          photo_count: tag[3] || 0
+        }));
 
       setTags(processedTags);
       setFilteredTags(processedTags);
@@ -56,7 +59,7 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
 
   useEffect(() => {
     const filtered = tags.filter(tag =>
-      tag.name.toLowerCase().includes(searchTerm.toLowerCase())
+      tag && tag.name && tag.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredTags(filtered);
     logger.debug('BulkTagSelectorModal', 'tags_filtered', 'Tags filtered by search term', {
@@ -111,6 +114,10 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
   };
 
   const handleTagCreated = (newTag) => {
+    if (!newTag || !newTag.id || !newTag.name) {
+      logger.warn('BulkTagSelectorModal', 'invalid_tag_created', 'Invalid tag data received', { newTag });
+      return;
+    }
     setTags(prev => [...prev, newTag]);
     setSelectedTagIds(prev => [...prev, newTag.id]);
     logger.info('BulkTagSelectorModal', 'tag_created_and_selected', 'New tag created and selected for bulk assignment', {
@@ -128,7 +135,7 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
 
   if (!isOpen) return null;
 
-  const selectedTags = tags.filter(tag => selectedTagIds.includes(tag.id));
+  const selectedTags = tags.filter(tag => tag && tag.id && selectedTagIds.includes(tag.id));
 
   return (
     <div style={{
