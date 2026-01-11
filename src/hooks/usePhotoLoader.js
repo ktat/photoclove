@@ -81,13 +81,17 @@ export function usePhotoLoader({
 
     /**
      * Load all photos based on current view mode
+     * @param {Object} viewMode - ViewMode object
+     * @param {Object} config - App configuration
+     * @param {boolean} silent - If true, don't show loading indicator (for metadata-only updates)
      */
-    const loadAllPhotosBasedOnViewMode = useCallback(async (viewMode, config) => {
+    const loadAllPhotosBasedOnViewMode = useCallback(async (viewMode, config, silent = false) => {
         const callStack = new Error().stack;
         logger.info('PhotosList', 'load_photos_viewmode', 'loadAllPhotosBasedOnViewMode called', {
             viewMode: viewMode.mode,
             viewModeData: viewMode.data,
             hasConfig: !!config,
+            silent,
             photoLoading,
             callStack: callStack.split('\n').slice(1, 4).join('\n')
         });
@@ -100,8 +104,8 @@ export function usePhotoLoader({
             return;
         }
 
-        // Prevent duplicate loading
-        if (photoLoading) {
+        // Prevent duplicate loading (but allow silent updates)
+        if (photoLoading && !silent) {
             logger.info('PhotosList', 'loading_already_in_progress', 'Photo loading already in progress, skipping');
             return;
         }
@@ -121,12 +125,15 @@ export function usePhotoLoader({
             viewMode: viewMode.mode,
             viewModeData: viewMode.data,
             appConfig: config,
+            silent,
             isSearchMode,
             searchResultsLength: searchResults.length
         });
 
-        // Show loading indicator
-        setPhotoLoading(true);
+        // Show loading indicator (unless silent mode)
+        if (!silent) {
+            setPhotoLoading(true);
+        }
 
         try {
             let result;
@@ -231,8 +238,10 @@ export function usePhotoLoader({
             // Don't apply filters here - let the memoized filteredPhotos handle it
             // This ensures consistency between all components
 
-            // Hide loading indicator
-            setPhotoLoading(false);
+            // Hide loading indicator (unless in silent mode where it was never shown)
+            if (!silent) {
+                setPhotoLoading(false);
+            }
 
         } catch (error) {
             // Reset to safe state
@@ -242,8 +251,10 @@ export function usePhotoLoader({
             setIsLimitedByConfig(false);
             setConfigLimit(null);
 
-            // Hide loading indicator on error
-            setPhotoLoading(false);
+            // Hide loading indicator on error (unless in silent mode)
+            if (!silent) {
+                setPhotoLoading(false);
+            }
 
             // Use enhanced error handling
             handleError(error, 'Load photos', { appConfig: config });

@@ -448,17 +448,9 @@ function PhotosList({
             viewMode
         });
 
-        // Immediately set loading to false to prevent indicator from showing
-        // This will be called again by loadAllPhotosBasedOnViewMode, but the
-        // rapid state change prevents the UI from rendering the loading state
-        setPhotoLoading(false);
-
-        // Load photos (this will temporarily set photoLoading to true, then back to false)
-        await loadAllPhotosBasedOnViewMode(viewModeObj, appConfig);
-
-        // Ensure loading is false after completion
-        setPhotoLoading(false);
-    }, [loadAllPhotosBasedOnViewMode, viewModeObj, appConfig, viewMode, setPhotoLoading]);
+        // Load photos in silent mode (no loading indicator)
+        await loadAllPhotosBasedOnViewMode(viewModeObj, appConfig, true);
+    }, [loadAllPhotosBasedOnViewMode, viewModeObj, appConfig, viewMode]);
 
     // Use photo display management hook (Phase 4) - Must be before usePhotoOperations
     const {
