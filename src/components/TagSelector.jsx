@@ -149,47 +149,44 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
                 gap: '8px',
                 alignItems: 'center'
             }}>
-                {selectedTags.map(tag => {
-                    const fullTag = allTags.find(t => t.id === tag.id) || tag;
-                    return (
-                        <span
-                            key={tag.id}
+                {selectedTags.map(tag => (
+                    <span
+                        key={tag.id}
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '6px 12px',
+                            backgroundColor: 'rgba(33, 150, 243, 0.3)',
+                            border: '1px solid #2196F3',
+                            borderRadius: '16px',
+                            fontSize: '13px',
+                            color: 'var(--text)',
+                            whiteSpace: 'nowrap'
+                        }}
+                    >
+                        <span>{tag.name}</span>
+                        <button
+                            onClick={() => handleTagRemove(tag.id)}
+                            disabled={isLoading}
                             style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                padding: '6px 12px',
-                                backgroundColor: 'rgba(33, 150, 243, 0.3)',
-                                border: '1px solid #2196F3',
-                                borderRadius: '16px',
-                                fontSize: '13px',
+                                background: 'none',
+                                border: 'none',
                                 color: 'var(--text)',
-                                whiteSpace: 'nowrap'
+                                cursor: isLoading ? 'not-allowed' : 'pointer',
+                                padding: '0 0 0 4px',
+                                fontSize: '16px',
+                                lineHeight: '1',
+                                opacity: isLoading ? 0.5 : 0.7
                             }}
+                            title="Remove tag"
+                            onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                            onMouseLeave={(e) => e.currentTarget.style.opacity = isLoading ? '0.5' : '0.7'}
                         >
-                            <span>{tag.name} ({fullTag.photoCount || 0})</span>
-                            <button
-                                onClick={() => handleTagRemove(tag.id)}
-                                disabled={isLoading}
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: 'var(--text)',
-                                    cursor: isLoading ? 'not-allowed' : 'pointer',
-                                    padding: '0 0 0 4px',
-                                    fontSize: '16px',
-                                    lineHeight: '1',
-                                    opacity: isLoading ? 0.5 : 0.7
-                                }}
-                                title="Remove tag"
-                                onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                                onMouseLeave={(e) => e.currentTarget.style.opacity = isLoading ? '0.5' : '0.7'}
-                            >
-                                ×
-                            </button>
-                        </span>
-                    );
-                })}
+                            ×
+                        </button>
+                    </span>
+                ))}
 
                 <button
                     className="add-tag-button"
