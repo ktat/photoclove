@@ -576,11 +576,6 @@ export class ViewMode {
      */
     getBackNavigationInfo() {
         switch (this._mode) {
-            case VIEW_MODES.SEARCH:
-                return {
-                    label: "Back to HOME",
-                    action: "clearSearch"
-                };
             case VIEW_MODES.ALBUM:
                 return {
                     label: "Back to Album List",
@@ -639,6 +634,10 @@ export class ViewMode {
     }
 
     showAddToAlbum() {
+        return !this.isImportMode() && !this.isTrashMode();
+    }
+
+    showAddTags() {
         return !this.isImportMode() && !this.isTrashMode();
     }
 

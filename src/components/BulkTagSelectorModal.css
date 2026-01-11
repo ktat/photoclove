@@ -1,0 +1,29 @@
+/* BulkTagSelectorModal Styles */
+
+.tag-search-input:focus {
+  outline: 2px solid #2196F3;
+  outline-offset: -2px;
+}
+
+.tag-search-input::placeholder {
+  color: #6b7280;
+}
+
+/* Scrollbar styling for tag list */
+.tag-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.tag-list::-webkit-scrollbar-track {
+  background: var(--bg);
+  border-radius: 4px;
+}
+
+.tag-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.tag-list::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}

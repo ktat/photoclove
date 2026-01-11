@@ -13,6 +13,7 @@ import { VIEW_MODES } from "../../constants/viewModes.js";
 import { useTutorial } from "../../hooks/useTutorial.js";
 import AlbumCreationModal from "../../components/AlbumCreationModal.jsx";
 import AlbumSelectorModal from "../../components/AlbumSelectorModal.jsx";
+import BulkTagSelectorModal from "../../components/BulkTagSelectorModal.jsx";
 import ContextualDeleteModal from "../../components/ContextualDeleteModal.jsx";
 import TutorialTooltip from "../../components/TutorialTooltip.jsx";
 import Scrollable from "../../Scrollable.jsx";
@@ -25,6 +26,7 @@ function DirectoryMenu(props) {
 
     const [showAlbumCreationModal, setShowAlbumCreationModal] = useState(false);
     const [showAlbumSelectorModal, setShowAlbumSelectorModal] = useState(false);
+    const [showBulkTagModal, setShowBulkTagModal] = useState(false);
 
     // Delete confirmation modal state
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -112,6 +114,8 @@ function DirectoryMenu(props) {
             showCreateAlbumModal();
         } else if (selected == "addToAlbum") {
             showAddToAlbumModal();
+        } else if (selected == "addTags") {
+            showAddTagsModal();
         } else if (selected == "importSelected") {
             importSelectedPhotos();
         } else if (selected == "selectAllInDirectory") {
@@ -539,6 +543,18 @@ function DirectoryMenu(props) {
         setShowAlbumSelectorModal(true);
     }
 
+    function showAddTagsModal() {
+        if (props.photoSelection.length === 0) {
+            props.addFooterMessage('Please select photos first');
+            return;
+        }
+
+        logger.debug('DirectoryMenu', 'show_add_tags_modal', 'Opening bulk tag selector modal', {
+            selectedPhotosCount: props.photoSelection.length
+        });
+        setShowBulkTagModal(true);
+    }
+
     async function createAlbumFromSelection(albumData) {
         try {
             logger.info('DirectoryMenu', 'create_album_start', 'Creating album from selection using unified collections', {
@@ -622,6 +638,58 @@ function DirectoryMenu(props) {
                 error: error.message
             });
             handleTauriError(error, 'Add to album');
+        }
+    }
+
+    async function addTagsToPhotos(selectedTagIds) {
+        try {
+            logger.info('DirectoryMenu', 'add_tags_start', 'Adding tags to photos using unified collections', {
+                tagIds: selectedTagIds,
+                photoCount: props.photoSelection.length
+            });
+
+            // Get all tags from tagsList to access full tag data
+            const tagsList = props.tagsList || [];
+
+            for (const photoPath of props.photoSelection) {
+                for (const tagId of selectedTagIds) {
+                    const tag = tagsList.find(t => t.id === tagId);
+                    if (tag) {
+                        const tagCollection = new UnifiedPhotoCollection({
+                            id: tag.id,
+                            type: 'tag',
+                            name: tag.name,
+                            color: tag.color
+                        });
+                        await tagCollection.addPhoto(photoPath);
+                    }
+                }
+            }
+
+            const photoCount = props.photoSelection.length;
+            const tagCount = selectedTagIds.length;
+            props.clearPhotoSelection();
+            props.addFooterMessage(`${tagCount} tag${tagCount > 1 ? 's' : ''} added to ${photoCount} photo${photoCount > 1 ? 's' : ''}`);
+
+            logger.info('DirectoryMenu', 'tags_added_to_photos', 'Tags added to photos successfully', {
+                tagIds: selectedTagIds,
+                photoCount,
+                tagCount
+            });
+
+            setShowBulkTagModal(false);
+
+            // Refresh photos to show new tags
+            if (props.refreshPhotos) {
+                props.refreshPhotos();
+            }
+        } catch (error) {
+            logger.error('DirectoryMenu', 'add_tags_failed', 'Failed to add tags to photos', {
+                tagIds: selectedTagIds,
+                photoCount: props.photoSelection.length,
+                error: error.message
+            });
+            handleTauriError(error, 'Add tags');
         }
     }
 
@@ -790,6 +858,14 @@ function DirectoryMenu(props) {
                 isOpen={showAlbumSelectorModal}
                 onClose={() => setShowAlbumSelectorModal(false)}
                 onConfirm={addPhotosToAlbum}
+                selectedPhotosCount={props.photoSelection.length}
+            />
+
+            {/* Bulk Tag Selector Modal */}
+            <BulkTagSelectorModal
+                isOpen={showBulkTagModal}
+                onClose={() => setShowBulkTagModal(false)}
+                onConfirm={addTagsToPhotos}
                 selectedPhotosCount={props.photoSelection.length}
             />
 
