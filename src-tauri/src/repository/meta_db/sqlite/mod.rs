@@ -1503,8 +1503,9 @@ impl MetaInfoDB for SQLite {
         &self,
         collection_id: i32,
         ordered: bool,
+        config: Option<config::Config>,
     ) -> Result<Vec<photo::Photo>, String> {
-        SQLite::get_collection_photos(self, collection_id, ordered)
+        SQLite::get_collection_photos(self, collection_id, ordered, config)
     }
 }
 
@@ -2194,7 +2195,8 @@ impl SQLite {
         &self,
         collection_id: i32,
         ordered: bool,
+        config: Option<config::Config>,
     ) -> Result<Vec<photo::Photo>, String> {
-        collections::get_collection_photos(self, collection_id, ordered)
+        collections::get_collection_photos(self, collection_id, ordered, config)
     }
 }

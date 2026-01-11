@@ -4,6 +4,19 @@ use regex;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PhotoTag {
+    pub id: i32,
+    pub name: String,
+    pub color: Option<String>,
+}
+
+impl PhotoTag {
+    pub fn new(id: i32, name: String, color: Option<String>) -> Self {
+        PhotoTag { id, name, color }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Photo {
     pub file: file::File,
     pub dir: file::Dir,
@@ -18,7 +31,7 @@ pub struct Photo {
     pub css_style: Option<String>,
     pub star: Option<i32>,
     pub comment: Option<String>,
-    pub tags: Option<Vec<(i32, String, Option<String>)>>,
+    pub tags: Option<Vec<PhotoTag>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -186,7 +199,7 @@ impl Photo {
         self.comment = Some(comment);
     }
 
-    pub fn set_tags(&mut self, tags: Vec<(i32, String, Option<String>)>) {
+    pub fn set_tags(&mut self, tags: Vec<PhotoTag>) {
         self.tags = Some(tags);
     }
 
@@ -204,7 +217,7 @@ impl Photo {
                             } else {
                                 None
                             };
-                            tags.push((tag_id, tag_name, tag_color));
+                            tags.push(PhotoTag::new(tag_id, tag_name, tag_color));
                         }
                     }
                 }

@@ -190,8 +190,12 @@ pub async fn get_collection_photos(
     let correlation_id = logging_service.generate_correlation_id();
     log::info!(target: "photo_collections", "get_collection_photos_request; correlation_id={}; collection_id={}; ordered={:?}", correlation_id, collection_id, ordered);
 
-    match meta_db.get_collection_photos(collection_id, ordered.unwrap_or(false)) {
-        Ok(photos) => {
+    match meta_db.get_collection_photos(collection_id, ordered.unwrap_or(false), Some(state.config.clone())) {
+        Ok(mut photos) => {
+            // Set has_thumbnail flag for each photo
+            for photo in photos.iter_mut() {
+                photo.set_has_thumbnail();
+            }
             log::info!(target: "photo_collections", "get_collection_photos_success; correlation_id={}; count={}", correlation_id, photos.len());
             serde_json::to_string(&photos).map_err(|e| e.to_string())
         }

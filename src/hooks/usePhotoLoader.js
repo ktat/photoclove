@@ -213,6 +213,18 @@ export function usePhotoLoader({
                     tagsContent: firstPhoto.tags,
                     fullPhotoKeys: Object.keys(firstPhoto || {})
                 });
+
+                // Also check photos with tags
+                const photosWithTags = data.photos.filter(p => p.tags && p.tags.length > 0);
+                if (photosWithTags.length > 0) {
+                    logger.info('PhotosList', 'backend_data_with_tags', 'Found photos with tags', {
+                        count: photosWithTags.length,
+                        sample: {
+                            path: photosWithTags[0]?.file?.path || photosWithTags[0]?.path,
+                            tags: photosWithTags[0].tags
+                        }
+                    });
+                }
             }
 
             // Check if we hit the configuration limit

@@ -227,5 +227,6 @@ pub(crate) trait MetaInfoDB {
         &self,
         collection_id: i32,
         ordered: bool,
+        config: Option<config::Config>,
     ) -> Result<Vec<photo::Photo>, String>;
 }
