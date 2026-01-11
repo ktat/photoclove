@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 
 import { invoke } from "@tauri-apps/api/core";
 
@@ -7,9 +7,6 @@ import { useUI } from "../context/UIContext.jsx";
 import { useError } from "../context/ErrorContext.jsx";
 
 import { ViewMode } from "../domain/ViewMode.js";
-import { PhotoCollection } from "../domain/PhotoCollection.js";
-import { Photo } from "../domain/Photo.js";
-import { ImportState } from "../domain/ImportState.js";
 
 import { VIEW_MODES } from "../constants/viewModes.js";
 
@@ -38,9 +35,7 @@ import { usePhotoListStateGroups } from "../hooks/usePhotoListStateGroups.js";
 
 import PhotoDisplayWrapper from "./PhotosList/PhotoDisplayWrapper.jsx";
 import PhotoListContent from "./PhotosList/PhotoListContent.jsx";
-import PhotosListMini from "./PhotosList/PhotosListMini.jsx";
 import SideMenuWrapper from "./PhotosList/SideMenuWrapper.jsx";
-import DirectoryMenu from "./PhotosList/DirectoryMenu.jsx";
 import PhotoLoading from "./PhotosList/PhotoLoading.jsx";
 import PhotoOption from "./PhotosList/PhotoOption.jsx";
 
@@ -97,11 +92,9 @@ function PhotosList({
     const {
         toggleSearchPage,
         searchInitialQuery,
-        showAlbumsList,
         currentAlbumId,
         currentTagId,
         viewMode,
-        modeData,
         openAlbum,
         toggleAlbumListMode,
         openTag,
@@ -164,10 +157,10 @@ function PhotosList({
         photosListMiniAllPhotos, setPhotosListMiniAllPhotos,
         photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex,
         photosListMiniReread, setPhotosListMiniReread,
-        photosListImgSrc, setPhotosListImgSrc,
+        setPhotosListImgSrc,
         imgCacheMap, setImgCacheMap,
         thumbnailStore, setThumbnailStore,
-        debugMessage, setDebugMessage,
+        debugMessage,
         sortOfPhotos, setSort,
         sortInitialized,
         filterOptions, setFilterOptions,
@@ -612,6 +605,24 @@ function PhotosList({
         isSearchMode
     });
 
+    // Auto-open Selection tab when items are selected (Feature #152)
+    const prevSelectionCount = useRef(0);
+    useEffect(() => {
+        const totalSelectionCount = photoSelection.length + selectedAlbums.length + selectedTags.length;
+
+        // Auto-open Selection tab when selection goes from 0 to 1+
+        if (prevSelectionCount.current === 0 && totalSelectionCount > 0) {
+            changeTab(undefined, "#tab-selection");
+            setShowSideMenu(true);
+            logger.info('PhotosList', 'auto_open_selection_tab', 'Auto-opening Selection tab', {
+                photoCount: photoSelection.length,
+                albumCount: selectedAlbums.length,
+                tagCount: selectedTags.length
+            });
+        }
+        prevSelectionCount.current = totalSelectionCount;
+    }, [photoSelection.length, selectedAlbums.length, selectedTags.length, changeTab, setShowSideMenu]);
+
     const {
         reloadCurrentModeData,
         updatePhotosAfterTrashOperation
@@ -927,6 +938,9 @@ function PhotosList({
                         setShowSideMenu={setShowSideMenu}
                         closeRightColumn={closeRightColumn}
                         viewModeObj={viewModeObj}
+                        photoSelectionCount={photoSelection.length}
+                        selectedAlbumsCount={selectedAlbums.length}
+                        selectedTagsCount={selectedTags.length}
                     />
                 )}
 
@@ -957,6 +971,21 @@ function PhotosList({
                         // Mode flags for PhotoInfo/PhotoOption
                         isImportMode={viewModeObj.isImportMode()}
                         isTrashMode={viewModeObj.isTrashMode()}
+
+                        // Selection tab props (Feature #153)
+                        viewModeObj={viewModeObj}
+                        photoSelection={photoSelection}
+                        selectedAlbums={selectedAlbums}
+                        selectedTags={selectedTags}
+                        selectAllPhotoToSelection={selectAllPhotoToSelection}
+                        clearPhotoSelection={clearPhotoSelection}
+                        deleteSelectedAlbums={deleteSelectedAlbums}
+                        clearAlbumSelection={clearAlbumSelection}
+                        deleteSelectedTags={deleteSelectedTags}
+                        clearTagSelection={clearTagSelection}
+                        importState={importState}
+                        albumsList={albumsList}
+                        tagsList={tagsList}
                     />
                 )}
 

@@ -48,23 +48,35 @@ function DirectoryMenu(props) {
 
     // Tutorial trigger effect
     useEffect(() => {
+        // Don't show tutorial in album list or tag list modes
+        const isAlbumListMode = props.viewModeObj?.isAlbumListMode?.() || false;
+        const isTagListMode = props.viewModeObj?.isTagListMode?.() || false;
+
+        if (isAlbumListMode || isTagListMode) {
+            setShowTutorial(false);
+            return;
+        }
+
         if (props.photoSelection.length > 0) {
             const context = props.viewModeObj?.isAlbumMode() ? 'albumMode' : 'dateMode';
+            const isTrashMode = props.viewModeObj?.isTrashMode() || false;
 
-            if (shouldShowTutorial('selectionTutorial', context)) {
-                setTutorialContent(getTutorialContent(context, props.photoSelection.length));
+            // Only show tutorial if not already showing and if should show
+            if (!showTutorial && shouldShowTutorial('selectionTutorial', context)) {
+                setTutorialContent(getTutorialContent(context, props.photoSelection.length, isTrashMode));
                 setShowTutorial(true);
                 markTutorialShown('selectionTutorial', context);
 
                 logger.info('DirectoryMenu', 'tutorial_triggered', 'Selection tutorial shown', {
                     context,
-                    photoCount: props.photoSelection.length
+                    photoCount: props.photoSelection.length,
+                    isTrashMode
                 });
             }
         } else {
             setShowTutorial(false);
         }
-    }, [props.photoSelection.length, props.viewModeObj, shouldShowTutorial, markTutorialShown]);
+    }, [props.photoSelection.length, props.viewModeObj, showTutorial]);
 
     const handleTutorialDismiss = () => {
         setShowTutorial(false);
