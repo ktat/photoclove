@@ -47,10 +47,19 @@ function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
 
         // Refresh photos list to update grid view display
         if (onPhotosRefresh) {
+            logger.debug('PhotoTags', 'refreshing_photos', 'Calling onPhotosRefresh after tag change', {
+                photoPath: currentPhotoPath,
+                oldTagCount: photoTags.length,
+                newTagCount: newTags.length
+            });
             await onPhotosRefresh();
             logger.info('PhotoTags', 'photos_refreshed', 'Photos refreshed after tag change', {
                 photoPath: currentPhotoPath,
                 tagCount: newTags.length
+            });
+        } else {
+            logger.warn('PhotoTags', 'no_refresh_handler', 'onPhotosRefresh not available', {
+                photoPath: currentPhotoPath
             });
         }
     };
