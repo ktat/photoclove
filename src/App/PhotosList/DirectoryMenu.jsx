@@ -683,7 +683,17 @@ function DirectoryMenu(props) {
 
             // Refresh photos to show new tags
             if (props.onPhotosRefresh) {
+                logger.debug('DirectoryMenu', 'refreshing_photos_after_bulk_tag', 'Calling onPhotosRefresh', {
+                    photoCount,
+                    tagCount
+                });
                 await props.onPhotosRefresh();
+                logger.info('DirectoryMenu', 'photos_refreshed_after_bulk_tag', 'Photos refreshed successfully', {
+                    photoCount,
+                    tagCount
+                });
+            } else {
+                logger.warn('DirectoryMenu', 'no_refresh_handler', 'onPhotosRefresh not available for bulk tag operation');
             }
         } catch (error) {
             logger.error('DirectoryMenu', 'add_tags_failed', 'Failed to add tags to photos', {
