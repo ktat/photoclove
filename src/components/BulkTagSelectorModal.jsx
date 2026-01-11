@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { logger } from '../services/LoggerService.js';
 import { useError } from '../context/ErrorContext.jsx';
 import { UnifiedPhotoCollection } from '../domain/UnifiedPhotoCollection.js';
-import TagChip from './TagChip.jsx';
 import TagInput from './TagInput.jsx';
 import './BulkTagSelectorModal.css';
 
@@ -29,7 +28,10 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
 
       setTags(processedTags);
       setFilteredTags(processedTags);
-      logger.info('BulkTagSelectorModal', 'load_tags_complete', 'Tags loaded successfully', { tagCount: processedTags.length });
+      logger.info('BulkTagSelectorModal', 'load_tags_complete', 'Tags loaded successfully', {
+        tagCount: processedTags.length,
+        sampleTag: processedTags[0] // Log first tag to see structure
+      });
     } catch (error) {
       logger.error('BulkTagSelectorModal', 'load_tags_failed', 'Failed to load tags', { error: error.message });
       handleTauriError(error, 'Load tags');
@@ -203,7 +205,19 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {selectedTags.map(tag => (
-                <TagChip key={tag.id} tag={tag} />
+                <span
+                  key={tag.id}
+                  style={{
+                    padding: '4px 10px',
+                    backgroundColor: 'rgba(33, 150, 243, 0.3)',
+                    border: '1px solid #2196F3',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    color: 'var(--text)'
+                  }}
+                >
+                  {tag.name}
+                </span>
               ))}
             </div>
           </div>
@@ -231,7 +245,7 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
           />
         </div>
 
-        {/* Tag List with Checkboxes */}
+        {/* Tag List with Checkboxes - Compact horizontal layout */}
         <div style={{
           flex: 1,
           maxHeight: '250px',
@@ -239,7 +253,8 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
           marginBottom: '16px',
           border: '1px solid var(--border)',
           borderRadius: '4px',
-          backgroundColor: 'var(--bg)'
+          backgroundColor: 'var(--bg)',
+          padding: '12px'
         }}>
           {isLoading ? (
             <div style={{
@@ -260,63 +275,59 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
               {searchTerm ? 'No tags match your search' : 'No tags found'}
             </div>
           ) : (
-            filteredTags.map(tag => (
-              <div
-                key={tag.id}
-                onClick={() => !isAdding && handleTagToggle(tag.id)}
-                style={{
-                  padding: '12px',
-                  cursor: isAdding ? 'not-allowed' : 'pointer',
-                  backgroundColor: selectedTagIds.includes(tag.id) ? 'rgba(33, 150, 243, 0.2)' : 'transparent',
-                  borderBottom: '1px solid var(--border)',
-                  transition: 'background-color 0.2s',
-                  opacity: isAdding ? 0.6 : 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px'
-                }}
-                onMouseEnter={(e) => {
-                  if (!isAdding && !selectedTagIds.includes(tag.id)) {
-                    e.currentTarget.style.backgroundColor = 'var(--bg-elevated)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isAdding && !selectedTagIds.includes(tag.id)) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedTagIds.includes(tag.id)}
-                  onChange={() => {}} // Handled by parent div onClick
-                  disabled={isAdding}
-                  style={{
-                    cursor: isAdding ? 'not-allowed' : 'pointer',
-                    width: '16px',
-                    height: '16px'
-                  }}
-                />
-                <div style={{ flex: 1 }}>
-                  <div style={{
-                    fontSize: '14px',
-                    marginBottom: '4px',
-                    color: 'var(--text)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}>
-                    <TagChip tag={tag} />
-                  </div>
-                  <div style={{
-                    fontSize: '12px',
-                    color: 'var(--text)'
-                  }}>
-                    📸 {tag.photoCount || 0} photos
-                  </div>
-                </div>
-              </div>
-            ))
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '8px'
+            }}>
+              {filteredTags.map(tag => {
+                const isSelected = selectedTagIds.includes(tag.id);
+                return (
+                  <label
+                    key={tag.id}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '6px 10px',
+                      cursor: isAdding ? 'not-allowed' : 'pointer',
+                      backgroundColor: isSelected ? 'rgba(33, 150, 243, 0.3)' : 'var(--bg-elevated)',
+                      border: `1px solid ${isSelected ? '#2196F3' : 'var(--border)'}`,
+                      borderRadius: '16px',
+                      transition: 'all 0.2s',
+                      opacity: isAdding ? 0.6 : 1,
+                      fontSize: '13px',
+                      color: 'var(--text)',
+                      userSelect: 'none'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isAdding && !isSelected) {
+                        e.currentTarget.style.backgroundColor = '#374151';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isAdding && !isSelected) {
+                        e.currentTarget.style.backgroundColor = 'var(--bg-elevated)';
+                      }
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => !isAdding && handleTagToggle(tag.id)}
+                      disabled={isAdding}
+                      style={{
+                        cursor: isAdding ? 'not-allowed' : 'pointer',
+                        width: '14px',
+                        height: '14px',
+                        margin: 0
+                      }}
+                    />
+                    <span>{tag.name} ({tag.photoCount || 0})</span>
+                  </label>
+                );
+              })}
+            </div>
           )}
         </div>
 
