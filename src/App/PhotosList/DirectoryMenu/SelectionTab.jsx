@@ -104,6 +104,9 @@ function SelectionTab({
                                                 {/* Album operations (all modes) */}
                                                 {viewModeObj?.showCreateAlbum() && <option value="createAlbum">Create Album</option>}
                                                 {viewModeObj?.showAddToAlbum() && <option value="addToAlbum">Add to Existing Album</option>}
+
+                                                {/* Tag operations */}
+                                                {viewModeObj?.showAddTags() && <option value="addTags">Add Tags</option>}
                                             </>
                                         )}
                                     </select>
