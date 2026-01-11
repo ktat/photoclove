@@ -282,6 +282,12 @@
     border-color: #4CAF50;
 }
 
+/* Tab with active selections but not currently open - show orange (Feature #152) */
+.vertical-tab-button.has-selection:not(.active) {
+    background: #FF9800;
+    color: white;
+}
+
 .vertical-tabs.menu-closed .vertical-tab-button:first-child {
     border-radius: 5px 0 0 0;
 }

@@ -55,8 +55,15 @@
     color: white;
 }
 
+/* Default active tab color (green) */
 .directory-vertical-tab-button.active {
     background: #4CAF50;
+    color: white;
+}
+
+/* Tab with active selections but not currently open - show orange (Feature #152) */
+.directory-vertical-tab-button.has-selection:not(.active) {
+    background: #FF9800;
     color: white;
 }
 

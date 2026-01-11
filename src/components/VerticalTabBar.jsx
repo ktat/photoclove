@@ -1,5 +1,6 @@
 import React from 'react';
 import { VIEW_MODES } from '../constants/viewModes.js';
+import { getSelectionTabClassName } from '../utils/tabClassUtils.js';
 import './VerticalTabBar.css';
 
 /**
@@ -14,7 +15,10 @@ function VerticalTabBar({
     changeTab,
     setShowSideMenu,
     closeRightColumn,
-    viewModeObj
+    viewModeObj,
+    photoSelectionCount = 0,
+    selectedAlbumsCount = 0,
+    selectedTagsCount = 0
 }) {
     // Define tab configurations based on view mode
     const getAvailableTabs = () => {
@@ -65,23 +69,38 @@ function VerticalTabBar({
         changeTab(e, targetTab);
         setShowSideMenu(true);
     };
-    
+
     const availableTabs = getAvailableTabs();
-    
+
     return (
         <div className={`directory-vertical-tabs ${showSideMenu ? 'menu-open' : 'menu-closed'}`}>
-            {availableTabs.map(tab => (
-                <button
-                    key={tab.id}
-                    className={tabClass[tab.id] ? "directory-vertical-tab-button active" : "directory-vertical-tab-button"}
-                    onClick={(e) => handleTabClick(e, tab.targetTab)}
-                    title={tab.title}
-                    aria-label={tab.title}
-                    aria-pressed={tabClass[tab.id]}
-                >
-                    <span className="directory-vertical-text">{tab.label}</span>
-                </button>
-            ))}
+            {availableTabs.map(tab => {
+                // Generate className - use shared utility for Selection tab (Feature #152)
+                const className = tab.id === 'selection'
+                    ? getSelectionTabClassName(
+                        tabClass[tab.id],
+                        photoSelectionCount,
+                        selectedAlbumsCount,
+                        selectedTagsCount,
+                        'directory-vertical-tab-button'
+                    )
+                    : tabClass[tab.id]
+                        ? "directory-vertical-tab-button active"
+                        : "directory-vertical-tab-button";
+
+                return (
+                    <button
+                        key={tab.id}
+                        className={className}
+                        onClick={(e) => handleTabClick(e, tab.targetTab)}
+                        title={tab.title}
+                        aria-label={tab.title}
+                        aria-pressed={tabClass[tab.id]}
+                    >
+                        <span className="directory-vertical-text">{tab.label}</span>
+                    </button>
+                );
+            })}
             
             {showSideMenu && (
                 <button
