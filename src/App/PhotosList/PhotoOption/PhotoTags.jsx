@@ -45,14 +45,12 @@ function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
         setPhotoTags(newTags);
         addFooterMessage?.(`Photo tags updated (${newTags.length} tags)`);
 
-        // Refresh photos list to update grid view display
-        if (onPhotosRefresh) {
-            await onPhotosRefresh();
-            logger.info('PhotoTags', 'photos_refreshed', 'Photos refreshed after tag change', {
-                photoPath: currentPhotoPath,
-                tagCount: newTags.length
-            });
-        }
+        // Note: No need to refresh photos list in PhotoViewer mode
+        // Grid view will be updated when user returns to grid or uses bulk tag operations
+        logger.info('PhotoTags', 'tags_updated', 'Photo tags updated in viewer', {
+            photoPath: currentPhotoPath,
+            tagCount: newTags.length
+        });
     };
 
     if (isLoading) {

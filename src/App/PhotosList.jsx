@@ -456,7 +456,7 @@ function PhotosList({
         currentPhotoLoadingController,
         setCurrentPhotoLoadingController,
         handleError,
-        getPhotos,
+        refreshPhotos: refreshPhotosOnly,
         photosListMiniReread
     });
 
