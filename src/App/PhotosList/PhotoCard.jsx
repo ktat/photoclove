@@ -1,7 +1,6 @@
 import React, { useCallback, useRef } from 'react';
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { openUrl } from '@tauri-apps/plugin-opener';
-import TagChip from "../../components/TagChip.jsx";
 import fileUrl from "../../PathUtil.jsx";
 import { logger } from "../../services/LoggerService.js";
 
@@ -283,39 +282,27 @@ function PhotoCard({
                     </div>
                 )}
 
-                {/* Tags overlay */}
+                {/* Tags indicator - simple emoji */}
                 {tags.length > 0 && (
-                    <div style={{
-                        position: "absolute",
-                        bottom: "4px",
-                        left: "4px",
-                        right: "4px",
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "2px",
-                        maxHeight: "40px",
-                        overflow: "hidden"
-                    }}>
-                        {tags.slice(0, 3).map(tag => (
-                            <TagChip
-                                key={tag.id}
-                                tag={tag}
-                                style={{
-                                    fontSize: "8px",
-                                    padding: "1px 4px",
-                                    maxWidth: "60px"
-                                }}
-                            />
-                        ))}
-                        {tags.length > 3 && (
-                            <span style={{
-                                fontSize: "8px",
-                                backgroundColor: "rgba(0, 0, 0, 0.5)",
-                                color: "white",
-                                padding: "1px 4px",
-                                borderRadius: "8px"
-                            }}>
-                                +{tags.length - 3}
+                    <div
+                        style={{
+                            position: "absolute",
+                            bottom: "4px",
+                            left: "4px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "2px",
+                            padding: "2px 6px",
+                            backgroundColor: "rgba(0, 0, 0, 0.6)",
+                            borderRadius: "8px",
+                            fontSize: "12px"
+                        }}
+                        title={`${tags.length} tag${tags.length !== 1 ? 's' : ''}: ${tags.map(t => t.name).join(', ')}`}
+                    >
+                        <span>🏷️</span>
+                        {tags.length > 1 && (
+                            <span style={{ color: "white", fontSize: "10px" }}>
+                                {tags.length}
                             </span>
                         )}
                     </div>
