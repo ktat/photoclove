@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 import { logger } from '../services/LoggerService.js';
 import { useError } from '../context/ErrorContext.jsx';
+import { UnifiedPhotoCollection } from '../domain/UnifiedPhotoCollection.js';
 import TagChip from './TagChip.jsx';
 import TagInput from './TagInput.jsx';
 import './BulkTagSelectorModal.css';
@@ -19,24 +19,13 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
     setIsLoading(true);
     try {
       logger.info('BulkTagSelectorModal', 'load_tags_start', 'Loading tags for bulk selection', { selectedPhotosCount });
-      const tagsResult = await invoke('get_photos_unified', {
-        request: {
-          type: 'search',
-          search_type: 'all_tags'
-        }
-      });
-      const tagList = JSON.parse(tagsResult);
 
-      // Convert tuple format to object format: [id, name, color, photo_count]
+      // Use UnifiedPhotoCollection to get all tags (same as TagSelector)
+      const tagList = await UnifiedPhotoCollection.getAllTags();
+
       // Filter out invalid entries
       const processedTags = (Array.isArray(tagList) ? tagList : [])
-        .filter(tag => Array.isArray(tag) && tag[0] && tag[1]) // Ensure valid tag with id and name
-        .map(tag => ({
-          id: tag[0],
-          name: tag[1],
-          color: tag[2] || null,
-          photo_count: tag[3] || 0
-        }));
+        .filter(tag => tag && tag.id && tag.name);
 
       setTags(processedTags);
       setFilteredTags(processedTags);
@@ -323,7 +312,7 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
                     fontSize: '12px',
                     color: 'var(--text)'
                   }}>
-                    📸 {tag.photo_count || 0} photos
+                    📸 {tag.photoCount || 0} photos
                   </div>
                 </div>
               </div>
@@ -382,8 +371,8 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
               padding: '8px 16px',
               border: 'none',
               borderRadius: '4px',
-              backgroundColor: (selectedTagIds.length === 0 || isAdding) ? '#ccc' : '#2196F3',
-              color: 'white',
+              backgroundColor: (selectedTagIds.length === 0 || isAdding) ? '#4b5563' : '#2196F3',
+              color: (selectedTagIds.length === 0 || isAdding) ? '#9ca3af' : 'white',
               cursor: (selectedTagIds.length === 0 || isAdding) ? 'not-allowed' : 'pointer',
               fontSize: '14px',
               fontWeight: 'bold'

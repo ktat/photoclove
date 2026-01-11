@@ -648,12 +648,12 @@ function DirectoryMenu(props) {
                 photoCount: props.photoSelection.length
             });
 
-            // Get all tags from tagsList to access full tag data
-            const tagsList = props.tagsList || [];
+            // Get all tags to ensure we have the latest data (including newly created tags)
+            const allTags = await UnifiedPhotoCollection.getAllTags();
 
             for (const photoPath of props.photoSelection) {
                 for (const tagId of selectedTagIds) {
-                    const tag = tagsList.find(t => t.id === tagId);
+                    const tag = allTags.find(t => t.id === tagId);
                     if (tag) {
                         const tagCollection = new UnifiedPhotoCollection({
                             id: tag.id,
@@ -662,6 +662,8 @@ function DirectoryMenu(props) {
                             color: tag.color
                         });
                         await tagCollection.addPhoto(photoPath);
+                    } else {
+                        logger.warn('DirectoryMenu', 'tag_not_found', 'Tag not found in all tags list', { tagId });
                     }
                 }
             }
