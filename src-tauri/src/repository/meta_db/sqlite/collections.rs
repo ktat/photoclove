@@ -1,5 +1,6 @@
 use crate::entity::{config, photo};
 use crate::repository::meta_db::sqlite::SQLite;
+use crate::repository::meta_db::sqlite::tags;
 use crate::value::file;
 use rusqlite::{params, Result};
 
@@ -269,7 +270,7 @@ pub(super) fn get_collection_photos(
             let comment: String = row.get("comment")?;
 
             // Create a file from the path
-            let file = file::File::new(path);
+            let file = file::File::new(path.clone());
 
             // Create photo with the file and no config
             let mut photo = photo::Photo::new(file, None);
@@ -282,11 +283,29 @@ pub(super) fn get_collection_photos(
                 None
             };
 
-            Ok(photo)
+            Ok((photo, path))
         })
         .map_err(|e| format!("Failed to query collection photos: {}", e))?
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| format!("Failed to collect collection photos: {}", e))?;
 
-    Ok(photos)
+    // Add tags to each photo
+    let mut photos_with_tags = Vec::new();
+    for (mut photo, path) in photos {
+        // Get tags for this photo
+        match tags::get_tags_for_photo(sqlite, &path) {
+            Ok(photo_tags) => {
+                if !photo_tags.is_empty() {
+                    photo.tags = Some(photo_tags);
+                }
+            }
+            Err(e) => {
+                log::warn!(target: "photo_collections", "get_collection_photos_tags_error; photo_path={}; error={}", path, e);
+                // Continue without tags rather than failing
+            }
+        }
+        photos_with_tags.push(photo);
+    }
+
+    Ok(photos_with_tags)
 }
