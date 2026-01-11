@@ -73,6 +73,7 @@ function SideMenuWrapper({
         moveToTrashCan,
         getPhotos,
         reloadCurrentModeData,
+        refreshPhotosOnly,
         updatePhotosAfterTrashOperation,
         deletePhotos,
         restorePhotos,
@@ -115,7 +116,7 @@ function SideMenuWrapper({
                     setDateList={updateDateList}
                     setCurrentDateNum={setCurrentDateNum}
                     moveToTrashCan={moveToTrashCan}
-                    onPhotosRefresh={reloadCurrentModeData}
+                    onPhotosRefresh={refreshPhotosOnly}
                     reloadCurrentModeData={reloadCurrentModeData}
                     updatePhotosAfterTrashOperation={updatePhotosAfterTrashOperation}
                     deletePhotos={deletePhotos}

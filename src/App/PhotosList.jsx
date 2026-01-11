@@ -634,6 +634,15 @@ function PhotosList({
         setPhotoCollection
     });
 
+    // Wrapper function to reload photos only (without date list)
+    // Used for tag/metadata updates that don't affect date structure
+    const refreshPhotosOnly = useCallback(async () => {
+        logger.info('PhotosList', 'refresh_photos_only', 'Refreshing photos without date list', {
+            viewMode
+        });
+        await loadAllPhotosBasedOnViewMode(viewModeObj, appConfig);
+    }, [loadAllPhotosBasedOnViewMode, viewModeObj, appConfig, viewMode]);
+
     useSearchInitialization({
         isSearchMode,
         isAdvancedSearchMode,
@@ -816,6 +825,7 @@ function PhotosList({
         getPhotos,
         loadMorePhotos: handleInfiniteScroll,
         reloadCurrentModeData,
+        refreshPhotosOnly,
         moveToTrashCan,
         updatePhotosAfterTrashOperation,
         deletePhotos: deletePhotosHandler,
@@ -860,7 +870,7 @@ function PhotosList({
     }), [
         closePhotoDisplay, displayPhoto,
         toggleSelection, isPhotoSelected, addSelection, clearPhotoSelection, selectAllPhotoToSelection,
-        getPhotos, handleInfiniteScroll, reloadCurrentModeData,
+        getPhotos, handleInfiniteScroll, reloadCurrentModeData, refreshPhotosOnly,
         moveToTrashCan, updatePhotosAfterTrashOperation, deletePhotosHandler, restorePhotosHandler,
         permanentlyDeletePhoto,
         setStarWithUpdate, updatePhotoComment, removePhotoFromList,
@@ -963,7 +973,7 @@ function PhotosList({
                         imgCacheMap={imgCacheMap}
                         setStar={setStarWithUpdate}
                         star={star}
-                        onPhotosRefresh={reloadCurrentModeData}
+                        onPhotosRefresh={refreshPhotosOnly}
                         onCommentUpdate={updatePhotoComment}
                         onAlbumUpdate={handleAlbumUpdate}
                         onAlbumDelete={handleAlbumDelete}
