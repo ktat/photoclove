@@ -253,10 +253,11 @@ function PhotoOption(props) {
                         />
                     )}
                     {activeTab === "tags" && (
-                        <PhotoTags 
+                        <PhotoTags
                             currentPhotoPath={props.currentPhotoPath}
                             showSideMenu={props.showSideMenu}
                             addFooterMessage={props.addFooterMessage}
+                            onPhotosRefresh={props.onPhotosRefresh}
                         />
                     )}
                     {activeTab === "album" && isAlbumMode && (
