@@ -231,6 +231,7 @@ pub(super) fn get_collection_photos(
     sqlite: &SQLite,
     collection_id: i32,
     ordered: bool,
+    config: Option<config::Config>,
 ) -> Result<Vec<photo::Photo>, String> {
     let conn = sqlite
         .get_connection()
@@ -272,8 +273,8 @@ pub(super) fn get_collection_photos(
             // Create a file from the path
             let file = file::File::new(path.clone());
 
-            // Create photo with the file and no config
-            let mut photo = photo::Photo::new(file, None);
+            // Create photo with the file and config
+            let mut photo = photo::Photo::new(file, config.clone());
 
             // Set the star and comment from database
             photo.star = if star > 0 { Some(star) } else { None };
@@ -289,23 +290,34 @@ pub(super) fn get_collection_photos(
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| format!("Failed to collect collection photos: {}", e))?;
 
+    // Fetch all tags in one query (bulk operation for performance)
+    log::debug!(target: "photo_collections", "get_collection_photos_fetching_tags_bulk; collection_id={}; photo_count={}", collection_id, photos.len());
+
+    let photo_paths: Vec<String> = photos.iter().map(|(_, path)| path.clone()).collect();
+    let tags_map = tags::get_tags_for_photos_bulk(sqlite, &photo_paths)
+        .map_err(|e| {
+            log::error!(target: "photo_collections", "get_collection_photos_bulk_tags_error; error={}", e);
+            e
+        })?;
+
+    log::debug!(target: "photo_collections", "get_collection_photos_tags_fetched_bulk; photos_with_tags={}", tags_map.len());
+
     // Add tags to each photo
     let mut photos_with_tags = Vec::new();
     for (mut photo, path) in photos {
-        // Get tags for this photo
-        match tags::get_tags_for_photo(sqlite, &path) {
-            Ok(photo_tags) => {
-                if !photo_tags.is_empty() {
-                    photo.tags = Some(photo_tags);
-                }
-            }
-            Err(e) => {
-                log::warn!(target: "photo_collections", "get_collection_photos_tags_error; photo_path={}; error={}", path, e);
-                // Continue without tags rather than failing
+        if let Some(photo_tags) = tags_map.get(&path) {
+            if !photo_tags.is_empty() {
+                // Convert tuple format to PhotoTag objects
+                let tags: Vec<photo::PhotoTag> = photo_tags.iter()
+                    .map(|(id, name, color)| photo::PhotoTag::new(*id, name.clone(), color.clone()))
+                    .collect();
+                photo.tags = Some(tags);
+                log::debug!(target: "photo_collections", "get_collection_photos_tags_set; photo_path={}; tag_count={}", path, photo_tags.len());
             }
         }
         photos_with_tags.push(photo);
     }
 
+    log::debug!(target: "photo_collections", "get_collection_photos_tags_complete; collection_id={}; photos_with_tags_count={}", collection_id, photos_with_tags.len());
     Ok(photos_with_tags)
 }

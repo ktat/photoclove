@@ -1,3 +1,4 @@
+use crate::entity::photo;
 use crate::repository::meta_db;
 
 /// Create PhotoInfo from database row data without tags
@@ -35,7 +36,7 @@ pub(super) fn photo_info_from_row_with_tags(
             None
         } else {
             // Parse the GROUP_CONCAT result: "id:name:color,id:name:color,..."
-            let parsed_tags: Vec<(i32, String, Option<String>)> = tags_str
+            let parsed_tags: Vec<photo::PhotoTag> = tags_str
                 .split(',')
                 .filter_map(|tag_str| {
                     let parts: Vec<&str> = tag_str.split(':').collect();
@@ -47,7 +48,7 @@ pub(super) fn photo_info_from_row_with_tags(
                             } else {
                                 Some(parts[2].to_string())
                             };
-                            Some((id, name, color))
+                            Some(photo::PhotoTag::new(id, name, color))
                         } else {
                             None
                         }

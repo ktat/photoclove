@@ -11,7 +11,7 @@ pub struct PhotoMeta {
     pub star: star::Star,
     pub comment: comment::Comment,
     pub google_photo_url: Option<String>,
-    pub tags: Option<Vec<(i32, String, Option<String>)>>,
+    pub tags: Option<Vec<photo::PhotoTag>>,
 }
 #[derive(Debug)]
 pub struct PhotoMetas {
@@ -163,9 +163,9 @@ impl PhotoMeta {
                 // Convert back to string format for directory mode
                 let tag_strings: Vec<String> = tags
                     .iter()
-                    .map(|(id, name, color)| {
-                        let color_str = color.as_ref().map_or("", |c| c.as_str());
-                        format!("{}:{}:{}", id, name, color_str)
+                    .map(|tag| {
+                        let color_str = tag.color.as_ref().map_or("", |c| c.as_str());
+                        format!("{}:{}:{}", tag.id, tag.name, color_str)
                     })
                     .collect();
                 Some(tag_strings.join(","))

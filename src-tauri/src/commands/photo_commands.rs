@@ -297,65 +297,19 @@ pub async fn get_photos_unified(
 
                     log::info!(target: "get_photos", "album_photos_request_using_unified_collections; album_id={}", album_id);
 
-                    // Use unified collection query instead of legacy album_photos table
-                    let conn = meta_db.get_connection().map_err(|e| {
-                        log::error!(target: "get_photos", "album_db_connection_failed; error={}", e);
+                    // Use get_collection_photos which includes tag information and config
+                    let mut photos = meta_db.get_collection_photos(album_id, true, Some(state.config.clone())).map_err(|e| {
+                        log::error!(target: "get_photos", "album_photos_failed; error={}", e);
                     })?;
 
-                    let mut stmt = conn.prepare(
-                        "SELECT pm.path, pm.photo_date, pm.star, pm.comment, pm.created_at, pm.updated_at,
-                                pm.google_photos_url, pm.exif_iso, pm.exif_fnumber, pm.exif_date_time,
-                                pm.exif_date_time_original, pm.exif_lens_model, pm.exif_make, pm.exif_lens_make,
-                                pm.exif_model, pm.exif_xresolution, pm.exif_yresolution, pm.exif_resolution_unit,
-                                pm.exif_copyright, pm.exif_exposure_time, pm.exif_shutter_speed_value,
-                                pm.exif_focal_length, pm.exif_focal_length_in35mm_film, pm.exif_digital_zoom_ratio,
-                                pm.exif_exposure_mode, pm.exif_white_balance_mode, pm.exif_orientation, pm.css_style,
-                                pci.order_index, pci.added_at
-                         FROM photo_collection_items pci
-                         JOIN photo_metadata pm ON pci.photo_path = pm.path
-                         JOIN photo_collections pc ON pci.collection_id = pc.id
-                         WHERE pc.id = ?1 AND pc.type = 'album' AND pm.delete_flg = 0
-                         ORDER BY pci.order_index, pci.added_at"
-                    ).map_err(|e| {
-                        log::error!(target: "get_photos", "album_prepare_failed; error={}", e);
-                    })?;
-
-                    let config_for_closure = state.config.clone();
-                    let photos = stmt
-                        .query_map(params![album_id], |row| {
-                            let path: String = row.get("path")?;
-                            let _photo_date: String = row.get("photo_date")?;
-                            let star: i32 = row.get("star")?;
-                            let comment: String = row.get("comment")?;
-
-                            // Create a file from the path
-                            let file = file::File::new(path);
-
-                            // Create photo with the file and config for thumbnail support
-                            let mut photo =
-                                photo::Photo::new(file, Some(config_for_closure.clone()));
-
-                            // Check if thumbnail exists and set has_thumbnail flag
-                            photo.set_has_thumbnail();
-
-                            // Set the star and comment from database
-                            photo.star = if star > 0 { Some(star) } else { None };
-                            photo.comment = if !comment.is_empty() {
-                                Some(comment)
-                            } else {
-                                None
-                            };
-
-                            Ok(photo)
-                        })
-                        .map_err(|e| {
-                            log::error!(target: "get_photos", "album_query_failed; error={}", e);
-                        })?;
-
-                    let photo_list: Result<Vec<_>, _> = photos.collect();
-                    let photos = photo_list.map_err(|e| {
-                        log::error!(target: "get_photos", "album_collect_failed; error={}", e);
-                    })?;
+                    // Set has_thumbnail flag for each photo
+                    for photo in photos.iter_mut() {
+                        photo.set_has_thumbnail();
+                        // Debug: log photos with tags
+                        if photo.tags.is_some() {
+                            log::debug!(target: "get_photos", "album_photo_with_tags; path={}; tags={:?}", photo.file.path, photo.tags);
+                        }
+                    }
 
                     // Convert to Photos format to match other responses
                     let photos_response = photo::Photos {

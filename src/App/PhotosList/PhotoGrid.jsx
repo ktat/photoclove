@@ -86,19 +86,25 @@ function PhotoGrid({
 
             {/* Photo Grid */}
             <Scrollable f={onInfiniteScroll} className="photos">
-                {displayedPhotos.map((photo, index) => (
-                    <PhotoCard
-                        key={photo.originalPath}
-                        photo={photo}
-                        index={index}
-                        iconSize={iconSize}
-                        isSelected={photoSelectionDict[photo.originalPath] || false}
-                        onAddSelection={onAddSelection}
-                        onDisplayPhoto={onDisplayPhoto}
-                        setShowSideMenu={setShowSideMenu}
-                        importState={importState}
-                    />
-                ))}
+                {displayedPhotos.map((photo, index) => {
+                    // Include tag count in key to force re-render when tags change
+                    const tagCount = photo.getTags ? photo.getTags().length : (photo.tags?.length || 0);
+                    const photoKey = `${photo.originalPath}_${tagCount}`;
+
+                    return (
+                        <PhotoCard
+                            key={photoKey}
+                            photo={photo}
+                            index={index}
+                            iconSize={iconSize}
+                            isSelected={photoSelectionDict[photo.originalPath] || false}
+                            onAddSelection={onAddSelection}
+                            onDisplayPhoto={onDisplayPhoto}
+                            setShowSideMenu={setShowSideMenu}
+                            importState={importState}
+                        />
+                    );
+                })}
 
                 {/* Infinite scroll completion indicator */}
                 {displayedPhotos.length > 0 && (

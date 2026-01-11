@@ -440,6 +440,22 @@ function PhotosList({
         }
     }, [loadTagPhotosOriginal, setPhotoLoading]);
 
+    // Sync allPhotosForCurrentFetch to album/tag photos when in respective modes
+    // This ensures album/tag modes get updated when data is refreshed
+    useEffect(() => {
+        if (viewModeObj.isAlbumMode() && allPhotosForCurrentFetch.length > 0) {
+            updateAlbumPhotos(allPhotosForCurrentFetch);
+            logger.debug('PhotosList', 'sync_album_photos', 'Synced allPhotosForCurrentFetch to albumPhotos', {
+                photoCount: allPhotosForCurrentFetch.length
+            });
+        } else if (viewModeObj.isTagMode() && allPhotosForCurrentFetch.length > 0) {
+            setTagPhotos(allPhotosForCurrentFetch);
+            logger.debug('PhotosList', 'sync_tag_photos', 'Synced allPhotosForCurrentFetch to tagPhotos', {
+                photoCount: allPhotosForCurrentFetch.length
+            });
+        }
+    }, [allPhotosForCurrentFetch, viewModeObj, updateAlbumPhotos, setTagPhotos]);
+
     // Wrapper function to reload photos only (without date list)
     // Used for tag/metadata updates that don't affect date structure
     // Updates silently without showing loading indicator
@@ -449,6 +465,7 @@ function PhotosList({
         });
 
         // Load photos in silent mode (no loading indicator)
+        // The useEffect above will automatically sync to albumPhotos/tagPhotos
         await loadAllPhotosBasedOnViewMode(viewModeObj, appConfig, true);
     }, [loadAllPhotosBasedOnViewMode, viewModeObj, appConfig, viewMode]);
 
