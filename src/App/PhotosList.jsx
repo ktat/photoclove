@@ -440,6 +440,15 @@ function PhotosList({
         }
     }, [loadTagPhotosOriginal, setPhotoLoading]);
 
+    // Wrapper function to reload photos only (without date list)
+    // Used for tag/metadata updates that don't affect date structure
+    const refreshPhotosOnly = useCallback(async () => {
+        logger.info('PhotosList', 'refresh_photos_only', 'Refreshing photos without date list', {
+            viewMode
+        });
+        await loadAllPhotosBasedOnViewMode(viewModeObj, appConfig);
+    }, [loadAllPhotosBasedOnViewMode, viewModeObj, appConfig, viewMode]);
+
     // Use photo display management hook (Phase 4) - Must be before usePhotoOperations
     const {
         displayPhoto,
@@ -633,15 +642,6 @@ function PhotosList({
         photoCollection,
         setPhotoCollection
     });
-
-    // Wrapper function to reload photos only (without date list)
-    // Used for tag/metadata updates that don't affect date structure
-    const refreshPhotosOnly = useCallback(async () => {
-        logger.info('PhotosList', 'refresh_photos_only', 'Refreshing photos without date list', {
-            viewMode
-        });
-        await loadAllPhotosBasedOnViewMode(viewModeObj, appConfig);
-    }, [loadAllPhotosBasedOnViewMode, viewModeObj, appConfig, viewMode]);
 
     useSearchInitialization({
         isSearchMode,
