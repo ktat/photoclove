@@ -69,7 +69,7 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
       zIndex: 1000
     }}>
       <div style={{
-        backgroundColor: 'white',
+        backgroundColor: 'var(--bg-elevated)',
         borderRadius: '8px',
         padding: '24px',
         minWidth: '400px',
@@ -78,14 +78,14 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
       }}>
         <form onSubmit={handleSubmit}>
           {/* Header */}
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
             alignItems: 'center',
             marginBottom: '20px'
           }}>
-            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold' }}>Create New Album</h2>
-            <button 
+            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: 'var(--text)' }}>Create New Album</h2>
+            <button
               type="button"
               onClick={handleClose}
               disabled={isCreating}
@@ -94,7 +94,7 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
                 border: 'none',
                 fontSize: '24px',
                 cursor: isCreating ? 'not-allowed' : 'pointer',
-                color: '#666',
+                color: 'var(--text)',
                 padding: '0',
                 width: '30px',
                 height: '30px',
@@ -107,21 +107,22 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
             </button>
           </div>
 
-          <p style={{ 
-            margin: '0 0 20px 0', 
-            color: '#666', 
-            fontSize: '14px' 
+          <p style={{
+            margin: '0 0 20px 0',
+            color: 'var(--text)',
+            fontSize: '14px'
           }}>
             Create a new album with {selectedPhotosCount} selected photo{selectedPhotosCount !== 1 ? 's' : ''}
           </p>
 
           {/* Album Name Input */}
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: '6px', 
+            <label style={{
+              display: 'block',
+              marginBottom: '6px',
               fontWeight: 'bold',
-              fontSize: '14px'
+              fontSize: '14px',
+              color: 'var(--text)'
             }}>
               Album Name *
             </label>
@@ -135,21 +136,24 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
               style={{
                 width: '100%',
                 padding: '8px 12px',
-                border: '1px solid #ddd',
+                border: '1px solid var(--border)',
                 borderRadius: '4px',
                 fontSize: '14px',
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                backgroundColor: 'var(--bg-elevated)',
+                color: 'var(--text)'
               }}
             />
           </div>
 
           {/* Album Description Input */}
           <div style={{ marginBottom: '24px' }}>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: '6px', 
+            <label style={{
+              display: 'block',
+              marginBottom: '6px',
               fontWeight: 'bold',
-              fontSize: '14px'
+              fontSize: '14px',
+              color: 'var(--text)'
             }}>
               Description (optional)
             </label>
@@ -162,32 +166,34 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
               style={{
                 width: '100%',
                 padding: '8px 12px',
-                border: '1px solid #ddd',
+                border: '1px solid var(--border)',
                 borderRadius: '4px',
                 fontSize: '14px',
                 boxSizing: 'border-box',
                 resize: 'vertical',
-                minHeight: '60px'
+                minHeight: '60px',
+                backgroundColor: 'var(--bg-elevated)',
+                color: 'var(--text)'
               }}
             />
           </div>
 
           {/* Action Buttons */}
-          <div style={{ 
-            display: 'flex', 
-            gap: '12px', 
-            justifyContent: 'flex-end' 
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            justifyContent: 'flex-end'
           }}>
-            <button 
+            <button
               type="button"
-              onClick={handleClose} 
+              onClick={handleClose}
               disabled={isCreating}
               style={{
                 padding: '8px 16px',
-                border: '1px solid #ddd',
+                border: '1px solid var(--border)',
                 borderRadius: '4px',
-                backgroundColor: 'white',
-                color: '#333',
+                backgroundColor: 'var(--bg-elevated)',
+                color: 'var(--text)',
                 cursor: isCreating ? 'not-allowed' : 'pointer',
                 fontSize: '14px',
                 opacity: isCreating ? 0.6 : 1
@@ -195,15 +201,15 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
             >
               Cancel
             </button>
-            <button 
+            <button
               type="submit"
               disabled={!albumName.trim() || isCreating}
               style={{
                 padding: '8px 16px',
                 border: 'none',
                 borderRadius: '4px',
-                backgroundColor: (!albumName.trim() || isCreating) ? '#ccc' : '#28a745',
-                color: 'white',
+                backgroundColor: (!albumName.trim() || isCreating) ? '#4b5563' : '#28a745',
+                color: (!albumName.trim() || isCreating) ? '#9ca3af' : 'white',
                 cursor: (!albumName.trim() || isCreating) ? 'not-allowed' : 'pointer',
                 fontSize: '14px',
                 fontWeight: 'bold'
