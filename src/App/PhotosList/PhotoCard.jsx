@@ -215,13 +215,6 @@ function PhotoCard({
     const tags = getTags();
     const uniqueKey = photo.originalPath;
 
-    // Debug logging for tag display
-    logger.debug('PhotoCard', 'render_tags', 'Rendering photo card with tags', {
-        photoPath: photo.originalPath,
-        tagCount: tags.length,
-        tags: tags.map(t => ({ id: t.id, name: t.name }))
-    });
-
     return (
         <div
             key={uniqueKey}
