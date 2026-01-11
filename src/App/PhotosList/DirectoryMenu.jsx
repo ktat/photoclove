@@ -682,8 +682,8 @@ function DirectoryMenu(props) {
             setShowBulkTagModal(false);
 
             // Refresh photos to show new tags
-            if (props.refreshPhotos) {
-                props.refreshPhotos();
+            if (props.onPhotosRefresh) {
+                await props.onPhotosRefresh();
             }
         } catch (error) {
             logger.error('DirectoryMenu', 'add_tags_failed', 'Failed to add tags to photos', {
