@@ -20,7 +20,7 @@ import { logger } from '../services/LoggerService.js';
  * @param {Object} params.currentPhotoLoadingController - AbortController for photo loading
  * @param {Function} params.setCurrentPhotoLoadingController - Setter for loading controller
  * @param {Function} params.handleError - Error handler function
- * @param {Function} params.getPhotos - Function to fetch photos
+ * @param {Function} params.refreshPhotos - Function to refresh photos from backend
  * @param {boolean} params.photosListMiniReread - Current reread state
  * @returns {Object} Photo display management functions
  */
@@ -35,7 +35,7 @@ export function usePhotoDisplay({
     currentPhotoLoadingController,
     setCurrentPhotoLoadingController,
     handleError,
-    getPhotos,
+    refreshPhotos,
     photosListMiniReread
 }) {
     /**
@@ -100,7 +100,9 @@ export function usePhotoDisplay({
             setCurrentPhotoLoadingController(null);
         }
 
-        const fetchPhotos = async () => getPhotos();
+        // Refresh photos from backend when closing PhotoViewer
+        // This ensures tag/metadata changes made in viewer are reflected in grid
+        const fetchPhotos = async () => refreshPhotos();
         fetchPhotos().catch(error => handleError(error, 'Refresh photos after closing display'));
     }, [
         setShowSideMenu,
@@ -108,7 +110,7 @@ export function usePhotoDisplay({
         setCurrentPhotoPath,
         currentPhotoLoadingController,
         setCurrentPhotoLoadingController,
-        getPhotos,
+        refreshPhotos,
         handleError
     ]);
 
