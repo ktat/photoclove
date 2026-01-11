@@ -963,7 +963,7 @@ function PhotosList({
                         imgCacheMap={imgCacheMap}
                         setStar={setStarWithUpdate}
                         star={star}
-                        onPhotosRefresh={getPhotos}
+                        onPhotosRefresh={reloadCurrentModeData}
                         onCommentUpdate={updatePhotoComment}
                         onAlbumUpdate={handleAlbumUpdate}
                         onAlbumDelete={handleAlbumDelete}
