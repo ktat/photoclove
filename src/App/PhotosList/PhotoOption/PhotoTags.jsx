@@ -4,7 +4,7 @@ import { logger } from '../../../services/LoggerService.js';
 import TagSelector from '../../../components/TagSelector.jsx';
 import './PhotoTags.css';
 
-function PhotoTags({ currentPhotoPath, addFooterMessage }) {
+function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
     const [photoTags, setPhotoTags] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -41,9 +41,18 @@ function PhotoTags({ currentPhotoPath, addFooterMessage }) {
         }
     };
 
-    const handleTagsChange = (newTags) => {
+    const handleTagsChange = async (newTags) => {
         setPhotoTags(newTags);
         addFooterMessage?.(`Photo tags updated (${newTags.length} tags)`);
+
+        // Refresh photos list to update grid view display
+        if (onPhotosRefresh) {
+            await onPhotosRefresh();
+            logger.info('PhotoTags', 'photos_refreshed', 'Photos refreshed after tag change', {
+                photoPath: currentPhotoPath,
+                tagCount: newTags.length
+            });
+        }
     };
 
     if (isLoading) {
