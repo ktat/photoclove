@@ -41,8 +41,26 @@ export class UnifiedPhotoCollection {
             });
         }
 
-        this.photoCount = data.photo_count || 0;
-        this.settings = data.settings || {};
+        // Parse settings if it's a string (from backend)
+        if (typeof data.settings === 'string') {
+            try {
+                this.settings = JSON.parse(data.settings);
+            } catch (e) {
+                logger.warn('UnifiedPhotoCollection', 'settings_parse_error', 'Failed to parse settings JSON', {
+                    collectionId: this.id,
+                    settings: data.settings,
+                    error: e.message
+                });
+                this.settings = {};
+            }
+        } else {
+            this.settings = data.settings || {};
+        }
+
+        // Use photo_count from settings if available, otherwise use top-level value
+        // Backend stores the actual count in settings as JSON string
+        this.photoCount = this.settings.photo_count || data.photo_count || 0;
+
         this.createdAt = data.created_at;
         this.updatedAt = data.updated_at;
     }
