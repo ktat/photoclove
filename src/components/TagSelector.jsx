@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { UnifiedPhotoCollection } from '../domain/UnifiedPhotoCollection.js';
 import { logger } from '../services/LoggerService.js';
-import TagChip from './TagChip.jsx';
 import TagInput from './TagInput.jsx';
 import './TagSelector.css';
 
@@ -144,21 +143,70 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
     return (
         <div className="tag-selector">
             {/* Selected Tags */}
-            <div className="selected-tags">
-                {selectedTags.map(tag => (
-                    <TagChip
-                        key={tag.id}
-                        tag={tag}
-                        isRemovable={true}
-                        onRemove={handleTagRemove}
-                    />
-                ))}
-                
+            <div className="selected-tags" style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '8px',
+                alignItems: 'center'
+            }}>
+                {selectedTags.map(tag => {
+                    const fullTag = allTags.find(t => t.id === tag.id) || tag;
+                    return (
+                        <span
+                            key={tag.id}
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '6px 12px',
+                                backgroundColor: 'rgba(33, 150, 243, 0.3)',
+                                border: '1px solid #2196F3',
+                                borderRadius: '16px',
+                                fontSize: '13px',
+                                color: 'var(--text)',
+                                whiteSpace: 'nowrap'
+                            }}
+                        >
+                            <span>{tag.name} ({fullTag.photoCount || 0})</span>
+                            <button
+                                onClick={() => handleTagRemove(tag.id)}
+                                disabled={isLoading}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--text)',
+                                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                                    padding: '0 0 0 4px',
+                                    fontSize: '16px',
+                                    lineHeight: '1',
+                                    opacity: isLoading ? 0.5 : 0.7
+                                }}
+                                title="Remove tag"
+                                onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                                onMouseLeave={(e) => e.currentTarget.style.opacity = isLoading ? '0.5' : '0.7'}
+                            >
+                                ×
+                            </button>
+                        </span>
+                    );
+                })}
+
                 <button
                     className="add-tag-button"
                     onClick={handleDropdownToggle}
                     disabled={isLoading}
                     title="Add tag"
+                    style={{
+                        padding: '6px 12px',
+                        backgroundColor: 'var(--bg-elevated)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '16px',
+                        color: 'var(--text)',
+                        cursor: isLoading ? 'not-allowed' : 'pointer',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        opacity: isLoading ? 0.6 : 1
+                    }}
                 >
                     {isLoading ? '...' : '+'}
                 </button>
@@ -180,15 +228,42 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
 
                     <div className="tag-options">
                         {filteredTags.length > 0 ? (
-                            filteredTags.map(tag => (
-                                <div
-                                    key={tag.id}
-                                    className="tag-option"
-                                    onClick={() => handleTagSelect(tag)}
-                                >
-                                    <TagChip tag={tag} />
-                                </div>
-                            ))
+                            <div style={{
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                gap: '8px',
+                                padding: '4px'
+                            }}>
+                                {filteredTags.map(tag => (
+                                    <button
+                                        key={tag.id}
+                                        className="tag-option-pill"
+                                        onClick={() => handleTagSelect(tag)}
+                                        style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            padding: '6px 12px',
+                                            cursor: 'pointer',
+                                            backgroundColor: 'var(--bg-elevated)',
+                                            border: '1px solid var(--border)',
+                                            borderRadius: '16px',
+                                            transition: 'all 0.2s',
+                                            fontSize: '13px',
+                                            color: 'var(--text)',
+                                            whiteSpace: 'nowrap'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.backgroundColor = '#374151';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.backgroundColor = 'var(--bg-elevated)';
+                                        }}
+                                    >
+                                        {tag.name} ({tag.photoCount || 0})
+                                    </button>
+                                ))}
+                            </div>
                         ) : searchTerm ? (
                             <div className="tag-no-results">
                                 No tags found for "{searchTerm}"
