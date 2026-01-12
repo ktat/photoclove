@@ -83,86 +83,58 @@ When working on features:
 
 ### Database Migration Implementation
 
-#### Album Tables Migration
-**File**: `src-tauri/src/repository/meta_db/sqlite.rs`
+#### Database Migration System
+**Directory**: `src-tauri/src/repository/meta_db/migrations/`
 
 ##### Migration Pattern
-PhotoClove uses a proper database migration system that checks for table existence before creation. All new tables should follow this pattern:
+PhotoClove uses a versioned migration system with SQL files. All new tables should be added as new migration files.
 
+**Migration Files**:
+- `001_initial_schema.sql` - Core photo_metadata table
+- `002_create_date_summary.sql` - Date summary for performance
+- `003_create_collections.sql` - Albums and tags (unified collections)
+- `004_create_job_queue.sql` - Background job queue
+
+**Adding New Migrations**:
+1. Create a new SQL file: `NNN_description.sql`
+2. Register in `migrations/mod.rs`:
 ```rust
-// Check if table exists
-let table_exists = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='table_name'")
-    .and_then(|mut stmt| {
-        stmt.query_row([], |row| {
-            let _name: String = row.get(0)?;
-            Ok(true)
-        })
-    })
-    .unwrap_or(false);
-
-if !table_exists {
-    log::info!(target: "component", "table_creation; status=creating_table");
-    
-    // Create table with full schema
-    conn.execute("CREATE TABLE table_name (...)", [])?;
-    
-    // Create indexes
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_name ON table_name(column)", [])?;
-    
-    log::info!(target: "component", "table_creation; status=completed");
-}
+Migration {
+    version: N,
+    name: "description",
+    sql: include_str!("NNN_description.sql"),
+},
 ```
 
-##### Album Tables Implementation
-**Location**: Lines 644-718 in `init_db()` function
+##### Collections Tables (Albums & Tags)
+**File**: `003_create_collections.sql`
 
-**Tables Created**:
-1. **`albums`**: Stores album metadata (id, name, description, cover_photo_path, timestamps)
-2. **`album_photos`**: Junction table for album-photo relationships (album_id, photo_path, added_at, order_index)
+**Tables**:
+1. **`photo_collections`**: Unified storage for albums and tags
+   - `type`: 'album' or 'tag'
+   - `name`, `color`, `description`, `cover_photo_path`
+   - `settings` (JSON), timestamps
+
+2. **`photo_collection_items`**: Junction table for collection-photo relationships
+   - `collection_id`, `photo_path`, `order_index`, `added_at`
+   - `metadata` (JSON for additional data)
 
 **Key Features**:
-- **Conditional creation**: Only creates tables if they don't exist
-- **Proper foreign keys**: Maintains referential integrity with photo_metadata table
-- **Performance indexes**: Optimized queries for album operations
-- **Structured logging**: Clear migration progress tracking
-- **Error handling**: Proper Result<()> return types, no silent failures
-
-**Migration Triggers**:
-- App startup calls `init_db()`
-- Tables created automatically if missing
-- Existing installations get tables on next app start
-- No data loss or conflicts with existing databases
+- **Versioned migrations**: Tracked in `_migrations` table
+- **Automatic execution**: `run_migrations()` applies pending migrations on startup
+- **Legacy support**: Handles old schema migration automatically
+- **Unified design**: Albums and tags share the same table structure
 
 ##### Best Practices
 When adding new tables:
 
-1. **Follow the pattern**: Use `sqlite_master` existence check
-2. **Add proper logging**: Use structured logging with correlation info
-3. **Include indexes**: Add performance indexes during creation
-4. **Handle errors**: Use Result types, avoid silent failures
+1. **Create migration file**: Add numbered SQL file in migrations directory
+2. **Register migration**: Add to MIGRATIONS array in `mod.rs`
+3. **Use proper constraints**: Foreign keys, indexes, CHECK constraints
+4. **Handle errors**: Migrations use Result types
 5. **Test thoroughly**: Verify migration works on fresh and existing databases
 
-##### Migration Benefits
-- **Automatic**: No manual database setup required
-- **Safe**: Checks existence before creation, prevents conflicts
-- **Traceable**: Comprehensive logging for debugging
-- **Consistent**: Follows established patterns used by other tables
-- **Maintainable**: Clear, readable migration code
-
-This migration system ensures album functionality works reliably across all user installations.
-
 ### Bug Investigation
-
-#### First-Click Bug Solution (Fixed 2025-07-20)
-**Problem**: "No Photo Found!" displayed on first date/Recent Photos click after app startup.  
-**Root Cause**: Null reference error in logging code (`config.fetch_method` when `config` is null).  
-**Solution**: Use optional chaining in PhotosList.jsx:873:
-
-```javascript
-fetchMethod: config?.fetch_method || fetchConfig?.fetch_method || 'unknown',
-```
-
-**Lesson**: Logging errors can prevent state updates. Always use defensive programming in logging code.
 
 #### Investigation Process
 1. **Check logs first**: `~/.local/share/photoclove/logs/`
