@@ -218,6 +218,7 @@ pub(crate) trait MetaInfoDB {
     ) -> Result<(), String>;
     fn delete_collection(&self, id: i32) -> Result<bool, String>;
     fn add_photo_to_collection(&self, collection_id: i32, photo_path: &str) -> Result<(), String>;
+    fn add_photos_to_collection_bulk(&self, collection_id: i32, photo_paths: &[String]) -> Result<usize, String>;
     fn remove_photo_from_collection(
         &self,
         collection_id: i32,
