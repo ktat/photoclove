@@ -52,8 +52,7 @@ export function useTrashOperations({
      * @returns {Promise<boolean>} - True if successful, false otherwise
      */
     const deletePhotos = useCallback(async (paths, { skipConfirmation = false, clearSelection = true } = {}) => {
-        console.log('[useTrashOperations.deletePhotos] Called with', {
-            paths,
+        logger.debug('useTrashOperations', 'delete_photos_called', 'deletePhotos called', {
             pathsLength: paths?.length,
             skipConfirmation,
             clearSelection,
@@ -96,17 +95,17 @@ export function useTrashOperations({
 
             try {
                 // Use batch command for efficient date_summary update
-                console.log('[useTrashOperations.deletePhotos] Calling move_to_trash_batch');
+                logger.debug('useTrashOperations', 'move_to_trash_batch_call', 'Calling move_to_trash_batch');
                 const resultStr = await invoke("move_to_trash_batch", { paths: deletedPaths });
                 const result = JSON.parse(resultStr);
-                console.log('[useTrashOperations.deletePhotos] Batch result:', result);
+                logger.debug('useTrashOperations', 'move_to_trash_batch_result', 'Batch result received', { result });
 
                 // Update date counts locally
                 if (result.date_changes && dateNum && updateDateNum && dateList && updateDateList) {
-                    console.log('[useTrashOperations.deletePhotos] Updating date counts', {
+                    logger.debug('useTrashOperations', 'updating_date_counts', 'Updating date counts', {
                         dateChanges: result.date_changes,
-                        currentDateNum: dateNum,
-                        currentDateList: dateList
+                        currentDateNumKeys: Object.keys(dateNum).length,
+                        currentDateListLength: dateList.length
                     });
 
                     const updatedDateNum = { ...dateNum };
@@ -119,17 +118,17 @@ export function useTrashOperations({
                         }
                     }
 
-                    console.log('[useTrashOperations.deletePhotos] New dateNum:', updatedDateNum);
+                    logger.debug('useTrashOperations', 'new_date_num', 'New dateNum calculated', { updatedDateNumKeys: Object.keys(updatedDateNum).length });
                     updateDateNum(updatedDateNum);
                     updateDateList([...dateList]); // Trigger re-render with new reference
-                    console.log('[useTrashOperations.deletePhotos] Date update calls completed');
+                    logger.debug('useTrashOperations', 'date_update_completed', 'Date update calls completed');
 
                     logger.info('useTrashOperations', 'delete_photos_date_updated', 'Updated date counts after delete', {
                         changedDates: Object.keys(result.date_changes).length,
                         dateChanges: result.date_changes
                     });
                 } else {
-                    console.log('[useTrashOperations.deletePhotos] Skipping date update', {
+                    logger.debug('useTrashOperations', 'skipping_date_update', 'Skipping date update', {
                         hasDateChanges: !!result.date_changes,
                         hasDateNum: !!dateNum,
                         hasUpdateDateNum: !!updateDateNum,
