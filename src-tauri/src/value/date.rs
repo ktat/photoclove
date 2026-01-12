@@ -1,4 +1,4 @@
-use chrono::{LocalResult, NaiveDate, TimeZone, Utc};
+use chrono::{LocalResult, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -6,6 +6,128 @@ pub struct Date {
     pub year: i32,
     pub month: u32,
     pub day: u32,
+}
+
+/// DateTime value object for handling EXIF date-time values
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub struct DateTime {
+    pub year: i32,
+    pub month: u32,
+    pub day: u32,
+    pub hour: u32,
+    pub minute: u32,
+    pub second: u32,
+}
+
+impl Clone for DateTime {
+    fn clone(&self) -> DateTime {
+        DateTime {
+            year: self.year,
+            month: self.month,
+            day: self.day,
+            hour: self.hour,
+            minute: self.minute,
+            second: self.second,
+        }
+    }
+}
+
+impl DateTime {
+    pub fn new(year: i32, month: u32, day: u32, hour: u32, minute: u32, second: u32) -> Option<DateTime> {
+        // Validate using chrono
+        let date = NaiveDate::from_ymd_opt(year, month, day)?;
+        let time = NaiveTime::from_hms_opt(hour, minute, second)?;
+        let _dt = NaiveDateTime::new(date, time);
+
+        Some(DateTime {
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            second,
+        })
+    }
+
+    /// Parse datetime string with flexible date delimiter
+    /// Supports formats like:
+    /// - "2025:11:23 06:17:23" (EXIF format with colon)
+    /// - "2025/11/23 06:17:23" (slash format)
+    /// - "2025-11-23 06:17:23" (ISO format)
+    pub fn try_from_string(datetime_str: &str) -> Result<DateTime, String> {
+        let trimmed = datetime_str.trim();
+        if trimmed.is_empty() {
+            return Err("empty datetime string".to_string());
+        }
+
+        // Split into date and time parts
+        let parts: Vec<&str> = trimmed.splitn(2, ' ').collect();
+        if parts.is_empty() {
+            return Err(format!("invalid datetime format: {}", datetime_str));
+        }
+
+        let date_part = parts[0];
+
+        // Detect delimiter and parse date
+        let date_delimiter = if date_part.contains(':') {
+            ":"
+        } else if date_part.contains('/') {
+            "/"
+        } else if date_part.contains('-') {
+            "-"
+        } else {
+            return Err(format!("unknown date delimiter in: {}", date_part));
+        };
+
+        let date_components: Vec<&str> = date_part.split(date_delimiter).collect();
+        if date_components.len() < 3 {
+            return Err(format!("invalid date format: {}", date_part));
+        }
+
+        let year = date_components[0]
+            .parse::<i32>()
+            .map_err(|_| format!("invalid year: {}", date_components[0]))?;
+        let month = date_components[1]
+            .parse::<u32>()
+            .map_err(|_| format!("invalid month: {}", date_components[1]))?;
+        let day = date_components[2]
+            .parse::<u32>()
+            .map_err(|_| format!("invalid day: {}", date_components[2]))?;
+
+        // Parse time if present
+        let (hour, minute, second) = if parts.len() > 1 {
+            let time_part = parts[1];
+            let time_components: Vec<&str> = time_part.split(':').collect();
+            if time_components.len() >= 3 {
+                let h = time_components[0]
+                    .parse::<u32>()
+                    .map_err(|_| format!("invalid hour: {}", time_components[0]))?;
+                let m = time_components[1]
+                    .parse::<u32>()
+                    .map_err(|_| format!("invalid minute: {}", time_components[1]))?;
+                let s = time_components[2]
+                    .parse::<u32>()
+                    .map_err(|_| format!("invalid second: {}", time_components[2]))?;
+                (h, m, s)
+            } else {
+                (0, 0, 0)
+            }
+        } else {
+            (0, 0, 0)
+        };
+
+        DateTime::new(year, month, day, hour, minute, second)
+            .ok_or_else(|| format!("invalid datetime: {}", datetime_str))
+    }
+
+    /// Check if two datetime strings represent the same datetime
+    /// Returns true if they are equal, false if different or parsing fails
+    pub fn are_equal(dt1: &str, dt2: &str) -> bool {
+        match (Self::try_from_string(dt1), Self::try_from_string(dt2)) {
+            (Ok(d1), Ok(d2)) => d1 == d2,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -165,5 +287,53 @@ mod tests {
         let d2 = date::Date::new(2022, 2, 28).unwrap();
         let dates = date::Dates::new(&[d1, d2]);
         assert_eq!(dates.dates.len(), 2);
+    }
+
+    #[test]
+    fn test_datetime_parse_colon_format() {
+        let dt = date::DateTime::try_from_string("2025:11:23 06:17:23").unwrap();
+        assert_eq!(dt.year, 2025);
+        assert_eq!(dt.month, 11);
+        assert_eq!(dt.day, 23);
+        assert_eq!(dt.hour, 6);
+        assert_eq!(dt.minute, 17);
+        assert_eq!(dt.second, 23);
+    }
+
+    #[test]
+    fn test_datetime_parse_slash_format() {
+        let dt = date::DateTime::try_from_string("2025/11/23 06:17:23").unwrap();
+        assert_eq!(dt.year, 2025);
+        assert_eq!(dt.month, 11);
+        assert_eq!(dt.day, 23);
+        assert_eq!(dt.hour, 6);
+        assert_eq!(dt.minute, 17);
+        assert_eq!(dt.second, 23);
+    }
+
+    #[test]
+    fn test_datetime_are_equal_different_formats() {
+        // Same datetime with different date delimiters should be equal
+        assert!(date::DateTime::are_equal(
+            "2025:11:23 06:17:23",
+            "2025/11/23 06:17:23"
+        ));
+        assert!(date::DateTime::are_equal(
+            "2025-11-23 06:17:23",
+            "2025:11:23 06:17:23"
+        ));
+    }
+
+    #[test]
+    fn test_datetime_are_equal_different_values() {
+        // Different datetimes should not be equal
+        assert!(!date::DateTime::are_equal(
+            "2025:11:23 06:17:23",
+            "2025:11:23 06:17:24"
+        ));
+        assert!(!date::DateTime::are_equal(
+            "2025:11:23 06:17:23",
+            "2025:11:24 06:17:23"
+        ));
     }
 }

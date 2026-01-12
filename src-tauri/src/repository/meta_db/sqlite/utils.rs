@@ -9,6 +9,7 @@ pub(super) fn photo_info_from_row(
     comment: String,
     css_style: Option<String>,
     google_photo_url: Option<String>,
+    orientation: Option<String>,
 ) -> meta_db::PhotoInfo {
     meta_db::PhotoInfo {
         path,
@@ -18,6 +19,7 @@ pub(super) fn photo_info_from_row(
         css_style,
         google_photo_url,
         tags: None,
+        orientation,
     }
 }
 
@@ -30,6 +32,7 @@ pub(super) fn photo_info_from_row_with_tags(
     css_style: Option<String>,
     google_photo_url: Option<String>,
     tags_str: Option<String>,
+    orientation: Option<String>,
 ) -> meta_db::PhotoInfo {
     let tags = if let Some(tags_str) = tags_str {
         if tags_str.is_empty() {
@@ -76,6 +79,7 @@ pub(super) fn photo_info_from_row_with_tags(
         css_style,
         google_photo_url,
         tags: tags.clone(),
+        orientation,
     };
 
     log::info!(target: "database", "photo_info_created; path={}; tags_count={}; tags_data={:?}",

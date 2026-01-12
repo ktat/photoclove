@@ -168,6 +168,7 @@ export function usePhotoLoader({
                 });
             } catch (error) {
                 handleError(error, `Unsupported mode ${viewMode.mode}`, { mode: viewMode.mode });
+                if (!silent) setPhotoLoading(false);
                 return;
             }
 
@@ -192,6 +193,7 @@ export function usePhotoLoader({
                     photosType: data && data.photos ? typeof data.photos : 'undefined',
                     isArray: data && data.photos ? Array.isArray(data.photos) : false
                 });
+                if (!silent) setPhotoLoading(false);
                 return;
             }
 
@@ -211,7 +213,22 @@ export function usePhotoLoader({
                     tagsType: typeof firstPhoto.tags,
                     tagsLength: Array.isArray(firstPhoto.tags) ? firstPhoto.tags.length : 'not array',
                     tagsContent: firstPhoto.tags,
-                    fullPhotoKeys: Object.keys(firstPhoto || {})
+                    fullPhotoKeys: Object.keys(firstPhoto || {}),
+                    hasMetaData: !!firstPhoto.meta_data,
+                    metaDataOrientation: firstPhoto.meta_data?.orientation
+                });
+
+                // Check meta_data for photos at different indices
+                const indicesToCheck = [0, 10, 49, 50, 51, 100].filter(i => i < data.photos.length);
+                const metaDataCheck = indicesToCheck.map(i => ({
+                    index: i,
+                    path: data.photos[i]?.file?.path?.slice(-30),
+                    hasMeta: !!data.photos[i]?.meta_data,
+                    orientation: data.photos[i]?.meta_data?.orientation || 'NONE'
+                }));
+                logger.info('PhotosList', 'backend_meta_data_check', 'Checking meta_data at different indices', {
+                    totalPhotos: data.photos.length,
+                    samples: metaDataCheck
                 });
 
                 // Also check photos with tags
@@ -239,8 +256,8 @@ export function usePhotoLoader({
                 firstPhotoPath: data.photos[0]?.file?.path || 'no photos'
             });
 
-            // Convert backend data to Photo entities and store directly
-            const photoEntities = convertPhotosToEntities(data.photos, config, false, false);
+            // Wrapper signature: (photosData, isFromTrash, toJSON) - appConfig via closure
+            const photoEntities = convertPhotosToEntities(data.photos, false, false);
             logger.info('PhotosList', 'before_set_photos', 'About to update allPhotosForCurrentFetch', {
                 photoCount: photoEntities.length
             });
@@ -486,8 +503,8 @@ export function usePhotoLoader({
                 viewMode: viewMode.mode,
                 viewModeData: viewMode.data
             });
-            // Fallback to unified method on error
-            return await loadAllPhotosBasedOnViewMode(viewMode, appConfig);
+            // Reset loading state - don't fallback as it may cause issues
+            // when photoLoading is already true
         } finally {
             setPhotoLoading(false);
         }

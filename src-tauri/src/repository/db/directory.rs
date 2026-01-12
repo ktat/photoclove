@@ -148,6 +148,8 @@ impl RepositoryDB for Directory {
                 } else {
                     let photo_meta = result.unwrap();
                     meta.date_time = photo_meta.photo_time();
+                    // Set orientation from photo_meta
+                    meta.orientation = photo_meta.photo().meta_data.orientation.clone();
                     // Set star and comment from metadata
                     p.set_star(photo_meta.star.star());
                     p.set_comment(photo_meta.comment.comment());
@@ -190,6 +192,8 @@ impl RepositoryDB for Directory {
                 let mut meta = exif::ExifData::empty();
                 let photo_meta = meta_data.get(f).unwrap();
                 meta.date_time = photo_meta.photo_time();
+                // Set orientation from photo_meta
+                meta.orientation = photo_meta.photo().meta_data.orientation.clone();
                 p.embed_exif(meta);
                 // Set CSS style from metadata
                 p.set_css_style(photo_meta.photo().css_style.clone());
@@ -389,6 +393,8 @@ impl RepositoryDB for Directory {
             let mut meta = exif::ExifData::empty();
             let photo_meta = meta_data.get(f).unwrap();
             meta.date_time = photo_meta.photo_time();
+            // Set orientation from photo_meta
+            meta.orientation = photo_meta.photo().meta_data.orientation.clone();
             p.embed_exif(meta);
             p.set_css_style(photo_meta.photo().css_style.clone());
             p.set_star(photo_meta.star.star());
@@ -513,10 +519,14 @@ impl RepositoryDB for Directory {
     async fn move_photos_to_exif_date(&self, date: date::Date) -> date::Dates {
         let dir = self.path.child(date.to_string());
         let files = dir_service::find_files(&dir);
+        log::info!(target: "directory", "move_photos_to_exif_date; date={}; dir={}; file_count={}", date.to_string(), dir.path, files.files.len());
         let mut dates_to_be_changed: HashMap<String, bool> = HashMap::new();
         for file in files.files {
-            let photo = photo::Photo::new_with_exif(file);
-            let new_dir = self.path.child(photo.created_date_string());
+            let photo = photo::Photo::new_with_exif(file.clone());
+            let created_date_str = photo.created_date_string();
+            let new_dir = self.path.child(created_date_str.clone());
+            log::debug!(target: "directory", "move_check; file={}; photo_time={}; created_date_str={}; current_dir={}; new_dir={}",
+                file.path, photo.time(), created_date_str, dir.path, new_dir.path);
             if dir.path != new_dir.path {
                 dates_to_be_changed
                     .entry(photo.created_date_string())
@@ -524,8 +534,20 @@ impl RepositoryDB for Directory {
                 let filename = photo.file.filename();
                 let new_pathbuf = new_dir.as_pathbuf();
                 let new_path = new_pathbuf.as_path().join(filename);
-                fs::rename(&photo.file.path, &new_path.display().to_string());
-                log::info!(target: "directory", "file_move; from={}; to={}", photo.file.path, new_path.display().to_string());
+
+                // Ensure target directory exists
+                if !new_pathbuf.exists() {
+                    if let Err(e) = fs::create_dir_all(&new_pathbuf) {
+                        log::error!(target: "directory", "create_dir_failed; dir={}; error={}", new_dir.path, e);
+                        continue;
+                    }
+                    log::info!(target: "directory", "created_dir; dir={}", new_dir.path);
+                }
+
+                match fs::rename(&photo.file.path, &new_path.display().to_string()) {
+                    Ok(_) => log::info!(target: "directory", "file_moved; from={}; to={}", photo.file.path, new_path.display().to_string()),
+                    Err(e) => log::error!(target: "directory", "file_move_failed; from={}; to={}; error={}", photo.file.path, new_path.display().to_string(), e),
+                }
             }
         }
         let mut dates = date::Dates::new(&[]);

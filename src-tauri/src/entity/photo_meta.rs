@@ -107,6 +107,10 @@ impl PhotoMeta {
         let mut photo = photo::Photo::new(f.unwrap(), Option::None);
         photo.set_time(record.date.clone());
         photo.set_css_style(record.css_style.clone());
+        // Set orientation from database record
+        if let Some(ref orientation) = record.orientation {
+            photo.meta_data.orientation = orientation.clone();
+        }
         return Some(PhotoMeta {
             photo: photo,
             star: star::Star::new(record.star),
@@ -136,6 +140,10 @@ impl PhotoMeta {
         let mut photo = photo::Photo::new(f.unwrap(), Option::None);
         photo.set_time(record.date.clone());
         photo.set_css_style(record.css_style.clone());
+        // Set orientation from database record
+        if let Some(ref orientation) = record.orientation {
+            photo.meta_data.orientation = orientation.clone();
+        }
         Some(PhotoMeta {
             photo: photo,
             star: star::Star::new(record.star),

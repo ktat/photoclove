@@ -19,6 +19,7 @@ export class Photo {
         this.cssStyle = data.css_style || '';
         this.tags = data.tags || []; // Array of tag objects: [{id, name, color}]
         this.created_at = data.created_at || ''; // File creation time from backend
+        this.meta_data = data.meta_data || null; // EXIF data including orientation
 
         // State flags
         this.inTrashBin = data.inTrashBin || false;
@@ -180,7 +181,8 @@ export class Photo {
             inTrashBin: this.inTrashBin,
             inAlbum: this.inAlbum,
             albumId: this.albumId,
-            import_source: this.import_source
+            import_source: this.import_source,
+            meta_data: this.meta_data
         };
         return new Photo(newData, this.config);
     }
@@ -202,7 +204,8 @@ export class Photo {
             inTrashBin: this.inTrashBin,
             inAlbum: this.inAlbum,
             albumId: this.albumId,
-            import_source: this.import_source
+            import_source: this.import_source,
+            meta_data: this.meta_data
         };
         return new Photo(newData, this.config);
     }
@@ -223,7 +226,8 @@ export class Photo {
             inTrashBin: true,
             inAlbum: this.inAlbum,
             albumId: this.albumId,
-            import_source: this.import_source
+            import_source: this.import_source,
+            meta_data: this.meta_data
         };
         return new Photo(newData, this.config);
     }
@@ -244,7 +248,8 @@ export class Photo {
             inTrashBin: false,
             inAlbum: this.inAlbum,
             albumId: this.albumId,
-            import_source: this.import_source
+            import_source: this.import_source,
+            meta_data: this.meta_data
         };
         return new Photo(newData, this.config);
     }
@@ -267,6 +272,7 @@ export class Photo {
             inAlbum: this.inAlbum,
             albumId: this.albumId,
             import_source: this.import_source,
+            meta_data: this.meta_data, // EXIF data including orientation
             // Store config data needed for path generation
             configData: this.config ? {
                 thumbnail_store: this.config.thumbnail_store,
@@ -357,7 +363,8 @@ export class Photo {
             created_at: backendData.created_at || backendData.file?.created_at || '',
             inTrashBin: isFromTrash,
             inAlbum: false,
-            albumId: null
+            albumId: null,
+            meta_data: backendData.meta_data || null // EXIF data including orientation
         };
 
         const newPhoto = new Photo(data, config);
@@ -408,7 +415,8 @@ export class Photo {
             created_at: albumPhotoData.created_at || albumPhotoData.file?.created_at || '',
             inTrashBin: false,
             inAlbum: true,
-            albumId: albumId
+            albumId: albumId,
+            meta_data: albumPhotoData.meta_data || null // EXIF data including orientation
         };
         return new Photo(data, config);
     }
@@ -439,7 +447,8 @@ export class Photo {
             inTrashBin: jsonData.inTrashBin || false,
             inAlbum: jsonData.inAlbum || false,
             albumId: jsonData.albumId || null,
-            import_source: jsonData.import_source || false
+            import_source: jsonData.import_source || false,
+            meta_data: jsonData.meta_data || null // EXIF data including orientation
         };
 
         // Restore config from stored configData

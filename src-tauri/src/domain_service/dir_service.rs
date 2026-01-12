@@ -32,7 +32,9 @@ pub fn find_files(dir: &file::Dir) -> file::Files {
         }
         return f;
     } else {
-        panic!("Cannot readdir: {}", dir.path.to_string())
+        // Directory doesn't exist or cannot be read - return empty files list
+        log::warn!(target: "dir_service", "directory_not_found; path={}", dir.path.to_string());
+        return f;
     }
 }
 
@@ -72,8 +74,8 @@ pub fn find_directories(dir: &file::Dir, regex: &Option<Regex>) -> file::Dirs {
             }
         }
     } else {
-        let p = dir.path.as_str();
-        panic!("Cannot open directory: {}", p)
+        // Directory doesn't exist or cannot be read - return empty dirs list
+        log::warn!(target: "dir_service", "directory_not_found; path={}", dir.path.to_string());
     }
     f
 }
