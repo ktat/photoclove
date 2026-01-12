@@ -3,11 +3,8 @@ import { useUI } from "../context/UIContext.jsx";
 import "./Home.css";
 
 function Home(props) {
-    const [showWelcome, setShowWelcome] = useState(false);
-    const [showSplash, setShowSplash] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const { toggleSearchPage } = useUI();
-    const message = ``;
 
     const handleQuickSearch = () => {
         if (searchQuery.trim()) {
@@ -27,14 +24,7 @@ function Home(props) {
 
     return (
         <div id="home-container">
-            <div><pre style={{
-                display: "inline-block",
-                letterSpacing: "0em",
-                lineHeight: "1em",
-                whiteSpace: "pre",
-                textAlign: "left",
-                fontFamily: ["Lucida Console", "Monaco", "monospace"]
-            }} >{message}</pre>
+            <div>
                 <div className="home-search-container">
                     <div className="home-search-bar">
                         <input 

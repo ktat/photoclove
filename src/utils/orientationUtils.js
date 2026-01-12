@@ -52,7 +52,7 @@ const ORIENTATION_TRANSFORMS = {
  * @param {string|number} orientation - EXIF orientation value (1-8 or text description)
  * @returns {{ rotate: number, scaleX: number, scaleY: number }} Transform parameters
  */
-export function parseOrientationValue(orientation) {
+function parseOrientationValue(orientation) {
     if (!orientation) {
         return { rotate: 0, scaleX: 1, scaleY: 1 };
     }
@@ -143,31 +143,4 @@ export function getCombinedTransformStyle(orientation, cssStyle) {
     }
 
     return style;
-}
-
-/**
- * Get simple orientation-only transform style (without editor CSS)
- * @param {string|number} orientation - EXIF orientation value
- * @returns {Object} React style object with transform
- */
-export function getOrientationTransformStyle(orientation) {
-    const transform = parseOrientationValue(orientation);
-
-    if (transform.rotate === 0 && transform.scaleX === 1 && transform.scaleY === 1) {
-        return {};
-    }
-
-    const transforms = [];
-
-    if (transform.rotate !== 0) {
-        transforms.push(`rotate(${transform.rotate}deg)`);
-    }
-    if (transform.scaleX === -1) {
-        transforms.push('scaleX(-1)');
-    }
-    if (transform.scaleY === -1) {
-        transforms.push('scaleY(-1)');
-    }
-
-    return transforms.length > 0 ? { transform: transforms.join(' ') } : {};
 }
