@@ -2,6 +2,136 @@ use rusqlite::params;
 
 use super::SQLite;
 
+/// Get all tags
+pub(super) fn get_all_tags(db: &SQLite) -> Result<Vec<(i32, String, Option<String>)>, String> {
+    let conn = db
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    let mut stmt = conn
+        .prepare("SELECT id, name, color FROM photo_collections WHERE type = 'tag' ORDER BY name")
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let tags = stmt
+        .query_map([], |row| {
+            let id: i32 = row.get(0)?;
+            let name: String = row.get(1)?;
+            let color: Option<String> = row.get(2)?;
+            Ok((id, name, color))
+        })
+        .map_err(|e| format!("Failed to query tags: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect tags: {}", e))?;
+
+    Ok(tags)
+}
+
+/// Get all tags with photo count
+pub(super) fn get_all_tags_with_photo_count(db: &SQLite) -> Result<Vec<(i32, String, Option<String>, i32)>, String> {
+    let conn = db
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT pc.id, pc.name, pc.color,
+                    (SELECT COUNT(*) FROM photo_collection_items WHERE collection_id = pc.id) as photo_count
+             FROM photo_collections pc
+             WHERE pc.type = 'tag'
+             ORDER BY pc.name"
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let tags = stmt
+        .query_map([], |row| {
+            let id: i32 = row.get(0)?;
+            let name: String = row.get(1)?;
+            let color: Option<String> = row.get(2)?;
+            let count: i32 = row.get(3)?;
+            Ok((id, name, color, count))
+        })
+        .map_err(|e| format!("Failed to query tags: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect tags: {}", e))?;
+
+    Ok(tags)
+}
+
+/// Create a new tag
+pub(super) fn create_tag(db: &SQLite, name: &str, color: Option<&str>) -> Result<i32, String> {
+    let conn = db
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    conn.execute(
+        "INSERT INTO photo_collections (type, name, color, created_at, updated_at) VALUES ('tag', ?1, ?2, ?3, ?4)",
+        params![name, color, now, now],
+    )
+    .map_err(|e| format!("Failed to create tag: {}", e))?;
+
+    let tag_id = conn.last_insert_rowid() as i32;
+    Ok(tag_id)
+}
+
+/// Delete a tag
+pub(super) fn delete_tag(db: &SQLite, tag_id: i32) -> Result<bool, String> {
+    let conn = db
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    // First delete all photo-tag associations
+    conn.execute(
+        "DELETE FROM photo_collection_items WHERE collection_id = ?1",
+        params![tag_id],
+    )
+    .map_err(|e| format!("Failed to delete tag associations: {}", e))?;
+
+    // Then delete the tag itself
+    let rows_affected = conn
+        .execute(
+            "DELETE FROM photo_collections WHERE id = ?1 AND type = 'tag'",
+            params![tag_id],
+        )
+        .map_err(|e| format!("Failed to delete tag: {}", e))?;
+
+    Ok(rows_affected > 0)
+}
+
+/// Add a tag to a photo
+pub(super) fn add_tag_to_photo(db: &SQLite, photo_path: &str, tag_id: i32) -> Result<(), String> {
+    let conn = db
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    conn.execute(
+        "INSERT OR IGNORE INTO photo_collection_items (collection_id, photo_path, order_index, added_at) VALUES (?1, ?2, 0, ?3)",
+        params![tag_id, photo_path, now],
+    )
+    .map_err(|e| format!("Failed to add tag to photo: {}", e))?;
+
+    Ok(())
+}
+
+/// Remove a tag from a photo
+pub(super) fn remove_tag_from_photo(db: &SQLite, photo_path: &str, tag_id: i32) -> Result<bool, String> {
+    let conn = db
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    let rows_affected = conn
+        .execute(
+            "DELETE FROM photo_collection_items WHERE collection_id = ?1 AND photo_path = ?2",
+            params![tag_id, photo_path],
+        )
+        .map_err(|e| format!("Failed to remove tag from photo: {}", e))?;
+
+    Ok(rows_affected > 0)
+}
+
 /// Remove all tags from a photo
 pub(super) fn remove_all_tags_from_photo(db: &SQLite, photo_path: &str) -> Result<i32, String> {
     let conn = db

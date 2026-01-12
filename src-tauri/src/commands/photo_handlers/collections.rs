@@ -3,7 +3,6 @@
 //! Handles retrieval of album and tag lists.
 
 use super::HandlerContext;
-use crate::repository::MetaInfoDB;
 
 /// Handle all albums list request.
 ///

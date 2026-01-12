@@ -1,5 +1,4 @@
 use crate::app_state::AppState;
-use crate::repository::MetaInfoDB;
 use tauri::State;
 
 // Unified PhotoCollection API endpoints

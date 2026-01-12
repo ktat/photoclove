@@ -199,6 +199,7 @@ impl Photo {
         self.comment = Some(comment);
     }
 
+    #[allow(dead_code)]
     pub fn set_tags(&mut self, tags: Vec<PhotoTag>) {
         self.tags = Some(tags);
     }

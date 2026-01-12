@@ -1,7 +1,7 @@
 use crate::entity::photo;
 use crate::repository::meta_db;
 use crate::repository::{self, MetaInfoDB};
-use crate::value::{comment, date, exif, file, star};
+use crate::value::{comment, exif, file, star};
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 
@@ -48,9 +48,11 @@ impl PhotoMeta {
         meta_db.get_photo_meta(photo)
     }
 
+    #[allow(dead_code)]
     pub fn set_star(&mut self, star: star::Star) {
         self.star = star
     }
+    #[allow(dead_code)]
     pub fn set_comment(&mut self, comment: comment::Comment) {
         self.comment = comment
     }
@@ -67,6 +69,7 @@ impl PhotoMetas {
         self.data.keys()
     }
 
+    #[allow(dead_code)]
     pub fn iter(&self) -> indexmap::map::Iter<'_, String, PhotoMeta> {
         self.data.iter()
     }
@@ -79,15 +82,18 @@ impl PhotoMetas {
         self.data.insert(key.to_owned(), value);
     }
 
+    #[allow(dead_code)]
     pub fn remove(&mut self, key: &str) -> Option<PhotoMeta> {
-        self.data.remove(key)
+        self.data.shift_remove(key)
     }
 
+    #[allow(dead_code)]
     pub fn get_with_photo(&self, photo: photo::Photo) -> Option<&PhotoMeta> {
         return self.get(&photo.file.path);
     }
 }
 
+#[allow(dead_code)]
 impl PhotoMeta {
     pub fn new_from_photo(photo: &photo::Photo) -> PhotoMeta {
         PhotoMeta {

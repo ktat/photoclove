@@ -1,12 +1,10 @@
-use chrono::{DateTime, Utc};
 use dirs;
-use log::{debug, error, info, warn};
+use log::{info, warn};
 use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
-use uuid::Uuid;
 
 pub struct LoggingService {
     correlation_counter: AtomicU64,

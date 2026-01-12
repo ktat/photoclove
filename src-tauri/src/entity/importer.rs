@@ -28,6 +28,7 @@ pub struct Importer {
     pub paths: Vec<String>,
 }
 
+#[allow(dead_code)]
 pub struct ImporterSelectedFiles {
     selected_photo_files: Vec<file::File>,
 }
@@ -83,16 +84,19 @@ impl ImportProgress {
     }
 }
 
+#[allow(dead_code)]
 fn is_sha256_hash(s: &str) -> bool {
     s.len() == 64 && s.chars().all(|c| c.is_ascii_hexdigit())
 }
 
+#[allow(dead_code)]
 fn get_directory_sha256_hash(path: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(path.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
+#[allow(dead_code)]
 fn migrate_files_from_sha256_to_uuid(
     destination_dir: &path::Path,
     sha256_hash: &str,
@@ -158,6 +162,7 @@ fn migrate_files_from_sha256_to_uuid(
     Ok(())
 }
 
+#[allow(dead_code)]
 fn get_or_create_source_uuid(
     source_path: &str,
     destination_dir: Option<&path::Path>,
@@ -248,8 +253,9 @@ fn get_or_create_source_uuid(
     }
 }
 
+#[allow(dead_code)]
 fn copy_file(from: &str, to: &str) -> io::Result<u64> {
-    let result = fs::copy(from.clone(), to.clone());
+    let result = fs::copy(from, to);
 
     let meta = std::fs::metadata(from).unwrap();
     let ft = filetime::FileTime::from_system_time(meta.modified().unwrap());
@@ -258,6 +264,7 @@ fn copy_file(from: &str, to: &str) -> io::Result<u64> {
     result
 }
 
+#[allow(dead_code)]
 impl ImporterSelectedFiles {
     pub fn new() -> ImporterSelectedFiles {
         ImporterSelectedFiles {
@@ -268,7 +275,7 @@ impl ImporterSelectedFiles {
     pub fn import_photos(
         &self,
         window: &tauri::Window,
-        origin_repo_db: &repository::RepoDB,
+        _origin_repo_db: &repository::RepoDB,
         origin_meta_db: &repository::MetaDB,
         destination_dir: Arc<path::PathBuf>,
         trash_dir: Arc<path::PathBuf>,
@@ -317,7 +324,7 @@ impl ImporterSelectedFiles {
 
         let sleep_millis = time::Duration::from_millis(100);
         let t1 = time::SystemTime::now();
-        let mut arc_date_list = Arc::new(RwLock::new(HashMap::new()));
+        let arc_date_list = Arc::new(RwLock::new(HashMap::new()));
         for files in photos_file_chunks {
             let window = window.clone();
             let meta_db = origin_meta_db.new_connect();
@@ -472,6 +479,7 @@ impl Importer {
         }
     }
 
+    #[allow(dead_code)]
     pub fn update(
         &mut self,
         directory: String,

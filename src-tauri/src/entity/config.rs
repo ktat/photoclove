@@ -83,6 +83,7 @@ pub struct RepositoryConfig {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryOption {}
 impl Config {
+    #[allow(dead_code)]
     pub fn reload(&mut self) {
         let config = Config::new();
         self.repository = config.repository;

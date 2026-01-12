@@ -8,6 +8,7 @@ pub enum CollectionType {
     Tag,
 }
 
+#[allow(dead_code)]
 impl CollectionType {
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s.to_lowercase().as_str() {
@@ -39,6 +40,7 @@ pub struct PhotoCollection {
     pub photo_count: Option<i32>,
 }
 
+#[allow(dead_code)]
 impl PhotoCollection {
     pub fn new(
         id: i64,
@@ -156,6 +158,7 @@ pub struct PhotoCollectionItem {
     pub metadata: HashMap<String, serde_json::Value>,
 }
 
+#[allow(dead_code)]
 impl PhotoCollectionItem {
     pub fn new(
         collection_id: i64,

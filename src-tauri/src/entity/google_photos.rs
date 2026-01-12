@@ -9,10 +9,12 @@ static USER_AGENT: &str = "photoclove/1.0";
 
 pub struct GooglePhotos {
     access_token: String,
+    #[allow(dead_code)]
     refresh_token: String,
     db_path: String,
 }
 
+#[allow(dead_code)]
 pub struct GooglePhotosAlbum {
     id: String,
     title: String,
@@ -82,6 +84,7 @@ pub struct GoogleStatus {
     message: String,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GoogleMediaItem {
@@ -104,11 +107,11 @@ impl GooglePhotos {
         }
     }
 
-    pub async fn get_album(&self, mut album_id: String) -> GooglePhotosAlbum {
-        album_id = album_id + ".photoclove";
-        let mut path = "albums/".to_string();
-        path += &album_id;
-        self.get_request(&path).await;
+    #[allow(dead_code, unreachable_code)]
+    pub async fn get_album(&self, album_id: String) -> GooglePhotosAlbum {
+        let album_id_full = album_id + ".photoclove";
+        let path = "albums/".to_string() + &album_id_full;
+        let _ = self.get_request(&path).await;
         GooglePhotosAlbum {
             id: todo!(),
             title: todo!(),
@@ -120,9 +123,10 @@ impl GooglePhotos {
         }
     }
 
-    pub async fn create_album(&self, mut album_id: String) -> GooglePhotosAlbumResponse {
+    #[allow(dead_code)]
+    pub async fn create_album(&self, album_id: String) -> GooglePhotosAlbumResponse {
         let album_title = album_id.clone();
-        album_id = album_id + ".photoclove";
+        let _ = album_id + ".photoclove";
         let path = "albums";
         let item = GooglePhotosAlbumItemForWrite { title: album_title };
         let data = GooglePhotosAlbumForWrite { album: item };
@@ -325,6 +329,7 @@ impl GooglePhotos {
         return response.text().await;
     }
 
+    #[allow(dead_code)]
     async fn post_request(&self, path: &str, data: String) -> Result<String, String> {
         let uri = API_END_POINT_URL.to_string() + path;
         let auth = "Bearer ".to_string() + &self.access_token;

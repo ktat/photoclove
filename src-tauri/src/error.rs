@@ -135,6 +135,7 @@ pub enum PhotoCloveError {
     },
 }
 
+#[allow(dead_code)]
 impl PhotoCloveError {
     /// Get the error category
     pub fn category(&self) -> ErrorCategory {
@@ -400,6 +401,7 @@ pub struct ErrorWithContext {
     pub user_action: Option<String>,
 }
 
+#[allow(dead_code)]
 impl ErrorWithContext {
     pub fn with_user_action(mut self, action: String) -> Self {
         self.user_action = Some(action);
@@ -408,9 +410,11 @@ impl ErrorWithContext {
 }
 
 /// Result type for PhotoClove operations
+#[allow(dead_code)]
 pub type PhotoCloveResult<T> = Result<T, PhotoCloveError>;
 
 /// Helper functions for creating common errors
+#[allow(dead_code)]
 impl PhotoCloveError {
     pub fn permission_denied(operation: &str, path: &str) -> Self {
         PhotoCloveError::PermissionDenied {

@@ -64,7 +64,7 @@ pub async fn set_logging_enabled(
 /// JSON object containing logging enabled status and level
 #[tauri::command]
 pub async fn get_logging_status(
-    state: tauri::State<'_, AppState>,
+    _state: tauri::State<'_, AppState>,
 ) -> Result<serde_json::Value, String> {
     // Always read the current saved configuration to get the latest state
     let config = Config::new();

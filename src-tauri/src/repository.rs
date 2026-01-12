@@ -29,8 +29,10 @@ pub enum Sort {
     NameAsc,  // Value 7: File name A→Z
 
     // Legacy variants for backwards compatibility
+    #[allow(dead_code)]
     PhotoTime, // Fallback to PhotoTimeDesc
     Time,      // File created time (for import mode)
+    #[allow(dead_code)]
     Name,      // Fallback to NameAsc
 }
 pub struct DatesNum {
@@ -48,6 +50,7 @@ impl DatesNum {
         serde_json::to_string(&self.data).unwrap()
     }
 
+    #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.data.len()
     }
@@ -71,6 +74,7 @@ pub fn sort_from_int(i: i32) -> Sort {
     }
 }
 
+#[allow(dead_code)]
 #[async_trait]
 pub(crate) trait RepositoryDB {
     fn connect(&self);
@@ -101,7 +105,7 @@ pub(crate) trait RepositoryDB {
         page: u32,
         offset: usize,
         star: i32,
-        hasComment: bool,
+        has_comment: bool,
         extension: &str,
         conifg: Option<config::Config>,
     ) -> photo::Photos;
@@ -113,7 +117,7 @@ pub(crate) trait RepositoryDB {
         num: u32,
         offset: usize,
         star: i32,
-        hasComment: bool,
+        has_comment: bool,
         extension: &str,
         conifg: Option<config::Config>,
     ) -> photo::Photos;
@@ -121,6 +125,7 @@ pub(crate) trait RepositoryDB {
     fn get_photo_count_per_dates(&self, dates: date::Dates, meta_data: DatesNum) -> DatesNum;
     fn get_photo_count_in_date(&self, date: date::Date) -> i32;
 }
+#[allow(dead_code)]
 trait RepositoryConfig {
     fn get_cofnig(&mut self) -> config::Config;
 }

@@ -69,7 +69,7 @@ impl Dir {
 
     pub fn find_files_and_dirs(
         &self,
-        sort: repository::Sort,
+        _sort: repository::Sort,
         page: usize,
         num: usize,
         date_after: Option<date::Date>,
