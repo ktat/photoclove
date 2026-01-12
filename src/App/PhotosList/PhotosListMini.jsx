@@ -7,6 +7,8 @@ import { logger } from "../../services/LoggerService.js";
 import { Photo } from "../../domain/Photo.js";
 import { parseCssStyle, calculateSimpleThumbnailDisplay, getDateKey as utilGetDateKey, createBorderStyles } from "./PhotosListMini/photoUtils.js";
 import { useKeyboardShortcuts } from "./PhotosListMini/useKeyboardShortcuts.js";
+import { useDeletionOperations } from "./PhotosListMini/useDeletionOperations.js";
+import ThumbnailItem from "./PhotosListMini/ThumbnailItem.jsx";
 import { useUI } from "../../context/UIContext.jsx";
 import { VIEW_MODES } from "../../constants/viewModes.js";
 import { getCombinedTransformStyle } from "../../utils/orientationUtils.js";
@@ -80,15 +82,40 @@ function PhotosListMini(props) {
     const [unselectedContent, setUnselectedContent] = useState("");
     const [showHelp, setShowHelp] = useState(false);
 
-    // Delete modal state
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [deleteOperation, setDeleteOperation] = useState(null); // 'removeFromAlbum' | 'deleteFile'
-
-
     const navigateLock = useRef(false);
 
     // Check if we're in album mode
     const isAlbumMode = props.albumId !== undefined && props.albumId !== null;
+
+    // Use deletion operations hook
+    const {
+        showDeleteModal,
+        deleteOperation,
+        showRemoveFromAlbumModal,
+        showDeleteFileModal,
+        showPermanentDeleteModal,
+        handleConfirmAction,
+        closeModal: closeDeleteModal,
+        currentPhotoPath: deleteTargetPath
+    } = useDeletionOperations({
+        photos: photosWithMethods,
+        currentIndex: props.currentIndex,
+        albumId: props.albumId,
+        albumName: props.albumName,
+        isAlbumMode,
+        isTrashMode,
+        removePhotoFromList: props.removePhotoFromList,
+        deletePhotos: props.deletePhotos,
+        updatePhotosAfterTrashOperation: props.updatePhotosAfterTrashOperation,
+        setCurrentIndex: props.setCurrentIndex,
+        setCurrentPhotoPath: props.setCurrentPhotoPath,
+        setCurrentPhotoIndex: props.setCurrentPhotoIndex,
+        closePhotoDisplay: props.closePhotoDisplay,
+        addFooterMessage: props.addFooterMessage,
+        handleTauriError: props.handleTauriError,
+        setAllPhotos: setPhotosListMiniAllPhotos,
+        allPhotos: photosListMiniAllPhotos
+    });
 
     // Helper function to get the correct date key for pagination
     const getDateKey = () => {
@@ -400,135 +427,6 @@ function PhotosListMini(props) {
             setUnselectedInfoHidden(false);
         }
     }
-
-    // Modal handlers
-    const showRemoveFromAlbumModal = () => {
-        setDeleteOperation('removeFromAlbum');
-        setShowDeleteModal(true);
-    };
-
-    const showDeleteFileModal = () => {
-        setDeleteOperation('deleteFile');
-        setShowDeleteModal(true);
-    };
-
-    const showPermanentDeleteModal = () => {
-        setDeleteOperation('permanentDelete');
-        setShowDeleteModal(true);
-    };
-
-    const handleConfirmAction = async () => {
-        console.log('[PhotosListMini.handleConfirmAction] Called', {
-            deleteOperation,
-            currentIndex: props.currentIndex,
-            hasDeletePhotos: !!props.deletePhotos
-        });
-
-        const currentPhoto = photosWithMethods[props.currentIndex];
-        if (!currentPhoto) {
-            console.log('[PhotosListMini.handleConfirmAction] No current photo');
-            return;
-        }
-
-        // Close modal immediately for better UX
-        console.log('[PhotosListMini.handleConfirmAction] Closing modal immediately');
-        setShowDeleteModal(false);
-        setDeleteOperation(null);
-
-        // Perform operation asynchronously in background
-        try {
-            if (deleteOperation === 'removeFromAlbum') {
-                await invoke('remove_photo_from_album', {
-                    albumId: props.albumId,
-                    photoPath: currentPhoto.originalPath
-                });
-
-                logger.info('PhotosListMini', 'photo_removed_from_album', 'Photo removed from album', {
-                    albumId: props.albumId,
-                    photoPath: currentPhoto.originalPath
-                });
-
-                // Remove from current view
-                props.removePhotoFromList?.(props.currentIndex);
-                props.addFooterMessage?.('Photo removed from album');
-            } else if (deleteOperation === 'permanentDelete') {
-                // Permanently delete from trash
-                const currentIndex = props.currentIndex;
-                const allPhotos = photosListMiniAllPhotos;
-
-                // Remove from thumbnail list
-                const newAllPhotos = [...allPhotos];
-                newAllPhotos.splice(currentIndex, 1);
-                setPhotosListMiniAllPhotos(newAllPhotos);
-
-                // Handle navigation to next/previous photo
-                if (newAllPhotos.length > 0) {
-                    let newIndex;
-                    if (currentIndex >= newAllPhotos.length) {
-                        // Last photo was removed, go to previous
-                        newIndex = newAllPhotos.length - 1;
-                    } else {
-                        // Not last photo - stay at same index (shows next photo)
-                        newIndex = currentIndex;
-                    }
-
-                    // Get the path - use originalPath for trash photos, fallback to file.path
-                    const nextPhoto = newAllPhotos[newIndex];
-                    const nextPhotoPath = nextPhoto?.originalPath || nextPhoto?.file?.path;
-
-                    if (nextPhotoPath) {
-                        if (props.setCurrentIndex) props.setCurrentIndex(newIndex);
-                        if (props.setCurrentPhotoPath) props.setCurrentPhotoPath(nextPhotoPath);
-                        if (props.setCurrentPhotoIndex) props.setCurrentPhotoIndex(newIndex);
-                    }
-                } else {
-                    // No photos left, close display
-                    if (props.closePhotoDisplay) {
-                        props.closePhotoDisplay();
-                    }
-                }
-
-                // Update grid view (removes from photoCollection)
-                if (props.updatePhotosAfterTrashOperation) {
-                    await props.updatePhotosAfterTrashOperation([currentPhoto.originalPath], 'permanentDelete');
-                }
-
-                // Perform backend deletion
-                await invoke('delete_permanently_batch', {
-                    paths: [currentPhoto.originalPath]
-                });
-
-                logger.info('PhotosListMini', 'photo_permanently_deleted', 'Photo permanently deleted from trash', {
-                    photoPath: currentPhoto.originalPath
-                });
-
-                props.addFooterMessage?.('Photo permanently deleted');
-            } else {
-                console.log('[PhotosListMini.handleConfirmAction] Calling deletePhotos');
-                await props.deletePhotos([currentPhoto.originalPath], {
-                    skipConfirmation: true,  // PhotosListMini has its own confirmation
-                    clearSelection: false    // Don't clear selection in main list
-                });
-                console.log('[PhotosListMini.handleConfirmAction] deletePhotos completed');
-
-                logger.info('PhotosListMini', 'photo_deleted', 'Photo moved to trash', {
-                    photoPath: currentPhoto.originalPath
-                });
-
-                // Photo removal is handled by deletePhotos
-                props.addFooterMessage?.('Photo deleted');
-            }
-        } catch (error) {
-            console.log('[PhotosListMini.handleConfirmAction] Error occurred:', error);
-            logger.error('PhotosListMini', 'action_failed', 'Failed to perform action', {
-                operation: deleteOperation,
-                error: error.message
-            });
-            const errorContext = deleteOperation === 'removeFromAlbum' ? 'Remove from album' :
-                                 deleteOperation === 'permanentDelete' ? 'Permanently delete photo' : 'Delete photo';
-            props.handleTauriError?.(error, errorContext);
-        }
-    };
 
     // Keyboard navigation - restored from main branch
     function photoNavigation(e) {
@@ -957,13 +855,10 @@ function PhotosListMini(props) {
             <ContextualDeleteModal
                 isOpen={showDeleteModal}
                 operation={deleteOperation}
-                photoPath={photosWithMethods[props.currentIndex]?.originalPath}
+                photoPath={deleteTargetPath}
                 albumName={props.albumName}
                 onConfirm={handleConfirmAction}
-                onCancel={() => {
-                    setShowDeleteModal(false);
-                    setDeleteOperation(null);
-                }}
+                onCancel={closeDeleteModal}
             />
         </>
     )
