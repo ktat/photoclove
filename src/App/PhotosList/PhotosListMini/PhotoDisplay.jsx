@@ -59,8 +59,12 @@ function PhotoDisplay(props) {
         };
     }, []);
 
-    useEffect((e) => {
+    useEffect(() => {
+        // Recalculate wrapper size when mini list is toggled
+        // handleImgLoad is stable (defined in component scope) so we intentionally omit it
+        // to prevent infinite loops while keeping the effect functional
         handleImgLoad(null, 0);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.photosListMiniClosed])
 
     useEffect((e) => {

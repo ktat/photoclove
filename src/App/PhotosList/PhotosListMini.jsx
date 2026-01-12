@@ -248,8 +248,9 @@ function PhotosListMini(props) {
 
         const clientHeight = document.querySelector('#photos-list-mini')?.clientHeight - 20 || 80;
 
-        // Initialize image source if not already set
-        if (!photosListImgSrc[v.originalPath]) {
+        // Initialize image source if not already set - use functional state update to avoid mutation
+        let imgSrc = photosListImgSrc[v.originalPath];
+        if (!imgSrc) {
             if (v.import_source === true) {
                 if (!v._cachedThumbnailPath) {
                     const importDir = (v.import_source === true && importState?.currentImportPath && importState.currentImportPath !== '')
@@ -261,17 +262,34 @@ function PhotosListMini(props) {
                     })
                         .then(cachePath => {
                             v._cachedThumbnailPath = convertFileSrc(cachePath);
-                            if (photosListImgSrc[v.originalPath] === "") {
-                                setPhotosListImgSrc(prev => ({ ...prev, [v.originalPath]: v._cachedThumbnailPath }));
-                            }
+                            setPhotosListImgSrc(prev => {
+                                if (!prev[v.originalPath] || prev[v.originalPath] === "") {
+                                    return { ...prev, [v.originalPath]: v._cachedThumbnailPath };
+                                }
+                                return prev;
+                            });
                         })
-                        .catch(() => {});
+                        .catch(err => {
+                            logger.debug('PhotosListMini', 'thumbnail_path_error', 'Failed to get thumbnail path', {
+                                photoPath: v.originalPath,
+                                error: err?.message || String(err)
+                            });
+                        });
                 }
-                photosListImgSrc[v.originalPath] = v._cachedThumbnailPath || "";
+                imgSrc = v._cachedThumbnailPath || "";
             } else if (v.hasThumbnail) {
-                photosListImgSrc[v.originalPath] = convertFileSrc(v.thumbnailPath());
+                imgSrc = convertFileSrc(v.thumbnailPath());
             } else {
-                photosListImgSrc[v.originalPath] = convertFileSrc(v.displayPath());
+                imgSrc = convertFileSrc(v.displayPath());
+            }
+            // Update state immutably if we computed a new value
+            if (imgSrc) {
+                setPhotosListImgSrc(prev => {
+                    if (!prev[v.originalPath]) {
+                        return { ...prev, [v.originalPath]: imgSrc };
+                    }
+                    return prev;
+                });
             }
         }
 
@@ -336,7 +354,7 @@ function PhotosListMini(props) {
                     ) : (
                         <>
                             <img
-                                src={photosListImgSrc[v.originalPath]}
+                                src={imgSrc || photosListImgSrc[v.originalPath]}
                                 style={{
                                     border: borderStyle[i],
                                     maxHeight: clientHeight + "px",

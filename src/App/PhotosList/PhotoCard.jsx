@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useMemo } from 'react';
+import React, { useCallback, useRef, useMemo, useEffect } from 'react';
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { openUrl } from '@tauri-apps/plugin-opener';
 import fileUrl from "../../PathUtil.jsx";
@@ -45,6 +45,15 @@ function PhotoCard({
     // Calculate initial image source
     let imgSrc = null;
     let imgRef = useRef(null);
+    const isMountedRef = useRef(true);
+
+    // Track component mount state to prevent updates on unmounted components
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
 
     if (photo.import_source === true) {
         // For import photos: Get thumbnail cache path and set it directly in src
@@ -68,6 +77,8 @@ function PhotoCard({
                 importDirectory: importDir
             })
                 .then(cachePath => {
+                    // Check if component is still mounted before updating
+                    if (!isMountedRef.current) return;
                     photo._cachedThumbnailPath = convertFileSrc(cachePath);
                     // If we have an imgRef, update src immediately
                     if (imgRef.current) {
@@ -134,6 +145,8 @@ function PhotoCard({
                     skipResizeFallback: photo.import_source === true  // Import modeではリサイズをスキップ
                 })
                     .then(() => {
+                        // Check if component is still mounted
+                        if (!isMountedRef.current) return;
                         logger.debug('PhotoCard', 'thumbnail_generated', 'Thumbnail generated successfully', {
                             photoPath: photo.originalPath
                         });
@@ -147,22 +160,22 @@ function PhotoCard({
                         });
                     })
                     .then(cachePath => {
+                        // Check if component is still mounted and element is valid
+                        if (!isMountedRef.current || !imgElement || !imgElement.isConnected) return;
                         const thumbnailUrl = convertFileSrc(cachePath) + '?t=' + Date.now();
                         logger.debug('PhotoCard', 'thumbnail_retry', 'Retrying with generated thumbnail', {
                             photoPath: photo.originalPath,
                             thumbnailUrl
                         });
-                        if (imgElement) {
-                            imgElement.src = thumbnailUrl;
-                        }
+                        imgElement.src = thumbnailUrl;
                     })
                     .catch(err => {
                         logger.error('PhotoCard', 'thumbnail_generation_failed', 'Failed to generate thumbnail', {
                             photoPath: photo.originalPath,
-                            error: err.message
+                            error: err?.message || String(err)
                         });
-                        // If generation fails, try original immediately
-                        if (imgElement && !imgElement.dataset.triedOriginal) {
+                        // If generation fails, try original immediately (only if still mounted and connected)
+                        if (isMountedRef.current && imgElement && imgElement.isConnected && !imgElement.dataset.triedOriginal) {
                             imgElement.dataset.triedOriginal = 'true';
                             imgElement.src = convertFileSrc(photo.originalPath);
                         }
