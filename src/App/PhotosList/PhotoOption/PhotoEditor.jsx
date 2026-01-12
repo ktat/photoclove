@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import ReactDOM from "react-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 import { openUrl } from '@tauri-apps/plugin-opener';
@@ -24,6 +23,12 @@ import {
     rotateValue,
     normalizeRotationValue
 } from './PhotoEditor/styleUtils.js';
+import {
+    applyFiltersToCanvas,
+    applyTransformsToCanvas
+} from './PhotoEditor/imageProcessing.js';
+import EditorControl from './EditorControl.jsx';
+import CropTool from './CropTool.jsx';
 
 function PhotoEditor(props) {
     const [originalStyles, setOriginalStyles] = useState(new Map());
@@ -252,102 +257,24 @@ function PhotoEditor(props) {
             tempImg.crossOrigin = 'anonymous';
             
             tempImg.onload = async function() {
-                // Parse and apply transforms from editor styles (same as downloadStyled)
                 const { rotate, brightness, contrast, saturation, hue, scale } = editorStyles;
-                
-                // First, draw the image to a temporary canvas to apply filters
+
+                // Create temporary canvas for filters
                 const tempCanvas = document.createElement('canvas');
                 const tempCtx = tempCanvas.getContext('2d');
                 tempCanvas.width = tempImg.width;
                 tempCanvas.height = tempImg.height;
-                
+
                 // Draw the original image
                 tempCtx.drawImage(tempImg, 0, 0);
-                
-                // Apply filters by manipulating image data if needed
-                if (brightness !== 100 || contrast !== 100 || saturation !== 100 || hue !== 0) {
-                    const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-                    const data = imageData.data;
-                    
-                    // Apply brightness, contrast, saturation, and hue adjustments
-                    for (let i = 0; i < data.length; i += 4) {
-                        let r = data[i];
-                        let g = data[i + 1];
-                        let b = data[i + 2];
-                        
-                        // Apply brightness (simple multiplication)
-                        if (brightness !== 100) {
-                            const brightnessMultiplier = brightness / 100;
-                            r = Math.min(255, r * brightnessMultiplier);
-                            g = Math.min(255, g * brightnessMultiplier);
-                            b = Math.min(255, b * brightnessMultiplier);
-                        }
-                        
-                        // Apply contrast (using formula: (pixel - 128) * contrast + 128)
-                        if (contrast !== 100) {
-                            const contrastMultiplier = contrast / 100;
-                            r = Math.min(255, Math.max(0, (r - 128) * contrastMultiplier + 128));
-                            g = Math.min(255, Math.max(0, (g - 128) * contrastMultiplier + 128));
-                            b = Math.min(255, Math.max(0, (b - 128) * contrastMultiplier + 128));
-                        }
-                        
-                        // Apply saturation (convert to HSL, adjust saturation, convert back)
-                        if (saturation !== 100) {
-                            const saturationMultiplier = saturation / 100;
-                            const max = Math.max(r, g, b);
-                            const min = Math.min(r, g, b);
-                            const delta = max - min;
-                            
-                            if (delta !== 0) {
-                                const avg = (max + min) / 2;
-                                const adjustedDelta = delta * saturationMultiplier;
-                                const factor = adjustedDelta / delta;
-                                
-                                r = Math.min(255, Math.max(0, avg + (r - avg) * factor));
-                                g = Math.min(255, Math.max(0, avg + (g - avg) * factor));
-                                b = Math.min(255, Math.max(0, avg + (b - avg) * factor));
-                            }
-                        }
-                        
-                        // Apply hue rotation (simplified RGB hue shift)
-                        if (hue !== 0) {
-                            const hueRadians = (hue * Math.PI) / 180;
-                            const cosHue = Math.cos(hueRadians);
-                            const sinHue = Math.sin(hueRadians);
-                            
-                            const newR = r * (cosHue + (1 - cosHue) / 3) + g * ((1 - cosHue) / 3 - sinHue * Math.sqrt(1/3)) + b * ((1 - cosHue) / 3 + sinHue * Math.sqrt(1/3));
-                            const newG = r * ((1 - cosHue) / 3 + sinHue * Math.sqrt(1/3)) + g * (cosHue + (1 - cosHue) / 3) + b * ((1 - cosHue) / 3 - sinHue * Math.sqrt(1/3));
-                            const newB = r * ((1 - cosHue) / 3 - sinHue * Math.sqrt(1/3)) + g * ((1 - cosHue) / 3 + sinHue * Math.sqrt(1/3)) + b * (cosHue + (1 - cosHue) / 3);
-                            
-                            r = Math.min(255, Math.max(0, newR));
-                            g = Math.min(255, Math.max(0, newG));
-                            b = Math.min(255, Math.max(0, newB));
-                        }
-                        
-                        data[i] = r;
-                        data[i + 1] = g;
-                        data[i + 2] = b;
-                    }
-                    
-                    tempCtx.putImageData(imageData, 0, 0);
-                }
-                
-                // Now apply transforms (rotation, scale) to the final canvas
-                ctx.save();
-                ctx.translate(canvas.width / 2, canvas.height / 2);
-                
-                if (rotate !== 0) {
-                    ctx.rotate((rotate * Math.PI) / 180);
-                }
-                
-                if (scale !== 100) {
-                    const scaleValue = scale / 100;
-                    ctx.scale(scaleValue, scaleValue);
-                }
-                
-                // Draw the filtered image centered
-                ctx.drawImage(tempCanvas, -tempCanvas.width / 2, -tempCanvas.height / 2);
-                ctx.restore();
+
+                // Apply filters using extracted utility
+                applyFiltersToCanvas(tempCtx, tempCanvas.width, tempCanvas.height,
+                    { brightness, contrast, saturation, hue });
+
+                // Apply transforms using extracted utility
+                applyTransformsToCanvas(ctx, canvas.width, canvas.height, tempCanvas,
+                    { rotate, scale });
                 
                 // Convert canvas to blob and send to backend
                 canvas.toBlob(async function(blob) {
@@ -502,103 +429,25 @@ function PhotoEditor(props) {
             tempImg.crossOrigin = 'anonymous';
             
             tempImg.onload = function() {
-                // Parse and apply transforms from editor styles
                 const { rotate, brightness, contrast, saturation, hue, scale } = editorStyles;
-                
-                // First, draw the image to a temporary canvas to apply filters
+
+                // Create temporary canvas for filters
                 const tempCanvas = document.createElement('canvas');
                 const tempCtx = tempCanvas.getContext('2d');
                 tempCanvas.width = tempImg.width;
                 tempCanvas.height = tempImg.height;
-                
+
                 // Draw the original image
                 tempCtx.drawImage(tempImg, 0, 0);
-                
-                // Apply filters by manipulating image data if needed
-                if (brightness !== 100 || contrast !== 100 || saturation !== 100 || hue !== 0) {
-                    const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-                    const data = imageData.data;
-                    
-                    // Apply brightness, contrast, saturation, and hue adjustments
-                    for (let i = 0; i < data.length; i += 4) {
-                        let r = data[i];
-                        let g = data[i + 1];
-                        let b = data[i + 2];
-                        
-                        // Apply brightness (simple multiplication)
-                        if (brightness !== 100) {
-                            const brightnessMultiplier = brightness / 100;
-                            r = Math.min(255, r * brightnessMultiplier);
-                            g = Math.min(255, g * brightnessMultiplier);
-                            b = Math.min(255, b * brightnessMultiplier);
-                        }
-                        
-                        // Apply contrast (using formula: (pixel - 128) * contrast + 128)
-                        if (contrast !== 100) {
-                            const contrastMultiplier = contrast / 100;
-                            r = Math.min(255, Math.max(0, (r - 128) * contrastMultiplier + 128));
-                            g = Math.min(255, Math.max(0, (g - 128) * contrastMultiplier + 128));
-                            b = Math.min(255, Math.max(0, (b - 128) * contrastMultiplier + 128));
-                        }
-                        
-                        // Apply saturation (convert to HSL, adjust saturation, convert back)
-                        if (saturation !== 100) {
-                            const saturationMultiplier = saturation / 100;
-                            const max = Math.max(r, g, b);
-                            const min = Math.min(r, g, b);
-                            const delta = max - min;
-                            
-                            if (delta !== 0) {
-                                const avg = (max + min) / 2;
-                                const adjustedDelta = delta * saturationMultiplier;
-                                const factor = adjustedDelta / delta;
-                                
-                                r = Math.min(255, Math.max(0, avg + (r - avg) * factor));
-                                g = Math.min(255, Math.max(0, avg + (g - avg) * factor));
-                                b = Math.min(255, Math.max(0, avg + (b - avg) * factor));
-                            }
-                        }
-                        
-                        // Apply hue rotation (simplified RGB hue shift)
-                        if (hue !== 0) {
-                            const hueRadians = (hue * Math.PI) / 180;
-                            const cosHue = Math.cos(hueRadians);
-                            const sinHue = Math.sin(hueRadians);
-                            
-                            const newR = r * (cosHue + (1 - cosHue) / 3) + g * ((1 - cosHue) / 3 - sinHue * Math.sqrt(1/3)) + b * ((1 - cosHue) / 3 + sinHue * Math.sqrt(1/3));
-                            const newG = r * ((1 - cosHue) / 3 + sinHue * Math.sqrt(1/3)) + g * (cosHue + (1 - cosHue) / 3) + b * ((1 - cosHue) / 3 - sinHue * Math.sqrt(1/3));
-                            const newB = r * ((1 - cosHue) / 3 - sinHue * Math.sqrt(1/3)) + g * ((1 - cosHue) / 3 + sinHue * Math.sqrt(1/3)) + b * (cosHue + (1 - cosHue) / 3);
-                            
-                            r = Math.min(255, Math.max(0, newR));
-                            g = Math.min(255, Math.max(0, newG));
-                            b = Math.min(255, Math.max(0, newB));
-                        }
-                        
-                        data[i] = r;
-                        data[i + 1] = g;
-                        data[i + 2] = b;
-                    }
-                    
-                    tempCtx.putImageData(imageData, 0, 0);
-                }
-                
-                // Now apply transforms (rotation, scale) to the final canvas
-                ctx.save();
-                ctx.translate(canvas.width / 2, canvas.height / 2);
-                
-                if (rotate !== 0) {
-                    ctx.rotate((rotate * Math.PI) / 180);
-                }
-                
-                if (scale !== 100) {
-                    const scaleValue = scale / 100;
-                    ctx.scale(scaleValue, scaleValue);
-                }
-                
-                // Draw the filtered image centered
-                ctx.drawImage(tempCanvas, -tempCanvas.width / 2, -tempCanvas.height / 2);
-                ctx.restore();
-                
+
+                // Apply filters using extracted utility
+                applyFiltersToCanvas(tempCtx, tempCanvas.width, tempCanvas.height,
+                    { brightness, contrast, saturation, hue });
+
+                // Apply transforms using extracted utility
+                applyTransformsToCanvas(ctx, canvas.width, canvas.height, tempCanvas,
+                    { rotate, scale });
+
                 // Convert canvas to blob and download
                 canvas.toBlob(async function(blob) {
                     const url = URL.createObjectURL(blob);
@@ -759,177 +608,82 @@ function PhotoEditor(props) {
     }
 
 
-    // Render crop overlay (no full screen darkening needed)
-    const renderCropOverlay = () => {
-        return null; // Only photo area overlay is needed
-    };
-
-    // Render photo-specific crop overlay directly on the photo container
-    const renderPhotoOverlay = () => {
-        if (!cropMode) return null;
-
-        const photoContainer = document.querySelector('#photo');
-        if (!photoContainer) return null;
-
-        // Ensure photo container is positioned relatively
-        if (window.getComputedStyle(photoContainer).position === 'static') {
-            photoContainer.style.position = 'relative';
-        }
-
-        return ReactDOM.createPortal(
-            <>
-                {/* Semi-transparent overlay over the photo */}
-                <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Semi-transparent dark
-                    border: 'none',
-                    pointerEvents: 'auto',
-                    cursor: 'crosshair',
-                    zIndex: 10000
-                }}
-                onMouseDown={handleImageMouseDown}
-                onMouseMove={handleImageMouseMove}
-                onMouseUp={handleImageMouseUp}
-                >
-                    <div style={{
-                        position: 'absolute',
-                        top: '10px',
-                        left: '10px',
-                        color: 'white',
-                        fontSize: '14px',
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: '8px 12px',
-                        borderRadius: '6px',
-                        pointerEvents: 'none'
-                    }}>
-                        Click and drag to crop
-                    </div>
-                    {/* Crop selection rectangle */}
-                    <div
-                        id="crop-selection"
-                        style={{
-                            position: 'absolute',
-                            border: '2px dashed #ffffff',
-                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                            pointerEvents: 'none',
-                            left: `${cropSelection.x}%`,
-                            top: `${cropSelection.y}%`,
-                            width: `${cropSelection.width}%`,
-                            height: `${cropSelection.height}%`
-                        }}
-                    >
-                        <div style={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            color: 'white',
-                            fontSize: '12px',
-                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                            padding: '2px 8px',
-                            borderRadius: '4px',
-                            whiteSpace: 'nowrap'
-                        }}>
-                            {Math.round(cropSelection.width)}% × {Math.round(cropSelection.height)}%
-                        </div>
-                    </div>
-
-                    {/* Instruction text */}
-                    <div style={{
-                        position: 'absolute',
-                        top: '10px',
-                        left: '10px',
-                        color: 'white',
-                        fontSize: '14px',
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: '8px 12px',
-                        borderRadius: '6px',
-                        pointerEvents: 'none',
-                        zIndex: 10001
-                    }}>
-                        Click and drag on the photo to select crop area
-                    </div>
-                </div>
-            </>,
-            photoContainer
-        );
+    // Crop overlay handlers for CropTool component
+    const cropHandlers = {
+        onMouseDown: handleImageMouseDown,
+        onMouseMove: handleImageMouseMove,
+        onMouseUp: handleImageMouseUp
     };
 
     return (
         <>
-            {renderCropOverlay()}
-            {renderPhotoOverlay()}
+            <CropTool
+                cropMode={cropMode}
+                cropSelection={cropSelection}
+                handlers={cropHandlers}
+            />
             <div className="editor-tab">
                 <div className="photo-info-editor">
                     <div className="editor-controls">
-                        <div className="editor-control">
-                            <div className="control-row">
-                                <label>Rotation<br />(deg):</label>
-                                <input type="range" min="0" max="360" value={editorStyles.rotate}
-                                       className="editor-slider" onChange={(e) => updateStyle('rotate', e.target.value)} />
-                                <input type="number" min="0" max="360" value={editorStyles.rotate}
-                                       className="value-input" onChange={(e) => updateStyle('rotate', e.target.value)} />
-                                <button className="reset-btn" onClick={() => resetSingleControl('rotate')} title="Reset rotation">↻</button>
-                            </div>
+                        <EditorControl
+                            label={<>Rotation<br />(deg):</>}
+                            value={editorStyles.rotate}
+                            min={0}
+                            max={360}
+                            onChange={(v) => updateStyle('rotate', v)}
+                            onReset={() => resetSingleControl('rotate')}
+                            resetTitle="Reset rotation"
+                        >
                             <div className="rotation-shortcuts">
                                 <button className="shortcut-btn" onClick={() => rotateBy(-90)} title="Turn left 90°">↶ 90°</button>
                                 <button className="shortcut-btn" onClick={() => rotateBy(90)} title="Turn right 90°">↷ 90°</button>
                             </div>
-                        </div>
-                        <div className="editor-control">
-                            <div className="control-row">
-                                <label>Brightness:</label>
-                                <input type="range" min="0" max="200" value={editorStyles.brightness}
-                                       className="editor-slider" onChange={(e) => updateStyle('brightness', e.target.value)} />
-                                <input type="number" min="0" max="200" value={editorStyles.brightness}
-                                       className="value-input" onChange={(e) => updateStyle('brightness', e.target.value)} />
-                                <button className="reset-btn" onClick={() => resetSingleControl('brightness')} title="Reset brightness">↻</button>
-                            </div>
-                        </div>
-                        <div className="editor-control">
-                            <div className="control-row">
-                                <label>Contrast:</label>
-                                <input type="range" min="0" max="200" value={editorStyles.contrast}
-                                       className="editor-slider" onChange={(e) => updateStyle('contrast', e.target.value)} />
-                                <input type="number" min="0" max="200" value={editorStyles.contrast}
-                                       className="value-input" onChange={(e) => updateStyle('contrast', e.target.value)} />
-                                <button className="reset-btn" onClick={() => resetSingleControl('contrast')} title="Reset contrast">↻</button>
-                            </div>
-                        </div>
-                        <div className="editor-control">
-                            <div className="control-row">
-                                <label>Saturation:</label>
-                                <input type="range" min="0" max="200" value={editorStyles.saturation}
-                                       className="editor-slider" onChange={(e) => updateStyle('saturation', e.target.value)} />
-                                <input type="number" min="0" max="200" value={editorStyles.saturation}
-                                       className="value-input" onChange={(e) => updateStyle('saturation', e.target.value)} />
-                                <button className="reset-btn" onClick={() => resetSingleControl('saturation')} title="Reset saturation">↻</button>
-                            </div>
-                        </div>
-                        <div className="editor-control">
-                            <div className="control-row">
-                                <label>Hue (deg):</label>
-                                <input type="range" min="0" max="360" value={editorStyles.hue}
-                                       className="editor-slider" onChange={(e) => updateStyle('hue', e.target.value)} />
-                                <input type="number" min="0" max="360" value={editorStyles.hue}
-                                       className="value-input" onChange={(e) => updateStyle('hue', e.target.value)} />
-                                <button className="reset-btn" onClick={() => resetSingleControl('hue')} title="Reset hue">↻</button>
-                            </div>
-                        </div>
-                        <div className="editor-control">
-                            <div className="control-row">
-                                <label>Scale:</label>
-                                <input type="range" min="50" max="200" value={editorStyles.scale}
-                                       className="editor-slider" onChange={(e) => updateStyle('scale', e.target.value)} />
-                                <input type="number" min="50" max="200" value={editorStyles.scale}
-                                       className="value-input" onChange={(e) => updateStyle('scale', e.target.value)} />
-                                <button className="reset-btn" onClick={() => resetSingleControl('scale')} title="Reset scale">↻</button>
-                            </div>
-                        </div>
+                        </EditorControl>
+                        <EditorControl
+                            label="Brightness:"
+                            value={editorStyles.brightness}
+                            min={0}
+                            max={200}
+                            onChange={(v) => updateStyle('brightness', v)}
+                            onReset={() => resetSingleControl('brightness')}
+                            resetTitle="Reset brightness"
+                        />
+                        <EditorControl
+                            label="Contrast:"
+                            value={editorStyles.contrast}
+                            min={0}
+                            max={200}
+                            onChange={(v) => updateStyle('contrast', v)}
+                            onReset={() => resetSingleControl('contrast')}
+                            resetTitle="Reset contrast"
+                        />
+                        <EditorControl
+                            label="Saturation:"
+                            value={editorStyles.saturation}
+                            min={0}
+                            max={200}
+                            onChange={(v) => updateStyle('saturation', v)}
+                            onReset={() => resetSingleControl('saturation')}
+                            resetTitle="Reset saturation"
+                        />
+                        <EditorControl
+                            label="Hue (deg):"
+                            value={editorStyles.hue}
+                            min={0}
+                            max={360}
+                            onChange={(v) => updateStyle('hue', v)}
+                            onReset={() => resetSingleControl('hue')}
+                            resetTitle="Reset hue"
+                        />
+                        <EditorControl
+                            label="Scale:"
+                            value={editorStyles.scale}
+                            min={50}
+                            max={200}
+                            onChange={(v) => updateStyle('scale', v)}
+                            onReset={() => resetSingleControl('scale')}
+                            resetTitle="Reset scale"
+                        />
                         <div className="editor-control crop-control">
                             <div className="control-row">
                                 <label>Crop:</label>
