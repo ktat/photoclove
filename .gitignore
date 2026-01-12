@@ -9,7 +9,8 @@
 /example/thumbnail/
 /t/
 ./public/movie.tmp.MP4
-
+/tmp/
+/.roo/
 run.sh
 rsync-ui.sh
 dev.sh
