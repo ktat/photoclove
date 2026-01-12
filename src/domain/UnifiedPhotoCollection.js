@@ -57,9 +57,9 @@ export class UnifiedPhotoCollection {
             this.settings = data.settings || {};
         }
 
-        // Use photo_count from settings if available, otherwise use top-level value
-        // Backend stores the actual count in settings as JSON string
-        this.photoCount = this.settings.photo_count || data.photo_count || 0;
+        // Use photoCount from backend (calculated dynamically via subquery)
+        // Don't use settings.photo_count as it can get out of sync
+        this.photoCount = data.photoCount || data.photo_count || 0;
 
         this.createdAt = data.created_at;
         this.updatedAt = data.updated_at;
