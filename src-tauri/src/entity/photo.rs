@@ -235,13 +235,15 @@ impl Photo {
     }
 
     pub fn created_date_string(&self) -> String {
-        let re = regex::Regex::new(r"^([0-9]{4})/([0-9]{1,2})/([0-9]{1,2}).+$").unwrap();
+        // Support multiple date delimiters: '/', '-', ':'
+        let re = regex::Regex::new(r"^([0-9]{4})[/\-:]([0-9]{1,2})[/\-:]([0-9]{1,2}).+$").unwrap();
         let replaced = re.replace(&self.time, "$1-$2-$3").to_string();
         replaced
     }
 
     pub fn created_date(&self) -> date::Date {
-        let re = regex::Regex::new(r"^([0-9]{4})/([0-9]{1,2})/([0-9]{1,2}).+$").unwrap();
+        // Support multiple date delimiters: '/', '-', ':'
+        let re = regex::Regex::new(r"^([0-9]{4})[/\-:]([0-9]{1,2})[/\-:]([0-9]{1,2}).+$").unwrap();
         let replaced = re.replace(&self.time, "$1-$2-$3").to_string();
 
         // Check if the replacement resulted in a valid date string

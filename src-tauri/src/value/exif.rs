@@ -208,13 +208,18 @@ impl ExifData {
             if t == "" {
                 t = data.date_time_original.clone();
             }
+            // Convert EXIF colon format to ISO 8601 hyphen format (2025:11:23 -> 2025-11-23)
+            let re = regex::Regex::new(r"^([0-9]{4}):([0-9]{1,2}):([0-9]{1,2})").unwrap();
             if t != "" {
-                let re = regex::Regex::new(r"^([0-9]{4}):([0-9]{1,2}):([0-9]{1,2})").unwrap();
-                data.date_time = re.replace(&t, "$1/$2/$3").to_string();
+                data.date_time = re.replace(&t, "$1-$2-$3").to_string();
             } else {
                 let file_created_time = file.created_datetime();
-                let re = regex::Regex::new(r"^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})").unwrap();
-                data.date_time = re.replace(&file_created_time, "$1/$2/$3").to_string();
+                // File created time is already in hyphen format, keep it as is
+                data.date_time = file_created_time;
+            }
+            // Also convert date_time_original to hyphen format for consistency
+            if !data.date_time_original.is_empty() {
+                data.date_time_original = re.replace(&data.date_time_original, "$1-$2-$3").to_string();
             }
         }
         data

@@ -829,10 +829,11 @@ impl MetaInfoDB for SQLite {
 
             date_num.insert(date.to_string(), photos.photos.len());
 
-            // Get existing photo paths from database for this date
-            let existing_photos = match self.get_photo_meta_data_in_date(date.clone()) {
-                Ok(photo_metas) => photo_metas,
-                Err(_) => photo_meta::PhotoMetas::new(),
+            // Get existing photo paths from database by directory path (not photo_date)
+            // This is important for orphan detection when files are moved
+            let existing_photos = match self.get_photo_paths_in_directory(&date_dir.path) {
+                Ok(paths) => paths,
+                Err(_) => Vec::new(),
             };
 
             // Create a set of current file paths from filesystem
@@ -840,10 +841,10 @@ impl MetaInfoDB for SQLite {
                 photos.photos.iter().map(|p| p.file.path.clone()).collect();
 
             // Delete photos from database that are no longer in filesystem
-            for (path, existing_photo) in existing_photos.iter() {
+            for path in existing_photos.iter() {
                 if !current_paths.contains(path) {
                     log::info!(target: "sqlite", "orphaned_photo_delete; path={}", path);
-                    self.delete_photo(existing_photo.photo());
+                    self.delete_photo_by_path(path);
                 }
             }
 
@@ -877,12 +878,12 @@ impl MetaInfoDB for SQLite {
         );
 
         let query_sql = "SELECT pm.path, COALESCE(pm.exif_date_time_original, pm.exif_date_time, pm.photo_date) as photo_time, pm.star, pm.comment, pm.css_style, pm.google_photos_url,
-                            GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags -- 3
+                            GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags, pm.exif_orientation
                      FROM photo_metadata pm
                      LEFT JOIN photo_collection_items pt ON pm.path = pt.photo_path
                      LEFT JOIN photo_collections t ON pt.collection_id = t.id AND t.type = 'tag'
                      WHERE pm.photo_date >= ?1 AND pm.photo_date < ?2 AND (pm.delete_flg = 0 OR pm.delete_flg IS NULL)
-                     GROUP BY pm.path, photo_time, pm.star, pm.comment, pm.css_style, pm.google_photos_url";
+                     GROUP BY pm.path, photo_time, pm.star, pm.comment, pm.css_style, pm.google_photos_url, pm.exif_orientation";
 
         log::info!(target: "database", "get_photo_meta_data_in_date_query; query={}; date={}; next_date={}", query_sql, date_str, next_date);
 
@@ -901,6 +902,7 @@ impl MetaInfoDB for SQLite {
                     row.get(4)?,
                     row.get(5)?,
                     row.get(6)?,
+                    row.get(7)?,
                 ))
             })
             .map_err(|e| format!("Failed to execute query: {}", e))?;
@@ -925,7 +927,7 @@ impl MetaInfoDB for SQLite {
         };
 
         let mut stmt = match conn
-            .prepare("SELECT path, COALESCE(exif_date_time_original, exif_date_time, photo_date) as photo_time, star, comment, css_style, google_photos_url FROM photo_metadata WHERE path = ?1")
+            .prepare("SELECT path, COALESCE(exif_date_time_original, exif_date_time, photo_date) as photo_time, star, comment, css_style, google_photos_url, exif_orientation FROM photo_metadata WHERE path = ?1")
         {
             Ok(stmt) => stmt,
             Err(e) => {
@@ -941,6 +943,7 @@ impl MetaInfoDB for SQLite {
                 row.get(3)?,
                 row.get(4)?,
                 row.get(5)?,
+                row.get(6)?,
             ))
         });
 
@@ -970,7 +973,7 @@ impl MetaInfoDB for SQLite {
         };
 
         let mut stmt = match conn
-            .prepare("SELECT path, COALESCE(exif_date_time_original, exif_date_time, photo_date) as photo_time, star, comment, css_style, google_photos_url FROM photo_metadata WHERE path = ?1")
+            .prepare("SELECT path, COALESCE(exif_date_time_original, exif_date_time, photo_date) as photo_time, star, comment, css_style, google_photos_url, exif_orientation FROM photo_metadata WHERE path = ?1")
         {
             Ok(stmt) => stmt,
             Err(e) => {
@@ -986,6 +989,7 @@ impl MetaInfoDB for SQLite {
                 row.get(3)?,
                 row.get(4)?,
                 row.get(5)?,
+                row.get(6)?,
             ))
         });
 
@@ -1011,21 +1015,11 @@ impl MetaInfoDB for SQLite {
             Err(_) => return,
         };
 
-        let existing_meta = self.get_photo_meta(photo.clone());
-        let created_at = self.get_photo_created_at(photo);
-
         let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        // Use UPDATE to preserve other columns (especially exif_orientation)
         let _ = conn.execute(
-            "INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment, created_at, updated_at, google_photos_url) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![
-                photo.file.path,
-                existing_meta.photo_time(),
-                star.star(),
-                existing_meta.comment.comment(),
-                created_at,
-                now,
-                None::<String>
-            ],
+            "UPDATE photo_metadata SET star = ?1, updated_at = ?2 WHERE path = ?3",
+            params![star.star(), now, photo.file.path],
         );
     }
 
@@ -1035,21 +1029,11 @@ impl MetaInfoDB for SQLite {
             Err(_) => return,
         };
 
-        let existing_meta = self.get_photo_meta(photo.clone());
-        let created_at = self.get_photo_created_at(photo);
-
         let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        // Use UPDATE to preserve other columns (especially exif_orientation)
         let _ = conn.execute(
-            "INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment, created_at, updated_at, google_photos_url) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![
-                photo.file.path,
-                existing_meta.photo_time(),
-                existing_meta.star.star(),
-                comment.comment(),
-                created_at,
-                now,
-                None::<String>
-            ],
+            "UPDATE photo_metadata SET comment = ?1, updated_at = ?2 WHERE path = ?3",
+            params![comment.comment(), now, photo.file.path],
         );
     }
 
@@ -1323,6 +1307,7 @@ impl MetaInfoDB for SQLite {
                 let exif_date_time_original: Option<String> =
                     row.get("exif_date_time_original").ok();
                 let exif_date_time: Option<String> = row.get("exif_date_time").ok();
+                let exif_orientation: Option<String> = row.get("exif_orientation").ok();
                 let star: i32 = row.get("star")?;
                 let comment: String = row.get("comment")?;
 
@@ -1337,6 +1322,10 @@ impl MetaInfoDB for SQLite {
                     None,
                 );
                 photo.set_time(photo_time);
+                // Set orientation from database
+                if let Some(ref orientation) = exif_orientation {
+                    photo.meta_data.orientation = orientation.clone();
+                }
 
                 // Create photo_meta object
                 let mut photo_meta = photo_meta::PhotoMeta::new(photo);
@@ -1524,6 +1513,66 @@ impl SQLite {
             "DELETE FROM photo_metadata WHERE path = ?1",
             params![photo.file.path],
         );
+    }
+
+    /// Get all photo paths in a directory from database (by path pattern, not photo_date)
+    pub fn get_photo_paths_in_directory(&self, dir_path: &str) -> Result<Vec<String>, String> {
+        let conn = self
+            .get_connection()
+            .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+        // Query by path pattern: dir_path/% (files directly in directory)
+        // Also handle UUID subdirectories: dir_path/%/%
+        let pattern = format!("{}/%", dir_path);
+        let pattern_uuid = format!("{}/%/%", dir_path);
+
+        let mut stmt = conn
+            .prepare("SELECT path FROM photo_metadata WHERE (path LIKE ?1 OR path LIKE ?2) AND (delete_flg = 0 OR delete_flg IS NULL)")
+            .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+        let rows = stmt
+            .query_map(params![pattern, pattern_uuid], |row| row.get(0))
+            .map_err(|e| format!("Failed to execute query: {}", e))?;
+
+        let mut paths = Vec::new();
+        for row in rows {
+            if let Ok(path) = row {
+                paths.push(path);
+            }
+        }
+
+        log::debug!(target: "sqlite", "get_photo_paths_in_directory; dir={}; count={}", dir_path, paths.len());
+        Ok(paths)
+    }
+
+    /// Delete photo record by path (for orphan cleanup after file move)
+    pub fn delete_photo_by_path(&self, path: &str) {
+        let conn = match self.get_connection() {
+            Ok(conn) => conn,
+            Err(_) => return,
+        };
+
+        // Get photo_date before deletion for date_summary update
+        let photo_date: Option<String> = conn
+            .query_row(
+                "SELECT COALESCE(exif_date_time_original, exif_date_time, photo_date) FROM photo_metadata WHERE path = ?1",
+                params![path],
+                |row| row.get(0),
+            )
+            .ok();
+
+        // Hard delete since the file has been moved
+        let _ = conn.execute(
+            "DELETE FROM photo_metadata WHERE path = ?1",
+            params![path],
+        );
+
+        // Update date_summary
+        if let Some(date_str) = photo_date {
+            let _ = date_summary::update_date_summary_for_photo(self, &date_str, -1);
+        }
+
+        log::info!(target: "sqlite", "photo_deleted_by_path; path={}", path);
     }
 
     /// Restore photo from trash without updating date_summary (for batch operations)
@@ -2046,6 +2095,9 @@ impl SQLite {
             if let Some(date_time) = row.get::<_, Option<String>>("exif_date_time_original").unwrap_or_default() {
                 exif_data.date_time = date_time;
             }
+            if let Some(orientation) = row.get::<_, Option<String>>("exif_orientation").unwrap_or_default() {
+                exif_data.orientation = orientation;
+            }
             photo.embed_exif(exif_data);
             
             // Process tags from concatenated string: "id:name:color,id:name:color"
@@ -2198,5 +2250,149 @@ impl SQLite {
         config: Option<config::Config>,
     ) -> Result<Vec<photo::Photo>, String> {
         collections::get_collection_photos(self, collection_id, ordered, config)
+    }
+
+    /// Update EXIF data for a photo if values differ from database
+    /// Returns true if any updates were made
+    pub fn update_exif_if_changed(
+        &self,
+        path: &str,
+        exif: &crate::value::exif::ExifData,
+    ) -> Result<bool, String> {
+        let conn = self
+            .get_connection()
+            .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+        // Get current EXIF values from database
+        let mut stmt = conn
+            .prepare(
+                "SELECT exif_iso, exif_fnumber, exif_date_time, exif_date_time_original,
+                        exif_lens_model, exif_make, exif_lens_make, exif_model,
+                        exif_xresolution, exif_yresolution, exif_resolution_unit, exif_copyright,
+                        exif_exposure_time, exif_shutter_speed_value, exif_focal_length,
+                        exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode,
+                        exif_white_balance_mode, exif_orientation
+                 FROM photo_metadata WHERE path = ?1",
+            )
+            .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+        let db_exif: Option<(
+            Option<String>, Option<String>, Option<String>, Option<String>,
+            Option<String>, Option<String>, Option<String>, Option<String>,
+            Option<String>, Option<String>, Option<String>, Option<String>,
+            Option<String>, Option<String>, Option<String>, Option<String>,
+            Option<String>, Option<String>, Option<String>, Option<String>,
+        )> = stmt
+            .query_row(rusqlite::params![path], |row| {
+                Ok((
+                    row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?,
+                    row.get(4)?, row.get(5)?, row.get(6)?, row.get(7)?,
+                    row.get(8)?, row.get(9)?, row.get(10)?, row.get(11)?,
+                    row.get(12)?, row.get(13)?, row.get(14)?, row.get(15)?,
+                    row.get(16)?, row.get(17)?, row.get(18)?, row.get(19)?,
+                ))
+            })
+            .ok();
+
+        if db_exif.is_none() {
+            return Ok(false); // Photo not in database
+        }
+
+        let db = db_exif.unwrap();
+
+        // Helper to check if update needed (file value is not empty and differs from DB)
+        let needs_update = |file_val: &str, db_val: &Option<String>| -> bool {
+            if file_val.is_empty() {
+                return false;
+            }
+            match db_val {
+                None => true,
+                Some(db_str) => db_str.is_empty() || db_str != file_val,
+            }
+        };
+
+        // Helper for datetime fields - use DateTime value object for comparison
+        // This handles different date formats (2025:11:23 vs 2025/11/23) correctly
+        let needs_update_datetime = |file_val: &str, db_val: &Option<String>| -> bool {
+            if file_val.is_empty() {
+                return false;
+            }
+            match db_val {
+                None => true,
+                Some(db_str) => {
+                    if db_str.is_empty() {
+                        return true;
+                    }
+                    // Use DateTime value object to compare dates regardless of format
+                    !crate::value::date::DateTime::are_equal(file_val, db_str)
+                }
+            }
+        };
+
+        // Check each field for differences
+        let mut updates: Vec<(&str, &str)> = Vec::new();
+
+        if needs_update(&exif.iso, &db.0) { updates.push(("exif_iso", &exif.iso)); }
+        if needs_update(&exif.fnumber, &db.1) { updates.push(("exif_fnumber", &exif.fnumber)); }
+        // Use DateTime-aware comparison for date fields to handle format differences
+        if needs_update_datetime(&exif.date_time, &db.2) { updates.push(("exif_date_time", &exif.date_time)); }
+        if needs_update_datetime(&exif.date_time_original, &db.3) { updates.push(("exif_date_time_original", &exif.date_time_original)); }
+        if needs_update(&exif.lens_model, &db.4) { updates.push(("exif_lens_model", &exif.lens_model)); }
+        if needs_update(&exif.make, &db.5) { updates.push(("exif_make", &exif.make)); }
+        if needs_update(&exif.lens_make, &db.6) { updates.push(("exif_lens_make", &exif.lens_make)); }
+        if needs_update(&exif.model, &db.7) { updates.push(("exif_model", &exif.model)); }
+        if needs_update(&exif.xresolution, &db.8) { updates.push(("exif_xresolution", &exif.xresolution)); }
+        if needs_update(&exif.yresolution, &db.9) { updates.push(("exif_yresolution", &exif.yresolution)); }
+        if needs_update(&exif.resolution_unit, &db.10) { updates.push(("exif_resolution_unit", &exif.resolution_unit)); }
+        if needs_update(&exif.copyright, &db.11) { updates.push(("exif_copyright", &exif.copyright)); }
+        if needs_update(&exif.exposure_time, &db.12) { updates.push(("exif_exposure_time", &exif.exposure_time)); }
+        if needs_update(&exif.shutter_speed_value, &db.13) { updates.push(("exif_shutter_speed_value", &exif.shutter_speed_value)); }
+        if needs_update(&exif.focal_length, &db.14) { updates.push(("exif_focal_length", &exif.focal_length)); }
+        if needs_update(&exif.focal_length_in35mm_film, &db.15) { updates.push(("exif_focal_length_in35mm_film", &exif.focal_length_in35mm_film)); }
+        if needs_update(&exif.digital_zoom_ratio, &db.16) { updates.push(("exif_digital_zoom_ratio", &exif.digital_zoom_ratio)); }
+        if needs_update(&exif.exposure_mode, &db.17) { updates.push(("exif_exposure_mode", &exif.exposure_mode)); }
+        if needs_update(&exif.white_balance_mode, &db.18) { updates.push(("exif_white_balance_mode", &exif.white_balance_mode)); }
+        if needs_update(&exif.orientation, &db.19) { updates.push(("exif_orientation", &exif.orientation)); }
+
+        if updates.is_empty() {
+            return Ok(false);
+        }
+
+        // Build and execute UPDATE statement
+        let set_clauses: Vec<String> = updates
+            .iter()
+            .enumerate()
+            .map(|(i, (col, _))| format!("{} = ?{}", col, i + 1))
+            .collect();
+
+        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        let sql = format!(
+            "UPDATE photo_metadata SET {}, updated_at = ?{} WHERE path = ?{}",
+            set_clauses.join(", "),
+            updates.len() + 1,
+            updates.len() + 2
+        );
+
+        log::info!(
+            target: "sqlite",
+            "exif_sync_update; path={}; fields_updated={}",
+            path,
+            updates.iter().map(|(col, _)| *col).collect::<Vec<_>>().join(",")
+        );
+
+        // Execute with dynamic params
+        let mut params: Vec<Box<dyn rusqlite::ToSql>> = updates
+            .iter()
+            .map(|(_, val)| Box::new(val.to_string()) as Box<dyn rusqlite::ToSql>)
+            .collect();
+        params.push(Box::new(now));
+        params.push(Box::new(path.to_string()));
+
+        let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+
+        conn.execute(&sql, param_refs.as_slice())
+            .map_err(|e| format!("Failed to update EXIF: {}", e))?;
+
+        Ok(true)
     }
 }

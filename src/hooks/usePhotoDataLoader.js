@@ -98,7 +98,7 @@ export function usePhotoDataLoader({
             // Handle both array and object formats
             const albumPhotosData = data.photos || data;
 
-            // Convert to Photo entities and then to JSON for state storage
+            // Wrapper signature: (photosData, isFromTrash, toJSON) - appConfig via closure
             const photosAsJSON = convertPhotosToEntities(albumPhotosData, false, true);
             updateAlbumPhotos(photosAsJSON);
             setPhotosList({ photos: photosAsJSON });
@@ -156,7 +156,7 @@ export function usePhotoDataLoader({
             // Handle both array and object formats
             const tagPhotosData = data.photos || data;
 
-            // Convert to Photo entities and then to JSON for state storage
+            // Wrapper signature: (photosData, isFromTrash, toJSON) - appConfig via closure
             const photosAsJSON = convertPhotosToEntities(tagPhotosData, false, true);
 
             // Set tagPhotos with JSON for React state
@@ -185,8 +185,8 @@ export function usePhotoDataLoader({
                 photos = photosData.photos;
             }
 
-            // Convert to Photo entities and then to JSON for state storage
-            const photosAsJSON = convertPhotosToEntities(photos, true, true); // isFromTrash = true
+            // Wrapper signature: (photosData, isFromTrash, toJSON) - appConfig via closure
+            const photosAsJSON = convertPhotosToEntities(photos, true, true);
             setTrashPhotos(photosAsJSON);
         } catch (error) {
             // Error already handled by loadUnifiedData
