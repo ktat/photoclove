@@ -17,6 +17,7 @@ import BackNavigationLink from "../../components/BackNavigationLink.jsx";
 import StatusBar from "./StatusBar.jsx";
 import PhotosToolbar from "./PhotosToolbar.jsx";
 import PhotoGrid from "./PhotoGrid.jsx";
+import { logger } from "../../services/LoggerService.js";
 
 /**
  * @param {Object} props
@@ -68,7 +69,15 @@ function PhotoListContent({
     const tagSearchTerm = tags.searchTerm;
 
     // Destructure from config state
-    const { import: importState } = configState;
+    const { import: importState, app: appConfig } = configState;
+    const thumbnailOrientationCorrection = appConfig?.thumbnail_orientation_correction || false;
+
+    // Debug log for orientation correction setting
+    logger.info('PhotoListContent', 'config_check', 'Checking orientation correction setting', {
+        thumbnailOrientationCorrection,
+        hasAppConfig: !!appConfig,
+        appConfigKeys: appConfig ? Object.keys(appConfig) : []
+    });
 
     // Derive values from viewModeObj
     const currentAlbumName = viewModeObj.getCollectionName();
@@ -251,6 +260,7 @@ function PhotoListContent({
                             importState={importState}
                             setShowSideMenu={setShowSideMenu}
                             isLoading={photoLoading}
+                            thumbnailOrientationCorrection={thumbnailOrientationCorrection}
                         />
 
                         <div className="debug" style={{ display: (debugMessage === "" ? "none" : "block"), backgroundColor: "white", color: "black", position: "absolute", zIndex: "100", bottom: "0px", left: "0px", width: "400px", height: "200px" }}>

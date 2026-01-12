@@ -25,7 +25,8 @@ function PhotoGrid({
     showSideMenu,
     setShowSideMenu,
     importState,
-    isLoading = false
+    isLoading = false,
+    thumbnailOrientationCorrection = false
 }) {
 
     // Check if any filters are active
@@ -102,6 +103,7 @@ function PhotoGrid({
                             onDisplayPhoto={onDisplayPhoto}
                             setShowSideMenu={setShowSideMenu}
                             importState={importState}
+                            thumbnailOrientationCorrection={thumbnailOrientationCorrection}
                         />
                     );
                 })}

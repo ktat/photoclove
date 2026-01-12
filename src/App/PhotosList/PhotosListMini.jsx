@@ -9,6 +9,7 @@ import { parseCssStyle, calculateSimpleThumbnailDisplay, getDateKey as utilGetDa
 import { useKeyboardShortcuts } from "./PhotosListMini/useKeyboardShortcuts.js";
 import { useUI } from "../../context/UIContext.jsx";
 import { VIEW_MODES } from "../../constants/viewModes.js";
+import { getCombinedTransformStyle } from "../../utils/orientationUtils.js";
 
 const NUM_OF_PHOTO_LIST = 9;
 
@@ -45,6 +46,18 @@ function PhotosListMini(props) {
 
     // Import state for thumbnail caching
     const importState = props.importState;
+
+    // Thumbnail orientation correction setting
+    const thumbnailOrientationCorrection = props.config?.thumbnail_orientation_correction || false;
+
+    // Debug log for orientation correction setting
+    if (thumbnailOrientationCorrection) {
+        logger.info('PhotosListMini', 'orientation_setting', 'Orientation correction enabled', {
+            thumbnailOrientationCorrection,
+            hasConfig: !!props.config,
+            configKeys: props.config ? Object.keys(props.config).slice(0, 5) : []
+        });
+    }
 
     // State from original implementation - simplified
     const [showPhotosIndex, setShowPhotosIndex] = useState([]);
@@ -747,7 +760,9 @@ function PhotosListMini(props) {
                                             style={{
                                                 border: borderStyle[i],
                                                 maxHeight: clientHeight + "px",
-                                                ...parseCssStyle(v.cssStyle)
+                                                ...(thumbnailOrientationCorrection
+                                                    ? getCombinedTransformStyle(v.meta_data?.orientation, v.cssStyle)
+                                                    : parseCssStyle(v.cssStyle))
                                             }}
                                             alt={"photo-" + i}
                                             onError={(e) => {
