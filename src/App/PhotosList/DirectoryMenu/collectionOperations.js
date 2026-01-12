@@ -1,0 +1,273 @@
+/**
+ * Collection operations for DirectoryMenu
+ * Handles album and tag operations
+ */
+import { useState, useCallback } from 'react';
+import { invoke } from "@tauri-apps/api/core";
+import { confirm } from "@tauri-apps/plugin-dialog";
+import { logger } from "../../../services/LoggerService.js";
+import { UnifiedPhotoCollection } from "../../../domain/UnifiedPhotoCollection.js";
+
+/**
+ * Hook for album operations
+ */
+export function useAlbumOperations({
+    photoSelection,
+    clearPhotoSelection,
+    addFooterMessage,
+    handleTauriError,
+    viewModeObj,
+    removePhotoFromList
+}) {
+    const [showAlbumCreationModal, setShowAlbumCreationModal] = useState(false);
+    const [showAlbumSelectorModal, setShowAlbumSelectorModal] = useState(false);
+
+    const showCreateAlbumModal = useCallback(() => {
+        if (photoSelection.length === 0) {
+            addFooterMessage('Please select photos first');
+            return;
+        }
+
+        logger.debug('collectionOperations', 'show_create_album_modal', 'Opening album creation modal', {
+            selectedPhotosCount: photoSelection.length
+        });
+        setShowAlbumCreationModal(true);
+    }, [photoSelection, addFooterMessage]);
+
+    const showAddToAlbumModal = useCallback(() => {
+        if (photoSelection.length === 0) {
+            addFooterMessage('Please select photos first');
+            return;
+        }
+
+        logger.debug('collectionOperations', 'show_add_to_album_modal', 'Opening album selector modal', {
+            selectedPhotosCount: photoSelection.length
+        });
+        setShowAlbumSelectorModal(true);
+    }, [photoSelection, addFooterMessage]);
+
+    const createAlbumFromSelection = useCallback(async (albumData) => {
+        try {
+            logger.info('collectionOperations', 'create_album_start', 'Creating album from selection using unified collections', {
+                albumName: albumData.name,
+                photoCount: photoSelection.length
+            });
+
+            const album = await UnifiedPhotoCollection.create('album', {
+                name: albumData.name,
+                description: albumData.description
+            });
+
+            for (const photoPath of photoSelection) {
+                await album.addPhoto(photoPath);
+            }
+
+            if (photoSelection.length > 0) {
+                const firstPhotoPath = photoSelection[0];
+                logger.info('collectionOperations', 'set_cover_photo', 'Setting first photo as album cover using unified collection', {
+                    albumId: album.id,
+                    coverPhotoPath: firstPhotoPath
+                });
+
+                await album.update({
+                    coverPhotoPath: firstPhotoPath
+                });
+            }
+
+            const photoCount = photoSelection.length;
+            clearPhotoSelection();
+            addFooterMessage(`Album "${albumData.name}" created with ${photoCount} photos`);
+
+            logger.info('collectionOperations', 'album_created_from_selection', 'Album created from selected photos', {
+                albumName: albumData.name,
+                albumId: album.id,
+                photoCount,
+                coverPhotoSet: photoSelection.length > 0
+            });
+
+            setShowAlbumCreationModal(false);
+        } catch (error) {
+            logger.error('collectionOperations', 'create_album_failed', 'Failed to create album from selection', {
+                albumName: albumData.name,
+                photoCount: photoSelection.length,
+                error: error.message
+            });
+            handleTauriError(error, 'Create album');
+        }
+    }, [photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError]);
+
+    const addPhotosToAlbum = useCallback(async (albumId) => {
+        try {
+            const photoCount = photoSelection.length;
+            logger.info('collectionOperations', 'add_to_album_start', 'Adding photos to existing album (bulk)', {
+                albumId,
+                photoCount
+            });
+
+            const addedCount = await invoke("add_photos_to_collection_bulk", {
+                collectionId: albumId,
+                photoPaths: photoSelection
+            });
+
+            clearPhotoSelection();
+
+            if (addedCount === photoCount) {
+                addFooterMessage(`${addedCount} photo${addedCount !== 1 ? 's' : ''} added to album`);
+            } else {
+                const skipped = photoCount - addedCount;
+                addFooterMessage(`${addedCount} photo${addedCount !== 1 ? 's' : ''} added to album (${skipped} already existed)`);
+            }
+
+            logger.info('collectionOperations', 'photos_added_to_album', 'Photos added to album successfully (bulk)', {
+                albumId,
+                requestedCount: photoCount,
+                addedCount
+            });
+
+            setShowAlbumSelectorModal(false);
+        } catch (error) {
+            logger.error('collectionOperations', 'add_to_album_failed', 'Failed to add photos to album', {
+                albumId,
+                photoCount: photoSelection.length,
+                error: error.message
+            });
+            handleTauriError(error, 'Add to album');
+        }
+    }, [photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError]);
+
+    const removeFromCurrentAlbum = useCallback(async () => {
+        const currentAlbumId = viewModeObj?.getCurrentAlbumId();
+
+        if (!currentAlbumId || photoSelection.length === 0) return;
+
+        const count = photoSelection.length;
+        const confirmed = await confirm(
+            `Remove ${count} photo${count > 1 ? 's' : ''} from this album?\n\nPhotos will remain in your library.`,
+            "Remove from Album"
+        );
+
+        if (confirmed) {
+            try {
+                logger.info('collectionOperations', 'remove_from_album_start', 'Removing photos from album', {
+                    albumId: currentAlbumId,
+                    photoCount: count
+                });
+
+                for (const photoPath of photoSelection) {
+                    await invoke("remove_photo_from_album", {
+                        albumId: currentAlbumId,
+                        photoPath: photoPath
+                    });
+                    removePhotoFromList?.(photoPath);
+                }
+
+                clearPhotoSelection();
+                addFooterMessage(`${count} photo${count > 1 ? 's' : ''} removed from album`);
+
+                logger.info('collectionOperations', 'photos_removed_from_album', 'Photos removed from album successfully', {
+                    albumId: currentAlbumId,
+                    photoCount: count
+                });
+            } catch (error) {
+                logger.error('collectionOperations', 'remove_from_album_failed', 'Failed to remove photos from album', {
+                    albumId: currentAlbumId,
+                    photoCount: count,
+                    error: error.message
+                });
+                handleTauriError(error, 'Remove from album');
+            }
+        }
+    }, [photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError, viewModeObj, removePhotoFromList]);
+
+    return {
+        showAlbumCreationModal,
+        setShowAlbumCreationModal,
+        showAlbumSelectorModal,
+        setShowAlbumSelectorModal,
+        showCreateAlbumModal,
+        showAddToAlbumModal,
+        createAlbumFromSelection,
+        addPhotosToAlbum,
+        removeFromCurrentAlbum
+    };
+}
+
+/**
+ * Hook for tag operations
+ */
+export function useTagOperations({
+    photoSelection,
+    clearPhotoSelection,
+    addFooterMessage,
+    handleTauriError,
+    onPhotosRefresh
+}) {
+    const [showBulkTagModal, setShowBulkTagModal] = useState(false);
+
+    const showAddTagsModal = useCallback(() => {
+        if (photoSelection.length === 0) {
+            addFooterMessage('Please select photos first');
+            return;
+        }
+
+        logger.debug('collectionOperations', 'show_add_tags_modal', 'Opening bulk tag selector modal', {
+            selectedPhotosCount: photoSelection.length
+        });
+        setShowBulkTagModal(true);
+    }, [photoSelection, addFooterMessage]);
+
+    const addTagsToPhotos = useCallback(async (selectedTagIds) => {
+        try {
+            const photoCount = photoSelection.length;
+            const tagCount = selectedTagIds.length;
+
+            logger.info('collectionOperations', 'add_tags_start', 'Adding tags to photos (bulk)', {
+                tagIds: selectedTagIds,
+                photoCount
+            });
+
+            let totalAdded = 0;
+            for (const tagId of selectedTagIds) {
+                const addedCount = await invoke("add_photos_to_collection_bulk", {
+                    collectionId: tagId,
+                    photoPaths: photoSelection
+                });
+                totalAdded += addedCount;
+            }
+
+            clearPhotoSelection();
+            addFooterMessage(`${tagCount} tag${tagCount > 1 ? 's' : ''} added to ${photoCount} photo${photoCount > 1 ? 's' : ''}`);
+
+            logger.info('collectionOperations', 'tags_added_to_photos', 'Tags added to photos successfully (bulk)', {
+                tagIds: selectedTagIds,
+                photoCount,
+                tagCount,
+                totalAdded
+            });
+
+            setShowBulkTagModal(false);
+
+            if (onPhotosRefresh) {
+                await onPhotosRefresh();
+                logger.info('collectionOperations', 'photos_refreshed_after_bulk_tag', 'Photos refreshed successfully', {
+                    photoCount,
+                    tagCount
+                });
+            }
+        } catch (error) {
+            logger.error('collectionOperations', 'add_tags_failed', 'Failed to add tags to photos', {
+                tagIds: selectedTagIds,
+                photoCount: photoSelection.length,
+                error: error.message
+            });
+            handleTauriError(error, 'Add tags');
+        }
+    }, [photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError, onPhotosRefresh]);
+
+    return {
+        showBulkTagModal,
+        setShowBulkTagModal,
+        showAddTagsModal,
+        addTagsToPhotos
+    };
+}
