@@ -1480,6 +1480,10 @@ impl MetaInfoDB for SQLite {
         SQLite::add_photo_to_collection(self, collection_id, photo_path)
     }
 
+    fn add_photos_to_collection_bulk(&self, collection_id: i32, photo_paths: &[String]) -> Result<usize, String> {
+        collections::add_photos_to_collection_bulk(self, collection_id, photo_paths)
+    }
+
     fn remove_photo_from_collection(
         &self,
         collection_id: i32,
@@ -1546,33 +1550,75 @@ impl SQLite {
     }
 
     /// Delete photo record by path (for orphan cleanup after file move)
+    /// Note: This checks if the file was moved to a new location first.
+    /// If found, it updates the path instead of deleting to preserve album/tag associations.
     pub fn delete_photo_by_path(&self, path: &str) {
         let conn = match self.get_connection() {
             Ok(conn) => conn,
             Err(_) => return,
         };
 
-        // Get photo_date before deletion for date_summary update
-        let photo_date: Option<String> = conn
+        // Extract filename from the old path
+        let filename = std::path::Path::new(path)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("");
+
+        if filename.is_empty() {
+            log::warn!(target: "sqlite", "delete_photo_by_path_invalid_path; path={}", path);
+            return;
+        }
+
+        // Check if a new record with the same filename exists (file was moved)
+        let new_path: Option<String> = conn
             .query_row(
-                "SELECT COALESCE(exif_date_time_original, exif_date_time, photo_date) FROM photo_metadata WHERE path = ?1",
-                params![path],
+                "SELECT path FROM photo_metadata WHERE path LIKE ?1 AND path != ?2 ORDER BY created_at DESC LIMIT 1",
+                params![format!("%/{}", filename), path],
                 |row| row.get(0),
             )
             .ok();
 
-        // Hard delete since the file has been moved
-        let _ = conn.execute(
-            "DELETE FROM photo_metadata WHERE path = ?1",
-            params![path],
-        );
+        if let Some(ref new_path_str) = new_path {
+            // File was moved - update path instead of deleting to preserve album/tag associations
+            log::info!(target: "sqlite", "photo_path_update_for_move; old_path={}; new_path={}", path, new_path_str);
 
-        // Update date_summary
-        if let Some(date_str) = photo_date {
-            let _ = date_summary::update_date_summary_for_photo(self, &date_str, -1);
+            // Update photo_collection_items to point to new path
+            let _ = conn.execute(
+                "UPDATE photo_collection_items SET photo_path = ?1 WHERE photo_path = ?2",
+                params![new_path_str, path],
+            );
+
+            // Delete the old record (the new one was already created by record_photos_meta_data)
+            let _ = conn.execute(
+                "DELETE FROM photo_metadata WHERE path = ?1",
+                params![path],
+            );
+
+            log::info!(target: "sqlite", "photo_moved_associations_preserved; old_path={}; new_path={}", path, new_path_str);
+        } else {
+            // File was truly deleted, not moved
+            // Get photo_date before deletion for date_summary update
+            let photo_date: Option<String> = conn
+                .query_row(
+                    "SELECT COALESCE(exif_date_time_original, exif_date_time, photo_date) FROM photo_metadata WHERE path = ?1",
+                    params![path],
+                    |row| row.get(0),
+                )
+                .ok();
+
+            // Hard delete
+            let _ = conn.execute(
+                "DELETE FROM photo_metadata WHERE path = ?1",
+                params![path],
+            );
+
+            // Update date_summary
+            if let Some(date_str) = photo_date {
+                let _ = date_summary::update_date_summary_for_photo(self, &date_str, -1);
+            }
+
+            log::info!(target: "sqlite", "photo_deleted_by_path; path={}", path);
         }
-
-        log::info!(target: "sqlite", "photo_deleted_by_path; path={}", path);
     }
 
     /// Restore photo from trash without updating date_summary (for batch operations)
@@ -2233,6 +2279,14 @@ impl SQLite {
         photo_path: &str,
     ) -> Result<(), String> {
         collections::add_photo_to_collection(self, collection_id, photo_path)
+    }
+
+    pub fn add_photos_to_collection_bulk(
+        &self,
+        collection_id: i32,
+        photo_paths: &[String],
+    ) -> Result<usize, String> {
+        collections::add_photos_to_collection_bulk(self, collection_id, photo_paths)
     }
 
     pub fn remove_photo_from_collection(
