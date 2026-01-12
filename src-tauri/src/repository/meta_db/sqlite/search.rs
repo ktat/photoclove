@@ -1,10 +1,15 @@
 //! Search and filter operations for SQLite repository
 
 use super::SQLite;
+use super::filter_options;
+use super::search_debug::{format_param_for_debug, create_embedded_sql, log_date_range_debug};
 use crate::entity::photo::Photo;
 use crate::entity::photo::Photos;
 use crate::value::exif::ExifData;
 use crate::value::file::File;
+
+// Re-export filter options functions
+pub use filter_options::{get_camera_options, get_lens_options, get_extension_options};
 
 /// Add advanced filter conditions to SQL query
 pub fn add_advanced_filters(
@@ -170,168 +175,6 @@ pub fn add_advanced_filters(
     Ok(())
 }
 
-/// Get camera options for filter dropdown
-pub fn get_camera_options(sqlite: &SQLite) -> Result<String, String> {
-    let conn = sqlite.get_connection().map_err(|e| e.to_string())?;
-
-    let mut stmt = conn
-        .prepare(
-            "
-        SELECT
-            exif_make,
-            exif_model,
-            COUNT(*) as count
-        FROM photo_metadata
-        WHERE exif_make IS NOT NULL AND exif_model IS NOT NULL
-        GROUP BY exif_make, exif_model
-        ORDER BY count DESC
-    ",
-        )
-        .map_err(|e| e.to_string())?;
-
-    let camera_iter = stmt
-        .query_map([], |row| {
-            let make: String = row.get("exif_make")?;
-            let model: String = row.get("exif_model")?;
-            let count: i64 = row.get("count")?;
-
-            let id = format!(
-                "{}_{}",
-                make.replace(" ", "_").to_lowercase(),
-                model.replace(" ", "_").to_lowercase()
-            );
-
-            // Debug: Log each camera option generation
-            log::debug!(
-                target: "database",
-                "camera_option_created; make={}; model={}; id={}; count={}",
-                make, model, id, count
-            );
-
-            Ok(serde_json::json!({
-                "id": id,
-                "make": make,
-                "model": model,
-                "count": count
-            }))
-        })
-        .map_err(|e| e.to_string())?;
-
-    let mut cameras: Vec<serde_json::Value> = Vec::new();
-    for camera in camera_iter {
-        cameras.push(camera.map_err(|e| e.to_string())?);
-    }
-
-    // Count photos with unknown camera info (NULL or empty make/model)
-    let unknown_count: i64 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM photo_metadata
-             WHERE exif_make IS NULL OR exif_model IS NULL
-                OR exif_make = '' OR exif_model = ''",
-            [],
-            |row| row.get(0),
-        )
-        .unwrap_or(0);
-
-    // Add "Unknown" option if there are photos with unknown camera
-    if unknown_count > 0 {
-        cameras.push(serde_json::json!({
-            "id": "unknown",
-            "make": "Unknown",
-            "model": "Camera",
-            "count": unknown_count
-        }));
-    }
-
-    // Debug: Log camera options for troubleshooting
-    log::debug!(
-        target: "database",
-        "camera_options_generated; camera_count={}; unknown_count={}; sample_cameras=[{}]",
-        cameras.len(),
-        unknown_count,
-        cameras.iter().take(3).map(|c| format!("{:?}", c)).collect::<Vec<_>>().join(", ")
-    );
-
-    serde_json::to_string(&cameras).map_err(|e| e.to_string())
-}
-
-/// Get lens options for filter dropdown
-pub fn get_lens_options(sqlite: &SQLite) -> Result<String, String> {
-    let conn = sqlite.get_connection().map_err(|e| e.to_string())?;
-
-    let mut stmt = conn
-        .prepare(
-            "
-        SELECT
-            exif_lens_model,
-            COUNT(*) as count
-        FROM photo_metadata
-        WHERE exif_lens_model IS NOT NULL AND exif_lens_model != ''
-        GROUP BY exif_lens_model
-        ORDER BY count DESC
-    ",
-        )
-        .map_err(|e| e.to_string())?;
-
-    let lens_iter = stmt
-        .query_map([], |row| {
-            let model: String = row.get("exif_lens_model")?;
-            let count: i64 = row.get("count")?;
-
-            Ok(serde_json::json!({
-                "id": model.replace(" ", "_").to_lowercase(),
-                "model": model,
-                "count": count
-            }))
-        })
-        .map_err(|e| e.to_string())?;
-
-    let mut lenses: Vec<serde_json::Value> = Vec::new();
-    for lens in lens_iter {
-        lenses.push(lens.map_err(|e| e.to_string())?);
-    }
-
-    serde_json::to_string(&lenses).map_err(|e| e.to_string())
-}
-
-/// Get extension options for filter dropdown
-pub fn get_extension_options(sqlite: &SQLite) -> Result<String, String> {
-    let conn = sqlite.get_connection().map_err(|e| e.to_string())?;
-
-    let mut stmt = conn
-        .prepare(
-            "
-        SELECT
-            LOWER(SUBSTR(path, INSTR(path, '.') + 1)) as extension,
-            COUNT(*) as count
-        FROM photo_metadata
-        WHERE INSTR(path, '.') > 0
-        GROUP BY extension
-        ORDER BY count DESC
-    ",
-        )
-        .map_err(|e| e.to_string())?;
-
-    let extension_iter = stmt
-        .query_map([], |row| {
-            let extension: String = row.get("extension")?;
-            let count: i64 = row.get("count")?;
-
-            Ok(serde_json::json!({
-                "extension": extension,
-                "count": count
-            }))
-        })
-        .map_err(|e| e.to_string())?;
-
-    let mut extensions: Vec<serde_json::Value> = Vec::new();
-    for extension in extension_iter {
-        extensions.push(extension.map_err(|e| e.to_string())?);
-    }
-
-    serde_json::to_string(&extensions).map_err(|e| e.to_string())
-}
-
 /// Search photos with query and filters
 pub fn search_photos(
     sqlite: &SQLite,
@@ -374,76 +217,19 @@ pub fn search_photos(
 
     // Add search condition based on search_type (only if query is not empty)
     if !query.is_empty() {
-        match search_type {
-            "filename" => {
-                sql_query.push_str(" AND path LIKE ?");
-                params.push(Box::new(format!("%{}%", query)));
-            }
-            "comment" => {
-                sql_query.push_str(" AND comment LIKE ?");
-                params.push(Box::new(format!("%{}%", query)));
-            }
-            "camera" => {
-                sql_query.push_str(" AND (exif_make LIKE ? OR exif_model LIKE ?)");
-                params.push(Box::new(format!("%{}%", query)));
-                params.push(Box::new(format!("%{}%", query)));
-            }
-            "settings" => {
-                sql_query.push_str(" AND (exif_iso LIKE ? OR exif_fnumber LIKE ? OR exif_focal_length LIKE ? OR exif_shutter_speed_value LIKE ?)");
-                let query_pattern = format!("%{}%", query);
-                params.push(Box::new(query_pattern.clone()));
-                params.push(Box::new(query_pattern.clone()));
-                params.push(Box::new(query_pattern.clone()));
-                params.push(Box::new(query_pattern));
-            }
-            "date" => {
-                sql_query.push_str(" AND (exif_date_time_original LIKE ? OR exif_date_time LIKE ? OR photo_date LIKE ?)");
-                let query_pattern = format!("%{}%", query);
-                params.push(Box::new(query_pattern.clone()));
-                params.push(Box::new(query_pattern.clone()));
-                params.push(Box::new(query_pattern));
-            }
-            "exif" => {
-                sql_query.push_str(" AND (exif_make LIKE ? OR exif_model LIKE ? OR exif_lens_model LIKE ? OR exif_iso LIKE ? OR exif_fnumber LIKE ? OR exif_focal_length LIKE ? OR exif_shutter_speed_value LIKE ?)");
-                let query_pattern = format!("%{}%", query);
-                params.push(Box::new(query_pattern.clone()));
-                params.push(Box::new(query_pattern.clone()));
-                params.push(Box::new(query_pattern.clone()));
-                params.push(Box::new(query_pattern.clone()));
-                params.push(Box::new(query_pattern.clone()));
-                params.push(Box::new(query_pattern.clone()));
-                params.push(Box::new(query_pattern));
-            }
-            "all" => {
-                sql_query.push_str(" AND (path LIKE ? OR comment LIKE ? OR exif_make LIKE ? OR exif_model LIKE ? OR exif_lens_model LIKE ? OR exif_iso LIKE ? OR exif_fnumber LIKE ? OR exif_focal_length LIKE ?)");
-                let query_pattern = format!("%{}%", query);
-                params.push(Box::new(query_pattern.clone()));
-                params.push(Box::new(query_pattern.clone()));
-                params.push(Box::new(query_pattern.clone()));
-                params.push(Box::new(query_pattern.clone()));
-                params.push(Box::new(query_pattern.clone()));
-                params.push(Box::new(query_pattern.clone()));
-                params.push(Box::new(query_pattern.clone()));
-                params.push(Box::new(query_pattern));
-            }
-            _ => {
-                sql_query.push_str(" AND path LIKE ?");
-                params.push(Box::new(format!("%{}%", query)));
-            }
-        }
+        add_search_condition(&mut sql_query, &mut params, query, search_type);
     }
 
     // Add advanced filters
     add_advanced_filters(sqlite, &mut sql_query, &mut params, &filter_params)?;
 
-    // Debug: Log the final SQL query with parameter information
+    // Debug logging
     let param_strings: Vec<String> = params
         .iter()
         .enumerate()
         .map(|(i, param)| format_param_for_debug(i, param))
         .collect();
 
-    // Create SQL with embedded parameters for better readability
     let embedded_sql = create_embedded_sql(&sql_query, &params);
 
     log::debug!(
@@ -468,50 +254,7 @@ pub fn search_photos(
     sql_query.push_str(" GROUP BY pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url, pm.exif_date_time_original, pm.exif_make, pm.exif_model, pm.exif_lens_model");
 
     // Add ORDER BY clause with primary and secondary sort fields
-    let order_direction = if sort_order.to_lowercase() == "asc" {
-        "ASC"
-    } else {
-        "DESC"
-    };
-    let secondary_direction = "DESC"; // Default secondary sort direction
-
-    match sort_field {
-        "exif_date_time_original" => {
-            sql_query.push_str(&format!(
-                " ORDER BY pm.exif_date_time_original {}, pm.photo_date {}, pm.path {}",
-                order_direction, secondary_direction, secondary_direction
-            ));
-        }
-        "photo_date" => {
-            sql_query.push_str(&format!(
-                " ORDER BY pm.photo_date {}, pm.exif_date_time_original {}, pm.path {}",
-                order_direction, secondary_direction, secondary_direction
-            ));
-        }
-        "path" => {
-            sql_query.push_str(&format!(
-                " ORDER BY pm.path {}, pm.exif_date_time_original {}, pm.photo_date {}",
-                order_direction, secondary_direction, secondary_direction
-            ));
-        }
-        "star" => {
-            // For star rating, we need to handle NULLs - put them at the end for DESC, beginning for ASC
-            let null_handling = if sort_order.to_lowercase() == "desc" {
-                "NULLS LAST"
-            } else {
-                "NULLS FIRST"
-            };
-            sql_query.push_str(&format!(" ORDER BY pm.star {} {}, pm.exif_date_time_original {}, pm.photo_date {}, pm.path {}",
-                order_direction, null_handling, secondary_direction, secondary_direction, secondary_direction));
-        }
-        _ => {
-            // Default fallback to exif_date_time_original with secondary sorts
-            sql_query.push_str(&format!(
-                " ORDER BY pm.exif_date_time_original {}, pm.photo_date {}, pm.path {}",
-                order_direction, secondary_direction, secondary_direction
-            ));
-        }
-    }
+    add_order_by_clause(&mut sql_query, sort_field, sort_order);
 
     // Add LIMIT clause
     sql_query.push_str(&format!(" LIMIT {}", max_photos_per_fetch));
@@ -531,47 +274,7 @@ pub fn search_photos(
 
     let mut stmt = conn.prepare(&sql_query).map_err(|e| e.to_string())?;
     let photo_iter = stmt.query_map(&param_refs[..], |row| {
-        let photo_path = row.get::<_, String>("path").unwrap_or_default();
-
-        // Create Photo entity from file path
-        let file_result = File::new_if_exists(photo_path.clone());
-        if file_result.is_none() {
-            return Err(rusqlite::Error::InvalidPath(photo_path.into()));
-        }
-        let file = file_result.unwrap();
-
-        // Get config for thumbnail checking
-        let config = crate::entity::config::Config::new();
-        let mut photo = Photo::new(file, Some(config));
-
-        // Set thumbnail status
-        photo.set_has_thumbnail();
-
-        // Set metadata from database
-        let star = row.get::<_, i32>("star").unwrap_or(0);
-        photo.set_star(star);
-
-        let comment = row.get::<_, Option<String>>("comment").unwrap_or_default().unwrap_or_default();
-        photo.set_comment(comment);
-
-        // Set EXIF data
-        let mut exif_data = ExifData::empty();
-        if let Some(date_time) = row.get::<_, Option<String>>("exif_date_time_original").unwrap_or_default() {
-            exif_data.date_time = date_time;
-        }
-        if let Some(orientation) = row.get::<_, Option<String>>("exif_orientation").unwrap_or_default() {
-            exif_data.orientation = orientation;
-        }
-        photo.embed_exif(exif_data);
-
-        // Process tags from concatenated string: "id:name:color,id:name:color"
-        let tags_string = row.get::<_, Option<String>>("tags").unwrap_or_default();
-
-        log::info!(target: "database", "search_photos_row_tags; path={}; raw_tags={:?}", photo_path, tags_string);
-
-        photo.set_tags_from_string(tags_string);
-
-        Ok(photo)
+        map_row_to_photo(row)
     }).map_err(|e| e.to_string())?;
 
     let mut photos = Photos::new();
@@ -584,12 +287,10 @@ pub fn search_photos(
             }
             Err(e) => {
                 log::error!(target: "database", "search_photos_photo_error; error={}", e);
-                // TODO: continue processing but remove problematic photo from results
             }
         }
     }
 
-    // Results are already limited by SQL LIMIT clause
     let final_count = photos.photos.len();
     let duration = start_time.elapsed();
 
@@ -614,95 +315,159 @@ pub fn search_photos(
     Ok(json_response)
 }
 
-/// Format parameter for debug logging
-fn format_param_for_debug(i: usize, param: &Box<dyn rusqlite::ToSql>) -> String {
-    match param.to_sql() {
-        Ok(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(text))) => {
-            format!("${}: '{}'", i + 1, text)
+/// Add search condition based on search_type
+fn add_search_condition(
+    sql_query: &mut String,
+    params: &mut Vec<Box<dyn rusqlite::ToSql>>,
+    query: &str,
+    search_type: &str,
+) {
+    match search_type {
+        "filename" => {
+            sql_query.push_str(" AND path LIKE ?");
+            params.push(Box::new(format!("%{}%", query)));
         }
-        Ok(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Integer(int))) => {
-            format!("${}: {}", i + 1, int)
+        "comment" => {
+            sql_query.push_str(" AND comment LIKE ?");
+            params.push(Box::new(format!("%{}%", query)));
         }
-        Ok(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Real(real))) => {
-            format!("${}: {}", i + 1, real)
+        "camera" => {
+            sql_query.push_str(" AND (exif_make LIKE ? OR exif_model LIKE ?)");
+            params.push(Box::new(format!("%{}%", query)));
+            params.push(Box::new(format!("%{}%", query)));
         }
-        Ok(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Null)) => {
-            format!("${}: NULL", i + 1)
+        "settings" => {
+            sql_query.push_str(" AND (exif_iso LIKE ? OR exif_fnumber LIKE ? OR exif_focal_length LIKE ? OR exif_shutter_speed_value LIKE ?)");
+            let query_pattern = format!("%{}%", query);
+            params.push(Box::new(query_pattern.clone()));
+            params.push(Box::new(query_pattern.clone()));
+            params.push(Box::new(query_pattern.clone()));
+            params.push(Box::new(query_pattern));
         }
-        Ok(rusqlite::types::ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Text(text))) => {
-            format!("${}: '{}'", i + 1, String::from_utf8_lossy(text))
+        "date" => {
+            sql_query.push_str(" AND (exif_date_time_original LIKE ? OR exif_date_time LIKE ? OR photo_date LIKE ?)");
+            let query_pattern = format!("%{}%", query);
+            params.push(Box::new(query_pattern.clone()));
+            params.push(Box::new(query_pattern.clone()));
+            params.push(Box::new(query_pattern));
         }
-        Ok(rusqlite::types::ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Integer(int))) => {
-            format!("${}: {}", i + 1, int)
+        "exif" => {
+            sql_query.push_str(" AND (exif_make LIKE ? OR exif_model LIKE ? OR exif_lens_model LIKE ? OR exif_iso LIKE ? OR exif_fnumber LIKE ? OR exif_focal_length LIKE ? OR exif_shutter_speed_value LIKE ?)");
+            let query_pattern = format!("%{}%", query);
+            params.push(Box::new(query_pattern.clone()));
+            params.push(Box::new(query_pattern.clone()));
+            params.push(Box::new(query_pattern.clone()));
+            params.push(Box::new(query_pattern.clone()));
+            params.push(Box::new(query_pattern.clone()));
+            params.push(Box::new(query_pattern.clone()));
+            params.push(Box::new(query_pattern));
         }
-        Ok(rusqlite::types::ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Real(real))) => {
-            format!("${}: {}", i + 1, real)
+        "all" => {
+            sql_query.push_str(" AND (path LIKE ? OR comment LIKE ? OR exif_make LIKE ? OR exif_model LIKE ? OR exif_lens_model LIKE ? OR exif_iso LIKE ? OR exif_fnumber LIKE ? OR exif_focal_length LIKE ?)");
+            let query_pattern = format!("%{}%", query);
+            params.push(Box::new(query_pattern.clone()));
+            params.push(Box::new(query_pattern.clone()));
+            params.push(Box::new(query_pattern.clone()));
+            params.push(Box::new(query_pattern.clone()));
+            params.push(Box::new(query_pattern.clone()));
+            params.push(Box::new(query_pattern.clone()));
+            params.push(Box::new(query_pattern.clone()));
+            params.push(Box::new(query_pattern));
         }
-        Ok(rusqlite::types::ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Null)) => {
-            format!("${}: NULL", i + 1)
+        _ => {
+            sql_query.push_str(" AND path LIKE ?");
+            params.push(Box::new(format!("%{}%", query)));
         }
-        Ok(_) => format!("${}: <unknown>", i + 1),
-        Err(_) => format!("${}: <error>", i + 1),
     }
 }
 
-/// Create SQL with embedded parameters for better readability
-fn create_embedded_sql(sql_query: &str, params: &Vec<Box<dyn rusqlite::ToSql>>) -> String {
-    let mut embedded_sql = sql_query.to_string();
-    for param in params.iter() {
-        let placeholder = "?";
-        let replacement = match param.to_sql() {
-            Ok(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(ref text))) => {
-                format!("'{}'", text.replace("'", "''")) // Escape single quotes
-            }
-            Ok(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Integer(int))) => {
-                int.to_string()
-            }
-            Ok(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Real(real))) => {
-                real.to_string()
-            }
-            Ok(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Null)) => {
-                "NULL".to_string()
-            }
-            Ok(rusqlite::types::ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Text(text))) => {
-                format!("'{}'", String::from_utf8_lossy(text).replace("'", "''"))
-            }
-            Ok(rusqlite::types::ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Integer(int))) => {
-                int.to_string()
-            }
-            Ok(rusqlite::types::ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Real(real))) => {
-                real.to_string()
-            }
-            Ok(rusqlite::types::ToSqlOutput::Borrowed(rusqlite::types::ValueRef::Null)) => {
-                "NULL".to_string()
-            }
-            _ => "?".to_string(),
-        };
-        // Replace the first occurrence of ? with the parameter value
-        if let Some(pos) = embedded_sql.find(placeholder) {
-            embedded_sql.replace_range(pos..pos + 1, &replacement);
+/// Add ORDER BY clause with primary and secondary sort fields
+fn add_order_by_clause(sql_query: &mut String, sort_field: &str, sort_order: &str) {
+    let order_direction = if sort_order.to_lowercase() == "asc" {
+        "ASC"
+    } else {
+        "DESC"
+    };
+    let secondary_direction = "DESC";
+
+    match sort_field {
+        "exif_date_time_original" => {
+            sql_query.push_str(&format!(
+                " ORDER BY pm.exif_date_time_original {}, pm.photo_date {}, pm.path {}",
+                order_direction, secondary_direction, secondary_direction
+            ));
+        }
+        "photo_date" => {
+            sql_query.push_str(&format!(
+                " ORDER BY pm.photo_date {}, pm.exif_date_time_original {}, pm.path {}",
+                order_direction, secondary_direction, secondary_direction
+            ));
+        }
+        "path" => {
+            sql_query.push_str(&format!(
+                " ORDER BY pm.path {}, pm.exif_date_time_original {}, pm.photo_date {}",
+                order_direction, secondary_direction, secondary_direction
+            ));
+        }
+        "star" => {
+            let null_handling = if sort_order.to_lowercase() == "desc" {
+                "NULLS LAST"
+            } else {
+                "NULLS FIRST"
+            };
+            sql_query.push_str(&format!(" ORDER BY pm.star {} {}, pm.exif_date_time_original {}, pm.photo_date {}, pm.path {}",
+                order_direction, null_handling, secondary_direction, secondary_direction, secondary_direction));
+        }
+        _ => {
+            sql_query.push_str(&format!(
+                " ORDER BY pm.exif_date_time_original {}, pm.photo_date {}, pm.path {}",
+                order_direction, secondary_direction, secondary_direction
+            ));
         }
     }
-    embedded_sql
 }
 
-/// Log database date range for debugging
-fn log_date_range_debug(conn: &rusqlite::Connection) {
-    if let Ok(mut sample_stmt) = conn.prepare("SELECT MIN(exif_date_time_original) as min_date, MAX(exif_date_time_original) as max_date, COUNT(*) as total_photos FROM photo_metadata WHERE exif_date_time_original IS NOT NULL AND exif_date_time_original != ''") {
-        if let Ok(sample_row) = sample_stmt.query_row([], |row| {
-            Ok((
-                row.get::<_, Option<String>>("min_date").unwrap_or_default(),
-                row.get::<_, Option<String>>("max_date").unwrap_or_default(),
-                row.get::<_, i64>("total_photos").unwrap_or(0)
-            ))
-        }) {
-            log::debug!(
-                target: "database",
-                "database_date_range; min_date={}; max_date={}; total_photos_with_dates={}",
-                sample_row.0.unwrap_or_else(|| "None".to_string()),
-                sample_row.1.unwrap_or_else(|| "None".to_string()),
-                sample_row.2
-            );
-        }
+/// Map a database row to a Photo entity
+fn map_row_to_photo(row: &rusqlite::Row) -> Result<Photo, rusqlite::Error> {
+    let photo_path = row.get::<_, String>("path").unwrap_or_default();
+
+    // Create Photo entity from file path
+    let file_result = File::new_if_exists(photo_path.clone());
+    if file_result.is_none() {
+        return Err(rusqlite::Error::InvalidPath(photo_path.into()));
     }
+    let file = file_result.unwrap();
+
+    // Get config for thumbnail checking
+    let config = crate::entity::config::Config::new();
+    let mut photo = Photo::new(file, Some(config));
+
+    // Set thumbnail status
+    photo.set_has_thumbnail();
+
+    // Set metadata from database
+    let star = row.get::<_, i32>("star").unwrap_or(0);
+    photo.set_star(star);
+
+    let comment = row.get::<_, Option<String>>("comment").unwrap_or_default().unwrap_or_default();
+    photo.set_comment(comment);
+
+    // Set EXIF data
+    let mut exif_data = ExifData::empty();
+    if let Some(date_time) = row.get::<_, Option<String>>("exif_date_time_original").unwrap_or_default() {
+        exif_data.date_time = date_time;
+    }
+    if let Some(orientation) = row.get::<_, Option<String>>("exif_orientation").unwrap_or_default() {
+        exif_data.orientation = orientation;
+    }
+    photo.embed_exif(exif_data);
+
+    // Process tags from concatenated string: "id:name:color,id:name:color"
+    let tags_string = row.get::<_, Option<String>>("tags").unwrap_or_default();
+
+    log::info!(target: "database", "search_photos_row_tags; path={}; raw_tags={:?}", photo_path, tags_string);
+
+    photo.set_tags_from_string(tags_string);
+
+    Ok(photo)
 }
