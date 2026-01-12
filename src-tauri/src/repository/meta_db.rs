@@ -1,3 +1,10 @@
+//! Metadata database module aggregator.
+//!
+//! This module serves as a routing layer that re-exports metadata database submodules.
+//! Actual implementations are in the respective submodules (primarily `sqlite`).
+//!
+//! Also defines shared types used across submodules.
+
 use crate::entity::photo;
 use serde::{Deserialize, Serialize};
 

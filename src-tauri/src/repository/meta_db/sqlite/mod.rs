@@ -8,6 +8,8 @@
 //! - `dates` - Date retrieval operations
 //! - `photo_metadata` - Photo metadata recording and retrieval
 //! - `photo_crud` - Photo CRUD operations (star, comment, delete, restore)
+//! - `filter_options` - Filter dropdown options (cameras, lenses, extensions)
+//! - `search_debug` - Debug helpers for search operations
 //! - `search` - Search and filter operations
 //! - `exif` - EXIF data operations
 //! - `counts` - Photo count operations
@@ -28,6 +30,8 @@ mod date_summary;
 mod dates;
 mod photo_metadata;
 mod photo_crud;
+mod filter_options;
+mod search_debug;
 mod search;
 mod exif;
 mod counts;
