@@ -4,6 +4,146 @@ use rusqlite::params;
 
 use super::SQLite;
 
+/// Get all albums with photo count
+pub(super) fn get_all_albums(db: &SQLite) -> Result<Vec<(i32, String, String, Option<String>, i32)>, String> {
+    let conn = db
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT pc.id, pc.name, COALESCE(pc.description, '') as description, pc.cover_photo_path,
+                    (SELECT COUNT(*) FROM photo_collection_items WHERE collection_id = pc.id) as photo_count
+             FROM photo_collections pc
+             WHERE pc.type = 'album'
+             ORDER BY pc.name"
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let albums = stmt
+        .query_map([], |row| {
+            let id: i32 = row.get(0)?;
+            let name: String = row.get(1)?;
+            let description: String = row.get(2)?;
+            let cover_photo_path: Option<String> = row.get(3)?;
+            let count: i32 = row.get(4)?;
+            Ok((id, name, description, cover_photo_path, count))
+        })
+        .map_err(|e| format!("Failed to query albums: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect albums: {}", e))?;
+
+    Ok(albums)
+}
+
+/// Create a new album
+pub(super) fn create_album(db: &SQLite, name: &str, description: &str) -> Result<i32, String> {
+    let conn = db
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    conn.execute(
+        "INSERT INTO photo_collections (type, name, description, created_at, updated_at) VALUES ('album', ?1, ?2, ?3, ?4)",
+        params![name, description, now, now],
+    )
+    .map_err(|e| format!("Failed to create album: {}", e))?;
+
+    let album_id = conn.last_insert_rowid() as i32;
+    Ok(album_id)
+}
+
+/// Update an album
+pub(super) fn update_album(
+    db: &SQLite,
+    id: i32,
+    name: &str,
+    description: &str,
+    cover_photo_path: Option<&str>,
+) -> Result<bool, String> {
+    let conn = db
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    let rows_affected = conn
+        .execute(
+            "UPDATE photo_collections SET name = ?1, description = ?2, cover_photo_path = ?3, updated_at = ?4 WHERE id = ?5 AND type = 'album'",
+            params![name, description, cover_photo_path, now, id],
+        )
+        .map_err(|e| format!("Failed to update album: {}", e))?;
+
+    Ok(rows_affected > 0)
+}
+
+/// Delete an album
+pub(super) fn delete_album(db: &SQLite, id: i32) -> Result<bool, String> {
+    let conn = db
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    // First delete all photo-album associations
+    conn.execute(
+        "DELETE FROM photo_collection_items WHERE collection_id = ?1",
+        params![id],
+    )
+    .map_err(|e| format!("Failed to delete album associations: {}", e))?;
+
+    // Then delete the album itself
+    let rows_affected = conn
+        .execute(
+            "DELETE FROM photo_collections WHERE id = ?1 AND type = 'album'",
+            params![id],
+        )
+        .map_err(|e| format!("Failed to delete album: {}", e))?;
+
+    Ok(rows_affected > 0)
+}
+
+/// Add a photo to an album
+pub(super) fn add_photo_to_album(db: &SQLite, album_id: i32, photo_path: &str) -> Result<(), String> {
+    let conn = db
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    // Get the next order_index
+    let order_index: i32 = conn
+        .query_row(
+            "SELECT COALESCE(MAX(order_index), -1) + 1 FROM photo_collection_items WHERE collection_id = ?1",
+            params![album_id],
+            |row| row.get(0),
+        )
+        .unwrap_or(0);
+
+    conn.execute(
+        "INSERT OR IGNORE INTO photo_collection_items (collection_id, photo_path, order_index, added_at) VALUES (?1, ?2, ?3, ?4)",
+        params![album_id, photo_path, order_index, now],
+    )
+    .map_err(|e| format!("Failed to add photo to album: {}", e))?;
+
+    Ok(())
+}
+
+/// Remove a photo from an album
+pub(super) fn remove_photo_from_album(db: &SQLite, album_id: i32, photo_path: &str) -> Result<bool, String> {
+    let conn = db
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    let rows_affected = conn
+        .execute(
+            "DELETE FROM photo_collection_items WHERE collection_id = ?1 AND photo_path = ?2",
+            params![album_id, photo_path],
+        )
+        .map_err(|e| format!("Failed to remove photo from album: {}", e))?;
+
+    Ok(rows_affected > 0)
+}
+
 /// Get list of photo paths in an album
 pub(super) fn get_album_photos(db: &SQLite, album_id: i32) -> Result<Vec<String>, String> {
     let conn = db
@@ -55,7 +195,6 @@ pub(super) fn get_album_photos_with_metadata(
     ).map_err(|e| format!("Failed to prepare query: {}", e))?;
 
     let config_clone = config.clone();
-    let mut photo_count = 0;
     let photos = stmt
         .query_map(params![album_id], |row| {
             let path: String = row.get("path")?;
@@ -89,7 +228,7 @@ pub(super) fn get_album_photos_with_metadata(
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| format!("Failed to collect album photos with metadata: {}", e))?;
 
-    photo_count = photos.len();
+    let photo_count = photos.len();
     let thumbnail_count = photos.iter().filter(|p| p.has_thumbnail).count();
     log::info!(target: "albums", "get_album_photos_with_metadata_complete; album_id={}; total_photos={}; photos_with_thumbnails={}",
         album_id, photo_count, thumbnail_count);

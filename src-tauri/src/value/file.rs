@@ -294,6 +294,7 @@ impl File {
         return filename.to_string();
     }
 
+    #[allow(dead_code)]
     pub fn create_file_if_not_exists(&self) -> bool {
         let p = std::path::Path::new(&self.path);
         let mut created = false;

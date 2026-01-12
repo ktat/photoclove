@@ -93,10 +93,11 @@ impl RepositoryDB for Directory {
         page: u32,
         offset: usize,
         star: i32,
-        hasComment: bool,
+        has_comment: bool,
         extension: &str,
         opt_conf: Option<config::Config>,
     ) -> photo::Photos {
+        let _ = has_comment; // Suppress unused variable warning (filtering done by DB query)
         let dir = self.path.child(date.to_string());
         let mut photos = photo::Photos::new();
         let mut conf: config::Config = config::Config::template();
@@ -163,7 +164,7 @@ impl RepositoryDB for Directory {
                 if star > 0 && md.star.star() < star {
                     continue;
                 }
-                if hasComment && md.comment.comment().len() == 0 {
+                if has_comment && md.comment.comment().len() == 0 {
                     continue;
                 }
 
@@ -336,7 +337,7 @@ impl RepositoryDB for Directory {
         num: u32,
         offset: usize,
         star: i32,
-        hasComment: bool,
+        has_comment: bool,
         extension: &str,
         opt_conf: Option<config::Config>,
     ) -> photo::Photos {
@@ -364,7 +365,7 @@ impl RepositoryDB for Directory {
             if star > 0 && md.star.star() < star {
                 continue;
             }
-            if hasComment && md.comment.comment().len() == 0 {
+            if has_comment && md.comment.comment().len() == 0 {
                 continue;
             }
 
@@ -436,7 +437,7 @@ impl RepositoryDB for Directory {
         path: &str,
         date: date::Date,
         sort: Sort,
-        config: Option<config::Config>,
+        _config: Option<config::Config>,
     ) -> Option<photo::Photo> {
         let mut page: u32 = 1;
         let mut next_is_target = false;
@@ -478,7 +479,7 @@ impl RepositoryDB for Directory {
         path: &str,
         date: date::Date,
         sort: Sort,
-        config: Option<config::Config>,
+        _config: Option<config::Config>,
     ) -> Option<photo::Photo> {
         let mut page: u32 = 1;
         let mut prev_is_target = false;

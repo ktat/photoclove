@@ -4,7 +4,6 @@
 
 use super::{HandlerContext, SearchParams};
 use crate::entity::photo;
-use crate::repository::MetaInfoDB;
 
 /// Handle album photos search request.
 ///

@@ -7,7 +7,7 @@ use tauri::{Emitter, Manager};
 pub(crate) async fn process_google_photos_upload_job(
     job: &job_queue::QueuedJob,
     app_handle: &tauri::AppHandle,
-    db: &Arc<SQLite>,
+    _db: &Arc<SQLite>,
 ) -> Result<(), String> {
     log::info!(target: "google_photos", "upload_job; status=starting");
     log::info!(target: "job_queue", "job_info; job_unit_id={}", job.job_unit_id);

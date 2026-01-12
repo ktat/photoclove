@@ -6,7 +6,6 @@
 //! - Image caching and cache management
 //! - File linking for public directory
 
-use crate::entity::config::Config;
 use crate::utils;
 use std::{fs, path};
 

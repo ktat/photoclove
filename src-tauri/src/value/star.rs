@@ -14,6 +14,7 @@ impl Star {
         Star { data: star }
     }
 
+    #[allow(dead_code)]
     pub fn set_star(&mut self, star: i32) {
         self.data = star;
     }

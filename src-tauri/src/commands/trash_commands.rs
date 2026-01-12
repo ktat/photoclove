@@ -11,7 +11,7 @@
 use crate::app_state::{AppState, BatchOperationResult};
 use crate::domain_service::{file_service, thumbnail_service};
 use crate::entity::{photo, trash};
-use crate::repository::{MetaInfoDB, RepositoryDB};
+use crate::repository::MetaInfoDB;
 use crate::value::file;
 
 /// Moves multiple photos to trash in a batch operation.

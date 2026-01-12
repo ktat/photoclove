@@ -38,7 +38,7 @@ pub fn move_to_trash(file: file::File, trash: trash::Trash) -> Result<(), std::i
 pub fn restore_from_trash(
     file: file::File,
     trash: trash::Trash,
-    library_path: String,
+    _library_path: String,
 ) -> Result<(), std::io::Error> {
     let trash_path = path::Path::new(&trash.dir.path);
     let target_file = path::Path::new(&file.path);

@@ -13,7 +13,7 @@ use tauri::State;
 /// # Returns
 /// A JSON string representation of the current configuration
 #[tauri::command]
-pub fn get_config(state: State<AppState>) -> String {
+pub fn get_config(_state: State<AppState>) -> String {
     let new_config = Config::new();
     serde_json::to_string(&new_config).unwrap()
 }
@@ -29,7 +29,7 @@ pub fn get_config(state: State<AppState>) -> String {
 /// # Returns
 /// A JSON string indicating success (`{result: true}`) or failure (`{result: false}`)
 #[tauri::command]
-pub fn save_config(state: State<AppState>, config: Config) -> String {
+pub fn save_config(_state: State<AppState>, config: Config) -> String {
     log::info!(target: "config", "save_config_called; logging_enabled={}; use_exif_thumbnail={}; thumbnail_orientation_correction={}; google_auth_auto_reauth={}",
         config.logging_enabled,
         config.use_exif_thumbnail,

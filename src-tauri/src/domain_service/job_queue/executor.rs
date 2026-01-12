@@ -4,7 +4,7 @@ use crate::entity::job_queue;
 use crate::repository::meta_db::sqlite::SQLite;
 use std::sync::Arc;
 use std::thread;
-use tauri::{Emitter, Manager};
+use tauri::Emitter;
 
 /// Process pending jobs at startup
 pub(crate) fn process_startup_jobs(

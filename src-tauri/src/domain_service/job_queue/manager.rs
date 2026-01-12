@@ -54,6 +54,7 @@ impl JobQueueManager {
     }
 
     /// Stop background processing
+    #[allow(dead_code)]
     pub fn stop_background_processing(&self) {
         let mut running = self.is_running.lock().unwrap();
         *running = false;

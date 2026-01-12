@@ -37,7 +37,7 @@ pub async fn create_thumbnails(
     let mut last_result: Result<(), Box<dyn Error>> = Result::Ok(());
     for date in dates.dates {
         log::info!(target: "photo_service", "thumbnail_creation; date={}", date.to_string());
-        let (tx, tr) = mpsc::channel(); // Sender and Receiver. for more info, check mpsc and message passing.
+        let (tx, _tr) = mpsc::channel(); // Sender and Receiver. for more info, check mpsc and message passing.
         let from = origin.join(date.to_string());
         let to = dest.join(date.to_string());
         let mut comp = FolderCompressor::new(from.clone(), to.clone());
@@ -47,7 +47,7 @@ pub async fn create_thumbnails(
         comp.set_sender(tx);
         let r = comp.compress();
         match r {
-            Ok(ret) => {
+            Ok(_ret) => {
                 last_result = r;
                 let ignore_file_size = ignore_file_size as u64;
                 log::info!(target: "photo_service", "thumbnail_processing; from={:?}; to={:?}", from, to);

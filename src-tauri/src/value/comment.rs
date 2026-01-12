@@ -12,6 +12,7 @@ impl Comment {
         }
     }
 
+    #[allow(dead_code)]
     pub fn set_comment(&mut self, comment: String) {
         self.data = comment;
     }

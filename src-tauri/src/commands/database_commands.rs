@@ -130,7 +130,7 @@ pub async fn create_db_in_date(
 pub async fn create_thumbnails(
     window: tauri::Window,
     state: tauri::State<'_, AppState>,
-    date_str: &str,
+    _date_str: &str,
 ) -> Result<String, ()> {
     let dates = state.repo_db.get_dates();
     let c = &state.config;
