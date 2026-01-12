@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { logger } from '../services/LoggerService.js';
 import { unifiedCollectionService } from '../services/UnifiedCollectionService.js';
+import { useAsyncCancellation } from './useAsyncCancellation.js';
 
 /**
  * Custom hook for managing data loading operations
@@ -26,7 +27,9 @@ export function usePhotoDataLoader({
     isFilterOptionsLoading,
     appConfig
 }) {
-    
+    // Async cancellation for stale request handling
+    const { startNewRequest, isRequestValid } = useAsyncCancellation();
+
     // Logger helper functions for consistent logging patterns
     const logOperation = useMemo(() => ({
         start: (operation, context = {}) => 
@@ -90,10 +93,22 @@ export function usePhotoDataLoader({
     }, [updateAlbumsList, setFilteredAlbums, handleError]);
 
     const loadAlbumPhotos = useCallback(async (albumId) => {
+        // Start new request, invalidating any previous pending requests
+        const requestId = startNewRequest();
+
         try {
             const data = await loadUnifiedData('album_photos',
                 { params: { album_id: albumId } },
-                { operation: 'album photos', albumId });
+                { operation: 'album photos', albumId, requestId });
+
+            // Check if this request was cancelled while waiting
+            if (!isRequestValid(requestId)) {
+                logger.debug('PhotosList', 'album_request_cancelled', 'Ignoring stale album photos response', {
+                    requestId,
+                    albumId
+                });
+                return;
+            }
 
             // Handle both array and object formats
             const albumPhotosData = data.photos || data;
@@ -103,9 +118,13 @@ export function usePhotoDataLoader({
             updateAlbumPhotos(photosAsJSON);
             setPhotosList({ photos: photosAsJSON });
         } catch (error) {
+            // Ignore errors from cancelled requests
+            if (!isRequestValid(requestId)) {
+                return;
+            }
             // Error already handled by loadUnifiedData
         }
-    }, [updateAlbumPhotos, loadUnifiedData, setPhotosList, convertPhotosToEntities]);
+    }, [updateAlbumPhotos, loadUnifiedData, setPhotosList, convertPhotosToEntities, startNewRequest, isRequestValid]);
 
     // Handle album click to switch to album view
     const handleAlbumClick = useCallback((album) => {
@@ -148,11 +167,23 @@ export function usePhotoDataLoader({
     }, [setTagsList, setFilteredTags, handleError]);
 
     const loadTagPhotos = useCallback(async (tagId) => {
+        // Start new request, invalidating any previous pending requests
+        const requestId = startNewRequest();
+
         try {
-            const data = await loadUnifiedData('tag', 
-                { query: tagId.toString() }, 
-                { operation: 'tag photos', tagId });
-            
+            const data = await loadUnifiedData('tag',
+                { query: tagId.toString() },
+                { operation: 'tag photos', tagId, requestId });
+
+            // Check if this request was cancelled while waiting
+            if (!isRequestValid(requestId)) {
+                logger.debug('PhotosList', 'tag_request_cancelled', 'Ignoring stale tag photos response', {
+                    requestId,
+                    tagId
+                });
+                return;
+            }
+
             // Handle both array and object formats
             const tagPhotosData = data.photos || data;
 
@@ -163,19 +194,35 @@ export function usePhotoDataLoader({
             setTagPhotos(photosAsJSON);
             setPhotosList({ photos: photosAsJSON });
         } catch (error) {
+            // Ignore errors from cancelled requests
+            if (!isRequestValid(requestId)) {
+                return;
+            }
             // Error already handled by loadUnifiedData
         }
-    }, [loadUnifiedData, setTagPhotos, setPhotosList, convertPhotosToEntities]);
+    }, [loadUnifiedData, setTagPhotos, setPhotosList, convertPhotosToEntities, startNewRequest, isRequestValid]);
 
     // Load trash photos
     const loadTrashPhotos = useCallback(async () => {
+        // Start new request, invalidating any previous pending requests
+        const requestId = startNewRequest();
+
         try {
-            const photosData = await loadUnifiedData('trash', {}, { 
+            const photosData = await loadUnifiedData('trash', {}, {
                 operation: 'trash photos',
                 hasConfig: !!appConfig,
                 configTrashPath: appConfig?.trash_path,
-                configThumbnailStore: appConfig?.thumbnail_store
+                configThumbnailStore: appConfig?.thumbnail_store,
+                requestId
             });
+
+            // Check if this request was cancelled while waiting
+            if (!isRequestValid(requestId)) {
+                logger.debug('PhotosList', 'trash_request_cancelled', 'Ignoring stale trash photos response', {
+                    requestId
+                });
+                return;
+            }
 
             // Handle both array and object formats
             let photos = [];
@@ -189,9 +236,13 @@ export function usePhotoDataLoader({
             const photosAsJSON = convertPhotosToEntities(photos, true, true);
             setTrashPhotos(photosAsJSON);
         } catch (error) {
+            // Ignore errors from cancelled requests
+            if (!isRequestValid(requestId)) {
+                return;
+            }
             // Error already handled by loadUnifiedData
         }
-    }, [loadUnifiedData, appConfig, convertPhotosToEntities, setTrashPhotos]);
+    }, [loadUnifiedData, appConfig, convertPhotosToEntities, setTrashPhotos, startNewRequest, isRequestValid]);
 
     // Filter options caching function  
     const loadFilterOptions = useCallback(async () => {
