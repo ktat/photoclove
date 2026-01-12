@@ -14,6 +14,7 @@ pub mod import_commands;
 pub mod job_queue_commands;
 pub mod logging_commands;
 pub mod photo_commands;
+pub mod photo_handlers;
 pub mod search_commands;
 pub mod style_commands;
 pub mod tag_commands;
