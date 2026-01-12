@@ -1,9 +1,20 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { useEffect, useState, useRef } from "react";
-// import ReactPlayer from 'react-player';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import fileUrl from "../../../PathUtil.jsx";
 import { logger } from "../../../services/LoggerService.js";
+
+// Layout and timing constants
+const CONTAINER_READY_DELAY_MS = 50;
+const VIDEO_SOURCE_DELAY_MS = 200;
+const LOCK_RELEASE_DELAY_MS = 1000;
+const VIDEO_HEIGHT_OFFSET = 150;
+const CONTAINER_PADDING = 40;
+const MAX_RETRY_COUNT = 3;
+const RETRY_DELAY_MS = 100;
+const FALLBACK_WIDTH = 800;
+const FALLBACK_HEIGHT = 600;
+const SCROLL_LOCK_DELAY_MS = 100;
 
 let currentFile = "";
 let width = 0;
@@ -47,7 +58,7 @@ function PhotoDisplay(props) {
                 // Small delay to ensure container has updated dimensions
                 setTimeout(() => {
                     handleImgLoad(null, 0); // Recalculate wrapper size
-                }, 50);
+                }, CONTAINER_READY_DELAY_MS);
             }
         };
 
@@ -77,7 +88,7 @@ function PhotoDisplay(props) {
                 movie(props.currentPhotoPath);
                 let photoDisplayDiv = document.querySelector('.photoDisplay');
                 let width = photoDisplayDiv.clientWidth;
-                let height = photoDisplayDiv.clientHeight - 150;
+                let height = photoDisplayDiv.clientHeight - VIDEO_HEIGHT_OFFSET;
 
                 setPhotoDisplayWidth(width + "px");
                 setPhotoDisplayHeight(height + "px");
@@ -86,7 +97,7 @@ function PhotoDisplay(props) {
                 setVideoClass("video-off");
                 setVideoSource("");
             }
-        }, 50);
+        }, CONTAINER_READY_DELAY_MS);
     }, [props.currentPhotoPath]);
 
     function dragPhotoStart(e) {
@@ -110,11 +121,11 @@ function PhotoDisplay(props) {
                     // I don't know why react player require waiting for a while to play video correctly.
                     setTimeout(() => {
                         setVideoSource(videoPath);
-                    }, 200);
+                    }, VIDEO_SOURCE_DELAY_MS);
                 });
                 setTimeout(() => {
                     invoke("lock", { t: false })
-                }, 1000);
+                }, LOCK_RELEASE_DELAY_MS);
             })
         }
         return true;
@@ -205,7 +216,7 @@ function PhotoDisplay(props) {
             wrapperDiv.scrollTop += deltaY;
         }, 0);
 
-        setTimeout(() => { setScrollLock(false) }, 100);
+        setTimeout(() => { setScrollLock(false) }, SCROLL_LOCK_DELAY_MS);
         window.onscroll = function () { };
     }
 
@@ -244,18 +255,18 @@ function PhotoDisplay(props) {
             const wrapperDiv = document.querySelector('#imageWrapper');
             
             if (photoContainer && wrapperDiv) {
-                let availableWidth = photoContainer.clientWidth - 40; // Account for padding
-                let availableHeight = photoContainer.clientHeight - 40; // Account for padding
-                
+                let availableWidth = photoContainer.clientWidth - CONTAINER_PADDING;
+                let availableHeight = photoContainer.clientHeight - CONTAINER_PADDING;
+
                 // Handle case where container dimensions are not ready on first load
-                if ((availableWidth <= 0 || availableHeight <= 0) && retryCount < 3) {
-                    // Retry after a small delay to allow container to render (max 3 attempts)
+                if ((availableWidth <= 0 || availableHeight <= 0) && retryCount < MAX_RETRY_COUNT) {
+                    // Retry after a small delay to allow container to render
                     setTimeout(() => {
                         handleImgLoad(e, retryCount + 1);
-                    }, 100);
+                    }, RETRY_DELAY_MS);
                     // Set wrapper to reasonable default size as fallback
-                    const fallbackWidth = Math.min(imgWidth, 800);
-                    const fallbackHeight = Math.min(imgHeight, 600);
+                    const fallbackWidth = Math.min(imgWidth, FALLBACK_WIDTH);
+                    const fallbackHeight = Math.min(imgHeight, FALLBACK_HEIGHT);
                     wrapperDiv.style.width = fallbackWidth + 'px';
                     wrapperDiv.style.height = fallbackHeight + 'px';
                     wrapperDiv.style.maxWidth = '100%';
@@ -271,8 +282,8 @@ function PhotoDisplay(props) {
                 
                 // Use fallback dimensions if still no container size after retries
                 if (availableWidth <= 0 || availableHeight <= 0) {
-                    availableWidth = 800;
-                    availableHeight = 600;
+                    availableWidth = FALLBACK_WIDTH;
+                    availableHeight = FALLBACK_HEIGHT;
                     logger.debug('PhotoDisplay', 'emergency_fallback_dimensions', 'Using emergency fallback dimensions', {
                         availableWidth,
                         availableHeight
