@@ -3,9 +3,9 @@
  * Handles date maintenance operations
  */
 import { useCallback, useRef } from 'react';
-import { invoke } from "@tauri-apps/api/core";
 import { message, confirm } from "@tauri-apps/plugin-dialog";
 import { logger } from "../../../services/LoggerService.js";
+import { invokeWithErrorHandling } from "../../../services/TauriService.js";
 
 /**
  * Hook for date maintenance operations
@@ -34,9 +34,13 @@ export function useDateOperations({
         if (answer) {
             lockRef.current = true;
             try {
-                const r = await invoke("create_db_in_date", { dateStr: currentDate });
+                const data = await invokeWithErrorHandling(
+                    "create_db_in_date",
+                    { dateStr: currentDate },
+                    'dateOperations',
+                    { parseJson: true }
+                );
                 lockRef.current = false;
-                const data = JSON.parse(r);
                 setCurrentDateNum?.(data[currentDate.replace(/\//g, "-")]);
             } catch (error) {
                 lockRef.current = false;
@@ -58,7 +62,11 @@ export function useDateOperations({
         if (answer) {
             lockRef.current = true;
             try {
-                await invoke("move_photos_to_exif_date", { dateStr: currentDate });
+                await invokeWithErrorHandling(
+                    "move_photos_to_exif_date",
+                    { dateStr: currentDate },
+                    'dateOperations'
+                );
                 lockRef.current = false;
             } catch (error) {
                 lockRef.current = false;
@@ -80,7 +88,11 @@ export function useDateOperations({
         if (answer) {
             lockThumbnailRef.current = true;
             try {
-                await invoke("create_thumbnails_in_date", { dateStr: currentDate });
+                await invokeWithErrorHandling(
+                    "create_thumbnails_in_date",
+                    { dateStr: currentDate },
+                    'dateOperations'
+                );
                 lockThumbnailRef.current = false;
             } catch (error) {
                 lockThumbnailRef.current = false;
