@@ -86,7 +86,6 @@ function PhotosListMini(props) {
         backwardPhotos,
         forwardPhotos,
         goToPhoto,
-        setImageCache,
         lockNavigate
     } = usePhotoNavigation({
         photos: photosWithMethods,

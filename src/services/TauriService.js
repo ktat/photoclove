@@ -196,29 +196,8 @@ export async function invokeWithRetry(
     throw lastError;
 }
 
-/**
- * Create a Tauri service instance for a specific context
- * Provides methods bound to a specific component context
- *
- * @param {string} context - Component/context name for logging
- * @returns {Object} Service instance with bound methods
- */
-export function createTauriContext(context) {
-    return {
-        invoke: (command, args, options) =>
-            invokeWithErrorHandling(command, args, context, options),
-
-        invokeWithProgress: (command, items, argBuilder, options) =>
-            invokeWithProgress(command, items, argBuilder, { ...options, context }),
-
-        invokeWithRetry: (command, args, options) =>
-            invokeWithRetry(command, args, context, options)
-    };
-}
-
 export default {
     invokeWithErrorHandling,
     invokeWithProgress,
-    invokeWithRetry,
-    createTauriContext
+    invokeWithRetry
 };
