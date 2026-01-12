@@ -209,6 +209,105 @@ pub(super) fn add_photo_to_collection(
     Ok(())
 }
 
+/// Bulk insert photos to a collection
+/// SQLite has a limit of 999 variables per query (SQLITE_LIMIT_VARIABLE_NUMBER)
+/// Each row needs 4 variables, so we batch at 200 rows to be safe
+const BULK_INSERT_BATCH_SIZE: usize = 200;
+
+pub(super) fn add_photos_to_collection_bulk(
+    sqlite: &SQLite,
+    collection_id: i32,
+    photo_paths: &[String],
+) -> Result<usize, String> {
+    if photo_paths.is_empty() {
+        return Ok(0);
+    }
+
+    let conn = sqlite
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    // 1. Get existing photos in this collection
+    let mut existing_stmt = conn
+        .prepare("SELECT photo_path FROM photo_collection_items WHERE collection_id = ?1")
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let existing_paths: std::collections::HashSet<String> = existing_stmt
+        .query_map(params![collection_id], |row| row.get(0))
+        .map_err(|e| format!("Failed to query existing photos: {}", e))?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    log::debug!(target: "collections", "bulk_insert_existing_check; collection_id={}; existing_count={}; requested_count={}",
+        collection_id, existing_paths.len(), photo_paths.len());
+
+    // 2. Filter out already existing photos
+    let new_paths: Vec<&String> = photo_paths
+        .iter()
+        .filter(|p| !existing_paths.contains(*p))
+        .collect();
+
+    if new_paths.is_empty() {
+        log::info!(target: "collections", "bulk_insert_all_exist; collection_id={}; all photos already in collection", collection_id);
+        return Ok(0);
+    }
+
+    log::info!(target: "collections", "bulk_insert_filtered; collection_id={}; new_count={}; skipped_count={}",
+        collection_id, new_paths.len(), photo_paths.len() - new_paths.len());
+
+    // 3. Get the starting order_index
+    let start_order_index: i32 = conn.query_row(
+        "SELECT COALESCE(MAX(order_index), -1) + 1 FROM photo_collection_items WHERE collection_id = ?1",
+        params![collection_id],
+        |row| row.get(0)
+    ).unwrap_or(0);
+
+    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let mut total_inserted = 0;
+
+    // 4. Batch insert
+    for (batch_idx, chunk) in new_paths.chunks(BULK_INSERT_BATCH_SIZE).enumerate() {
+        // Build INSERT statement with multiple VALUES
+        let placeholders: Vec<String> = chunk
+            .iter()
+            .enumerate()
+            .map(|(i, _)| {
+                let base = i * 4;
+                format!("(?{}, ?{}, ?{}, ?{})", base + 1, base + 2, base + 3, base + 4)
+            })
+            .collect();
+
+        let sql = format!(
+            "INSERT OR IGNORE INTO photo_collection_items (collection_id, photo_path, order_index, added_at) VALUES {}",
+            placeholders.join(", ")
+        );
+
+        // Build params
+        let mut params_vec: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
+        for (i, path) in chunk.iter().enumerate() {
+            let order_index = start_order_index + (batch_idx * BULK_INSERT_BATCH_SIZE + i) as i32;
+            params_vec.push(Box::new(collection_id));
+            params_vec.push(Box::new((*path).clone()));
+            params_vec.push(Box::new(order_index));
+            params_vec.push(Box::new(now.clone()));
+        }
+
+        let param_refs: Vec<&dyn rusqlite::ToSql> = params_vec.iter().map(|p| p.as_ref()).collect();
+
+        let rows_affected = conn.execute(&sql, param_refs.as_slice())
+            .map_err(|e| format!("Failed to bulk insert photos: {}", e))?;
+
+        total_inserted += rows_affected;
+
+        log::debug!(target: "collections", "bulk_insert_batch; collection_id={}; batch={}; batch_size={}; rows_affected={}",
+            collection_id, batch_idx, chunk.len(), rows_affected);
+    }
+
+    log::info!(target: "collections", "bulk_insert_complete; collection_id={}; total_inserted={}", collection_id, total_inserted);
+
+    Ok(total_inserted)
+}
+
 pub(super) fn remove_photo_from_collection(
     sqlite: &SQLite,
     collection_id: i32,
@@ -266,15 +365,20 @@ pub(super) fn get_collection_photos(
     let photos = stmt
         .query_map(params![collection_id], |row| {
             let path: String = row.get("path")?;
-            let _photo_date: String = row.get("photo_date")?;
+            let photo_date: String = row.get("photo_date")?;
             let star: i32 = row.get("star")?;
             let comment: String = row.get("comment")?;
+            let exif_orientation: Option<String> = row.get("exif_orientation")?;
+            let css_style: Option<String> = row.get("css_style")?;
 
             // Create a file from the path
             let file = file::File::new(path.clone());
 
             // Create photo with the file and config
             let mut photo = photo::Photo::new(file, config.clone());
+
+            // Set photo time from database
+            photo.set_time(photo_date);
 
             // Set the star and comment from database
             photo.star = if star > 0 { Some(star) } else { None };
@@ -283,6 +387,16 @@ pub(super) fn get_collection_photos(
             } else {
                 None
             };
+
+            // Set orientation from database
+            if let Some(ref orientation) = exif_orientation {
+                if !orientation.is_empty() {
+                    photo.meta_data.orientation = orientation.clone();
+                }
+            }
+
+            // Set CSS style from database
+            photo.css_style = css_style;
 
             Ok((photo, path))
         })

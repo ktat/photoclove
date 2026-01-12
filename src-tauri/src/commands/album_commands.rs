@@ -151,6 +151,46 @@ pub async fn add_photo_to_album(
     }
 }
 
+/// Adds multiple photos to an album in bulk
+///
+/// This is more efficient than calling add_photo_to_album multiple times.
+/// It first filters out photos that are already in the album, then bulk inserts
+/// the remaining photos in batches (to respect SQLite variable limits).
+///
+/// # Arguments
+/// * `album_id` - The ID of the album
+/// * `photo_paths` - List of photo paths to add
+/// * `state` - Application state containing the database and logging service
+///
+/// # Returns
+/// * `Ok(usize)` - Number of photos actually added (excluding duplicates)
+/// * `Err(String)` - Error message if operation fails
+#[tauri::command]
+pub async fn add_photos_to_album_bulk(
+    album_id: i32,
+    photo_paths: Vec<String>,
+    state: tauri::State<'_, AppState>,
+) -> Result<usize, String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "albums", "add_photos_to_album_bulk_request; correlation_id={}; album_id={}; photo_count={}",
+        correlation_id, album_id, photo_paths.len());
+
+    match meta_db.add_photos_to_collection_bulk(album_id, &photo_paths) {
+        Ok(added_count) => {
+            log::info!(target: "albums", "add_photos_to_album_bulk_success; correlation_id={}; added_count={}; requested_count={}",
+                correlation_id, added_count, photo_paths.len());
+            Ok(added_count)
+        }
+        Err(e) => {
+            log::error!(target: "albums", "add_photos_to_album_bulk_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
 /// Removes a photo from an album
 ///
 /// # Arguments

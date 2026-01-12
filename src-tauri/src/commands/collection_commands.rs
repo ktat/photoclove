@@ -152,6 +152,38 @@ pub async fn add_photo_to_collection(
     }
 }
 
+/// Add multiple photos to a collection in bulk
+///
+/// This is more efficient than calling add_photo_to_collection multiple times.
+/// It first filters out photos that are already in the collection, then bulk inserts
+/// the remaining photos in batches (to respect SQLite variable limits).
+/// Works for both albums and tags.
+#[tauri::command]
+pub async fn add_photos_to_collection_bulk(
+    collection_id: i32,
+    photo_paths: Vec<String>,
+    state: State<'_, AppState>,
+) -> Result<usize, String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "photo_collections", "add_photos_to_collection_bulk_request; correlation_id={}; collection_id={}; photo_count={}",
+        correlation_id, collection_id, photo_paths.len());
+
+    match meta_db.add_photos_to_collection_bulk(collection_id, &photo_paths) {
+        Ok(added_count) => {
+            log::info!(target: "photo_collections", "add_photos_to_collection_bulk_success; correlation_id={}; added_count={}; requested_count={}",
+                correlation_id, added_count, photo_paths.len());
+            Ok(added_count)
+        }
+        Err(e) => {
+            log::error!(target: "photo_collections", "add_photos_to_collection_bulk_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}
+
 /// Remove a photo from a collection
 #[tauri::command]
 pub async fn remove_photo_from_collection(

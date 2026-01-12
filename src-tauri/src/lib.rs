@@ -234,6 +234,7 @@ pub fn run() {
             update_album,
             delete_album,
             add_photo_to_album,
+            add_photos_to_album_bulk,
             remove_photo_from_album,
             get_album_photos,
             get_album_photos_with_metadata,
@@ -244,6 +245,7 @@ pub fn run() {
             update_collection,
             delete_collection,
             add_photo_to_collection,
+            add_photos_to_collection_bulk,
             remove_photo_from_collection,
             get_collection_photos,
         ])

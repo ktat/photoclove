@@ -609,25 +609,32 @@ function DirectoryMenu(props) {
 
     async function addPhotosToAlbum(albumId) {
         try {
-            logger.info('DirectoryMenu', 'add_to_album_start', 'Adding photos to existing album', {
-                albumId,
-                photoCount: props.photoSelection.length
-            });
-
-            for (const photoPath of props.photoSelection) {
-                await invoke("add_photo_to_album", {
-                    albumId: albumId,
-                    photoPath: photoPath
-                });
-            }
-
             const photoCount = props.photoSelection.length;
-            props.clearPhotoSelection();
-            props.addFooterMessage(`${photoCount} photo${photoCount > 1 ? 's' : ''} added to album`);
-
-            logger.info('DirectoryMenu', 'photos_added_to_album', 'Photos added to album successfully', {
+            logger.info('DirectoryMenu', 'add_to_album_start', 'Adding photos to existing album (bulk)', {
                 albumId,
                 photoCount
+            });
+
+            // Use unified bulk insert command (works for both albums and tags)
+            const addedCount = await invoke("add_photos_to_collection_bulk", {
+                collectionId: albumId,
+                photoPaths: props.photoSelection
+            });
+
+            props.clearPhotoSelection();
+
+            // Show message with actual added count (excludes duplicates)
+            if (addedCount === photoCount) {
+                props.addFooterMessage(`${addedCount} photo${addedCount !== 1 ? 's' : ''} added to album`);
+            } else {
+                const skipped = photoCount - addedCount;
+                props.addFooterMessage(`${addedCount} photo${addedCount !== 1 ? 's' : ''} added to album (${skipped} already existed)`);
+            }
+
+            logger.info('DirectoryMenu', 'photos_added_to_album', 'Photos added to album successfully (bulk)', {
+                albumId,
+                requestedCount: photoCount,
+                addedCount
             });
 
             setShowAlbumSelectorModal(false);
@@ -643,40 +650,32 @@ function DirectoryMenu(props) {
 
     async function addTagsToPhotos(selectedTagIds) {
         try {
-            logger.info('DirectoryMenu', 'add_tags_start', 'Adding tags to photos using unified collections', {
-                tagIds: selectedTagIds,
-                photoCount: props.photoSelection.length
-            });
-
-            // Get all tags to ensure we have the latest data (including newly created tags)
-            const allTags = await UnifiedPhotoCollection.getAllTags();
-
-            for (const photoPath of props.photoSelection) {
-                for (const tagId of selectedTagIds) {
-                    const tag = allTags.find(t => t.id === tagId);
-                    if (tag) {
-                        const tagCollection = new UnifiedPhotoCollection({
-                            id: tag.id,
-                            type: 'tag',
-                            name: tag.name,
-                            color: tag.color
-                        });
-                        await tagCollection.addPhoto(photoPath);
-                    } else {
-                        logger.warn('DirectoryMenu', 'tag_not_found', 'Tag not found in all tags list', { tagId });
-                    }
-                }
-            }
-
             const photoCount = props.photoSelection.length;
             const tagCount = selectedTagIds.length;
+
+            logger.info('DirectoryMenu', 'add_tags_start', 'Adding tags to photos (bulk)', {
+                tagIds: selectedTagIds,
+                photoCount
+            });
+
+            // Use bulk insert for each tag (same as album)
+            let totalAdded = 0;
+            for (const tagId of selectedTagIds) {
+                const addedCount = await invoke("add_photos_to_collection_bulk", {
+                    collectionId: tagId,
+                    photoPaths: props.photoSelection
+                });
+                totalAdded += addedCount;
+            }
+
             props.clearPhotoSelection();
             props.addFooterMessage(`${tagCount} tag${tagCount > 1 ? 's' : ''} added to ${photoCount} photo${photoCount > 1 ? 's' : ''}`);
 
-            logger.info('DirectoryMenu', 'tags_added_to_photos', 'Tags added to photos successfully', {
+            logger.info('DirectoryMenu', 'tags_added_to_photos', 'Tags added to photos successfully (bulk)', {
                 tagIds: selectedTagIds,
                 photoCount,
-                tagCount
+                tagCount,
+                totalAdded
             });
 
             setShowBulkTagModal(false);

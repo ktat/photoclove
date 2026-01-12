@@ -12,4 +12,5 @@ pub struct PhotoInfo {
     pub css_style: Option<String>,
     pub google_photo_url: Option<String>,
     pub tags: Option<Vec<photo::PhotoTag>>,
+    pub orientation: Option<String>,
 }
