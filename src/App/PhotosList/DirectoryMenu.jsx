@@ -1,12 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { invoke, convertFileSrc } from "@tauri-apps/api/core";
-import { message, confirm } from "@tauri-apps/plugin-dialog";
-import { emit } from "@tauri-apps/api/event";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { localForage } from "../../storage/forage";
 import { logger } from "../../services/LoggerService.js";
-import { UnifiedPhotoCollection } from "../../domain/UnifiedPhotoCollection.js";
 import { useUI } from "../../context/UIContext.jsx";
 import { useError } from "../../context/ErrorContext.jsx";
 import { VIEW_MODES } from "../../constants/viewModes.js";
@@ -20,13 +16,12 @@ import Scrollable from "../../Scrollable.jsx";
 import SelectionTab from "./DirectoryMenu/SelectionTab.jsx";
 import FilterTab from "./DirectoryMenu/FilterTab.jsx";
 import { getTutorialContent } from "./DirectoryMenu/tutorialContent.jsx";
+import { usePhotoImport, useGooglePhotosUpload, useTrashOperations } from "./DirectoryMenu/photoOperations.js";
+import { useAlbumOperations, useTagOperations } from "./DirectoryMenu/collectionOperations.js";
+import { useDateOperations } from "./DirectoryMenu/dateOperations.js";
 
 function DirectoryMenu(props) {
     const { handleTauriError } = useError();
-
-    const [showAlbumCreationModal, setShowAlbumCreationModal] = useState(false);
-    const [showAlbumSelectorModal, setShowAlbumSelectorModal] = useState(false);
-    const [showBulkTagModal, setShowBulkTagModal] = useState(false);
 
     // Delete confirmation modal state
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -34,6 +29,78 @@ function DirectoryMenu(props) {
         operation: null,
         count: 0,
         onConfirm: null
+    });
+
+    // Photo operations hooks
+    const { importSelectedPhotos } = usePhotoImport({
+        importState: props.importState,
+        photoSelection: props.photoSelection,
+        clearPhotoSelection: props.clearPhotoSelection,
+        addFooterMessage: props.addFooterMessage,
+        handleTauriError
+    });
+
+    const { uploadToGooglePhotos } = useGooglePhotosUpload({
+        photoSelection: props.photoSelection,
+        clearPhotoSelection: props.clearPhotoSelection,
+        addFooterMessage: props.addFooterMessage,
+        setShowJobQueue: props.setShowJobQueue
+    });
+
+    const { deleteFiles, restoreSelectedFromTrash, permanentDeleteSelected } = useTrashOperations({
+        photoSelection: props.photoSelection,
+        clearPhotoSelection: props.clearPhotoSelection,
+        addFooterMessage: props.addFooterMessage,
+        handleTauriError,
+        deletePhotos: props.deletePhotos,
+        restorePhotos: props.restorePhotos,
+        updatePhotosAfterTrashOperation: props.updatePhotosAfterTrashOperation,
+        reloadCurrentModeData: props.reloadCurrentModeData,
+        setDeleteModalConfig,
+        setShowDeleteModal
+    });
+
+    // Collection operations hooks
+    const {
+        showAlbumCreationModal,
+        setShowAlbumCreationModal,
+        showAlbumSelectorModal,
+        setShowAlbumSelectorModal,
+        showCreateAlbumModal,
+        showAddToAlbumModal,
+        createAlbumFromSelection,
+        addPhotosToAlbum,
+        removeFromCurrentAlbum
+    } = useAlbumOperations({
+        photoSelection: props.photoSelection,
+        clearPhotoSelection: props.clearPhotoSelection,
+        addFooterMessage: props.addFooterMessage,
+        handleTauriError,
+        viewModeObj: props.viewModeObj,
+        removePhotoFromList: props.removePhotoFromList
+    });
+
+    const {
+        showBulkTagModal,
+        setShowBulkTagModal,
+        showAddTagsModal,
+        addTagsToPhotos
+    } = useTagOperations({
+        photoSelection: props.photoSelection,
+        clearPhotoSelection: props.clearPhotoSelection,
+        addFooterMessage: props.addFooterMessage,
+        handleTauriError,
+        onPhotosRefresh: props.onPhotosRefresh
+    });
+
+    // Date operations hook
+    const { createDbInDate, movePhotosToExifDate, createThumbnails, applyDateChanges } = useDateOperations({
+        currentDate: props.currentDate,
+        setCurrentDateNum: props.setCurrentDateNum,
+        dateNum: props.dateNum,
+        setDateNum: props.setDateNum,
+        dateList: props.dateList,
+        setDateList: props.setDateList
     });
 
     // Tutorial state
@@ -96,12 +163,7 @@ function DirectoryMenu(props) {
         logger.info('DirectoryMenu', 'tutorial_disabled', 'User disabled selection tutorial', { context });
     };
 
-    // Use useRef for lock flags to persist across re-renders
-    const lockRef = useRef(false);
-    const lockThumbnailRef = useRef(false);
-    const lockUploadRef = useRef(false);
-    const lockDeleteRef = useRef(false);
-
+    // doOperation handler for dropdown menu
     function doOperation(e) {
         const selected = e.target.value;
         if (selected == "uploadToGooglePhotos") {
@@ -130,573 +192,13 @@ function DirectoryMenu(props) {
         e.target.value = "";
     }
 
-    async function importSelectedPhotos() {
-        if (!props.importState || props.photoSelection.length === 0) {
-            props.addFooterMessage('Please select photos first');
-            return;
-        }
-
-        const count = props.photoSelection.length;
-        const confirmed = await confirm(
-            `Import ${count} photo${count > 1 ? 's' : ''} to your library?`,
-            "Confirm Import"
-        );
-
-        if (confirmed) {
-            try {
-                logger.info('DirectoryMenu', 'import_photos_start', 'Starting photo import', {
-                    photoCount: count,
-                    currentPath: props.importState.currentImportPath
-                });
-
-                await props.importState.importPhotos(props.photoSelection);
-
-                props.clearPhotoSelection();
-                props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} imported successfully`);
-
-                logger.info('DirectoryMenu', 'photos_imported', 'Photos imported successfully', {
-                    photoCount: count
-                });
-            } catch (error) {
-                logger.error('DirectoryMenu', 'import_photos_failed', 'Failed to import photos', {
-                    photoCount: count,
-                    error: error.message
-                });
-                handleTauriError(error, 'Import photos');
-            }
-        }
-    }
-
-    async function createDbInDate() {
-        if (lockRef.current) {
-            message("Currently, this operation is locked. Pelase wait for a while", "This operation is locked");
-        } else {
-            confirm("This takes long time if you have many photos.", "Warning").then((answer) => {
-                if (answer) {
-                    lockRef.current = true;
-                    invoke("create_db_in_date", { dateStr: props.currentDate }).then((r) => {
-                        lockRef.current = false;
-                        let data = JSON.parse(r);
-                        props.setCurrentDateNum(data[props.currentDate.replace(/\//g, "-")]);
-                    })
-                }
-            });
-        }
-    }
-
-    async function movePhotosToExifDate() {
-        if (lockRef.current) {
-            message("Currently, this operation is locked. Pelase wait for a while", "This operation is locked");
-        } else {
-            confirm("This takes long time if you have many photos.", "Warning").then((answer) => {
-                if (answer) {
-                    lockRef.current = true;
-                    invoke("move_photos_to_exif_date", { dateStr: props.currentDate }).then(() => {
-                        lockRef.current = false;
-                    })
-                }
-            });
-        }
-    }
-
-    async function createThumbnails() {
-        if (lockThumbnailRef.current) {
-            message("Currently, this operation is locked. Pelase wait for a while", "This operation is locked");
-        } else {
-            confirm("This takes long time if you have many photos.", "Warning").then((answer) => {
-                if (answer) {
-                    lockThumbnailRef.current = true;
-                    invoke("create_thumbnails_in_date", { dateStr: props.currentDate }).then((r) => {
-                        lockThumbnailRef.current = false;
-                    })
-                }
-            });
-        }
-    }
-
-    async function uploadToGooglePhotos() {
-        if (lockUploadRef.current) {
-            message("Currently uploading. Please wait for the current upload to complete.", "Upload in Progress");
-            return;
-        }
-
-        const files = props.photoSelection;
-        const BATCH_SIZE = 50;
-        const numBatches = Math.ceil(files.length / BATCH_SIZE);
-
-        let answer = true;
-        if (files.length > BATCH_SIZE) {
-            answer = await confirm(
-                `Upload ${files.length} photos to Google Photos?\n` +
-                `This will create ${numBatches} upload jobs (max ${BATCH_SIZE} photos per job).`,
-                "Confirm Upload"
-            );
-        } else {
-            answer = await confirm(
-                `Upload ${files.length} photos to Google Photos?`,
-                "Confirm Upload"
-            );
-        }
-
-        if (answer) {
-            try {
-                const tokens = await localForage.getItem("GoogleOAuthTokens");
-                if (!tokens) {
-                    message("Please sign in to Google Photos first", "Authentication Required");
-                    return;
-                }
-
-                lockUploadRef.current = true;
-
-                logger.info('DirectoryMenu', 'google_photos_upload_start', 'User initiated Google Photos upload', {
-                    filesCount: files.length,
-                    batchesExpected: numBatches
-                });
-
-                const jobUnitIds = await invoke("upload_to_google_photos", {
-                    selectedFiles: files,
-                    accessToken: tokens.accessToken,
-                    refreshToken: tokens.refreshToken
-                });
-
-                props.clearPhotoSelection();
-                lockUploadRef.current = false;
-
-                message(
-                    `Created ${jobUnitIds.length} upload job${jobUnitIds.length > 1 ? 's' : ''}. ` +
-                    `Check Job Queue for progress.`,
-                    "Upload Started"
-                );
-
-                logger.info('DirectoryMenu', 'google_photos_jobs_created', 'Google Photos upload jobs created', {
-                    jobUnitsCreated: jobUnitIds.length,
-                    jobUnitIds: jobUnitIds
-                });
-
-                props.setShowJobQueue(true);
-
-            } catch (e) {
-                lockUploadRef.current = false;
-                logger.error('DirectoryMenu', 'google_photos_upload_error', 'Failed to start Google Photos upload', {
-                    error: e.toString(),
-                    filesCount: files.length
-                });
-                message("Failed to start upload: " + e.toString(), "Upload Error");
-            }
-        }
-    }
-
-    /**
-     * Apply date count changes from batch operation result to local state
-     * @param {Object} dateChanges - Map of date -> count delta from backend
-     */
-    function applyDateChanges(dateChanges) {
-        if (!props.dateNum || !props.setDateNum || !dateChanges) {
-            return;
-        }
-
-        const updatedDateNum = { ...props.dateNum };
-
-        for (const [date, delta] of Object.entries(dateChanges)) {
-            updatedDateNum[date] = (updatedDateNum[date] || 0) + delta;
-
-            // Remove date entry if count reaches zero or negative
-            if (updatedDateNum[date] <= 0) {
-                delete updatedDateNum[date];
-            }
-        }
-
-        props.setDateNum(updatedDateNum);
-
-        if (props.setDateList && props.dateList) {
-            const newDateList = [...props.dateList];
-            props.setDateList(newDateList);
-        }
-
-        logger.info('DirectoryMenu', 'date_counts_updated', 'Applied date changes from batch operation', {
-            changedDates: Object.keys(dateChanges).length,
-            dateChanges
-        });
-    }
-
-    /**
-     * Deletes selected photos - wrapper that handles confirmation and calls the handler
-     */
-    async function deleteFiles() {
-        if (lockDeleteRef.current) return false;
-
-        if (!props.photoSelection || props.photoSelection.length === 0) {
-            props.addFooterMessage('Please select photos first');
-            return false;
-        }
-
-        const count = props.photoSelection.length;
-
-        console.log('[DirectoryMenu.deleteFiles] Starting deletion', {
-            count,
-            hasDeletePhotos: !!props.deletePhotos,
-            photoSelection: props.photoSelection
-        });
-
-        // Show ContextualDeleteModal
-        setDeleteModalConfig({
-            operation: 'moveToTrash',
-            count: count,
-            onConfirm: async () => {
-                setShowDeleteModal(false);
-
-                try {
-                    lockDeleteRef.current = true;
-
-                    console.log('[DirectoryMenu.deleteFiles] Calling props.deletePhotos');
-
-                    // Call the handler from PhotosList which handles date updates
-                    const result = await props.deletePhotos(props.photoSelection, {
-                        skipConfirmation: true,  // Already confirmed
-                        clearSelection: true
-                    });
-
-                    console.log('[DirectoryMenu.deleteFiles] Result:', result);
-                    return result;
-                } finally {
-                    lockDeleteRef.current = false;
-                }
-            }
-        });
-        setShowDeleteModal(true);
-        return false; // Will be handled by modal confirmation
-    }
-
-    // Trash operation functions
-    /**
-     * Restores selected photos from trash - wrapper that handles confirmation and calls the handler
-     */
-    async function restoreSelectedFromTrash() {
-        if (!props.photoSelection || props.photoSelection.length === 0) {
-            props.addFooterMessage('Please select photos first');
-            return false;
-        }
-
-        const count = props.photoSelection.length;
-
-        // Show ContextualDeleteModal
-        setDeleteModalConfig({
-            operation: 'restoreFromTrash',
-            count: count,
-            onConfirm: async () => {
-                setShowDeleteModal(false);
-
-                // Call the handler from PhotosList which handles date updates
-                const result = await props.restorePhotos(props.photoSelection, {
-                    skipConfirmation: true,  // Already confirmed
-                    clearSelection: true
-                });
-
-                return result;
-            }
-        });
-        setShowDeleteModal(true);
-        return false; // Will be handled by modal confirmation
-    }
-
-    async function permanentDeleteSelected() {
-        if (props.photoSelection.length === 0) {
-            props.addFooterMessage('Please select photos first');
-            return;
-        }
-
-        const count = props.photoSelection.length;
-
-        // Show ContextualDeleteModal
-        setDeleteModalConfig({
-            operation: 'permanentDelete',
-            count: count,
-            onConfirm: async () => {
-                setShowDeleteModal(false);
-
-                try {
-                    logger.info('DirectoryMenu', 'permanent_delete_start', 'Permanently deleting photos', {
-                        photoCount: count
-                    });
-
-                    // Save paths before clearing selection
-                    const deletedPaths = [...props.photoSelection];
-
-                    // Optimistic UI update - remove from trash view
-                    props.clearPhotoSelection();
-                    if (props.updatePhotosAfterTrashOperation) {
-                        await props.updatePhotosAfterTrashOperation(deletedPaths, 'permanentDelete');
-                    }
-
-                    try {
-                        // Use batch command for efficient processing
-                        const resultStr = await invoke("delete_permanently_batch", { paths: deletedPaths });
-                        const result = JSON.parse(resultStr);
-
-                        // Show result message with failure info if any
-                        if (result.failed > 0) {
-                            props.addFooterMessage(`${result.succeeded} photo${result.succeeded !== 1 ? 's' : ''} permanently deleted, ${result.failed} failed`);
-                        } else {
-                            props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} permanently deleted`);
-                        }
-
-                        logger.info('DirectoryMenu', 'photos_permanently_deleted', 'Photos permanently deleted successfully', {
-                            photoCount: count,
-                            result
-                        });
-                    } catch (backendError) {
-                        // Rollback UI changes on backend failure
-                        logger.error('DirectoryMenu', 'permanent_delete_backend_failed', 'Backend operation failed, reloading trash view', {
-                            photoCount: count,
-                            error: backendError.message
-                        });
-
-                        props.addFooterMessage('Permanent delete operation failed. Reloading...');
-
-                        // Reload trash view to restore UI state
-                        if (props.reloadCurrentModeData) {
-                            await props.reloadCurrentModeData();
-                        }
-
-                        throw backendError; // Re-throw for outer catch
-                    }
-                } catch (error) {
-                    logger.error('DirectoryMenu', 'permanent_delete_failed', 'Failed to permanently delete photos', {
-                        photoCount: count,
-                        error: error.message
-                    });
-                    handleTauriError(error, 'Permanently delete photos');
-                }
-            }
-        });
-        setShowDeleteModal(true);
-    }
-
-    async function removeFromCurrentAlbum() {
-        const currentAlbumId = props.viewModeObj?.getCurrentAlbumId();
-
-        if (!currentAlbumId || props.photoSelection.length === 0) return;
-
-        const count = props.photoSelection.length;
-        const confirmed = await confirm(
-            `Remove ${count} photo${count > 1 ? 's' : ''} from this album?\n\nPhotos will remain in your library.`,
-            "Remove from Album"
-        );
-
-        if (confirmed) {
-            try {
-                logger.info('DirectoryMenu', 'remove_from_album_start', 'Removing photos from album', {
-                    albumId: currentAlbumId,
-                    photoCount: count
-                });
-
-                // Remove each photo from album and update UI
-                for (const photoPath of props.photoSelection) {
-                    await invoke("remove_photo_from_album", {
-                        albumId: currentAlbumId,
-                        photoPath: photoPath
-                    });
-
-                    // Remove photo from UI immediately after successful backend deletion
-                    props.removePhotoFromList(photoPath);
-                }
-
-                props.clearPhotoSelection();
-                props.addFooterMessage(`${count} photo${count > 1 ? 's' : ''} removed from album`);
-
-                logger.info('DirectoryMenu', 'photos_removed_from_album', 'Photos removed from album successfully', {
-                    albumId: currentAlbumId,
-                    photoCount: count
-                });
-            } catch (error) {
-                logger.error('DirectoryMenu', 'remove_from_album_failed', 'Failed to remove photos from album', {
-                    albumId: currentAlbumId,
-                    photoCount: count,
-                    error: error.message
-                });
-                handleTauriError(error, 'Remove from album');
-            }
-        }
-    }
-
-    function showCreateAlbumModal() {
-        if (props.photoSelection.length === 0) {
-            props.addFooterMessage('Please select photos first');
-            return;
-        }
-
-        logger.debug('DirectoryMenu', 'show_create_album_modal', 'Opening album creation modal', {
-            selectedPhotosCount: props.photoSelection.length
-        });
-        setShowAlbumCreationModal(true);
-    }
-
-    function showAddToAlbumModal() {
-        if (props.photoSelection.length === 0) {
-            props.addFooterMessage('Please select photos first');
-            return;
-        }
-
-        logger.debug('DirectoryMenu', 'show_add_to_album_modal', 'Opening album selector modal', {
-            selectedPhotosCount: props.photoSelection.length
-        });
-        setShowAlbumSelectorModal(true);
-    }
-
-    function showAddTagsModal() {
-        if (props.photoSelection.length === 0) {
-            props.addFooterMessage('Please select photos first');
-            return;
-        }
-
-        logger.debug('DirectoryMenu', 'show_add_tags_modal', 'Opening bulk tag selector modal', {
-            selectedPhotosCount: props.photoSelection.length
-        });
-        setShowBulkTagModal(true);
-    }
-
-    async function createAlbumFromSelection(albumData) {
-        try {
-            logger.info('DirectoryMenu', 'create_album_start', 'Creating album from selection using unified collections', {
-                albumName: albumData.name,
-                photoCount: props.photoSelection.length
-            });
-
-            const album = await UnifiedPhotoCollection.create('album', {
-                name: albumData.name,
-                description: albumData.description
-            });
-
-            // Add all selected photos to the new album
-            for (const photoPath of props.photoSelection) {
-                await album.addPhoto(photoPath);
-            }
-
-            // Automatically set the first selected photo as the cover photo
-            if (props.photoSelection.length > 0) {
-                const firstPhotoPath = props.photoSelection[0];
-                logger.info('DirectoryMenu', 'set_cover_photo', 'Setting first photo as album cover using unified collection', {
-                    albumId: album.id,
-                    coverPhotoPath: firstPhotoPath
-                });
-
-                await album.update({
-                    coverPhotoPath: firstPhotoPath
-                });
-            }
-
-            const photoCount = props.photoSelection.length;
-            props.clearPhotoSelection();
-            props.addFooterMessage(`Album "${albumData.name}" created with ${photoCount} photos`);
-
-            logger.info('DirectoryMenu', 'album_created_from_selection', 'Album created from selected photos', {
-                albumName: albumData.name,
-                albumId: album.id,
-                photoCount,
-                coverPhotoSet: props.photoSelection.length > 0
-            });
-
-            setShowAlbumCreationModal(false);
-        } catch (error) {
-            logger.error('DirectoryMenu', 'create_album_failed', 'Failed to create album from selection', {
-                albumName: albumData.name,
-                photoCount: props.photoSelection.length,
-                error: error.message
-            });
-            handleTauriError(error, 'Create album');
-        }
-    }
-
-    async function addPhotosToAlbum(albumId) {
-        try {
-            const photoCount = props.photoSelection.length;
-            logger.info('DirectoryMenu', 'add_to_album_start', 'Adding photos to existing album (bulk)', {
-                albumId,
-                photoCount
-            });
-
-            // Use unified bulk insert command (works for both albums and tags)
-            const addedCount = await invoke("add_photos_to_collection_bulk", {
-                collectionId: albumId,
-                photoPaths: props.photoSelection
-            });
-
-            props.clearPhotoSelection();
-
-            // Show message with actual added count (excludes duplicates)
-            if (addedCount === photoCount) {
-                props.addFooterMessage(`${addedCount} photo${addedCount !== 1 ? 's' : ''} added to album`);
-            } else {
-                const skipped = photoCount - addedCount;
-                props.addFooterMessage(`${addedCount} photo${addedCount !== 1 ? 's' : ''} added to album (${skipped} already existed)`);
-            }
-
-            logger.info('DirectoryMenu', 'photos_added_to_album', 'Photos added to album successfully (bulk)', {
-                albumId,
-                requestedCount: photoCount,
-                addedCount
-            });
-
-            setShowAlbumSelectorModal(false);
-        } catch (error) {
-            logger.error('DirectoryMenu', 'add_to_album_failed', 'Failed to add photos to album', {
-                albumId,
-                photoCount: props.photoSelection.length,
-                error: error.message
-            });
-            handleTauriError(error, 'Add to album');
-        }
-    }
-
-    async function addTagsToPhotos(selectedTagIds) {
-        try {
-            const photoCount = props.photoSelection.length;
-            const tagCount = selectedTagIds.length;
-
-            logger.info('DirectoryMenu', 'add_tags_start', 'Adding tags to photos (bulk)', {
-                tagIds: selectedTagIds,
-                photoCount
-            });
-
-            // Use bulk insert for each tag (same as album)
-            let totalAdded = 0;
-            for (const tagId of selectedTagIds) {
-                const addedCount = await invoke("add_photos_to_collection_bulk", {
-                    collectionId: tagId,
-                    photoPaths: props.photoSelection
-                });
-                totalAdded += addedCount;
-            }
-
-            props.clearPhotoSelection();
-            props.addFooterMessage(`${tagCount} tag${tagCount > 1 ? 's' : ''} added to ${photoCount} photo${photoCount > 1 ? 's' : ''}`);
-
-            logger.info('DirectoryMenu', 'tags_added_to_photos', 'Tags added to photos successfully (bulk)', {
-                tagIds: selectedTagIds,
-                photoCount,
-                tagCount,
-                totalAdded
-            });
-
-            setShowBulkTagModal(false);
-
-            // Refresh photos to show new tags
-            if (props.onPhotosRefresh) {
-                await props.onPhotosRefresh();
-                logger.info('DirectoryMenu', 'photos_refreshed_after_bulk_tag', 'Photos refreshed successfully', {
-                    photoCount,
-                    tagCount
-                });
-            }
-        } catch (error) {
-            logger.error('DirectoryMenu', 'add_tags_failed', 'Failed to add tags to photos', {
-                tagIds: selectedTagIds,
-                photoCount: props.photoSelection.length,
-                error: error.message
-            });
-            handleTauriError(error, 'Add tags');
-        }
-    }
+    // The following functions have been moved to operation hooks:
+    // - importSelectedPhotos -> usePhotoImport
+    // - uploadToGooglePhotos -> useGooglePhotosUpload
+    // - deleteFiles, restoreSelectedFromTrash, permanentDeleteSelected -> useTrashOperations
+    // - createDbInDate, movePhotosToExifDate, createThumbnails, applyDateChanges -> useDateOperations
+    // - showCreateAlbumModal, showAddToAlbumModal, createAlbumFromSelection, addPhotosToAlbum, removeFromCurrentAlbum -> useAlbumOperations
+    // - showAddTagsModal, addTagsToPhotos -> useTagOperations
 
     return (
         <div id="directory-maintenance">
