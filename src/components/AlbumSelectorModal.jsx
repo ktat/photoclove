@@ -25,14 +25,17 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
       });
       const albumList = JSON.parse(albumsResult);
       
-      // Convert tuple format to object format: [id, name, description, cover_photo_path, photo_count]
-      const processedAlbums = albumList.map(album => ({
-        id: album[0],
-        name: album[1],
-        description: album[2],
-        coverPhoto: album[3] || null,
-        photo_count: album[4] || 0
-      }));
+      // Backend returns object format: {id, name, description, coverPhoto, photoCount, ...}
+      // Filter out invalid entries first
+      const processedAlbums = albumList
+        .filter(album => album && album.id != null && album.name != null)
+        .map(album => ({
+          id: album.id,
+          name: album.name,
+          description: album.description || null,
+          coverPhoto: album.coverPhoto || null,
+          photo_count: album.photoCount || 0
+        }));
       
       setAlbums(processedAlbums);
       setFilteredAlbums(processedAlbums);
@@ -54,8 +57,8 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
   }, [isOpen]);
 
   useEffect(() => {
-    const filtered = albums.filter(album => 
-      album.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const filtered = albums.filter(album =>
+      album && album.name && album.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredAlbums(filtered);
     logger.debug('AlbumSelectorModal', 'albums_filtered', 'Albums filtered by search term', { 
@@ -267,37 +270,43 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
           gap: '12px', 
           justifyContent: 'flex-end' 
         }}>
-          <button 
-            onClick={handleClose} 
+          <button
+            onClick={handleClose}
             disabled={isAdding}
             style={{
-              padding: '8px 16px',
+              padding: '10px 20px',
               border: '1px solid var(--border)',
-              borderRadius: '4px',
+              borderRadius: '6px',
               backgroundColor: 'var(--bg-elevated)',
               color: 'var(--text)',
               cursor: isAdding ? 'not-allowed' : 'pointer',
               fontSize: '14px',
-              opacity: isAdding ? 0.6 : 1
+              fontWeight: '500',
+              opacity: isAdding ? 0.6 : 1,
+              transition: 'all 0.2s ease'
             }}
           >
             Cancel
           </button>
-          <button 
-            onClick={handleSubmit} 
+          <button
+            onClick={handleSubmit}
             disabled={!selectedAlbumId || isAdding}
             style={{
-              padding: '8px 16px',
+              padding: '10px 20px',
               border: 'none',
-              borderRadius: '4px',
-              backgroundColor: (!selectedAlbumId || isAdding) ? '#ccc' : '#2196F3',
+              borderRadius: '6px',
+              background: (!selectedAlbumId || isAdding)
+                ? 'linear-gradient(135deg, #666 0%, #555 100%)'
+                : 'linear-gradient(135deg, #646cff 0%, #535bf2 100%)',
               color: 'white',
               cursor: (!selectedAlbumId || isAdding) ? 'not-allowed' : 'pointer',
               fontSize: '14px',
-              fontWeight: 'bold'
+              fontWeight: '500',
+              opacity: (!selectedAlbumId || isAdding) ? 0.6 : 1,
+              transition: 'all 0.2s ease'
             }}
           >
-            {isAdding ? '📸 Adding...' : '📸 Add to Album'}
+            {isAdding ? 'Adding...' : 'Add to Album'}
           </button>
         </div>
       </div>
