@@ -65,18 +65,18 @@ function Preferences(props) {
             use_count: isFirstView ? 1 : parseInt(config.use_count)
         };
 
-        Promise.all([
-            invoke("save_config", { config: updatedConfig }),
-            invoke("set_logging_enabled", { enabled: updatedConfig.logging_enabled })
-        ]).then(() => {
+        // Note: Only call save_config, not set_logging_enabled
+        // set_logging_enabled uses stale AppState config and would overwrite our changes
+        invoke("save_config", { config: updatedConfig }).then(() => {
             setConfig(updatedConfig);
             logger.setEnabled(updatedConfig.logging_enabled);
+            logger.info('Preferences', 'config_saved', 'Configuration saved successfully', { updatedConfig });
 
             if (isFirstView) {
                 props.togglePreferences(false);
-            } else {
-                setConfigLoaded(!configLoaded);
             }
+            // Note: Removed setConfigLoaded toggle here to prevent useEffect from
+            // re-fetching config and overwriting the just-saved values
         }).catch((error) => {
             logger.error('Preferences', 'config_save_failed', 'Failed to save configuration', { error: error.message });
             message("Failed to save configuration. Please try again.");
@@ -194,6 +194,17 @@ function Preferences(props) {
                                 />
                                 <label htmlFor="use-exif-thumbnail-check">
                                     Use EXIF thumbnails when available (faster import)
+                                </label>
+                            </div>
+                            <div className="setting-item">
+                                <input
+                                    type="checkbox"
+                                    id="thumbnail-orientation-correction-check"
+                                    checked={config.thumbnail_orientation_correction || false}
+                                    onChange={(e) => setConfig(prev => ({ ...prev, thumbnail_orientation_correction: e.target.checked }))}
+                                />
+                                <label htmlFor="thumbnail-orientation-correction-check">
+                                    Apply EXIF orientation correction to thumbnails
                                 </label>
                             </div>
                         </div>
