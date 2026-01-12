@@ -15,6 +15,7 @@ import { useState, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { logger } from '../services/LoggerService.js';
 import { PhotoCollection } from '../domain/PhotoCollection.js';
+import { useAsyncCancellation } from './useAsyncCancellation.js';
 
 /**
  * Photo loading hook
@@ -79,6 +80,9 @@ export function usePhotoLoader({
     const [photoLoading, setPhotoLoading] = useState(false);
     const [currentPhotoLoadingController, setCurrentPhotoLoadingController] = useState(null);
 
+    // Async cancellation for stale request handling
+    const { startNewRequest, isRequestValid } = useAsyncCancellation();
+
     /**
      * Load all photos based on current view mode
      * @param {Object} viewMode - ViewMode object
@@ -86,13 +90,16 @@ export function usePhotoLoader({
      * @param {boolean} silent - If true, don't show loading indicator (for metadata-only updates)
      */
     const loadAllPhotosBasedOnViewMode = useCallback(async (viewMode, config, silent = false) => {
+        // Start new request, invalidating any previous pending requests
+        const requestId = startNewRequest();
+
         const callStack = new Error().stack;
         logger.info('PhotosList', 'load_photos_viewmode', 'loadAllPhotosBasedOnViewMode called', {
             viewMode: viewMode.mode,
             viewModeData: viewMode.data,
             hasConfig: !!config,
             silent,
-            photoLoading,
+            requestId,
             callStack: callStack.split('\n').slice(1, 4).join('\n')
         });
 
@@ -101,12 +108,6 @@ export function usePhotoLoader({
                 viewModeObj: viewMode,
                 config: config
             });
-            return;
-        }
-
-        // Prevent duplicate loading (but allow silent updates)
-        if (photoLoading && !silent) {
-            logger.info('PhotosList', 'loading_already_in_progress', 'Photo loading already in progress, skipping');
             return;
         }
 
@@ -126,6 +127,7 @@ export function usePhotoLoader({
             viewModeData: viewMode.data,
             appConfig: config,
             silent,
+            requestId,
             isSearchMode,
             searchResultsLength: searchResults.length
         });
@@ -161,12 +163,29 @@ export function usePhotoLoader({
                     request: photoParams
                 });
 
+                // Check if this request was cancelled while waiting
+                if (!isRequestValid(requestId)) {
+                    logger.debug('PhotosList', 'request_cancelled', 'Request cancelled, ignoring stale response', {
+                        requestId,
+                        mode: viewMode.mode
+                    });
+                    return;
+                }
+
                 logger.info('PhotosList', 'viewmode_result', 'Unified get_photos result from ViewMode', {
                     resultType: typeof result,
                     hasResult: !!result,
-                    mode: viewMode.mode
+                    mode: viewMode.mode,
+                    requestId
                 });
             } catch (error) {
+                // Ignore errors from cancelled requests
+                if (!isRequestValid(requestId)) {
+                    logger.debug('PhotosList', 'request_cancelled_error', 'Ignoring error from cancelled request', {
+                        requestId
+                    });
+                    return;
+                }
                 handleError(error, `Unsupported mode ${viewMode.mode}`, { mode: viewMode.mode });
                 if (!silent) setPhotoLoading(false);
                 return;
@@ -273,6 +292,14 @@ export function usePhotoLoader({
             }
 
         } catch (error) {
+            // Ignore errors from cancelled requests
+            if (!isRequestValid(requestId)) {
+                logger.debug('PhotosList', 'request_cancelled_catch', 'Ignoring error from cancelled request', {
+                    requestId
+                });
+                return;
+            }
+
             // Reset to safe state
             setAllPhotosForCurrentFetch([]);
             setPhotosListMiniAllPhotos([]);
@@ -293,13 +320,11 @@ export function usePhotoLoader({
             addFooterMessage && addFooterMessage(`Failed to load photos: ${errorMsg}`);
         }
     }, [
-        // photoLoading removed - causes infinite loop when state changes
         sortOfPhotos,
         starFilter,
         hasCommentFilter,
         extensionFilter,
         isSearchMode,
-        // searchResults removed - only used for logging, causes infinite loop in search mode
         setPhotoLoading,
         setAllPhotosForCurrentFetch,
         setIsLimitedByConfig,
@@ -308,7 +333,9 @@ export function usePhotoLoader({
         setPhotosList,
         convertPhotosToEntities,
         handleError,
-        addFooterMessage
+        addFooterMessage,
+        startNewRequest,
+        isRequestValid
     ]);
 
     /**
@@ -371,6 +398,9 @@ export function usePhotoLoader({
      * Load photos using PhotoCollection (supports Date, Recent, Search, Import, Trash modes)
      */
     const loadPhotosWithCollection = useCallback(async (viewMode) => {
+        // Start new request, invalidating any previous pending requests
+        const requestId = startNewRequest();
+
         if (!viewMode) {
             logger.warn('PhotosList', 'load_photos_collection_no_viewmode', 'ViewMode not provided, skipping photo loading');
             return;
@@ -381,15 +411,11 @@ export function usePhotoLoader({
             return;
         }
 
-        if (photoLoading) {
-            logger.info('PhotosList', 'loading_already_in_progress', 'Photo loading already in progress, skipping');
-            return;
-        }
-
         logger.info('PhotosList', 'load_photos_collection', 'Loading photos with PhotoCollection', {
             viewMode: viewMode.mode,
             viewModeData: viewMode.data,
-            hasAppConfig: !!appConfig
+            hasAppConfig: !!appConfig,
+            requestId
         });
 
         setPhotoLoading(true);
@@ -464,14 +490,26 @@ export function usePhotoLoader({
             logger.info('PhotosList', 'fetching_photos', 'About to fetch photos using PhotoCollection', {
                 mode: collection.mode,
                 pageSize: Math.min(9999, appConfig?.max_photos_per_fetch || 1000),
-                filters
+                filters,
+                requestId
             });
             const updatedCollection = await collection.fetchPhotos(1, Math.min(9999, appConfig?.max_photos_per_fetch || 1000), filters);
+
+            // Check if this request was cancelled while waiting
+            if (!isRequestValid(requestId)) {
+                logger.debug('PhotosList', 'request_cancelled_collection', 'Request cancelled, ignoring stale collection response', {
+                    requestId,
+                    mode: viewMode.mode
+                });
+                return;
+            }
+
             logger.info('PhotosList', 'fetch_photos_result', 'Photos fetched from PhotoCollection', {
                 mode: collection.mode,
                 photoCount: updatedCollection.photos.length,
                 hasNext: updatedCollection.metadata.hasNext,
-                hasPrev: updatedCollection.metadata.hasPrev
+                hasPrev: updatedCollection.metadata.hasPrev,
+                requestId
             });
 
             // Update states
@@ -499,20 +537,27 @@ export function usePhotoLoader({
             });
 
         } catch (error) {
+            // Ignore errors from cancelled requests
+            if (!isRequestValid(requestId)) {
+                logger.debug('PhotosList', 'request_cancelled_collection_error', 'Ignoring error from cancelled request', {
+                    requestId
+                });
+                return;
+            }
             handleError(error, 'Load photos collection', {
                 viewMode: viewMode.mode,
-                viewModeData: viewMode.data
+                viewModeData: viewMode.data,
+                requestId
             });
-            // Reset loading state - don't fallback as it may cause issues
-            // when photoLoading is already true
         } finally {
-            setPhotoLoading(false);
+            // Only reset loading state if this is still the current request
+            if (isRequestValid(requestId)) {
+                setPhotoLoading(false);
+            }
         }
     }, [
-        photoLoading,
         appConfig,
         sortOfPhotos,
-        searchResults,
         importState,
         setPhotoLoading,
         setPhotoCollection,
@@ -522,7 +567,9 @@ export function usePhotoLoader({
         setCurrentPhotoPath,
         setCurrentPhotoIndex,
         handleError,
-        loadAllPhotosBasedOnViewMode
+        loadAllPhotosBasedOnViewMode,
+        startNewRequest,
+        isRequestValid
     ]);
 
     return {
