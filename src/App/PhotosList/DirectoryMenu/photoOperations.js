@@ -2,11 +2,12 @@
  * Photo operations for DirectoryMenu
  * Handles import, upload, delete, and restore operations
  */
-import { useState, useCallback, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { invoke } from "@tauri-apps/api/core";
 import { message, confirm } from "@tauri-apps/plugin-dialog";
 import { localForage } from "../../../storage/forage";
 import { logger } from "../../../services/LoggerService.js";
+import { invokeWithErrorHandling } from "../../../services/TauriService.js";
 
 /**
  * Hook for photo import operations
@@ -237,25 +238,19 @@ export function useTrashOperations({
                     }
 
                     try {
-                        const resultStr = await invoke("delete_permanently_batch", { paths: deletedPaths });
-                        const result = JSON.parse(resultStr);
+                        const result = await invokeWithErrorHandling(
+                            "delete_permanently_batch",
+                            { paths: deletedPaths },
+                            'photoOperations',
+                            { parseJson: true }
+                        );
 
                         if (result.failed > 0) {
                             addFooterMessage(`${result.succeeded} photo${result.succeeded !== 1 ? 's' : ''} permanently deleted, ${result.failed} failed`);
                         } else {
                             addFooterMessage(`${count} photo${count > 1 ? 's' : ''} permanently deleted`);
                         }
-
-                        logger.info('photoOperations', 'photos_permanently_deleted', 'Photos permanently deleted successfully', {
-                            photoCount: count,
-                            result
-                        });
                     } catch (backendError) {
-                        logger.error('photoOperations', 'permanent_delete_backend_failed', 'Backend operation failed, reloading trash view', {
-                            photoCount: count,
-                            error: backendError.message
-                        });
-
                         addFooterMessage('Permanent delete operation failed. Reloading...');
 
                         if (reloadCurrentModeData) {

@@ -3,9 +3,9 @@
  * Handles album and tag operations
  */
 import { useState, useCallback } from 'react';
-import { invoke } from "@tauri-apps/api/core";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import { logger } from "../../../services/LoggerService.js";
+import { invokeWithErrorHandling } from "../../../services/TauriService.js";
 import { UnifiedPhotoCollection } from "../../../domain/UnifiedPhotoCollection.js";
 
 /**
@@ -99,15 +99,12 @@ export function useAlbumOperations({
     const addPhotosToAlbum = useCallback(async (albumId) => {
         try {
             const photoCount = photoSelection.length;
-            logger.info('collectionOperations', 'add_to_album_start', 'Adding photos to existing album (bulk)', {
-                albumId,
-                photoCount
-            });
 
-            const addedCount = await invoke("add_photos_to_collection_bulk", {
-                collectionId: albumId,
-                photoPaths: photoSelection
-            });
+            const addedCount = await invokeWithErrorHandling(
+                "add_photos_to_collection_bulk",
+                { collectionId: albumId, photoPaths: photoSelection },
+                'collectionOperations'
+            );
 
             clearPhotoSelection();
 
@@ -118,19 +115,8 @@ export function useAlbumOperations({
                 addFooterMessage(`${addedCount} photo${addedCount !== 1 ? 's' : ''} added to album (${skipped} already existed)`);
             }
 
-            logger.info('collectionOperations', 'photos_added_to_album', 'Photos added to album successfully (bulk)', {
-                albumId,
-                requestedCount: photoCount,
-                addedCount
-            });
-
             setShowAlbumSelectorModal(false);
         } catch (error) {
-            logger.error('collectionOperations', 'add_to_album_failed', 'Failed to add photos to album', {
-                albumId,
-                photoCount: photoSelection.length,
-                error: error.message
-            });
             handleTauriError(error, 'Add to album');
         }
     }, [photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError]);
@@ -148,16 +134,13 @@ export function useAlbumOperations({
 
         if (confirmed) {
             try {
-                logger.info('collectionOperations', 'remove_from_album_start', 'Removing photos from album', {
-                    albumId: currentAlbumId,
-                    photoCount: count
-                });
-
                 for (const photoPath of photoSelection) {
-                    await invoke("remove_photo_from_album", {
-                        albumId: currentAlbumId,
-                        photoPath: photoPath
-                    });
+                    await invokeWithErrorHandling(
+                        "remove_photo_from_album",
+                        { albumId: currentAlbumId, photoPath: photoPath },
+                        'collectionOperations',
+                        { silent: true }
+                    );
                     removePhotoFromList?.(photoPath);
                 }
 
@@ -169,11 +152,6 @@ export function useAlbumOperations({
                     photoCount: count
                 });
             } catch (error) {
-                logger.error('collectionOperations', 'remove_from_album_failed', 'Failed to remove photos from album', {
-                    albumId: currentAlbumId,
-                    photoCount: count,
-                    error: error.message
-                });
                 handleTauriError(error, 'Remove from album');
             }
         }
@@ -221,17 +199,14 @@ export function useTagOperations({
             const photoCount = photoSelection.length;
             const tagCount = selectedTagIds.length;
 
-            logger.info('collectionOperations', 'add_tags_start', 'Adding tags to photos (bulk)', {
-                tagIds: selectedTagIds,
-                photoCount
-            });
-
             let totalAdded = 0;
             for (const tagId of selectedTagIds) {
-                const addedCount = await invoke("add_photos_to_collection_bulk", {
-                    collectionId: tagId,
-                    photoPaths: photoSelection
-                });
+                const addedCount = await invokeWithErrorHandling(
+                    "add_photos_to_collection_bulk",
+                    { collectionId: tagId, photoPaths: photoSelection },
+                    'collectionOperations',
+                    { silent: true }
+                );
                 totalAdded += addedCount;
             }
 
@@ -249,17 +224,8 @@ export function useTagOperations({
 
             if (onPhotosRefresh) {
                 await onPhotosRefresh();
-                logger.info('collectionOperations', 'photos_refreshed_after_bulk_tag', 'Photos refreshed successfully', {
-                    photoCount,
-                    tagCount
-                });
             }
         } catch (error) {
-            logger.error('collectionOperations', 'add_tags_failed', 'Failed to add tags to photos', {
-                tagIds: selectedTagIds,
-                photoCount: photoSelection.length,
-                error: error.message
-            });
             handleTauriError(error, 'Add tags');
         }
     }, [photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError, onPhotosRefresh]);
