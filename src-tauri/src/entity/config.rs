@@ -1,7 +1,7 @@
 use dirs::home_dir;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
-use std::{fs, io::BufReader, io::BufWriter};
+use std::{fs, io::BufReader, io::BufWriter, io::Write};
 
 fn default_download_dir() -> String {
     let home = match home_dir() {
@@ -42,6 +42,10 @@ fn default_google_auth_auto_reauth() -> bool {
     false
 }
 
+fn default_thumbnail_orientation_correction() -> bool {
+    false
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub repository: RepositoryConfig,
@@ -68,6 +72,8 @@ pub struct Config {
     pub use_exif_thumbnail: bool,
     #[serde(default = "default_google_auth_auto_reauth")]
     pub google_auth_auto_reauth: bool,
+    #[serde(default = "default_thumbnail_orientation_correction")]
+    pub thumbnail_orientation_correction: bool,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryConfig {
@@ -97,6 +103,7 @@ impl Config {
         self.logging_level = config.logging_level;
         self.use_exif_thumbnail = config.use_exif_thumbnail;
         self.google_auth_auto_reauth = config.google_auth_auto_reauth;
+        self.thumbnail_orientation_correction = config.thumbnail_orientation_correction;
     }
 
     pub fn config_path() -> String {
@@ -134,20 +141,29 @@ impl Config {
 
     pub fn save(&self) -> bool {
         let path = Config::config_path();
-        let file = fs::OpenOptions::new()
+        let file = match fs::OpenOptions::new()
             .write(true)
             .truncate(true)
-            .open(path)
-            .unwrap();
-        let writer = BufWriter::new(file);
-        let result = serde_yaml::to_writer(writer, self);
+            .open(&path) {
+                Ok(f) => f,
+                Err(e) => {
+                    log::error!(target: "config", "config_file_open_failed; path={}; error={:?}", path, e);
+                    return false;
+                }
+            };
+        let mut writer = BufWriter::new(file);
+        let result = serde_yaml::to_writer(&mut writer, self);
         if let Err(ref error) = result {
-            log::error!(target: "config", "config_save_failed; error={:?}", error);
+            log::error!(target: "config", "config_serialize_failed; error={:?}", error);
+            return false;
         }
-        match result {
-            Ok(()) => return true,
-            _ => return false,
+        // Explicitly flush the buffer to ensure data is written to disk
+        if let Err(e) = writer.flush() {
+            log::error!(target: "config", "config_flush_failed; error={:?}", e);
+            return false;
         }
+        log::debug!(target: "config", "config_saved_to_file; path={}", path);
+        true
     }
 
     pub fn template() -> Config {
@@ -182,6 +198,7 @@ impl Config {
             logging_level: default_logging_level(),
             use_exif_thumbnail: default_use_exif_thumbnail(),
             google_auth_auto_reauth: default_google_auth_auto_reauth(),
+            thumbnail_orientation_correction: default_thumbnail_orientation_correction(),
         }
     }
 

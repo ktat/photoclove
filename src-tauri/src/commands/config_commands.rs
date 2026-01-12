@@ -30,9 +30,17 @@ pub fn get_config(state: State<AppState>) -> String {
 /// A JSON string indicating success (`{result: true}`) or failure (`{result: false}`)
 #[tauri::command]
 pub fn save_config(state: State<AppState>, config: Config) -> String {
+    log::info!(target: "config", "save_config_called; logging_enabled={}; use_exif_thumbnail={}; thumbnail_orientation_correction={}; google_auth_auto_reauth={}",
+        config.logging_enabled,
+        config.use_exif_thumbnail,
+        config.thumbnail_orientation_correction,
+        config.google_auth_auto_reauth
+    );
     if config.save() {
+        log::info!(target: "config", "save_config_success; status=saved");
         return "{result: true}".to_string();
     } else {
+        log::error!(target: "config", "save_config_failed; status=error");
         return "{result: false}".to_string();
     }
 }
