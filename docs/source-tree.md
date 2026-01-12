@@ -64,50 +64,96 @@ src/
 │       ├── 📄 DirectoryMenu.jsx     # Right sidebar menu
 │       ├── 📄 PhotoLoading.jsx      # Loading indicator
 │       ├── 📄 PhotoOption.jsx       # Photo metadata panel
-│       ├── 📄 PhotosListMini.jsx    # Full-screen photo viewer
+│       ├── 📄 PhotosListMini.jsx    # Full-screen photo viewer (475 lines, refactored)
 │       ├── 📄 PhotoGrid.jsx         # Photo grid display component
+│       ├── 📄 PhotoCard.jsx         # Individual photo card component
+│       ├── 📄 PhotoListContent.jsx  # Photo list content wrapper
+│       ├── 📄 PhotoDisplayWrapper.jsx # Photo display wrapper
+│       ├── 📄 PhotosToolbar.jsx     # Toolbar for photo actions
+│       ├── 📄 SideMenuWrapper.jsx   # Side menu wrapper component
+│       ├── 📄 StatusBar.jsx         # Status bar component
+│       ├── 📄 ListViewHeader.jsx    # List view header
+│       ├── 📄 GenericListView.jsx   # Generic list view component
+│       ├── 📄 AlbumTab.jsx          # Album tab component
+│       │
+│       ├── 📁 DirectoryMenu/
+│       │   ├── 📄 FilterTab.jsx          # Filter options tab
+│       │   ├── 📄 SelectionTab.jsx       # Selection operations tab
+│       │   ├── 📄 tutorialContent.jsx    # Tutorial content
+│       │   ├── 📄 collectionOperations.js # Collection operations
+│       │   ├── 📄 dateOperations.js      # Date operations
+│       │   └── 📄 photoOperations.js     # Photo operations
 │       │
 │       ├── 📁 PhotoOption/
-│       │   ├── 📄 PhotoEditor.jsx   # Image editing controls (980 lines)
+│       │   ├── 📄 PhotoEditor.jsx   # Image editing controls
 │       │   ├── 📄 PhotoInfo.jsx     # Photo metadata display with external app launcher
+│       │   ├── 📄 PhotoTags.jsx     # Photo tag management
+│       │   ├── 📄 CropTool.jsx      # Crop tool component
+│       │   ├── 📄 EditorControl.jsx # Editor control component
 │       │   │
 │       │   └── 📁 PhotoEditor/      # PhotoEditor utility modules
-│       │       ├── 📄 cssUtils.js   # CSS parsing/generation (218 lines)
-│       │       ├── 📄 cropUtils.js  # Crop calculations (144 lines)
-│       │       └── 📄 styleUtils.js # Style application (199 lines)
+│       │       ├── 📄 cssUtils.js   # CSS parsing/generation
+│       │       ├── 📄 cropUtils.js  # Crop calculations
+│       │       ├── 📄 styleUtils.js # Style application
+│       │       └── 📄 imageProcessing.js # Image processing utilities
 │       │
 │       └── 📁 PhotosListMini/
 │           ├── 📄 PhotoDisplay.jsx  # Individual photo display
-│           ├── 📄 photoUtils.js     # Thumbnail display calculations (128 lines)
-│           └── 📄 useKeyboardShortcuts.js # Keyboard navigation hook (124 lines)
+│           ├── 📄 ThumbnailItem.jsx # Thumbnail item component
+│           ├── 📄 HelpPanel.jsx     # Help panel component
+│           ├── 📄 AlbumModeIndicator.jsx # Album mode indicator
+│           ├── 📄 photoUtils.js     # Thumbnail display calculations
+│           ├── 📄 useKeyboardShortcuts.js # Keyboard navigation hook
+│           ├── 📄 useDeletionOperations.js # Deletion operations hook
+│           ├── 📄 usePhotoMetadataOperations.js # Photo metadata operations
+│           ├── 📄 usePhotoNavigation.js # Photo navigation hook
+│           └── 📄 useStarOperations.js # Star rating operations hook
 │
 ├── 📁 hooks/                   # Custom React hooks
 │   ├── 📄 useAppConfig.js           # Application configuration hook
+│   ├── 📄 useCollectionManagement.js # Collection (album/tag) management
+│   ├── 📄 useDataSynchronization.js # Data synchronization logic
 │   ├── 📄 useDateNavigation.js      # Date navigation logic
+│   ├── 📄 useFilteredPhotos.js      # Photo filtering logic (extracted from PhotosList)
 │   ├── 📄 useImportModeLifecycle.js # Import mode lifecycle management
 │   ├── 📄 useInfiniteScroll.js      # Infinite scroll pagination
+│   ├── 📄 useModalState.js          # Modal state management
+│   ├── 📄 usePageState.js           # Page state management
 │   ├── 📄 usePhotoDataLoader.js     # Photo data loading logic
 │   ├── 📄 usePhotoDataSync.js       # Photo data synchronization
 │   ├── 📄 usePhotoDisplay.js        # Photo display state management
+│   ├── 📄 usePhotoListHelpers.js    # PhotosList helper functions
+│   ├── 📄 usePhotoListStateGroups.js # PhotosList state groups
+│   ├── 📄 usePhotoLoader.js         # Photo loading logic
 │   ├── 📄 usePhotoMetadata.js       # Photo metadata operations
-│   ├── 📄 usePhotoOperations.js     # Photo operations (510 lines: album, trash, list management)
+│   ├── 📄 usePhotoOperationFlow.js  # Photo operation flow management
+│   ├── 📄 usePhotoOperations.js     # Photo operations (album, trash, list)
 │   ├── 📄 usePhotoSelection.js      # Photo selection logic
 │   ├── 📄 usePhotosListDisplay.js   # PhotosList display state
+│   ├── 📄 usePhotosListEffects.js   # PhotosList side effects (extracted)
 │   ├── 📄 usePhotosListFilters.js   # Filter state management
+│   ├── 📄 usePhotosListHandlers.js  # PhotosList event handlers (extracted)
 │   ├── 📄 usePhotosListSelection.js # PhotosList selection operations
 │   ├── 📄 usePhotosListState.js     # Main PhotosList state hook
 │   ├── 📄 usePhotosQuery.js         # Photo query logic
 │   ├── 📄 usePhotosState.js         # Photos state management
 │   ├── 📄 useSearch.js              # Search functionality
+│   ├── 📄 useSearchAndFilterManagement.jsx # Search and filter management
 │   ├── 📄 useSearchHistory.js       # Search history management
+│   ├── 📄 useSearchInitialization.js # Search initialization
+│   ├── 📄 useTabManagement.js       # Tab management logic
 │   ├── 📄 useThumbnailGeneration.js # Thumbnail generation logic
+│   ├── 📄 useTrashOperations.js     # Trash operations hook
 │   ├── 📄 useTutorial.js            # Tutorial state management
 │   ├── 📄 useViewMode.js            # View mode state machine
+│   ├── 📄 useViewModeFactory.js     # ViewMode factory (extracted)
+│   ├── 📄 useViewModeHelpers.js     # ViewMode helper functions
 │   ├── 📄 useViewModeObject.js      # ViewMode DDD value object integration
 │   └── 📄 useViewModeSync.js        # ViewMode synchronization
 │
 ├── 📁 services/                # External service integrations
 │   ├── 📄 LoggerService.js     # Structured logging service
+│   ├── 📄 TauriService.js      # Tauri backend communication service
 │   └── 📁 firebase/            # Firebase authentication
 │       ├── 📄 app.js           # Firebase app configuration
 │       ├── 📄 auth.js          # Authentication methods
@@ -129,18 +175,31 @@ src/
 - **`Home.jsx`**: Default dashboard view showing welcome image and basic information
 
 #### Photo Management Components
-- **`PhotosList.jsx`**: Main photo grid with filtering, sorting, pagination, and selection
+- **`PhotosList.jsx`**: Main photo grid with filtering, sorting, pagination, and selection (496 lines, refactored)
 - **`PhotoGrid.jsx`**: Photo grid display component with thumbnail rendering
-- **`PhotosListMini.jsx`**: Full-screen photo viewer with navigation and editing capabilities (735 lines)
-  - **`photoUtils.js`**: Thumbnail display calculations and border styles (128 lines)
-  - **`useKeyboardShortcuts.js`**: Keyboard navigation hook for photo browsing (124 lines)
-- **`PhotoDisplay.jsx`**: Individual photo rendering with transformation support
+- **`PhotoCard.jsx`**: Individual photo card component with selection and tag display
+- **`PhotoListContent.jsx`**: Photo list content wrapper component
+- **`PhotosListMini.jsx`**: Full-screen photo viewer with navigation and editing capabilities (475 lines, refactored)
+  - **`PhotoDisplay.jsx`**: Individual photo display with transformation support
+  - **`ThumbnailItem.jsx`**: Thumbnail item component
+  - **`HelpPanel.jsx`**: Help panel component with keyboard shortcuts
+  - **`AlbumModeIndicator.jsx`**: Album mode indicator component
+  - **`photoUtils.js`**: Thumbnail display calculations and border styles
+  - **`useKeyboardShortcuts.js`**: Keyboard navigation hook for photo browsing
+  - **`useDeletionOperations.js`**: Deletion operations hook
+  - **`usePhotoMetadataOperations.js`**: Photo metadata operations hook
+  - **`usePhotoNavigation.js`**: Photo navigation hook
+  - **`useStarOperations.js`**: Star rating operations hook
 - **`PhotoOption.jsx`**: Right sidebar panel for photo metadata and actions
-- **`PhotoEditor.jsx`**: Image editing interface with filters, transforms, and crop tools (980 lines)
-  - **`cssUtils.js`**: CSS parsing and generation utilities (218 lines)
-  - **`cropUtils.js`**: Crop calculation utilities and aspect ratio presets (144 lines)
-  - **`styleUtils.js`**: Style application utilities for DOM elements (199 lines)
+- **`PhotoEditor.jsx`**: Image editing interface with filters, transforms, and crop tools
+  - **`CropTool.jsx`**: Crop tool component
+  - **`EditorControl.jsx`**: Editor control component
+  - **`cssUtils.js`**: CSS parsing and generation utilities
+  - **`cropUtils.js`**: Crop calculation utilities and aspect ratio presets
+  - **`styleUtils.js`**: Style application utilities for DOM elements
+  - **`imageProcessing.js`**: Image processing utilities
 - **`PhotoInfo.jsx`**: Photo metadata display with EXIF data and external app launcher (🚀 button)
+- **`PhotoTags.jsx`**: Photo tag management component
 
 #### Import System Components
 - **`Importer.jsx`**: Directory browser and photo selection interface
@@ -201,6 +260,38 @@ src-tauri/
 ├── 📁 src/                     # Rust source code
 │   ├── 📄 main.rs              # Application entry point
 │   ├── 📄 lib.rs               # Main library with Tauri commands
+│   ├── 📄 app_state.rs         # Application state management
+│   ├── 📄 error.rs             # Error types and handling
+│   ├── 📄 utils.rs             # Utility functions
+│   │
+│   ├── 📁 commands/            # Tauri command handlers (refactored)
+│   │   ├── 📄 mod.rs           # Commands module declaration
+│   │   ├── 📄 album_commands.rs    # Album management commands
+│   │   ├── 📄 collection_commands.rs # Collection commands
+│   │   ├── 📄 config_commands.rs   # Configuration commands
+│   │   ├── 📄 database_commands.rs # Database commands
+│   │   ├── 📄 google_commands.rs   # Google Photos commands
+│   │   ├── 📄 image_commands.rs    # Image processing commands
+│   │   ├── 📄 import_commands.rs   # Import commands
+│   │   ├── 📄 job_queue_commands.rs # Job queue commands
+│   │   ├── 📄 logging_commands.rs  # Logging commands
+│   │   ├── 📄 photo_commands.rs    # Main photo commands
+│   │   ├── 📄 search_commands.rs   # Search commands
+│   │   ├── 📄 style_commands.rs    # Style commands
+│   │   ├── 📄 tag_commands.rs      # Tag commands
+│   │   ├── 📄 trash_commands.rs    # Trash commands
+│   │   ├── 📄 utility_commands.rs  # Utility commands
+│   │   │
+│   │   └── 📁 photo_handlers/  # Photo command handlers (split)
+│   │       ├── 📄 mod.rs       # Photo handlers module
+│   │       ├── 📄 album.rs     # Album photo handlers
+│   │       ├── 📄 collections.rs # Collection photo handlers
+│   │       ├── 📄 date.rs      # Date-based photo handlers
+│   │       ├── 📄 navigation.rs # Photo navigation handlers
+│   │       ├── 📄 recent.rs    # Recent photos handlers
+│   │       ├── 📄 search.rs    # Search handlers
+│   │       ├── 📄 tag.rs       # Tag handlers
+│   │       └── 📄 trash.rs     # Trash handlers
 │   │
 │   ├── 📄 entity.rs            # Domain entities module declaration
 │   ├── 📁 entity/              # Business domain entities
@@ -209,6 +300,7 @@ src-tauri/
 │   │   ├── 📄 importer.rs      # Import operation state entity
 │   │   ├── 📄 job_queue.rs     # Background job entities
 │   │   ├── 📄 photo.rs         # Photo entity with metadata
+│   │   ├── 📄 photo_collection.rs # Unified collection entity
 │   │   ├── 📄 photo_meta.rs    # Photo metadata entities
 │   │   └── 📄 trash.rs         # Trash/recycle bin entity
 │   │
@@ -217,8 +309,29 @@ src-tauri/
 │   │   ├── 📄 dir_service.rs   # Directory operation services
 │   │   ├── 📄 file_service.rs  # File operation services
 │   │   ├── 📄 job_queue_service.rs # Background job processing
+│   │   ├── 📄 logging_service.rs # Structured logging service
 │   │   ├── 📄 photo_service.rs # Photo processing services
-│   │   └── 📄 repository_dir_service.rs # Repository directory services
+│   │   ├── 📄 repository_dir_service.rs # Repository directory services
+│   │   ├── 📄 thumbnail_service.rs # Thumbnail generation service
+│   │   ├── 📄 token_storage_service.rs # OAuth token management
+│   │   │
+│   │   └── 📁 job_queue/       # Job queue subsystem
+│   │       ├── 📄 mod.rs       # Job queue module
+│   │       ├── 📄 executor.rs  # Job executor
+│   │       ├── 📄 manager.rs   # Job manager
+│   │       ├── 📄 submission.rs # Job submission
+│   │       │
+│   │       ├── 📁 handlers/    # Job handlers
+│   │       │   ├── 📄 mod.rs   # Handlers module
+│   │       │   ├── 📄 create_db.rs # Database creation handler
+│   │       │   ├── 📄 google_photos.rs # Google Photos handler
+│   │       │   ├── 📄 import.rs # Import handler
+│   │       │   └── 📄 thumbnail.rs # Thumbnail handler
+│   │       │
+│   │       └── 📁 utils/       # Job queue utilities
+│   │           ├── 📄 mod.rs   # Utils module
+│   │           ├── 📄 date_extractor.rs # Date extraction
+│   │           └── 📄 events.rs # Event handling
 │   │
 │   ├── 📄 repository.rs        # Repository pattern interfaces
 │   ├── 📁 repository/          # Data access layer
@@ -230,11 +343,29 @@ src-tauri/
 │   │   │   └── 📄 json.rs      # JSON-based config storage
 │   │   │
 │   │   ├── 📁 db/              # Database implementations
-│   │   │   ├── 📄 directory.rs # Filesystem-based repository
-│   │   │   └── 📄 sqlite.rs    # SQLite database operations
+│   │   │   └── 📄 directory.rs # Filesystem-based repository
 │   │   │
-│   │   └── 📁 meta_db/         # Metadata database implementations
-│   │       └── 📄 sqlite.rs    # SQLite metadata operations
+│   │   └── 📁 meta_db/         # Metadata database (refactored)
+│   │       ├── 📄 mod.rs       # SQLite module
+│   │       ├── 📄 albums.rs    # Album operations
+│   │       ├── 📄 collections.rs # Collection operations
+│   │       ├── 📄 counts.rs    # Count operations
+│   │       ├── 📄 date_summary.rs # Date summary operations
+│   │       ├── 📄 dates.rs     # Date operations
+│   │       ├── 📄 exif.rs      # EXIF operations
+│   │       ├── 📄 job_queue.rs # Job queue operations
+│   │       ├── 📄 photo_crud.rs # Photo CRUD operations
+│   │       ├── 📄 photo_metadata.rs # Photo metadata operations
+│   │       ├── 📄 search.rs    # Search operations
+│   │       ├── 📄 tags.rs      # Tag operations
+│   │       ├── 📄 utils.rs     # SQLite utilities
+│   │       │
+│   │       └── 📁 migrations/  # Database migrations
+│   │           ├── 📄 mod.rs   # Migrations module
+│   │           ├── 📄 001_initial_schema.sql
+│   │           ├── 📄 002_create_date_summary.sql
+│   │           ├── 📄 003_create_collections.sql
+│   │           └── 📄 004_create_job_queue.sql
 │   │
 │   ├── 📄 value.rs             # Value objects module declaration
 │   ├── 📁 value/               # Domain value objects
@@ -298,8 +429,25 @@ src-tauri/
 
 **Repositories** (`repository/`): Data access and persistence
 - **`db/directory.rs`**: Filesystem-based photo storage and retrieval
-- **`meta_db/sqlite.rs`**: SQLite database for metadata, unified collections, and search indices
+- **`meta_db/sqlite/`**: SQLite database modules (refactored into separate files):
+  - `mod.rs`: Main SQLite module
+  - `albums.rs`: Album CRUD operations
+  - `collections.rs`: Unified collection operations
+  - `counts.rs`: Count queries
+  - `dates.rs`: Date-related queries
+  - `exif.rs`: EXIF data operations
+  - `photo_crud.rs`: Photo CRUD operations
+  - `photo_metadata.rs`: Photo metadata operations
+  - `search.rs`: Search functionality
+  - `tags.rs`: Tag operations
+  - `utils.rs`: SQLite utilities
+- **`meta_db/migrations/`**: Database migration SQL files
 - **`config/json.rs`**: JSON-based configuration file management
+
+**Commands** (`commands/`): Tauri command handlers (refactored from lib.rs)
+- Modular command structure with separate files for each feature area
+- **`photo_handlers/`**: Photo command handlers split into focused modules:
+  - `album.rs`, `collections.rs`, `date.rs`, `navigation.rs`, `recent.rs`, `search.rs`, `tag.rs`, `trash.rs`
 
 **Value Objects** (`value/`): Immutable data types
 - **`date.rs`**: Date parsing, formatting, and comparison utilities

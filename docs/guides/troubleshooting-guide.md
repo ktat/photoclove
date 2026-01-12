@@ -98,3 +98,27 @@ This document provides comprehensive troubleshooting guidance for common issues 
 
 ### Permanent Delete with Thumbnails
 **Fixed**: Implemented complete permanent delete that removes both original files and cached thumbnails from all locations
+
+### EXIF Orientation Correction for Album/Tag Thumbnails
+**Fixed 2025-01-13**: Photos in album/tag GridView were not applying EXIF orientation correction, causing photos to appear rotated incorrectly. Added `src/utils/orientationUtils.js` utility and fixed PhotoCard, PhotoGrid, and PhotoListContent components
+
+### Preferences Save Not Persisting
+**Fixed 2025-01-13**: Preferences changes were not being saved to the config file due to issues in config_commands.rs and entity/config.rs. Fixed configuration entity and command handler
+
+### Album Mode Tag Display
+**Fixed 2025-01-13**: Tags were not displaying correctly in album mode and tag loading was slow. Optimized tag loading with batch queries and fixed display logic
+
+### Move Files by EXIF Date
+**Fixed 2025-01-13**: "Move files according to EXIF date" feature was not working correctly. Fixed date calculation in photo.rs, photo_meta.rs, and directory.rs
+
+### Collection Photo Count Display
+**Fixed 2025-01-13**: Album/tag collection photo counts were not displaying correctly. Fixed backend dynamic count calculation in UnifiedPhotoCollection.js
+
+### Tag Display Refresh in Grid View
+**Fixed 2025-01-13**: Tags were not updating in grid view when added/removed. Fixed refresh mechanism in PhotoCard.jsx and PhotoTags.jsx with proper event propagation
+
+### Trash Navigation Links
+**Fixed 2025-01-13**: Navigation links in trash mode were not working correctly. Fixed in StatusBar.jsx and PhotoDisplayWrapper.jsx
+
+### Bulk Insert for Album/Tag Assignments
+**Fixed 2025-01-13**: Added bulk insert capability for album/tag photo assignments to improve performance when adding multiple photos to collections
