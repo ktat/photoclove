@@ -353,7 +353,7 @@ pub async fn get_photos_unified(
                     log::info!(target: "get_photos", "tag_request_using_unified_collections; tag_ids={:?}", tag_ids);
                     let placeholders = tag_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
                     let query_sql = format!(
-                        "SELECT pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url,
+                        "SELECT pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url, pm.exif_orientation,
                                 GROUP_CONCAT(pc.id || ':' || pc.name || ':' || COALESCE(pc.color, '')) as tags
                          FROM photo_metadata pm
                          LEFT JOIN photo_collection_items pci ON pm.path = pci.photo_path
@@ -365,7 +365,7 @@ pub async fn get_photos_unified(
                              GROUP BY pci2.photo_path
                              HAVING COUNT(DISTINCT pci2.collection_id) = ?
                          ) AND pm.delete_flg = 0
-                         GROUP BY pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url
+                         GROUP BY pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url, pm.exif_orientation
                          ORDER BY pm.photo_date DESC",
                         placeholders
                     );
@@ -413,6 +413,13 @@ pub async fn get_photos_unified(
                             // Set CSS style
                             if let Ok(css_style) = row.get::<_, Option<String>>("css_style") {
                                 photo.set_css_style(css_style);
+                            }
+
+                            // Set orientation from database
+                            if let Ok(Some(orientation)) = row.get::<_, Option<String>>("exif_orientation") {
+                                if !orientation.is_empty() {
+                                    photo.meta_data.orientation = orientation;
+                                }
                             }
 
                             // Process tags from concatenated string
@@ -732,6 +739,13 @@ pub fn get_photo_info(
             // File exists, read EXIF from file
             let photo = photo::Photo::new(file::File::new(path_str.to_string()), Option::None);
             let exif_data = exif::ExifData::new(f);
+
+            // Sync EXIF data to database if there are differences
+            // This ensures DB stays in sync with actual file metadata
+            if let Err(e) = state.meta_db.update_exif_if_changed(path_str, &exif_data) {
+                log::warn!(target: "photo_info", "exif_sync_failed; path={}; error={}", path_str, e);
+            }
+
             let photo_meta = photo_meta::PhotoMeta::new_with_data(photo, &state.meta_db);
             let photo_meta_with_exif = photo_meta::PhotoMetaWithExif::new(photo_meta, exif_data);
 
