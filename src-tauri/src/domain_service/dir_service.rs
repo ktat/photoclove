@@ -5,77 +5,85 @@ use uuid::Uuid;
 
 pub fn find_files(dir: &file::Dir) -> file::Files {
     let mut f = file::Files { files: Vec::new() };
-    let readdir = fs::read_dir(&dir.path);
-    if readdir.is_ok() {
-        for entry in readdir.unwrap() {
-            let entry = entry.unwrap();
-            let entry_path = entry.path();
-            let file_name = entry_path.file_name().unwrap();
 
-            if file_name.to_string_lossy().chars().next().unwrap() == '.' {
-                continue;
-            }
+    let Ok(readdir) = fs::read_dir(&dir.path) else {
+        log::warn!(target: "dir_service", "directory_not_found; path={}", dir.path);
+        return f;
+    };
 
-            if entry_path.display().to_string() != ".".to_string() && entry_path.is_file() {
-                f.files
-                    .push(file::File::new(entry_path.display().to_string()));
-            } else if entry_path.is_dir() {
-                // Check if this is a UUID directory (UUID-like format)
-                let dir_name = file_name.to_string_lossy();
-                if Uuid::parse_str(&dir_name).is_ok() {
-                    // Recursively scan UUID subdirectory
-                    let uuid_dir = file::Dir::new(entry_path.display().to_string());
-                    let uuid_files = find_files(&uuid_dir);
-                    f.files.extend(uuid_files.files);
-                }
+    for entry_result in readdir {
+        let Ok(entry) = entry_result else {
+            continue;
+        };
+        let entry_path = entry.path();
+        let Some(file_name) = entry_path.file_name() else {
+            continue;
+        };
+
+        // Skip hidden files (starting with '.')
+        if file_name.to_string_lossy().starts_with('.') {
+            continue;
+        }
+
+        if entry_path.display().to_string() != "." && entry_path.is_file() {
+            f.files
+                .push(file::File::new(entry_path.display().to_string()));
+        } else if entry_path.is_dir() {
+            // Check if this is a UUID directory (UUID-like format)
+            let dir_name = file_name.to_string_lossy();
+            if Uuid::parse_str(&dir_name).is_ok() {
+                // Recursively scan UUID subdirectory
+                let uuid_dir = file::Dir::new(entry_path.display().to_string());
+                let uuid_files = find_files(&uuid_dir);
+                f.files.extend(uuid_files.files);
             }
         }
-        return f;
-    } else {
-        // Directory doesn't exist or cannot be read - return empty files list
-        log::warn!(target: "dir_service", "directory_not_found; path={}", dir.path.to_string());
-        return f;
     }
+    f
 }
 
 pub fn find_directories(dir: &file::Dir, regex: &Option<Regex>) -> file::Dirs {
     let mut f = file::Dirs { dirs: Vec::new() };
-    let res = fs::read_dir(&dir.path);
-    if res.is_ok() {
-        for entry in res.unwrap() {
-            if entry.is_err() {
-                print!("{:?}", entry.err());
-                continue;
-            }
-            let entry = entry.unwrap();
-            let entry_path = entry.path();
-            let t = &entry_path.display().to_string();
-            let cap_result = regex.as_ref().unwrap().captures(t);
-            if cap_result.is_none() {
-                continue;
-            }
-            let cap = cap_result.unwrap();
-            if regex.is_some() && cap.len() == 0 {
-                continue;
-            } else if date::Date::new(
-                cap[1].parse::<i32>().unwrap(),
-                cap[2].parse::<u32>().unwrap(),
-                cap[3].parse::<u32>().unwrap(),
-            )
-            .is_none()
-            {
-                print!("invalid path? {:?}\n", cap);
-                continue;
-            }
 
-            if entry_path.display().to_string() != ".".to_string() && entry_path.is_dir() {
-                f.dirs
-                    .push(file::Dir::new(entry_path.display().to_string()));
-            }
+    let Ok(entries) = fs::read_dir(&dir.path) else {
+        log::warn!(target: "dir_service", "directory_not_found; path={}", dir.path);
+        return f;
+    };
+
+    let Some(re) = regex.as_ref() else {
+        return f;
+    };
+
+    for entry_result in entries {
+        let Ok(entry) = entry_result else {
+            log::warn!(target: "dir_service", "entry_read_failed; path={}", dir.path);
+            continue;
+        };
+
+        let entry_path = entry.path();
+        let path_str = entry_path.display().to_string();
+
+        let Some(cap) = re.captures(&path_str) else {
+            continue;
+        };
+
+        if cap.len() == 0 {
+            continue;
         }
-    } else {
-        // Directory doesn't exist or cannot be read - return empty dirs list
-        log::warn!(target: "dir_service", "directory_not_found; path={}", dir.path.to_string());
+
+        // Parse date components with fallback to 0 for invalid values
+        let year = cap[1].parse::<i32>().unwrap_or(0);
+        let month = cap[2].parse::<u32>().unwrap_or(0);
+        let day = cap[3].parse::<u32>().unwrap_or(0);
+
+        if date::Date::new(year, month, day).is_none() {
+            log::debug!(target: "dir_service", "invalid_date_path; path={}", path_str);
+            continue;
+        }
+
+        if path_str != "." && entry_path.is_dir() {
+            f.dirs.push(file::Dir::new(path_str));
+        }
     }
     f
 }
