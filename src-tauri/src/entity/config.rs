@@ -46,6 +46,14 @@ fn default_thumbnail_orientation_correction() -> bool {
     false
 }
 
+fn default_color_theme() -> String {
+    "dark".to_string()
+}
+
+fn default_photo_grid_theme() -> String {
+    "default".to_string()
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub repository: RepositoryConfig,
@@ -74,6 +82,10 @@ pub struct Config {
     pub google_auth_auto_reauth: bool,
     #[serde(default = "default_thumbnail_orientation_correction")]
     pub thumbnail_orientation_correction: bool,
+    #[serde(default = "default_color_theme")]
+    pub color_theme: String,
+    #[serde(default = "default_photo_grid_theme")]
+    pub photo_grid_theme: String,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryConfig {
@@ -105,6 +117,8 @@ impl Config {
         self.use_exif_thumbnail = config.use_exif_thumbnail;
         self.google_auth_auto_reauth = config.google_auth_auto_reauth;
         self.thumbnail_orientation_correction = config.thumbnail_orientation_correction;
+        self.color_theme = config.color_theme;
+        self.photo_grid_theme = config.photo_grid_theme;
     }
 
     pub fn config_path() -> String {
@@ -200,6 +214,8 @@ impl Config {
             use_exif_thumbnail: default_use_exif_thumbnail(),
             google_auth_auto_reauth: default_google_auth_auto_reauth(),
             thumbnail_orientation_correction: default_thumbnail_orientation_correction(),
+            color_theme: default_color_theme(),
+            photo_grid_theme: default_photo_grid_theme(),
         }
     }
 
