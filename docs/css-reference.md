@@ -9,6 +9,85 @@ See also:
 - [HTML Structure - Sidebar Panels](html-structure/sidebar-panels.md)
 - [HTML Structure - Import & Preferences](html-structure/import-preferences.md)
 
+## Design System Tokens
+
+PhotoClove uses CSS custom properties (variables) for consistent styling. All values are defined in `src/styles/base.css`.
+
+### Background Colors
+| Variable | Usage |
+|----------|-------|
+| `--color-bg-base` | Main page background (#1b1b1b dark / #e8e8e8 light) |
+| `--color-bg-elevated` | Cards, modals, elevated surfaces |
+| `--color-bg-surface` | Input fields, interactive surfaces |
+| `--color-bg-muted` | Disabled states, subtle backgrounds |
+| `--color-bg-film` | Film strip background (#141414) |
+| `--color-film-sprocket` | Film sprocket holes accent |
+
+### Text Colors
+| Variable | Usage |
+|----------|-------|
+| `--color-text-primary` | Main text, headings |
+| `--color-text-secondary` | Secondary text, descriptions |
+| `--color-text-muted` | Placeholder, disabled text |
+| `--color-text-on-light` | Text on light backgrounds (slide themes) |
+
+### Border Colors
+| Variable | Usage |
+|----------|-------|
+| `--color-border-default` | Standard borders |
+| `--color-border-subtle` | Subtle dividers |
+| `--color-border-strong` | Emphasized borders |
+
+### State Colors
+| Variable | Usage |
+|----------|-------|
+| `--color-primary` | Primary actions, links |
+| `--color-primary-hover` | Primary hover state |
+| `--color-primary-selected` | Selected item background |
+| `--color-success` | Success states |
+| `--color-warning` | Warning states, stars |
+| `--color-danger` | Error states, delete actions |
+| `--color-info` | Info states, tutorial highlights |
+
+### Font Sizes
+| Variable | Size | Usage |
+|----------|------|-------|
+| `--font-size-2xs` | 9px | Very small indicators |
+| `--font-size-xs` | 11px | Small labels, metadata |
+| `--font-size-sm` | 13px | Secondary text |
+| `--font-size-base` | 14px | Body text (default) |
+| `--font-size-lg` | 16px | Subheadings, emphasis |
+| `--font-size-xl` | 18px | Section titles |
+| `--font-size-2xl` | 20px | Page titles |
+
+### Spacing Scale (4px base)
+- `--space-1` (4px), `--space-2` (8px), `--space-3` (12px), `--space-4` (16px)
+- `--space-5` (20px), `--space-6` (24px), `--space-8` (32px), `--space-10` (40px)
+
+### Border Radius
+- `--radius-sm` (4px), `--radius-md` (6px), `--radius-lg` (8px), `--radius-xl` (12px), `--radius-full` (9999px)
+
+## Theme Support
+
+### Application Themes
+PhotoClove supports dark and light themes via `data-theme` attribute on `<html>`:
+
+- **Dark** (default): `data-theme="dark"` - Dark backgrounds with light text
+- **Light**: `data-theme="light"` - Light backgrounds with dark text
+
+### Grid Themes
+Photo grid appearance can be customized via `data-grid-theme` attribute:
+
+| Theme | Description |
+|-------|-------------|
+| `default` | Standard photo grid |
+| `filmstrip` | Film strip with sprocket holes (negative style) |
+| `slide-mount` | Slide mount frame appearance |
+| `lightbox` | Light box viewing style |
+| `slide-35mm` | Classic 35mm slide appearance |
+
+Grid themes affect both the main photo grid and the thumbnail strip (PhotosListMini).
+
 ## Layout Classes
 
 **Main Application Structure**
