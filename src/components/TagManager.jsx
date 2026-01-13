@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import classNames from 'classnames';
 import { logger } from '../services/LoggerService.js';
 import { unifiedCollectionService } from '../services/UnifiedCollectionService.js';
 import TagChip from './TagChip.jsx';
 import TagInput from './TagInput.jsx';
-import './TagManager.css';
+import styles from './TagManager.module.css';
 
 const TagManager = () => {
     const [tags, setTags] = useState([]);
@@ -125,42 +126,42 @@ const TagManager = () => {
 
     if (isLoading) {
         return (
-            <div className="tag-manager">
-                <div className="tag-manager-loading">Loading tags...</div>
+            <div className={styles.tagManager}>
+                <div className={styles.tagManagerLoading}>Loading tags...</div>
             </div>
         );
     }
 
     return (
-        <div className="tag-manager">
-            <div className="tag-manager-header">
+        <div className={styles.tagManager}>
+            <div className={styles.tagManagerHeader}>
                 <h3>Tag Management</h3>
-                <p className="tag-manager-description">
+                <p className={styles.tagManagerDescription}>
                     Manage your photo tags. Create new tags, delete unused ones, or search for photos by tag.
                 </p>
             </div>
 
-            <div className="tag-manager-create">
+            <div className={styles.tagManagerCreate}>
                 <h4>Create New Tag</h4>
                 <TagInput onTagCreated={handleTagCreated} />
             </div>
 
-            <div className="tag-manager-list">
-                <div className="tag-manager-controls">
-                    <div className="tag-search-control">
+            <div className={styles.tagManagerList}>
+                <div className={styles.tagManagerControls}>
+                    <div className={styles.tagSearchControl}>
                         <input
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder="Search tags..."
-                            className="tag-search-field"
+                            className={styles.tagSearchField}
                         />
                     </div>
-                    <div className="tag-sort-control">
+                    <div className={styles.tagSortControl}>
                         <select
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value)}
-                            className="tag-sort-select"
+                            className={styles.tagSortSelect}
                         >
                             <option value="name">Sort by Name</option>
                             <option value="created">Sort by Created</option>
@@ -168,26 +169,26 @@ const TagManager = () => {
                     </div>
                 </div>
 
-                <div className="tag-count-info">
+                <div className={styles.tagCountInfo}>
                     {filteredAndSortedTags.length} of {tags.length} tags
                     {searchTerm && ` matching "${searchTerm}"`}
                 </div>
 
-                <div className="tag-list">
+                <div className={styles.tagList}>
                     {filteredAndSortedTags.length > 0 ? (
                         filteredAndSortedTags.map(tag => (
-                            <div key={tag.id} className="tag-item">
+                            <div key={tag.id} className={styles.tagItem}>
                                 <TagChip tag={tag} />
-                                <div className="tag-item-actions">
+                                <div className={styles.tagItemActions}>
                                     <button
-                                        className="tag-action-button tag-search-button"
+                                        className={classNames(styles.tagActionButton, styles.tagSearchButton)}
                                         onClick={() => handleTagSearch([tag.id])}
                                         title="Search photos with this tag"
                                     >
                                         🔍
                                     </button>
                                     <button
-                                        className="tag-action-button tag-delete-button"
+                                        className={classNames(styles.tagActionButton, styles.tagDeleteButton)}
                                         onClick={() => handleTagDelete(tag.id)}
                                         title="Delete this tag"
                                     >
@@ -197,11 +198,11 @@ const TagManager = () => {
                             </div>
                         ))
                     ) : searchTerm ? (
-                        <div className="tag-empty-state">
+                        <div className={styles.tagEmptyState}>
                             No tags found matching "{searchTerm}"
                         </div>
                     ) : (
-                        <div className="tag-empty-state">
+                        <div className={styles.tagEmptyState}>
                             No tags created yet. Create your first tag above!
                         </div>
                     )}
@@ -209,18 +210,18 @@ const TagManager = () => {
             </div>
 
             {tags.length > 0 && (
-                <div className="tag-manager-stats">
+                <div className={styles.tagManagerStats}>
                     <h4>Statistics</h4>
-                    <div className="tag-stats-grid">
-                        <div className="tag-stat">
-                            <span className="tag-stat-number">{tags.length}</span>
-                            <span className="tag-stat-label">Total Tags</span>
+                    <div className={styles.tagStatsGrid}>
+                        <div className={styles.tagStat}>
+                            <span className={styles.tagStatNumber}>{tags.length}</span>
+                            <span className={styles.tagStatLabel}>Total Tags</span>
                         </div>
-                        <div className="tag-stat">
-                            <span className="tag-stat-number">
+                        <div className={styles.tagStat}>
+                            <span className={styles.tagStatNumber}>
                                 {tags.filter(tag => tag.color).length}
                             </span>
-                            <span className="tag-stat-label">Colored Tags</span>
+                            <span className={styles.tagStatLabel}>Colored Tags</span>
                         </div>
                     </div>
                 </div>

@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { UnifiedPhotoCollection } from '../domain/UnifiedPhotoCollection.js';
 import { logger } from '../services/LoggerService.js';
 import TagInput from './TagInput.jsx';
-import './TagSelector.css';
+import styles from './TagSelector.module.css';
 
 const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
     const [allTags, setAllTags] = useState([]);
@@ -141,9 +141,9 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
     };
 
     return (
-        <div className="tag-selector">
+        <div className={styles.tagSelector}>
             {/* Selected Tags */}
-            <div className="selected-tags" style={{
+            <div className={styles.selectedTags} style={{
                 display: 'flex',
                 flexWrap: 'wrap',
                 gap: '8px',
@@ -189,7 +189,7 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
                 ))}
 
                 <button
-                    className="add-tag-button"
+                    className={styles.addTagButton}
                     onClick={handleDropdownToggle}
                     disabled={isLoading}
                     title="Add tag"
@@ -211,19 +211,19 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
 
             {/* Dropdown */}
             {isDropdownOpen && (
-                <div className="tag-dropdown" ref={dropdownRef}>
-                    <div className="tag-search">
+                <div className={styles.tagDropdown} ref={dropdownRef}>
+                    <div className={styles.tagSearch}>
                         <input
                             ref={searchInputRef}
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder="Search tags..."
-                            className="tag-search-input"
+                            className={styles.tagSearchInput}
                         />
                     </div>
 
-                    <div className="tag-options">
+                    <div className={styles.tagOptions}>
                         {filteredTags.length > 0 ? (
                             <div style={{
                                 display: 'flex',
@@ -234,7 +234,7 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
                                 {filteredTags.map(tag => (
                                     <button
                                         key={tag.id}
-                                        className="tag-option-pill"
+                                        className={styles.tagOptionPill}
                                         onClick={() => handleTagSelect(tag)}
                                         style={{
                                             display: 'inline-flex',
@@ -262,18 +262,18 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
                                 ))}
                             </div>
                         ) : searchTerm ? (
-                            <div className="tag-no-results">
+                            <div className={styles.tagNoResults}>
                                 No tags found for "{searchTerm}"
                             </div>
                         ) : (
-                            <div className="tag-no-results">
+                            <div className={styles.tagNoResults}>
                                 All tags are already selected
                             </div>
                         )}
                     </div>
 
-                    <div className="tag-create-section">
-                        <div className="tag-create-divider">or create new tag</div>
+                    <div className={styles.tagCreateSection}>
+                        <div className={styles.tagCreateDivider}>or create new tag</div>
                         <TagInput onTagCreated={handleTagCreated} />
                     </div>
                 </div>

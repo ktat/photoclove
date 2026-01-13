@@ -1,5 +1,6 @@
 import React from 'react';
-import './TagChip.css';
+import classNames from 'classnames';
+import styles from './TagChip.module.css';
 
 const TagChip = ({ tag, onRemove, isRemovable = false, onClick }) => {
     const handleClick = (e) => {
@@ -16,20 +17,16 @@ const TagChip = ({ tag, onRemove, isRemovable = false, onClick }) => {
         }
     };
 
-    // Color feature removed - tags now use default styling
-    // const chipStyle = tag.color ? { backgroundColor: tag.color } : {};
-
     return (
         <span
-            className={`tag-chip ${onClick ? 'tag-chip-clickable' : ''}`}
-            // style={chipStyle}
+            className={classNames(styles.tagChip, { [styles.tagChipClickable]: onClick })}
             onClick={handleClick}
             title={tag.name}
         >
-            <span className="tag-chip-text">{tag.name}</span>
+            <span className={styles.tagChipText}>{tag.name}</span>
             {isRemovable && (
-                <button 
-                    className="tag-chip-remove" 
+                <button
+                    className={styles.tagChipRemove}
                     onClick={handleRemove}
                     aria-label={`Remove ${tag.name} tag`}
                 >
