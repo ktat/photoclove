@@ -187,9 +187,12 @@ function PhotosListMini(props) {
         invoke("get_config", {}).then((e) => {
             const json = JSON.parse(e);
             setThumbnailStore(json.thumbnail_store);
-            // Apply photo grid theme on load
+            // Apply themes on load
             if (json.photo_grid_theme) {
                 document.documentElement.setAttribute('data-grid-theme', json.photo_grid_theme);
+            }
+            if (json.color_theme) {
+                document.documentElement.setAttribute('data-theme', json.color_theme);
             }
         });
     }, []);
@@ -376,16 +379,17 @@ function PhotosListMini(props) {
                 </a>
 
                 {/* Metadata overlay - stars and comments */}
+                {/* Note: fontSize is hardcoded because CSS variables don't work with color-scheme: light */}
                 {(v.star > 0 || v.comment) && (
                     <div style={{
                         position: "absolute",
-                        top: "28px",
+                        bottom: "2px",
                         left: "2px",
                         backgroundColor: "rgba(0, 0, 0, 0.5)",
                         color: "white",
                         padding: "2px 4px",
                         borderRadius: "3px",
-                        fontSize: "var(--font-size-2xs)",
+                        fontSize: "9px",
                         display: "flex",
                         alignItems: "center",
                         gap: "2px",

@@ -151,7 +151,7 @@ function PhotoOption(props) {
 
     // Helper function for selection tab class (replaces getSelectionTabClassName)
     const getSelectionTabClass = () => {
-        const isActive = activeTab === "selection";
+        const isActive = activeTab === "selection" && props.showSideMenu;
         const hasSelection = (props.photoSelection?.length || 0) +
                            (props.selectedAlbums?.length || 0) +
                            (props.selectedTags?.length || 0) > 0;
@@ -170,7 +170,7 @@ function PhotoOption(props) {
                 [styles.menuClosed]: !props.showSideMenu
             })}>
                 <button
-                    className={classNames(styles.verticalTabButton, { [styles.active]: activeTab === "info" })}
+                    className={classNames(styles.verticalTabButton, { [styles.active]: activeTab === "info" && props.showSideMenu })}
                     onClick={() => handleTabClick("info")}
                     title="Photo Information"
                 >
@@ -180,7 +180,7 @@ function PhotoOption(props) {
                 {/* Hide Editor tab in import and trash modes */}
                 {!isImportMode && !isTrashMode && (
                     <button
-                        className={classNames(styles.verticalTabButton, { [styles.active]: activeTab === "editor" })}
+                        className={classNames(styles.verticalTabButton, { [styles.active]: activeTab === "editor" && props.showSideMenu })}
                         onClick={() => handleTabClick("editor")}
                         title="Photo Editor"
                     >
@@ -191,7 +191,7 @@ function PhotoOption(props) {
                 {/* Hide Tags tab in import and trash modes */}
                 {!isImportMode && !isTrashMode && (
                     <button
-                        className={classNames(styles.verticalTabButton, { [styles.active]: activeTab === "tags" })}
+                        className={classNames(styles.verticalTabButton, { [styles.active]: activeTab === "tags" && props.showSideMenu })}
                         onClick={() => handleTabClick("tags")}
                         title="Photo Tags"
                     >
@@ -200,7 +200,7 @@ function PhotoOption(props) {
                 )}
                 {isAlbumMode && (
                     <button
-                        className={classNames(styles.verticalTabButton, { [styles.active]: activeTab === "album" })}
+                        className={classNames(styles.verticalTabButton, { [styles.active]: activeTab === "album" && props.showSideMenu })}
                         onClick={() => handleTabClick("album")}
                         title="Album Management"
                     >
@@ -236,7 +236,7 @@ function PhotoOption(props) {
                     top: '0px',
                     width: '320px',
                     height: 'calc(100vh - 25px)',
-                    backgroundColor: '#1f1f1f',
+                    backgroundColor: 'var(--color-bg-elevated)',
                     paddingLeft: '20px',
                     paddingTop: '10px',
                     zIndex: 1001

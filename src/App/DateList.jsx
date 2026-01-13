@@ -245,6 +245,8 @@ function DateList(props) {
             {/* Date Controls - Outside Scroll Area */}
             <div className="date-filters-controls" style={{ borderBottom: '1px solid var(--color-border-default)', paddingBottom: '3px', marginBottom: '3px' }}>
                 {/* Filter Controls */}
+                {/* Note: fontSize is hardcoded because color-scheme: light in light theme
+                    causes browser to override CSS variable values for form elements */}
                 <div className="date-filters" style={{ margin: "3px 0", textAlign: "center" }}>
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
@@ -256,14 +258,11 @@ function DateList(props) {
                                     setFilterMonth('all'); // Reset month when year changes
                                 }}
                                 style={{
-                                    fontSize: 'var(--font-size-xs)',
+                                    fontSize: '11px', // Hardcoded: CSS variables don't work with color-scheme: light
                                     padding: '2px 4px',
                                     width: '55px',
                                     height: '22px',
-                                    backgroundColor: 'var(--color-bg-elevated)',
-                                    color: 'var(--color-text-primary)',
-                                    border: '1px solid var(--color-border-default)',
-                                    borderRadius: 'var(--radius-sm)'
+                                    margin: 0
                                 }}
                             >
                                 <option value="all">All</option>
@@ -278,14 +277,11 @@ function DateList(props) {
                                 value={filterMonth}
                                 onChange={(e) => setFilterMonth(e.target.value)}
                                 style={{
-                                    fontSize: 'var(--font-size-xs)',
+                                    fontSize: '11px', // Hardcoded: CSS variables don't work with color-scheme: light
                                     padding: '2px 4px',
                                     width: '60px',
                                     height: '22px',
-                                    backgroundColor: 'var(--color-bg-elevated)',
-                                    color: 'var(--color-text-primary)',
-                                    border: '1px solid var(--color-border-default)',
-                                    borderRadius: 'var(--radius-sm)'
+                                    margin: 0
                                 }}
                             >
                                 <option value="all">All</option>
@@ -304,12 +300,13 @@ function DateList(props) {
 
                 {/* View Mode Toggle */}
                 <div className="view-mode-toggle" style={{ margin: "3px 0", textAlign: "center" }}>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '2px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 0 }}>
                         <button
                             onClick={() => setViewMode('flat')}
                             style={{
-                                fontSize: 'var(--font-size-xs)',
+                                fontSize: '11px', // Hardcoded: CSS variables don't work with color-scheme: light
                                 padding: '3px 8px',
+                                margin: 0,
                                 backgroundColor: viewMode === 'flat' ? 'var(--color-primary-selected)' : 'var(--color-bg-elevated)',
                                 color: 'var(--color-text-primary)',
                                 border: viewMode === 'flat' ? '1px solid var(--color-primary)' : '1px solid var(--color-border-default)',
@@ -323,8 +320,9 @@ function DateList(props) {
                         <button
                             onClick={() => setViewMode('hierarchical')}
                             style={{
-                                fontSize: 'var(--font-size-xs)',
+                                fontSize: '11px', // Hardcoded: CSS variables don't work with color-scheme: light
                                 padding: '3px 8px',
+                                margin: 0,
                                 backgroundColor: viewMode === 'hierarchical' ? 'var(--color-primary-selected)' : 'var(--color-bg-elevated)',
                                 color: 'var(--color-text-primary)',
                                 border: viewMode === 'hierarchical' ? '1px solid var(--color-primary)' : '1px solid var(--color-border-default)',
@@ -386,8 +384,8 @@ function DateList(props) {
                                             }}
                                             onClick={() => toggleYearExpansion(yearData.year)}
                                         >
-                                            <span style={{ fontSize: "var(--font-size-2xs)", marginRight: "4px" }}>
-                                                {isYearExpanded ? '▼' : '▶'}
+                                            <span style={{ marginRight: "4px" }}>
+                                                {isYearExpanded ? '▾' : '▸'}
                                             </span>
                                             {yearData.year} ({yearPhotoCount})
                                         </div>
@@ -412,8 +410,8 @@ function DateList(props) {
                                                                 }}
                                                                 onClick={() => toggleMonthExpansion(yearData.year, monthData.month)}
                                                             >
-                                                                <span style={{ fontSize: "var(--font-size-2xs)", marginRight: "4px" }}>
-                                                                    {isMonthExpanded ? '▼' : '▶'}
+                                                                <span style={{ marginRight: "4px" }}>
+                                                                    {isMonthExpanded ? '▾' : '▸'}
                                                                 </span>
                                                                 {monthNames[monthData.month - 1]} ({monthPhotoCount})
                                                             </div>

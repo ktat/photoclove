@@ -3,6 +3,7 @@
  * Provides slider + number input + reset button pattern
  */
 import React from 'react';
+import styles from './PhotoEditor.module.css';
 
 /**
  * EditorControl - A reusable control component with range slider, number input, and reset button
@@ -22,15 +23,15 @@ function EditorControl({ label, value, min, max, onChange, onReset, resetTitle, 
     };
 
     return (
-        <div className="editor-control">
-            <div className="control-row">
+        <div className={styles['editor-control']}>
+            <div className={styles['control-row']}>
                 <label>{label}</label>
                 <input
                     type="range"
                     min={min}
                     max={max}
                     value={value}
-                    className="editor-slider"
+                    className={styles['editor-slider']}
                     onChange={handleChange}
                 />
                 <input
@@ -38,11 +39,11 @@ function EditorControl({ label, value, min, max, onChange, onReset, resetTitle, 
                     min={min}
                     max={max}
                     value={value}
-                    className="value-input"
+                    className={styles['value-input']}
                     onChange={handleChange}
                 />
                 <button
-                    className="reset-btn"
+                    className={styles['reset-btn']}
                     onClick={onReset}
                     title={resetTitle || `Reset ${label.toLowerCase()}`}
                 >
