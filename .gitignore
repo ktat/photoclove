@@ -15,3 +15,4 @@ run.sh
 rsync-ui.sh
 dev.sh
 .aider*
+public/movie.tmp.MP4
