@@ -157,11 +157,11 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
                             alignItems: 'center',
                             gap: '6px',
                             padding: '6px 12px',
-                            backgroundColor: 'rgba(33, 150, 243, 0.3)',
-                            border: '1px solid #2196F3',
+                            backgroundColor: 'var(--color-primary-selected)',
+                            border: '1px solid var(--color-primary)',
                             borderRadius: '16px',
-                            fontSize: '13px',
-                            color: 'var(--text)',
+                            fontSize: 'var(--font-size-sm)',
+                            color: 'var(--color-text-primary)',
                             whiteSpace: 'nowrap'
                         }}
                     >
@@ -172,10 +172,10 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
                             style={{
                                 background: 'none',
                                 border: 'none',
-                                color: 'var(--text)',
+                                color: 'var(--color-text-primary)',
                                 cursor: isLoading ? 'not-allowed' : 'pointer',
                                 padding: '0 0 0 4px',
-                                fontSize: '16px',
+                                fontSize: 'var(--font-size-lg)',
                                 lineHeight: '1',
                                 opacity: isLoading ? 0.5 : 0.7
                             }}
@@ -195,12 +195,12 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
                     title="Add tag"
                     style={{
                         padding: '6px 12px',
-                        backgroundColor: 'var(--bg-elevated)',
-                        border: '1px solid var(--border)',
+                        backgroundColor: 'var(--color-bg-elevated)',
+                        border: '1px solid var(--color-border-default)',
                         borderRadius: '16px',
-                        color: 'var(--text)',
+                        color: 'var(--color-text-primary)',
                         cursor: isLoading ? 'not-allowed' : 'pointer',
-                        fontSize: '16px',
+                        fontSize: 'var(--font-size-lg)',
                         fontWeight: 'bold',
                         opacity: isLoading ? 0.6 : 1
                     }}
@@ -242,19 +242,19 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
                                             gap: '6px',
                                             padding: '6px 12px',
                                             cursor: 'pointer',
-                                            backgroundColor: 'var(--bg-elevated)',
-                                            border: '1px solid var(--border)',
+                                            backgroundColor: 'var(--color-bg-elevated)',
+                                            border: '1px solid var(--color-border-default)',
                                             borderRadius: '16px',
                                             transition: 'all 0.2s',
-                                            fontSize: '13px',
-                                            color: 'var(--text)',
+                                            fontSize: 'var(--font-size-sm)',
+                                            color: 'var(--color-text-primary)',
                                             whiteSpace: 'nowrap'
                                         }}
                                         onMouseEnter={(e) => {
-                                            e.currentTarget.style.backgroundColor = '#374151';
+                                            e.currentTarget.style.backgroundColor = 'var(--color-bg-muted)';
                                         }}
                                         onMouseLeave={(e) => {
-                                            e.currentTarget.style.backgroundColor = 'var(--bg-elevated)';
+                                            e.currentTarget.style.backgroundColor = 'var(--color-bg-elevated)';
                                         }}
                                     >
                                         {tag.name} ({tag.photoCount || 0})

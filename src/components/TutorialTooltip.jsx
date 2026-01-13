@@ -65,7 +65,7 @@ const TutorialTooltip = ({
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
           zIndex: 10000,
           maxWidth: '320px',
-          fontSize: '14px',
+          fontSize: 'var(--font-size-base)',
           lineHeight: '1.4'
         }}
       >
@@ -99,11 +99,11 @@ const TutorialTooltip = ({
             onClick={handleDontShowAgain}
             style={{
               background: 'transparent',
-              border: '1px solid #60A5FA',
-              color: '#60A5FA',
+              border: '1px solid var(--color-primary)',
+              color: 'var(--color-primary)',
               padding: '6px 12px',
               borderRadius: '4px',
-              fontSize: '12px',
+              fontSize: 'var(--font-size-xs)',
               cursor: 'pointer'
             }}
           >
@@ -112,12 +112,12 @@ const TutorialTooltip = ({
           <button
             onClick={handleDismiss}
             style={{
-              background: '#3B82F6',
+              background: 'var(--color-primary)',
               border: 'none',
               color: 'white',
               padding: '6px 12px',
               borderRadius: '4px',
-              fontSize: '12px',
+              fontSize: 'var(--font-size-xs)',
               cursor: 'pointer',
               fontWeight: 'bold'
             }}

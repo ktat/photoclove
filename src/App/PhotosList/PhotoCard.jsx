@@ -286,7 +286,7 @@ function PhotoCard({
     return (
         <div
             key={uniqueKey}
-            className={classNames('row', getSizeClass(iconSize))}
+            className={classNames('row', getSizeClass(iconSize), { [styles.cardSelected]: isSelected })}
             style={{
                 flex: "0 0 " + ((iconSize / 1) + 41) + "px",
                 textAlign: "center",
@@ -294,13 +294,13 @@ function PhotoCard({
                 position: "relative"
             }}
         >
-            <div style={{ flexShrink: 0 }}>
+            <div className={styles.thumbnailContainer} style={{ width: iconSize + 'px', height: iconSize + 'px' }}>
                 <a href="#" onClick={() => onDisplayPhoto(photo.originalPath, index)}>
                     {!photo.hasThumbnail && photo.originalPath?.match(/\.(mp4|webm)$/i)
                         ? <div className="photo-list-movie" style={{ minWidth: (iconSize - 20) + 'px', marginTop: (iconSize / 7) + "px" }}>
                             <span style={{ fontSize: (iconSize / 3) + 'px' }}>&#127909;</span>
                         </div>
-                        : <div style={{ width: iconSize + 'px', height: iconSize + 'px', flexShrink: 0 }}>
+                        : <div className={styles.imageWrapper}>
                             <img
                                 ref={photo.import_source === true ? imgRef : null}
                                 alt={photo.originalPath}
@@ -310,19 +310,13 @@ function PhotoCard({
                                 onError={handleImageError}
                             />
                             {photo.originalPath?.match(/\.(mp4|webm)$/i) && (
-                                <div style={{
-                                    color: "white",
-                                    position: "relative",
-                                    top: iconSize / -3,
-                                    fontSize: (iconSize / 6) + 'px'
-                                }}>
+                                <div className={styles.videoPlayIcon} style={{ fontSize: (iconSize / 6) + 'px' }}>
                                     &#x25b6;
                                 </div>
                             )}
                         </div>
                     }
                 </a>
-
                 {/* Metadata overlay - stars and comments */}
                 {(photo.star > 0 || photo.comment) && (
                     <div className={styles.metadataOverlay}>
@@ -334,7 +328,6 @@ function PhotoCard({
                         )}
                     </div>
                 )}
-
                 {/* Tags indicator - simple emoji */}
                 {tags.length > 0 && (
                     <div

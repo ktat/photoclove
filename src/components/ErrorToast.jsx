@@ -50,7 +50,7 @@ const ErrorToast = ({ error, onDismiss, autoHide = true }) => {
       padding: '12px 16px',
       margin: '8px 0',
       color: severityConfig.color === '#eab308' ? '#92400e' : severityConfig.color,
-      fontSize: '14px',
+      fontSize: 'var(--font-size-base)',
       position: 'relative',
       overflow: 'hidden',
       minWidth: '300px',
@@ -87,7 +87,7 @@ const ErrorToast = ({ error, onDismiss, autoHide = true }) => {
           right: '8px',
           background: 'none',
           border: 'none',
-          fontSize: '16px',
+          fontSize: 'var(--font-size-lg)',
           cursor: 'pointer',
           color: 'inherit',
           padding: '2px',
@@ -112,10 +112,10 @@ const ErrorToast = ({ error, onDismiss, autoHide = true }) => {
           marginBottom: '4px',
           fontWeight: 'bold'
         }}>
-          <span style={{ marginRight: '8px', fontSize: '16px' }}>
+          <span style={{ marginRight: '8px', fontSize: 'var(--font-size-lg)' }}>
             {getSeverityIcon(error.severity)}
           </span>
-          <span style={{ fontSize: '13px' }}>
+          <span style={{ fontSize: 'var(--font-size-sm)' }}>
             {error.category} {error.severity}
           </span>
         </div>
@@ -131,7 +131,7 @@ const ErrorToast = ({ error, onDismiss, autoHide = true }) => {
         {/* Compact suggestion */}
         {error.suggestion && (
           <div style={{
-            fontSize: '12px',
+            fontSize: 'var(--font-size-sm)',
             opacity: 0.9,
             fontStyle: 'italic'
           }}>
@@ -142,7 +142,7 @@ const ErrorToast = ({ error, onDismiss, autoHide = true }) => {
         {/* Operation context if important */}
         {error.operation && error.severity !== 'Info' && (
           <div style={{
-            fontSize: '11px',
+            fontSize: 'var(--font-size-xs)',
             opacity: 0.7,
             marginTop: '4px'
           }}>

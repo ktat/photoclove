@@ -21,12 +21,12 @@ function AlbumModeIndicator({ isAlbumMode, albumName }) {
             color: 'white',
             padding: '8px 12px',
             borderRadius: '6px',
-            fontSize: '14px',
+            fontSize: 'var(--font-size-base)',
             zIndex: 1000
         }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                 <div>{albumName || 'Album'}</div>
-                <div style={{ fontSize: '11px', opacity: 0.8, marginTop: '2px' }}>
+                <div style={{ fontSize: 'var(--font-size-2xs)', opacity: 0.8, marginTop: '2px' }}>
                     DEL: Remove | Ctrl+DEL: Delete
                 </div>
             </div>

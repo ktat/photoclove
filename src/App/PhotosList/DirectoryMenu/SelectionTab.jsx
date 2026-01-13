@@ -59,7 +59,7 @@ function SelectionTab({
                 {/* Photo Selection (default mode) */}
                 {viewModeObj?.shouldShowPhotoSelection() && (
                     <>
-                        <div>
+                        <div style={{ marginBottom: 'var(--space-3)' }}>
                             <button onClick={() => selectAllPhotoToSelection()}>Select all photos in page</button>
                         </div>
                         {photoSelection.length == 0
@@ -121,17 +121,17 @@ function SelectionTab({
                                 {/* Import Progress Display - Import Mode Only */}
                                 {viewModeObj?.shouldShowImportProgress() && importState?.importProgress && (
                                     <div className="import-progress" style={{
-                                        marginTop: '15px',
-                                        padding: '10px',
-                                        backgroundColor: 'var(--bg-elevated)',
-                                        border: '1px solid var(--border)',
-                                        borderRadius: '4px'
+                                        marginTop: 'var(--space-4)',
+                                        padding: 'var(--space-3)',
+                                        backgroundColor: 'var(--color-bg-elevated)',
+                                        border: '1px solid var(--color-border-default)',
+                                        borderRadius: 'var(--radius-sm)'
                                     }}>
-                                        <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Import Progress</div>
+                                        <div style={{ fontWeight: 'bold', marginBottom: 'var(--space-1)' }}>Import Progress</div>
                                         <div>Progress: {importState.importProgress.progress}%</div>
                                         <div>Current: {importState.importProgress.current_file}</div>
                                         {importState.importProgress.error && (
-                                            <div style={{ color: '#dc2626', marginTop: '5px' }}>
+                                            <div style={{ color: 'var(--color-danger)', marginTop: 'var(--space-1)' }}>
                                                 Error: {importState.importProgress.error}
                                             </div>
                                         )}
@@ -150,24 +150,24 @@ function SelectionTab({
                 {/* Album Selection (album list mode) */}
                 {viewModeObj?.shouldShowAlbumSelection() && (
                     <div>
-                        <div style={{ marginBottom: '15px' }}>
-                            <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>Selected Albums</h3>
+                        <div style={{ marginBottom: 'var(--space-4)' }}>
+                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>Selected Albums</h3>
                         </div>
                         {selectedAlbums.length === 0 ? (
                             <div><br />No albums selected.</div>
                         ) : (
                             <div>
-                                <div className="operation" style={{ marginBottom: '15px' }}>
+                                <div className="operation" style={{ marginBottom: 'var(--space-4)' }}>
                                     <button
                                         onClick={deleteSelectedAlbums}
                                         style={{
-                                            padding: '8px 12px',
-                                            backgroundColor: '#dc2626',
+                                            padding: 'var(--space-2) var(--space-3)',
+                                            backgroundColor: 'var(--color-danger)',
                                             color: 'white',
                                             border: 'none',
-                                            borderRadius: '4px',
+                                            borderRadius: 'var(--radius-sm)',
                                             cursor: 'pointer',
-                                            marginRight: '10px'
+                                            marginRight: 'var(--space-3)'
                                         }}
                                     >
                                         Delete Selected Albums
@@ -175,11 +175,11 @@ function SelectionTab({
                                     <button
                                         onClick={() => clearAlbumSelection()}
                                         style={{
-                                            padding: '8px 12px',
-                                            backgroundColor: 'var(--bg-elevated)',
-                                            color: 'var(--text)',
-                                            border: '1px solid var(--border)',
-                                            borderRadius: '4px',
+                                            padding: 'var(--space-2) var(--space-3)',
+                                            backgroundColor: 'var(--color-bg-elevated)',
+                                            color: 'var(--color-text-primary)',
+                                            border: '1px solid var(--color-border-default)',
+                                            borderRadius: 'var(--radius-sm)',
                                             cursor: 'pointer'
                                         }}
                                     >
@@ -204,24 +204,24 @@ function SelectionTab({
                 {/* Tag Selection (tag list mode) */}
                 {viewModeObj?.shouldShowTagSelection() && (
                     <div>
-                        <div style={{ marginBottom: '15px' }}>
-                            <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>Selected Tags</h3>
+                        <div style={{ marginBottom: 'var(--space-4)' }}>
+                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>Selected Tags</h3>
                         </div>
                         {selectedTags.length === 0 ? (
                             <div><br />No tags selected.</div>
                         ) : (
                             <div>
-                                <div className="operation" style={{ marginBottom: '15px' }}>
+                                <div className="operation" style={{ marginBottom: 'var(--space-4)' }}>
                                     <button
                                         onClick={deleteSelectedTags}
                                         style={{
-                                            padding: '8px 12px',
-                                            backgroundColor: '#dc2626',
+                                            padding: 'var(--space-2) var(--space-3)',
+                                            backgroundColor: 'var(--color-danger)',
                                             color: 'white',
                                             border: 'none',
-                                            borderRadius: '4px',
+                                            borderRadius: 'var(--radius-sm)',
                                             cursor: 'pointer',
-                                            marginRight: '10px'
+                                            marginRight: 'var(--space-3)'
                                         }}
                                     >
                                         Delete Selected Tags
@@ -229,11 +229,11 @@ function SelectionTab({
                                     <button
                                         onClick={() => clearTagSelection()}
                                         style={{
-                                            padding: '8px 12px',
-                                            backgroundColor: 'var(--bg-elevated)',
-                                            color: 'var(--text)',
-                                            border: '1px solid var(--border)',
-                                            borderRadius: '4px',
+                                            padding: 'var(--space-2) var(--space-3)',
+                                            backgroundColor: 'var(--color-bg-elevated)',
+                                            color: 'var(--color-text-primary)',
+                                            border: '1px solid var(--color-border-default)',
+                                            borderRadius: 'var(--radius-sm)',
                                             cursor: 'pointer'
                                         }}
                                     >
@@ -247,11 +247,11 @@ function SelectionTab({
                                             <li key={tagId}>
                                                 <span style={{
                                                     display: 'inline-block',
-                                                    width: '12px',
-                                                    height: '12px',
-                                                    backgroundColor: tag.color || '#374151',
+                                                    width: 'var(--space-3)',
+                                                    height: 'var(--space-3)',
+                                                    backgroundColor: tag.color || 'var(--color-bg-muted)',
                                                     borderRadius: '50%',
-                                                    marginRight: '8px'
+                                                    marginRight: 'var(--space-2)'
                                                 }}></span>
                                                 <span>{tag.name} ({tag.photoCount} photos)</span>
                                             </li>

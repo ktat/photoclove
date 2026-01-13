@@ -18,9 +18,15 @@ function DateList(props) {
         updateRecentPhotosMode
     } = usePhoto();
     
-    const { toggleSearchPage, showPhotosListView, showDatePhotos, showRecentPhotos } = useUI();
-    
+    const { toggleSearchPage, showPhotosListView, showDatePhotos, showRecentPhotos, viewMode: currentAppViewMode } = useUI();
+
     const [selectedStyle, setSelectedStyle] = useState({});
+
+    // Get selected date color based on current ViewMode
+    // White when viewing date photos, muted when viewing other modes
+    const getSelectedDateColor = () => {
+        return currentAppViewMode === 'date' ? 'var(--color-text-primary)' : 'var(--color-text-muted)';
+    };
     
     // Filter and view mode state
     const [filterYear, setFilterYear] = useState('all');
@@ -110,7 +116,7 @@ function DateList(props) {
     // Helper function to handle date click
     const handleDateClick = (year, month, day) => {
         const date = new Date(year + '/' + month + '/' + day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
-        setSelectedStyle({ ["a-" + date]: "#ccc", ["li-" + date]: "square" });
+        setSelectedStyle({ ["a-" + date]: "var(--color-text-primary)", ["li-" + date]: "square" });
         logger.info('DateList', 'date_click', 'Date clicked - starting navigation', { date });
         updateRecentPhotosMode(false);
         updateCurrentDate(date);
@@ -172,13 +178,13 @@ function DateList(props) {
     return (
         <>
             {/* Fixed Controls - Outside Scroll Area */}
-            <div className="dateList-controls" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '5px', marginBottom: '5px' }}>
+            <div className="dateList-controls" style={{ borderBottom: '1px solid var(--color-border-default)', paddingBottom: '5px', marginBottom: '5px' }}>
                 {/* Recent Photos */}
                 <div style={{ marginBottom: '3px' }}>
                     <a href="#"
                        className="recent-photos-link"
                        style={{
-                           color: recentPhotosMode ? "#ccc" : "#646cff",
+                           color: recentPhotosMode ? "var(--color-text-primary)" : "var(--color-primary)",
                            textDecoration: "none",
                            display: 'flex',
                            alignItems: 'center',
@@ -188,13 +194,13 @@ function DateList(props) {
                        onClick={(e) => {
                            e.preventDefault();
                            logger.info('DateList', 'recent_photos_click', 'Recent Photos clicked - starting navigation');
-                           setSelectedStyle({});
+                           // Keep selectedStyle to preserve date selection visual
                            updateRecentPhotosMode(true);
                            showRecentPhotos();
                        }}
                        onMouseEnter={(e) => props.handleMouseEnter && props.handleMouseEnter("Recent Photos", e)}
                        onMouseLeave={() => props.handleMouseLeave && props.handleMouseLeave()}>
-                        <span className="recent-photos-icon" style={{ fontSize: '16px' }}>⏱️</span>
+                        <span className="recent-photos-icon" style={{ fontSize: 'var(--font-size-lg)' }}>⏱️</span>
                         <span className="recent-photos-text">Recent Photos</span>
                     </a>
                 </div>
@@ -204,7 +210,7 @@ function DateList(props) {
                     className="calendar-expand-trigger"
                     style={{
                         textAlign: 'center',
-                        fontSize: '16px',
+                        fontSize: 'var(--font-size-lg)',
                         padding: '8px 0',
                         cursor: 'pointer',
                         display: props.leftMenuCollapsed ? 'block' : 'none'
@@ -237,27 +243,27 @@ function DateList(props) {
             </div>
 
             {/* Date Controls - Outside Scroll Area */}
-            <div className="date-filters-controls" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '3px', marginBottom: '3px' }}>
+            <div className="date-filters-controls" style={{ borderBottom: '1px solid var(--color-border-default)', paddingBottom: '3px', marginBottom: '3px' }}>
                 {/* Filter Controls */}
                 <div className="date-filters" style={{ margin: "3px 0", textAlign: "center" }}>
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                            <span style={{ fontSize: '10px' }}>📅</span>
-                            <select 
-                                value={filterYear} 
+                            <span style={{ fontSize: 'var(--font-size-xs)' }}>📅</span>
+                            <select
+                                value={filterYear}
                                 onChange={(e) => {
                                     setFilterYear(e.target.value);
                                     setFilterMonth('all'); // Reset month when year changes
                                 }}
-                                style={{ 
-                                    fontSize: '9px', 
-                                    padding: '1px 2px',
-                                    width: '50px',
-                                    height: '18px',
-                                    backgroundColor: 'var(--bg-elevated)',
-                                    color: 'var(--text)',
-                                    border: '1px solid var(--border)',
-                                    borderRadius: '2px'
+                                style={{
+                                    fontSize: 'var(--font-size-xs)',
+                                    padding: '2px 4px',
+                                    width: '55px',
+                                    height: '22px',
+                                    backgroundColor: 'var(--color-bg-elevated)',
+                                    color: 'var(--color-text-primary)',
+                                    border: '1px solid var(--color-border-default)',
+                                    borderRadius: 'var(--radius-sm)'
                                 }}
                             >
                                 <option value="all">All</option>
@@ -267,19 +273,19 @@ function DateList(props) {
                             </select>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                            <span style={{ fontSize: '10px' }}>🗓️</span>
-                            <select 
-                                value={filterMonth} 
+                            <span style={{ fontSize: 'var(--font-size-xs)' }}>🗓️</span>
+                            <select
+                                value={filterMonth}
                                 onChange={(e) => setFilterMonth(e.target.value)}
-                                style={{ 
-                                    fontSize: '9px', 
-                                    padding: '1px 2px',
+                                style={{
+                                    fontSize: 'var(--font-size-xs)',
+                                    padding: '2px 4px',
                                     width: '60px',
-                                    height: '18px',
-                                    backgroundColor: 'var(--bg-elevated)',
-                                    color: 'var(--text)',
-                                    border: '1px solid var(--border)',
-                                    borderRadius: '2px'
+                                    height: '22px',
+                                    backgroundColor: 'var(--color-bg-elevated)',
+                                    color: 'var(--color-text-primary)',
+                                    border: '1px solid var(--color-border-default)',
+                                    borderRadius: 'var(--radius-sm)'
                                 }}
                             >
                                 <option value="all">All</option>
@@ -299,30 +305,30 @@ function DateList(props) {
                 {/* View Mode Toggle */}
                 <div className="view-mode-toggle" style={{ margin: "3px 0", textAlign: "center" }}>
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '2px' }}>
-                        <button 
+                        <button
                             onClick={() => setViewMode('flat')}
-                            style={{ 
-                                fontSize: '10px', 
-                                padding: '2px 6px',
-                                backgroundColor: viewMode === 'flat' ? 'var(--accent)' : 'var(--bg-elevated)',
-                                color: viewMode === 'flat' ? 'white' : 'var(--text)',
-                                border: '1px solid var(--border)',
-                                borderRadius: '3px 0 0 3px',
+                            style={{
+                                fontSize: 'var(--font-size-xs)',
+                                padding: '3px 8px',
+                                backgroundColor: viewMode === 'flat' ? 'var(--color-primary-selected)' : 'var(--color-bg-elevated)',
+                                color: 'var(--color-text-primary)',
+                                border: viewMode === 'flat' ? '1px solid var(--color-primary)' : '1px solid var(--color-border-default)',
+                                borderRadius: 'var(--radius-sm) 0 0 var(--radius-sm)',
                                 cursor: 'pointer',
                                 borderRight: 'none'
                             }}
                         >
                             List
                         </button>
-                        <button 
+                        <button
                             onClick={() => setViewMode('hierarchical')}
-                            style={{ 
-                                fontSize: '10px', 
-                                padding: '2px 6px',
-                                backgroundColor: viewMode === 'hierarchical' ? 'var(--accent)' : 'var(--bg-elevated)',
-                                color: viewMode === 'hierarchical' ? 'white' : 'var(--text)',
-                                border: '1px solid var(--border)',
-                                borderRadius: '0 3px 3px 0',
+                            style={{
+                                fontSize: 'var(--font-size-xs)',
+                                padding: '3px 8px',
+                                backgroundColor: viewMode === 'hierarchical' ? 'var(--color-primary-selected)' : 'var(--color-bg-elevated)',
+                                color: 'var(--color-text-primary)',
+                                border: viewMode === 'hierarchical' ? '1px solid var(--color-primary)' : '1px solid var(--color-border-default)',
+                                borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
                                 cursor: 'pointer'
                             }}
                         >
@@ -344,9 +350,9 @@ function DateList(props) {
                                 const photoCount = getPhotoCount(l.year, l.month, l.day);
                                 return photoCount > 0 && (
                                     <li key={i} style={{ listStyle: selectedStyle["li-" + date] || "none" }}>
-                                        <a href="#" 
-                                           style={{ 
-                                               color: selectedStyle["a-" + date] || "#646cff",
+                                        <a href="#"
+                                           style={{
+                                               color: selectedStyle["a-" + date] ? getSelectedDateColor() : "var(--color-primary)",
                                                fontSize: "inherit"
                                            }} 
                                            onClick={(e) => {
@@ -375,12 +381,12 @@ function DateList(props) {
                                             style={{ 
                                                 cursor: "pointer",
                                                 fontSize: "inherit",
-                                                color: "#646cff",
+                                                color: "var(--color-primary)",
                                                 padding: "1px 0"
                                             }}
                                             onClick={() => toggleYearExpansion(yearData.year)}
                                         >
-                                            <span style={{ fontSize: "8px", marginRight: "4px" }}>
+                                            <span style={{ fontSize: "var(--font-size-2xs)", marginRight: "4px" }}>
                                                 {isYearExpanded ? '▼' : '▶'}
                                             </span>
                                             {yearData.year} ({yearPhotoCount})
@@ -401,12 +407,12 @@ function DateList(props) {
                                                                 style={{ 
                                                                     cursor: "pointer",
                                                                     fontSize: "inherit",
-                                                                    color: "#aaa",
+                                                                    color: "var(--color-text-secondary)",
                                                                     padding: "1px 0"
                                                                 }}
                                                                 onClick={() => toggleMonthExpansion(yearData.year, monthData.month)}
                                                             >
-                                                                <span style={{ fontSize: "8px", marginRight: "4px" }}>
+                                                                <span style={{ fontSize: "var(--font-size-2xs)", marginRight: "4px" }}>
                                                                     {isMonthExpanded ? '▼' : '▶'}
                                                                 </span>
                                                                 {monthNames[monthData.month - 1]} ({monthPhotoCount})
@@ -421,9 +427,9 @@ function DateList(props) {
                                                                         const isSelected = selectedStyle["a-" + date];
                                                                         return photoCount > 0 && (
                                                                             <div key={`day-${yearData.year}-${monthData.month}-${day}`} style={{ listStyle: isSelected ? "square" : "none" }}>
-                                                                                <a href="#" 
-                                                                                   style={{ 
-                                                                                       color: isSelected ? "#ccc" : "#646cff",
+                                                                                <a href="#"
+                                                                                   style={{
+                                                                                       color: isSelected ? getSelectedDateColor() : "var(--color-primary)",
                                                                                        fontSize: "inherit",
                                                                                        textDecoration: "none"
                                                                                    }} 

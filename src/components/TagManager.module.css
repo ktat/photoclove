@@ -13,27 +13,27 @@
     margin: 0 0 8px 0;
     font-size: 20px;
     font-weight: 600;
-    color: var(--text);
+    color: var(--color-text-primary);
 }
 
 .tag-manager-description {
     margin: 0;
-    color: #9ca3af;
+    color: var(--color-text-secondary);
     font-size: 14px;
 }
 
 .tag-manager-loading {
     text-align: center;
     padding: 40px;
-    color: #9ca3af;
+    color: var(--color-text-secondary);
     font-size: 16px;
 }
 
 /* Create Tag Section */
 .tag-manager-create {
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-lg);
     padding: 20px;
     margin-bottom: 24px;
 }
@@ -42,14 +42,14 @@
     margin: 0 0 16px 0;
     font-size: 16px;
     font-weight: 600;
-    color: var(--text);
+    color: var(--color-text-primary);
 }
 
 /* Tag List Section */
 .tag-manager-list {
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-lg);
     padding: 20px;
 }
 
@@ -67,21 +67,21 @@
 .tag-search-field {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm);
     font-size: 14px;
     outline: none;
-    transition: border-color 0.2s ease;
-    background-color: var(--bg);
-    color: var(--text);
+    transition: border-color 0.2s ease-out;
+    background-color: var(--color-bg-surface);
+    color: var(--color-text-primary);
 }
 
 .tag-search-field::placeholder {
-    color: #6b7280;
+    color: var(--color-text-muted);
 }
 
 .tag-search-field:focus {
-    border-color: #646cff;
+    border-color: var(--color-primary);
 }
 
 .tag-sort-control {
@@ -91,23 +91,23 @@
 .tag-sort-select {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm);
     font-size: 14px;
-    background: var(--bg);
-    color: var(--text);
+    background: var(--color-bg-surface);
+    color: var(--color-text-primary);
     outline: none;
     cursor: pointer;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s ease-out;
 }
 
 .tag-sort-select:focus {
-    border-color: #646cff;
+    border-color: var(--color-primary);
 }
 
 .tag-count-info {
     font-size: 12px;
-    color: #9ca3af;
+    color: var(--color-text-secondary);
     margin-bottom: 16px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -127,15 +127,15 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--bg);
-    transition: background-color 0.2s ease, border-color 0.2s ease;
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-elevated);
+    transition: background-color 0.2s ease-out, border-color 0.2s ease-out;
 }
 
 .tag-item:hover {
-    background: #2a2a2a;
-    border-color: #646cff;
+    background: var(--color-bg-surface);
+    border-color: var(--color-primary);
 }
 
 .tag-item-actions {
@@ -146,49 +146,49 @@
 .tag-action-button {
     width: 32px;
     height: 32px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    background: var(--bg-elevated);
-    color: var(--text);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-elevated);
+    color: var(--color-text-primary);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 14px;
-    transition: all 0.2s ease;
+    transition: all 0.2s ease-out;
 }
 
 .tag-action-button:hover {
-    background: #2a2a2a;
+    background: var(--color-bg-surface);
     transform: scale(1.05);
 }
 
 .tag-search-button:hover {
-    background: #1e3a8a;
-    border-color: #3b82f6;
-    color: #60a5fa;
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
 }
 
 .tag-delete-button:hover {
-    background: #7f1d1d;
-    border-color: #ef4444;
-    color: #f87171;
+    background: var(--color-danger);
+    border-color: var(--color-danger);
+    color: white;
 }
 
 /* Empty State */
 .tag-empty-state {
     text-align: center;
     padding: 40px 20px;
-    color: #9ca3af;
+    color: var(--color-text-secondary);
     font-style: italic;
 }
 
 /* Tag Stats */
 .tag-manager-stats {
     margin-top: 24px;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-lg);
     padding: 20px;
 }
 
@@ -196,7 +196,7 @@
     margin: 0 0 16px 0;
     font-size: 16px;
     font-weight: 600;
-    color: var(--text);
+    color: var(--color-text-primary);
 }
 
 .tag-stats-grid {
@@ -208,23 +208,23 @@
 .tag-stat {
     text-align: center;
     padding: 16px;
-    background: var(--bg);
-    border-radius: 6px;
-    border: 1px solid var(--border);
+    background: var(--color-bg-surface);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-default);
 }
 
 .tag-stat-number {
     display: block;
     font-size: 24px;
     font-weight: 700;
-    color: #646cff;
+    color: var(--color-primary);
     margin-bottom: 4px;
 }
 
 .tag-stat-label {
     display: block;
     font-size: 12px;
-    color: #9ca3af;
+    color: var(--color-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
@@ -235,15 +235,15 @@
 }
 
 .tag-list::-webkit-scrollbar-track {
-    background: var(--bg);
-    border-radius: 4px;
+    background: var(--color-bg-surface);
+    border-radius: var(--radius-sm);
 }
 
 .tag-list::-webkit-scrollbar-thumb {
-    background: #4b5563;
-    border-radius: 4px;
+    background: var(--color-border-default);
+    border-radius: var(--radius-sm);
 }
 
 .tag-list::-webkit-scrollbar-thumb:hover {
-    background: #6b7280;
+    background: var(--color-text-muted);
 }

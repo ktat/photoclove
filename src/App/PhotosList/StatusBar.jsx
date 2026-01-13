@@ -64,12 +64,12 @@ function StatusBar({
         <div className="photo-page-info">
             {renderTitleAndNavigation()}
             {infiniteScrollEnabled && displayedPhotoCount < filteredPhotos.length && (
-                <span style={{ marginLeft: "10px", fontSize: "12px", color: "#666" }}>
+                <span style={{ marginLeft: "10px", fontSize: "var(--font-size-sm)", color: "var(--color-text-muted)" }}>
                     {' '}- Showing: {displayedPhotoCount} photos
                 </span>
             )}
             {isLimitedByConfig && (
-                <span style={{ marginLeft: "10px", fontSize: "11px", color: "#f60", fontWeight: "bold" }}>
+                <span style={{ marginLeft: "10px", fontSize: "var(--font-size-xs)", color: "var(--color-warning)", fontWeight: "bold" }}>
                     {' '}(Limited by config)
                 </span>
             )}

@@ -10,50 +10,74 @@
 
 /* Header showing photo count */
 .header {
-    margin-bottom: 10px;
-    font-size: 14px;
-    color: var(--text);
+    margin-bottom: var(--space-3);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
 }
 
 /* Filter summary text */
 .filterSummary {
-    font-size: 12px;
-    color: #888;
-    margin-top: 5px;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin-top: var(--space-1);
 }
 
 /* Clear filters button */
 .clearFiltersButton {
-    margin-left: 10px;
-    font-size: 11px;
-    padding: 2px 6px;
+    margin-left: var(--space-3);
+    font-size: var(--font-size-xs);
+    padding: 2px var(--space-2);
     cursor: pointer;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 4px;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border-default);
+    color: var(--color-text-primary);
+    border-radius: var(--radius-sm);
 }
 
 .clearFiltersButton:hover {
-    background: var(--accent);
+    background: var(--color-primary);
 }
 
 /* No photo found message */
 .noPhotos {
-    color: var(--text);
+    color: var(--color-text-primary);
 }
 
 /* Infinite scroll indicator at bottom */
 .scrollIndicator {
     text-align: center;
-    padding: 20px;
+    padding: var(--space-5);
     width: 100%;
     grid-column: 1 / -1;
-    color: #888;
+    color: var(--color-text-muted);
 }
 
 .scrollIndicatorSubtext {
-    font-size: 12px;
-    margin-top: 5px;
-    color: #666;
+    font-size: var(--font-size-xs);
+    margin-top: var(--space-1);
+    color: var(--color-text-muted);
+}
+
+/* Scroll to load more - with bounce animation */
+.scrollToLoad {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.scrollArrow {
+    font-size: var(--font-size-xl);
+    animation: bounce-arrow 1.5s ease-in-out infinite;
+}
+
+@keyframes bounce-arrow {
+    0%, 100% {
+        transform: translateY(0);
+        opacity: 0.5;
+    }
+    50% {
+        transform: translateY(8px);
+        opacity: 1;
+    }
 }

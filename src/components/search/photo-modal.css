@@ -13,14 +13,14 @@
 }
 
 .photo-modal {
-  background: #2a2a2a;
-  border-radius: 8px;
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-lg);
   max-width: 95vw;
   max-height: 95vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid #444;
+  border: 1px solid var(--color-border-default);
 }
 
 .photo-modal-header {
@@ -28,8 +28,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 15px 20px;
-  border-bottom: 1px solid #444;
-  background: #333;
+  border-bottom: 1px solid var(--color-border-default);
+  background: var(--color-bg-muted);
 }
 
 .photo-modal-info {
@@ -41,19 +41,19 @@
 .photo-modal-title {
   font-size: 16px;
   font-weight: 500;
-  color: #e0e0e0;
+  color: var(--color-text-primary);
 }
 
 .photo-modal-counter {
   font-size: 12px;
-  color: #ccc;
+  color: var(--color-text-secondary);
 }
 
 .photo-modal-close {
   background: none;
   border: none;
   font-size: 24px;
-  color: #ccc;
+  color: var(--color-text-secondary);
   cursor: pointer;
   padding: 0;
   width: 30px;
@@ -61,12 +61,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .photo-modal-close:hover {
-  background: #4a4a4a;
-  color: #fff;
+  background: var(--color-border-default);
+  color: var(--color-text-primary);
 }
 
 .photo-modal-content {
@@ -90,7 +90,7 @@
 .photo-nav-button {
   background: rgba(0, 0, 0, 0.5);
   border: none;
-  color: #fff;
+  color: white;
   font-size: 30px;
   padding: 10px 15px;
   cursor: pointer;
@@ -98,7 +98,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
+  transition: background 0.2s ease-out;
   user-select: none;
 }
 
@@ -125,14 +125,14 @@
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 .photo-display-video {
   max-width: 100%;
   max-height: 100%;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
@@ -142,23 +142,23 @@
 .photo-comment-section {
   margin-bottom: 20px;
   padding: 15px;
-  background: #333;
-  border-radius: 4px;
-  border: 1px solid #444;
+  background: var(--color-bg-muted);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-default);
 }
 
 .photo-info-section h4,
 .photo-rating-section h4,
 .photo-comment-section h4 {
   margin: 0 0 10px 0;
-  color: #e0e0e0;
+  color: var(--color-text-primary);
   font-size: 14px;
 }
 
 .photo-info-section p {
   margin: 5px 0;
   font-size: 12px;
-  color: #ccc;
+  color: var(--color-text-secondary);
   word-wrap: break-word;
 }
 
@@ -170,27 +170,27 @@
 
 .star-rating .star {
   font-size: 20px;
-  color: #444;
+  color: var(--color-border-default);
   cursor: pointer;
-  transition: color 0.2s;
+  transition: color 0.2s ease-out;
 }
 
 .star-rating .star:hover {
-  color: #ffc107;
+  color: var(--color-warning);
 }
 
 .star-rating .star.filled {
-  color: #ffc107;
+  color: var(--color-warning);
 }
 
 .photo-comment-section textarea {
   width: 100%;
   min-height: 80px;
   padding: 8px;
-  border: 1px solid #444;
-  border-radius: 4px;
-  background: #2a2a2a;
-  color: #e0e0e0;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
   font-size: 12px;
   resize: vertical;
 }
@@ -198,15 +198,15 @@
 .photo-comment-section button {
   padding: 6px 12px;
   font-size: 12px;
-  background: #4a9eff;
+  background: var(--color-primary);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
 .photo-comment-section button:hover {
-  background: #3a8eef;
+  background: var(--color-primary-hover);
 }
 
 /* Responsive adjustments */

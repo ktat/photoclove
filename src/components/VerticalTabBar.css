@@ -8,7 +8,7 @@
     flex-direction: column;
     gap: 5px;
     /* z-index: 1001; */
-    transition: right 0.3s ease;
+    transition: right 0.3s ease-out;
 }
 
 .directory-vertical-tabs.menu-open {
@@ -29,13 +29,13 @@
     writing-mode: initial;
     text-orientation: initial;
     padding: 12px 4px;
-    background: var(--bg-elevated);
-    color: var(--text);
+    background: var(--color-bg-elevated);
+    color: var(--color-text-primary);
     border: none;
     cursor: pointer;
     font-size: 12px;
     font-weight: bold;
-    transition: all 0.3s ease;
+    transition: all 0.3s ease-out;
     min-height: 60px;
     width: 30px;
     display: flex;
@@ -51,20 +51,23 @@
 }
 
 .directory-vertical-tab-button:hover {
-    background: var(--accent);
-    color: white;
+    background: var(--color-bg-surface);
+    color: var(--color-primary);
+    border-left: 3px solid var(--color-primary);
 }
 
 /* Default active tab color (green) */
 .directory-vertical-tab-button.active {
-    background: #4CAF50;
-    color: white;
+    background: var(--color-bg-surface);
+    color: var(--color-success);
+    border-left: 3px solid var(--color-success);
 }
 
 /* Tab with active selections but not currently open - show orange (Feature #152) */
 .directory-vertical-tab-button.has-selection:not(.active) {
-    background: #FF9800;
-    color: white;
+    background: var(--color-bg-surface);
+    color: var(--color-warning);
+    border-left: 3px solid var(--color-warning);
 }
 
 .directory-vertical-tab-button:first-child {
@@ -76,16 +79,18 @@
 }
 
 .directory-vertical-tab-button.directory-close-tab {
-    background-color: #d32f2f;
-    color: white;
+    background-color: var(--color-bg-elevated);
+    color: var(--color-danger);
     font-size: 16px;
     font-weight: bold;
     writing-mode: horizontal-tb;
     text-orientation: mixed;
     padding: 8px;
     min-height: 40px;
+    border-left: 3px solid var(--color-danger);
 }
 
 .directory-vertical-tab-button.directory-close-tab:hover {
-    background-color: #b71c1c;
+    background-color: var(--color-bg-surface);
+    color: var(--color-danger);
 }

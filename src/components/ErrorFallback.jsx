@@ -44,20 +44,20 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
         alignItems: 'center',
         marginBottom: '16px'
       }}>
-        <span style={{ fontSize: '32px', marginRight: '12px' }}>
+        <span style={{ fontSize: '32px' /* Icon size - intentionally large */, marginRight: '12px' }}>
           {isApplicationLevel ? '🚨' : '⚠️'}
         </span>
         <div>
           <h2 style={{
             margin: 0,
-            fontSize: '24px',
+            fontSize: 'var(--font-size-xl)',
             fontWeight: 'bold',
             color: '#dc2626'
           }}>
             {errorTitle}
           </h2>
           <div style={{
-            fontSize: '14px',
+            fontSize: 'var(--font-size-base)',
             color: '#7f1d1d',
             marginTop: '4px'
           }}>
@@ -68,7 +68,7 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
 
       {/* Friendly Description */}
       <div style={{
-        fontSize: '16px',
+        fontSize: 'var(--font-size-lg)',
         lineHeight: '1.5',
         marginBottom: '12px',
         color: '#991b1b'
@@ -86,7 +86,7 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
         borderLeft: '4px solid #ef4444'
       }}>
         <div style={{
-          fontSize: '14px',
+          fontSize: 'var(--font-size-base)',
           fontWeight: 'bold',
           marginBottom: '4px',
           color: '#dc2626'
@@ -94,7 +94,7 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
           💡 What you can do:
         </div>
         <div style={{
-          fontSize: '14px',
+          fontSize: 'var(--font-size-base)',
           color: '#7f1d1d'
         }}>
           {getSuggestion()}
@@ -111,7 +111,7 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
           padding: '8px 12px',
           borderRadius: '4px',
           cursor: 'pointer',
-          fontSize: '14px',
+          fontSize: 'var(--font-size-base)',
           marginBottom: '16px',
           alignSelf: 'flex-start'
         }}
@@ -127,7 +127,7 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
           borderRadius: '6px',
           padding: '12px',
           marginBottom: '16px',
-          fontSize: '12px',
+          fontSize: 'var(--font-size-sm)',
           fontFamily: 'monospace'
         }}>
           <div style={{ marginBottom: '12px' }}>
@@ -152,7 +152,7 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
                 backgroundColor: 'white',
                 borderRadius: '4px',
                 border: '1px solid #fecaca',
-                fontSize: '11px',
+                fontSize: 'var(--font-size-xs)',
                 overflow: 'auto',
                 maxHeight: '200px',
                 whiteSpace: 'pre-wrap'
@@ -171,7 +171,7 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
                 backgroundColor: 'white',
                 borderRadius: '4px',
                 border: '1px solid #fecaca',
-                fontSize: '11px',
+                fontSize: 'var(--font-size-xs)',
                 overflow: 'auto',
                 maxHeight: '150px',
                 whiteSpace: 'pre-wrap'
@@ -198,7 +198,7 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
             border: 'none',
             borderRadius: '6px',
             cursor: 'pointer',
-            fontSize: '14px',
+            fontSize: 'var(--font-size-base)',
             fontWeight: 'bold',
             display: 'flex',
             alignItems: 'center',
@@ -218,7 +218,7 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
               border: 'none',
               borderRadius: '6px',
               cursor: 'pointer',
-              fontSize: '14px',
+              fontSize: 'var(--font-size-base)',
               fontWeight: 'bold'
             }}
           >
@@ -235,7 +235,7 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
           backgroundColor: '#fcd34d',
           color: '#92400e',
           borderRadius: '4px',
-          fontSize: '12px',
+          fontSize: 'var(--font-size-sm)',
           textAlign: 'center'
         }}>
           🔧 Development Mode: This error boundary will show more details in production

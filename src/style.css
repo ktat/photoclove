@@ -17,7 +17,7 @@
   width: 100%;
   height: calc(100vh - 30px);
   overflow: hidden;
-  transition: width 0.3s ease;
+  transition: width 0.3s ease-out;
 }
 
 .inner-container.menu-open {
@@ -35,12 +35,12 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--color-primary);
   text-decoration: inherit;
 }
 
 a:hover {
-  color: #535bf2;
+  color: var(--color-primary-hover);
 }
 
 h1 {
@@ -77,8 +77,8 @@ h1 {
 
 div.selected:after {
   margin-left: -27px;
-  font-size: 18px;
-  padding: 0 10 10 0px;
+  font-size: var(--font-size-lg);
+  padding: 0 var(--space-3) var(--space-3) 0;
   content: " \2705";
   color: red;
 }
@@ -97,9 +97,9 @@ ul.list-of-selected li {
 }
 
 .scroll-indicator-text {
-  font-size: 16px;
+  font-size: var(--font-size-base);
   font-weight: bold;
-  color: #666;
+  color: var(--color-text-muted);
   animation: scrollPulse 2s ease-in-out infinite;
 }
 
@@ -154,12 +154,12 @@ ul.list-of-selected li {
 
 @media (prefers-color-scheme: dark) {
   :root {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
+    color: var(--color-text-primary);
+    background-color: var(--color-bg-surface);
   }
 
   a:hover {
-    color: #24c8db;
+    color: var(--color-primary);
   }
 }
 
@@ -180,7 +180,7 @@ table {
   width: 90%;
   border-width: 1px;
   border-style: solid;
-  border-color: var(--border);
+  border-color: var(--color-border-default);
 }
 
 table td {
@@ -193,13 +193,13 @@ table th {
   text-align: left;
   border-width: 0px 0px 1px 1px;
   border-style: solid;
-  padding: 2px 5px 2px 5px;
-  border-color: var(--border);
+  padding: var(--space-1);
+  border-color: var(--color-border-default);
   overflow-x: hidden;
 }
 
 .star a {
-  color: #aa9900
+  color: var(--color-warning);
 }
 
 .comment textarea {
@@ -241,16 +241,16 @@ ul.tabs-list {
 }
 
 li.tab {
-  font-size: 14px;
-  margin-right: 15px;
+  font-size: var(--font-size-sm);
+  margin-right: var(--space-4);
   border-top-left-radius: 10%;
   border-top-right-radius: 10%;
   border-bottom-left-radius: 10%;
   border-bottom-right-radius: 10%;
-  background-color: #444;
-  border: 1px solid #777;
+  background-color: var(--color-bg-muted);
+  border: 1px solid var(--color-border-strong);
   border-bottom: none;
-  margin-bottom: 10px;
+  margin-bottom: var(--space-3);
 }
 
 #tab-maintenance ul li {
@@ -263,8 +263,8 @@ li.tab {
 }
 
 li.tab-active {
-  background-color: #555;
-  border: 1px solid #ccc;
+  background-color: var(--color-border-strong);
+  border: 1px solid var(--color-text-secondary);
   border-bottom: none;
   border-bottom-color: transparent;
 }
@@ -272,23 +272,23 @@ li.tab-active {
 li.tab a,
 li.tab-active a {
   display: block;
-  padding: 5px;
+  padding: var(--space-1);
   text-decoration: none;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 li.tab a:hover {
   display: block;
-  padding: 5px;
+  padding: var(--space-1);
   text-decoration: none;
-  background-color: #666;
+  background-color: var(--color-bg-surface);
 }
 
 div.tab {
   display: none;
-  padding: 10px;
-  padding-right: 10px;
-  padding-left: 0px;
+  padding: var(--space-3);
+  padding-right: var(--space-3);
+  padding-left: 0;
   border: none;
   height: calc(100vh - 100px);
   overflow-y: auto;
@@ -301,9 +301,9 @@ div.tab.active {
 
 div.tab-active {
   display: block;
-  padding: 10px;
-  padding-right: 10px;
-  padding-left: 0px;
+  padding: var(--space-3);
+  padding-right: var(--space-3);
+  padding-left: 0;
   border: none;
   height: calc(100vh - 100px);
   overflow-y: auto;
@@ -314,22 +314,22 @@ div.tab-active {
 .back-to-home {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: linear-gradient(135deg, #4a9eff 0%, #3a8eef 100%);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   color: white;
   text-decoration: none;
-  border-radius: 20px;
-  font-size: 12px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
   font-weight: 500;
-  transition: all 0.3s ease;
+  transition: all 0.3s ease-out;
   border: none;
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(74, 158, 255, 0.3);
 }
 
 .back-to-home:hover {
-  background: linear-gradient(135deg, #3a8eef 0%, #2a7edf 100%);
+  background: linear-gradient(135deg, var(--color-primary-hover) 0%, var(--color-primary-hover) 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(74, 158, 255, 0.4);
   color: white;
@@ -342,11 +342,11 @@ div.tab-active {
 
 .back-to-home::before {
   content: "🏠";
-  font-size: 14px;
+  font-size: var(--font-size-sm);
 }
 
 div#tab-selection img {
-  padding: 10px;
+  padding: var(--space-3);
 }
 
 a.run-app {
@@ -386,6 +386,6 @@ a.run-app {
   min-width: calc(100vw / 2);
   border-width: 1px;
   border-style: solid;
-  border-color: #fff;
+  border-color: var(--color-text-primary);
   object-fit: contain;
 }

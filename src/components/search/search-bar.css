@@ -1,46 +1,46 @@
 /* Search Bar Styles */
 .search-bar {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
   max-width: 100%;
 }
 
 .search-input-container {
   display: flex;
   align-items: center;
-  gap: 3px;
-  margin-bottom: 10px;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
   width: 100%;
 }
 
 .search-input {
   flex: 1;
-  padding: 6px;
-  border: 1px solid #444;
-  border-radius: 4px;
-  font-size: 12px;
-  background: #2a2a2a;
-  color: #e0e0e0;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
   min-width: 0;
   max-width: 100%;
 }
 
 .search-input::placeholder {
-  color: #999;
+  color: var(--color-text-muted);
 }
 
 .search-button, .clear-button, .advanced-toggle {
-  padding: 6px 8px;
-  border: 1px solid #444;
-  border-radius: 4px;
-  background: #2a2a2a;
-  color: #e0e0e0;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   flex-shrink: 0;
 }
 
 .search-button:hover, .clear-button:hover, .advanced-toggle:hover {
-  background: #3a3a3a;
+  background: var(--color-bg-muted);
 }
 
 .search-button:disabled {
@@ -50,16 +50,16 @@
 
 .search-type-select {
   width: 100%;
-  padding: 5px;
-  margin-top: 5px;
-  background: #2a2a2a;
-  color: #e0e0e0;
-  border: 1px solid #444;
-  border-radius: 4px;
+  padding: var(--space-1);
+  margin-top: var(--space-1);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
 }
 
 .search-results-summary {
-  font-size: 12px;
-  color: #ccc;
-  margin-top: 5px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-1);
 }

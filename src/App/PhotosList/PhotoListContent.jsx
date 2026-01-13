@@ -17,6 +17,7 @@ import BackNavigationLink from "../../components/BackNavigationLink.jsx";
 import StatusBar from "./StatusBar.jsx";
 import PhotosToolbar from "./PhotosToolbar.jsx";
 import PhotoGrid from "./PhotoGrid.jsx";
+import EmptyState from "./EmptyState.jsx";
 import { logger } from "../../services/LoggerService.js";
 
 /**
@@ -115,7 +116,8 @@ function PhotoListContent({
     } = displayState;
 
     const {
-        query: searchQuery
+        query: searchQuery,
+        currentParams: currentSearchParams
     } = searchState;
 
     const {
@@ -236,7 +238,7 @@ function PhotoListContent({
                             </div>
                             : <div>
                                 <>
-                                    <div>{viewModeObj.getEmptyStateMessage()}</div>
+                                    <EmptyState viewModeObj={viewModeObj} searchQuery={searchQuery} searchParams={currentSearchParams} />
                                     {renderFilterClearingUI()}
                                 </>
                             </div>

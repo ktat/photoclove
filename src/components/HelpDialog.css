@@ -3,7 +3,7 @@
 #help {
   border-width: 1px;
   border-style: solid;
-  border-color: var(--border);
+  border-color: var(--color-border-default);
   z-index: 100;
   display: block;
   position: absolute;
@@ -12,16 +12,16 @@
   width: 550px;
   font-size: 20px;
   padding-top: 10px;
-  background-color: #333;
+  background-color: var(--color-bg-muted);
   text-align: left;
-  border-radius: 10px;
+  border-radius: var(--radius-xl);
   padding: 5px 20px 20px 20px;
 }
 
 #help table tr th,
 #help table tr td,
 #help table {
-  border-color: var(--border);
+  border-color: var(--color-border-default);
 }
 
 #help h1 {
@@ -46,7 +46,7 @@
 #unselectedInfo {
   border-width: 1px;
   border-style: solid;
-  border-color: #fff;
+  border-color: var(--color-text-primary);
   z-index: 110;
   display: block;
   position: absolute;
@@ -57,18 +57,18 @@
   max-height: 90px;
   font-size: 20px;
   padding-top: 10px;
-  background-color: #444;
+  background-color: var(--color-border-default);
   text-align: center;
   font-weight: bold;
-  border-radius: 10px;
+  border-radius: var(--radius-xl);
 }
 
 #selectedInfo {
-  color: #dd8;
+  color: var(--color-warning);
 }
 
 #unselectedInfo {
-  color: #e77;
+  color: var(--color-danger);
 }
 
 #selectedInfo.hidden,

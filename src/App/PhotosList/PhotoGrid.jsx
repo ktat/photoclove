@@ -64,26 +64,7 @@ function PhotoGrid({
                             </div>
                         )}
                     </>
-                ) : (
-                    <>
-                        {!isLoading && (
-                            <>
-                                <div className={styles.noPhotos}>No Photo Found!</div>
-                                {hasActiveFilters && (
-                                    <div className={styles.filterSummary}>
-                                        {getFilterSummary}
-                                        <button
-                                            className={styles.clearFiltersButton}
-                                            onClick={onClearFilters}
-                                        >
-                                            Clear Filters
-                                        </button>
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </>
-                )}
+                ) : null}
             </div>
 
             {/* Photo Grid - using global .photos class for complex grid layout */}
@@ -121,10 +102,11 @@ function PhotoGrid({
                             </div>
                         ) : (
                             displayedPhotos.length < totalPhotosCount ? (
-                                <div>
-                                    <div>Scroll to load more photos</div>
+                                <div className={styles.scrollToLoad}>
+                                    <div className={styles.scrollArrow}>↓</div>
+                                    <div>Scroll to load more</div>
                                     <div className={styles.scrollIndicatorSubtext}>
-                                        Showing {displayedPhotos.length} of {totalPhotosCount} photos
+                                        {displayedPhotos.length} / {totalPhotosCount} photos
                                     </div>
                                 </div>
                             ) : (

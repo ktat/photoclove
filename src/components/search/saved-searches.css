@@ -1,11 +1,11 @@
 /* Saved Searches Styles */
 .saved-searches {
-  margin-bottom: 20px;
-  border: 1px solid #444;
-  border-radius: 4px;
-  padding: 12px;
-  background: #2a2a2a;
-  color: #e0e0e0;
+  margin-bottom: var(--space-5);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
   width: 100%;
   box-sizing: border-box;
   max-width: 100%;
@@ -15,78 +15,78 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: var(--space-4);
 }
 
 .saved-searches-header h3 {
   margin: 0;
-  font-size: 14px;
-  color: #e0e0e0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
 }
 
 .header-actions {
   display: flex;
-  gap: 3px;
+  gap: var(--space-1);
 }
 
 .save-button, .export-button, .import-button {
-  padding: 4px 6px;
-  border: 1px solid #444;
-  border-radius: 4px;
-  background: #3a3a3a;
-  color: #e0e0e0;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-muted);
+  color: var(--color-text-primary);
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   text-decoration: none;
 }
 
 .save-button:hover, .export-button:hover, .import-button:hover {
-  background: #4a4a4a;
+  background: var(--color-border-default);
 }
 
 .save-dialog, .update-dialog {
-  background: #333;
-  border: 1px solid #444;
-  border-radius: 4px;
-  padding: 15px;
-  margin-bottom: 15px;
+  background: var(--color-bg-muted);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
 }
 
 .save-dialog h4, .update-dialog h4 {
-  margin: 0 0 10px 0;
-  font-size: 14px;
-  color: #e0e0e0;
+  margin: 0 0 var(--space-3) 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
 }
 
 .save-dialog input {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #444;
-  border-radius: 4px;
-  margin-bottom: 10px;
-  background: #2a2a2a;
-  color: #e0e0e0;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-3);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
 }
 
 .dialog-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .dialog-actions button {
-  padding: 8px 16px;
-  border: 1px solid #444;
-  border-radius: 4px;
-  background: #3a3a3a;
-  color: #e0e0e0;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-muted);
+  color: var(--color-text-primary);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
 }
 
 .dialog-actions button:first-child {
-  background: #007bff;
+  background: var(--color-primary);
   color: white;
-  border-color: #007bff;
+  border-color: var(--color-primary);
 }
 
 .dialog-actions button:disabled {
@@ -101,110 +101,110 @@
 
 .empty-state {
   text-align: center;
-  padding: 20px;
-  color: #ccc;
+  padding: var(--space-5);
+  color: var(--color-text-secondary);
 }
 
 .empty-state p {
-  margin: 5px 0;
-  font-size: 12px;
+  margin: var(--space-1) 0;
+  font-size: var(--font-size-xs);
 }
 
 /* Search Item Styles */
 .search-item {
-  padding: 16px;
-  border: 1px solid #3a3a3a;
-  border-radius: 8px;
-  margin-bottom: 12px;
-  background: linear-gradient(135deg, #353535 0%, #2a2a2a 100%);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transition: all 0.2s ease;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-3);
+  background: linear-gradient(135deg, var(--color-bg-muted) 0%, var(--color-bg-surface) 100%);
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease-out;
   overflow: hidden;
   position: relative;
 }
 
 .search-item:hover {
-  border-color: #4a4a4a;
+  border-color: var(--color-border-default);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .search-info {
-  margin-right: 5px;
+  margin-right: var(--space-1);
 }
 
 .search-header {
   cursor: pointer;
-  padding: 8px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  margin: -8px;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease-out;
+  margin: calc(-1 * var(--space-2));
 }
 
 .search-header:hover {
-  background: rgba(77, 166, 255, 0.08);
+  background: var(--color-primary-muted);
   transform: translateX(2px);
 }
 
 .search-name {
   font-weight: 600;
-  margin-bottom: 8px;
-  font-size: 15px;
-  color: #f0f0f0;
+  margin-bottom: var(--space-2);
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
   letter-spacing: 0.3px;
   line-height: 1.3;
   text-align: left;
 }
 
 .search-dates {
-  font-size: 12px;
-  color: #aaa;
-  margin-bottom: 4px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-1);
   font-weight: 500;
   line-height: 1.4;
   text-align: left;
 }
 
 .date-separator {
-  margin: 0 10px;
-  color: #4da6ff;
+  margin: 0 var(--space-3);
+  color: var(--color-primary);
   font-weight: bold;
 }
 
 /* Search Actions */
 .search-actions {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: var(--space-2);
+  right: var(--space-2);
   display: flex;
   gap: 2px;
   align-items: flex-start;
 }
 
 .search-actions button {
-  padding: 2px 3px;
-  border: 1px solid #4a4a4a;
-  border-radius: 3px;
-  background: linear-gradient(135deg, #3a3a3a 0%, #333 100%);
-  color: #ddd;
+  padding: 2px var(--space-1);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--color-bg-muted) 0%, var(--color-bg-muted) 100%);
+  color: var(--color-text-primary);
   cursor: pointer;
-  font-size: 10px;
-  transition: all 0.2s ease;
+  font-size: var(--font-size-xs);
+  transition: all 0.2s ease-out;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 16px;
   width: 18px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   opacity: 0.7;
 }
 
 .search-actions button:hover {
-  background: linear-gradient(135deg, #4a4a4a 0%, #3a3a3a 100%);
-  border-color: #5a5a5a;
+  background: linear-gradient(135deg, var(--color-border-default) 0%, var(--color-bg-muted) 100%);
+  border-color: var(--color-border-strong);
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-  color: #f0f0f0;
+  color: var(--color-text-primary);
   opacity: 1;
 }
 

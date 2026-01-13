@@ -34,7 +34,7 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
       padding: '20px'
     }}>
       <div style={{
-        backgroundColor: 'white',
+        backgroundColor: 'var(--color-bg-elevated)',
         borderRadius: '12px',
         padding: '24px',
         maxWidth: '500px',
@@ -52,22 +52,22 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
           paddingBottom: '12px',
           borderBottom: `2px solid ${severityConfig.color}20`
         }}>
-          <span style={{ fontSize: '24px', marginRight: '12px' }}>
+          <span style={{ fontSize: 'var(--font-size-xl)', marginRight: '12px' }}>
             {getSeverityIcon(error.severity)}
           </span>
           <div>
             <h2 style={{
               margin: 0,
               color: severityConfig.color,
-              fontSize: '20px',
+              fontSize: 'var(--font-size-2xl)',
               fontWeight: 'bold'
             }}>
               {error.category} {error.severity}
             </h2>
             {error.operation && (
               <div style={{
-                fontSize: '14px',
-                color: '#666',
+                fontSize: 'var(--font-size-base)',
+                color: 'var(--color-text-muted)',
                 marginTop: '4px',
                 fontStyle: 'italic'
               }}>
@@ -80,9 +80,9 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
         {/* Error Message */}
         <div style={{
           marginBottom: '16px',
-          fontSize: '16px',
+          fontSize: 'var(--font-size-lg)',
           lineHeight: '1.5',
-          color: '#333'
+          color: 'var(--color-text-primary)'
         }}>
           {error.message}
         </div>
@@ -98,7 +98,7 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
             borderLeft: `4px solid ${severityConfig.color}`
           }}>
             <div style={{
-              fontSize: '14px',
+              fontSize: 'var(--font-size-base)',
               fontWeight: 'bold',
               color: severityConfig.color,
               marginBottom: '4px'
@@ -106,8 +106,8 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
               💡 Suggestion:
             </div>
             <div style={{
-              fontSize: '14px',
-              color: '#555',
+              fontSize: 'var(--font-size-base)',
+              color: 'var(--color-text-secondary)',
               lineHeight: '1.4'
             }}>
               {error.suggestion}
@@ -120,8 +120,8 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
           <details style={{ marginBottom: '16px' }}>
             <summary style={{
               cursor: 'pointer',
-              fontSize: '14px',
-              color: '#666',
+              fontSize: 'var(--font-size-base)',
+              color: 'var(--color-text-muted)',
               marginBottom: '8px'
             }}>
               Technical Details
@@ -130,7 +130,7 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
               backgroundColor: '#f8f9fa',
               padding: '12px',
               borderRadius: '4px',
-              fontSize: '12px',
+              fontSize: 'var(--font-size-sm)',
               fontFamily: 'monospace',
               border: '1px solid #e9ecef'
             }}>
@@ -156,7 +156,7 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
                     marginTop: '4px',
                     overflow: 'auto',
                     maxHeight: '200px',
-                    fontSize: '11px'
+                    fontSize: 'var(--font-size-xs)'
                   }}>
                     {error.stack}
                   </pre>
@@ -186,7 +186,7 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
-                fontSize: '14px',
+                fontSize: 'var(--font-size-base)',
                 fontWeight: 'bold',
                 display: 'flex',
                 alignItems: 'center',
@@ -207,7 +207,7 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
               border: 'none',
               borderRadius: '6px',
               cursor: 'pointer',
-              fontSize: '14px',
+              fontSize: 'var(--font-size-base)',
               fontWeight: 'bold'
             }}
           >
@@ -224,7 +224,7 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
             border: '1px solid #fecaca',
             borderRadius: '6px',
             color: '#dc2626',
-            fontSize: '13px',
+            fontSize: 'var(--font-size-sm)',
             textAlign: 'center'
           }}>
             ⚠️ This is a critical error that may require restarting the application

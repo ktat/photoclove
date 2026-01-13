@@ -49,7 +49,7 @@ export const PhotoProvider = ({ children }) => {
     updateRecentPhotosMode: useCallback((mode) => {
       setRecentPhotosMode(mode);
       if (mode) {
-        setCurrentDate("");
+        // Keep currentDate for visual indication, only clear datePage
         setDatePage({});
       }
     }, []),

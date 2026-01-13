@@ -254,8 +254,8 @@ function DirectoryMenu(props) {
                     {props.importState.currentImportPath &&
                         !props.importState.importPaths?.includes(props.importState.currentImportPath) && (
                             <p style={{
-                                fontSize: '0.9em',
-                                color: '#888',
+                                fontSize: 'var(--font-size-sm)',
+                                color: 'var(--color-text-muted)',
                                 marginBottom: '10px',
                                 fontStyle: 'italic'
                             }}>
@@ -289,9 +289,9 @@ function DirectoryMenu(props) {
                     <Scrollable
                         style={{
                             maxHeight: '250px',
-                            border: '1px solid var(--border)',
+                            border: '1px solid var(--color-border-default)',
                             borderRadius: '4px',
-                            backgroundColor: 'var(--bg-elevated)'
+                            backgroundColor: 'var(--color-bg-elevated)'
                         }}
                     >
                         <ul style={{ listStyle: 'none', padding: '8px', margin: 0 }}>

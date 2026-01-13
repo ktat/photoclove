@@ -15,6 +15,7 @@ function VerticalTabBar({
     changeTab,
     setShowSideMenu,
     closeRightColumn,
+    clearAllTabs,
     viewModeObj,
     photoSelectionCount = 0,
     selectedAlbumsCount = 0,
@@ -105,7 +106,10 @@ function VerticalTabBar({
             {showSideMenu && (
                 <button
                     className="directory-vertical-tab-button directory-close-tab"
-                    onClick={closeRightColumn}
+                    onClick={() => {
+                        clearAllTabs?.();
+                        closeRightColumn();
+                    }}
                     title="Close Panel"
                     aria-label="Close side panel"
                 >

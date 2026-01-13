@@ -194,7 +194,7 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
     <div className="album-tab" style={{ padding: '16px' }}>
       {/* Album Information Section */}
       <div className="album-info-section" style={{ marginBottom: '24px' }}>
-        <h3 style={{ margin: '0 0 16px 0', color: '#333' }}>Album Information</h3>
+        <h3 style={{ margin: '0 0 16px 0', color: 'var(--color-text-primary)' }}>Album Information</h3>
         
         {isEditing ? (
           <div className="album-edit-form">
@@ -211,9 +211,9 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
                 style={{
                   width: '100%',
                   padding: '8px',
-                  border: '1px solid #ddd',
+                  border: '1px solid var(--color-border-default)',
                   borderRadius: '4px',
-                  fontSize: '14px'
+                  fontSize: 'var(--font-size-base)'
                 }}
               />
             </div>
@@ -230,9 +230,9 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
                 style={{
                   width: '100%',
                   padding: '8px',
-                  border: '1px solid #ddd',
+                  border: '1px solid var(--color-border-default)',
                   borderRadius: '4px',
-                  fontSize: '14px',
+                  fontSize: 'var(--font-size-base)',
                   resize: 'vertical'
                 }}
               />
@@ -243,9 +243,9 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
                 disabled={!editedName.trim() || isLoading}
                 style={{
                   padding: '8px 16px',
-                  backgroundColor: !editedName.trim() || isLoading ? '#ccc' : '#007bff',
-                  color: 'white',
-                  border: 'none',
+                  backgroundColor: !editedName.trim() || isLoading ? 'var(--color-bg-muted)' : 'var(--color-primary-selected)',
+                  color: !editedName.trim() || isLoading ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
+                  border: !editedName.trim() || isLoading ? '1px solid var(--color-border-default)' : '1px solid var(--color-primary)',
                   borderRadius: '4px',
                   cursor: !editedName.trim() || isLoading ? 'not-allowed' : 'pointer'
                 }}
@@ -257,8 +257,8 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
                 disabled={isLoading}
                 style={{
                   padding: '8px 16px',
-                  backgroundColor: '#6c757d',
-                  color: 'white',
+                  backgroundColor: 'var(--color-bg-muted)',
+                  color: 'var(--color-text-primary)',
                   border: 'none',
                   borderRadius: '4px',
                   cursor: isLoading ? 'not-allowed' : 'pointer'
@@ -276,34 +276,34 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
               justifyContent: 'space-between',
               marginBottom: '8px'
             }}>
-              <strong style={{ fontSize: '16px' }}>{albumInfo?.name}</strong>
+              <strong style={{ fontSize: 'var(--font-size-lg)' }}>{albumInfo?.name}</strong>
               <button 
                 onClick={() => setIsEditing(true)}
                 disabled={isLoading}
                 style={{
                   padding: '4px 8px',
                   backgroundColor: 'transparent',
-                  border: '1px solid #ddd',
+                  border: '1px solid var(--color-border-default)',
                   borderRadius: '4px',
                   cursor: isLoading ? 'not-allowed' : 'pointer',
-                  fontSize: '12px'
+                  fontSize: 'var(--font-size-xs)'
                 }}
               >
                 ✏️ Edit
               </button>
             </div>
             {albumInfo?.description && (
-              <div className="album-description" style={{ 
+              <div className="album-description" style={{
                 marginBottom: '12px',
-                color: '#666',
+                color: 'var(--color-text-muted)',
                 fontStyle: 'italic'
               }}>
                 {albumInfo.description}
               </div>
             )}
-            <div className="album-stats" style={{ 
-              fontSize: '14px',
-              color: '#666'
+            <div className="album-stats" style={{
+              fontSize: 'var(--font-size-base)',
+              color: 'var(--color-text-muted)'
             }}>
               <div style={{ marginBottom: '4px' }}>
                 📸 {albumInfo?.photo_count || 0} photos
@@ -320,18 +320,18 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
       {/* Cover Photo Section */}
       {currentPhotoPath && (
         <div className="cover-section" style={{ marginBottom: '24px' }}>
-          <h3 style={{ margin: '0 0 12px 0', color: '#333' }}>Cover Photo</h3>
+          <h3 style={{ margin: '0 0 12px 0', color: 'var(--color-text-primary)' }}>Cover Photo</h3>
           <button 
             onClick={setCoverPhoto}
             disabled={isLoading}
             style={{
               padding: '8px 16px',
-              backgroundColor: isLoading ? '#ccc' : '#28a745',
-              color: 'white',
+              backgroundColor: isLoading ? 'var(--color-bg-muted)' : 'var(--color-success)',
+              color: isLoading ? 'var(--color-text-muted)' : 'white',
               border: 'none',
               borderRadius: '4px',
               cursor: isLoading ? 'not-allowed' : 'pointer',
-              fontSize: '14px'
+              fontSize: 'var(--font-size-base)'
             }}
           >
             {isLoading ? '🖼️ Setting...' : '🖼️ Set Current Photo as Cover'}
@@ -341,8 +341,8 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
 
       {/* Google Photos Sync Section */}
       <div className="sync-section" style={{ marginBottom: '24px' }}>
-        <h3 style={{ margin: '0 0 12px 0', color: '#333' }}>Google Photos Sync</h3>
-        <div style={{ color: '#666', fontSize: '14px', fontStyle: 'italic' }}>
+        <h3 style={{ margin: '0 0 12px 0', color: 'var(--color-text-primary)' }}>Google Photos Sync</h3>
+        <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-base)', fontStyle: 'italic' }}>
           Sync configuration will be available in a future update.
         </div>
         {/* TODO: Implement sync settings when improvement #64 is ready
@@ -385,18 +385,18 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
 
       {/* Album Operations */}
       <div className="album-operations">
-        <h3 style={{ margin: '0 0 12px 0', color: '#333' }}>Album Operations</h3>
+        <h3 style={{ margin: '0 0 12px 0', color: 'var(--color-text-primary)' }}>Album Operations</h3>
         <button 
           onClick={deleteAlbum}
           disabled={isLoading}
           style={{
             padding: '8px 16px',
-            backgroundColor: isLoading ? '#ccc' : '#dc3545',
-            color: 'white',
+            backgroundColor: isLoading ? 'var(--color-bg-muted)' : 'var(--color-danger)',
+            color: isLoading ? 'var(--color-text-muted)' : 'white',
             border: 'none',
             borderRadius: '4px',
             cursor: isLoading ? 'not-allowed' : 'pointer',
-            fontSize: '14px'
+            fontSize: 'var(--font-size-base)'
           }}
         >
           {isLoading ? '🗑️ Deleting...' : '🗑️ Delete Album'}
