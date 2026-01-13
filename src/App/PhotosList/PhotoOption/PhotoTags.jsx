@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { logger } from '../../../services/LoggerService.js';
 import TagSelector from '../../../components/TagSelector.jsx';
-import './PhotoTags.css';
+import styles from './PhotoTags.module.css';
 
 function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
     const [photoTags, setPhotoTags] = useState([]);
@@ -55,27 +55,27 @@ function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
 
     if (isLoading) {
         return (
-            <div className="photo-tags-container">
-                <div className="photo-tags-header">
+            <div className={styles.photoTagsContainer}>
+                <div className={styles.photoTagsHeader}>
                     <h3>Photo Tags</h3>
                 </div>
-                <div className="photo-tags-loading">Loading tags...</div>
+                <div className={styles.photoTagsLoading}>Loading tags...</div>
             </div>
         );
     }
 
     return (
-        <div className="photo-tags-container">
-            <div className="photo-tags-header">
+        <div className={styles.photoTagsContainer}>
+            <div className={styles.photoTagsHeader}>
                 <h3>Photo Tags</h3>
-                <p className="photo-tags-description">
-                    Add tags to organize and categorize your photos. 
+                <p className={styles.photoTagsDescription}>
+                    Add tags to organize and categorize your photos.
                     Tags make it easier to find related photos later.
                 </p>
             </div>
 
-            <div className="photo-tags-content">
-                <div className="photo-tags-section">
+            <div className={styles.photoTagsContent}>
+                <div className={styles.photoTagsSection}>
                     <h4>Current Tags ({photoTags.length})</h4>
                     <TagSelector
                         photoPath={currentPhotoPath}
@@ -85,13 +85,13 @@ function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
                 </div>
 
                 {photoTags.length === 0 && (
-                    <div className="photo-tags-empty">
+                    <div className={styles.photoTagsEmpty}>
                         <p>No tags assigned to this photo yet.</p>
                         <p>Click the + button above to add your first tag!</p>
                     </div>
                 )}
 
-                <div className="photo-tags-tips">
+                <div className={styles.photoTagsTips}>
                     <h4>Tips</h4>
                     <ul>
                         <li>Use descriptive tags like "vacation", "family", or "nature"</li>

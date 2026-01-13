@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import classNames from 'classnames';
 import PhotoInfo from "./PhotoOption/PhotoInfo.jsx";
 import PhotoEditor from "./PhotoOption/PhotoEditor.jsx";
 import PhotoTags from "./PhotoOption/PhotoTags.jsx";
@@ -7,11 +8,10 @@ import SelectionTab from "./DirectoryMenu/SelectionTab.jsx";
 import TutorialTooltip from "../../components/TutorialTooltip.jsx";
 import { useUI } from "../../context/UIContext.jsx";
 import { VIEW_MODES } from "../../constants/viewModes.js";
-import { getSelectionTabClassName } from "../../utils/tabClassUtils.js";
 import { useTutorial } from "../../hooks/useTutorial.js";
 import { getTutorialContent } from "./DirectoryMenu/tutorialContent.jsx";
 import { logger } from "../../services/LoggerService.js";
-import './PhotoOption.css';
+import styles from './PhotoOption.module.css';
 
 function PhotoOption(props) {
     const [activeTab, setActiveTab] = useState("info");
@@ -149,67 +149,77 @@ function PhotoOption(props) {
         e.target.value = "";
     };
 
+    // Helper function for selection tab class (replaces getSelectionTabClassName)
+    const getSelectionTabClass = () => {
+        const isActive = activeTab === "selection";
+        const hasSelection = (props.photoSelection?.length || 0) +
+                           (props.selectedAlbums?.length || 0) +
+                           (props.selectedTags?.length || 0) > 0;
+
+        return classNames(styles.verticalTabButton, {
+            [styles.active]: isActive,
+            [styles.hasSelection]: hasSelection && !isActive
+        });
+    };
+
     return (
         <>
             {/* Vertical tabs replacing the toggle */}
-            <div className={`vertical-tabs ${props.showSideMenu ? 'menu-open' : 'menu-closed'}`}>
+            <div className={classNames(styles.verticalTabs, {
+                [styles.menuOpen]: props.showSideMenu,
+                [styles.menuClosed]: !props.showSideMenu
+            })}>
                 <button
-                    className={activeTab === "info" ? "vertical-tab-button active" : "vertical-tab-button"}
+                    className={classNames(styles.verticalTabButton, { [styles.active]: activeTab === "info" })}
                     onClick={() => handleTabClick("info")}
                     title="Photo Information"
                 >
-                    <span className="vertical-text">Info</span>
+                    <span className={styles.verticalText}>Info</span>
                 </button>
 
                 {/* Hide Editor tab in import and trash modes */}
                 {!isImportMode && !isTrashMode && (
                     <button
-                        className={activeTab === "editor" ? "vertical-tab-button active" : "vertical-tab-button"}
+                        className={classNames(styles.verticalTabButton, { [styles.active]: activeTab === "editor" })}
                         onClick={() => handleTabClick("editor")}
                         title="Photo Editor"
                     >
-                        <span className="vertical-text">Editor</span>
+                        <span className={styles.verticalText}>Editor</span>
                     </button>
                 )}
 
                 {/* Hide Tags tab in import and trash modes */}
                 {!isImportMode && !isTrashMode && (
                     <button
-                        className={activeTab === "tags" ? "vertical-tab-button active" : "vertical-tab-button"}
+                        className={classNames(styles.verticalTabButton, { [styles.active]: activeTab === "tags" })}
                         onClick={() => handleTabClick("tags")}
                         title="Photo Tags"
                     >
-                        <span className="vertical-text">Tags</span>
+                        <span className={styles.verticalText}>Tags</span>
                     </button>
                 )}
                 {isAlbumMode && (
                     <button
-                        className={activeTab === "album" ? "vertical-tab-button active" : "vertical-tab-button"}
+                        className={classNames(styles.verticalTabButton, { [styles.active]: activeTab === "album" })}
                         onClick={() => handleTabClick("album")}
                         title="Album Management"
                     >
-                        <span className="vertical-text">Album</span>
+                        <span className={styles.verticalText}>Album</span>
                     </button>
                 )}
 
                 {/* Selection tab - always available (Feature #153) */}
                 <button
-                    className={getSelectionTabClassName(
-                        activeTab === "selection",
-                        props.photoSelection?.length || 0,
-                        props.selectedAlbums?.length || 0,
-                        props.selectedTags?.length || 0,
-                        'vertical-tab-button'
-                    )}
+                    className={getSelectionTabClass()}
                     onClick={() => handleTabClick("selection")}
                     title="Photo Selection"
                 >
-                    <span className="vertical-text">Selection</span>
+                    <span className={styles.verticalText}>Selection</span>
                 </button>
 
                 {props.showSideMenu && (
-                    <button 
-                        className="vertical-tab-button close-tab"
+                    <button
+                        className={classNames(styles.verticalTabButton, styles.closeTab)}
                         onClick={handleCloseTab}
                         title="Close Panel"
                     >
@@ -217,10 +227,10 @@ function PhotoOption(props) {
                     </button>
                 )}
             </div>
-            
+
             {/* Content area */}
             {props.currentPhotoPath && props.showSideMenu && (
-                <div className="tab-content" style={{
+                <div className={styles.tabContent} style={{
                     position: 'fixed',
                     right: '0px',
                     top: '0px',
