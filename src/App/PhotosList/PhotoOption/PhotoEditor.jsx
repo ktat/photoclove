@@ -380,9 +380,9 @@ function PhotoEditor(props) {
                 cropSelection={cropSelection}
                 handlers={cropHandlers}
             />
-            <div className={styles.editorTab}>
-                <div className={styles.photoInfoEditor}>
-                    <div className={styles.editorControls}>
+            <div className={styles['editor-tab']}>
+                <div className={styles['photo-info-editor']}>
+                    <div className={styles['editor-controls']}>
                         <EditorControl
                             label={<>Rotation<br />(deg):</>}
                             value={editorStyles.rotate}
@@ -392,9 +392,9 @@ function PhotoEditor(props) {
                             onReset={() => resetSingleControl('rotate')}
                             resetTitle="Reset rotation"
                         >
-                            <div className={styles.rotationShortcuts}>
-                                <button className={styles.shortcutBtn} onClick={() => rotateBy(-90)} title="Turn left 90°">↶ 90°</button>
-                                <button className={styles.shortcutBtn} onClick={() => rotateBy(90)} title="Turn right 90°">↷ 90°</button>
+                            <div className={styles['rotation-shortcuts']}>
+                                <button className={styles['shortcut-btn']} onClick={() => rotateBy(-90)} title="Turn left 90°">↶ 90°</button>
+                                <button className={styles['shortcut-btn']} onClick={() => rotateBy(90)} title="Turn right 90°">↷ 90°</button>
                             </div>
                         </EditorControl>
                         <EditorControl
@@ -442,26 +442,26 @@ function PhotoEditor(props) {
                             onReset={() => resetSingleControl('scale')}
                             resetTitle="Reset scale"
                         />
-                        <div className={styles.editorControlCrop}>
-                            <div className={styles.controlRow}>
+                        <div className={styles['editor-control-crop']}>
+                            <div className={styles['control-row']}>
                                 <label>Crop:</label>
                                 {!cropMode ? (
-                                    <button className={styles.actionBtn} onClick={enterCropMode}>Crop</button>
+                                    <button className={styles['action-btn']} onClick={enterCropMode}>Crop</button>
                                 ) : (
-                                    <div className={styles.cropButtons}>
-                                        <button className={styles.actionBtn} onClick={applyCrop}>Done</button>
-                                        <button className={styles.actionBtn} onClick={exitCropMode}>Cancel</button>
+                                    <div className={styles['crop-buttons']}>
+                                        <button className={styles['action-btn']} onClick={applyCrop}>Done</button>
+                                        <button className={styles['action-btn']} onClick={exitCropMode}>Cancel</button>
                                     </div>
                                 )}
                             </div>
                             {cropMode && (
-                                <div className={styles.cropPresets}>
+                                <div className={styles['crop-presets']}>
                                     <label>Presets:</label>
-                                    <div className={styles.presetButtons}>
+                                    <div className={styles['preset-buttons']}>
                                         {CROP_PRESETS.map((preset, index) => (
                                             <button
                                                 key={index}
-                                                className={styles.presetBtn}
+                                                className={styles['preset-btn']}
                                                 onClick={() => setCropPreset(preset)}
                                                 title={`Set crop to ${preset.name}`}
                                             >
@@ -473,15 +473,15 @@ function PhotoEditor(props) {
                             )}
                         </div>
                     </div>
-                    <div className={styles.editorButtons}>
-                        <button className={styles.actionBtn} onClick={() => applyStyle()}>Apply</button>
-                        <button className={styles.actionBtn} onClick={() => saveAsCopy()}>Save As Copy</button>
-                        <button className={styles.actionBtn} onClick={() => resetStyle()}>Reset</button>
-                        <button className={styles.actionBtn} onClick={() => downloadStyled()}>Download</button>
+                    <div className={styles['editor-buttons']}>
+                        <button className={styles['action-btn']} onClick={() => applyStyle()}>Apply</button>
+                        <button className={styles['action-btn']} onClick={() => saveAsCopy()}>Save As Copy</button>
+                        <button className={styles['action-btn']} onClick={() => resetStyle()}>Reset</button>
+                        <button className={styles['action-btn']} onClick={() => downloadStyled()}>Download</button>
                     </div>
-                    <div className={styles.cssPreview}>
+                    <div className={styles['css-preview']}>
                         <label>CSS Preview:</label>
-                        <textarea id="css-preview-text" rows="4" readOnly className={styles.cssPreviewTextarea}></textarea>
+                        <textarea id="css-preview-text" rows="4" readOnly className={styles['css-preview-textarea']}></textarea>
                     </div>
                 </div>
             </div>

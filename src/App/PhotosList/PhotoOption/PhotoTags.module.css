@@ -71,6 +71,7 @@
     border: 1px solid rgba(59, 130, 246, 0.2);
     border-radius: var(--radius-lg);
     padding: 16px;
+    text-align: center;
 }
 
 .photo-tags-tips h4 {
@@ -84,6 +85,7 @@
     margin: 0;
     padding-left: 16px;
     color: var(--color-text-primary);
+    text-align: left;
 }
 
 .photo-tags-tips li {

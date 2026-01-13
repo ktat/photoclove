@@ -156,55 +156,55 @@ function PhotoOption(props) {
                            (props.selectedAlbums?.length || 0) +
                            (props.selectedTags?.length || 0) > 0;
 
-        return classNames(styles.verticalTabButton, {
+        return classNames(styles['vertical-tab-button'], {
             [styles.active]: isActive,
-            [styles.hasSelection]: hasSelection && !isActive
+            [styles['has-selection']]: hasSelection && !isActive
         });
     };
 
     return (
         <>
             {/* Vertical tabs replacing the toggle */}
-            <div className={classNames(styles.verticalTabs, {
-                [styles.menuOpen]: props.showSideMenu,
-                [styles.menuClosed]: !props.showSideMenu
+            <div className={classNames(styles['vertical-tabs'], {
+                [styles['menu-open']]: props.showSideMenu,
+                [styles['menu-closed']]: !props.showSideMenu
             })}>
                 <button
-                    className={classNames(styles.verticalTabButton, { [styles.active]: activeTab === "info" && props.showSideMenu })}
+                    className={classNames(styles['vertical-tab-button'], { [styles.active]: activeTab === "info" && props.showSideMenu })}
                     onClick={() => handleTabClick("info")}
                     title="Photo Information"
                 >
-                    <span className={styles.verticalText}>Info</span>
+                    <span className={styles['vertical-text']}>Info</span>
                 </button>
 
                 {/* Hide Editor tab in import and trash modes */}
                 {!isImportMode && !isTrashMode && (
                     <button
-                        className={classNames(styles.verticalTabButton, { [styles.active]: activeTab === "editor" && props.showSideMenu })}
+                        className={classNames(styles['vertical-tab-button'], { [styles.active]: activeTab === "editor" && props.showSideMenu })}
                         onClick={() => handleTabClick("editor")}
                         title="Photo Editor"
                     >
-                        <span className={styles.verticalText}>Editor</span>
+                        <span className={styles['vertical-text']}>Editor</span>
                     </button>
                 )}
 
                 {/* Hide Tags tab in import and trash modes */}
                 {!isImportMode && !isTrashMode && (
                     <button
-                        className={classNames(styles.verticalTabButton, { [styles.active]: activeTab === "tags" && props.showSideMenu })}
+                        className={classNames(styles['vertical-tab-button'], { [styles.active]: activeTab === "tags" && props.showSideMenu })}
                         onClick={() => handleTabClick("tags")}
                         title="Photo Tags"
                     >
-                        <span className={styles.verticalText}>Tags</span>
+                        <span className={styles['vertical-text']}>Tags</span>
                     </button>
                 )}
                 {isAlbumMode && (
                     <button
-                        className={classNames(styles.verticalTabButton, { [styles.active]: activeTab === "album" && props.showSideMenu })}
+                        className={classNames(styles['vertical-tab-button'], { [styles.active]: activeTab === "album" && props.showSideMenu })}
                         onClick={() => handleTabClick("album")}
                         title="Album Management"
                     >
-                        <span className={styles.verticalText}>Album</span>
+                        <span className={styles['vertical-text']}>Album</span>
                     </button>
                 )}
 
@@ -214,12 +214,12 @@ function PhotoOption(props) {
                     onClick={() => handleTabClick("selection")}
                     title="Photo Selection"
                 >
-                    <span className={styles.verticalText}>Selection</span>
+                    <span className={styles['vertical-text']}>Selection</span>
                 </button>
 
                 {props.showSideMenu && (
                     <button
-                        className={classNames(styles.verticalTabButton, styles.closeTab)}
+                        className={classNames(styles['vertical-tab-button'], styles['close-tab'])}
                         onClick={handleCloseTab}
                         title="Close Panel"
                     >
@@ -230,7 +230,7 @@ function PhotoOption(props) {
 
             {/* Content area */}
             {props.currentPhotoPath && props.showSideMenu && (
-                <div className={styles.tabContent} style={{
+                <div className={styles['tab-content']} style={{
                     position: 'fixed',
                     right: '0px',
                     top: '0px',
