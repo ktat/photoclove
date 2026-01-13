@@ -1,26 +1,40 @@
 /* Editor styles */
+
+/* Main editor container */
+.editor-tab {
+    width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+.photo-info-editor {
+    width: 100%;
+}
+
 .editor-controls {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-bottom: 20px;
+    gap: 6px;
+    margin-bottom: 12px;
 }
 
 .editor-control {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
 }
 
 .editor-control label {
-   /* min-width: 120px; */
     font-weight: bold;
+    font-size: 11px;
     color: var(--color-text-primary);
+    min-width: 70px;
 }
 
-.editor-control input[type="range"] {
+.editor-control input[type="range"],
+.editor-slider {
     flex: 1;
-    height: 5px;
+    height: 4px;
     background: var(--color-bg-muted);
     border-radius: var(--radius-sm);
     outline: none;
@@ -28,22 +42,25 @@
     transition: opacity 0.2s ease-out;
 }
 
-.editor-control input[type="range"]:hover {
+.editor-control input[type="range"]:hover,
+.editor-slider:hover {
     opacity: 1;
 }
 
-.editor-control input[type="range"]::-webkit-slider-thumb {
+.editor-control input[type="range"]::-webkit-slider-thumb,
+.editor-slider::-webkit-slider-thumb {
     appearance: none;
-    width: 20px;
-    height: 20px;
+    width: 14px;
+    height: 14px;
     background: var(--color-success);
     border-radius: 50%;
     cursor: pointer;
 }
 
-.editor-control input[type="range"]::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
+.editor-control input[type="range"]::-moz-range-thumb,
+.editor-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
     background: var(--color-success);
     border-radius: 50%;
     cursor: pointer;
@@ -51,26 +68,47 @@
 }
 
 .editor-control span {
-    min-width: 40px;
+    min-width: 30px;
     text-align: center;
     font-weight: bold;
+    font-size: 11px;
     color: var(--color-success);
+}
+
+/* Value input for editor controls */
+.value-input {
+    width: 40px;
+    padding: 2px 4px;
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-elevated);
+    color: var(--color-text-primary);
+    font-size: 11px;
+    text-align: center;
+    margin: 0 2px;
+}
+
+.value-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
 }
 
 .editor-buttons {
     display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
 }
 
 .editor-buttons button {
-    padding: 10px 20px;
+    padding: 5px 10px;
     border: none;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
     background: var(--color-success);
     color: white;
     cursor: pointer;
-    font-weight: bold;
+    font-weight: 500;
+    font-size: 11px;
     transition: background 0.3s ease-out;
 }
 
@@ -108,24 +146,25 @@
 .css-preview {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 4px;
 }
 
 .css-preview label {
     font-weight: bold;
+    font-size: 11px;
     color: var(--color-text-primary);
 }
 
 .css-preview textarea {
     width: 100%;
-    min-height: 100px;
-    padding: 10px;
+    min-height: 60px;
+    padding: 6px;
     border: 1px solid var(--color-bg-muted);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
     background: var(--color-bg-surface);
     color: var(--color-text-primary);
     font-family: monospace;
-    font-size: 12px;
+    font-size: 10px;
     resize: vertical;
     box-sizing: border-box;
     overflow-x: auto;
@@ -136,16 +175,16 @@
 .control-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
     flex: 1;
 }
 
 .control-row span {
-    min-width: 35px;
+    min-width: 28px;
     text-align: center;
     font-weight: bold;
     color: var(--color-success);
-    font-size: 12px;
+    font-size: 10px;
 }
 
 .reset-btn {
@@ -153,11 +192,11 @@
     color: white !important;
     border: 1px solid var(--color-text-muted) !important;
     border-radius: 3px !important;
-    padding: 4px 6px !important;
+    padding: 2px 4px !important;
     cursor: pointer;
-    font-size: 14px;
-    min-width: 24px;
-    height: 24px;
+    font-size: 12px;
+    min-width: 18px;
+    height: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -171,8 +210,8 @@
 
 .rotation-shortcuts {
     display: flex;
-    gap: 6px;
-    margin-top: 4px;
+    gap: 4px;
+    margin-top: 2px;
 }
 
 .shortcut-btn {
@@ -180,9 +219,9 @@
     color: var(--color-text-secondary) !important;
     border: 1px solid var(--color-border-strong) !important;
     border-radius: 3px !important;
-    padding: 4px 8px !important;
+    padding: 2px 6px !important;
     cursor: pointer;
-    font-size: 11px;
+    font-size: 10px;
     transition: background-color 0.2s ease-out;
     margin: 0 !important;
 }
@@ -196,13 +235,13 @@
     background: var(--color-success) !important;
     color: white !important;
     border: none !important;
-    border-radius: 4px !important;
-    padding: 6px 12px !important;
+    border-radius: 3px !important;
+    padding: 4px 8px !important;
     cursor: pointer;
-    font-size: 11px !important;
+    font-size: 10px !important;
     font-weight: 500;
     transition: background 0.2s ease-out;
-    margin: 0 4px 0 0 !important;
+    margin: 0 2px 0 0 !important;
     min-width: auto;
 }
 
@@ -235,4 +274,66 @@
 .action-btn:nth-child(4):hover {
     background: var(--color-info) !important;
     filter: brightness(0.9);
+}
+
+/* Crop control styles */
+.editor-control-crop {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.crop-buttons {
+    display: flex;
+    gap: 3px;
+}
+
+.crop-presets {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 2px;
+}
+
+.crop-presets label {
+    font-size: 10px;
+    color: var(--color-text-secondary);
+}
+
+.preset-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.preset-btn {
+    background: var(--color-bg-elevated) !important;
+    color: var(--color-text-secondary) !important;
+    border: 1px solid var(--color-border-strong) !important;
+    border-radius: 3px !important;
+    padding: 2px 5px !important;
+    cursor: pointer;
+    font-size: 9px;
+    transition: background-color 0.2s ease-out;
+    margin: 0 !important;
+}
+
+.preset-btn:hover {
+    background: var(--color-bg-surface) !important;
+    color: var(--color-text-primary) !important;
+}
+
+/* CSS Preview textarea */
+.css-preview-textarea {
+    width: 100%;
+    min-height: 50px;
+    padding: 4px;
+    border: 1px solid var(--color-bg-muted);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-surface);
+    color: var(--color-text-primary);
+    font-family: monospace;
+    font-size: 9px;
+    resize: vertical;
+    box-sizing: border-box;
 }

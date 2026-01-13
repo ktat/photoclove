@@ -22,7 +22,8 @@ function Preferences(props) {
         logging_level: 'info',
         use_exif_thumbnail: false,
         google_auth_auto_reauth: false,
-        photo_grid_theme: 'default'
+        photo_grid_theme: 'default',
+        color_theme: 'dark'
     });
     const [additionalExportFrom, setAdditionalExportFrom] = useState(0);
     const [configLoaded, setConfigLoaded] = useState(false);
@@ -51,11 +52,24 @@ function Preferences(props) {
         Object.keys(config).map((k) => {
             newConfig[k] = config[k];
         });
-        setConfig(newConfig);
-        // Apply theme on config load
-        if (config.photo_grid_theme) {
+
+        // Preserve current visual theme state (user may have changed without saving)
+        const currentColorTheme = document.documentElement.getAttribute('data-theme');
+        const currentGridTheme = document.documentElement.getAttribute('data-grid-theme');
+
+        if (currentColorTheme) {
+            newConfig.color_theme = currentColorTheme;
+        } else if (config.color_theme) {
+            document.documentElement.setAttribute('data-theme', config.color_theme);
+        }
+
+        if (currentGridTheme) {
+            newConfig.photo_grid_theme = currentGridTheme;
+        } else if (config.photo_grid_theme) {
             document.documentElement.setAttribute('data-grid-theme', config.photo_grid_theme);
         }
+
+        setConfig(newConfig);
     }
 
     function saveConfig() {
@@ -184,10 +198,34 @@ function Preferences(props) {
                 {/* Appearance Tab */}
                 {activeTab === 'appearance' && (
                     <div className="preferences-section">
+                        <p className="setting-description" style={{ marginBottom: 'var(--space-4)' }}>
+                            Theme changes are applied immediately for preview. Click "Save Changes" to persist.
+                        </p>
+                        <h2 className="section-title">Color Theme</h2>
+                        <div className="setting-group">
+                            <div className="setting-row">
+                                <label>App Theme:</label>
+                                <select
+                                    value={config.color_theme || 'dark'}
+                                    onChange={(e) => {
+                                        setConfig(prev => ({ ...prev, color_theme: e.target.value }));
+                                        // Apply theme immediately
+                                        document.documentElement.setAttribute('data-theme', e.target.value);
+                                    }}
+                                >
+                                    <option value="dark">Dark</option>
+                                    <option value="light">Light</option>
+                                </select>
+                            </div>
+                            <p className="setting-description">
+                                Change the overall color scheme of the application.
+                            </p>
+                        </div>
+
                         <h2 className="section-title">Photo Grid Theme</h2>
                         <div className="setting-group">
                             <div className="setting-row">
-                                <label>Theme:</label>
+                                <label>Grid Style:</label>
                                 <select
                                     value={config.photo_grid_theme || 'default'}
                                     onChange={(e) => {
@@ -201,7 +239,7 @@ function Preferences(props) {
                                 </select>
                             </div>
                             <p className="setting-description">
-                                Choose how photos are displayed in the grid. Changes apply immediately.
+                                Choose how photos are displayed in the grid.
                             </p>
                         </div>
                     </div>

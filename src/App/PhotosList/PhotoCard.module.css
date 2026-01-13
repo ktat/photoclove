@@ -150,6 +150,7 @@
 }
 
 /* Metadata overlay (stars, comments) - positioned inside thumbnail container */
+/* Note: font-size is hardcoded because CSS variables don't work with color-scheme: light */
 .metadataOverlay {
     position: absolute;
     bottom: var(--space-1);
@@ -158,7 +159,7 @@
     color: white;
     padding: 1px var(--space-2);
     border-radius: var(--radius-sm);
-    font-size: var(--font-size-xs);
+    font-size: 11px;
     display: flex;
     align-items: center;
     gap: 2px;
@@ -176,13 +177,13 @@
     padding: 1px var(--space-2);
     background-color: rgba(0, 0, 0, 0.6);
     border-radius: var(--radius-sm);
-    font-size: var(--font-size-xs);
+    font-size: 11px;
     z-index: 10;
 }
 
 .tagsIndicator span:last-child {
     color: white;
-    font-size: var(--font-size-xs);
+    font-size: 11px;
 }
 
 /* Size-specific overlay adjustments
@@ -204,15 +205,15 @@
 .size100 .tagsIndicator {
     bottom: 2px;
     padding: 1px var(--space-1);
-    font-size: var(--font-size-2xs);
+    font-size: 9px;
 }
 
-/* size200 uses default values (--font-size-xs) */
+/* size200 uses default values (11px) */
 
 .size300 .metadataOverlay,
 .size300 .tagsIndicator {
     bottom: var(--space-2);
-    font-size: var(--font-size-sm);
+    font-size: 13px;
     padding: 2px var(--space-3);
 }
 

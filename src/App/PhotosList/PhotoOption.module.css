@@ -80,67 +80,41 @@
   box-sizing: border-box;
 }
 
-/* Vertical tabs styles */
-.vertical-tabs {
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 1000;
-  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-  overflow: hidden;
-  border: 1px solid var(--color-border-default);
-  border-right: none;
-  background-color: var(--color-bg-surface);
-}
-
-.vertical-tab-button:last-child {
-  border-bottom: none;
-}
-
-.vertical-tab-button:hover {
-  background-color: var(--color-bg-elevated);
-  color: var(--color-text-primary);
-}
-
-.vertical-tab-button.active {
-  background-color: var(--color-success);
-  color: white;
-  font-weight: 600;
-}
+/* Vertical tabs styles - legacy definition removed, see line 230+ for active styles */
 
 /* Photo Info table styles */
+/* Note: font-size is hardcoded because CSS variables don't work with color-scheme: light */
 .photo-info-table-wrapper {
   overflow-x: auto;
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 .photo-info-table {
   width: 100%;
   max-width: 100%;
   border-collapse: collapse;
-  font-size: var(--font-size-xs);
+  font-size: 11px;
   table-layout: fixed;
 }
 
 .photo-info-table th {
   background-color: var(--color-bg-muted);
   color: var(--color-text-secondary);
-  padding: var(--space-2);
+  padding: 4px 6px;
   text-align: left;
   font-weight: 500;
+  font-size: 10px;
   border: 1px solid var(--color-border-default);
   width: 30%;
   word-wrap: break-word;
 }
 
 .photo-info-table td {
-  padding: var(--space-2);
+  padding: 4px 6px;
   border: 1px solid var(--color-border-default);
   background-color: var(--color-bg-surface);
   color: var(--color-text-primary);
+  font-size: 10px;
   word-wrap: break-word;
   overflow-wrap: break-word;
   max-width: 0;
@@ -227,34 +201,36 @@
 }
 
 /* Vertical tabs for PhotoOption toggle */
+/* Matches GridView VerticalTabBar.css styling */
 .vertical-tabs {
     position: fixed;
     top: 50%;
     transform: translateY(-50%);
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
+    gap: 5px;
     z-index: 1000;
-    transition: right 0.15s ease-out;
+    transition: right 0.3s ease-out;
 }
 
 .vertical-tabs.menu-closed {
-    right: 10px;
+    right: -5px;
 }
 
 .vertical-tabs.menu-open {
-    right: 315px;
+    right: 305px;
 }
 
+/* Note: font-size is hardcoded because CSS variables don't work with color-scheme: light */
 .vertical-tab-button {
     writing-mode: initial;
     text-orientation: initial;
-    padding: var(--space-3) var(--space-1);
+    padding: 12px 4px;
     background: var(--color-bg-elevated);
     color: var(--color-text-primary);
     border: none;
     cursor: pointer;
-    font-size: var(--font-size-xs);
+    font-size: 12px;
     font-weight: bold;
     transition: all 0.3s ease-out;
     min-height: 60px;
@@ -263,7 +239,7 @@
     align-items: center;
     justify-content: center;
     white-space: nowrap;
-    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+    border-radius: 5px 0 0 5px;
 }
 
 .vertical-text {
@@ -272,20 +248,23 @@
 }
 
 .vertical-tab-button:hover {
-    background: var(--color-primary);
-    color: white;
+    background: var(--color-bg-surface);
+    color: var(--color-primary);
+    border-left: 3px solid var(--color-primary);
 }
 
+/* Default active tab color (green) - matches GridView VerticalTabBar */
 .vertical-tab-button.active {
-    background: var(--color-success);
-    color: white;
-    border-color: var(--color-success);
+    background: var(--color-bg-surface);
+    color: var(--color-success);
+    border-left: 3px solid var(--color-success);
 }
 
 /* Tab with active selections but not currently open - show orange (Feature #152) */
 .vertical-tab-button.has-selection:not(.active) {
-    background: var(--color-warning);
-    color: white;
+    background: var(--color-bg-surface);
+    color: var(--color-warning);
+    border-left: 3px solid var(--color-warning);
 }
 
 .vertical-tabs.menu-closed .vertical-tab-button:first-child {
@@ -305,17 +284,18 @@
 }
 
 .vertical-tab-button.close-tab {
-    background-color: var(--color-danger);
-    color: white;
-    font-size: var(--font-size-base);
+    background-color: var(--color-bg-elevated);
+    color: var(--color-danger);
+    font-size: 16px;
     font-weight: bold;
     writing-mode: horizontal-tb;
     text-orientation: mixed;
-    padding: var(--space-2);
+    padding: 8px;
     min-height: 40px;
+    border-left: 3px solid var(--color-danger);
 }
 
 .vertical-tab-button.close-tab:hover {
-    background-color: var(--color-danger);
-    filter: brightness(0.85);
+    background-color: var(--color-bg-surface);
+    color: var(--color-danger);
 }

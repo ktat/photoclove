@@ -105,28 +105,58 @@ body {
   --radius-xl: 12px;
   --radius-full: 9999px;
 
-  /* --- Shadows --- */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
-  --shadow-glow-primary: 0 0 12px rgba(74, 158, 255, 0.4);
-
-  /* --- Transitions --- */
-  --transition-fast: 150ms ease-out;
-  --transition-normal: 250ms ease-out;
-  --transition-slow: 350ms ease-out;
-
-  /* --- Component Sizes --- */
+  /* --- Toggle Switch --- */
   --toggle-height: 22px;
+}
 
-  /* --- Font Sizes --- */
-  --font-size-2xs: 9px;
-  --font-size-xs: 11px;
-  --font-size-sm: 13px;
-  --font-size-base: 14px;
-  --font-size-lg: 16px;
-  --font-size-xl: 18px;
-  --font-size-2xl: 20px;
+/* ========== Light Theme ========== */
+[data-theme="light"] {
+  color-scheme: light;
+  background: var(--color-bg-base);
+  color: var(--color-text-primary);
+
+  /* --- Background Colors --- */
+  --color-bg-base: #e8e8e8;
+  --color-bg-elevated: #ffffff;
+  --color-bg-surface: #f0f0f0;
+  --color-bg-muted: #d4d4d4;
+  --color-bg-film: #c0c0c0;
+
+  /* --- Text Colors --- */
+  --color-text-primary: #1f1f1f;
+  --color-text-secondary: #525252;
+  --color-text-muted: #737373;
+
+  /* --- Border Colors --- */
+  --color-border-default: #d4d4d4;
+  --color-border-subtle: #e5e5e5;
+  --color-border-strong: #a3a3a3;
+
+  /* --- Primary (adjusted for light bg) --- */
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-primary-hover: #1e40af;
+  --color-primary-muted: rgba(37, 99, 235, 0.15);
+  --color-primary-selected: rgba(37, 99, 235, 0.2);
+
+  /* --- State Colors (adjusted for light bg) --- */
+  --color-success: #16a34a;
+  --color-success-dark: #15803d;
+  --color-success-muted: rgba(22, 163, 74, 0.15);
+
+  --color-warning: #d97706;
+  --color-warning-dark: #b45309;
+  --color-warning-muted: rgba(217, 119, 6, 0.15);
+
+  --color-danger: #dc2626;
+  --color-danger-dark: #b91c1c;
+  --color-danger-muted: rgba(220, 38, 38, 0.15);
+
+  /* --- Shadows (lighter for light theme) --- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.2);
+  --shadow-glow-primary: 0 0 12px rgba(37, 99, 235, 0.3);
 }
 
 /* start dark theme */
@@ -177,6 +207,11 @@ input[type="range"]::-moz-range-track {
 /* 📅 アイコンも暗く反転させたい場合 */
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
+}
+
+/* Light theme - don't invert the date picker icon */
+[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none;
 }
 
 ::-webkit-scrollbar {

@@ -4,6 +4,7 @@ import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import fileUrl from "../../../PathUtil.jsx";
 import { logger } from '../../../services/LoggerService.js';
+import styles from '../PhotoOption.module.css';
 
 function PhotoInfo(props) {
     const [photoInfo, setPhotoInfo] = useState({});
@@ -110,9 +111,9 @@ function PhotoInfo(props) {
     }
 
     return (
-        <div className="info-tab">
-            <div className="photo-info-table-wrapper">
-                <table className="photo-info-table">
+        <div className={styles['info-tab']}>
+            <div className={styles['photo-info-table-wrapper']}>
+                <table className={styles['photo-info-table']}>
                     <tbody>
                         <tr><th>File Name</th>
                             <td>

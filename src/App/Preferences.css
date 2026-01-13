@@ -193,7 +193,7 @@
   height: var(--toggle-height);
   min-width: 40px;
   min-height: var(--toggle-height);
-  background-color: var(--color-bg-muted);
+  background-color: var(--color-border-strong) !important;
   border-radius: calc(var(--toggle-height) / 2);
   position: relative;
   cursor: pointer;
@@ -219,7 +219,7 @@
 }
 
 .preferences .setting-item input[type="checkbox"]:checked {
-  background-color: var(--color-primary);
+  background-color: var(--color-primary) !important;
 }
 
 .preferences .setting-item input[type="checkbox"]:checked::before {
