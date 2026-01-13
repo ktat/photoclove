@@ -1,6 +1,7 @@
 import React from 'react';
 import { useUI } from '../../context/UIContext.jsx';
 import { VIEW_MODES } from '../../constants/viewModes.js';
+import styles from './PhotosToolbar.module.css';
 
 /**
  * PhotosToolbar Component
@@ -61,32 +62,13 @@ function PhotosToolbar({
             <button
                 ref={filterButtonRef}
                 onClick={() => setShowFilterPopover(!showFilterPopover)}
-                style={{
-                    padding: '6px 10px',
-                    marginLeft: '10px',
-                    backgroundColor: hasActiveFilters ? 'var(--accent)' : 'var(--bg-elevated)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    color: 'var(--text)',
-                    fontSize: '14px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                }}
+                className={hasActiveFilters ? styles.filterButtonActive : styles.filterButton}
                 title="Filter photos"
             >
-                <span style={{ fontSize: '16px' }}>⚙️</span>
+                <span className={styles.filterIcon}>⚙️</span>
                 Filter
                 {hasActiveFilters && (
-                    <span style={{
-                        backgroundColor: 'var(--accent)',
-                        color: '#fff',
-                        borderRadius: '10px',
-                        padding: '2px 6px',
-                        fontSize: '11px',
-                        marginLeft: '4px'
-                    }}>
+                    <span className={styles.filterBadge}>
                         {activeFilterCount}
                     </span>
                 )}

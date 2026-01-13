@@ -1,0 +1,59 @@
+/**
+ * PhotoGrid CSS Module
+ * Styles for the photo grid container and headers
+ */
+
+/* Container for the entire grid section */
+.container {
+    /* photo-grid-container - no special styles needed */
+}
+
+/* Header showing photo count */
+.header {
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: var(--text);
+}
+
+/* Filter summary text */
+.filterSummary {
+    font-size: 12px;
+    color: #888;
+    margin-top: 5px;
+}
+
+/* Clear filters button */
+.clearFiltersButton {
+    margin-left: 10px;
+    font-size: 11px;
+    padding: 2px 6px;
+    cursor: pointer;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 4px;
+}
+
+.clearFiltersButton:hover {
+    background: var(--accent);
+}
+
+/* No photo found message */
+.noPhotos {
+    color: var(--text);
+}
+
+/* Infinite scroll indicator at bottom */
+.scrollIndicator {
+    text-align: center;
+    padding: 20px;
+    width: 100%;
+    grid-column: 1 / -1;
+    color: #888;
+}
+
+.scrollIndicatorSubtext {
+    font-size: 12px;
+    margin-top: 5px;
+    color: #666;
+}
