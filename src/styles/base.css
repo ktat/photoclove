@@ -107,6 +107,15 @@ body {
 
   /* --- Toggle Switch --- */
   --toggle-height: 22px;
+
+  /* --- Font Sizes --- */
+  --font-size-2xs: 9px;
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
 }
 
 /* ========== Light Theme ========== */

@@ -46,6 +46,7 @@ export const getTutorialContent = (context, photoCount, isTrashMode = false) => 
                     <li>{deleteText}</li>
                     <li>📚 Create Album - Make a new album</li>
                     <li>📚 Add to Album - Add to a different album</li>
+                    <li>🏷️ Add Tags - Add tags to photos</li>
                 </ul>
             </div>
         );
@@ -61,6 +62,7 @@ export const getTutorialContent = (context, photoCount, isTrashMode = false) => 
                     <li>{deleteText}</li>
                     <li>📚 Create Album - Make a new album</li>
                     <li>📚 Add to Album - Add to existing album</li>
+                    <li>🏷️ Add Tags - Add tags to photos</li>
                 </ul>
             </div>
         );
