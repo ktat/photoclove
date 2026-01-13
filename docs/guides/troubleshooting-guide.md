@@ -122,3 +122,15 @@ This document provides comprehensive troubleshooting guidance for common issues 
 
 ### Bulk Insert for Album/Tag Assignments
 **Fixed 2025-01-13**: Added bulk insert capability for album/tag photo assignments to improve performance when adding multiple photos to collections
+
+### Trash Mode Image Display
+**Fixed 2025-01-14**: Photos in trash mode were not displaying correctly due to path handling issues. Fixed in PhotosListMini.jsx to properly resolve trash photo paths
+
+### TutorialTooltip Styling Issues
+**Fixed 2025-01-14**: TutorialTooltip component had styling inconsistencies. Improved CSS styling and positioning for better visibility
+
+### Logging Standards Violations
+**Fixed 2025-01-14**: Replaced `println!` statements with proper `log` macro usage in backend Rust code (counts.rs, dates.rs). Frontend console.log calls in debugStorage.js replaced with structured logger. Memory safety improved in PhotoDisplay.jsx with optional chaining
+
+### Backend Error Handling Improvements
+**Fixed 2025-01-14**: Improved error handling patterns in dir_service.rs following Rust idioms (`?` operator, `if let` patterns) instead of `is_none()` checks with `unwrap()`

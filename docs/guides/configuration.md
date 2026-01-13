@@ -34,7 +34,11 @@ use_count: 0                            # Application usage counter
 # Photo loading performance
 max_photos_per_fetch: 1000               # Maximum photos loaded per request
 
-# Debug logging (added in recent updates)
+# Appearance settings
+app_theme: dark                          # Application theme: dark, light
+photo_grid_theme: default               # Grid theme: default, filmstrip, slide-mount, lightbox, slide-35mm
+
+# Debug logging
 logging_enabled: true                    # Enable/disable application logging
 logging_level: debug                     # Log level: debug, info, warn, error
 ```
@@ -113,6 +117,27 @@ logging_level: debug                     # Log level: debug, info, warn, error
 - **Default**: `1048576` (1MB)
 - **Reason**: Small files load quickly as-is, don't need thumbnails
 - **Units**: Bytes
+
+### Appearance Settings
+
+#### app_theme
+- **Purpose**: Application color theme (dark or light mode)
+- **Default**: `dark`
+- **Options**: `dark`, `light`
+- **Access**: Configurable through Preferences → Appearance
+- **Behavior**: Sets `data-theme` attribute on document root
+
+#### photo_grid_theme
+- **Purpose**: Visual theme for photo grid display
+- **Default**: `default`
+- **Options**:
+  - `default` - Standard grid layout
+  - `filmstrip` - Film strip with sprocket holes (negative style)
+  - `slide-mount` - Slide mount frame appearance
+  - `lightbox` - Light box viewing style
+  - `slide-35mm` - Classic 35mm slide appearance
+- **Access**: Configurable through Preferences → Appearance
+- **Behavior**: Sets `data-grid-theme` attribute on document root
 
 ### Debug Logging
 

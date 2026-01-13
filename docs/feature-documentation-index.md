@@ -27,6 +27,7 @@ This index helps you quickly navigate to the right documentation for PhotoClove 
 - **[Configuration Guide](guides/configuration.md)** - Application settings and preferences
 - **[Terms and Source Mapping](terms.md)** - Feature names to file mapping
 - **[PhotosList Modes](photoslist-modes-operations.md)** - Photo view modes
+- **[CSS Design System](css-reference.md)** - CSS variables, themes, and styling guidelines
 
 ### Development Workflows
 - **[Feature Sequences](feature-sequences.md)** - Frontend/backend interaction flows
