@@ -297,6 +297,71 @@
   display: none;
 }
 
+/* ========== Film Strip Theme for PhotosListMini ========== */
+[data-grid-theme="filmstrip"] #photos-list-mini {
+  background-color: var(--color-bg-film);
+  position: relative;
+  padding: 14px 0;
+}
+
+/* Film strip sprocket holes - top */
+[data-grid-theme="filmstrip"] #photos-list-mini::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background:
+    repeating-linear-gradient(
+      to right,
+      transparent 0px,
+      transparent 5px,
+      var(--color-bg-base) 5px,
+      var(--color-bg-base) 15px,
+      transparent 15px,
+      transparent 20px
+    );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Film strip sprocket holes - bottom */
+[data-grid-theme="filmstrip"] #photos-list-mini::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background:
+    repeating-linear-gradient(
+      to right,
+      transparent 0px,
+      transparent 5px,
+      var(--color-bg-base) 5px,
+      var(--color-bg-base) 15px,
+      transparent 15px,
+      transparent 20px
+    );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Film strip - navigation arrows */
+[data-grid-theme="filmstrip"] #photos-list-mini div.row1 a {
+  color: var(--color-text-secondary);
+}
+
+/* Film strip - photo containers */
+[data-grid-theme="filmstrip"] #photos-list-mini div.row2 {
+  padding: 0 4px;
+}
+
+[data-grid-theme="filmstrip"] #photos-list-mini div.row2 img {
+  border: 2px solid var(--color-bg-muted);
+}
+
 #photoDisplay.photosListMiniClosed {
   min-height: calc(100vh - 90px);
   max-height: calc(100vh - 90px);
