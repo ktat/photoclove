@@ -243,27 +243,30 @@ function PhotoListContent({
                                 </>
                             </div>
                         }
-                        <PhotoGrid
-                            displayedPhotos={displayedPhotos}
-                            totalPhotosCount={filteredPhotos.length}
-                            iconSize={iconSize}
-                            photoSelectionDict={photoSelectionDict}
-                            onAddSelection={addSelection}
-                            onDisplayPhoto={displayPhoto}
-                            onInfiniteScroll={handleInfiniteScroll}
-                            isLimitedByConfig={isLimitedByConfig}
-                            configLimit={configLimit}
-                            starFilter={viewModeObj.isImportMode() ? 0 : starFilter}
-                            hasCommentFilter={viewModeObj.isImportMode() ? false : hasCommentFilter}
-                            hasTagFilter={viewModeObj.isImportMode() ? false : hasTagFilter}
-                            extensionFilter={viewModeObj.isImportMode() ? importExtensionFilter : extensionFilter}
-                            onClearFilters={clearAllFilters}
-                            showSideMenu={showSideMenu}
-                            importState={importState}
-                            setShowSideMenu={setShowSideMenu}
-                            isLoading={photoLoading}
-                            thumbnailOrientationCorrection={thumbnailOrientationCorrection}
-                        />
+                        {/* Only render PhotoGrid when there are photos to display */}
+                        {displayedPhotos.length > 0 && (
+                            <PhotoGrid
+                                displayedPhotos={displayedPhotos}
+                                totalPhotosCount={filteredPhotos.length}
+                                iconSize={iconSize}
+                                photoSelectionDict={photoSelectionDict}
+                                onAddSelection={addSelection}
+                                onDisplayPhoto={displayPhoto}
+                                onInfiniteScroll={handleInfiniteScroll}
+                                isLimitedByConfig={isLimitedByConfig}
+                                configLimit={configLimit}
+                                starFilter={viewModeObj.isImportMode() ? 0 : starFilter}
+                                hasCommentFilter={viewModeObj.isImportMode() ? false : hasCommentFilter}
+                                hasTagFilter={viewModeObj.isImportMode() ? false : hasTagFilter}
+                                extensionFilter={viewModeObj.isImportMode() ? importExtensionFilter : extensionFilter}
+                                onClearFilters={clearAllFilters}
+                                showSideMenu={showSideMenu}
+                                importState={importState}
+                                setShowSideMenu={setShowSideMenu}
+                                isLoading={photoLoading}
+                                thumbnailOrientationCorrection={thumbnailOrientationCorrection}
+                            />
+                        )}
 
                         <div className="debug" style={{ display: (debugMessage === "" ? "none" : "block"), backgroundColor: "white", color: "black", position: "absolute", zIndex: "100", bottom: "0px", left: "0px", width: "400px", height: "200px" }}>
                             {debugMessage}
