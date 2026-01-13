@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import Scrollable from "../../Scrollable.jsx";
 import PhotoCard from "./PhotoCard.jsx";
+import styles from './PhotoGrid.module.css';
 
 /**
  * PhotoGrid Component
@@ -45,17 +46,17 @@ function PhotoGrid({
     }, [starFilter, hasCommentFilter, hasTagFilter, extensionFilter]);
 
     return (
-        <div className="photo-grid-container">
+        <div className={styles.container}>
             {/* Header with photo count and filters info */}
-            <div style={{ marginBottom: "10px", fontSize: "14px", color: "var(--text)" }}>
+            <div className={styles.header}>
                 {displayedPhotos.length > 0 ? (
                     <>
                         <span>Showing {displayedPhotos.length} photo{displayedPhotos.length !== 1 ? 's' : ''}</span>
                         {hasActiveFilters && (
-                            <div style={{ fontSize: "12px", color: "#666", marginTop: "5px" }}>
+                            <div className={styles.filterSummary}>
                                 {getFilterSummary}
                                 <button
-                                    style={{ marginLeft: "10px", fontSize: "11px", padding: "2px 6px", cursor: "pointer" }}
+                                    className={styles.clearFiltersButton}
                                     onClick={onClearFilters}
                                 >
                                     Clear Filters
@@ -67,12 +68,12 @@ function PhotoGrid({
                     <>
                         {!isLoading && (
                             <>
-                                <div>No Photo Found!</div>
+                                <div className={styles.noPhotos}>No Photo Found!</div>
                                 {hasActiveFilters && (
-                                    <div style={{ fontSize: "12px", color: "#666", marginTop: "5px" }}>
+                                    <div className={styles.filterSummary}>
                                         {getFilterSummary}
                                         <button
-                                            style={{ marginLeft: "10px", fontSize: "11px", padding: "2px 6px", cursor: "pointer" }}
+                                            className={styles.clearFiltersButton}
                                             onClick={onClearFilters}
                                         >
                                             Clear Filters
@@ -85,7 +86,7 @@ function PhotoGrid({
                 )}
             </div>
 
-            {/* Photo Grid */}
+            {/* Photo Grid - using global .photos class for complex grid layout */}
             <Scrollable f={onInfiniteScroll} className="photos">
                 {displayedPhotos.map((photo, index) => {
                     // Include tag count in key to force re-render when tags change
@@ -110,12 +111,11 @@ function PhotoGrid({
 
                 {/* Infinite scroll completion indicator */}
                 {displayedPhotos.length > 0 && (
-                    <div className="infinite-scroll-complete"
-                        style={{ textAlign: 'center', padding: '20px', width: '100%', gridColumn: '1 / -1', color: '#666' }}>
+                    <div className={styles.scrollIndicator}>
                         {isLimitedByConfig ? (
                             <div>
                                 <div>Showing {displayedPhotos.length} photos (limited by configuration)</div>
-                                <div style={{ fontSize: '12px', marginTop: '5px', color: '#999' }}>
+                                <div className={styles.scrollIndicatorSubtext}>
                                     Display limit: {configLimit} photos. There may be more photos available.
                                 </div>
                             </div>
@@ -123,7 +123,7 @@ function PhotoGrid({
                             displayedPhotos.length < totalPhotosCount ? (
                                 <div>
                                     <div>Scroll to load more photos</div>
-                                    <div style={{ fontSize: '12px', marginTop: '5px', color: '#999' }}>
+                                    <div className={styles.scrollIndicatorSubtext}>
                                         Showing {displayedPhotos.length} of {totalPhotosCount} photos
                                     </div>
                                 </div>
