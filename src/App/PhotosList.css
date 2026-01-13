@@ -90,19 +90,30 @@
   text-align: right;
 }
 
-/* Photos grid */
+/* Photos grid wrapper */
 .photos {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(var(--photo-grid-size, 141px), max-content));
-  gap: var(--space-3);
-  overflow-y: scroll;
   margin-top: var(--space-3);
   min-width: calc(var(--vw) - 662px);
   max-width: calc(var(--vw) - 662px);
   max-height: calc(100vh - 150px);
+}
+
+/* Photos grid (applied to scroll-box inside Scrollable) */
+.photos .scroll-box {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--photo-grid-size, 141px), max-content));
+  gap: var(--space-3);
+  overflow-y: scroll;
   padding: var(--space-3);
   justify-content: start;
   align-content: start;
+  max-height: calc(100vh - 150px);
+}
+
+/* Film strip theme - grid adjustments */
+[data-grid-theme="filmstrip"] .photos .scroll-box {
+  row-gap: var(--space-6);
+  column-gap: 0;
 }
 
 .photos .row {

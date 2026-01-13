@@ -16,6 +16,58 @@
     border-radius: var(--radius-sm);
     background-color: var(--color-bg-elevated);
     transition: border-color 0.15s ease-out, background-color 0.15s ease-out;
+    position: relative;
+}
+
+/* ========== Film Strip Theme ========== */
+:global([data-grid-theme="filmstrip"]) .card {
+    margin: 0;
+    padding: 12px 0 12px 7px; /* Left padding for photo spacing */
+    border: none;
+    border-radius: 0;
+    background-color: var(--color-bg-film);
+}
+
+/* Film strip sprocket holes - top */
+:global([data-grid-theme="filmstrip"]) .card::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background:
+        repeating-linear-gradient(
+            to right,
+            transparent 0px,
+            transparent 4px,
+            var(--color-bg-base) 4px,
+            var(--color-bg-base) 12px,
+            transparent 12px,
+            transparent 16px
+        );
+    pointer-events: none;
+}
+
+/* Film strip sprocket holes - bottom */
+:global([data-grid-theme="filmstrip"]) .card::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background:
+        repeating-linear-gradient(
+            to right,
+            transparent 0px,
+            transparent 4px,
+            var(--color-bg-base) 4px,
+            var(--color-bg-base) 12px,
+            transparent 12px,
+            transparent 16px
+        );
+    pointer-events: none;
 }
 
 /* Size variants - min-width based on iconSize */
@@ -56,6 +108,14 @@
     margin-top: var(--space-1);
     gap: var(--space-2);
     min-width: 25px;
+}
+
+/* Film strip theme - menu */
+:global([data-grid-theme="filmstrip"]) .menu {
+    margin-left: 0;
+    margin-top: 0;
+    padding: 0 var(--space-2);
+    background-color: transparent;
 }
 
 .menu a {
@@ -165,15 +225,35 @@
     transition: border-color 0.15s ease-out, background-color 0.15s ease-out;
 }
 
+/* Film strip theme - thumbnail container */
+:global([data-grid-theme="filmstrip"]) .thumbnailContainer {
+    border-radius: 0;
+    border: none;
+    background-color: transparent;
+    padding: 0 2px;
+}
+
 /* Selected state - blue border and light background */
 .thumbnailContainerSelected {
     border-color: var(--color-primary);
     background-color: var(--color-primary-selected);
 }
 
+/* Film strip theme - selected state */
+:global([data-grid-theme="filmstrip"]) .thumbnailContainerSelected {
+    border: none;
+    box-shadow: 0 0 0 3px var(--color-primary);
+}
+
 /* Card-level selection - wraps both thumbnail and menu */
 .cardSelected {
     border-color: var(--color-primary);
+    background-color: var(--color-primary-selected);
+}
+
+/* Film strip theme - card selected */
+:global([data-grid-theme="filmstrip"]) .cardSelected {
+    border: none;
     background-color: var(--color-primary-selected);
 }
 

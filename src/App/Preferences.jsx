@@ -21,7 +21,8 @@ function Preferences(props) {
         logging_enabled: false,
         logging_level: 'info',
         use_exif_thumbnail: false,
-        google_auth_auto_reauth: false
+        google_auth_auto_reauth: false,
+        photo_grid_theme: 'default'
     });
     const [additionalExportFrom, setAdditionalExportFrom] = useState(0);
     const [configLoaded, setConfigLoaded] = useState(false);
@@ -51,6 +52,10 @@ function Preferences(props) {
             newConfig[k] = config[k];
         });
         setConfig(newConfig);
+        // Apply theme on config load
+        if (config.photo_grid_theme) {
+            document.documentElement.setAttribute('data-grid-theme', config.photo_grid_theme);
+        }
     }
 
     function saveConfig() {
@@ -88,6 +93,7 @@ function Preferences(props) {
 
     const tabs = [
         { id: 'general', label: 'General', icon: '⚙️' },
+        { id: 'appearance', label: 'Appearance', icon: '🎨' },
         { id: 'thumbnail', label: 'Thumbnail', icon: '🖼️' },
         { id: 'performance', label: 'Performance', icon: '⚡' },
         { id: 'logging', label: 'Logging', icon: '📝' },
@@ -172,6 +178,32 @@ function Preferences(props) {
                             </div>
                         </div>
 
+                    </div>
+                )}
+
+                {/* Appearance Tab */}
+                {activeTab === 'appearance' && (
+                    <div className="preferences-section">
+                        <h2 className="section-title">Photo Grid Theme</h2>
+                        <div className="setting-group">
+                            <div className="setting-row">
+                                <label>Theme:</label>
+                                <select
+                                    value={config.photo_grid_theme || 'default'}
+                                    onChange={(e) => {
+                                        setConfig(prev => ({ ...prev, photo_grid_theme: e.target.value }));
+                                        // Apply theme immediately without restart
+                                        document.documentElement.setAttribute('data-grid-theme', e.target.value);
+                                    }}
+                                >
+                                    <option value="default">Default</option>
+                                    <option value="filmstrip">Film Strip</option>
+                                </select>
+                            </div>
+                            <p className="setting-description">
+                                Choose how photos are displayed in the grid. Changes apply immediately.
+                            </p>
+                        </div>
                     </div>
                 )}
 
