@@ -13,20 +13,20 @@
 }
 
 .log-viewer {
-    background: var(--bg-elevated);
-    color: var(--text);
-    border-radius: 8px;
+    background: var(--color-bg-elevated);
+    color: var(--color-text-primary);
+    border-radius: var(--radius-sm);
     width: 95vw;
     height: 90vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border: 1px solid var(--border);
+    border: 1px solid var(--color-border-default);
 }
 
 .log-viewer-header {
     padding: 1rem;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--color-border-default);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -34,7 +34,7 @@
 
 .log-viewer-header h2 {
     margin: 0;
-    color: var(--text);
+    color: var(--color-text-primary);
 }
 
 .log-viewer-actions {
@@ -43,16 +43,16 @@
 }
 
 .log-viewer-actions button {
-    background: var(--bg-elevated) !important;
-    color: var(--text) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 4px;
+    background: var(--color-bg-elevated) !important;
+    color: var(--color-text-primary) !important;
+    border: 1px solid var(--color-border-default) !important;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     padding: 0.5rem 1rem;
 }
 
 .log-viewer-actions button:hover {
-    background: var(--accent) !important;
+    background: var(--color-primary) !important;
     color: white !important;
 }
 
@@ -63,24 +63,24 @@
 
 .log-viewer-error {
     padding: 1rem;
-    background: #4a1515;
-    border-left: 4px solid #f00;
-    color: #c00;
+    background: rgba(239, 68, 68, 0.15);
+    border-left: 4px solid var(--color-danger);
+    color: var(--color-danger);
 }
 
 .log-viewer-stats {
     padding: 0.5rem 1rem;
-    background: var(--bg);
-    border-bottom: 1px solid var(--border);
+    background: var(--color-bg-surface);
+    border-bottom: 1px solid var(--color-border-default);
     font-size: 0.875rem;
-    color: var(--text);
+    color: var(--color-text-primary);
     display: flex;
     gap: 1rem;
 }
 
 .log-viewer-filters {
     padding: 1rem;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--color-border-default);
     display: flex;
     gap: 1rem;
     flex-wrap: wrap;
@@ -91,22 +91,22 @@
     flex-direction: column;
     gap: 0.25rem;
     font-size: 0.875rem;
-    color: var(--text);
+    color: var(--color-text-primary);
 }
 
 .log-viewer-filters select,
 .log-viewer-filters select option {
-    background: var(--bg-elevated) !important;
-    color: var(--text) !important;
-    border: 1px solid var(--border) !important;
+    background: var(--color-bg-elevated) !important;
+    color: var(--color-text-primary) !important;
+    border: 1px solid var(--color-border-default) !important;
     padding: 0.25rem 0.5rem;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
 }
 
 .log-viewer-filters select:focus {
-    background: var(--bg-elevated) !important;
-    color: var(--text) !important;
-    border-color: var(--accent) !important;
+    background: var(--color-bg-elevated) !important;
+    color: var(--color-text-primary) !important;
+    border-color: var(--color-primary) !important;
 }
 
 .log-viewer-content {
@@ -115,7 +115,7 @@
     padding: 0;
     font-family: 'Courier New', monospace;
     font-size: 0.8rem;
-    background: var(--bg-elevated);
+    background: var(--color-bg-elevated);
 }
 
 .log-header {
@@ -123,11 +123,11 @@
     grid-template-columns: 80px 50px 100px 80px minmax(200px, 1fr) 180px;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
-    background: var(--bg);
-    border-bottom: 2px solid var(--accent);
+    background: var(--color-bg-surface);
+    border-bottom: 2px solid var(--color-primary);
     font-weight: bold;
     font-size: 0.85rem;
-    color: var(--text);
+    color: var(--color-text-primary);
     position: sticky;
     top: 0;
     z-index: 10;
@@ -136,7 +136,7 @@
 .log-header span {
     text-transform: uppercase;
     font-size: 0.75rem;
-    color: var(--accent);
+    color: var(--color-primary);
 }
 
 .log-entries {
@@ -148,7 +148,7 @@
     grid-template-columns: 80px 50px 100px 80px minmax(200px, 1fr) 180px;
     gap: 0.5rem;
     padding: 0.25rem;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--color-border-default);
     align-items: start;
     min-width: 0;
 }
@@ -171,7 +171,7 @@
 
 .log-timestamp {
     font-size: 0.7rem;
-    color: var(--accent);
+    color: var(--color-primary);
 }
 
 .log-level {
@@ -180,24 +180,24 @@
 }
 
 .log-level.DEBUG {
-    color: #6c757d;
+    color: var(--color-text-muted);
 }
 
 .log-level.INFO {
-    color: #0d6efd;
+    color: var(--color-info);
 }
 
 .log-level.WARN {
-    color: #fd7e14;
+    color: var(--color-warning);
 }
 
 .log-level.ERROR {
-    color: #dc3545;
+    color: var(--color-danger);
 }
 
 .log-component {
     font-weight: bold;
-    color: var(--text);
+    color: var(--color-text-primary);
     font-size: 0.75rem;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -205,7 +205,7 @@
 }
 
 .log-event {
-    color: #6f42c1;
+    color: var(--color-primary);
     font-size: 0.75rem;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -213,7 +213,7 @@
 }
 
 .log-message {
-    color: var(--text);
+    color: var(--color-text-primary);
     white-space: pre-wrap;
     word-break: break-word;
     overflow-wrap: break-word;
@@ -227,7 +227,7 @@
 
 .log-correlation {
     font-size: 0.7rem;
-    color: var(--accent);
+    color: var(--color-primary);
     font-family: monospace;
     word-break: break-all;
 }
@@ -239,25 +239,25 @@
 
 .log-data summary {
     cursor: pointer;
-    color: #0d6efd;
+    color: var(--color-info);
     font-size: 0.75rem;
 }
 
 .log-data pre {
-    background: var(--bg);
+    background: var(--color-bg-surface);
     padding: 0.5rem;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     margin: 0.25rem 0 0 0;
     font-size: 0.7rem;
     overflow-x: auto;
-    color: var(--text);
+    color: var(--color-text-primary);
 }
 
 .log-empty {
     text-align: center;
-    color: var(--accent);
+    color: var(--color-primary);
     padding: 2rem;
-    background: var(--bg-elevated);
+    background: var(--color-bg-elevated);
 }
 
 /* LogViewer data copy button styles */
@@ -267,16 +267,16 @@
 
 .copy-data-button {
     position: absolute;
-    top: 5px;
-    right: 5px;
+    top: var(--space-1);
+    right: var(--space-1);
     background: rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    padding: 4px 6px;
-    font-size: 12px;
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--font-size-xs);
     opacity: 0.7;
-    transition: opacity 0.2s, background-color 0.2s;
+    transition: opacity 0.2s ease-out, background-color 0.2s ease-out;
     z-index: 10;
 }
 
@@ -294,13 +294,13 @@
 .copy-message-button {
     background: rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    padding: 2px 4px;
-    font-size: 10px;
+    padding: 2px var(--space-1);
+    font-size: var(--font-size-xs);
     opacity: 0.5;
-    transition: opacity 0.2s, background-color 0.2s;
-    margin-left: 8px;
+    transition: opacity 0.2s ease-out, background-color 0.2s ease-out;
+    margin-left: var(--space-2);
     flex-shrink: 0;
 }
 

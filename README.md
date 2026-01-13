@@ -311,35 +311,31 @@ PhotoClove uses a structured development workflow with the `improvement/` direct
 ## 📋 Roadmap
 
 ### Recently Completed ✅
+- [x] **CSS Modules Migration (Phase 1-4)**: PhotoCard, PhotoGrid, PhotosToolbar, PhotoOption, and Tag components migrated to CSS Modules for better style isolation
+- [x] **Major Code Refactoring**: Extracted reusable hooks, reduced file sizes significantly (PhotosList -54%, PhotosListMini -45%, DirectoryMenu operations extracted)
+- [x] **Backend Modularization**: Split photo_commands.rs and search.rs into focused handler modules for better maintainability
+- [x] **Async Operation Cancellation**: Photo loading now supports cancellation for improved responsiveness
+- [x] **Code Quality Improvements**: Reduced compiler warnings from 99 to 16, removed unused code across frontend and backend
+- [x] **Album/Tag System Bug Fixes**: Fixed collection photo count, tag display in grid view, bulk operations, and preserved associations on file moves
 - [x] **State Management Refactoring**: Complete overhaul with custom hooks architecture, view mode state machine, and React Query-like data fetching
-- [x] **React Query Integration**: Custom implementation with automatic caching, background refetching, mutation support, and retry logic
-- [x] **Performance Optimization**: Unified cache service with LRU eviction, automatic cleanup, and comprehensive statistics
-- [x] **Navigation Improvements**: View mode state machine with validated transitions and history tracking
-- [x] **Google OAuth Token Management**: Secure platform-native token storage with automatic refresh and external service integration
-- [x] **Enhanced Job Queue**: Immediate manual retry, comprehensive logging, and improved error handling
 - [x] **Google Photos Integration**: Complete OAuth flow with token refresh, API error detection, and secure credential management
-- [x] **Bug Fixes**: Fixed thumbnail list not updating after DEL key deletion in Recent Photos and Search modes
-- [x] **Architecture Improvement**: Removed date dependencies from PhotosList components, improving reliability across viewing modes
 - [x] **Advanced Search System**: Complete search interface with EXIF-based filtering, saved searches, and search history
 - [x] **Logging & Debug System**: Real-time LogViewer with configurable logging levels and systematic debugging approach
-- [x] **Infinite Scroll**: Smooth photo browsing with batch loading and configuration limit detection
-- [x] **Search Functionality**: Complete search interface with advanced filters
-- [x] **Thumbnail Display**: Implement Display Window Algorithm for efficient thumbnail loading
-- [x] **Crop Tool**: Complete the photo cropping functionality
-- [x] **Album Support**: Create custom photo collections with descriptions, cover photos, and ordering
-- [x] **Tag System**: Color-coded taggable labels with search integration and bulk management
+- [x] **Album & Tag Support**: Create custom photo collections with descriptions, cover photos, color-coded tags, and bulk management
+- [x] **Crop Tool**: Complete the photo cropping functionality with real-time preview
+- [x] **Thumbnail Display**: Display Window Algorithm for efficient thumbnail loading
+- [x] **Database Migrations**: Automatic schema updates on app startup with versioned migration system
 
 ### Current Focus 🎯
-- [ ] **Collection Migration Completion**: Finalize unified collection system across all view modes
-- [ ] **Enhanced Error Handling**: Improve user feedback for failed operations
-- [ ] **Performance Optimization**: Further optimize large collection handling
-- [ ] **Database Migrations**: Automatic schema updates on app startup
+- [ ] **CSS Modules Migration Completion**: Migrate remaining components (search/, modals, utilities) to CSS Modules
+- [ ] **Enhanced Error Handling**: Improve user feedback for failed operations with actionable error messages
+- [ ] **Performance Optimization**: Further optimize large collection handling and memory management
 
 ### Future Plans
 - [ ] **Cloud Storage**: Amazon Photos integration
 - [ ] **Slide Show**: Full-screen photo presentation mode
 - [ ] **Internationalization**: Multi-language support
-- [ ] **Advanced Editing**: More sophisticated photo editing tools
+- [ ] **Advanced Editing**: More sophisticated photo editing tools (filters, adjustments, layers)
 
 See [`CHANGES.md`](./CHANGES.md) for detailed version history and recent updates.
 

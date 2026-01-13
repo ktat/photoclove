@@ -118,9 +118,9 @@ const DocumentViewer = ({ title, fileName, onClose }) => {
             <div
               className="prose prose-sm max-w-none"
               style={{
-                fontSize: '14px',
+                fontSize: 'var(--font-size-base)',
                 lineHeight: '1.6',
-                color: '#374151'
+                color: 'var(--color-text-secondary)'
               }}
               dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
             />

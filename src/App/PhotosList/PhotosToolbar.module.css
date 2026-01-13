@@ -5,45 +5,42 @@
 
 /* Filter button */
 .filterButton {
-    padding: 6px 10px;
-    margin-left: 10px;
-    background-color: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: 4px;
+    padding: var(--space-2) var(--space-3);
+    margin-left: var(--space-3);
+    background-color: var(--color-bg-elevated);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    color: var(--text);
-    font-size: 14px;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--space-1);
 }
 
 .filterButton:hover {
-    background-color: var(--accent);
+    background-color: var(--color-primary-muted);
+    border-color: var(--color-primary);
 }
 
 /* Filter button when filters are active */
 .filterButtonActive {
     composes: filterButton;
-    background-color: var(--accent);
+    background-color: var(--color-primary-selected);
+    border-color: var(--color-primary);
 }
 
 /* Filter icon */
 .filterIcon {
-    font-size: 16px;
+    font-size: var(--font-size-base);
 }
 
 /* Active filter count badge */
 .filterBadge {
-    background-color: var(--accent);
-    color: #fff;
-    border-radius: 10px;
-    padding: 2px 6px;
-    font-size: 11px;
-    margin-left: 4px;
-}
-
-/* When button is active, badge needs different color */
-.filterButtonActive .filterBadge {
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: var(--color-primary);
+    color: white;
+    border-radius: var(--radius-md);
+    padding: 2px var(--space-2);
+    font-size: var(--font-size-xs);
+    margin-left: var(--space-1);
 }

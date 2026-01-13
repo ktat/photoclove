@@ -72,9 +72,24 @@ export function useTabManagement({ viewMode, isSearchMode }) {
         setTabClass(newTabState);
     }, [tabClass, viewMode]);
 
+    /**
+     * Clear all tab selections (used when closing the side panel)
+     */
+    const clearAllTabs = useCallback(() => {
+        logger.info('useTabManagement', 'clear_all_tabs', 'Clearing all tab selections');
+        setTabClass({
+            'filter': false,
+            'maintenance': false,
+            'selection': false,
+            'search': false,
+            'directory': false,
+        });
+    }, []);
+
     return {
         tabClass,
         setTabClass,
-        changeTab
+        changeTab,
+        clearAllTabs
     };
 }

@@ -7,15 +7,17 @@
 
 .photoLoadingOn {
   flex: 1;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-height: calc(100vh - 30px);
   padding: 20px 20px 10px 20px;
   margin: 0 0 0 0px;
   min-width: calc(var(--vw) - 560px);
   max-width: calc(100vw - 320px - 230px);
   text-align: center;
-  overflow: hidden;
-  transition: max-width 0.3s ease;
+  overflow: visible;
+  transition: max-width 0.3s ease-out;
 }
 
 .inner-container.menu-closed .photoLoadingOn {
@@ -26,47 +28,218 @@
   display: none;
 }
 
-/* Loading spinner animation */
+/* Cute Loading Content */
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* Camera icon with sparkles */
+.loading-icon {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-emoji {
+  font-size: 48px;
+  animation: bounce 1s ease-in-out infinite;
+  padding-top: 20px;
+}
+
+.camera-emoji.static {
+  animation: none;
+}
+
+/* Trash content - photo inside trash */
+.trash-content {
+  position: absolute;
+  font-size: 20px;
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-10deg);
+  z-index: -1;
+  opacity: 0.85;
+}
+
+.sparkle {
+  position: absolute;
+  font-size: 20px;
+  animation: sparkle-float 1.5s ease-in-out infinite;
+}
+
+.sparkle.search-move {
+  animation: search-updown 1s ease-in-out infinite;
+}
+
+.sparkle-1 {
+  top: 15px;
+  right: 15px;
+  animation-delay: 0s;
+}
+
+.sparkle-2 {
+  top: 25px;
+  left: 10px;
+  animation-delay: 0.3s;
+}
+
+.sparkle-3 {
+  bottom: 20px;
+  right: 10px;
+  animation-delay: 0.6s;
+}
+
+/* Loading text */
+.loading-text {
+  font-size: var(--font-size-xl);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+}
+
+.loading-subtext {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* Animated dots */
+.loading-dots {
+  display: inline-flex;
+  margin-left: 2px;
+}
+
+.dot {
+  animation: dot-blink 1.4s ease-in-out infinite;
+  opacity: 0;
+}
+
+.dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* Animations */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.05);
+  }
+}
+
+@keyframes sparkle-float {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes dot-blink {
+  0%, 20% {
+    opacity: 0;
+  }
+  40%, 100% {
+    opacity: 1;
+  }
+}
+
+@keyframes search-updown {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(15px);
+  }
+}
+
+/* Legacy spinner - keep for compatibility */
 .lds-dual-ring {
-  display: inline-block;
-  width: 80px;
-  height: 80px;
+  display: none;
 }
 
-.lds-dual-ring:after {
-  font-size: 1.5em;
-  content: '\1f980';
-  display: block;
-  padding-top: 15px;
-  width: 65px;
-  height: 64px;
-  margin: 8px;
-  border-radius: 45%;
-  border: 6px solid #fff;
-  border-color: #fff transparent #fff transparent;
-  animation: lds-dual-ring 1.2s linear infinite;
+/* ======================================
+   Empty State Styles (No Search Result, etc.)
+   ====================================== */
+
+.empty-state-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: var(--space-6);
+  text-align: center;
 }
 
-@keyframes lds-dual-ring {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
+.empty-state-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
 }
 
-/* Media queries for photo loading */
+/* Empty state icon with sparkles */
+.empty-state-icon {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state-emoji {
+  font-size: 48px;
+}
+
+/* Empty state text */
+.empty-state-text {
+  font-size: var(--font-size-xl);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+}
+
+.empty-state-subtext {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+
+/* Media queries for photo loading and empty states */
 @media screen and (max-width: 1000px) {
-  .photoLoadingOn h1 {
+  .loading-text {
+    font-size: var(--font-size-lg);
     white-space: nowrap;
   }
 
   .photoLoadingOn {
     flex: 1;
     text-align: center;
-    display: block;
+    display: flex;
     width: 100%;
     max-width: calc(var(--vw) - 60px);
     min-width: calc(var(--vw) - 60px);
@@ -74,5 +247,15 @@
     min-height: calc(100vh - 30px);
     padding: 20px 20px 10px 20px;
     margin: 0 0 0 0px;
+  }
+
+  .empty-state-text {
+    font-size: var(--font-size-lg);
+    white-space: nowrap;
+  }
+
+  .empty-state-container {
+    min-height: 200px;
+    padding: var(--space-4);
   }
 }

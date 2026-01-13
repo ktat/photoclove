@@ -142,7 +142,7 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
       zIndex: 1000
     }}>
       <div style={{
-        backgroundColor: 'var(--bg-elevated)',
+        backgroundColor: 'var(--color-bg-elevated)',
         borderRadius: '8px',
         padding: '24px',
         minWidth: '400px',
@@ -160,16 +160,16 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
             alignItems: 'center',
             marginBottom: '8px'
           }}>
-            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: 'var(--text)' }}>Add Tags</h2>
+            <h2 style={{ margin: 0, fontSize: 'var(--font-size-2xl)', fontWeight: 'bold', color: 'var(--color-text-primary)' }}>Add Tags</h2>
             <button
               onClick={handleClose}
               disabled={isAdding}
               style={{
                 background: 'none',
                 border: 'none',
-                fontSize: '24px',
+                fontSize: 'var(--font-size-xl)',
                 cursor: isAdding ? 'not-allowed' : 'pointer',
-                color: 'var(--text)',
+                color: 'var(--color-text-primary)',
                 padding: '0',
                 width: '30px',
                 height: '30px',
@@ -181,7 +181,7 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
               ×
             </button>
           </div>
-          <p style={{ margin: 0, color: 'var(--text)', fontSize: '14px' }}>
+          <p style={{ margin: 0, color: 'var(--color-text-primary)', fontSize: 'var(--font-size-base)' }}>
             Add tags to {selectedPhotosCount} photo{selectedPhotosCount !== 1 ? 's' : ''}
           </p>
         </div>
@@ -191,13 +191,13 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
           <div style={{
             marginBottom: '16px',
             padding: '12px',
-            backgroundColor: 'var(--bg)',
+            backgroundColor: 'var(--color-bg-surface)',
             borderRadius: '4px',
-            border: '1px solid var(--border)'
+            border: '1px solid var(--color-border-default)'
           }}>
             <div style={{
-              fontSize: '12px',
-              color: 'var(--text)',
+              fontSize: 'var(--font-size-sm)',
+              color: 'var(--color-text-primary)',
               marginBottom: '8px',
               fontWeight: 'bold'
             }}>
@@ -209,11 +209,11 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
                   key={tag.id}
                   style={{
                     padding: '4px 10px',
-                    backgroundColor: 'rgba(33, 150, 243, 0.3)',
-                    border: '1px solid #2196F3',
+                    backgroundColor: 'var(--color-primary-selected)',
+                    border: '1px solid var(--color-primary)',
                     borderRadius: '12px',
-                    fontSize: '12px',
-                    color: 'var(--text)'
+                    fontSize: 'var(--font-size-sm)',
+                    color: 'var(--color-text-primary)'
                   }}
                 >
                   {tag.name}
@@ -235,12 +235,12 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
             style={{
               width: '100%',
               padding: '8px 12px',
-              border: '1px solid var(--border)',
+              border: '1px solid var(--color-border-default)',
               borderRadius: '4px',
-              fontSize: '14px',
+              fontSize: 'var(--font-size-base)',
               boxSizing: 'border-box',
-              backgroundColor: 'var(--bg-elevated)',
-              color: 'var(--text)'
+              backgroundColor: 'var(--color-bg-elevated)',
+              color: 'var(--color-text-primary)'
             }}
           />
         </div>
@@ -251,17 +251,17 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
           maxHeight: '250px',
           overflowY: 'auto',
           marginBottom: '16px',
-          border: '1px solid var(--border)',
+          border: '1px solid var(--color-border-default)',
           borderRadius: '4px',
-          backgroundColor: 'var(--bg)',
+          backgroundColor: 'var(--color-bg-surface)',
           padding: '12px'
         }}>
           {isLoading ? (
             <div style={{
               padding: '20px',
               textAlign: 'center',
-              color: 'var(--text)',
-              fontSize: '14px'
+              color: 'var(--color-text-primary)',
+              fontSize: 'var(--font-size-base)'
             }}>
               Loading tags...
             </div>
@@ -269,8 +269,8 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
             <div style={{
               padding: '20px',
               textAlign: 'center',
-              color: 'var(--text)',
-              fontSize: '14px'
+              color: 'var(--color-text-primary)',
+              fontSize: 'var(--font-size-base)'
             }}>
               {searchTerm ? 'No tags match your search' : 'No tags found'}
             </div>
@@ -291,23 +291,23 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
                       gap: '6px',
                       padding: '6px 10px',
                       cursor: isAdding ? 'not-allowed' : 'pointer',
-                      backgroundColor: isSelected ? 'rgba(33, 150, 243, 0.3)' : 'var(--bg-elevated)',
-                      border: `1px solid ${isSelected ? '#2196F3' : 'var(--border)'}`,
+                      backgroundColor: isSelected ? 'var(--color-primary-selected)' : 'var(--color-bg-elevated)',
+                      border: `1px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border-default)'}`,
                       borderRadius: '16px',
                       transition: 'all 0.2s',
                       opacity: isAdding ? 0.6 : 1,
-                      fontSize: '13px',
-                      color: 'var(--text)',
+                      fontSize: 'var(--font-size-sm)',
+                      color: 'var(--color-text-primary)',
                       userSelect: 'none'
                     }}
                     onMouseEnter={(e) => {
                       if (!isAdding && !isSelected) {
-                        e.currentTarget.style.backgroundColor = '#374151';
+                        e.currentTarget.style.backgroundColor = 'var(--color-bg-muted)';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!isAdding && !isSelected) {
-                        e.currentTarget.style.backgroundColor = 'var(--bg-elevated)';
+                        e.currentTarget.style.backgroundColor = 'var(--color-bg-elevated)';
                       }
                     }}
                   >
@@ -335,13 +335,13 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
         <div style={{
           marginBottom: '20px',
           padding: '12px',
-          backgroundColor: 'var(--bg)',
+          backgroundColor: 'var(--color-bg-surface)',
           borderRadius: '4px',
-          border: '1px solid var(--border)'
+          border: '1px solid var(--color-border-default)'
         }}>
           <div style={{
-            fontSize: '12px',
-            color: 'var(--text)',
+            fontSize: 'var(--font-size-sm)',
+            color: 'var(--color-text-primary)',
             marginBottom: '8px',
             fontWeight: 'bold'
           }}>
@@ -364,12 +364,12 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
             disabled={isAdding}
             style={{
               padding: '8px 16px',
-              border: '1px solid var(--border)',
+              border: '1px solid var(--color-border-default)',
               borderRadius: '4px',
-              backgroundColor: 'var(--bg-elevated)',
-              color: 'var(--text)',
+              backgroundColor: 'var(--color-bg-elevated)',
+              color: 'var(--color-text-primary)',
               cursor: isAdding ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
+              fontSize: 'var(--font-size-base)',
               opacity: isAdding ? 0.6 : 1
             }}
           >
@@ -382,10 +382,10 @@ const BulkTagSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount 
               padding: '8px 16px',
               border: 'none',
               borderRadius: '4px',
-              backgroundColor: (selectedTagIds.length === 0 || isAdding) ? '#4b5563' : '#2196F3',
-              color: (selectedTagIds.length === 0 || isAdding) ? '#9ca3af' : 'white',
+              backgroundColor: (selectedTagIds.length === 0 || isAdding) ? 'var(--color-bg-muted)' : 'var(--color-primary)',
+              color: (selectedTagIds.length === 0 || isAdding) ? 'var(--color-text-muted)' : 'white',
               cursor: (selectedTagIds.length === 0 || isAdding) ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
+              fontSize: 'var(--font-size-base)',
               fontWeight: 'bold'
             }}
           >

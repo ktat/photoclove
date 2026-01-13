@@ -1,12 +1,12 @@
 /* BulkTagSelectorModal Styles */
 
 .tag-search-input:focus {
-  outline: 2px solid #2196F3;
+  outline: 2px solid var(--color-primary);
   outline-offset: -2px;
 }
 
 .tag-search-input::placeholder {
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 /* Scrollbar styling for tag list */
@@ -15,15 +15,15 @@
 }
 
 .tag-list::-webkit-scrollbar-track {
-  background: var(--bg);
-  border-radius: 4px;
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-sm);
 }
 
 .tag-list::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
+  background: var(--color-border-default);
+  border-radius: var(--radius-sm);
 }
 
 .tag-list::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
+  background: var(--color-text-muted);
 }

@@ -352,7 +352,7 @@ const AdvancedFilters = ({
                           onClick={() => handleTagToggle(tag)}
                           style={{
                             opacity: isSelected ? 1 : 0.6,
-                            border: isSelected ? '2px solid #3b82f6' : '1px solid #d1d5db',
+                            border: isSelected ? '2px solid var(--color-primary)' : '1px solid var(--color-border-default)',
                             cursor: 'pointer'
                           }}
                         />

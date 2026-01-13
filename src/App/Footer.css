@@ -6,11 +6,11 @@ footer {
   text-align: center;
   min-height: 25px;
   max-height: 25px;
-  margin: 5px 5px 0px 5px;
-  padding: 0px 10px 0px 5px;
-  border-width: 1px 0px 0px 0px;
+  margin: var(--space-1) var(--space-1) 0 var(--space-1);
+  padding: 0 var(--space-3) 0 var(--space-1);
+  border-width: 1px 0 0 0;
   border-style: solid;
-  border-color: var(--border);
+  border-color: var(--color-border-default);
 }
 
 footer .message {

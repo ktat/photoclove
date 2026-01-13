@@ -6,12 +6,12 @@
   min-width: calc(var(--vw) - 230px);
   max-height: calc(100vh - 30px);
   min-height: calc(100vh - 30px);
-  padding: 24px;
+  padding: var(--space-6);
   margin: 0;
   order: 2;
   overflow: hidden;
   background-color: transparent;
-  color: var(--text);
+  color: var(--color-text-primary);
 }
 
 /* Expand Preferences when left menu is collapsed */
@@ -21,28 +21,28 @@
 
 /* Header */
 .preferences-header {
-  margin-bottom: 24px;
+  margin-bottom: var(--space-6);
 }
 
 .preferences-header h1 {
-  margin: 0 0 8px 0;
+  margin: 0 0 var(--space-2) 0;
   font-size: 28px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--color-text-primary);
 }
 
 .preferences-subtitle {
   margin: 0;
-  font-size: 14px;
-  color: #9ca3af;
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
 }
 
 /* Tab Navigation */
 .preferences-tabs {
   display: flex;
-  gap: 4px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid var(--border);
+  gap: var(--space-1);
+  margin-bottom: var(--space-6);
+  border-bottom: 1px solid var(--color-border-default);
   overflow-x: auto;
   flex-shrink: 0;
 }
@@ -50,48 +50,48 @@
 .preferences-tab {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  color: #9ca3af;
+  color: var(--color-text-secondary);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--font-size-base);
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease-out;
   white-space: nowrap;
 }
 
 .preferences-tab:hover {
-  color: var(--text);
-  background-color: var(--bg-elevated);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-elevated);
 }
 
 .preferences-tab.active {
-  color: #646cff;
-  border-bottom-color: #646cff;
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
 }
 
 .tab-icon {
-  font-size: 18px;
+  font-size: var(--font-size-xl);
 }
 
 .tab-label {
-  font-size: 14px;
+  font-size: var(--font-size-base);
 }
 
 /* Tab Content */
 .preferences-content {
   flex: 1;
   overflow-y: auto;
-  padding-right: 8px;
+  padding-right: var(--space-2);
   width: 100%;
 }
 
 .preferences-section {
   width: 100%;
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn 0.3s ease-out;
 }
 
 @keyframes fadeIn {
@@ -107,24 +107,24 @@
 
 /* Section Titles */
 .section-title {
-  margin: 0 0 16px 0;
-  font-size: 18px;
+  margin: 0 0 var(--space-4) 0;
+  font-size: var(--font-size-xl);
   font-weight: 600;
-  color: var(--text);
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
+  color: var(--color-text-primary);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border-default);
 }
 
 .section-title:not(:first-child) {
-  margin-top: 32px;
+  margin-top: var(--space-8);
 }
 
 /* Setting Groups */
 .setting-group {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
   width: 100%;
 }
 
@@ -132,35 +132,35 @@
 .setting-row {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-4);
   width: 100%;
 }
 
 .setting-row label {
   flex: 0 0 200px;
-  font-size: 14px;
+  font-size: var(--font-size-base);
   font-weight: 500;
-  color: var(--text);
+  color: var(--color-text-primary);
 }
 
 .setting-row input[type="number"],
 .setting-row input[type="text"],
 .setting-row select {
   flex: 1;
-  padding: 8px 12px;
-  background-color: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text);
-  font-size: 14px;
-  transition: border-color 0.2s ease;
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  transition: border-color 0.2s ease-out;
 }
 
 .setting-row input[type="number"]:focus,
 .setting-row input[type="text"]:focus,
 .setting-row select:focus {
   outline: none;
-  border-color: #646cff;
+  border-color: var(--color-primary);
 }
 
 .setting-row select {
@@ -176,8 +176,8 @@
 .setting-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 0 8px 12px;
+  gap: var(--space-2);
+  padding: var(--space-2) 0 var(--space-2) var(--space-3);
   background-color: transparent;
   border: none;
   width: 100%;
@@ -190,14 +190,14 @@
   -moz-appearance: none;
   appearance: none;
   width: 40px;
-  height: 22px;
+  height: var(--toggle-height);
   min-width: 40px;
-  min-height: 22px;
-  background-color: #39393d;
-  border-radius: 11px;
+  min-height: var(--toggle-height);
+  background-color: var(--color-bg-muted);
+  border-radius: calc(var(--toggle-height) / 2);
   position: relative;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease-out;
   flex-shrink: 0;
   border: none;
   outline: none;
@@ -211,7 +211,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background-color: #ffffff;
+  background-color: white;
   top: 2px;
   left: 2px;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -219,7 +219,7 @@
 }
 
 .preferences .setting-item input[type="checkbox"]:checked {
-  background-color: #646cff;
+  background-color: var(--color-primary);
 }
 
 .preferences .setting-item input[type="checkbox"]:checked::before {
@@ -236,78 +236,91 @@
 
 .setting-item label {
   flex: 1;
-  font-size: 14px;
-  color: var(--text);
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
   cursor: pointer;
   user-select: none;
   text-align: left;
-  margin-left: 4px;
+  margin-left: var(--space-1);
 }
 
 /* FolderPicker styling in Preferences */
 .preferences-section .row2,
 .preferences-section .row3 {
   text-align: left;
-  margin: 8px 0;
+  margin: var(--space-2) 0;
 }
 
 .preferences-section .row2 {
-  font-size: 14px;
+  font-size: var(--font-size-base);
   font-weight: 500;
-  color: var(--text);
-  margin-bottom: 8px;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
 }
 
 .preferences-section .row3 {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .preferences-section .row3 button {
-  padding: 8px 16px;
-  background-color: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text);
-  font-size: 14px;
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease-out;
 }
 
 .preferences-section .row3 button:hover {
-  background-color: #2a2a2a;
-  border-color: #646cff;
+  background-color: var(--color-bg-surface);
+  border-color: var(--color-primary);
+}
+
+/* Compact folder list (Export From) */
+.setting-group.folder-list {
+  gap: var(--space-1);
+}
+
+.setting-group.folder-list .row2 {
+  margin-bottom: 0;
+}
+
+.setting-group.folder-list .row3 {
+  margin: 0;
 }
 
 /* Add Export Path Button */
 .add-export-path {
   display: flex;
   justify-content: flex-start;
-  margin-top: 8px;
+  margin-top: var(--space-2);
 }
 
 /* Buttons */
 .btn-primary,
 .btn-secondary {
-  padding: 10px 20px;
+  padding: var(--space-3) var(--space-5);
   border: none;
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease-out;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #646cff 0%, #535bf2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   color: white;
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #535bf2 0%, #4246d8 100%);
+  background: linear-gradient(135deg, var(--color-primary-hover) 0%, var(--color-primary-hover) 100%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(100, 108, 255, 0.3);
+  box-shadow: var(--shadow-glow-primary);
 }
 
 .btn-primary:active {
@@ -315,66 +328,66 @@
 }
 
 .btn-secondary {
-  background-color: var(--bg-elevated);
-  color: var(--text);
-  border: 1px solid var(--border);
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
 }
 
 .btn-secondary:hover {
-  background-color: #2a2a2a;
-  border-color: #646cff;
+  background-color: var(--color-bg-surface);
+  border-color: var(--color-primary);
 }
 
 /* Footer */
 .preferences-footer {
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border);
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border-default);
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 /* Restart Required Message */
 .restartRequired {
-  color: #ef4444;
+  color: var(--color-danger);
   font-weight: 500;
 }
 
 .create_db {
-  color: #10b981;
+  color: var(--color-success);
   font-weight: 500;
 }
 
 /* Scrollbar Styling */
 .preferences-content::-webkit-scrollbar {
-  width: 8px;
+  width: var(--space-2);
 }
 
 .preferences-content::-webkit-scrollbar-track {
-  background: var(--bg);
-  border-radius: 4px;
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-sm);
 }
 
 .preferences-content::-webkit-scrollbar-thumb {
-  background: #4b5563;
-  border-radius: 4px;
+  background: var(--color-border-default);
+  border-radius: var(--radius-sm);
 }
 
 .preferences-content::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
+  background: var(--color-text-muted);
 }
 
 /* Responsive */
 @media screen and (max-width: 1000px) {
   .preferences {
-    padding: 16px;
+    padding: var(--space-4);
   }
 
   .setting-row {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: var(--space-2);
   }
 
   .setting-row label {

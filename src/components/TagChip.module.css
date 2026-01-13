@@ -1,25 +1,25 @@
 .tag-chip {
     display: inline-flex;
     align-items: center;
-    padding: 4px 8px;
+    padding: var(--space-1) var(--space-2);
     margin: 2px;
-    background-color: #e1e5e9;
-    border-radius: 12px;
-    font-size: 12px;
+    background-color: var(--color-bg-surface);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-xs);
     font-weight: 500;
-    color: #374151;
-    border: 1px solid #d1d5db;
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border-default);
     max-width: 120px;
     overflow: hidden;
 }
 
 .tag-chip-clickable {
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease-out;
 }
 
 .tag-chip-clickable:hover {
-    background-color: #d1d5db;
+    background-color: var(--color-bg-muted);
 }
 
 .tag-chip-text {
@@ -30,25 +30,25 @@
 }
 
 .tag-chip-remove {
-    margin-left: 4px;
+    margin-left: var(--space-1);
     padding: 0;
     width: 16px;
     height: 16px;
     border: none;
     background: transparent;
-    color: #6b7280;
+    color: var(--color-text-muted);
     cursor: pointer;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: var(--font-size-sm);
     line-height: 1;
 }
 
 .tag-chip-remove:hover {
-    background-color: rgba(0, 0, 0, 0.1);
-    color: #374151;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-text-primary);
 }
 
 /* Dark chip styles when background color is dark */

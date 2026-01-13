@@ -1,8 +1,8 @@
 /* Search Tab Styles */
 .search-tab-content {
-  padding: 10px;
-  background: #1a1a1a;
-  color: #e0e0e0;
+  padding: var(--space-3);
+  background: var(--color-bg-base);
+  color: var(--color-text-primary);
   height: 100%;
   max-width: 280px;
   overflow-x: hidden;
@@ -13,5 +13,5 @@
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-right: 5px;
+  padding-right: var(--space-1);
 }

@@ -294,7 +294,7 @@ function PhotosList({
     });
 
     // Tab management
-    const { tabClass, setTabClass, changeTab } = useTabManagement({ viewMode, isSearchMode });
+    const { tabClass, setTabClass, changeTab, clearAllTabs } = useTabManagement({ viewMode, isSearchMode });
 
     // Selection tab auto-open effect
     useSelectionTabEffect({
@@ -407,7 +407,7 @@ function PhotosList({
             <>
                 {photoLoading ? (
                     <div className="photoLoadingOnParent" style={{ display: photoLoading ? "block" : "none" }}>
-                        <PhotoLoading />
+                        <PhotoLoading viewModeObj={viewModeObj} />
                     </div>
                 ) : (
                     <>
@@ -433,7 +433,7 @@ function PhotosList({
                     <VerticalTabBar
                         viewMode={viewMode} isSearchMode={isSearchMode} showSideMenu={showSideMenu}
                         tabClass={tabClass} changeTab={changeTab} setShowSideMenu={setShowSideMenu}
-                        closeRightColumn={closeRightColumn} viewModeObj={viewModeObj}
+                        closeRightColumn={closeRightColumn} clearAllTabs={clearAllTabs} viewModeObj={viewModeObj}
                         photoSelectionCount={photoSelection.length}
                         selectedAlbumsCount={selectedAlbums.length} selectedTagsCount={selectedTags.length}
                     />

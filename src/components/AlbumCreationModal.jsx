@@ -69,7 +69,7 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
       zIndex: 1000
     }}>
       <div style={{
-        backgroundColor: 'var(--bg-elevated)',
+        backgroundColor: 'var(--color-bg-elevated)',
         borderRadius: '8px',
         padding: '24px',
         minWidth: '400px',
@@ -84,7 +84,7 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
             alignItems: 'center',
             marginBottom: '20px'
           }}>
-            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: 'var(--text)' }}>Create New Album</h2>
+            <h2 style={{ margin: 0, fontSize: 'var(--font-size-2xl)', fontWeight: 'bold', color: 'var(--color-text-primary)' }}>Create New Album</h2>
             <button
               type="button"
               onClick={handleClose}
@@ -92,9 +92,9 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
               style={{
                 background: 'none',
                 border: 'none',
-                fontSize: '24px',
+                fontSize: 'var(--font-size-xl)',
                 cursor: isCreating ? 'not-allowed' : 'pointer',
-                color: 'var(--text)',
+                color: 'var(--color-text-primary)',
                 padding: '0',
                 width: '30px',
                 height: '30px',
@@ -109,8 +109,8 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
 
           <p style={{
             margin: '0 0 20px 0',
-            color: 'var(--text)',
-            fontSize: '14px'
+            color: 'var(--color-text-primary)',
+            fontSize: 'var(--font-size-base)'
           }}>
             Create a new album with {selectedPhotosCount} selected photo{selectedPhotosCount !== 1 ? 's' : ''}
           </p>
@@ -121,8 +121,8 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
               display: 'block',
               marginBottom: '6px',
               fontWeight: 'bold',
-              fontSize: '14px',
-              color: 'var(--text)'
+              fontSize: 'var(--font-size-base)',
+              color: 'var(--color-text-primary)'
             }}>
               Album Name *
             </label>
@@ -136,12 +136,12 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
               style={{
                 width: '100%',
                 padding: '8px 12px',
-                border: '1px solid var(--border)',
+                border: '1px solid var(--color-border-default)',
                 borderRadius: '4px',
-                fontSize: '14px',
+                fontSize: 'var(--font-size-base)',
                 boxSizing: 'border-box',
-                backgroundColor: 'var(--bg-elevated)',
-                color: 'var(--text)'
+                backgroundColor: 'var(--color-bg-elevated)',
+                color: 'var(--color-text-primary)'
               }}
             />
           </div>
@@ -152,8 +152,8 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
               display: 'block',
               marginBottom: '6px',
               fontWeight: 'bold',
-              fontSize: '14px',
-              color: 'var(--text)'
+              fontSize: 'var(--font-size-base)',
+              color: 'var(--color-text-primary)'
             }}>
               Description (optional)
             </label>
@@ -166,14 +166,14 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
               style={{
                 width: '100%',
                 padding: '8px 12px',
-                border: '1px solid var(--border)',
+                border: '1px solid var(--color-border-default)',
                 borderRadius: '4px',
-                fontSize: '14px',
+                fontSize: 'var(--font-size-base)',
                 boxSizing: 'border-box',
                 resize: 'vertical',
                 minHeight: '60px',
-                backgroundColor: 'var(--bg-elevated)',
-                color: 'var(--text)'
+                backgroundColor: 'var(--color-bg-elevated)',
+                color: 'var(--color-text-primary)'
               }}
             />
           </div>
@@ -190,12 +190,12 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
               disabled={isCreating}
               style={{
                 padding: '8px 16px',
-                border: '1px solid var(--border)',
+                border: '1px solid var(--color-border-default)',
                 borderRadius: '4px',
-                backgroundColor: 'var(--bg-elevated)',
-                color: 'var(--text)',
+                backgroundColor: 'var(--color-bg-elevated)',
+                color: 'var(--color-text-primary)',
                 cursor: isCreating ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
+                fontSize: 'var(--font-size-base)',
                 opacity: isCreating ? 0.6 : 1
               }}
             >
@@ -208,10 +208,10 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
                 padding: '8px 16px',
                 border: 'none',
                 borderRadius: '4px',
-                backgroundColor: (!albumName.trim() || isCreating) ? '#4b5563' : '#28a745',
-                color: (!albumName.trim() || isCreating) ? '#9ca3af' : 'white',
+                backgroundColor: (!albumName.trim() || isCreating) ? 'var(--color-bg-muted)' : 'var(--color-success)',
+                color: (!albumName.trim() || isCreating) ? 'var(--color-text-muted)' : 'white',
                 cursor: (!albumName.trim() || isCreating) ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
+                fontSize: 'var(--font-size-base)',
                 fontWeight: 'bold'
               }}
             >

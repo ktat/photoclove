@@ -53,7 +53,7 @@ function GenericListView({
             countSuffix: 'photos',
             defaultIcon: '📚',
             showCoverImage: true,
-            backgroundColor: '#374151'
+            backgroundColor: 'var(--color-bg-muted)'
         },
         tag: {
             className: 'tags',
@@ -82,9 +82,9 @@ function GenericListView({
         <div style={{
             marginBottom: '20px',
             padding: '10px',
-            backgroundColor: 'var(--bg-elevated)',
+            backgroundColor: 'var(--color-bg-elevated)',
             borderRadius: '4px',
-            border: '1px solid var(--border)'
+            border: '1px solid var(--color-border-default)'
         }}>
             <input
                 type="text"
@@ -95,11 +95,11 @@ function GenericListView({
                 style={{
                     width: '100%',
                     padding: '8px 12px',
-                    border: '1px solid var(--border)',
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                    backgroundColor: '#374151',
-                    color: 'var(--text)'
+                    border: '1px solid var(--color-border-default)',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: 'var(--font-size-base)',
+                    backgroundColor: 'var(--color-bg-muted)',
+                    color: 'var(--color-text-primary)'
                 }}
             />
         </div>
@@ -117,38 +117,38 @@ function GenericListView({
                         width: `${iconSize + 50}px`,
                         height: `${iconSize + 80}px`,
                         cursor: 'pointer',
-                        border: '2px dashed var(--border)',
+                        border: '2px dashed var(--color-border-default)',
                         borderRadius: '8px',
                         margin: '10px',
                         padding: '10px',
                         display: 'inline-block',
                         verticalAlign: 'top',
-                        backgroundColor: 'var(--bg-elevated)',
-                        transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                        backgroundColor: 'var(--color-bg-elevated)',
+                        transition: 'transform 0.2s ease-out, box-shadow 0.2s ease-out'
                     }}
                 >
                     <div className={currentConfig.coverClass} style={{
                         width: `${iconSize}px`,
                         height: `${iconSize}px`,
-                        backgroundColor: itemType === 'tag' ? '#374151' : 'var(--bg-elevated)',
+                        backgroundColor: itemType === 'tag' ? 'var(--color-bg-muted)' : 'var(--color-bg-elevated)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         marginBottom: '10px',
                         borderRadius: '4px',
                         overflow: 'hidden',
-                        border: '1px dashed var(--border)'
+                        border: '1px dashed var(--color-border-default)'
                     }}>
                         <div style={{
                             fontSize: `${iconSize * 0.15}px`,
-                            color: '#999',
+                            color: 'var(--color-text-muted)',
                             textAlign: 'center',
                             lineHeight: '1.2'
                         }}>{currentConfig.newItemText}</div>
                     </div>
                     <div className={currentConfig.infoClass} style={{
                         textAlign: 'center',
-                        fontSize: '12px'
+                        fontSize: 'var(--font-size-sm)'
                     }}>
                         <div className={currentConfig.nameClass} style={{
                             fontWeight: 'bold',
@@ -162,7 +162,7 @@ function GenericListView({
 
                 {/* Existing Items */}
                 {filteredItems.length === 0 ? (
-                    <div style={{ margin: '20px', color: '#666' }}>
+                    <div style={{ margin: '20px', color: 'var(--color-text-muted)' }}>
                         {effectiveSearchTerm ? currentConfig.searchEmptyMessage : currentConfig.emptyMessage}
                     </div>
                 ) : (
@@ -182,14 +182,14 @@ function GenericListView({
                                 width: `${iconSize + 50}px`,
                                 height: `${iconSize + 80}px`,
                                 cursor: 'pointer',
-                                border: selectedItems.includes(item.id) ? '2px solid var(--accent)' : '1px solid var(--border)',
+                                border: selectedItems.includes(item.id) ? '2px solid var(--color-primary)' : '1px solid var(--color-border-default)',
                                 borderRadius: '8px',
                                 margin: '10px',
                                 padding: '10px',
                                 display: 'inline-block',
                                 verticalAlign: 'top',
-                                backgroundColor: selectedItems.includes(item.id) ? 'var(--accent)' : 'var(--bg-elevated)',
-                                transition: 'transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease, background-color 0.2s ease',
+                                backgroundColor: selectedItems.includes(item.id) ? 'var(--color-primary-selected)' : 'var(--color-bg-elevated)',
+                                transition: 'transform 0.2s ease-out, box-shadow 0.2s ease-out, border 0.2s ease-out, background-color 0.2s ease-out',
                                 position: 'relative'
                             }}
                         >
@@ -227,14 +227,14 @@ function GenericListView({
                                 <div className={currentConfig.coverClass} style={{
                                     width: `${iconSize}px`,
                                     height: `${iconSize}px`,
-                                    backgroundColor: currentConfig.backgroundColor || item.color || '#374151',
+                                    backgroundColor: currentConfig.backgroundColor || item.color || 'var(--color-bg-muted)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     marginBottom: '10px',
                                     borderRadius: '4px',
                                     overflow: 'hidden',
-                                    border: '1px solid var(--border)'
+                                    border: '1px solid var(--color-border-default)'
                                 }}>
                                     {currentConfig.showCoverImage && item.coverPhoto ? (
                                         (() => {
@@ -269,23 +269,27 @@ function GenericListView({
                                     ) : (
                                         <div style={{
                                             fontSize: `${iconSize * 0.3}px`,
-                                            color: itemType === 'tag' && item.color ? '#fff' : '#999'
+                                            color: itemType === 'tag' && item.color ? 'white' : 'var(--color-text-muted)'
                                         }}>{currentConfig.defaultIcon}</div>
                                     )}
                                 </div>
                                 <div className={currentConfig.infoClass} style={{
                                     textAlign: 'center',
-                                    fontSize: '12px'
+                                    fontSize: 'var(--font-size-sm)',
+                                    overflow: 'hidden'
                                 }}>
                                     <div className={currentConfig.nameClass} style={{
                                         fontWeight: 'bold',
-                                        marginBottom: '4px',
-                                        wordWrap: 'break-word'
-                                    }}>
+                                        marginBottom: '2px',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap'
+                                    }} title={item.name}>
                                         {item.name}
                                     </div>
                                     <div className={currentConfig.countClass} style={{
-                                        color: '#666'
+                                        color: 'var(--color-text-muted)',
+                                        fontSize: 'var(--font-size-xs)'
                                     }}>
                                         {item.photoCount} {currentConfig.countSuffix}
                                     </div>

@@ -61,22 +61,22 @@ const FilterPopover = ({
                 position: 'fixed',
                 top: `${position.top}px`,
                 right: `${position.right}px`,
-                backgroundColor: 'var(--bg-elevated)',
-                border: '1px solid var(--border)',
+                backgroundColor: 'var(--color-bg-elevated)',
+                border: '1px solid var(--color-border-default)',
                 borderRadius: '8px',
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
                 padding: '12px 16px',
                 minWidth: '280px',
                 maxWidth: '350px',
                 zIndex: 10000,
-                color: 'var(--text)'
+                color: 'var(--color-text-primary)'
             }}
         >
             {/* Star Filter - Hide in import mode */}
             {!isImportMode && (
                 <div style={{ marginBottom: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span style={{ fontSize: '14px', color: 'var(--text)', minWidth: '50px' }}>Stars</span>
+                        <span style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-text-primary)', minWidth: '50px' }}>Stars</span>
                         <div style={{ display: 'flex', gap: '4px' }}>
                             {[0, 1, 2, 3, 4, 5].map((v) => (
                                 <span
@@ -91,11 +91,12 @@ const FilterPopover = ({
                                     }}
                                     style={{
                                         cursor: 'pointer',
-                                        fontSize: '16px',
+                                        fontSize: 'var(--font-size-lg)',
                                         padding: '2px 4px',
                                         borderRadius: '4px',
-                                        backgroundColor: starFilter === v ? 'var(--accent)' : 'transparent',
-                                        color: starFilter >= v ? '#ffd700' : '#666',
+                                        backgroundColor: starFilter === v ? 'var(--color-bg-surface)' : 'transparent',
+                                        border: starFilter === v ? '1px solid var(--color-primary)' : '1px solid transparent',
+                                        color: starFilter >= v ? 'var(--color-warning)' : 'var(--color-text-muted)',
                                         transition: 'all 0.2s'
                                     }}
                                     title={v === 0 ? 'Show all' : `${v} stars or more`}
@@ -112,7 +113,7 @@ const FilterPopover = ({
             {!isImportMode && (
                 <div style={{ marginBottom: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: '14px', color: 'var(--text)' }}>Has Comment</span>
+                        <span style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-text-primary)' }}>Has Comment</span>
                         <label style={{
                             position: 'relative',
                             display: 'inline-block',
@@ -139,7 +140,7 @@ const FilterPopover = ({
                                 left: 0,
                                 right: 0,
                                 bottom: 0,
-                                backgroundColor: hasCommentFilter ? 'var(--accent)' : '#374151',
+                                backgroundColor: hasCommentFilter ? 'var(--color-primary)' : 'var(--color-bg-muted)',
                                 borderRadius: '24px',
                                 transition: 'background-color 0.2s'
                             }}>
@@ -163,7 +164,7 @@ const FilterPopover = ({
             {!isImportMode && (
                 <div style={{ marginBottom: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: '14px', color: 'var(--text)' }}>Has Tag</span>
+                        <span style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-text-primary)' }}>Has Tag</span>
                         <label style={{
                             position: 'relative',
                             display: 'inline-block',
@@ -190,7 +191,7 @@ const FilterPopover = ({
                                 left: 0,
                                 right: 0,
                                 bottom: 0,
-                                backgroundColor: hasTagFilter ? 'var(--accent)' : '#374151',
+                                backgroundColor: hasTagFilter ? 'var(--color-primary)' : 'var(--color-bg-muted)',
                                 borderRadius: '24px',
                                 transition: 'background-color 0.2s'
                             }}>
@@ -213,7 +214,7 @@ const FilterPopover = ({
             {/* Extension Filter */}
             <div style={{ marginBottom: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span style={{ fontSize: '14px', color: 'var(--text)', minWidth: '70px' }}>Extensions</span>
+                    <span style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-text-primary)', minWidth: '70px' }}>Extensions</span>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
                         {/* All Extensions */}
                         <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -231,7 +232,7 @@ const FilterPopover = ({
                                 htmlFor="extension-filter-all"
                                 style={{ marginRight: '8px' }}
                             ></label>
-                            <span style={{ fontSize: '14px', cursor: 'pointer' }} onClick={() => setExtensionFilter("all")}>All</span>
+                            <span style={{ fontSize: 'var(--font-size-base)', cursor: 'pointer' }} onClick={() => setExtensionFilter("all")}>All</span>
                         </div>
                         
                         {/* Individual Extensions */}
@@ -272,7 +273,7 @@ const FilterPopover = ({
                                         style={{ marginRight: '6px' }}
                                     ></label>
                                     <span 
-                                        style={{ fontSize: '13px', cursor: 'pointer' }} 
+                                        style={{ fontSize: 'var(--font-size-sm)', cursor: 'pointer' }} 
                                         onClick={() => {
                                             const currentFilters = extensionFilter === "all" ? [] : extensionFilter.split(',').filter(f => f.trim() !== '');
                                             const isCurrentlyChecked = extensionFilter !== "all" && item.extensions.some(ext => extensionFilter.split(',').includes(ext));
@@ -300,7 +301,7 @@ const FilterPopover = ({
                 <div style={{ 
                     marginTop: '16px', 
                     paddingTop: '12px', 
-                    borderTop: '1px solid var(--border)',
+                    borderTop: '1px solid var(--color-border-default)',
                     textAlign: 'center'
                 }}>
                     <button
@@ -315,16 +316,16 @@ const FilterPopover = ({
                         }}
                         style={{
                             padding: '8px 16px',
-                            backgroundColor: 'var(--bg-elevated)',
-                            border: '1px solid var(--border)',
+                            backgroundColor: 'var(--color-bg-elevated)',
+                            border: '1px solid var(--color-border-default)',
                             borderRadius: '4px',
                             cursor: 'pointer',
-                            color: 'var(--text)',
-                            fontSize: '14px',
+                            color: 'var(--color-text-primary)',
+                            fontSize: 'var(--font-size-base)',
                             transition: 'background-color 0.2s'
                         }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--accent)'}
-                        onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--bg-elevated)'}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--color-primary)'}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--color-bg-elevated)'}
                     >
                         Clear All Filters
                     </button>

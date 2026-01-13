@@ -121,7 +121,7 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
       zIndex: 1000
     }}>
       <div style={{
-        backgroundColor: 'var(--bg-elevated)',
+        backgroundColor: 'var(--color-bg-elevated)',
         borderRadius: '8px',
         padding: '24px',
         minWidth: '400px',
@@ -139,16 +139,16 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
             alignItems: 'center',
             marginBottom: '8px'
           }}>
-            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: 'var(--text)' }}>Add to Album</h2>
+            <h2 style={{ margin: 0, fontSize: 'var(--font-size-2xl)', fontWeight: 'bold', color: 'var(--color-text-primary)' }}>Add to Album</h2>
             <button 
               onClick={handleClose}
               disabled={isAdding}
               style={{
                 background: 'none',
                 border: 'none',
-                fontSize: '24px',
+                fontSize: 'var(--font-size-xl)',
                 cursor: isAdding ? 'not-allowed' : 'pointer',
-                color: 'var(--text)',
+                color: 'var(--color-text-primary)',
                 padding: '0',
                 width: '30px',
                 height: '30px',
@@ -160,7 +160,7 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
               ×
             </button>
           </div>
-          <p style={{ margin: 0, color: 'var(--text)', fontSize: '14px' }}>
+          <p style={{ margin: 0, color: 'var(--color-text-primary)', fontSize: 'var(--font-size-base)' }}>
             Add {selectedPhotosCount} photo{selectedPhotosCount !== 1 ? 's' : ''} to an existing album
           </p>
         </div>
@@ -177,12 +177,12 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
             style={{
               width: '100%',
               padding: '8px 12px',
-              border: '1px solid var(--border)',
+              border: '1px solid var(--color-border-default)',
               borderRadius: '4px',
-              fontSize: '14px',
+              fontSize: 'var(--font-size-base)',
               boxSizing: 'border-box',
-              backgroundColor: 'var(--bg-elevated)',
-              color: 'var(--text)'
+              backgroundColor: 'var(--color-bg-elevated)',
+              color: 'var(--color-text-primary)'
             }}
           />
         </div>
@@ -193,16 +193,16 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
           maxHeight: '300px', 
           overflowY: 'auto', 
           marginBottom: '20px',
-          border: '1px solid var(--border)',
+          border: '1px solid var(--color-border-default)',
           borderRadius: '4px',
-          backgroundColor: 'var(--bg)'
+          backgroundColor: 'var(--color-bg-surface)'
         }}>
           {isLoading ? (
             <div style={{ 
               padding: '20px', 
               textAlign: 'center', 
-              color: 'var(--text)',
-              fontSize: '14px'
+              color: 'var(--color-text-primary)',
+              fontSize: 'var(--font-size-base)'
             }}>
               Loading albums...
             </div>
@@ -210,28 +210,28 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
             <div style={{ 
               padding: '20px', 
               textAlign: 'center', 
-              color: 'var(--text)',
-              fontSize: '14px'
+              color: 'var(--color-text-primary)',
+              fontSize: 'var(--font-size-base)'
             }}>
               {searchTerm ? 'No albums match your search' : 'No albums found'}
             </div>
           ) : (
             filteredAlbums.map(album => (
-              <div 
+              <div
                 key={album.id}
                 onClick={() => !isAdding && setSelectedAlbumId(album.id)}
                 style={{
                   padding: '12px',
                   cursor: isAdding ? 'not-allowed' : 'pointer',
-                  backgroundColor: selectedAlbumId === album.id ? 'rgba(33, 150, 243, 0.2)' : 'transparent',
-                  border: selectedAlbumId === album.id ? '2px solid #2196F3' : 'none',
-                  borderBottom: '1px solid var(--border)',
+                  backgroundColor: selectedAlbumId === album.id ? 'var(--color-primary-selected)' : 'transparent',
+                  border: selectedAlbumId === album.id ? '2px solid var(--color-primary)' : 'none',
+                  borderBottom: '1px solid var(--color-border-default)',
                   transition: 'background-color 0.2s',
                   opacity: isAdding ? 0.6 : 1
                 }}
                 onMouseEnter={(e) => {
                   if (!isAdding && selectedAlbumId !== album.id) {
-                    e.target.style.backgroundColor = 'var(--bg-elevated)';
+                    e.target.style.backgroundColor = 'var(--color-bg-elevated)';
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -242,15 +242,15 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
               >
                 <div style={{ 
                   fontWeight: selectedAlbumId === album.id ? 'bold' : 'normal',
-                  fontSize: '14px',
+                  fontSize: 'var(--font-size-base)',
                   marginBottom: '4px',
-                  color: 'var(--text)'
+                  color: 'var(--color-text-primary)'
                 }}>
                   {album.name}
                 </div>
                 <div style={{ 
-                  fontSize: '12px', 
-                  color: 'var(--text)'
+                  fontSize: 'var(--font-size-sm)', 
+                  color: 'var(--color-text-primary)'
                 }}>
                   📸 {album.photo_count || 0} photos
                   {album.description && (
@@ -275,12 +275,12 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
             disabled={isAdding}
             style={{
               padding: '10px 20px',
-              border: '1px solid var(--border)',
+              border: '1px solid var(--color-border-default)',
               borderRadius: '6px',
-              backgroundColor: 'var(--bg-elevated)',
-              color: 'var(--text)',
+              backgroundColor: 'var(--color-bg-elevated)',
+              color: 'var(--color-text-primary)',
               cursor: isAdding ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
+              fontSize: 'var(--font-size-base)',
               fontWeight: '500',
               opacity: isAdding ? 0.6 : 1,
               transition: 'all 0.2s ease'
@@ -296,11 +296,11 @@ const AlbumSelectorModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
               border: 'none',
               borderRadius: '6px',
               background: (!selectedAlbumId || isAdding)
-                ? 'linear-gradient(135deg, #666 0%, #555 100%)'
-                : 'linear-gradient(135deg, #646cff 0%, #535bf2 100%)',
+                ? 'var(--color-bg-muted)'
+                : 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%)',
               color: 'white',
               cursor: (!selectedAlbumId || isAdding) ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
+              fontSize: 'var(--font-size-base)',
               fontWeight: '500',
               opacity: (!selectedAlbumId || isAdding) ? 0.6 : 1,
               transition: 'all 0.2s ease'

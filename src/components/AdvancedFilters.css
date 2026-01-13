@@ -18,18 +18,18 @@
 }
 
 .clear-filters-button {
-    background: #555;
-    color: #fff;
+    background: var(--color-border-strong);
+    color: var(--color-text-primary);
     border: none;
     padding: 4px 8px;
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     font-size: 11px;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s ease-out;
 }
 
 .clear-filters-button:hover {
-    background: #666;
+    background: var(--color-text-muted);
 }
 
 .filter-sections {
@@ -63,7 +63,7 @@
 .filter-group select,
 .filter-group input {
     padding: 4px 6px;
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
     font-size: 11px;
     width: 100%;
     box-sizing: border-box;
@@ -107,7 +107,7 @@
     font-size: 11px !important;
     width: 100% !important;
     box-sizing: border-box !important;
-    color: var(--text) !important;
+    color: var(--color-text-primary) !important;
     height: auto !important;
     line-height: normal !important;
     font-family: inherit !important;
@@ -117,25 +117,25 @@
 .react-datepicker-wrapper input:focus,
 .react-datepicker__input-container input:focus {
     outline: none !important;
-    border-color: var(--accent) !important;
+    border-color: var(--color-primary) !important;
 }
 
 /* Override react-datepicker default styles for dark theme */
 .react-datepicker {
     font-size: 11px;
-    background-color: var(--bg-elevated);
-    border-color: var(--border);
-    color: var(--text);
+    background-color: var(--color-bg-elevated);
+    border-color: var(--color-border-default);
+    color: var(--color-text-primary);
 }
 
 .react-datepicker__header {
-    background-color: var(--bg);
-    border-bottom-color: var(--border);
+    background-color: var(--color-bg-surface);
+    border-bottom-color: var(--color-border-default);
     padding-top: 6px;
 }
 
 .react-datepicker__current-month {
-    color: var(--text);
+    color: var(--color-text-primary);
     font-size: 11px;
     margin-bottom: 8px;
     display: flex;
@@ -145,26 +145,26 @@
 }
 
 .react-datepicker__day-name {
-    color: var(--text);
+    color: var(--color-text-primary);
 }
 
 .react-datepicker__day {
-    color: var(--text);
+    color: var(--color-text-primary);
 }
 
 .react-datepicker__day:hover {
-    background-color: var(--accent);
-    color: var(--bg);
+    background-color: var(--color-primary);
+    color: var(--color-bg-surface);
 }
 
 .react-datepicker__day--selected,
 .react-datepicker__day--keyboard-selected {
-    background-color: var(--accent);
-    color: var(--bg);
+    background-color: var(--color-primary);
+    color: var(--color-bg-surface);
 }
 
 .react-datepicker__day--disabled {
-    color: #666;
+    color: var(--color-text-muted);
 }
 
 /* Year and Month dropdown styles - make them narrower */
@@ -179,16 +179,16 @@
 }
 
 .react-datepicker__month-dropdown {
-    background-color: var(--bg-elevated);
-    border-color: var(--border);
+    background-color: var(--color-bg-elevated);
+    border-color: var(--color-border-default);
     min-width: 75px;
     max-width: 85px;
     width: 85px;
 }
 
 .react-datepicker__year-dropdown {
-    background-color: var(--bg-elevated);
-    border-color: var(--border);
+    background-color: var(--color-bg-elevated);
+    border-color: var(--color-border-default);
     min-width: 55px;
     max-width: 60px;
     width: 60px;
@@ -215,8 +215,8 @@
 
 .react-datepicker__month-option:hover,
 .react-datepicker__year-option:hover {
-    background-color: var(--accent);
-    color: var(--bg);
+    background-color: var(--color-primary);
+    color: var(--color-bg-surface);
 }
 
 .react-datepicker__year-dropdown--scrollable {
@@ -228,7 +228,7 @@
 }
 
 .react-datepicker__navigation-icon::before {
-    border-color: var(--text);
+    border-color: var(--color-text-primary);
 }
 
 /* Clear button positioning - align to the right edge */
@@ -242,8 +242,8 @@
 }
 
 .react-datepicker__close-icon::after {
-    background-color: var(--accent);
-    color: var(--bg);
+    background-color: var(--color-primary);
+    color: var(--color-bg-surface);
     font-size: 10px;
     width: 12px;
     height: 12px;
@@ -257,14 +257,14 @@
   -moz-appearance: none;
   appearance: none;
   width: 40px;
-  height: 22px;
+  height: var(--toggle-height);
   min-width: 40px;
-  min-height: 22px;
-  background-color: #39393d;
-  border-radius: 11px;
+  min-height: var(--toggle-height);
+  background-color: var(--color-bg-muted);
+  border-radius: calc(var(--toggle-height) / 2);
   position: relative;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease-out;
   flex-shrink: 0;
   border: none;
   outline: none;
@@ -285,7 +285,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background-color: #ffffff;
+  background-color: white;
   top: 2px;
   left: 2px;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -293,7 +293,7 @@
 }
 
 .advanced-filters input[type="checkbox"]:checked {
-  background-color: #646cff;
+  background-color: var(--color-primary);
 }
 
 .advanced-filters input[type="checkbox"]:checked::before {

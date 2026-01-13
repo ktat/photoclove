@@ -46,15 +46,86 @@ body {
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
 
-  /* dark theme */
-  --bg: #5b5b5b;
-  /* ページ地 */
-  --bg-elevated: #242424;
-  /* 入力欄・カード */
-  --text: #e4e4e4;
-  --border: #444;
-  --accent: #999;
-  /* チェックボックスなどの強調色 */
+  /* === Design System Tokens === */
+
+  /* --- Background Colors --- */
+  --color-bg-base: #1b1b1b;
+  --color-bg-elevated: #242424;
+  --color-bg-surface: #2a2a2a;
+  --color-bg-muted: #333333;
+
+  /* --- Text Colors --- */
+  --color-text-primary: #e4e4e4;
+  --color-text-secondary: #9ca3af;
+  --color-text-muted: #6b7280;
+
+  /* --- Border Colors --- */
+  --color-border-default: #444444;
+  --color-border-subtle: #333333;
+  --color-border-strong: #555555;
+
+  /* --- Primary (Main Actions) --- */
+  --color-primary: #4a9eff;
+  --color-primary-dark: #2d6cb5;
+  --color-primary-hover: #3a8eef;
+  --color-primary-muted: rgba(74, 158, 255, 0.2);
+  --color-primary-selected: rgba(74, 158, 255, 0.25);
+  --color-primary-text: #0a1628;
+
+  /* --- State Colors --- */
+  --color-success: #22c55e;
+  --color-success-dark: #16803c;
+  --color-success-muted: rgba(34, 197, 94, 0.2);
+
+  --color-warning: #f59e0b;
+  --color-warning-dark: #b57208;
+  --color-warning-muted: rgba(245, 158, 11, 0.2);
+
+  --color-danger: #ef4444;
+  --color-danger-dark: #b91c1c;
+  --color-danger-muted: rgba(239, 68, 68, 0.2);
+
+  --color-info: #3b82f6;
+
+  /* --- Spacing Scale (4px base) --- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* --- Border Radius --- */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* --- Shadows --- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+  --shadow-glow-primary: 0 0 12px rgba(74, 158, 255, 0.4);
+
+  /* --- Transitions --- */
+  --transition-fast: 150ms ease-out;
+  --transition-normal: 250ms ease-out;
+  --transition-slow: 350ms ease-out;
+
+  /* --- Component Sizes --- */
+  --toggle-height: 22px;
+
+  /* --- Font Sizes --- */
+  --font-size-2xs: 9px;
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
 }
 
 /* start dark theme */
@@ -62,28 +133,21 @@ input,
 textarea,
 select,
 button {
-  background: var(--bg-elevated);
-  color: var(--text);
-  border: 1px solid var(--border);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
   margin-right: 10px;
   margin-left: 10px;
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #888;
-  /* グレーで控えめに */
-}
-
-input::placeholder,
-textarea::placeholder {
-  color: #888;
-  /* グレーで控えめに */
+  color: var(--color-text-muted);
 }
 
 /* Album list search input placeholder */
 .album-list-search-input::placeholder {
-  color: #9ca3af;
+  color: var(--color-text-secondary);
   opacity: 0.8;
 }
 
@@ -92,31 +156,21 @@ input[type="checkbox"],
 input[type="radio"],
 progress,
 meter {
-  accent-color: var(--accent);
-}
-
-/* 2023 年以降の主要ブラウザでサポート */
-
-input[type="checkbox"],
-input[type="radio"],
-progress,
-meter {
-  accent-color: var(--accent);
+  accent-color: var(--color-primary);
 }
 
 input[type="range"] {
-  accent-color: var(--accent);
-  /* 新ブラウザならこれだけで OK */
+  accent-color: var(--color-primary);
   width: 100%;
 }
 
 /* 古い WebKit 互換を残したい場合のピンポイント上書き */
 input[type="range"]::-webkit-slider-runnable-track {
-  background: var(--accent);
+  background: var(--color-primary);
 }
 
 input[type="range"]::-moz-range-track {
-  background: var(--accent);
+  background: var(--color-primary);
 }
 
 /* 📅 アイコンも暗く反転させたい場合 */
@@ -130,27 +184,27 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg);
+  background: var(--color-bg-surface);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--accent);
-  border-radius: 6px;
+  background: var(--color-primary);
+  border-radius: var(--radius-md);
 }
 
 /* finish dark theme */
 
 input[type="number"] {
   width: 90px;
-  background: var(--bg-elevated);
-  color: var(--text);
-  border: 1px solid var(--border);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
 }
 
 button {
-  background: var(--bg-elevated);
-  color: var(--text);
-  border: 1px solid var(--border);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
 }
 
 body {

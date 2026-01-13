@@ -46,21 +46,71 @@ When working on features:
 #### UI Theme & Color Guidelines
 **PhotoClove is a dark theme application**. Follow these strict color rules:
 
-- **Background colors**: Always use dark colors (e.g., `var(--bg)`, `var(--bg-elevated)`, `#1f2937`, `#374151`)
-- **Text colors**: Always use light colors for text (e.g., `var(--text)`, `#e4e4e4`, `#f9fafb`)
 - **Light colors prohibition**: NEVER use light colors (white, light gray) for large areas or backgrounds
-- **Light color usage**: Light colors can ONLY be used for:
-  - Small accents (buttons, highlights, icons)
-  - Active/selected states
-  - Focus indicators
-  - Small UI elements that need emphasis
-- **CSS Variables**: Always prefer CSS variables over hardcoded colors:
-  - `var(--bg)` for main background
-  - `var(--bg-elevated)` for elevated surfaces
-  - `var(--text)` for text
-  - `var(--border)` for borders
-  - `var(--accent)` for accent colors
+- **Light color usage**: Light colors can ONLY be used for small accents, active states, focus indicators
 - **Hardcoded colors to avoid**: Never use `white`, `#fff`, `#ffffff`, `#f5f5f5`, `#fafafa` for backgrounds
+- **Always use CSS variables**: Never hardcode colors or sizes - use the design system tokens
+
+#### CSS Design System (src/styles/base.css)
+All styling must use CSS variables defined in `base.css`. **Never hardcode colors, font sizes, or spacing values.**
+
+**Background Colors:**
+| Variable | Usage |
+|----------|-------|
+| `--color-bg-base` | Main page background |
+| `--color-bg-elevated` | Cards, modals, elevated surfaces |
+| `--color-bg-surface` | Input fields, interactive surfaces |
+| `--color-bg-muted` | Disabled states, subtle backgrounds |
+
+**Text Colors:**
+| Variable | Usage |
+|----------|-------|
+| `--color-text-primary` | Main text, headings |
+| `--color-text-secondary` | Secondary text, descriptions |
+| `--color-text-muted` | Placeholder, disabled text |
+
+**Border Colors:**
+| Variable | Usage |
+|----------|-------|
+| `--color-border-default` | Standard borders |
+| `--color-border-subtle` | Subtle dividers |
+| `--color-border-strong` | Emphasized borders |
+
+**State Colors:**
+| Variable | Usage |
+|----------|-------|
+| `--color-primary` | Primary actions, links |
+| `--color-primary-hover` | Primary hover state |
+| `--color-primary-selected` | Selected item background |
+| `--color-success` | Success states |
+| `--color-warning` | Warning states, stars |
+| `--color-danger` | Error states, delete actions |
+
+**Font Sizes:**
+| Variable | Size | Usage |
+|----------|------|-------|
+| `--font-size-2xs` | 9px | Very small indicators |
+| `--font-size-xs` | 11px | Small labels, metadata |
+| `--font-size-sm` | 13px | Secondary text |
+| `--font-size-base` | 14px | Body text (default) |
+| `--font-size-lg` | 16px | Subheadings, emphasis |
+| `--font-size-xl` | 18px | Section titles |
+| `--font-size-2xl` | 20px | Page titles |
+
+**Spacing (4px base):**
+- `--space-1` (4px), `--space-2` (8px), `--space-3` (12px), `--space-4` (16px), `--space-5` (20px), `--space-6` (24px)
+
+**Border Radius:**
+- `--radius-sm` (4px), `--radius-md` (6px), `--radius-lg` (8px), `--radius-xl` (12px)
+
+**Example - Before/After:**
+```javascript
+// ❌ BAD: Hardcoded values
+style={{ fontSize: '14px', color: '#666', backgroundColor: '#374151' }}
+
+// ✅ GOOD: CSS variables
+style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-text-muted)', backgroundColor: 'var(--color-bg-muted)' }}
+```
 
 #### CSS Modules Guidelines
 PhotoClove uses CSS Modules for component-specific styling. Follow these guidelines:

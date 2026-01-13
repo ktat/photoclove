@@ -46,7 +46,7 @@ const ErrorDisplay = () => {
               borderRadius: '8px',
               color: severityStyle.color,
               position: 'relative',
-              fontSize: '14px',
+              fontSize: 'var(--font-size-base)',
               boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
               animation: 'slideIn 0.3s ease-out'
             }}
@@ -60,7 +60,7 @@ const ErrorDisplay = () => {
                 right: '8px',
                 background: 'none',
                 border: 'none',
-                fontSize: '18px',
+                fontSize: 'var(--font-size-xl)',
                 cursor: 'pointer',
                 color: 'inherit',
                 padding: '4px',
@@ -82,7 +82,7 @@ const ErrorDisplay = () => {
                 display: 'flex', 
                 alignItems: 'center', 
                 marginBottom: '8px',
-                fontSize: '16px',
+                fontSize: 'var(--font-size-lg)',
                 fontWeight: 'bold'
               }}>
                 <span style={{ marginRight: '8px' }}>
@@ -96,7 +96,7 @@ const ErrorDisplay = () => {
               {/* Operation context */}
               {error.operation && (
                 <div style={{ 
-                  fontSize: '12px', 
+                  fontSize: 'var(--font-size-sm)', 
                   opacity: 0.8, 
                   marginBottom: '6px',
                   fontStyle: 'italic'
@@ -113,7 +113,7 @@ const ErrorDisplay = () => {
               {/* Suggestion if available */}
               {error.suggestion && (
                 <div style={{ 
-                  fontSize: '13px', 
+                  fontSize: 'var(--font-size-sm)', 
                   opacity: 0.9, 
                   marginBottom: '8px',
                   padding: '6px 8px',
@@ -145,7 +145,7 @@ const ErrorDisplay = () => {
                       border: 'none',
                       borderRadius: '4px',
                       cursor: 'pointer',
-                      fontSize: '12px',
+                      fontSize: 'var(--font-size-sm)',
                       fontWeight: 'bold'
                     }}
                     title="Retry the failed operation"
@@ -156,7 +156,7 @@ const ErrorDisplay = () => {
 
                 {/* Timestamp and correlation ID */}
                 <div style={{ 
-                  fontSize: '11px', 
+                  fontSize: 'var(--font-size-xs)', 
                   opacity: 0.7,
                   textAlign: 'right',
                   flex: 1

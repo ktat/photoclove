@@ -381,7 +381,7 @@ function PhotosListMini(props) {
                         color: "white",
                         padding: "2px 4px",
                         borderRadius: "3px",
-                        fontSize: "11px",
+                        fontSize: "var(--font-size-2xs)",
                         display: "flex",
                         alignItems: "center",
                         gap: "2px",

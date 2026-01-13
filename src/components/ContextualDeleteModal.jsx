@@ -129,29 +129,29 @@ const ContextualDeleteModal = ({
       zIndex: 10000
     }} onClick={handleCancel}>
       <div style={{
-        backgroundColor: 'white',
+        backgroundColor: 'var(--color-bg-elevated)',
         padding: '24px',
         borderRadius: '8px',
         maxWidth: '400px',
         textAlign: 'center',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
       }} onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ margin: '0 0 16px 0', fontSize: '20px' }}>{content.title}</h2>
+        <h2 style={{ margin: '0 0 16px 0', fontSize: 'var(--font-size-2xl)' }}>{content.title}</h2>
 
         <p style={{
           fontWeight: 'bold',
           margin: '16px 0',
-          fontSize: '16px',
-          color: '#1F2937'
+          fontSize: 'var(--font-size-lg)',
+          color: 'var(--color-text-primary)'
         }}>
           {content.message}
         </p>
 
         <p style={{
-          color: '#6B7280',
+          color: 'var(--color-text-muted)',
           marginBottom: '20px',
           lineHeight: '1.4',
-          fontSize: '14px'
+          fontSize: 'var(--font-size-base)'
         }}>
           {content.description}
         </p>
@@ -169,9 +169,9 @@ const ContextualDeleteModal = ({
               borderRadius: '4px',
               cursor: 'pointer',
               fontWeight: 'bold',
-              backgroundColor: '#6B7280',
+              backgroundColor: 'var(--color-bg-muted)',
               color: 'white',
-              fontSize: '14px'
+              fontSize: 'var(--font-size-base)'
             }}
           >
             Cancel
@@ -185,7 +185,7 @@ const ContextualDeleteModal = ({
               cursor: 'pointer',
               fontWeight: 'bold',
               color: 'white',
-              fontSize: '14px',
+              fontSize: 'var(--font-size-base)',
               ...content.confirmStyle
             }}
           >

@@ -146,7 +146,7 @@ function Preferences(props) {
                         </div>
 
                         <h2 className="section-title">Export From</h2>
-                        <div className="setting-group">
+                        <div className="setting-group folder-list">
                             {config.export_from.map((v, i) => (
                                 <PickFolderSingle
                                     key={i}
@@ -359,6 +359,18 @@ function Preferences(props) {
                                 <label htmlFor="preference-check">
                                     Show Welcome tutorial again
                                 </label>
+                            </div>
+                            <div className="setting-row">
+                                <label>Tab Instruction Tooltips:</label>
+                                <button
+                                    className="btn-secondary"
+                                    onClick={() => {
+                                        localStorage.removeItem('photoclove_tutorials');
+                                        message("Tab instruction tooltips will be shown again.");
+                                    }}
+                                >
+                                    Reset Tooltips
+                                </button>
                             </div>
                         </div>
                     </div>

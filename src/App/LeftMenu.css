@@ -5,14 +5,14 @@
   flex: 1;
   height: calc(100vh - 30px);
   overflow-y: hidden;
-  padding-top: 10px;
+  padding-top: var(--space-3);
 }
 
 .leftMenu {
   max-width: 230px;
   min-width: 230px;
   border: none;
-  background-color: #1f1f1f;
+  background-color: var(--color-bg-base);
   flex-shrink: 0;
   position: relative;
 }
@@ -20,17 +20,17 @@
 .leftMenu .navigation-icons {
   display: flex;
   justify-content: center;
-  gap: 8px;
+  gap: var(--space-2);
   padding: 6px 0;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 8px;
+  border-bottom: 1px solid var(--color-border-default);
+  margin-bottom: var(--space-2);
 }
 
 .leftMenu .navigation-icons a {
-  font-size: 16px;
+  font-size: var(--font-size-lg);
   text-decoration: none;
   padding: 5px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   transition: background-color 0.2s;
   display: flex;
   align-items: center;
@@ -40,7 +40,7 @@
 }
 
 .leftMenu .navigation-icons a:hover {
-  background-color: var(--bg-elevated);
+  background-color: var(--color-bg-elevated);
 }
 
 .leftMenu .dateList {
@@ -49,7 +49,7 @@
 }
 
 .leftMenu ul {
-  margin-left: 10px;
+  margin-left: var(--space-3);
   text-align: left;
   list-style: none;
 }
@@ -62,7 +62,7 @@ p.dateListTitle {
 
 div.dateList,
 div.dateList ul {
-  padding-top: 10px;
+  padding-top: var(--space-3);
   margin-top: 0px;
 }
 
@@ -101,44 +101,44 @@ div.dateListLoading-crub {
 
 /* Date List Filter Controls */
 .dateListFilters select {
-  background-color: var(--bg-elevated);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  font-size: 11px;
-  padding: 2px 4px;
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  padding: 2px var(--space-1);
 }
 
 .dateListFilters select:focus {
   outline: none;
-  border-color: #646cff;
+  border-color: var(--color-primary);
 }
 
 .dateListFilters button {
-  background-color: var(--bg-elevated);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 3px;
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease-out;
 }
 
 .dateListFilters button:hover {
-  background-color: var(--bg);
-  border-color: #646cff;
+  background-color: var(--color-bg-surface);
+  border-color: var(--color-primary);
 }
 
 /* Hierarchical date view styling */
 .dateList .hierarchical-year {
   font-weight: bold;
-  color: #888;
-  margin-bottom: 4px;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-1);
 }
 
 .dateList .hierarchical-month {
   font-weight: 600;
-  color: #aaa;
-  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
   margin-bottom: 3px;
 }
 
@@ -151,40 +151,40 @@ div.dateListLoading-crub {
 }
 
 .dateList .hierarchical-day {
-  font-size: 11px;
-  padding: 2px 4px;
+  font-size: var(--font-size-xs);
+  padding: 2px var(--space-1);
   display: inline-block;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   background-color: transparent;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease-out;
 }
 
 .dateList .hierarchical-day:hover {
-  background-color: var(--bg-elevated);
+  background-color: var(--color-bg-elevated);
 }
 
 /* Sidebar collapse toggle button */
 .sidebar-collapse-toggle {
   position: absolute;
-  bottom: 10px;
-  right: 10px;
+  bottom: var(--space-3);
+  right: var(--space-3);
   width: 28px;
   height: 28px;
-  background-color: var(--bg-elevated);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--font-size-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease-out, transform 0.2s ease-out;
   z-index: 10;
 }
 
 .sidebar-collapse-toggle:hover {
-  background-color: var(--bg);
+  background-color: var(--color-bg-surface);
   transform: scale(1.1);
 }
 
@@ -202,8 +202,8 @@ div.dateListLoading-crub {
 
 .leftMenu.collapsed .navigation-icons {
   flex-direction: column;
-  gap: 12px;
-  padding: 12px 0;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
 }
 
 .leftMenu.collapsed .navigation-icons a {
@@ -233,7 +233,7 @@ div.dateListLoading-crub {
   padding-bottom: 0;
   margin-bottom: 0;
   text-align: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .leftMenu.collapsed .dateList-controls > div {
@@ -242,7 +242,7 @@ div.dateListLoading-crub {
   justify-content: center;
   align-items: center;
   width: 100%;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .leftMenu.collapsed .recent-photos-link {
@@ -254,7 +254,7 @@ div.dateListLoading-crub {
 }
 
 .leftMenu.collapsed .recent-photos-icon {
-  font-size: 16px !important;
+  font-size: var(--font-size-lg) !important;
 }
 
 /* Tooltip styles for collapsed icons */
@@ -264,16 +264,16 @@ div.dateListLoading-crub {
   transform: translateY(-50%);
   background-color: rgba(0, 0, 0, 0.9);
   color: white;
-  padding: 6px 10px;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 6px var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
   white-space: nowrap;
   z-index: 1001;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
+  transition: opacity 0.2s ease-out, visibility 0.2s ease-out;
   pointer-events: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 .tooltip.show {
@@ -289,8 +289,8 @@ div.dateListLoading-crub {
   .sidebar-collapse-toggle {
     display: block;
     position: absolute;
-    bottom: 10px;
-    right: 10px;
+    bottom: var(--space-3);
+    right: var(--space-3);
     z-index: 10;
   }
 
@@ -299,7 +299,7 @@ div.dateListLoading-crub {
     min-width: 60px;
     max-width: 60px;
     transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                box-shadow 0.3s ease;
+                box-shadow 0.3s ease-out;
     overflow-x: hidden;
     position: relative;
   }
@@ -307,8 +307,8 @@ div.dateListLoading-crub {
   /* Vertical icon layout in collapsed state */
   .leftMenu .navigation-icons {
     flex-direction: column;
-    gap: 12px;
-    padding: 12px 0;
+    gap: var(--space-3);
+    padding: var(--space-3) 0;
   }
 
   .leftMenu .navigation-icons a {
@@ -341,7 +341,7 @@ div.dateListLoading-crub {
   }
 
   .leftMenu .recent-photos-icon {
-    font-size: 16px !important;
+    font-size: var(--font-size-lg) !important;
   }
 
   /* Expanded state - overlay when not collapsed */
@@ -358,7 +358,7 @@ div.dateListLoading-crub {
   /* Restore horizontal icon layout when expanded */
   .leftMenu:not(.collapsed) .navigation-icons {
     flex-direction: row;
-    gap: 8px;
+    gap: var(--space-2);
     padding: 6px 0;
   }
 
@@ -380,7 +380,7 @@ div.dateListLoading-crub {
   }
 
   .leftMenu:not(.collapsed) .recent-photos-icon {
-    font-size: 16px !important;
+    font-size: var(--font-size-lg) !important;
   }
 
   .leftMenu:not(.collapsed) .date-list-title,
@@ -392,9 +392,9 @@ div.dateListLoading-crub {
 
   /* Restore dateList-controls layout when expanded */
   .leftMenu:not(.collapsed) .dateList-controls {
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 8px;
-    margin-bottom: 8px;
+    border-bottom: 1px solid var(--color-border-default);
+    padding-bottom: var(--space-2);
+    margin-bottom: var(--space-2);
   }
 
   /* Fade-in animation for content reveal */
