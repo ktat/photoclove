@@ -44,6 +44,9 @@ importers:
       axios:
         specifier: ^1.12.2
         version: 1.12.2
+      classnames:
+        specifier: ^2.5.1
+        version: 2.5.1
       clipboard-manager:
         specifier: ^1.0.1
         version: 1.0.1
@@ -1362,6 +1365,9 @@ packages:
   check-error@2.1.1:
     resolution: {integrity: sha512-OAlb+T7V4Op9OwdkjmguYRqncdlx5JiofwOAUkmTF+jNdHwzTaTs4sRAGpzLF3oOz5xAyDGrPgeIDFQmDOTiJw==}
     engines: {node: '>= 16'}
+
+  classnames@2.5.1:
+    resolution: {integrity: sha512-saHYOzhIQs6wy2sVxTM6bUDsQO4F50V9RQ22qBpEdCW+I+/Wmke2HOl6lS6dTpdxVhb88/I6+Hs+438c3lfUow==}
 
   cli-table@0.3.11:
     resolution: {integrity: sha512-IqLQi4lO0nIB4tcdTpN4LCB9FI3uqrJZK7RC515EnhZ6qBaglkIgICb1wjeAqpdoOabm1+SuQtkXIPdYC93jhQ==}
@@ -4298,6 +4304,8 @@ snapshots:
       supports-color: 7.2.0
 
   check-error@2.1.1: {}
+
+  classnames@2.5.1: {}
 
   cli-table@0.3.11:
     dependencies:
