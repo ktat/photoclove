@@ -92,7 +92,7 @@ function PhotoGrid({
 
                 {/* Infinite scroll completion indicator */}
                 {displayedPhotos.length > 0 && (
-                    <div className={styles.scrollIndicator}>
+                    <div className={`${styles.scrollIndicator} scroll-indicator`}>
                         {isLimitedByConfig ? (
                             <div>
                                 <div>Showing {displayedPhotos.length} photos (limited by configuration)</div>
