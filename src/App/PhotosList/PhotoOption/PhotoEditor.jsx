@@ -4,7 +4,7 @@ import { isPermissionGranted, requestPermission, sendNotification } from '@tauri
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { logger } from '../../../services/LoggerService.js';
 import fileUrl from '../../../PathUtil.jsx';
-import './PhotoEditor.css';
+import styles from './PhotoEditor.module.css';
 
 // Extracted utilities (improvement #88)
 import {
@@ -622,9 +622,9 @@ function PhotoEditor(props) {
                 cropSelection={cropSelection}
                 handlers={cropHandlers}
             />
-            <div className="editor-tab">
-                <div className="photo-info-editor">
-                    <div className="editor-controls">
+            <div className={styles.editorTab}>
+                <div className={styles.photoInfoEditor}>
+                    <div className={styles.editorControls}>
                         <EditorControl
                             label={<>Rotation<br />(deg):</>}
                             value={editorStyles.rotate}
@@ -634,9 +634,9 @@ function PhotoEditor(props) {
                             onReset={() => resetSingleControl('rotate')}
                             resetTitle="Reset rotation"
                         >
-                            <div className="rotation-shortcuts">
-                                <button className="shortcut-btn" onClick={() => rotateBy(-90)} title="Turn left 90°">↶ 90°</button>
-                                <button className="shortcut-btn" onClick={() => rotateBy(90)} title="Turn right 90°">↷ 90°</button>
+                            <div className={styles.rotationShortcuts}>
+                                <button className={styles.shortcutBtn} onClick={() => rotateBy(-90)} title="Turn left 90°">↶ 90°</button>
+                                <button className={styles.shortcutBtn} onClick={() => rotateBy(90)} title="Turn right 90°">↷ 90°</button>
                             </div>
                         </EditorControl>
                         <EditorControl
@@ -684,26 +684,26 @@ function PhotoEditor(props) {
                             onReset={() => resetSingleControl('scale')}
                             resetTitle="Reset scale"
                         />
-                        <div className="editor-control crop-control">
-                            <div className="control-row">
+                        <div className={styles.editorControlCrop}>
+                            <div className={styles.controlRow}>
                                 <label>Crop:</label>
                                 {!cropMode ? (
-                                    <button className="action-btn" onClick={enterCropMode}>Crop</button>
+                                    <button className={styles.actionBtn} onClick={enterCropMode}>Crop</button>
                                 ) : (
-                                    <div className="crop-buttons">
-                                        <button className="action-btn" onClick={applyCrop}>Done</button>
-                                        <button className="action-btn" onClick={exitCropMode}>Cancel</button>
+                                    <div className={styles.cropButtons}>
+                                        <button className={styles.actionBtn} onClick={applyCrop}>Done</button>
+                                        <button className={styles.actionBtn} onClick={exitCropMode}>Cancel</button>
                                     </div>
                                 )}
                             </div>
                             {cropMode && (
-                                <div className="crop-presets">
+                                <div className={styles.cropPresets}>
                                     <label>Presets:</label>
-                                    <div className="preset-buttons">
+                                    <div className={styles.presetButtons}>
                                         {CROP_PRESETS.map((preset, index) => (
                                             <button
                                                 key={index}
-                                                className="preset-btn"
+                                                className={styles.presetBtn}
                                                 onClick={() => setCropPreset(preset)}
                                                 title={`Set crop to ${preset.name}`}
                                             >
@@ -715,15 +715,15 @@ function PhotoEditor(props) {
                             )}
                         </div>
                     </div>
-                    <div className="editor-buttons">
-                        <button className="action-btn" onClick={() => applyStyle()}>Apply</button>
-                        <button className="action-btn" onClick={() => saveAsCopy()}>Save As Copy</button>
-                        <button className="action-btn" onClick={() => resetStyle()}>Reset</button>
-                        <button className="action-btn" onClick={() => downloadStyled()}>Download</button>
+                    <div className={styles.editorButtons}>
+                        <button className={styles.actionBtn} onClick={() => applyStyle()}>Apply</button>
+                        <button className={styles.actionBtn} onClick={() => saveAsCopy()}>Save As Copy</button>
+                        <button className={styles.actionBtn} onClick={() => resetStyle()}>Reset</button>
+                        <button className={styles.actionBtn} onClick={() => downloadStyled()}>Download</button>
                     </div>
-                    <div className="css-preview">
+                    <div className={styles.cssPreview}>
                         <label>CSS Preview:</label>
-                        <textarea id="css-preview-text" rows="4" readOnly className="css-preview-textarea"></textarea>
+                        <textarea id="css-preview-text" rows="4" readOnly className={styles.cssPreviewTextarea}></textarea>
                     </div>
                 </div>
             </div>
