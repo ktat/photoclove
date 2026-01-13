@@ -1,6 +1,13 @@
-import { Photo } from './Photo.js';
-import { invoke } from "@tauri-apps/api/core";
 import { logger } from '../services/LoggerService.js';
+import {
+    fetchDatePhotos,
+    fetchRecentPhotos,
+    fetchSearchPhotos,
+    fetchAlbumPhotos,
+    fetchTagPhotos,
+    fetchTrashPhotos,
+    fetchImportPhotos
+} from './PhotoCollectionFetchers.js';
 
 /**
  * PhotoCollection - Domain object representing a collection of photos with mode-specific behavior
@@ -201,7 +208,6 @@ export class PhotoCollection {
         return new PhotoCollection(newPhotos, this.mode, this.metadata);
     }
 
-
     /**
      * Create a new collection with updated metadata
      */
@@ -243,7 +249,6 @@ export class PhotoCollection {
             importFilter,
             config,
             sortValue,
-            // Progress state
             importProgress: null,
             isImporting: false
         });
@@ -253,452 +258,36 @@ export class PhotoCollection {
      * Fetch photos based on the collection's mode and metadata
      */
     async fetchPhotos(page = 1, pageSize = 20, filters = {}) {
+        let result;
+
         switch (this.mode) {
             case 'date':
-                return await this._fetchDatePhotos(page, pageSize, filters);
+                result = await fetchDatePhotos(this, page, pageSize, filters);
+                break;
             case 'recent':
-                return await this._fetchRecentPhotos(page, pageSize, filters);
+                result = await fetchRecentPhotos(this, page, pageSize, filters);
+                break;
             case 'search':
-                return await this._fetchSearchPhotos(page, pageSize, filters);
+                result = await fetchSearchPhotos(this, page, pageSize, filters);
+                break;
             case 'album':
-                return await this._fetchAlbumPhotos(page, pageSize, filters);
+                result = await fetchAlbumPhotos(this, page, pageSize, filters);
+                break;
             case 'tag':
-                return await this._fetchTagPhotos(page, pageSize, filters);
+                result = await fetchTagPhotos(this, page, pageSize, filters);
+                break;
             case 'trash':
-                return await this._fetchTrashPhotos(page, pageSize, filters);
+                result = await fetchTrashPhotos(this, page, pageSize, filters);
+                break;
             case 'import':
-                return await this._fetchImportPhotos(page, pageSize, filters);
+                result = await fetchImportPhotos(this, page, pageSize, filters);
+                break;
             default:
                 throw new Error(`Fetch not implemented for mode: ${this.mode}`);
         }
+
+        return this.withPhotos(result.photos).withMetadata(result.metadata);
     }
-
-    /**
-     * Fetch photos for date mode
-     */
-    async _fetchDatePhotos(page, pageSize, filters) {
-        const result = await invoke("get_photos_unified", {
-            request: {
-                type: "search",
-                search_type: "date",
-                query: this.metadata.date,
-                sort_value: this.metadata.sortValue || 0,
-                page: 1,  // Original code always used page 1
-                limit: Math.min(9999, pageSize || 1000),  // Match original behavior
-                offset: 0,  // Original code always used offset 0
-                star: filters.star || -1,
-                has_comment: filters.hasComment || false,
-                extension: filters.extension || "all"
-            }
-        });
-
-        const data = JSON.parse(result);
-
-        logger.debug('PhotoCollection', '_fetchDatePhotos_parsed', 'Date mode JSON parsed', {
-            dataType: typeof data,
-            hasPhotos: !!data?.photos,
-            photosLength: data?.photos?.length,
-            dataKeys: data ? Object.keys(data) : 'null',
-            firstPhotoStructure: data?.photos?.[0] ? Object.keys(data.photos[0]) : 'no photos',
-            firstPhotoFile: data?.photos?.[0]?.file,
-            firstPhotoPath: data?.photos?.[0]?.file?.path || data?.photos?.[0]?.path
-        });
-
-        // Convert raw photos to Photo entities
-        const config = this.metadata.config;
-        logger.debug('PhotoCollection', 'fetch_date_photos_creating', 'Creating Photo entities from date backend data', {
-            mode: this.mode,
-            date: this.metadata.date,
-            photoCount: (data.photos || []).length,
-            hasConfig: !!config,
-            configThumbnailStore: config?.thumbnail_store,
-            configTrashPath: config?.trash_path
-        });
-
-        const photoEntities = (data.photos || [])
-            .map(photoData => Photo.fromBackendData(photoData, config, false)) // isFromTrash = false
-            .filter(photo => photo !== null); // Remove null entries from invalid data
-
-        return this.withPhotos(photoEntities)
-            .withMetadata({
-                hasNext: data.has_next || false,
-                hasPrev: false,  // Since we're getting all data, no pagination at API level
-                currentPage: page,
-                totalCount: data.total_count || photoEntities.length
-            });
-    }
-
-    /**
-     * Fetch photos for recent mode
-     */
-    async _fetchRecentPhotos(page, pageSize, filters) {
-        const result = await invoke("get_photos_unified", {
-            request: {
-                type: "search",
-                search_type: "recent",
-                limit: Math.min(60, pageSize || 60), // Match original behavior
-                sort_value: this.metadata.sortValue || 0,
-                star: filters.star || -1,
-                has_comment: filters.hasComment || false,
-                extension: filters.extension || "all"
-            }
-        });
-
-        const data = JSON.parse(result);
-
-        // Convert raw photos to Photo entities
-        const config = this.metadata.config;
-        const photoEntities = (data.photos || [])
-            .map(photoData => Photo.fromBackendData(photoData, config, false)) // isFromTrash = false
-            .filter(photo => photo !== null); // Remove null entries from invalid data
-
-
-        return this.withPhotos(photoEntities)
-            .withMetadata({
-                hasNext: false, // Recent mode typically doesn't paginate
-                hasPrev: false,
-                currentPage: 1,
-                totalCount: photoEntities.length
-            });
-    }
-
-    /**
-     * Check if filters have any active/meaningful values
-     */
-    _hasActiveFilters(filters) {
-        if (!filters) return false;
-
-        return !!(
-            filters.camera ||
-            filters.lens ||
-            (filters.isoRange?.min) || (filters.isoRange?.max) ||
-            (filters.apertureRange?.min) || (filters.apertureRange?.max) ||
-            (filters.shutterSpeedRange?.min) || (filters.shutterSpeedRange?.max) ||
-            (filters.focalLengthRange?.min) || (filters.focalLengthRange?.max) ||
-            filters.dateRange?.start || filters.dateRange?.end ||
-            filters.hasComment ||
-            (filters.starRating && filters.starRating > 0) ||
-            (filters.fileExtension && filters.fileExtension !== '') ||
-            (filters.selectedTags && filters.selectedTags.length > 0)
-        );
-    }
-
-    /**
-     * Fetch photos for search mode
-     */
-    async _fetchSearchPhotos(page, pageSize, filters) {
-        // If no search params, return empty
-        // Allow search with either query OR filters
-        const hasQuery = this.metadata.searchParams?.query?.trim();
-        const hasFilters = this._hasActiveFilters(this.metadata.searchParams?.filters);
-
-        if (!this.metadata.searchParams || (!hasQuery && !hasFilters)) {
-            logger.info('PhotoCollection', '_fetchSearchPhotos_no_params', 'No search params or all empty', {
-                hasSearchParams: !!this.metadata.searchParams,
-                hasQuery: !!hasQuery,
-                hasFilters: !!hasFilters,
-                filters: this.metadata.searchParams?.filters
-            });
-            return this.withPhotos([])
-                .withMetadata({
-                    hasNext: false,
-                    hasPrev: false,
-                    currentPage: page,
-                    totalCount: 0
-                });
-        }
-
-        logger.info('PhotoCollection', '_fetchSearchPhotos_start', 'Starting search', {
-            query: this.metadata.searchParams.query,
-            searchType: this.metadata.searchParams.searchType,
-            hasFilters: !!this.metadata.searchParams.filters,
-            filters: this.metadata.searchParams.filters
-        });
-
-        // Transform frontend filter format to backend format
-        const transformFiltersToBackend = (frontendFilters) => {
-            if (!frontendFilters) return null;
-
-            const backendFilters = {};
-
-            // Camera and lens (already matching)
-            if (frontendFilters.camera) backendFilters.camera = frontendFilters.camera;
-            if (frontendFilters.lens) backendFilters.lens = frontendFilters.lens;
-
-            // ISO range: isoRange.min/max -> iso_min/iso_max
-            if (frontendFilters.isoRange?.min) backendFilters.iso_min = parseInt(frontendFilters.isoRange.min);
-            if (frontendFilters.isoRange?.max) backendFilters.iso_max = parseInt(frontendFilters.isoRange.max);
-
-            // Aperture range: apertureRange.min/max -> aperture_min/aperture_max
-            if (frontendFilters.apertureRange?.min) backendFilters.aperture_min = parseFloat(frontendFilters.apertureRange.min);
-            if (frontendFilters.apertureRange?.max) backendFilters.aperture_max = parseFloat(frontendFilters.apertureRange.max);
-
-            // Focal length range: focalLengthRange.min/max -> focal_length_min/focal_length_max
-            if (frontendFilters.focalLengthRange?.min) backendFilters.focal_length_min = parseFloat(frontendFilters.focalLengthRange.min);
-            if (frontendFilters.focalLengthRange?.max) backendFilters.focal_length_max = parseFloat(frontendFilters.focalLengthRange.max);
-
-            // Date range: dateRange.start/end -> start_date/end_date
-            if (frontendFilters.dateRange?.start) backendFilters.start_date = frontendFilters.dateRange.start;
-            if (frontendFilters.dateRange?.end) backendFilters.end_date = frontendFilters.dateRange.end;
-
-            // Star rating: starRating -> min_rating
-            if (frontendFilters.starRating && frontendFilters.starRating > 0) {
-                backendFilters.min_rating = frontendFilters.starRating;
-            }
-
-            // Has comment: hasComment -> has_comments
-            if (frontendFilters.hasComment) backendFilters.has_comments = frontendFilters.hasComment;
-
-            // File extension: fileExtension -> extension
-            if (frontendFilters.fileExtension && frontendFilters.fileExtension !== '') {
-                backendFilters.extension = frontendFilters.fileExtension;
-            }
-
-            // Tags: selectedTags (array of tag objects) -> tag_ids (array of integers)
-            if (frontendFilters.selectedTags && frontendFilters.selectedTags.length > 0) {
-                backendFilters.tag_ids = frontendFilters.selectedTags.map(tag => tag.id);
-            }
-
-            return Object.keys(backendFilters).length > 0 ? backendFilters : null;
-        };
-
-        const transformedFilters = transformFiltersToBackend(this.metadata.searchParams.filters);
-
-        logger.debug('PhotoCollection', '_fetchSearchPhotos_filters_transformed', 'Filters transformed', {
-            frontendFilters: this.metadata.searchParams.filters,
-            backendFilters: transformedFilters
-        });
-
-        // Perform search using unified search API (same as other modes)
-        const requestParams = {
-            request: {
-                type: "search",
-                search_type: this.metadata.searchParams.searchType || "all",
-                query: this.metadata.searchParams.query || "",  // Empty string if no query
-                params: transformedFilters ? {
-                    filters: JSON.stringify(transformedFilters)
-                } : undefined,
-                sort_value: this.metadata.sortValue || 0,
-                page: 1,
-                limit: 9999,
-                offset: 0,
-                star: filters.star || -1,
-                has_comment: filters.hasComment || false,
-                extension: filters.extension || "all"
-            }
-        };
-
-        logger.info('PhotoCollection', '_fetchSearchPhotos_request', 'Request params', {
-            requestParams: JSON.stringify(requestParams)
-        });
-
-        let result;
-        try {
-            result = await invoke("get_photos_unified", requestParams);
-            logger.info('PhotoCollection', '_fetchSearchPhotos_result', 'Search completed', {
-                resultLength: result?.length,
-                resultSample: result?.substring(0, 100)
-            });
-        } catch (error) {
-            logger.error('PhotoCollection', '_fetchSearchPhotos_error', 'Search failed', {
-                error: error?.message || String(error)
-            });
-            throw error;
-        }
-
-        const data = JSON.parse(result);
-        logger.info('PhotoCollection', '_fetchSearchPhotos_parsed', 'Result parsed', {
-            hasPhotos: !!data.photos,
-            photoCount: data.photos?.length || 0
-        });
-
-        // Convert raw photos to Photo entities
-        const config = this.metadata.config;
-        const photoEntities = (data.photos || [])
-            .map(photoData => Photo.fromBackendData(photoData, config, false))
-            .filter(photo => photo !== null);
-
-        return this.withPhotos(photoEntities)
-            .withMetadata({
-                hasNext: false,
-                hasPrev: false,
-                currentPage: page,
-                totalCount: photoEntities.length
-            });
-    }
-
-    /**
-     * Fetch photos for album mode
-     */
-    async _fetchAlbumPhotos(page, pageSize, filters) {
-        const result = await invoke("get_photos_unified", {
-            request: {
-                type: "search",
-                search_type: "album_photos",
-                params: {
-                    album_id: this.metadata.albumId
-                },
-                star: filters.star || -1,
-                has_comment: filters.hasComment || false,
-                extension: filters.extension || "all"
-            }
-        });
-
-        const data = JSON.parse(result);
-
-        // Convert raw photos to Photo entities  
-        const config = this.metadata.config;
-        const photoEntities = (data.photos || [])
-            .map(photoData => Photo.fromBackendData(photoData, config, false))
-            .filter(photo => photo !== null);
-
-        return this.withPhotos(photoEntities)
-            .withMetadata({
-                hasNext: data.has_next || false,
-                hasPrev: false,
-                currentPage: page,
-                totalCount: data.total_count || photoEntities.length
-            });
-    }
-
-    /**
-     * Fetch photos for tag mode
-     */
-    async _fetchTagPhotos(page, pageSize, filters) {
-        const result = await invoke("get_photos_unified", {
-            request: {
-                type: "search",
-                search_type: "tag",
-                query: this.metadata.tagIds ? this.metadata.tagIds.join(',') : '',
-                star: filters.star || -1,
-                has_comment: filters.hasComment || false,
-                extension: filters.extension || "all"
-            }
-        });
-
-        const data = JSON.parse(result);
-
-        // Convert raw photos to Photo entities
-        const config = this.metadata.config;
-        const photoEntities = (data.photos || [])
-            .map(photoData => Photo.fromBackendData(photoData, config, false))
-            .filter(photo => photo !== null);
-
-        return this.withPhotos(photoEntities)
-            .withMetadata({
-                hasNext: data.has_next || false,
-                hasPrev: false,
-                currentPage: page,
-                totalCount: data.total_count || photoEntities.length
-            });
-    }
-
-    /**
-     * Fetch photos for trash mode
-     */
-    async _fetchTrashPhotos(page, pageSize, filters) {
-
-        const result = await invoke("get_photos_unified", {
-            request: {
-                type: "search",
-                search_type: "trash",
-                star: filters.star || -1,
-                has_comment: filters.hasComment || false,
-                extension: filters.extension || "all"
-            }
-        });
-
-
-        const data = JSON.parse(result);
-
-
-        // Convert raw photos to Photo entities
-        const config = this.metadata.config;
-
-
-        const photoEntities = (data.photos || [])
-            .map((photoData, index) => {
-                try {
-                    const result = Photo.fromBackendData(photoData, config, true); // isFromTrash = true
-                    return result;
-                } catch (error) {
-                    return null;
-                }
-            })
-            .filter(photo => photo !== null);
-
-
-        return this.withPhotos(photoEntities)
-            .withMetadata({
-                hasNext: data.has_next || false,
-                hasPrev: false,
-                currentPage: page,
-                totalCount: data.total_count || photoEntities.length
-            });
-    }
-
-    /**
-     * Fetch photos for import mode
-     */
-    async _fetchImportPhotos(page, pageSize, filters) {
-        const result = await invoke('show_importer', {
-            pathStr: this.metadata.currentImportPath,
-            page: page,
-            num: pageSize,
-            dateStr: this.metadata.importFilter
-        })
-
-        const importerData = JSON.parse(result);
-        logger.debug('PhotoCollection', '_fetchImportPhotos_parsed', 'Import mode JSON parsed', {
-            dataType: typeof importerData,
-            hasDirsFiles: !!importerData?.dirs_files,
-            dirsFilesKeys: importerData?.dirs_files ? Object.keys(importerData.dirs_files) : 'null',
-            filesLength: importerData?.dirs_files?.files?.files ? importerData.dirs_files.files.files.length : 'no files',
-            firstFileStructure: importerData?.dirs_files?.files?.files?.[0] ? Object.keys(importerData.dirs_files.files.files[0]) : 'no files'
-        });
-        // Normalize import photos to match standard photo structure
-        const rawPhotos = importerData.dirs_files.files.files || [];
-        const config = this.metadata.config;
-        const normalizedPhotos = rawPhotos.map(photo => {
-            const photoEntity = new Photo({
-                // Standard photo structure
-                file: {
-                    path: photo.path,
-                    name: photo.path.split('/').pop() || '',
-                    size: photo.size || 0
-                },
-                path: photo.path,
-                // Copy other properties that might exist
-                has_thumbnail: false,  // Set to false for simplicity
-                created_at: photo.created_at,
-                star: 0,
-                comment: '',
-                // Additional import-specific properties
-                import_source: true,
-                original_path: photo.path,
-            }, config);
-
-            return photoEntity;
-        });
-
-        logger.debug('PhotoCollection', '_fetchImportPhotos_normalized', 'Import mode photos normalized', {
-            originalFileCount: rawPhotos.length,
-            normalizedPhotoCount: normalizedPhotos.length,
-            firstNormalizedPhoto: normalizedPhotos[0] || null
-        });
-
-        return this.withPhotos(normalizedPhotos)
-            .withMetadata({
-                hasNext: importerData.dirs_files.has_next_file || false,
-                hasPrev: importerData.dirs_files.has_prev_file || false,
-                currentPage: importerData.page || page,
-                directories: importerData.dirs_files.dirs.dirs || [],
-                importPaths: importerData.paths || this.metadata.importPaths,
-                currentImportPath: importerData.dirs_files.dir.path || this.metadata.currentImportPath,
-                totalCount: normalizedPhotos.length
-            });
-    }
-
 
     /**
      * Get import-specific metadata

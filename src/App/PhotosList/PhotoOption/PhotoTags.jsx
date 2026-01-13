@@ -55,27 +55,27 @@ function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
 
     if (isLoading) {
         return (
-            <div className={styles.photoTagsContainer}>
-                <div className={styles.photoTagsHeader}>
+            <div className={styles['photo-tags-container']}>
+                <div className={styles['photo-tags-header']}>
                     <h3>Photo Tags</h3>
                 </div>
-                <div className={styles.photoTagsLoading}>Loading tags...</div>
+                <div className={styles['photo-tags-loading']}>Loading tags...</div>
             </div>
         );
     }
 
     return (
-        <div className={styles.photoTagsContainer}>
-            <div className={styles.photoTagsHeader}>
+        <div className={styles['photo-tags-container']}>
+            <div className={styles['photo-tags-header']}>
                 <h3>Photo Tags</h3>
-                <p className={styles.photoTagsDescription}>
+                <p className={styles['photo-tags-description']}>
                     Add tags to organize and categorize your photos.
                     Tags make it easier to find related photos later.
                 </p>
             </div>
 
-            <div className={styles.photoTagsContent}>
-                <div className={styles.photoTagsSection}>
+            <div className={styles['photo-tags-content']}>
+                <div className={styles['photo-tags-section']}>
                     <h4>Current Tags ({photoTags.length})</h4>
                     <TagSelector
                         photoPath={currentPhotoPath}
@@ -85,13 +85,13 @@ function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
                 </div>
 
                 {photoTags.length === 0 && (
-                    <div className={styles.photoTagsEmpty}>
+                    <div className={styles['photo-tags-empty']}>
                         <p>No tags assigned to this photo yet.</p>
                         <p>Click the + button above to add your first tag!</p>
                     </div>
                 )}
 
-                <div className={styles.photoTagsTips}>
+                <div className={styles['photo-tags-tips']}>
                     <h4>Tips</h4>
                     <ul>
                         <li>Use descriptive tags like "vacation", "family", or "nature"</li>
