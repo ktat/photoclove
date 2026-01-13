@@ -134,3 +134,24 @@ This document provides comprehensive troubleshooting guidance for common issues 
 
 ### Backend Error Handling Improvements
 **Fixed 2025-01-14**: Improved error handling patterns in dir_service.rs following Rust idioms (`?` operator, `if let` patterns) instead of `is_none()` checks with `unwrap()`
+
+### Theme Settings Not Persisting (Appearance Tab)
+**Fixed 2025-01-14**: Color theme and photo grid theme settings in Preferences > Appearance tab were not saved after restart. Backend Config struct was missing `color_theme` and `photo_grid_theme` fields. Added fields to `src-tauri/src/entity/config.rs` with proper serde defaults
+
+### CSS Modules Class Name Issues in PhotoViewer Tabs
+**Fixed 2025-01-14**: PhotoViewer mode tabs were appearing horizontally instead of vertically due to CSS Modules class name mismatch. JSX was using camelCase (`styles.verticalTabs`) but CSS used kebab-case (`.vertical-tabs`). Fixed by using bracket notation: `styles['vertical-tabs']` in PhotoOption.jsx, PhotoTags.jsx, and PhotoEditor.jsx
+
+### Preferences CSS Modules Migration
+**Fixed 2025-01-14**: Migrated Preferences component from global CSS to CSS Modules (`Preferences.module.css`). Added `:global()` wrappers for PickFolderSingle's row2/row3 classes that are used as global classes
+
+### PhotoEditor Memory Leak Fix
+**Fixed 2025-01-14**: PhotoEditor had event listener memory leaks. Fixed by extracting photo export utilities to `photoExportUtils.js` and proper cleanup in useEffect hooks. File split improves maintainability
+
+### PhotoCollection Domain Object Split
+**Fixed 2025-01-14**: PhotoCollection.js exceeded 700 lines. Extracted fetch methods to `PhotoCollectionFetchers.js` (430 lines), reducing PhotoCollection.js to 309 lines while maintaining cohesion
+
+### Scroll Indicator Visibility on Light Themes
+**Fixed 2025-01-14**: Scroll indicator was not visible on light background grid themes (slide-mount, lightbox). Fixed by using theme-aware colors and proper text inheritance in PhotoGrid.jsx and PhotosList.css
+
+### PhotoGrid Empty State Display
+**Fixed 2025-01-14**: PhotoGrid was showing empty theme background when no photos available. Fixed by hiding PhotoGrid component when photo count is zero in PhotoListContent.jsx
