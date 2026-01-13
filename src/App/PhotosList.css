@@ -151,6 +151,12 @@
   border-bottom-color: var(--color-text-on-light);
 }
 
+/* Scroll indicator text color for light background themes */
+[data-grid-theme="slide-mount"] .photos .scroll-indicator,
+[data-grid-theme="slide-35mm"] .photos .scroll-indicator {
+  color: var(--color-text-on-light);
+}
+
 .photos .row {
   margin: 0;
   display: flex;
