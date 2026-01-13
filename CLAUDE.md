@@ -124,6 +124,13 @@ PhotoClove uses CSS Modules for component-specific styling. Follow these guideli
   className={classNames(styles.base, { [styles.active]: isActive })}
   ```
 - **File naming**: Use `ComponentName.module.css` naming convention
+- **Global selectors in CSS Modules**: Use `:global()` when referencing external global classes
+  ```css
+  /* Reference global classes from child components */
+  .preferences-section :global(.row2) { ... }
+  /* Reference parent container classes */
+  :global(.inner-container.left-menu-collapsed) .preferences { ... }
+  ```
 - **Global CSS exceptions**: Keep complex layout CSS (e.g., `PhotosList.css`) as global when:
   - CSS contains complex responsive rules with many media queries
   - Styles are shared across multiple components
