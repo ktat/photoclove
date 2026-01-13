@@ -260,3 +260,26 @@ See also:
 - Class names follow kebab-case convention
 - Some classes use BEM-like naming (e.g., `.directory-vertical-tab-button`)
 - State classes often use data attributes alongside CSS classes for JavaScript access
+
+## CSS Modules
+
+PhotoClove uses CSS Modules for component-specific styling in newer components. CSS Modules files use the `.module.css` naming convention.
+
+**Migrated Components** (use CSS Modules):
+- `PhotoCard.module.css` - Photo card component
+- `PhotoGrid.module.css` - Photo grid display
+- `PhotosToolbar.module.css` - Toolbar for photo actions
+- `PhotoOption.module.css` - Photo metadata panel
+- `PhotoTags.module.css` - Photo tag management
+- `PhotoEditor.module.css` - Image editing controls
+- `TagChip.module.css` - Tag chip display
+- `TagInput.module.css` - Tag input field
+- `TagSelector.module.css` - Tag selection dropdown
+- `TagManager.module.css` - Tag management interface
+
+**Global CSS** (not migrated):
+- `PhotosList.css` - Complex layout with responsive rules
+- `FormControls.css` - Shared form utilities
+- Search and modal components - Lower priority for migration
+
+See CLAUDE.md for CSS Modules usage guidelines.

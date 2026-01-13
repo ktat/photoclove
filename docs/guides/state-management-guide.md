@@ -243,6 +243,33 @@ Manages photo data synchronization between different data sources.
 - Cache invalidation on updates
 - Cross-component data consistency
 
+### useAsyncCancellation
+
+Request ID pattern for cancelling stale async operations.
+
+**Location**: `src/hooks/useAsyncCancellation.js`
+
+**Purpose**: Prevents race conditions when rapid user interactions trigger multiple async operations
+
+**API**:
+```javascript
+const { startNewRequest, isRequestValid, cancelAll, getCurrentRequestId } = useAsyncCancellation();
+
+// Start new async operation
+const requestId = startNewRequest();
+const data = await fetchData();
+
+// Only process if this request is still valid
+if (isRequestValid(requestId)) {
+  setData(data);
+}
+```
+
+**Features**:
+- Request ID tracking with auto-increment
+- Stale request detection
+- Used by `usePhotoLoader` and `usePhotoDataLoader`
+
 ### useKeyboardShortcuts (PhotosListMini)
 
 Keyboard navigation hook for full-screen photo viewer.

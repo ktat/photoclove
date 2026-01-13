@@ -110,6 +110,7 @@ src/
 │           └── 📄 useStarOperations.js # Star rating operations hook
 │
 ├── 📁 hooks/                   # Custom React hooks
+│   ├── 📄 useAsyncCancellation.js    # Async operation cancellation (request ID pattern)
 │   ├── 📄 useAppConfig.js           # Application configuration hook
 │   ├── 📄 useCollectionManagement.js # Collection (album/tag) management
 │   ├── 📄 useDataSynchronization.js # Data synchronization logic
@@ -357,6 +358,8 @@ src-tauri/
 │   │       ├── 📄 photo_crud.rs # Photo CRUD operations
 │   │       ├── 📄 photo_metadata.rs # Photo metadata operations
 │   │       ├── 📄 search.rs    # Search operations
+│   │       ├── 📄 search_debug.rs # Search debugging utilities
+│   │       ├── 📄 filter_options.rs # Filter options builder
 │   │       ├── 📄 tags.rs      # Tag operations
 │   │       ├── 📄 utils.rs     # SQLite utilities
 │   │       │
@@ -439,6 +442,8 @@ src-tauri/
   - `photo_crud.rs`: Photo CRUD operations
   - `photo_metadata.rs`: Photo metadata operations
   - `search.rs`: Search functionality
+  - `search_debug.rs`: Search debugging utilities
+  - `filter_options.rs`: Filter options builder pattern
   - `tags.rs`: Tag operations
   - `utils.rs`: SQLite utilities
 - **`meta_db/migrations/`**: Database migration SQL files
