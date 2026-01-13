@@ -379,7 +379,6 @@ function PhotosListMini(props) {
                 </a>
 
                 {/* Metadata overlay - stars and comments */}
-                {/* Note: fontSize is hardcoded because CSS variables don't work with color-scheme: light */}
                 {(v.star > 0 || v.comment) && (
                     <div style={{
                         position: "absolute",
@@ -389,7 +388,7 @@ function PhotosListMini(props) {
                         color: "white",
                         padding: "2px 4px",
                         borderRadius: "3px",
-                        fontSize: "9px",
+                        fontSize: "var(--font-size-2xs)",
                         display: "flex",
                         alignItems: "center",
                         gap: "2px",

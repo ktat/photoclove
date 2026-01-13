@@ -258,7 +258,7 @@ function DateList(props) {
                                     setFilterMonth('all'); // Reset month when year changes
                                 }}
                                 style={{
-                                    fontSize: '11px', // Hardcoded: CSS variables don't work with color-scheme: light
+                                    fontSize: 'var(--font-size-xs)',
                                     padding: '2px 4px',
                                     width: '55px',
                                     height: '22px',
@@ -277,7 +277,7 @@ function DateList(props) {
                                 value={filterMonth}
                                 onChange={(e) => setFilterMonth(e.target.value)}
                                 style={{
-                                    fontSize: '11px', // Hardcoded: CSS variables don't work with color-scheme: light
+                                    fontSize: 'var(--font-size-xs)',
                                     padding: '2px 4px',
                                     width: '60px',
                                     height: '22px',
@@ -304,7 +304,7 @@ function DateList(props) {
                         <button
                             onClick={() => setViewMode('flat')}
                             style={{
-                                fontSize: '11px', // Hardcoded: CSS variables don't work with color-scheme: light
+                                fontSize: 'var(--font-size-xs)',
                                 padding: '3px 8px',
                                 margin: 0,
                                 backgroundColor: viewMode === 'flat' ? 'var(--color-primary-selected)' : 'var(--color-bg-elevated)',
@@ -320,7 +320,7 @@ function DateList(props) {
                         <button
                             onClick={() => setViewMode('hierarchical')}
                             style={{
-                                fontSize: '11px', // Hardcoded: CSS variables don't work with color-scheme: light
+                                fontSize: 'var(--font-size-xs)',
                                 padding: '3px 8px',
                                 margin: 0,
                                 backgroundColor: viewMode === 'hierarchical' ? 'var(--color-primary-selected)' : 'var(--color-bg-elevated)',

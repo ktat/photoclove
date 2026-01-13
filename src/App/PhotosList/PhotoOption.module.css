@@ -83,7 +83,6 @@
 /* Vertical tabs styles - legacy definition removed, see line 230+ for active styles */
 
 /* Photo Info table styles */
-/* Note: font-size is hardcoded because CSS variables don't work with color-scheme: light */
 .photo-info-table-wrapper {
   overflow-x: auto;
   margin-bottom: var(--space-3);
