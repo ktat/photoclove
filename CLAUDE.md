@@ -62,6 +62,24 @@ When working on features:
   - `var(--accent)` for accent colors
 - **Hardcoded colors to avoid**: Never use `white`, `#fff`, `#ffffff`, `#f5f5f5`, `#fafafa` for backgrounds
 
+#### CSS Modules Guidelines
+PhotoClove uses CSS Modules for component-specific styling. Follow these guidelines:
+
+- **New components**: Always use CSS Modules for new component styles
+- **Import pattern**: `import styles from './Component.module.css';`
+- **Class names**: Use `styles.className` or `styles['class-name']` for kebab-case
+- **Conditional classes**: Use `classnames` library for conditional class composition
+  ```javascript
+  import classNames from 'classnames';
+  className={classNames(styles.base, { [styles.active]: isActive })}
+  ```
+- **File naming**: Use `ComponentName.module.css` naming convention
+- **Global CSS exceptions**: Keep complex layout CSS (e.g., `PhotosList.css`) as global when:
+  - CSS contains complex responsive rules with many media queries
+  - Styles are shared across multiple components
+  - Migration cost outweighs benefits
+- **Migration priority**: Existing unmigrated files (search/, modals, utilities) are low priority - migrate only when actively modifying those components
+
 ### 3. Testing & Validation
 - Run `cargo check` for Rust changes in `src-tauri/src/`
 - Verify with appropriate test commands
