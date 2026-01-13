@@ -26,6 +26,7 @@ PhotoClove is a desktop photo manager designed for speed and simplicity. Built w
 - **📚 Album Management**: Create custom photo collections with descriptions, cover photos, and custom ordering
 - **🏷️ Tag System**: Color-coded tags for photo categorization with search integration and bulk operations
 - **💡 Tutorial System**: Context-aware help tooltips for new users
+- **🎨 Theme Support**: Dark/Light application themes with customizable photo grid themes (Film Strip, Slide Mount, Light Box, 35mm Slide)
 - **🖥️ Cross-Platform**: Works on Windows, macOS, and Linux
 
 ## 🏗️ Architecture
@@ -150,10 +151,14 @@ Key configuration options include:
 - `copy_parallel`: Number of parallel file operations (default: `2`)
 - `thumbnail_parallel`: Number of parallel thumbnail generations (default: `1`)
 
-#### Thumbnail Generation  
+#### Thumbnail Generation
 - `thumbnail_ratio`: Size ratio for thumbnails (default: `0.05`)
 - `thumbnail_compression_quality`: JPEG compression quality (default: `0.5`)
 - `thumbnail_ignore_file_size`: Skip thumbnails for files smaller than this size in bytes (default: `1048576` = 1MB)
+
+#### Appearance Settings
+- `app_theme`: Application color theme - `dark` (default) or `light`
+- `photo_grid_theme`: Photo grid visual style - `default`, `filmstrip`, `slide-mount`, `lightbox`, or `slide-35mm`
 
 On first run, configure these essential settings:
 
@@ -311,6 +316,10 @@ PhotoClove uses a structured development workflow with the `improvement/` direct
 ## 📋 Roadmap
 
 ### Recently Completed ✅
+- [x] **CSS Design System**: Comprehensive design tokens with CSS variables for colors, spacing, typography, and theming
+- [x] **Theme Support**: Dark/Light application themes with 5 photo grid themes (Default, Film Strip, Slide Mount, Light Box, 35mm Slide)
+- [x] **Logging Standards Compliance**: Backend and frontend logging standardized using structured log service
+- [x] **Error Handling Improvements**: Improved Rust error handling patterns following idiomatic practices
 - [x] **CSS Modules Migration (Phase 1-4)**: PhotoCard, PhotoGrid, PhotosToolbar, PhotoOption, and Tag components migrated to CSS Modules for better style isolation
 - [x] **Major Code Refactoring**: Extracted reusable hooks, reduced file sizes significantly (PhotosList -54%, PhotosListMini -45%, DirectoryMenu operations extracted)
 - [x] **Backend Modularization**: Split photo_commands.rs and search.rs into focused handler modules for better maintainability
