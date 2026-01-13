@@ -58,7 +58,7 @@ const TutorialTooltip = ({
           position: 'fixed',
           top: position.top,
           left: position.left,
-          backgroundColor: '#1E3A8A',
+          backgroundColor: 'var(--color-info-dark)',
           color: 'white',
           padding: '12px',
           borderRadius: '8px',
@@ -78,7 +78,7 @@ const TutorialTooltip = ({
           height: 0,
           borderLeft: '8px solid transparent',
           borderRight: '8px solid transparent',
-          borderBottom: '8px solid #1E3A8A'
+          borderBottom: '8px solid var(--color-info-dark)'
         }} />
 
         {/* Content */}
@@ -91,7 +91,7 @@ const TutorialTooltip = ({
           display: 'flex', 
           gap: '8px', 
           justifyContent: 'flex-end',
-          borderTop: '1px solid #3B82F6',
+          borderTop: '1px solid var(--color-info)',
           paddingTop: '12px',
           marginTop: '12px'
         }}>

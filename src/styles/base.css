@@ -54,11 +54,13 @@ body {
   --color-bg-surface: #2a2a2a;
   --color-bg-muted: #333333;
   --color-bg-film: #141414; /* Film strip background */
+  --color-film-sprocket: #2a2a2a; /* Film sprocket holes - slightly lighter for visibility */
 
   /* --- Text Colors --- */
   --color-text-primary: #e4e4e4;
   --color-text-secondary: #9ca3af;
   --color-text-muted: #6b7280;
+  --color-text-on-light: #1a1a1a; /* For light background themes like Slide Mount, 35mm Slide */
 
   /* --- Border Colors --- */
   --color-border-default: #444444;
@@ -87,6 +89,7 @@ body {
   --color-danger-muted: rgba(239, 68, 68, 0.2);
 
   --color-info: #3b82f6;
+  --color-info-dark: #1e3a8a; /* Tutorial/onboarding tooltip background */
 
   /* --- Spacing Scale (4px base) --- */
   --space-1: 4px;

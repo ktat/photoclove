@@ -116,6 +116,41 @@
   column-gap: 0;
 }
 
+/* Slide mount theme - grid adjustments */
+[data-grid-theme="slide-mount"] .photos .scroll-box {
+  gap: var(--space-4);
+  background-color: #d0d0d0;
+  padding: var(--space-4);
+}
+
+/* Light box theme - grid adjustments */
+[data-grid-theme="lightbox"] .photos .scroll-box {
+  gap: var(--space-3);
+  background: linear-gradient(180deg, rgba(160, 180, 220, 0.1) 0%, rgba(180, 200, 240, 0.15) 100%);
+  padding: var(--space-3);
+}
+
+/* 35mm slide theme - grid adjustments */
+[data-grid-theme="slide-35mm"] .photos .scroll-box {
+  gap: var(--space-4);
+  background: linear-gradient(135deg, #a09080 0%, #908070 100%);
+  padding: var(--space-4);
+}
+
+/* 35mm slide theme - checkbox and link colors */
+[data-grid-theme="slide-35mm"] .photo-list-menu a {
+  color: var(--color-text-on-light);
+}
+
+[data-grid-theme="slide-35mm"] .photo-list-menu label.checkbox:after {
+  border-color: var(--color-text-on-light);
+}
+
+[data-grid-theme="slide-35mm"] .photo-list-menu label.checkbox:before {
+  border-right-color: var(--color-text-on-light);
+  border-bottom-color: var(--color-text-on-light);
+}
+
 .photos .row {
   margin: 0;
   display: flex;
@@ -317,8 +352,8 @@
       to right,
       transparent 0px,
       transparent 5px,
-      var(--color-bg-base) 5px,
-      var(--color-bg-base) 15px,
+      var(--color-film-sprocket) 5px,
+      var(--color-film-sprocket) 15px,
       transparent 15px,
       transparent 20px
     );
@@ -339,8 +374,8 @@
       to right,
       transparent 0px,
       transparent 5px,
-      var(--color-bg-base) 5px,
-      var(--color-bg-base) 15px,
+      var(--color-film-sprocket) 5px,
+      var(--color-film-sprocket) 15px,
       transparent 15px,
       transparent 20px
     );
@@ -360,6 +395,80 @@
 
 [data-grid-theme="filmstrip"] #photos-list-mini div.row2 img {
   border: 2px solid var(--color-bg-muted);
+}
+
+/* ========== Slide Mount Theme for PhotosListMini ========== */
+[data-grid-theme="slide-mount"] #photos-list-mini {
+  background-color: #e8e8e8;
+  padding: 10px;
+}
+
+[data-grid-theme="slide-mount"] #photos-list-mini div.row1 a {
+  color: #333;
+}
+
+[data-grid-theme="slide-mount"] #photos-list-mini div.row2 {
+  background-color: #f5f5f5;
+  padding: 8px;
+  margin: 0 4px;
+  border-radius: var(--radius-sm);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+[data-grid-theme="slide-mount"] #photos-list-mini div.row2 img {
+  border: 2px solid #e0e0e0;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+/* ========== Light Box Theme for PhotosListMini ========== */
+[data-grid-theme="lightbox"] #photos-list-mini {
+  background: linear-gradient(180deg, rgba(180, 200, 255, 0.1) 0%, rgba(200, 220, 255, 0.15) 100%);
+  padding: 10px;
+  box-shadow: inset 0 0 50px rgba(180, 200, 255, 0.1);
+}
+
+[data-grid-theme="lightbox"] #photos-list-mini div.row1 a {
+  color: var(--color-text-secondary);
+}
+
+[data-grid-theme="lightbox"] #photos-list-mini div.row2 {
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 4px;
+  margin: 0 4px;
+  box-shadow:
+    0 0 15px rgba(255, 255, 255, 0.3),
+    inset 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+[data-grid-theme="lightbox"] #photos-list-mini div.row2 img {
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+/* ========== 35mm Slide Theme for PhotosListMini ========== */
+[data-grid-theme="slide-35mm"] #photos-list-mini {
+  background: linear-gradient(135deg, #c4b498 0%, #b4a488 100%);
+  padding: 10px;
+}
+
+[data-grid-theme="slide-35mm"] #photos-list-mini div.row1 a {
+  color: #4a4030;
+}
+
+[data-grid-theme="slide-35mm"] #photos-list-mini div.row2 {
+  background: linear-gradient(135deg, #d4c4a8 0%, #c4b498 100%);
+  padding: 8px;
+  margin: 0 4px;
+  border-radius: var(--radius-sm);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+[data-grid-theme="slide-35mm"] #photos-list-mini div.row2 img {
+  border: 2px solid #8a7a5a;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.4);
 }
 
 #photoDisplay.photosListMiniClosed {

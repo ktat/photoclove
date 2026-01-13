@@ -235,12 +235,42 @@ function Preferences(props) {
                                     }}
                                 >
                                     <option value="default">Default</option>
-                                    <option value="filmstrip">Film Strip</option>
+                                    <option value="filmstrip">Film Strip (Negative)</option>
+                                    <option value="slide-mount">Slide Mount</option>
+                                    <option value="lightbox">Light Box</option>
+                                    <option value="slide-35mm">35mm Slide</option>
                                 </select>
                             </div>
                             <p className="setting-description">
                                 Choose how photos are displayed in the grid.
                             </p>
+                        </div>
+
+                        {/* Theme Preview Section */}
+                        <h2 className="section-title">Preview</h2>
+                        <div className="setting-group">
+                            <div
+                                className="theme-preview-container"
+                                data-theme={config.color_theme || 'dark'}
+                                data-grid-theme={config.photo_grid_theme || 'default'}
+                            >
+                                <div className="theme-preview-grid">
+                                    <div className="preview-card">
+                                        <div className="preview-thumbnail"></div>
+                                        <div className="preview-menu"></div>
+                                    </div>
+                                    <div className="preview-card">
+                                        <div className="preview-thumbnail"></div>
+                                        <div className="preview-menu"></div>
+                                    </div>
+                                    <div className="preview-card selected">
+                                        <div className="preview-thumbnail selected"></div>
+                                        <div className="preview-menu">
+                                            <span className="preview-check">✓</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}

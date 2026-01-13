@@ -41,8 +41,8 @@
             to right,
             transparent 0px,
             transparent 4px,
-            var(--color-bg-base) 4px,
-            var(--color-bg-base) 12px,
+            var(--color-film-sprocket) 4px,
+            var(--color-film-sprocket) 12px,
             transparent 12px,
             transparent 16px
         );
@@ -62,8 +62,8 @@
             to right,
             transparent 0px,
             transparent 4px,
-            var(--color-bg-base) 4px,
-            var(--color-bg-base) 12px,
+            var(--color-film-sprocket) 4px,
+            var(--color-film-sprocket) 12px,
             transparent 12px,
             transparent 16px
         );
@@ -150,7 +150,6 @@
 }
 
 /* Metadata overlay (stars, comments) - positioned inside thumbnail container */
-/* Note: font-size is hardcoded because CSS variables don't work with color-scheme: light */
 .metadataOverlay {
     position: absolute;
     bottom: var(--space-1);
@@ -159,7 +158,7 @@
     color: white;
     padding: 1px var(--space-2);
     border-radius: var(--radius-sm);
-    font-size: 11px;
+    font-size: var(--font-size-xs);
     display: flex;
     align-items: center;
     gap: 2px;
@@ -177,13 +176,13 @@
     padding: 1px var(--space-2);
     background-color: rgba(0, 0, 0, 0.6);
     border-radius: var(--radius-sm);
-    font-size: 11px;
+    font-size: var(--font-size-xs);
     z-index: 10;
 }
 
 .tagsIndicator span:last-child {
     color: white;
-    font-size: 11px;
+    font-size: var(--font-size-xs);
 }
 
 /* Size-specific overlay adjustments
@@ -205,15 +204,15 @@
 .size100 .tagsIndicator {
     bottom: 2px;
     padding: 1px var(--space-1);
-    font-size: 9px;
+    font-size: var(--font-size-2xs);
 }
 
-/* size200 uses default values (11px) */
+/* size200 uses default values (--font-size-xs) */
 
 .size300 .metadataOverlay,
 .size300 .tagsIndicator {
     bottom: var(--space-2);
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     padding: 2px var(--space-3);
 }
 
@@ -256,6 +255,146 @@
 :global([data-grid-theme="filmstrip"]) .cardSelected {
     border: none;
     background-color: var(--color-primary-selected);
+}
+
+/* ========== Slide Mount Theme ========== */
+/* White plastic mount frame like slide projector slides */
+:global([data-grid-theme="slide-mount"]) .card {
+    margin: var(--space-3);
+    padding: var(--space-3);
+    border: none;
+    border-radius: var(--radius-sm);
+    background-color: #f5f5f5;
+    box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+:global([data-grid-theme="slide-mount"]) .thumbnailContainer {
+    border-radius: 0;
+    border: 2px solid #e0e0e0;
+    background-color: #000;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+:global([data-grid-theme="slide-mount"]) .thumbnailContainerSelected {
+    border-color: var(--color-primary);
+    box-shadow:
+        inset 0 0 10px rgba(0, 0, 0, 0.5),
+        0 0 0 2px var(--color-primary);
+}
+
+:global([data-grid-theme="slide-mount"]) .menu {
+    margin-left: var(--space-2);
+    background-color: transparent;
+}
+
+:global([data-grid-theme="slide-mount"]) .menu a,
+:global([data-grid-theme="slide-mount"]) .menu label {
+    color: #333;
+}
+
+:global([data-grid-theme="slide-mount"]) .cardSelected {
+    background-color: #e3e9f5;
+    box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.3),
+        0 0 0 2px var(--color-primary);
+}
+
+/* ========== Light Box Theme ========== */
+/* Translucent surface with backlight effect */
+:global([data-grid-theme="lightbox"]) .card {
+    margin: var(--space-2);
+    padding: var(--space-2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0;
+    background-color: rgba(200, 220, 255, 0.15);
+    box-shadow:
+        inset 0 0 30px rgba(180, 200, 255, 0.1),
+        0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+:global([data-grid-theme="lightbox"]) .thumbnailContainer {
+    border-radius: 0;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background-color: rgba(255, 255, 255, 0.95);
+    box-shadow:
+        0 0 20px rgba(255, 255, 255, 0.3),
+        inset 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+:global([data-grid-theme="lightbox"]) .thumbnailContainerSelected {
+    border-color: var(--color-primary);
+    box-shadow:
+        0 0 20px rgba(100, 150, 255, 0.5),
+        0 0 0 2px var(--color-primary);
+}
+
+:global([data-grid-theme="lightbox"]) .menu {
+    background-color: transparent;
+}
+
+:global([data-grid-theme="lightbox"]) .cardSelected {
+    background-color: rgba(100, 150, 255, 0.2);
+    border-color: var(--color-primary);
+}
+
+/* ========== 35mm Slide Theme ========== */
+/* Vintage thick cardboard mount */
+:global([data-grid-theme="slide-35mm"]) .card {
+    margin: var(--space-3);
+    padding: var(--space-3);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, #d4c4a8 0%, #c4b498 50%, #b4a488 100%);
+    box-shadow:
+        0 3px 6px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* Cardboard texture overlay */
+:global([data-grid-theme="slide-35mm"]) .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+    pointer-events: none;
+    border-radius: var(--radius-sm);
+}
+
+:global([data-grid-theme="slide-35mm"]) .thumbnailContainer {
+    border-radius: 0;
+    border: 2px solid #8a7a5a;
+    background-color: #000;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.6);
+}
+
+:global([data-grid-theme="slide-35mm"]) .thumbnailContainerSelected {
+    border-color: var(--color-primary);
+    box-shadow:
+        inset 0 0 8px rgba(0, 0, 0, 0.6),
+        0 0 0 2px var(--color-primary);
+}
+
+:global([data-grid-theme="slide-35mm"]) .menu {
+    margin-left: var(--space-2);
+    background-color: transparent;
+}
+
+:global([data-grid-theme="slide-35mm"]) .menu a,
+:global([data-grid-theme="slide-35mm"]) .menu label {
+    color: var(--color-text-on-light);
+}
+
+:global([data-grid-theme="slide-35mm"]) .cardSelected {
+    background: linear-gradient(135deg, #c4d4e8 0%, #b4c4d8 50%, #a4b4c8 100%);
+    box-shadow:
+        0 3px 6px rgba(0, 0, 0, 0.4),
+        0 0 0 2px var(--color-primary);
 }
 
 /* Image container with fixed dimensions */
