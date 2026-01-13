@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { UnifiedPhotoCollection } from '../domain/UnifiedPhotoCollection.js';
 import { logger } from '../services/LoggerService.js';
-import './TagInput.css';
+import styles from './TagInput.module.css';
 
 const TagInput = ({ onTagCreated, placeholder = "Create new tag..." }) => {
     const [inputValue, setInputValue] = useState('');
@@ -66,9 +66,9 @@ const TagInput = ({ onTagCreated, placeholder = "Create new tag..." }) => {
     };
 
     return (
-        <div className="tag-input-container">
-            <form onSubmit={handleSubmit} className="tag-input-form">
-                <div className="tag-input-wrapper">
+        <div className={styles.tagInputContainer}>
+            <form onSubmit={handleSubmit} className={styles.tagInputForm}>
+                <div className={styles.tagInputWrapper}>
                     <input
                         ref={inputRef}
                         type="text"
@@ -77,33 +77,19 @@ const TagInput = ({ onTagCreated, placeholder = "Create new tag..." }) => {
                         onKeyDown={handleKeyDown}
                         placeholder={placeholder}
                         disabled={isCreating}
-                        className="tag-input-field"
+                        className={styles.tagInputField}
                         maxLength={50}
                     />
-
-                    {/* Color button removed - tags now use default styling */}
-                    {/* <button type="button" onClick={() => setShowColorPicker(!showColorPicker)} ... >
-                        <span className="tag-color-indicator"></span>
-                    </button> */}
 
                     <button
                         type="submit"
                         disabled={!inputValue.trim() || isCreating}
-                        className="tag-create-button"
+                        className={styles.tagCreateButton}
                         title="Create tag"
                     >
                         {isCreating ? '...' : '+'}
                     </button>
                 </div>
-
-                {/* Color picker removed - tags now use default styling */}
-                {/* {showColorPicker && (
-                    <div className="tag-color-picker">
-                        {predefinedColors.map(color => (
-                            <button ... />
-                        ))}
-                    </div>
-                )} */}
             </form>
         </div>
     );
