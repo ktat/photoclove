@@ -55,7 +55,7 @@
 .scrollIndicatorSubtext {
     font-size: var(--font-size-xs);
     margin-top: var(--space-1);
-    color: var(--color-text-muted);
+    /* color inherited from parent .scrollIndicator for theme compatibility */
 }
 
 /* Scroll to load more - with bounce animation */
