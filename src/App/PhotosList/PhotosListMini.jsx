@@ -187,6 +187,10 @@ function PhotosListMini(props) {
         invoke("get_config", {}).then((e) => {
             const json = JSON.parse(e);
             setThumbnailStore(json.thumbnail_store);
+            // Apply photo grid theme on load
+            if (json.photo_grid_theme) {
+                document.documentElement.setAttribute('data-grid-theme', json.photo_grid_theme);
+            }
         });
     }, []);
 

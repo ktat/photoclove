@@ -53,6 +53,7 @@ body {
   --color-bg-elevated: #242424;
   --color-bg-surface: #2a2a2a;
   --color-bg-muted: #333333;
+  --color-bg-film: #141414; /* Film strip background */
 
   /* --- Text Colors --- */
   --color-text-primary: #e4e4e4;
