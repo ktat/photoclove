@@ -15,7 +15,7 @@
 }
 
 /* Expand Preferences when left menu is collapsed */
-.inner-container.left-menu-collapsed .preferences {
+:global(.inner-container.left-menu-collapsed) .preferences {
   min-width: calc(var(--vw) - 60px);
 }
 
@@ -252,26 +252,26 @@
 }
 
 /* FolderPicker styling in Preferences */
-.preferences-section .row2,
-.preferences-section .row3 {
+.preferences-section :global(.row2),
+.preferences-section :global(.row3) {
   text-align: left;
   margin: var(--space-2) 0;
 }
 
-.preferences-section .row2 {
+.preferences-section :global(.row2) {
   font-size: var(--font-size-base);
   font-weight: 500;
   color: var(--color-text-primary);
   margin-bottom: var(--space-2);
 }
 
-.preferences-section .row3 {
+.preferences-section :global(.row3) {
   display: flex;
   align-items: center;
   gap: var(--space-3);
 }
 
-.preferences-section .row3 button {
+.preferences-section :global(.row3) button {
   padding: var(--space-2) var(--space-4);
   background-color: var(--color-bg-elevated);
   border: 1px solid var(--color-border-default);
@@ -282,7 +282,7 @@
   transition: all 0.2s ease-out;
 }
 
-.preferences-section .row3 button:hover {
+.preferences-section :global(.row3) button:hover {
   background-color: var(--color-bg-surface);
   border-color: var(--color-primary);
 }
@@ -292,11 +292,11 @@
   gap: var(--space-1);
 }
 
-.setting-group.folder-list .row2 {
+.setting-group.folder-list :global(.row2) {
   margin-bottom: 0;
 }
 
-.setting-group.folder-list .row3 {
+.setting-group.folder-list :global(.row3) {
   margin: 0;
 }
 

@@ -2,10 +2,11 @@ import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { ask, message, confirm } from '@tauri-apps/plugin-dialog';
 import { relaunch } from "@tauri-apps/plugin-process";
+import classNames from 'classnames';
 import PickFolderSingle from "../FolderPicker.jsx";
 import { logger } from "../services/LoggerService.js";
 // import TagManager from "../components/TagManager.jsx";
-import './Preferences.css';
+import styles from './Preferences.module.css';
 
 
 function Preferences(props) {
@@ -116,33 +117,33 @@ function Preferences(props) {
     ];
 
     return (
-        <div id="preferences" className="preferences">
-            <div className="preferences-header">
+        <div id="preferences" className={styles.preferences}>
+            <div className={styles['preferences-header']}>
                 <h1>Preferences</h1>
-                <p className="preferences-subtitle">Customize PhotoClove settings</p>
+                <p className={styles['preferences-subtitle']}>Customize PhotoClove settings</p>
             </div>
 
             {/* Tab Navigation */}
-            <div className="preferences-tabs">
+            <div className={styles['preferences-tabs']}>
                 {tabs.map(tab => (
                     <button
                         key={tab.id}
-                        className={`preferences-tab ${activeTab === tab.id ? 'active' : ''}`}
+                        className={classNames(styles['preferences-tab'], { [styles.active]: activeTab === tab.id })}
                         onClick={() => setActiveTab(tab.id)}
                     >
-                        <span className="tab-icon">{tab.icon}</span>
-                        <span className="tab-label">{tab.label}</span>
+                        <span className={styles['tab-icon']}>{tab.icon}</span>
+                        <span className={styles['tab-label']}>{tab.label}</span>
                     </button>
                 ))}
             </div>
 
             {/* Tab Content */}
-            <div className="preferences-content">
+            <div className={styles['preferences-content']}>
                 {/* General Tab */}
                 {activeTab === 'general' && (
-                    <div className="preferences-section">
-                        <h2 className="section-title">Path Settings</h2>
-                        <div className="setting-group">
+                    <div className={styles['preferences-section']}>
+                        <h2 className={styles['section-title']}>Path Settings</h2>
+                        <div className={styles['setting-group']}>
                             <PickFolderSingle
                                 label="Data Path:"
                                 folder={config.data_path}
@@ -165,8 +166,8 @@ function Preferences(props) {
                             />
                         </div>
 
-                        <h2 className="section-title">Export From</h2>
-                        <div className="setting-group folder-list">
+                        <h2 className={styles['section-title']}>Export From</h2>
+                        <div className={classNames(styles['setting-group'], styles['folder-list'])}>
                             {config.export_from.map((v, i) => (
                                 <PickFolderSingle
                                     key={i}
@@ -182,9 +183,9 @@ function Preferences(props) {
                                     }}
                                 />
                             ))}
-                            <div className="add-export-path">
+                            <div className={styles['add-export-path']}>
                                 <button
-                                    className="btn-secondary"
+                                    className={styles['btn-secondary']}
                                     onClick={() => setAdditionalExportFrom(additionalExportFrom + 1)}
                                 >
                                     + Add Path
@@ -197,13 +198,13 @@ function Preferences(props) {
 
                 {/* Appearance Tab */}
                 {activeTab === 'appearance' && (
-                    <div className="preferences-section">
-                        <p className="setting-description" style={{ marginBottom: 'var(--space-4)' }}>
+                    <div className={styles['preferences-section']}>
+                        <p className={styles['setting-description']} style={{ marginBottom: 'var(--space-4)' }}>
                             Theme changes are applied immediately for preview. Click "Save Changes" to persist.
                         </p>
-                        <h2 className="section-title">Color Theme</h2>
-                        <div className="setting-group">
-                            <div className="setting-row">
+                        <h2 className={styles['section-title']}>Color Theme</h2>
+                        <div className={styles['setting-group']}>
+                            <div className={styles['setting-row']}>
                                 <label>App Theme:</label>
                                 <select
                                     value={config.color_theme || 'dark'}
@@ -217,14 +218,14 @@ function Preferences(props) {
                                     <option value="light">Light</option>
                                 </select>
                             </div>
-                            <p className="setting-description">
+                            <p className={styles['setting-description']}>
                                 Change the overall color scheme of the application.
                             </p>
                         </div>
 
-                        <h2 className="section-title">Photo Grid Theme</h2>
-                        <div className="setting-group">
-                            <div className="setting-row">
+                        <h2 className={styles['section-title']}>Photo Grid Theme</h2>
+                        <div className={styles['setting-group']}>
+                            <div className={styles['setting-row']}>
                                 <label>Grid Style:</label>
                                 <select
                                     value={config.photo_grid_theme || 'default'}
@@ -241,32 +242,32 @@ function Preferences(props) {
                                     <option value="slide-35mm">35mm Slide</option>
                                 </select>
                             </div>
-                            <p className="setting-description">
+                            <p className={styles['setting-description']}>
                                 Choose how photos are displayed in the grid.
                             </p>
                         </div>
 
                         {/* Theme Preview Section */}
-                        <h2 className="section-title">Preview</h2>
-                        <div className="setting-group">
+                        <h2 className={styles['section-title']}>Preview</h2>
+                        <div className={styles['setting-group']}>
                             <div
-                                className="theme-preview-container"
+                                className={styles['theme-preview-container']}
                                 data-theme={config.color_theme || 'dark'}
                                 data-grid-theme={config.photo_grid_theme || 'default'}
                             >
-                                <div className="theme-preview-grid">
-                                    <div className="preview-card">
-                                        <div className="preview-thumbnail"></div>
-                                        <div className="preview-menu"></div>
+                                <div className={styles['theme-preview-grid']}>
+                                    <div className={styles['preview-card']}>
+                                        <div className={styles['preview-thumbnail']}></div>
+                                        <div className={styles['preview-menu']}></div>
                                     </div>
-                                    <div className="preview-card">
-                                        <div className="preview-thumbnail"></div>
-                                        <div className="preview-menu"></div>
+                                    <div className={styles['preview-card']}>
+                                        <div className={styles['preview-thumbnail']}></div>
+                                        <div className={styles['preview-menu']}></div>
                                     </div>
-                                    <div className="preview-card selected">
-                                        <div className="preview-thumbnail selected"></div>
-                                        <div className="preview-menu">
-                                            <span className="preview-check">✓</span>
+                                    <div className={classNames(styles['preview-card'], styles.selected)}>
+                                        <div className={classNames(styles['preview-thumbnail'], styles.selected)}></div>
+                                        <div className={styles['preview-menu']}>
+                                            <span className={styles['preview-check']}>✓</span>
                                         </div>
                                     </div>
                                 </div>
@@ -277,15 +278,15 @@ function Preferences(props) {
 
                 {/* Thumbnail Tab */}
                 {activeTab === 'thumbnail' && (
-                    <div className="preferences-section">
-                        <h2 className="section-title">Thumbnail Settings</h2>
-                        <div className="setting-group">
+                    <div className={styles['preferences-section']}>
+                        <h2 className={styles['section-title']}>Thumbnail Settings</h2>
+                        <div className={styles['setting-group']}>
                             <PickFolderSingle
                                 label="Store Path:"
                                 folder={config.thumbnail_store}
                                 setFunc={(folder) => setConfig(prev => ({ ...prev, thumbnail_store: folder }))}
                             />
-                            <div className="setting-item">
+                            <div className={styles['setting-item']}>
                                 <input
                                     type="checkbox"
                                     id="use-exif-thumbnail-check"
@@ -296,7 +297,7 @@ function Preferences(props) {
                                     Use EXIF thumbnails when available (faster import)
                                 </label>
                             </div>
-                            <div className="setting-item">
+                            <div className={styles['setting-item']}>
                                 <input
                                     type="checkbox"
                                     id="thumbnail-orientation-correction-check"
@@ -309,9 +310,9 @@ function Preferences(props) {
                             </div>
                         </div>
 
-                        <h2 className="section-title">Compression</h2>
-                        <div className="setting-group">
-                            <div className="setting-row">
+                        <h2 className={styles['section-title']}>Compression</h2>
+                        <div className={styles['setting-group']}>
+                            <div className={styles['setting-row']}>
                                 <label>Compress Quality:</label>
                                 <select
                                     value={config.thumbnail_compression_quality || ''}
@@ -322,7 +323,7 @@ function Preferences(props) {
                                     ))}
                                 </select>
                             </div>
-                            <div className="setting-row">
+                            <div className={styles['setting-row']}>
                                 <label>Minimize Ratio:</label>
                                 <select
                                     value={config.thumbnail_ratio || ''}
@@ -333,7 +334,7 @@ function Preferences(props) {
                                     ))}
                                 </select>
                             </div>
-                            <div className="setting-row">
+                            <div className={styles['setting-row']}>
                                 <label>Ignore File Size:</label>
                                 <select
                                     value={config.thumbnail_ignore_file_size || ''}
@@ -350,10 +351,10 @@ function Preferences(props) {
 
                 {/* Performance Tab */}
                 {activeTab === 'performance' && (
-                    <div className="preferences-section">
-                        <h2 className="section-title">Parallel Processing</h2>
-                        <div className="setting-group">
-                            <div className="setting-row">
+                    <div className={styles['preferences-section']}>
+                        <h2 className={styles['section-title']}>Parallel Processing</h2>
+                        <div className={styles['setting-group']}>
+                            <div className={styles['setting-row']}>
                                 <label>Import Parallel:</label>
                                 <input
                                     value={config.copy_parallel || ''}
@@ -362,7 +363,7 @@ function Preferences(props) {
                                     onChange={(e) => setConfig(prev => ({ ...prev, copy_parallel: e.target.value }))}
                                 />
                             </div>
-                            <div className="setting-row">
+                            <div className={styles['setting-row']}>
                                 <label>Thumbnail Parallel:</label>
                                 <input
                                     value={config.thumbnail_parallel || ''}
@@ -373,9 +374,9 @@ function Preferences(props) {
                             </div>
                         </div>
 
-                        <h2 className="section-title">Display</h2>
-                        <div className="setting-group">
-                            <div className="setting-row">
+                        <h2 className={styles['section-title']}>Display</h2>
+                        <div className={styles['setting-group']}>
+                            <div className={styles['setting-row']}>
                                 <label>Max Photos Per Fetch:</label>
                                 <input
                                     value={config.max_photos_per_fetch || ''}
@@ -391,10 +392,10 @@ function Preferences(props) {
 
                 {/* Logging Tab */}
                 {activeTab === 'logging' && (
-                    <div className="preferences-section">
-                        <h2 className="section-title">Logging Configuration</h2>
-                        <div className="setting-group">
-                            <div className="setting-item">
+                    <div className={styles['preferences-section']}>
+                        <h2 className={styles['section-title']}>Logging Configuration</h2>
+                        <div className={styles['setting-group']}>
+                            <div className={styles['setting-item']}>
                                 <input
                                     type="checkbox"
                                     id="logging-enabled-check"
@@ -405,7 +406,7 @@ function Preferences(props) {
                                     Enable debug logging
                                 </label>
                             </div>
-                            <div className="setting-row">
+                            <div className={styles['setting-row']}>
                                 <label>Log Level:</label>
                                 <select
                                     value={config.logging_level || 'info'}
@@ -424,17 +425,17 @@ function Preferences(props) {
 
                 {/* Tags Tab */}
                 {/* {activeTab === 'tags' && (
-                    <div className="preferences-section">
+                    <div className={styles['preferences-section']}>
                         <TagManager />
                     </div>
                 )} */}
 
                 {/* Advanced Tab */}
                 {activeTab === 'advanced' && (
-                    <div className="preferences-section">
-                        <h2 className="section-title">Google Photos</h2>
-                        <div className="setting-group">
-                            <div className="setting-item">
+                    <div className={styles['preferences-section']}>
+                        <h2 className={styles['section-title']}>Google Photos</h2>
+                        <div className={styles['setting-group']}>
+                            <div className={styles['setting-item']}>
                                 <input
                                     type="checkbox"
                                     id="google-auth-auto-reauth-check"
@@ -447,9 +448,9 @@ function Preferences(props) {
                             </div>
                         </div>
 
-                        <h2 className="section-title">Tutorial</h2>
-                        <div className="setting-group">
-                            <div className="setting-item">
+                        <h2 className={styles['section-title']}>Tutorial</h2>
+                        <div className={styles['setting-group']}>
+                            <div className={styles['setting-item']}>
                                 <input
                                     type="checkbox"
                                     id="preference-check"
@@ -460,10 +461,10 @@ function Preferences(props) {
                                     Show Welcome tutorial again
                                 </label>
                             </div>
-                            <div className="setting-row">
+                            <div className={styles['setting-row']}>
                                 <label>Tab Instruction Tooltips:</label>
                                 <button
-                                    className="btn-secondary"
+                                    className={styles['btn-secondary']}
                                     onClick={() => {
                                         localStorage.removeItem('photoclove_tutorials');
                                         message("Tab instruction tooltips will be shown again.");
@@ -478,8 +479,8 @@ function Preferences(props) {
             </div>
 
             {/* Save Button */}
-            <div className="preferences-footer">
-                <button className="btn-primary" onClick={saveConfig}>
+            <div className={styles['preferences-footer']}>
+                <button className={styles['btn-primary']} onClick={saveConfig}>
                     Save Changes
                 </button>
             </div>
