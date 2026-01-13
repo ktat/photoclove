@@ -432,27 +432,34 @@ function PhotosListMini(props) {
                         <> ||&nbsp;&nbsp;<s>next</s> &gt;&gt;<br /><br /></>
                     )}
 
-                    <PhotoDisplay
-                        imgStyle={imgStyle}
-                        SetImgStyle={SetImgStyle}
-                        setPhotoZoom={setPhotoZoom}
-                        photoZoom={photoZoom}
-                        photoZoomReady={photoZoomReady}
-                        currentPhotoPath={props.isTrashMode && photosWithMethods[props.currentIndex]
-                            ? photosWithMethods[props.currentIndex].displayPath()
-                            : (props.currentPhotoPath || (photosWithMethods[props.currentIndex] && photosWithMethods[props.currentIndex].displayPath()))}
-                        currentPhotoSize={currentPhotoSize}
-                        imgCacheMap={imgCacheMap}
-                        thumbnailSrc={photosWithMethods[props.currentIndex]?.hasThumbnail
-                            ? photosWithMethods[props.currentIndex].thumbnailPath()
-                            : ""}
-                        photosListMiniClosed={photosListMiniClosed}
-                        selectedInfoHidden={selectedInfoHidden}
-                        unselectedInfoHidden={unselectedInfoHidden}
-                        selectedContent={selectedContent}
-                        unselectedContent={unselectedContent}
-                        currentPhotoCssStyle={photosWithMethods[props.currentIndex]?.cssStyle}
-                    />
+                    {/* In trash mode, wait for photo data to be ready to get correct trash path */}
+                    {isTrashMode && !photosWithMethods[props.currentIndex] ? (
+                        <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-muted)' }}>
+                            Loading...
+                        </div>
+                    ) : (
+                        <PhotoDisplay
+                            imgStyle={imgStyle}
+                            SetImgStyle={SetImgStyle}
+                            setPhotoZoom={setPhotoZoom}
+                            photoZoom={photoZoom}
+                            photoZoomReady={photoZoomReady}
+                            currentPhotoPath={isTrashMode && photosWithMethods[props.currentIndex]
+                                ? photosWithMethods[props.currentIndex].displayPath()
+                                : (props.currentPhotoPath || (photosWithMethods[props.currentIndex] && photosWithMethods[props.currentIndex].displayPath()))}
+                            currentPhotoSize={currentPhotoSize}
+                            imgCacheMap={imgCacheMap}
+                            thumbnailSrc={photosWithMethods[props.currentIndex]?.hasThumbnail
+                                ? photosWithMethods[props.currentIndex].thumbnailPath()
+                                : ""}
+                            photosListMiniClosed={photosListMiniClosed}
+                            selectedInfoHidden={selectedInfoHidden}
+                            unselectedInfoHidden={unselectedInfoHidden}
+                            selectedContent={selectedContent}
+                            unselectedContent={unselectedContent}
+                            currentPhotoCssStyle={photosWithMethods[props.currentIndex]?.cssStyle}
+                        />
+                    )}
                 </div>
 
                 <div id="photos-list-mini" className={photosListMiniClosed ? "photosListMiniClosed" : "photosListMini"}>
