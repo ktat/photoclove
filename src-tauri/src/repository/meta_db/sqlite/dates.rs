@@ -59,7 +59,7 @@ pub fn get_available_dates(sqlite: &SQLite) -> Result<Vec<date::Date>, String> {
 pub fn process_date_rows(
     rows: rusqlite::MappedRows<impl FnMut(&rusqlite::Row) -> rusqlite::Result<String>>,
 ) -> Result<Vec<date::Date>, String> {
-    println!("SQLite::process_date_rows() - Processing date rows");
+    log::debug!(target: "dates", "process_date_rows; status=processing");
 
     let mut dates = Vec::new();
     let mut row_count = 0;
@@ -68,29 +68,23 @@ pub fn process_date_rows(
     for row in rows {
         row_count += 1;
         let date_str = row.map_err(|e| {
-            println!(
-                "SQLite::process_date_rows() - Failed to parse row {}: {}",
+            log::warn!(
+                target: "dates",
+                "process_date_rows; row_parse_failed; row={}; error={}",
                 row_count, e
             );
             format!("Failed to parse row: {}", e)
         })?;
 
         if row_count <= 3 {
-            println!(
-                "SQLite::process_date_rows() - Processing row {}: '{}'",
+            log::trace!(
+                target: "dates",
+                "process_date_rows; row={}; value='{}'",
                 row_count, date_str
             );
         }
 
         // Parse date string in "yyyy-mm-dd" format
-        if row_count <= 3 {
-            println!(
-                "SQLite::process_date_rows() - Processing date string: '{}'",
-                date_str
-            );
-        }
-
-        // Convert format from "2023-01-15" to components
         let parts: Vec<&str> = date_str.split('-').collect();
         if parts.len() == 3 {
             if let (Ok(year), Ok(month), Ok(day)) = (
@@ -99,8 +93,9 @@ pub fn process_date_rows(
                 parts[2].parse::<u32>(),
             ) {
                 if row_count <= 3 {
-                    println!(
-                        "SQLite::process_date_rows() - Parsed components: {}-{}-{}",
+                    log::trace!(
+                        target: "dates",
+                        "process_date_rows; parsed_components; year={}; month={}; day={}",
                         year, month, day
                     );
                 }
@@ -110,33 +105,36 @@ pub fn process_date_rows(
                     parsed_count += 1;
 
                     if row_count <= 3 {
-                        println!(
-                            "SQLite::process_date_rows() - Created date object: {}-{:02}-{:02}",
+                        log::trace!(
+                            target: "dates",
+                            "process_date_rows; date_created; date={}-{:02}-{:02}",
                             year, month, day
                         );
                     }
                 } else {
                     if row_count <= 3 {
-                        println!("SQLite::process_date_rows() - Failed to create date object for: {}-{}-{}", year, month, day);
+                        log::warn!(target: "dates", "process_date_rows; date_creation_failed; year={}; month={}; day={}", year, month, day);
                     }
                 }
             } else {
                 if row_count <= 3 {
-                    println!("SQLite::process_date_rows() - Failed to parse date components from: {:?}", parts);
+                    log::warn!(target: "dates", "process_date_rows; component_parse_failed; parts={:?}", parts);
                 }
             }
         } else {
             if row_count <= 3 {
-                println!(
-                    "SQLite::process_date_rows() - Wrong number of date parts: {:?}",
+                log::warn!(
+                    target: "dates",
+                    "process_date_rows; invalid_part_count; parts={:?}",
                     parts
                 );
             }
         }
     }
 
-    println!(
-        "SQLite::process_date_rows() - Processed {} rows, parsed {} dates",
+    log::debug!(
+        target: "dates",
+        "process_date_rows; processed={}; parsed={}",
         row_count, parsed_count
     );
 
@@ -145,15 +143,18 @@ pub fn process_date_rows(
     let original_count = dates.len();
     dates.dedup_by(|a, b| a.year == b.year && a.month == b.month && a.day == b.day);
 
-    println!(
-        "SQLite::process_date_rows() - After deduplication: {} -> {} unique dates",
+    log::debug!(
+        target: "dates",
+        "process_date_rows; dedup; original={}; unique={}",
         original_count,
         dates.len()
     );
 
-    for (i, date) in dates.iter().enumerate() {
-        println!(
-            "SQLite::process_date_rows() - Final date {}: {}-{:02}-{:02}",
+    // Log first few dates for debugging
+    for (i, date) in dates.iter().take(3).enumerate() {
+        log::trace!(
+            target: "dates",
+            "process_date_rows; final_date_{}; value={}-{:02}-{:02}",
             i + 1,
             date.year,
             date.month,
@@ -161,8 +162,9 @@ pub fn process_date_rows(
         );
     }
 
-    println!(
-        "SQLite::process_date_rows() - Returning {} dates",
+    log::debug!(
+        target: "dates",
+        "process_date_rows; result_count={}",
         dates.len()
     );
     Ok(dates)
