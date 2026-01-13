@@ -65,7 +65,7 @@ const TutorialTooltip = ({
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
           zIndex: 10000,
           maxWidth: '320px',
-          fontSize: '12px',
+          fontSize: 'var(--font-size-sm)',
           lineHeight: '1.4'
         }}
       >
@@ -95,7 +95,6 @@ const TutorialTooltip = ({
           paddingTop: '12px',
           marginTop: '12px'
         }}>
-          {/* Note: fontSize is hardcoded because CSS variables don't work with color-scheme: light */}
           <button
             onClick={handleDontShowAgain}
             style={{
@@ -104,7 +103,7 @@ const TutorialTooltip = ({
               color: 'var(--color-primary)',
               padding: '6px 12px',
               borderRadius: '4px',
-              fontSize: '11px',
+              fontSize: 'var(--font-size-xs)',
               cursor: 'pointer',
               whiteSpace: 'nowrap'
             }}
@@ -119,7 +118,7 @@ const TutorialTooltip = ({
               color: 'white',
               padding: '6px 12px',
               borderRadius: '4px',
-              fontSize: '11px',
+              fontSize: 'var(--font-size-xs)',
               cursor: 'pointer',
               fontWeight: 'bold',
               whiteSpace: 'nowrap'

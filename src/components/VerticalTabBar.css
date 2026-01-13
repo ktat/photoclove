@@ -12,11 +12,11 @@
 }
 
 .directory-vertical-tabs.menu-open {
-    right: 320px;
+    right: 305px;
 }
 
 .directory-vertical-tabs.menu-closed {
-    right: 0px;
+    right: -15px;
 }
 
 .directory-vertical-tab-button:nth-child(2),
@@ -33,7 +33,7 @@
     color: var(--color-text-primary);
     border: none;
     cursor: pointer;
-    font-size: 12px;
+    font-size: var(--font-size-sm);
     font-weight: bold;
     transition: all 0.3s ease-out;
     min-height: 60px;
@@ -78,10 +78,15 @@
     border-radius: 0 0 0 5px;
 }
 
+/* When there's only one tab (e.g., Trash mode with only Selection tab) */
+.directory-vertical-tab-button:only-child {
+    border-radius: 5px 0 0 5px;
+}
+
 .directory-vertical-tab-button.directory-close-tab {
     background-color: var(--color-bg-elevated);
     color: var(--color-danger);
-    font-size: 16px;
+    font-size: var(--font-size-lg);
     font-weight: bold;
     writing-mode: horizontal-tb;
     text-orientation: mixed;
