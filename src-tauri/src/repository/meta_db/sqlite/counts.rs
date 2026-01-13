@@ -7,38 +7,39 @@ use std::collections::HashMap;
 
 /// Check if database has any photo metadata
 pub fn has_metadata(sqlite: &SQLite) -> bool {
-    println!("SQLite::has_metadata() - Checking if database contains metadata");
+    log::debug!(target: "counts", "has_metadata; status=checking");
 
     if let Ok(conn) = sqlite.get_connection() {
-        println!("SQLite::has_metadata() - Database connection successful");
+        log::debug!(target: "counts", "has_metadata; connection=success");
 
         if let Ok(mut stmt) = conn.prepare("SELECT COUNT(*) FROM photo_metadata") {
-            println!("SQLite::has_metadata() - Query prepared successfully");
+            log::debug!(target: "counts", "has_metadata; query_prepared=true");
 
             if let Ok(count) = stmt.query_row([], |row| {
                 let count: i64 = row.get(0)?;
                 Ok(count)
             }) {
-                println!("SQLite::has_metadata() - Found {} records", count);
+                log::debug!(target: "counts", "has_metadata; record_count={}", count);
                 return count > 0;
             } else {
-                println!("SQLite::has_metadata() - Failed to execute count query");
+                log::warn!(target: "counts", "has_metadata; query_execute=failed");
             }
         } else {
-            println!("SQLite::has_metadata() - Failed to prepare count query");
+            log::warn!(target: "counts", "has_metadata; query_prepare=failed");
         }
     } else {
-        println!("SQLite::has_metadata() - Failed to connect to database");
+        log::error!(target: "counts", "has_metadata; connection=failed");
     }
 
-    println!("SQLite::has_metadata() - Returning false (no metadata)");
+    log::debug!(target: "counts", "has_metadata; result=false");
     false
 }
 
 /// Get photo count per date (optimized using date_summary table)
 pub fn get_photo_count_per_dates(sqlite: &SQLite, dates: date::Dates) -> DatesNum {
-    println!(
-        "SQLite::get_photo_count_per_dates() - Getting optimized counts for {} dates",
+    log::debug!(
+        target: "counts",
+        "get_photo_count_per_dates; date_count={}",
         dates.dates.len()
     );
     let mut dates_num = DatesNum {
@@ -47,12 +48,13 @@ pub fn get_photo_count_per_dates(sqlite: &SQLite, dates: date::Dates) -> DatesNu
 
     let conn = match sqlite.get_connection() {
         Ok(conn) => {
-            println!("SQLite::get_photo_count_per_dates() - Database connection successful");
+            log::debug!(target: "counts", "get_photo_count_per_dates; connection=success");
             conn
         }
         Err(e) => {
-            println!(
-                "SQLite::get_photo_count_per_dates() - Database connection failed: {:?}",
+            log::error!(
+                target: "counts",
+                "get_photo_count_per_dates; connection_error={:?}",
                 e
             );
             return dates_num;
@@ -73,7 +75,7 @@ pub fn get_photo_count_per_dates(sqlite: &SQLite, dates: date::Dates) -> DatesNu
             .unwrap_or(0);
 
         if summary_count > 0 {
-            log::debug!(target: "sqlite", "get_photo_count_per_dates; using_optimized_date_summary=true");
+            log::debug!(target: "counts", "get_photo_count_per_dates; using_optimized_date_summary=true");
 
             // Use optimized single query from date_summary table
             let date_counts: HashMap<String, i32> = match conn
@@ -87,13 +89,13 @@ pub fn get_photo_count_per_dates(sqlite: &SQLite, dates: date::Dates) -> DatesNu
                     }) {
                         Ok(mapped) => mapped.filter_map(Result::ok).collect(),
                         Err(e) => {
-                            log::error!(target: "sqlite", "get_photo_count_per_dates; error={}; falling_back_to_empty", e);
+                            log::error!(target: "counts", "get_photo_count_per_dates; query_error={}; falling_back_to_empty", e);
                             HashMap::new()
                         }
                     }
                 }
                 Err(e) => {
-                    log::error!(target: "sqlite", "get_photo_count_per_dates; prepare_error={}; falling_back_to_empty", e);
+                    log::error!(target: "counts", "get_photo_count_per_dates; prepare_error={}; falling_back_to_empty", e);
                     HashMap::new()
                 }
             };
@@ -103,8 +105,8 @@ pub fn get_photo_count_per_dates(sqlite: &SQLite, dates: date::Dates) -> DatesNu
                 let date_string = date.to_string();
                 let count = date_counts.get(&date_string).copied().unwrap_or(0);
 
-                log::debug!(
-                    target: "sqlite",
+                log::trace!(
+                    target: "counts",
                     "get_photo_count_per_dates; date={}; count={}",
                     date_string, count
                 );
@@ -112,30 +114,30 @@ pub fn get_photo_count_per_dates(sqlite: &SQLite, dates: date::Dates) -> DatesNu
             }
 
             log::debug!(
-                target: "sqlite",
-                "get_photo_count_per_dates_complete; optimized_result={}",
-                dates_num.to_json()
+                target: "counts",
+                "get_photo_count_per_dates_complete; optimized=true; result_count={}",
+                dates_num.data.len()
             );
             return dates_num;
         }
     }
 
     // Fallback to original GROUP BY query
-    println!("SQLite::get_photo_count_per_dates() - Using fallback GROUP BY query");
+    log::debug!(target: "counts", "get_photo_count_per_dates; using_fallback_group_by=true");
 
-    // First, let's see what date formats we actually have in the database
+    // Debug: sample dates in database
     if let Ok(mut debug_stmt) =
         conn.prepare("SELECT DISTINCT photo_date FROM photo_metadata LIMIT 5")
     {
-        println!("SQLite::get_photo_count_per_dates() - Sample dates in database:");
         if let Ok(rows) = debug_stmt.query_map([], |row| {
             let date_str: String = row.get(0)?;
             Ok(date_str)
         }) {
             for (i, row) in rows.enumerate() {
                 if let Ok(date_str) = row {
-                    println!(
-                        "SQLite::get_photo_count_per_dates() - DB date {}: '{}'",
+                    log::trace!(
+                        target: "counts",
+                        "get_photo_count_per_dates; sample_date_{}='{}'",
                         i + 1,
                         date_str
                     );
@@ -147,12 +149,13 @@ pub fn get_photo_count_per_dates(sqlite: &SQLite, dates: date::Dates) -> DatesNu
     // Use GROUP BY to get all counts in a single query
     let mut stmt = match conn.prepare("SELECT date(photo_date) as date_only, COUNT(*) as count FROM photo_metadata WHERE (delete_flg = 0 OR delete_flg IS NULL) GROUP BY date(photo_date)") {
         Ok(stmt) => {
-            println!("SQLite::get_photo_count_per_dates() - GROUP BY query prepared successfully");
+            log::debug!(target: "counts", "get_photo_count_per_dates; group_by_query_prepared=true");
             stmt
         }
         Err(e) => {
-            println!(
-                "SQLite::get_photo_count_per_dates() - Query prepare failed: {:?}",
+            log::error!(
+                target: "counts",
+                "get_photo_count_per_dates; query_prepare_error={:?}",
                 e
             );
             return dates_num;
@@ -169,9 +172,10 @@ pub fn get_photo_count_per_dates(sqlite: &SQLite, dates: date::Dates) -> DatesNu
             let mut counts = std::collections::HashMap::new();
             for row in rows {
                 if let Ok((date_str, count)) = row {
-                    println!(
-                        "SQLite::get_photo_count_per_dates() - DB has {} photos for date '{}'",
-                        count, date_str
+                    log::trace!(
+                        target: "counts",
+                        "get_photo_count_per_dates; db_date={}; photo_count={}",
+                        date_str, count
                     );
                     counts.insert(date_str, count);
                 }
@@ -179,8 +183,9 @@ pub fn get_photo_count_per_dates(sqlite: &SQLite, dates: date::Dates) -> DatesNu
             counts
         }
         Err(e) => {
-            println!(
-                "SQLite::get_photo_count_per_dates() - Query execution failed: {:?}",
+            log::error!(
+                target: "counts",
+                "get_photo_count_per_dates; query_execute_error={:?}",
                 e
             );
             return dates_num;
@@ -191,16 +196,18 @@ pub fn get_photo_count_per_dates(sqlite: &SQLite, dates: date::Dates) -> DatesNu
     for date in dates.dates {
         let date_string = date.to_string();
         let count = db_counts.get(&date_string).unwrap_or(&0);
-        println!(
-            "SQLite::get_photo_count_per_dates() - Requested date '{}' has {} photos",
+        log::trace!(
+            target: "counts",
+            "get_photo_count_per_dates; requested_date={}; count={}",
             date_string, count
         );
         dates_num.data.insert(date_string, *count);
     }
 
-    println!(
-        "SQLite::get_photo_count_per_dates() - Final result: {}",
-        dates_num.to_json()
+    log::debug!(
+        target: "counts",
+        "get_photo_count_per_dates_complete; fallback=true; result_count={}",
+        dates_num.data.len()
     );
     dates_num
 }

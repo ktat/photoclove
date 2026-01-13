@@ -59,6 +59,7 @@ export function getPageState(key) {
         const value = localStorage.getItem(fullKey);
         return value ? JSON.parse(value) : null;
     } catch (e) {
+        // Console usage intentional: debugStorage is a DevTools utility for developers
         console.error(`Failed to parse state for key: ${fullKey}`, e);
         return null;
     }
@@ -171,6 +172,7 @@ export const debugStorageAPI = {
     stats: getStorageStats,
 
     // Convenience methods
+    // Console usage intentional: help() outputs to DevTools console for developers
     help() {
         console.log(`
 PhotoClove Storage Debug Tools
@@ -190,5 +192,6 @@ Available commands:
 // Expose debug API to window in development mode
 if (typeof window !== 'undefined' && import.meta.env.DEV) {
     window.debugStorage = debugStorageAPI;
+    // Console usage intentional: notify developers that debug API is available in DevTools
     console.log('Debug storage tools available: window.debugStorage.help()');
 }

@@ -50,7 +50,7 @@ function PhotoDisplay(props) {
 
     useEffect((e) => {
         currentFile = "";
-        document.querySelector("#dummy-for-focus").focus();
+        document.querySelector("#dummy-for-focus")?.focus();
 
         const resizeHandler = () => {
             // Recalculate wrapper sizing on window resize
@@ -80,7 +80,7 @@ function PhotoDisplay(props) {
 
     useEffect((e) => {
         // Don't set opacity here - let handleImgLoad handle it when image is ready
-        document.querySelector("#dummy-for-focus").focus();
+        document.querySelector("#dummy-for-focus")?.focus();
 
         // Small delay to ensure container is ready when transitioning from thumbnail view
         setTimeout(() => {
