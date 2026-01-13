@@ -5,6 +5,14 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
 
+  // CSS Modules configuration
+  css: {
+    modules: {
+      // Allow both kebab-case in CSS and camelCase in JS
+      localsConvention: 'camelCase',
+    },
+  },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   // prevent vite from obscuring rust errors
   clearScreen: false,

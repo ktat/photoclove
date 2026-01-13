@@ -1,9 +1,11 @@
 import React, { useCallback, useRef, useMemo, useEffect } from 'react';
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { openUrl } from '@tauri-apps/plugin-opener';
+import classNames from 'classnames';
 import fileUrl from "../../PathUtil.jsx";
 import { logger } from "../../services/LoggerService.js";
 import { getCombinedTransformStyle } from "../../utils/orientationUtils.js";
+import styles from './PhotoCard.module.css';
 
 /**
  * PhotoCard Component
@@ -230,6 +232,17 @@ function PhotoCard({
     const tags = getTags();
     const uniqueKey = photo.originalPath;
 
+    // Get CSS module class for icon size
+    const getSizeClass = useCallback((size) => {
+        const sizeMap = {
+            50: styles.size50,
+            100: styles.size100,
+            200: styles.size200,
+            300: styles.size300
+        };
+        return sizeMap[size] || styles.card;
+    }, []);
+
     // Calculate thumbnail image style with optional orientation correction
     const thumbnailStyle = useMemo(() => {
         const baseStyle = { width: "97%" };
@@ -273,7 +286,7 @@ function PhotoCard({
     return (
         <div
             key={uniqueKey}
-            className={"row pict-" + iconSize}
+            className={classNames('row', getSizeClass(iconSize))}
             style={{
                 flex: "0 0 " + ((iconSize / 1) + 41) + "px",
                 textAlign: "center",
@@ -287,7 +300,7 @@ function PhotoCard({
                         ? <div className="photo-list-movie" style={{ minWidth: (iconSize - 20) + 'px', marginTop: (iconSize / 7) + "px" }}>
                             <span style={{ fontSize: (iconSize / 3) + 'px' }}>&#127909;</span>
                         </div>
-                        : <div style={{ width: iconSize + 'px', height: iconSize + 'px', flexShrink: 0 }} >
+                        : <div style={{ width: iconSize + 'px', height: iconSize + 'px', flexShrink: 0 }}>
                             <img
                                 ref={photo.import_source === true ? imgRef : null}
                                 alt={photo.originalPath}
@@ -312,19 +325,7 @@ function PhotoCard({
 
                 {/* Metadata overlay - stars and comments */}
                 {(photo.star > 0 || photo.comment) && (
-                    <div style={{
-                        position: "absolute",
-                        bottom: "25px",
-                        right: "42px",
-                        backgroundColor: "rgba(0, 0, 0, 0.5)",
-                        color: "white",
-                        padding: "1px 3px",
-                        borderRadius: "3px",
-                        fontSize: "10px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "2px"
-                    }}>
+                    <div className={styles.metadataOverlay}>
                         {photo.star > 0 && (
                             <span>⭐{photo.star}</span>
                         )}
@@ -337,31 +338,18 @@ function PhotoCard({
                 {/* Tags indicator - simple emoji */}
                 {tags.length > 0 && (
                     <div
-                        style={{
-                            position: "absolute",
-                            bottom: "4px",
-                            left: "4px",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "2px",
-                            padding: "2px 6px",
-                            backgroundColor: "rgba(0, 0, 0, 0.6)",
-                            borderRadius: "8px",
-                            fontSize: "12px"
-                        }}
+                        className={styles.tagsIndicator}
                         title={`${tags.length} tag${tags.length !== 1 ? 's' : ''}: ${tags.map(t => t.name).join(', ')}`}
                     >
                         <span>🏷️</span>
                         {tags.length > 1 && (
-                            <span style={{ color: "white", fontSize: "10px" }}>
-                                {tags.length}
-                            </span>
+                            <span>{tags.length}</span>
                         )}
                     </div>
                 )}
             </div>
 
-            {/* Photo actions menu */}
+            {/* Photo actions menu - using global CSS for backward compatibility */}
             <div className="photo-list-menu">
                 <input
                     type="checkbox"
@@ -370,7 +358,7 @@ function PhotoCard({
                     onChange={(e) => onAddSelection(e.target.checked, photo.originalPath)}
                 />
                 <label
-                    className={"checkbox-photo checkbox hover"}
+                    className="checkbox-photo checkbox hover"
                     htmlFor={"photo-checkbox-" + index}
                 ></label>
                 <a href="#" onClick={() => {
