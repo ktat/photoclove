@@ -4,7 +4,7 @@
  */
 import { useCallback, useRef } from 'react';
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { calculateSimpleThumbnailDisplay } from "./photoUtils.js";
+import { calculateSimpleThumbnailDisplay, calculateThumbnailDisplayWithViewOffset } from "./photoUtils.js";
 
 /**
  * Hook for managing photo navigation
@@ -20,6 +20,8 @@ import { calculateSimpleThumbnailDisplay } from "./photoUtils.js";
  * @param {number} options.num - Number of photos per page
  * @param {Object} options.imgCacheMap - Image cache map
  * @param {Function} options.setImgCacheMap - Set image cache map
+ * @param {number|null} options.viewStartIndex - Current view window start index
+ * @param {Function} options.setViewStartIndex - Set view window start index
  * @returns {Object} Navigation functions and state
  */
 export function usePhotoNavigation({
@@ -33,7 +35,9 @@ export function usePhotoNavigation({
     getDateKey,
     num,
     imgCacheMap,
-    setImgCacheMap
+    setImgCacheMap,
+    viewStartIndex,
+    setViewStartIndex
 }) {
     const navigateLock = useRef(false);
 
@@ -142,34 +146,30 @@ export function usePhotoNavigation({
     }, [currentIndex, navigateToPhoto, setImageCache]);
 
     /**
-     * Shift thumbnail window backward
+     * Shift thumbnail window backward (does not change selected photo)
      */
     const backwardPhotos = useCallback(() => {
-        const { showPrev, startIndex } = calculateSimpleThumbnailDisplay(photos, currentIndex);
+        const { showPrev, startIndex } = calculateThumbnailDisplayWithViewOffset(photos, currentIndex, viewStartIndex);
         if (!showPrev) return;
 
-        const newSelectedIndex = Math.max(0, startIndex - 1);
-        if (photos[newSelectedIndex]) {
-            setCurrentIndex(newSelectedIndex);
-            setCurrentPhotoPath(photos[newSelectedIndex].originalPath);
-            setImageCache(newSelectedIndex, -1);
-        }
-    }, [photos, currentIndex, setCurrentIndex, setCurrentPhotoPath, setImageCache]);
+        // Only shift the view window, do not change selected photo
+        const newViewStartIndex = Math.max(0, startIndex - 1);
+        setViewStartIndex(newViewStartIndex);
+    }, [photos, currentIndex, viewStartIndex, setViewStartIndex]);
 
     /**
-     * Shift thumbnail window forward
+     * Shift thumbnail window forward (does not change selected photo)
      */
     const forwardPhotos = useCallback(() => {
-        const { showNext, endIndex } = calculateSimpleThumbnailDisplay(photos, currentIndex);
+        const NUM_OF_PHOTO_LIST = 9;
+        const { showNext, startIndex } = calculateThumbnailDisplayWithViewOffset(photos, currentIndex, viewStartIndex);
         if (!showNext) return;
 
-        const newSelectedIndex = Math.min(photos.length - 1, endIndex + 1);
-        if (photos[newSelectedIndex]) {
-            setCurrentIndex(newSelectedIndex);
-            setCurrentPhotoPath(photos[newSelectedIndex].originalPath);
-            setImageCache(newSelectedIndex, 1);
-        }
-    }, [photos, currentIndex, setCurrentIndex, setCurrentPhotoPath, setImageCache]);
+        // Only shift the view window, do not change selected photo
+        const maxStartIndex = Math.max(0, photos.length - NUM_OF_PHOTO_LIST);
+        const newViewStartIndex = Math.min(maxStartIndex, startIndex + 1);
+        setViewStartIndex(newViewStartIndex);
+    }, [photos, currentIndex, viewStartIndex, setViewStartIndex]);
 
     /**
      * Navigate directly to a specific photo
@@ -183,8 +183,10 @@ export function usePhotoNavigation({
                 datePage[getDateKey()] = Math.trunc(index / num) + 1;
             }
             setImageCache(index, 0);
+            // Reset view offset to auto-center on selected photo
+            setViewStartIndex(null);
         }
-    }, [photos, setCurrentIndex, setCurrentPhotoPath, datePage, getDateKey, num, setImageCache]);
+    }, [photos, setCurrentIndex, setCurrentPhotoPath, datePage, getDateKey, num, setImageCache, setViewStartIndex]);
 
     return {
         nextPhoto,

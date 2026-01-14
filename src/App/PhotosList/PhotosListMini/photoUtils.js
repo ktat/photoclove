@@ -112,7 +112,7 @@ export function getDateKey(recentPhotosMode, isSearchMode, currentDate) {
  * Create border styles array for thumbnail strip
  *
  * @param {number} length - Number of thumbnails
- * @param {number} activeIndex - Index of active thumbnail
+ * @param {number} activeIndex - Index of active thumbnail (-1 if not in view)
  * @returns {Array<string>} Array of CSS border style strings
  */
 export function createBorderStyles(length, activeIndex) {
@@ -125,4 +125,70 @@ export function createBorderStyles(length, activeIndex) {
         }
     }
     return borderStyles;
+}
+
+/**
+ * Calculate thumbnail display with explicit view offset
+ * Used when navigating the thumbnail strip independently of photo selection
+ *
+ * @param {Array} allPhotos - Array of all photos
+ * @param {number} selectedIndex - Currently selected photo index
+ * @param {number|null} viewStartIndex - Explicit view start index (null for auto-center)
+ * @returns {Object} Display configuration with startIndex, endIndex, selectedPositionInView, showPrev, showNext
+ */
+export function calculateThumbnailDisplayWithViewOffset(allPhotos, selectedIndex, viewStartIndex) {
+    const NUM_OF_PHOTO_LIST = 9;
+    const totalPhotos = allPhotos.length;
+
+    // Handle edge case: no photos
+    if (totalPhotos === 0) {
+        return {
+            startIndex: 0,
+            endIndex: 0,
+            selectedPositionInView: -1,
+            showPrev: false,
+            showNext: false
+        };
+    }
+
+    // Handle case where total photos <= 9
+    if (totalPhotos <= NUM_OF_PHOTO_LIST) {
+        return {
+            startIndex: 0,
+            endIndex: totalPhotos - 1,
+            selectedPositionInView: selectedIndex >= 0 && selectedIndex < totalPhotos ? selectedIndex : -1,
+            showPrev: false,
+            showNext: false
+        };
+    }
+
+    // If viewStartIndex is null, use auto-center behavior (same as calculateSimpleThumbnailDisplay)
+    if (viewStartIndex === null) {
+        const result = calculateSimpleThumbnailDisplay(allPhotos, selectedIndex);
+        return {
+            startIndex: result.startIndex,
+            endIndex: result.endIndex,
+            selectedPositionInView: result.borderPosition,
+            showPrev: result.showPrev,
+            showNext: result.showNext
+        };
+    }
+
+    // Use explicit view offset
+    let startIndex = Math.max(0, Math.min(viewStartIndex, totalPhotos - NUM_OF_PHOTO_LIST));
+    let endIndex = Math.min(startIndex + NUM_OF_PHOTO_LIST - 1, totalPhotos - 1);
+
+    // Calculate if selected photo is within view
+    let selectedPositionInView = -1;
+    if (selectedIndex >= startIndex && selectedIndex <= endIndex) {
+        selectedPositionInView = selectedIndex - startIndex;
+    }
+
+    return {
+        startIndex,
+        endIndex,
+        selectedPositionInView,
+        showPrev: startIndex > 0,
+        showNext: endIndex < totalPhotos - 1
+    };
 }
