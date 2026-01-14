@@ -187,11 +187,13 @@ function PhotosListMini(props) {
         invoke("get_config", {}).then((e) => {
             const json = JSON.parse(e);
             setThumbnailStore(json.thumbnail_store);
-            // Apply themes on load
-            if (json.photo_grid_theme) {
+            // Apply themes on load - preserve existing DOM state if already set
+            const currentGridTheme = document.documentElement.getAttribute('data-grid-theme');
+            const currentColorTheme = document.documentElement.getAttribute('data-theme');
+            if (!currentGridTheme && json.photo_grid_theme) {
                 document.documentElement.setAttribute('data-grid-theme', json.photo_grid_theme);
             }
-            if (json.color_theme) {
+            if (!currentColorTheme && json.color_theme) {
                 document.documentElement.setAttribute('data-theme', json.color_theme);
             }
         });
@@ -252,7 +254,7 @@ function PhotosListMini(props) {
             return null;
         }
 
-        const clientHeight = document.querySelector('#photos-list-mini')?.clientHeight - 20 || 80;
+        const clientHeight = document.querySelector('#photos-list-mini')?.clientHeight - 50 || 80;
 
         // Initialize image source if not already set - use functional state update to avoid mutation
         let imgSrc = photosListImgSrc[v.originalPath];
