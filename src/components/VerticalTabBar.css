@@ -42,7 +42,7 @@
     align-items: center;
     justify-content: center;
     white-space: nowrap;
-    border-radius: 5px 0 0 5px;
+    border-radius: 0;
 }
 
 .directory-vertical-text {
