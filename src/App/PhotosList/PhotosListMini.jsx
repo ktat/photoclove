@@ -5,7 +5,7 @@ import { ImgCacheContext, AllPhotosContext } from "../ImgCacheContext.jsx";
 import ContextualDeleteModal from "../../components/ContextualDeleteModal.jsx";
 import { logger } from "../../services/LoggerService.js";
 import { Photo } from "../../domain/Photo.js";
-import { parseCssStyle, calculateSimpleThumbnailDisplay, getDateKey as utilGetDateKey, createBorderStyles } from "./PhotosListMini/photoUtils.js";
+import { parseCssStyle, calculateSimpleThumbnailDisplay, calculateThumbnailDisplayWithViewOffset, getDateKey as utilGetDateKey, createBorderStyles } from "./PhotosListMini/photoUtils.js";
 import { useKeyboardShortcuts } from "./PhotosListMini/useKeyboardShortcuts.js";
 import { useDeletionOperations } from "./PhotosListMini/useDeletionOperations.js";
 import { usePhotoNavigation } from "./PhotosListMini/usePhotoNavigation.js";
@@ -62,6 +62,7 @@ function PhotosListMini(props) {
     const [photosListImgSrc, setPhotosListImgSrc] = useState({});
     const [photosListMiniClosed, setPhotosListMiniClosed] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
+    const [viewStartIndex, setViewStartIndex] = useState(null); // null means auto-center on selected photo
 
     // Check if we're in album mode
     const isAlbumMode = props.albumId !== undefined && props.albumId !== null;
@@ -98,7 +99,9 @@ function PhotosListMini(props) {
         getDateKey,
         num: props.num,
         imgCacheMap,
-        setImgCacheMap
+        setImgCacheMap,
+        viewStartIndex,
+        setViewStartIndex
     });
 
     // Use star operations hook
@@ -217,7 +220,7 @@ function PhotosListMini(props) {
         if (loadedCount > 0 && props.currentIndex >= 0) {
             adjustCurrentIndex();
         }
-    }, [props.currentIndex, props.reread, photosWithMethods.length, props.currentDate]);
+    }, [props.currentIndex, props.reread, photosWithMethods.length, props.currentDate, viewStartIndex]);
 
     function adjustCurrentIndex() {
         const totalPhotos = photosWithMethods.length;
@@ -229,7 +232,7 @@ function PhotosListMini(props) {
             return;
         }
 
-        const { startIndex, endIndex, borderPosition } = calculateSimpleThumbnailDisplay(photosWithMethods, selectedIndex);
+        const { startIndex, endIndex, selectedPositionInView } = calculateThumbnailDisplayWithViewOffset(photosWithMethods, selectedIndex, viewStartIndex);
 
         const photosIndex = [];
         for (let i = startIndex; i <= endIndex && i < totalPhotos; i++) {
@@ -239,7 +242,8 @@ function PhotosListMini(props) {
         }
 
         setShowPhotosIndex(photosIndex);
-        const newBorderStyle = createBorderStyles(photosIndex.length, borderPosition);
+        // selectedPositionInView is -1 if selected photo is not in view
+        const newBorderStyle = createBorderStyles(photosIndex.length, selectedPositionInView);
         setBorderStyle(newBorderStyle);
     }
 
@@ -404,7 +408,7 @@ function PhotosListMini(props) {
         );
     }, [photosWithMethods, photosListImgSrc, borderStyle, thumbnailOrientationCorrection, importState, goToPhoto]);
 
-    const { showPrev, showNext } = calculateSimpleThumbnailDisplay(photosWithMethods, props.currentIndex);
+    const { showPrev, showNext } = calculateThumbnailDisplayWithViewOffset(photosWithMethods, props.currentIndex, viewStartIndex);
 
     return (
         <>
