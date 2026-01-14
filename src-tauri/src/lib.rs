@@ -136,6 +136,10 @@ pub fn run() {
                     app.emit("click_menu_static", "about").unwrap();
                 } else if e.id == "github" {
                     app.emit("click_menu_static", "github").unwrap();
+                } else if e.id == "privacy_policy" {
+                    app.emit("click_menu_static", "privacy_policy").unwrap();
+                } else if e.id == "terms_of_use" {
+                    app.emit("click_menu_static", "terms_of_use").unwrap();
                 } else if e.id == "load_dates" {
                     app.emit("click_menu", "load_dates").unwrap();
                 } else if e.id == "create_db" {
