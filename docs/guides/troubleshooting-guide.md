@@ -155,3 +155,13 @@ This document provides comprehensive troubleshooting guidance for common issues 
 
 ### PhotoGrid Empty State Display
 **Fixed 2025-01-14**: PhotoGrid was showing empty theme background when no photos available. Fixed by hiding PhotoGrid component when photo count is zero in PhotoListContent.jsx
+
+### Privacy Policy and Terms of Use Menu Not Working
+**Fixed 2025-01-14**: Clicking Privacy Policy or Terms of Use in the Help (?) menu did nothing. Two issues:
+1. **Missing event handlers**: Menu items were defined in `lib.rs` but `on_menu_event` handler was missing cases for `privacy_policy` and `terms_of_use`
+2. **Tailwind CSS not installed**: DocumentViewer component used Tailwind CSS classes but PhotoClove doesn't use Tailwind, causing the modal to be invisible
+
+**Solution**:
+- Added event handlers for `privacy_policy` and `terms_of_use` in `src-tauri/src/lib.rs`
+- Migrated DocumentViewer to CSS Modules (`DocumentViewer.module.css`) using PhotoClove's design system variables
+- Fixed markdown parser to properly handle consecutive list items and remove extra `<br/>` tags around `<ul>` elements
