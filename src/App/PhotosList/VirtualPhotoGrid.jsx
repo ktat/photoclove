@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useEffect, useState, memo, useCallback } from 'react';
 import { Grid } from 'react-window';
 import PhotoCard from "./PhotoCard.jsx";
+import { Photo } from "../../domain/Photo.js";
 import styles from './PhotoGrid.module.css';
 
 /**
@@ -29,7 +30,26 @@ const PhotoCell = memo(function PhotoCell({
         return <div style={style} />;
     }
 
-    const photo = photos[index];
+    const photoData = photos[index];
+
+    // Convert JSON to Photo entity if needed (for methods like thumbnailPath, displayPath)
+    // This is important for trash photos which need displayPath() to get trash-relative path
+    const photo = useMemo(() => {
+        // If already a Photo instance (has displayPath method), use as is
+        if (photoData && typeof photoData.displayPath === 'function') {
+            return photoData;
+        }
+        // Convert JSON to Photo entity
+        if (photoData && photoData.originalPath) {
+            return Photo.fromJSON(photoData);
+        }
+        return photoData;
+    }, [photoData]);
+
+    if (!photo) {
+        return <div style={style} />;
+    }
+
     const tagCount = photo.getTags ? photo.getTags().length : (photo.tags?.length || 0);
     const photoKey = `${photo.originalPath}_${tagCount}`;
 
@@ -79,6 +99,23 @@ function VirtualPhotoGrid({
     const localContainerRef = useRef(null);
     const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
     const [shadow, setShadow] = useState({ top: false, bottom: true });
+    const [gridTheme, setGridTheme] = useState(() =>
+        document.documentElement.getAttribute('data-grid-theme') || 'default'
+    );
+
+    // Listen for theme changes via MutationObserver
+    useEffect(() => {
+        const observer = new MutationObserver((mutations) => {
+            for (const mutation of mutations) {
+                if (mutation.attributeName === 'data-grid-theme') {
+                    const newTheme = document.documentElement.getAttribute('data-grid-theme') || 'default';
+                    setGridTheme(newTheme);
+                }
+            }
+        });
+        observer.observe(document.documentElement, { attributes: true });
+        return () => observer.disconnect();
+    }, []);
 
     // Update shadow state based on scroll position
     const updateShadow = useCallback(() => {
@@ -92,10 +129,31 @@ function VirtualPhotoGrid({
         });
     }, []);
 
-    // Calculate cell dimensions based on iconSize
-    // Each cell includes the photo + padding/margins
-    const cellWidth = iconSize + 41; // Match the flex basis calculation from PhotoCard
-    const cellHeight = iconSize + 60; // Height including metadata overlay and menu
+    // Calculate extra space needed for each theme beyond base iconSize
+    // Each theme has different margin, padding, border requirements
+    // Base (41, 60) was too small - actual requirement is ~65px width for default theme:
+    // margin 16px + padding 8px + border 4px + thumbnailBorder 4px + menu 33px = 65px
+    const themeExtraSpace = useMemo(() => {
+        switch (gridTheme) {
+            case 'slide-mount':
+            case 'slide-35mm':
+                // margin 24px + padding 24px + border ~8px + menu 33px = ~89px
+                return { width: 48, height: 24 };
+            case 'lightbox':
+                // margin 16px + padding 16px + border ~4px + menu 33px = ~69px
+                return { width: 32, height: 8 };
+            case 'filmstrip':
+                // margin 0 + padding ~24px + menu 33px = ~57px
+                return { width: 24, height: 0 };
+            default:
+                // Default: margin 16px + padding 8px + border 8px + menu 33px = 65px
+                // Base 41 needs +24 to reach 65
+                return { width: 24, height: 0 };
+        }
+    }, [gridTheme]);
+
+    const cellWidth = iconSize + 41 + themeExtraSpace.width;
+    const cellHeight = iconSize + 60 + themeExtraSpace.height;
 
     // Calculate column count based on container width
     const columnCount = useMemo(() => {

@@ -52,6 +52,26 @@
     flex-direction: column;
     height: 100%;
     position: relative;
+    transition: background-color 0.3s ease-out, background 0.3s ease-out;
+}
+
+/* ===== Theme-specific background colors ===== */
+
+/* Slide Mount Theme - Light gray background */
+:global([data-grid-theme="slide-mount"]) .virtualGridContainer {
+    background-color: var(--color-theme-slide-mount-bg);
+}
+
+/* 35mm Slide Theme - Tan/brown gradient background */
+:global([data-grid-theme="slide-35mm"]) .virtualGridContainer {
+    background: linear-gradient(135deg, var(--color-theme-slide-35mm-bg-start) 0%, var(--color-theme-slide-35mm-bg-end) 100%);
+}
+
+/* Light Box Theme - Subtle blue backlight effect */
+/* Uses theme-aware variables defined in base.css */
+:global([data-grid-theme="lightbox"]) .virtualGridContainer {
+    background: linear-gradient(180deg, var(--color-theme-lightbox-gradient-start) 0%, var(--color-theme-lightbox-gradient-end) 100%);
+    background-color: var(--color-bg-base);
 }
 
 /* The react-window grid element */
