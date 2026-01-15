@@ -211,14 +211,8 @@ function PhotoListContent({
                                     currentAlbumName={currentAlbumName}
                                     currentTagName={currentTagName}
                                     searchQuery={searchQuery}
-                                    isSearchMode={isSearchMode}
-                                    clearSearch={clearSearch}
                                     toggleAlbumListMode={toggleAlbumListMode}
                                     openTagsList={openTagsList}
-                                    toggleHome={toggleHome}
-                                    filteredPhotos={filteredPhotos}
-                                    infiniteScrollEnabled={infiniteScrollEnabled}
-                                    displayedPhotoCount={displayedPhotoCount}
                                     isLimitedByConfig={isLimitedByConfig}
                                 />
                                 <PhotosToolbar
@@ -247,14 +241,11 @@ function PhotoListContent({
                         {displayedPhotos.length > 0 && (
                             <PhotoGrid
                                 displayedPhotos={displayedPhotos}
-                                totalPhotosCount={filteredPhotos.length}
                                 allPhotos={filteredPhotos}
                                 iconSize={iconSize}
                                 photoSelectionDict={photoSelectionDict}
                                 onAddSelection={addSelection}
                                 onDisplayPhoto={displayPhoto}
-                                isLimitedByConfig={isLimitedByConfig}
-                                configLimit={configLimit}
                                 starFilter={viewModeObj.isImportMode() ? 0 : starFilter}
                                 hasCommentFilter={viewModeObj.isImportMode() ? false : hasCommentFilter}
                                 hasTagFilter={viewModeObj.isImportMode() ? false : hasTagFilter}

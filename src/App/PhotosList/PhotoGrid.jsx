@@ -9,14 +9,11 @@ import styles from './PhotoGrid.module.css';
  */
 function PhotoGrid({
     displayedPhotos,
-    totalPhotosCount,
     allPhotos,
     iconSize,
     photoSelectionDict,
     onAddSelection,
     onDisplayPhoto,
-    isLimitedByConfig,
-    configLimit,
     starFilter,
     hasCommentFilter,
     hasTagFilter,
@@ -70,7 +67,6 @@ function PhotoGrid({
 
             <VirtualPhotoGrid
                 displayedPhotos={photos}
-                totalPhotosCount={totalPhotosCount}
                 iconSize={iconSize}
                 photoSelectionDict={photoSelectionDict}
                 onAddSelection={onAddSelection}
@@ -79,8 +75,6 @@ function PhotoGrid({
                 importState={importState}
                 thumbnailOrientationCorrection={thumbnailOrientationCorrection}
                 containerRef={containerRef}
-                isLimitedByConfig={isLimitedByConfig}
-                configLimit={configLimit}
             />
         </div>
     );
