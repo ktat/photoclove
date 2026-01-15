@@ -20,6 +20,7 @@ function PhotoGrid({
     extensionFilter,
     onClearFilters,
     setShowSideMenu,
+    showSideMenu,
     importState,
     thumbnailOrientationCorrection = false
 }) {
@@ -72,6 +73,7 @@ function PhotoGrid({
                 onAddSelection={onAddSelection}
                 onDisplayPhoto={onDisplayPhoto}
                 setShowSideMenu={setShowSideMenu}
+                showSideMenu={showSideMenu}
                 importState={importState}
                 thumbnailOrientationCorrection={thumbnailOrientationCorrection}
                 containerRef={containerRef}

@@ -253,6 +253,7 @@ function PhotoListContent({
                                 onClearFilters={clearAllFilters}
                                 importState={importState}
                                 setShowSideMenu={setShowSideMenu}
+                                showSideMenu={showSideMenu}
                                 thumbnailOrientationCorrection={thumbnailOrientationCorrection}
                             />
                         )}

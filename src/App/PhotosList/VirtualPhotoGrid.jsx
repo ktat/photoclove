@@ -88,6 +88,7 @@ function VirtualPhotoGrid({
     onAddSelection,
     onDisplayPhoto,
     setShowSideMenu,
+    showSideMenu,
     importState,
     thumbnailOrientationCorrection = false,
     containerRef
@@ -160,7 +161,7 @@ function VirtualPhotoGrid({
         return Math.ceil(displayedPhotos.length / columnCount);
     }, [displayedPhotos.length, columnCount]);
 
-    // Update container size on mount and resize
+    // Update container size on mount, resize, and side menu toggle
     useEffect(() => {
         const updateSize = () => {
             // Calculate available space based on viewport and UI elements
@@ -208,7 +209,7 @@ function VirtualPhotoGrid({
             clearTimeout(timeoutId);
             window.removeEventListener('resize', updateSize);
         };
-    }, []);
+    }, [showSideMenu]); // Re-run when side menu toggles
 
     // Attach scroll listener for shadow effects
     useEffect(() => {
