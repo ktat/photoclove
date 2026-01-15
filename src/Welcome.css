@@ -1,7 +1,15 @@
 /* Welcome Component Styles */
 #welcome-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   min-height: calc(100vh - 55px);
-  height: calc(100% - 15px)
+  height: calc(100% - 15px);
+  padding: 20px;
+}
+
+#welcome-container h1 {
+  margin: 0 0 20px 0;
 }
 
 #login-container,
@@ -13,11 +21,14 @@
 }
 
 #welcome-container .welcome-splash {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
   text-align: center;
   overflow-y: hidden;
-  max-height: calc(100vh - 150px);
-  width: calc(var(--vw) - 100px);
-  padding: 0px 50px 50px 50px;
+  width: 100%;
+  padding: 0;
 }
 
 #login-container {

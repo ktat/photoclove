@@ -60,44 +60,170 @@ p.dateListTitle {
   margin: 0px 0px 0px 0px;
 }
 
+/* DateList Title */
+.dateList-title {
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  margin: var(--space-3) var(--space-2) var(--space-2) var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dateList-refresh {
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  transition: color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dateList-refresh:hover {
+  color: var(--color-text-primary);
+}
+
+.dateList-refresh .refresh-icon {
+  position: relative;
+  top: 1px;
+}
+
+.dateList-refresh .refresh-text {
+  display: none;
+  font-size: var(--font-size-xs);
+}
+
+.dateList-refresh:hover .refresh-text {
+  display: flex;
+  gap: 1px;
+}
+
+.dateList-refresh .refresh-text span {
+  animation: refresh-wave-fade 1.8s ease-in-out infinite;
+}
+
+.dateList-refresh .refresh-text span.space {
+  width: 4px;
+}
+
+.dateList-refresh .refresh-text span:nth-child(1) { animation-delay: 0s; }
+.dateList-refresh .refresh-text span:nth-child(2) { animation-delay: 0.05s; }
+.dateList-refresh .refresh-text span:nth-child(3) { animation-delay: 0.1s; }
+.dateList-refresh .refresh-text span:nth-child(4) { animation-delay: 0.15s; }
+.dateList-refresh .refresh-text span:nth-child(5) { animation-delay: 0.2s; }
+.dateList-refresh .refresh-text span:nth-child(6) { animation-delay: 0.25s; }
+.dateList-refresh .refresh-text span:nth-child(7) { animation-delay: 0.3s; }
+.dateList-refresh .refresh-text span:nth-child(8) { animation-delay: 0.35s; }
+.dateList-refresh .refresh-text span:nth-child(9) { animation-delay: 0.4s; }
+.dateList-refresh .refresh-text span:nth-child(10) { animation-delay: 0.45s; }
+.dateList-refresh .refresh-text span:nth-child(11) { animation-delay: 0.5s; }
+.dateList-refresh .refresh-text span:nth-child(12) { animation-delay: 0.55s; }
+.dateList-refresh .refresh-text span:nth-child(13) { animation-delay: 0.6s; }
+.dateList-refresh .refresh-text span:nth-child(14) { animation-delay: 0.65s; }
+.dateList-refresh .refresh-text span:nth-child(15) { animation-delay: 0.7s; }
+
+@keyframes refresh-wave-fade {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* Loading Progress Bar */
+.dateList-loading {
+  flex: 1;
+  height: 3px;
+  background: var(--color-bg-muted);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.dateList-loading-bar {
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
+  animation: dateList-progress-slide 1.5s ease-in-out infinite;
+}
+
+@keyframes dateList-progress-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+/* Compact Filter Bar (Option B) */
+.dateList-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: var(--color-bg-surface);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-subtle);
+  margin: 0 var(--space-2) var(--space-1) var(--space-2);
+}
+
+.filter-bar-item {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.filter-bar-select {
+  background: transparent;
+  color: var(--color-text-primary);
+  border: none;
+  padding: 2px 0;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  margin: 0;
+  min-width: 0;
+  flex: 1;
+}
+
+.filter-bar-select:focus {
+  outline: none;
+}
+
+.filter-bar-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--color-border-default);
+  flex-shrink: 0;
+}
+
+.filter-bar-toggle {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.filter-bar-toggle button {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: none;
+  padding: var(--space-1) var(--space-2);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-sm);
+  transition: all 0.15s;
+  margin: 0;
+}
+
+.filter-bar-toggle button:hover {
+  color: var(--color-text-primary);
+}
+
+.filter-bar-toggle button.active {
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+}
+
 div.dateList,
 div.dateList ul {
   padding-top: var(--space-3);
   margin-top: 0px;
 }
 
-@keyframes date-list-loader {
-  0% {
-    transform: rotate(-45deg);
-  }
-
-  50% {
-    transform: rotate(45deg);
-  }
-
-  100% {
-    transform: rotate(-45deg);
-  }
-}
-
-.dateListLoading-container {
-  display: inline-block;
-  padding: 0px 0px 0px 2px;
-}
-
-div.dateListLoading {
-  color: gray;
-  display: inline-block;
-  animation: date-list-loader 2s linear infinite;
-  padding: 0px 0px 0px 2px;
-}
-
-div.dateListLoading-crub {
-  padding-left: 5px;
-  display: inline-block;
-  font-size: 7px;
-  animation: date-list-loader 0.8s linear infinite;
-}
 
 /* Date List Filter Controls */
 .dateListFilters select {
@@ -216,8 +342,8 @@ div.dateListLoading-crub {
 .leftMenu.collapsed .dateList-controls,
 .leftMenu.collapsed .date-list-title,
 .leftMenu.collapsed .date-filters-controls,
-.leftMenu.collapsed .dateListLoading-container,
-.leftMenu.collapsed .dateListLoading-crub {
+.leftMenu.collapsed .dateList-title,
+.leftMenu.collapsed .dateList-filter-bar {
   display: none;
 }
 
@@ -322,9 +448,7 @@ div.dateListLoading-crub {
   .leftMenu .dateList,
   .leftMenu .row,
   .leftMenu .date-list-title,
-  .leftMenu .date-filters-controls,
-  .leftMenu .dateListLoading-container,
-  .leftMenu .dateListLoading-crub {
+  .leftMenu .date-filters-controls {
     display: none !important;
   }
 
@@ -387,9 +511,16 @@ div.dateListLoading-crub {
 
   .leftMenu:not(.collapsed) .date-list-title,
   .leftMenu:not(.collapsed) .date-filters-controls,
-  .leftMenu:not(.collapsed) .dateListLoading-container,
-  .leftMenu:not(.collapsed) .dateListLoading-crub {
+  .leftMenu:not(.collapsed) .dateList-title {
     display: block !important;
+  }
+
+  .leftMenu:not(.collapsed) .dateList-title {
+    display: flex !important;
+  }
+
+  .leftMenu:not(.collapsed) .dateList-filter-bar {
+    display: flex !important;
   }
 
   /* Restore dateList-controls layout when expanded */
