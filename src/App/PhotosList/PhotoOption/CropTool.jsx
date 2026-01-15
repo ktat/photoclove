@@ -1,6 +1,6 @@
 /**
  * CropTool - Crop overlay component for PhotoEditor
- * Renders the crop selection interface on the photo container
+ * Renders the crop selection interface directly over the image
  */
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
@@ -13,24 +13,25 @@ import ReactDOM from 'react-dom';
  * @param {Object} props.handlers - Mouse event handlers (onMouseDown, onMouseMove, onMouseUp)
  */
 function CropTool({ cropMode, cropSelection, handlers }) {
-    const [photoContainer, setPhotoContainer] = useState(null);
+    const [imageWrapper, setImageWrapper] = useState(null);
 
     useEffect(() => {
         if (cropMode) {
-            const container = document.querySelector('#photo');
-            if (container) {
-                // Ensure photo container is positioned relatively
-                if (window.getComputedStyle(container).position === 'static') {
-                    container.style.position = 'relative';
+            // Use #imageWrapper which directly contains the image
+            const wrapper = document.querySelector('#imageWrapper');
+            if (wrapper) {
+                // Ensure wrapper is positioned relatively for absolute positioning of overlay
+                if (window.getComputedStyle(wrapper).position === 'static') {
+                    wrapper.style.position = 'relative';
                 }
-                setPhotoContainer(container);
+                setImageWrapper(wrapper);
             }
         } else {
-            setPhotoContainer(null);
+            setImageWrapper(null);
         }
     }, [cropMode]);
 
-    if (!cropMode || !photoContainer) {
+    if (!cropMode || !imageWrapper) {
         return null;
     }
 
@@ -99,7 +100,7 @@ function CropTool({ cropMode, cropSelection, handlers }) {
                 </div>
             </div>
         </div>,
-        photoContainer
+        imageWrapper
     );
 }
 

@@ -8,7 +8,7 @@ import { isPermissionGranted, requestPermission, sendNotification } from '@tauri
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { logger } from '../../../../services/LoggerService.js';
 import fileUrl from '../../../../PathUtil.jsx';
-import { applyFiltersToCanvas, applyTransformsToCanvas } from './imageProcessing.js';
+import { applyFiltersToCanvas, applyTransformsToCanvas, applyCropToCanvas, calculateRotatedDimensions, calculateScaledDimensions } from './imageProcessing.js';
 
 /**
  * Maximum image size for processing to prevent memory issues
@@ -17,13 +17,14 @@ const MAX_IMAGE_SIZE = 4096;
 
 /**
  * Create a styled canvas from the main image with applied editor styles
+ * Processing order: 1. Filters -> 2. Crop -> 3. Rotate -> 4. Scale
  * @param {HTMLImageElement} mainImage - The source image element
  * @param {Object} editorStyles - The editor styles to apply
  * @returns {Promise<HTMLCanvasElement>} The styled canvas
  */
 export function createStyledCanvas(mainImage, editorStyles) {
     return new Promise((resolve, reject) => {
-        const { rotate, brightness, contrast, saturation, hue, scale } = editorStyles;
+        const { rotate, brightness, contrast, saturation, hue, scale, crop } = editorStyles;
 
         // Calculate dimensions with size limit
         let width = mainImage.naturalWidth || mainImage.width;
@@ -41,18 +42,12 @@ export function createStyledCanvas(mainImage, editorStyles) {
             });
         }
 
-        // Create main canvas
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = width;
-        canvas.height = height;
-
         // Create temporary image for processing
         const tempImg = new Image();
         tempImg.crossOrigin = 'anonymous';
 
         tempImg.onload = function() {
-            // Create temporary canvas for filters
+            // Step 1: Create temporary canvas for filters
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
             tempCanvas.width = tempImg.width;
@@ -65,8 +60,35 @@ export function createStyledCanvas(mainImage, editorStyles) {
             applyFiltersToCanvas(tempCtx, tempCanvas.width, tempCanvas.height,
                 { brightness, contrast, saturation, hue });
 
-            // Apply transforms
-            applyTransformsToCanvas(ctx, canvas.width, canvas.height, tempCanvas,
+            // Step 2: Apply crop
+            const croppedCanvas = applyCropToCanvas(tempCanvas, crop);
+
+            // Step 3 & 4: Calculate final dimensions after rotation and scale
+            let finalWidth = croppedCanvas.width;
+            let finalHeight = croppedCanvas.height;
+
+            // Calculate rotated dimensions
+            if (rotate !== 0) {
+                const rotatedDims = calculateRotatedDimensions(finalWidth, finalHeight, rotate);
+                finalWidth = rotatedDims.width;
+                finalHeight = rotatedDims.height;
+            }
+
+            // Calculate scaled dimensions
+            if (scale !== 100) {
+                const scaledDims = calculateScaledDimensions(finalWidth, finalHeight, scale);
+                finalWidth = scaledDims.width;
+                finalHeight = scaledDims.height;
+            }
+
+            // Create final canvas with correct dimensions
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = Math.max(1, finalWidth);
+            canvas.height = Math.max(1, finalHeight);
+
+            // Apply transforms (rotate and scale)
+            applyTransformsToCanvas(ctx, canvas.width, canvas.height, croppedCanvas,
                 { rotate, scale });
 
             resolve(canvas);
@@ -119,11 +141,11 @@ export async function downloadStyledImage({ mainImage, editorStyles, photoPath, 
     try {
         const canvas = await createStyledCanvas(mainImage, editorStyles);
 
-        // Convert canvas to blob and download
+        // Convert canvas to blob and download (use JPEG for consistency with Save as Copy)
         canvas.toBlob(async function(blob) {
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            const fileName = photoPath.split('/').pop().replace(/\.[^/.]+$/, '_styled.png');
+            const fileName = photoPath.split('/').pop().replace(/\.[^/.]+$/, '_styled.jpg');
             link.download = fileName;
             link.href = url;
             document.body.appendChild(link);
@@ -182,7 +204,7 @@ export async function downloadStyledImage({ mainImage, editorStyles, photoPath, 
                 // Fallback to footer message only
                 addFooterMessage("download", `Styled image downloaded: ${fileName}`, false, 5000);
             }
-        }, 'image/png');
+        }, 'image/jpeg', 0.95);
 
     } catch (error) {
         logger.error('PhotoExport', 'download_failed', 'Download failed', { error: error.message });
