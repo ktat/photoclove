@@ -18,10 +18,57 @@
     margin-bottom: 12px;
 }
 
+/* Editor table layout */
+.editor-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    border: none;
+}
+
+.editor-table td {
+    padding: 2px 1px;
+    vertical-align: middle;
+    border: none;
+    text-align: left;
+}
+
+.editor-table td:nth-child(2) {
+    padding-left: 0;
+    padding-right: 10px;
+}
+
+.editor-table td:first-child {
+    width: 70px;
+    padding-left: 0;
+}
+
+.editor-table td:nth-child(3) {
+    width: 36px;
+}
+
+.editor-table td:nth-child(4) {
+    width: 18px;
+    padding-right: 0;
+}
+
+.label-cell {
+    font-weight: bold;
+    font-size: 11px;
+    color: var(--color-text-primary);
+    vertical-align: middle !important;
+}
+
+.shortcuts-cell {
+    display: flex;
+    gap: 2px;
+    padding: 1px 0 !important;
+}
+
 .editor-control {
     display: flex;
-    align-items: center;
-    gap: 6px;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .editor-control label {
@@ -34,7 +81,9 @@
 .editor-control input[type="range"],
 .editor-slider {
     flex: 1;
+    width: 100%;
     height: 4px;
+    margin: 0;
     background: var(--color-bg-muted);
     border-radius: var(--radius-sm);
     outline: none;
@@ -77,15 +126,16 @@
 
 /* Value input for editor controls */
 .value-input {
-    width: 40px;
-    padding: 2px 4px;
+    width: 42px !important;
+    max-width: 42px !important;
+    padding: 1px 2px !important;
     border: 1px solid var(--color-border-default);
     border-radius: var(--radius-sm);
     background: var(--color-bg-elevated);
     color: var(--color-text-primary);
-    font-size: 11px;
+    font-size: 10px;
     text-align: center;
-    margin: 0 2px;
+    margin: 0 1px;
 }
 
 .value-input:focus {
@@ -208,22 +258,19 @@
     background: var(--color-text-muted) !important;
 }
 
-.rotation-shortcuts {
-    display: flex;
-    gap: 4px;
-    margin-top: 2px;
-}
 
 .shortcut-btn {
     background: var(--color-bg-elevated) !important;
     color: var(--color-text-secondary) !important;
     border: 1px solid var(--color-border-strong) !important;
-    border-radius: 3px !important;
-    padding: 2px 6px !important;
+    border-radius: 2px !important;
+    padding: 0px 2px !important;
     cursor: pointer;
-    font-size: 10px;
+    font-size: 8px;
+    line-height: 1.2;
     transition: background-color 0.2s ease-out;
     margin: 0 !important;
+    white-space: nowrap;
 }
 
 .shortcut-btn:hover {

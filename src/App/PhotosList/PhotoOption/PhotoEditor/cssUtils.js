@@ -34,16 +34,16 @@ export function parseCssToEditorValues(cssString) {
     if (transformMatch) {
         const transformValue = transformMatch[1];
 
-        // Parse rotation: rotate(90deg)
+        // Parse rotation: rotate(90deg) - preserve decimal precision
         const rotateMatch = transformValue.match(/rotate\((-?\d+(?:\.\d+)?)deg\)/);
         if (rotateMatch) {
-            values.rotate = parseInt(rotateMatch[1]);
+            values.rotate = parseFloat(rotateMatch[1]);
         }
 
-        // Parse scale: scale(1.5)
+        // Parse scale: scale(1.5) - preserve decimal precision
         const scaleMatch = transformValue.match(/scale\((\d+(?:\.\d+)?)\)/);
         if (scaleMatch) {
-            values.scale = Math.round(parseFloat(scaleMatch[1]) * 100);
+            values.scale = parseFloat(scaleMatch[1]) * 100;
         }
     }
 

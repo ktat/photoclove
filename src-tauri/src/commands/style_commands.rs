@@ -115,6 +115,13 @@ pub async fn save_styled_copy_from_frontend(
 
     fs::write(&new_path, image_bytes).map_err(|e| format!("Failed to write image file: {}", e))?;
 
+    // TODO: Copy EXIF metadata from original photo to styled copy
+    // Canvas.toBlob() loses all EXIF data. To preserve EXIF:
+    // 1. Add rexiv2 crate (requires system gexiv2 library)
+    // 2. Read EXIF from original_photo_path
+    // 3. Write EXIF to new_path (except Orientation which may need updating)
+    // See improvement/165-4-exif-format.md for details
+
     // 6. Create Photo object and add to database
     let new_file = file::File::new(new_path_str.clone());
     let mut new_photo = photo::Photo::new(new_file, Some(state.config.clone()));
@@ -176,7 +183,7 @@ pub async fn save_styled_copy_from_frontend(
 
 /// Normalizes CSS style string for consistent hashing
 ///
-/// This helper function parses CSS properties, extracts transform and filter values,
+/// This helper function parses CSS properties, extracts transform, filter, and clip-path values,
 /// sorts them alphabetically, and creates a normalized CSS string. This ensures that
 /// equivalent CSS styles produce the same hash regardless of property order.
 ///
@@ -191,7 +198,7 @@ pub(crate) fn normalize_css_style(css: &str) -> String {
     // Parse CSS properties and sort them alphabetically
     let mut properties = HashMap::new();
 
-    // Simple CSS parsing - extract transform and filter properties
+    // Simple CSS parsing - extract transform, filter, and clip-path properties
     if let Some(transform_start) = css.find("transform:") {
         if let Some(transform_end) = css[transform_start..].find(';') {
             let transform_value = css[transform_start + 10..transform_start + transform_end].trim();
@@ -203,6 +210,14 @@ pub(crate) fn normalize_css_style(css: &str) -> String {
         if let Some(filter_end) = css[filter_start..].find(';') {
             let filter_value = css[filter_start + 7..filter_start + filter_end].trim();
             properties.insert("filter", filter_value);
+        }
+    }
+
+    // Extract clip-path for crop information
+    if let Some(clip_start) = css.find("clip-path:") {
+        if let Some(clip_end) = css[clip_start..].find(';') {
+            let clip_value = css[clip_start + 10..clip_start + clip_end].trim();
+            properties.insert("clip-path", clip_value);
         }
     }
 

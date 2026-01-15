@@ -3,6 +3,8 @@
  * Contains shared filter logic for brightness, contrast, saturation, and hue adjustments
  */
 
+import { isCropDefault } from './cropUtils.js';
+
 /**
  * Apply brightness adjustment to RGB values
  * @param {number} r - Red value (0-255)
@@ -14,11 +16,13 @@
 export function applyBrightness(r, g, b, brightness) {
     if (brightness === 100) return { r, g, b };
 
-    const multiplier = brightness / 100;
+    // Guard against negative values (clamp to 0)
+    const safeBrightness = Math.max(0, brightness);
+    const multiplier = safeBrightness / 100;
     return {
-        r: Math.min(255, r * multiplier),
-        g: Math.min(255, g * multiplier),
-        b: Math.min(255, b * multiplier)
+        r: Math.min(255, Math.max(0, r * multiplier)),
+        g: Math.min(255, Math.max(0, g * multiplier)),
+        b: Math.min(255, Math.max(0, b * multiplier))
     };
 }
 
@@ -170,6 +174,79 @@ export function applyFiltersToCanvas(ctx, width, height, filters) {
 }
 
 /**
+ * Apply crop to canvas, returning a new cropped canvas
+ * @param {HTMLCanvasElement} sourceCanvas - Source canvas to crop
+ * @param {Object} crop - Crop values in percentage (x, y, width, height)
+ * @returns {HTMLCanvasElement} New canvas with cropped image
+ */
+export function applyCropToCanvas(sourceCanvas, crop) {
+    if (!crop || isCropDefault(crop)) {
+        return sourceCanvas;
+    }
+
+    const cropX = (crop.x / 100) * sourceCanvas.width;
+    const cropY = (crop.y / 100) * sourceCanvas.height;
+    const cropWidth = (crop.width / 100) * sourceCanvas.width;
+    const cropHeight = (crop.height / 100) * sourceCanvas.height;
+
+    const croppedCanvas = document.createElement('canvas');
+    croppedCanvas.width = Math.max(1, Math.round(cropWidth));
+    croppedCanvas.height = Math.max(1, Math.round(cropHeight));
+    const ctx = croppedCanvas.getContext('2d');
+
+    ctx.drawImage(
+        sourceCanvas,
+        cropX, cropY, cropWidth, cropHeight,
+        0, 0, croppedCanvas.width, croppedCanvas.height
+    );
+
+    return croppedCanvas;
+}
+
+/**
+ * Calculate output dimensions after rotation
+ * @param {number} width - Original width
+ * @param {number} height - Original height
+ * @param {number} rotate - Rotation in degrees
+ * @returns {{width: number, height: number}} Output dimensions
+ */
+export function calculateRotatedDimensions(width, height, rotate) {
+    const normalizedRotate = ((rotate % 360) + 360) % 360;
+
+    if (normalizedRotate === 90 || normalizedRotate === 270) {
+        return { width: height, height: width };
+    }
+
+    if (normalizedRotate === 0 || normalizedRotate === 180) {
+        return { width, height };
+    }
+
+    // For arbitrary angles, calculate bounding box
+    const rad = (normalizedRotate * Math.PI) / 180;
+    const cos = Math.abs(Math.cos(rad));
+    const sin = Math.abs(Math.sin(rad));
+    return {
+        width: Math.ceil(width * cos + height * sin),
+        height: Math.ceil(width * sin + height * cos)
+    };
+}
+
+/**
+ * Calculate output dimensions after scaling
+ * @param {number} width - Original width
+ * @param {number} height - Original height
+ * @param {number} scale - Scale percentage (100 = no change)
+ * @returns {{width: number, height: number}} Output dimensions
+ */
+export function calculateScaledDimensions(width, height, scale) {
+    const factor = scale / 100;
+    return {
+        width: Math.round(width * factor),
+        height: Math.round(height * factor)
+    };
+}
+
+/**
  * Apply rotation and scale transforms to canvas
  * @param {CanvasRenderingContext2D} ctx - Canvas 2D context
  * @param {number} canvasWidth - Final canvas width
@@ -198,7 +275,8 @@ export function applyTransformsToCanvas(ctx, canvasWidth, canvasHeight, sourceCa
 }
 
 /**
- * Process an image with all editor styles (filters and transforms)
+ * Process an image with all editor styles (filters, crop, and transforms)
+ * Processing order: 1. Filters -> 2. Crop -> 3. Rotate -> 4. Scale
  * @param {HTMLImageElement} sourceImage - Source image element
  * @param {Object} editorStyles - Editor styles object
  * @param {number} maxSize - Maximum dimension size (default 4096)
@@ -206,7 +284,7 @@ export function applyTransformsToCanvas(ctx, canvasWidth, canvasHeight, sourceCa
  */
 export function processImage(sourceImage, editorStyles, maxSize = 4096) {
     return new Promise((resolve, reject) => {
-        const { rotate, brightness, contrast, saturation, hue, scale } = editorStyles;
+        const { rotate, brightness, contrast, saturation, hue, scale, crop } = editorStyles;
 
         // Calculate dimensions, limiting to maxSize
         let width = sourceImage.naturalWidth || sourceImage.width;
@@ -218,7 +296,7 @@ export function processImage(sourceImage, editorStyles, maxSize = 4096) {
             height = Math.floor(height * scaleRatio);
         }
 
-        // Create temporary canvas for filters
+        // Step 1: Create temporary canvas for filters
         const tempCanvas = document.createElement('canvas');
         const tempCtx = tempCanvas.getContext('2d');
         tempCanvas.width = width;
@@ -230,14 +308,35 @@ export function processImage(sourceImage, editorStyles, maxSize = 4096) {
         // Apply filters
         applyFiltersToCanvas(tempCtx, width, height, { brightness, contrast, saturation, hue });
 
-        // Create final canvas for transforms
+        // Step 2: Apply crop
+        const croppedCanvas = applyCropToCanvas(tempCanvas, crop);
+
+        // Step 3 & 4: Calculate final dimensions after rotation and scale
+        let finalWidth = croppedCanvas.width;
+        let finalHeight = croppedCanvas.height;
+
+        // Calculate rotated dimensions
+        if (rotate !== 0) {
+            const rotatedDims = calculateRotatedDimensions(finalWidth, finalHeight, rotate);
+            finalWidth = rotatedDims.width;
+            finalHeight = rotatedDims.height;
+        }
+
+        // Calculate scaled dimensions
+        if (scale !== 100) {
+            const scaledDims = calculateScaledDimensions(finalWidth, finalHeight, scale);
+            finalWidth = scaledDims.width;
+            finalHeight = scaledDims.height;
+        }
+
+        // Create final canvas with correct dimensions
         const finalCanvas = document.createElement('canvas');
         const finalCtx = finalCanvas.getContext('2d');
-        finalCanvas.width = width;
-        finalCanvas.height = height;
+        finalCanvas.width = Math.max(1, finalWidth);
+        finalCanvas.height = Math.max(1, finalHeight);
 
-        // Apply transforms
-        applyTransformsToCanvas(finalCtx, width, height, tempCanvas, { rotate, scale });
+        // Apply transforms (rotate and scale)
+        applyTransformsToCanvas(finalCtx, finalCanvas.width, finalCanvas.height, croppedCanvas, { rotate, scale });
 
         resolve(finalCanvas);
     });
