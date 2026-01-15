@@ -6,14 +6,66 @@
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>&#x1f980;Photoclove</title>
+  <style>
+    #firstView {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 40px;
+      background-color: #1b1b1b;
+      width: 100vw;
+      height: 100vh;
+      box-sizing: border-box;
+      color: white;
+    }
+    #firstView h1 {
+      margin: 0 0 24px 0;
+      font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+      font-weight: 500;
+    }
+    .loading-dots {
+      display: inline-flex;
+      margin-left: 2px;
+    }
+    .loading-dots .dot {
+      animation: dot-blink 0.6s ease-in-out infinite;
+      opacity: 0;
+    }
+    .loading-dots .dot:nth-child(1) { animation-delay: 0s; }
+    .loading-dots .dot:nth-child(2) { animation-delay: 0.1s; }
+    .loading-dots .dot:nth-child(3) { animation-delay: 0.2s; }
+    @keyframes dot-blink {
+      0%, 20% { opacity: 0; }
+      40%, 100% { opacity: 1; }
+    }
+    #firstView .splash-frame {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 64px;
+      background: #242424;
+      border: 1px solid #333333;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    #firstView .splash-frame img {
+      max-width: 80vw;
+      max-height: 65vh;
+      border-radius: 12px;
+      object-fit: contain;
+    }
+  </style>
 </head>
 
 <body style="margin: 0px; padding: 0px; overflow: hidden">
   <div id="root" style="margin: 0px; padding: 0px; overflow: hidden">
-    <div id="firstView" style="text-align: center; margin: 0px; padding: 20px; background-color: black; width:
-  100wh; height: 100vh;color: white;">
-      <h1>PhotoClove is Loading ...</h1>
-      <img src="/bird.jpg" width="100%" />
+    <div id="firstView">
+      <h1>PhotoClove is Loading <span class="loading-dots"><span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></span></h1>
+      <div class="splash-frame">
+        <img src="/bird.jpg" alt="Loading..." />
+      </div>
     </div>
     <script type="module" src="/src/main.jsx"></script>
   </div>

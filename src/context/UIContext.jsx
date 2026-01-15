@@ -4,6 +4,7 @@ import { message } from '@tauri-apps/plugin-dialog';
 import { useViewMode } from '../hooks/useViewMode.js';
 import { VIEW_MODES } from '../constants/viewModes.js';
 import { logger } from '../services/LoggerService.js';
+import WelcomeImage from '../WelcomeImage.jsx';
 
 const UIContext = createContext();
 
@@ -18,10 +19,10 @@ export const useUI = () => {
 export const UIProvider = ({ children }) => {
   // Use the new view mode state machine
   const viewMode = useViewMode(VIEW_MODES.HOME);
-  
+
   // Keep non-view-related state
   const [footerMessages, setFooterMessages] = useState({});
-  const [welcomeImage, setWelcomeImage] = useState("");
+  const [welcomeImage, setWelcomeImage] = useState(WelcomeImage());
   const [useCount, setUseCount] = useState(0);
 
   const addFooterMessage = useCallback((k, v, withDialog, deleteAfter) => {

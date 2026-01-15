@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { flushSync } from "react-dom";
 import Scrollable from "../Scrollable.jsx";
 import '../scrollable.css';
 import { usePhoto } from "../context/PhotoContext.jsx";
@@ -21,6 +22,17 @@ function DateList(props) {
     const { toggleSearchPage, showPhotosListView, showDatePhotos, showRecentPhotos, viewMode: currentAppViewMode } = useUI();
 
     const [selectedStyle, setSelectedStyle] = useState({});
+
+    // Show loading bar: either during initial load (!hideLoading) or when refresh clicked (isRefreshing)
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const showLoading = !hideLoading || isRefreshing;
+
+    // Reset isRefreshing when loading completes
+    useEffect(() => {
+        if (hideLoading && isRefreshing) {
+            setIsRefreshing(false);
+        }
+    }, [hideLoading, isRefreshing]);
 
     // Get selected date color based on current ViewMode
     // White when viewing date photos, muted when viewing other modes
@@ -223,116 +235,80 @@ function DateList(props) {
                 </div>
             </div>
 
-            <p className="dateListTitle date-list-title">
-                List of Date <a href="#" onClick={() => props.getDates()}>⟳</a>
-            </p>
-            
-            {/* Loading indicator */}
-            <div style={{ display: hideLoading ? "none" : "inline-block" }}>
-                <div className="dateListLoading-crub" style={{ display: hideLoading ? "none" : "inline-block" }}>
-                    &#129408;
-                </div>
-                <div className="dateListLoading-container">
-                    {["l", "o", "a", "d", "i", "n", "g"].map((l, i) => {
-                        return (<div className="dateListLoading" key={i}>{l}</div>);
-                    })}
-                </div>
-                <div className="dateListLoading-crub" style={{ display: hideLoading ? "none" : "inline-block" }}>
-                    &#129408;
-                </div>
+            {/* Title */}
+            <div className="dateList-title">
+                <span>List of Date</span>
+                {/* Loading indicator (progress bar) or refresh icon */}
+                {showLoading ? (
+                    <div className="dateList-loading">
+                        <div className="dateList-loading-bar"></div>
+                    </div>
+                ) : (
+                    <a href="#" className="dateList-refresh" onClick={(e) => {
+                        e.preventDefault();
+                        flushSync(() => {
+                            setIsRefreshing(true);
+                        });
+                        props.getDates();
+                    }}>
+                        <span className="refresh-icon">⟳</span>
+                        <span className="refresh-text">
+                            <span>C</span><span>l</span><span>i</span><span>c</span><span>k</span>
+                            <span className="space"> </span>
+                            <span>t</span><span>o</span>
+                            <span className="space"> </span>
+                            <span>R</span><span>e</span><span>l</span><span>o</span><span>a</span><span>d</span>
+                        </span>
+                    </a>
+                )}
             </div>
 
-            {/* Date Controls - Outside Scroll Area */}
-            <div className="date-filters-controls" style={{ borderBottom: '1px solid var(--color-border-default)', paddingBottom: '3px', marginBottom: '3px' }}>
-                {/* Filter Controls */}
-                {/* Note: fontSize is hardcoded because color-scheme: light in light theme
-                    causes browser to override CSS variable values for form elements */}
-                <div className="date-filters" style={{ margin: "3px 0", textAlign: "center" }}>
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                            <span style={{ fontSize: 'var(--font-size-xs)' }}>📅</span>
-                            <select
-                                value={filterYear}
-                                onChange={(e) => {
-                                    setFilterYear(e.target.value);
-                                    setFilterMonth('all'); // Reset month when year changes
-                                }}
-                                style={{
-                                    fontSize: 'var(--font-size-xs)',
-                                    padding: '2px 4px',
-                                    width: '55px',
-                                    height: '22px',
-                                    margin: 0
-                                }}
-                            >
-                                <option value="all">All</option>
-                                {availableYears.map(year => (
-                                    <option key={year} value={year}>{year}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                            <span style={{ fontSize: 'var(--font-size-xs)' }}>🗓️</span>
-                            <select
-                                value={filterMonth}
-                                onChange={(e) => setFilterMonth(e.target.value)}
-                                style={{
-                                    fontSize: 'var(--font-size-xs)',
-                                    padding: '2px 4px',
-                                    width: '60px',
-                                    height: '22px',
-                                    margin: 0
-                                }}
-                            >
-                                <option value="all">All</option>
-                                {availableMonths.map(month => {
-                                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                                    return (
-                                        <option key={month} value={month}>
-                                            {monthNames[month - 1]}
-                                        </option>
-                                    );
-                                })}
-                            </select>
-                        </div>
-                    </div>
+            {/* Compact Filter Bar (Option B) */}
+            <div className="dateList-filter-bar">
+                <div className="filter-bar-item">
+                    <select
+                        className="filter-bar-select"
+                        value={filterYear}
+                        onChange={(e) => {
+                            setFilterYear(e.target.value);
+                            setFilterMonth('all');
+                        }}
+                    >
+                        <option value="all">Year</option>
+                        {availableYears.map(year => (
+                            <option key={year} value={year}>{year}</option>
+                        ))}
+                    </select>
                 </div>
-
-                {/* View Mode Toggle */}
-                <div className="view-mode-toggle" style={{ margin: "3px 0", textAlign: "center" }}>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: 0 }}>
-                        <button
-                            onClick={() => setViewMode('flat')}
-                            style={{
-                                fontSize: 'var(--font-size-xs)',
-                                padding: '3px 8px',
-                                margin: 0,
-                                backgroundColor: viewMode === 'flat' ? 'var(--color-primary-selected)' : 'var(--color-bg-elevated)',
-                                color: 'var(--color-text-primary)',
-                                border: viewMode === 'flat' ? '1px solid var(--color-primary)' : '1px solid var(--color-border-default)',
-                                borderRadius: 'var(--radius-sm) 0 0 var(--radius-sm)',
-                                cursor: 'pointer',
-                                borderRight: 'none'
-                            }}
-                        >
-                            List
-                        </button>
-                        <button
-                            onClick={() => setViewMode('hierarchical')}
-                            style={{
-                                fontSize: 'var(--font-size-xs)',
-                                padding: '3px 8px',
-                                margin: 0,
-                                backgroundColor: viewMode === 'hierarchical' ? 'var(--color-primary-selected)' : 'var(--color-bg-elevated)',
-                                color: 'var(--color-text-primary)',
-                                border: viewMode === 'hierarchical' ? '1px solid var(--color-primary)' : '1px solid var(--color-border-default)',
-                                borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            Tree
-                        </button>
-                    </div>
+                <div className="filter-bar-item">
+                    <select
+                        className="filter-bar-select"
+                        value={filterMonth}
+                        onChange={(e) => setFilterMonth(e.target.value)}
+                    >
+                        <option value="all">Month</option>
+                        {availableMonths.map(month => {
+                            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                            return (
+                                <option key={month} value={month}>{monthNames[month - 1]}</option>
+                            );
+                        })}
+                    </select>
+                </div>
+                <span className="filter-bar-divider"></span>
+                <div className="filter-bar-toggle">
+                    <button
+                        className={viewMode === 'flat' ? 'active' : ''}
+                        onClick={() => setViewMode('flat')}
+                    >
+                        List
+                    </button>
+                    <button
+                        className={viewMode === 'hierarchical' ? 'active' : ''}
+                        onClick={() => setViewMode('hierarchical')}
+                    >
+                        Tree
+                    </button>
                 </div>
             </div>
             
