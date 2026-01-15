@@ -306,6 +306,7 @@ function PhotoCard({
                                 alt={photo.originalPath}
                                 style={thumbnailStyle}
                                 src={imgSrc}
+                                loading="lazy"
                                 onLoad={handleImageLoad}
                                 onError={handleImageError}
                             />

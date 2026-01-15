@@ -248,11 +248,11 @@ function PhotoListContent({
                             <PhotoGrid
                                 displayedPhotos={displayedPhotos}
                                 totalPhotosCount={filteredPhotos.length}
+                                allPhotos={filteredPhotos}
                                 iconSize={iconSize}
                                 photoSelectionDict={photoSelectionDict}
                                 onAddSelection={addSelection}
                                 onDisplayPhoto={displayPhoto}
-                                onInfiniteScroll={handleInfiniteScroll}
                                 isLimitedByConfig={isLimitedByConfig}
                                 configLimit={configLimit}
                                 starFilter={viewModeObj.isImportMode() ? 0 : starFilter}
@@ -260,10 +260,8 @@ function PhotoListContent({
                                 hasTagFilter={viewModeObj.isImportMode() ? false : hasTagFilter}
                                 extensionFilter={viewModeObj.isImportMode() ? importExtensionFilter : extensionFilter}
                                 onClearFilters={clearAllFilters}
-                                showSideMenu={showSideMenu}
                                 importState={importState}
                                 setShowSideMenu={setShowSideMenu}
-                                isLoading={photoLoading}
                                 thumbnailOrientationCorrection={thumbnailOrientationCorrection}
                             />
                         )}

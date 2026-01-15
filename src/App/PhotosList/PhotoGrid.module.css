@@ -43,41 +43,51 @@
     color: var(--color-text-primary);
 }
 
-/* Infinite scroll indicator at bottom */
-.scrollIndicator {
-    text-align: center;
-    padding: var(--space-5);
-    width: 100%;
-    grid-column: 1 / -1;
-    color: var(--color-text-muted);
-}
 
-.scrollIndicatorSubtext {
-    font-size: var(--font-size-xs);
-    margin-top: var(--space-1);
-    /* color inherited from parent .scrollIndicator for theme compatibility */
-}
+/* ========== Virtual Grid Styles ========== */
 
-/* Scroll to load more - with bounce animation */
-.scrollToLoad {
+/* Container for virtualized photo grid */
+.virtualGridContainer {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: var(--space-2);
+    height: 100%;
+    position: relative;
 }
 
-.scrollArrow {
-    font-size: var(--font-size-xl);
-    animation: bounce-arrow 1.5s ease-in-out infinite;
+/* The react-window grid element */
+.virtualGrid {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-default) transparent;
 }
 
-@keyframes bounce-arrow {
-    0%, 100% {
-        transform: translateY(0);
-        opacity: 0.5;
-    }
-    50% {
-        transform: translateY(8px);
-        opacity: 1;
-    }
+.virtualGrid::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.virtualGrid::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.virtualGrid::-webkit-scrollbar-thumb {
+    background: var(--color-border-default);
+    border-radius: var(--radius-sm);
+}
+
+.virtualGrid::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-strong);
+}
+
+/* Status bar at bottom of virtual grid */
+.virtualGridStatus {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: var(--space-2) var(--space-3);
+    background: linear-gradient(transparent, var(--color-bg-base));
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    text-align: center;
+    pointer-events: none;
 }
