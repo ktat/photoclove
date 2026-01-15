@@ -22,6 +22,7 @@ import { calculateSimpleThumbnailDisplay, calculateThumbnailDisplayWithViewOffse
  * @param {Function} options.setImgCacheMap - Set image cache map
  * @param {number|null} options.viewStartIndex - Current view window start index
  * @param {Function} options.setViewStartIndex - Set view window start index
+ * @param {Function} options.beforeNavigate - Optional callback before navigation, returns false to cancel
  * @returns {Object} Navigation functions and state
  */
 export function usePhotoNavigation({
@@ -37,7 +38,8 @@ export function usePhotoNavigation({
     imgCacheMap,
     setImgCacheMap,
     viewStartIndex,
-    setViewStartIndex
+    setViewStartIndex,
+    beforeNavigate
 }) {
     const navigateLock = useRef(false);
 
@@ -126,24 +128,38 @@ export function usePhotoNavigation({
     /**
      * Navigate to next photo
      */
-    const nextPhoto = useCallback(() => {
+    const nextPhoto = useCallback(async () => {
+        // Check beforeNavigate callback (may return Promise)
+        if (beforeNavigate) {
+            const canNavigate = await beforeNavigate();
+            if (!canNavigate) {
+                return;
+            }
+        }
         const nextIndex = currentIndex + 1;
         if (nextIndex < photos.length) {
             navigateToPhoto(nextIndex);
             setImageCache(nextIndex, 1);
         }
-    }, [currentIndex, photos.length, navigateToPhoto, setImageCache]);
+    }, [currentIndex, photos.length, navigateToPhoto, setImageCache, beforeNavigate]);
 
     /**
      * Navigate to previous photo
      */
-    const prevPhoto = useCallback(() => {
+    const prevPhoto = useCallback(async () => {
+        // Check beforeNavigate callback (may return Promise)
+        if (beforeNavigate) {
+            const canNavigate = await beforeNavigate();
+            if (!canNavigate) {
+                return;
+            }
+        }
         const prevIndex = currentIndex - 1;
         if (prevIndex >= 0) {
             navigateToPhoto(prevIndex);
             setImageCache(prevIndex, -1);
         }
-    }, [currentIndex, navigateToPhoto, setImageCache]);
+    }, [currentIndex, navigateToPhoto, setImageCache, beforeNavigate]);
 
     /**
      * Shift thumbnail window backward (does not change selected photo)
@@ -175,7 +191,14 @@ export function usePhotoNavigation({
      * Navigate directly to a specific photo
      * @param {number} index - Target photo index
      */
-    const goToPhoto = useCallback((index) => {
+    const goToPhoto = useCallback(async (index) => {
+        // Check beforeNavigate callback (may return Promise)
+        if (beforeNavigate) {
+            const canNavigate = await beforeNavigate();
+            if (!canNavigate) {
+                return;
+            }
+        }
         if (index >= 0 && index < photos.length && photos[index]) {
             setCurrentIndex(index);
             setCurrentPhotoPath(photos[index].originalPath);
@@ -186,7 +209,7 @@ export function usePhotoNavigation({
             // Reset view offset to auto-center on selected photo
             setViewStartIndex(null);
         }
-    }, [photos, setCurrentIndex, setCurrentPhotoPath, datePage, getDateKey, num, setImageCache, setViewStartIndex]);
+    }, [photos, setCurrentIndex, setCurrentPhotoPath, datePage, getDateKey, num, setImageCache, setViewStartIndex, beforeNavigate]);
 
     return {
         nextPhoto,

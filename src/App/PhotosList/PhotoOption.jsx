@@ -255,11 +255,12 @@ function PhotoOption(props) {
                         />
                     )}
                     {activeTab === "editor" && (
-                        <PhotoEditor 
+                        <PhotoEditor
                             currentPhotoPath={props.currentPhotoPath}
                             showSideMenu={props.showSideMenu}
                             addFooterMessage={props.addFooterMessage}
                             onPhotosRefresh={props.onPhotosRefresh}
+                            setEditorHasUnsavedChanges={props.setEditorHasUnsavedChanges}
                         />
                     )}
                     {activeTab === "tags" && (

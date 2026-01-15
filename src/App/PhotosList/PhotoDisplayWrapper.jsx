@@ -36,7 +36,8 @@ function PhotoDisplayWrapper({
     photoListMiniState,
     cacheState,
     navigationState,
-    configState
+    configState,
+    beforeNavigate
 }) {
     // Destructure from state groups
     const { allPhotos: photosListMiniAllPhotos, setAllPhotos: setPhotosListMiniAllPhotos, currentIndex: photosListMiniCurrentIndex, setCurrentIndex: setPhotosListMiniCurrentIndex, reread: photosListMiniReread } = photoListMiniState;
@@ -124,6 +125,7 @@ function PhotoDisplayWrapper({
                             addFooterMessage={addFooterMessage}
                             handleTauriError={handleTauriError}
                             importState={importState}
+                            beforeNavigate={beforeNavigate}
                         />
                     </div>
                 </ImgCacheContext.Provider>
