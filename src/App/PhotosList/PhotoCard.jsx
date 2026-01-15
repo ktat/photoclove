@@ -96,6 +96,39 @@ function PhotoCard({
         }
         // Use cached thumbnail path, or empty placeholder that will be updated async
         imgSrc = photo._cachedThumbnailPath || "";
+    } else if (photo.inTrashBin && !photo.hasThumbnail) {
+        // For trash photos without library thumbnails: Use EXIF thumbnail cache
+        // On error (cache miss), generate EXIF thumbnail from trash file
+        if (!photo._trashThumbnailPath) {
+            // Get cache path and store it on the photo object
+            invoke('get_thumbnail_path', {
+                photoPath: photo.originalPath,
+                importDirectory: 'trash'  // Use 'trash' as namespace to avoid collision
+            })
+                .then(cachePath => {
+                    if (!isMountedRef.current) return;
+                    photo._trashThumbnailPath = cachePath;
+                    // Update img src to try loading from cache
+                    if (imgRef.current) {
+                        imgRef.current.src = convertFileSrc(cachePath);
+                    }
+                })
+                .catch(err => {
+                    logger.warn('PhotoCard', 'trash_thumbnail_path_failed', 'Failed to get cache path', {
+                        photoPath: photo.originalPath,
+                        error: err.message
+                    });
+                });
+        }
+        // Use cached path if available, otherwise use trash file path as placeholder
+        // (will be updated once get_thumbnail_path completes)
+        if (photo._trashThumbnailPath) {
+            imgSrc = convertFileSrc(photo._trashThumbnailPath);
+        } else {
+            // Temporary: use trash file path until cache path is resolved
+            const trashFilePath = typeof photo.displayPath === 'function' ? photo.displayPath() : photo.originalPath;
+            imgSrc = convertFileSrc(trashFilePath);
+        }
     } else {
         // Normal photos: use existing logic
         if (photo.hasThumbnail && photo.thumbnailPath && typeof photo.thumbnailPath === 'function') {
@@ -203,6 +236,53 @@ function PhotoCard({
             return;
         }
 
+        // For trash photos without library thumbnails: Generate EXIF thumbnail on cache miss
+        if (photo.inTrashBin && !photo.hasThumbnail) {
+            const trashFilePath = typeof photo.displayPath === 'function' ? photo.displayPath() : null;
+
+            // Step 1: Cache miss - generate EXIF thumbnail from trash file
+            if (!e.currentTarget.dataset.thumbnailGenerated && trashFilePath) {
+                e.currentTarget.dataset.thumbnailGenerated = 'true';
+                const imgElement = e.currentTarget;
+
+                logger.debug('PhotoCard', 'trash_exif_generation_started', 'Generating EXIF thumbnail for trash photo', {
+                    originalPath: photo.originalPath,
+                    trashFilePath: trashFilePath?.slice(-50)
+                });
+
+                // Call get_resized_image with the trash file path to extract EXIF thumbnail
+                invoke('get_resized_image', {
+                    pathStr: trashFilePath,  // Use trash path as source file
+                    maxSize: 200,
+                    importDirectory: 'trash',  // Use 'trash' namespace for caching
+                    skipResizeFallback: false  // Allow resize fallback if no EXIF thumbnail
+                })
+                    .then(cachePath => {
+                        if (!isMountedRef.current || !imgElement || !imgElement.isConnected) return;
+                        // Update photo object for future renders
+                        photo._trashThumbnailPath = cachePath;
+                        const thumbnailUrl = convertFileSrc(cachePath) + '?t=' + Date.now();
+                        logger.info('PhotoCard', 'trash_exif_thumbnail_generated', 'EXIF thumbnail generated', {
+                            originalPath: photo.originalPath?.slice(-40),
+                            cachePath: cachePath?.slice(-40)
+                        });
+                        imgElement.src = thumbnailUrl;
+                    })
+                    .catch(err => {
+                        logger.error('PhotoCard', 'trash_exif_generation_failed', 'Failed to generate EXIF thumbnail', {
+                            originalPath: photo.originalPath,
+                            error: err?.message || String(err)
+                        });
+                        // Fallback to full image from trash (already loaded as placeholder)
+                    });
+                return;
+            }
+
+            // Step 2: If we're here after thumbnail generation, the generated thumbnail also failed
+            // Just keep showing the trash file (already set as placeholder)
+            return;
+        }
+
         // For normal photos: existing fallback logic
         if (photo.hasThumbnail && !e.currentTarget.dataset.triedOriginal) {
             // Mark that we've tried original to prevent infinite loop
@@ -302,7 +382,7 @@ function PhotoCard({
                         </div>
                         : <div className={styles.imageWrapper}>
                             <img
-                                ref={photo.import_source === true ? imgRef : null}
+                                ref={(photo.import_source === true || (photo.inTrashBin && !photo.hasThumbnail)) ? imgRef : null}
                                 alt={photo.originalPath}
                                 style={thumbnailStyle}
                                 src={imgSrc}

@@ -56,6 +56,13 @@ body {
   --color-bg-film: #141414; /* Film strip background */
   --color-film-sprocket: #2a2a2a; /* Film sprocket holes - slightly lighter for visibility */
 
+  /* --- Photo Grid Theme Colors --- */
+  --color-theme-slide-mount-bg: #d0d0d0;
+  --color-theme-slide-35mm-bg-start: #a09080;
+  --color-theme-slide-35mm-bg-end: #908070;
+  --color-theme-lightbox-gradient-start: rgba(160, 180, 220, 0.15);
+  --color-theme-lightbox-gradient-end: rgba(180, 200, 240, 0.2);
+
   /* --- Text Colors --- */
   --color-text-primary: #e4e4e4;
   --color-text-secondary: #9ca3af;
@@ -170,6 +177,10 @@ body {
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.15);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.2);
   --shadow-glow-primary: 0 0 12px rgba(37, 99, 235, 0.3);
+
+  /* --- Photo Grid Theme Colors (Light theme overrides) --- */
+  --color-theme-lightbox-gradient-start: rgba(160, 180, 220, 0.3);
+  --color-theme-lightbox-gradient-end: rgba(180, 200, 240, 0.4);
 }
 
 /* start dark theme */
