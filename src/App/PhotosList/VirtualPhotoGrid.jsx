@@ -83,7 +83,6 @@ const PhotoCell = memo(function PhotoCell({
  */
 function VirtualPhotoGrid({
     displayedPhotos,
-    totalPhotosCount,
     iconSize,
     photoSelectionDict,
     onAddSelection,
@@ -91,9 +90,7 @@ function VirtualPhotoGrid({
     setShowSideMenu,
     importState,
     thumbnailOrientationCorrection = false,
-    containerRef,
-    isLimitedByConfig,
-    configLimit
+    containerRef
 }) {
     const gridRef = useRef(null);
     const localContainerRef = useRef(null);
@@ -284,14 +281,6 @@ function VirtualPhotoGrid({
                 style={{ overflow: 'auto' }}
             />
 
-            {/* Status indicator */}
-            <div className={styles.virtualGridStatus}>
-                {isLimitedByConfig ? (
-                    <span>Showing {displayedPhotos.length} photos (limited to {configLimit})</span>
-                ) : (
-                    <span>Showing {displayedPhotos.length} of {totalPhotosCount} photos</span>
-                )}
-            </div>
         </div>
     );
 }
