@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { logger } from '../../../services/LoggerService.js';
 import styles from './PhotoEditor.module.css';
@@ -25,7 +25,6 @@ import {
     downloadStyledImage,
     saveStyledCopy
 } from './PhotoEditor/photoExportUtils.js';
-import EditorControl from './EditorControl.jsx';
 import CropTool from './CropTool.jsx';
 
 function PhotoEditor(props) {
@@ -44,43 +43,107 @@ function PhotoEditor(props) {
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const [dragMode, setDragMode] = useState('create');
+    const [savedCssStyle, setSavedCssStyle] = useState('');
+    const [previousPhotoPath, setPreviousPhotoPath] = useState(null);
+    const [cssPreview, setCssPreview] = useState('');
+
+    // Refs for checking unsaved changes (to avoid stale closure in useEffect)
+    const editorStylesRef = useRef(editorStyles);
+    const savedCssStyleRef = useRef(savedCssStyle);
+    const currentPhotoPathRef = useRef(props.currentPhotoPath);
+
+    // Keep refs in sync with state
+    useEffect(() => {
+        editorStylesRef.current = editorStyles;
+    }, [editorStyles]);
+
+    useEffect(() => {
+        savedCssStyleRef.current = savedCssStyle;
+    }, [savedCssStyle]);
+
+    useEffect(() => {
+        currentPhotoPathRef.current = props.currentPhotoPath;
+    }, [props.currentPhotoPath]);
+
+    // Reset visual styles on image elements
+    function resetVisualStyles() {
+        const mainImage = document.querySelector('#photoImgTag');
+        if (mainImage) {
+            mainImage.style.transform = '';
+            mainImage.style.filter = '';
+            mainImage.style.clipPath = '';
+        }
+
+        // Reset thumbnails
+        const resetThumbnails = (selector) => {
+            const thumbnails = document.querySelectorAll(selector);
+            thumbnails.forEach((img) => {
+                img.style.transform = '';
+                img.style.filter = '';
+                img.style.clipPath = '';
+            });
+        };
+
+        resetThumbnails('.photos .row img');
+        resetThumbnails('#photos-list-mini img');
+    }
 
     // Load saved CSS styles when photo changes
     useEffect(() => {
+        // Check if there are unsaved changes before switching
+        if (previousPhotoPath && props.currentPhotoPath !== previousPhotoPath) {
+            const currentCss = generateCSSFromValues(editorStylesRef.current);
+            const hasChanges = currentCss !== savedCssStyleRef.current;
+
+            if (hasChanges) {
+                // Notify user that changes were discarded
+                props.addFooterMessage?.('editor', 'Unsaved changes discarded', false, 3000);
+            }
+        }
+
+        // Always reset visual styles and load new photo
+        resetVisualStyles();
         setOriginalStyles(new Map());
+        setPreviousPhotoPath(props.currentPhotoPath);
+        setCropMode(false);
+        setCropSelection({ x: 0, y: 0, width: 100, height: 100 });
 
         if (props.currentPhotoPath) {
+            const loadingPhotoPath = props.currentPhotoPath;
             // Load saved CSS style for this photo
             invoke("get_css_style", { photoPath: props.currentPhotoPath })
-                .then((savedCssStyle) => {
+                .then((loadedCssStyle) => {
+                    // Check if photo hasn't changed during async load
+                    if (currentPhotoPathRef.current !== loadingPhotoPath) {
+                        return;
+                    }
 
-                    if (savedCssStyle && savedCssStyle.trim() !== '') {
+                    if (loadedCssStyle && loadedCssStyle.trim() !== '') {
                         // Parse the saved CSS and update editor values
-                        const editorValues = parseCssToEditorValues(savedCssStyle);
+                        const editorValues = parseCssToEditorValues(loadedCssStyle);
                         setEditorStyles(editorValues);
-
-                        // Update UI elements with saved values
-                        setTimeout(() => {
-                            updateUIElementsWithValues(editorValues, savedCssStyle);
-                        }, 200);
+                        setSavedCssStyle(loadedCssStyle.trim());
+                        setCssPreview(loadedCssStyle.trim());
                     } else {
                         // No saved CSS, use default values
                         setEditorStyles({ ...DEFAULT_EDITOR_VALUES });
-
-                        setTimeout(() => {
-                            updateUIElementsWithValues(DEFAULT_EDITOR_VALUES, '');
-                        }, 100);
+                        setSavedCssStyle('');
+                        setCssPreview('');
                     }
                 })
                 .catch((error) => {
+                    // Check if photo hasn't changed during async load
+                    if (currentPhotoPathRef.current !== loadingPhotoPath) {
+                        return;
+                    }
                     logger.error('PhotoEditor', 'css_load_failed', 'Failed to load CSS style', { photoPath: props.currentPhotoPath, error: error.message });
                     // Fallback to reset editor styles
                     setEditorStyles({ ...DEFAULT_EDITOR_VALUES });
-
-                    setTimeout(() => {
-                        updateUIElementsWithValues(DEFAULT_EDITOR_VALUES, '');
-                    }, 100);
+                    setSavedCssStyle('');
+                    setCssPreview('');
                 });
+        } else {
+            setCssPreview('');
         }
     }, [props.currentPhotoPath])
 
@@ -95,26 +158,11 @@ function PhotoEditor(props) {
     // Update CSS preview when editor styles change
     useEffect(() => {
         if (props.currentPhotoPath) {
-            setTimeout(() => {
-                const css = generateCSSFromValues(editorStyles);
-                const previewTextarea = document.getElementById('css-preview-text');
-                if (previewTextarea) {
-                    previewTextarea.value = css;
-                    logger.debug('PhotoEditor', 'css_preview_updated', 'CSS preview updated', { css });
-                }
-                updateUIElementsWithValues(editorStyles, css);
-            }, 100);
+            const css = generateCSSFromValues(editorStyles);
+            setCssPreview(css);
+            logger.debug('PhotoEditor', 'css_preview_updated', 'CSS preview updated', { css });
         }
-    }, [editorStyles])
-
-    // Helper function to update CSS preview
-    function updateUIElementsWithValues(editorValues, cssStyle) {
-        logger.debug('PhotoEditor', 'update_css_preview', 'Updating CSS preview with values', { editorValues });
-        const previewTextarea = document.getElementById('css-preview-text');
-        if (previewTextarea) {
-            previewTextarea.value = cssStyle || '';
-        }
-    }
+    }, [editorStyles, props.currentPhotoPath])
 
     // Editor functions
     function updateStyle(property, value) {
@@ -127,12 +175,6 @@ function PhotoEditor(props) {
                 ...prev,
                 [property]: parseInt(value)
             };
-
-            const css = generateCSSFromValues(newStyles);
-            const previewTextarea = document.getElementById('css-preview-text');
-            if (previewTextarea) {
-                previewTextarea.value = css;
-            }
 
             applyTempStyles(newStyles, originalStyles, setOriginalStyles, props.currentPhotoPath);
             return newStyles;
@@ -169,6 +211,7 @@ function PhotoEditor(props) {
                 photoPath: props.currentPhotoPath,
                 cssStyle: css
             });
+            setSavedCssStyle(css);
             props.addFooterMessage('editor', 'Style applied successfully', false, 3000);
         } catch (error) {
             logger.error('PhotoEditor', 'style_apply_failed', 'Failed to apply style', { error: error.message });
@@ -252,13 +295,7 @@ function PhotoEditor(props) {
         setEditorStyles({ ...DEFAULT_EDITOR_VALUES });
         setCropMode(false);
         setCropSelection({ ...DEFAULT_EDITOR_VALUES.crop });
-
-        setTimeout(() => {
-            const previewTextarea = document.getElementById('css-preview-text');
-            if (previewTextarea) {
-                previewTextarea.value = '';
-            }
-        }, 0);
+        // cssPreview will be updated by useEffect when editorStyles changes
     }
 
     async function downloadStyled() {
@@ -528,7 +565,13 @@ function PhotoEditor(props) {
                     </div>
                     <div className={styles['css-preview']}>
                         <label>CSS Preview:</label>
-                        <textarea id="css-preview-text" rows="4" readOnly className={styles['css-preview-textarea']}></textarea>
+                        <textarea
+                            id="css-preview-text"
+                            rows="4"
+                            readOnly
+                            value={cssPreview}
+                            className={styles['css-preview-textarea']}
+                        />
                     </div>
                 </div>
             </div>
