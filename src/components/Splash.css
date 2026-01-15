@@ -1,13 +1,17 @@
 /* Splash Screen Component Styles */
 
 .splash-container {
-  text-align: center;
-  vertical-align: middle;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  padding: 0px 0px 0px 0px;
-  margin: 0px 0px 0px 0px;
-  height: calc(100vh - 150px);
+  padding: var(--space-4);
+  margin: 0 0 var(--space-6) 0;
+  height: calc(100vh - 220px);
   border-radius: var(--radius-xl);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 img.splash {
