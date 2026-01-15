@@ -130,6 +130,17 @@ function PhotosList({
         filterButtonRef
     } = usePhotosState();
 
+    // State to track if PhotoEditor has unsaved changes
+    const [editorHasUnsavedChanges, setEditorHasUnsavedChanges] = useState(false);
+
+    // Callback for navigation - checks if PhotoEditor has unsaved changes
+    const checkEditorUnsavedChanges = useCallback(() => {
+        if (editorHasUnsavedChanges) {
+            return window.confirm('You have unsaved changes. Discard and switch to another photo?');
+        }
+        return true;
+    }, [editorHasUnsavedChanges]);
+
     const { savePageState, loadPageState } = usePageState();
 
     // Create ViewMode object using factory hook
@@ -416,6 +427,7 @@ function PhotosList({
                             displayState={displayState} searchState={searchState} handlers={handlers}
                             photoListMiniState={photoListMiniState} cacheState={cacheState}
                             navigationState={navigationState} configState={configState}
+                            beforeNavigate={checkEditorUnsavedChanges}
                         />
                         <PhotoListContent
                             photoLoading={photoLoading} viewState={viewState} filterState={filterState}
@@ -457,6 +469,7 @@ function PhotosList({
                         clearAlbumSelection={clearAlbumSelection} deleteSelectedTags={deleteSelectedTags}
                         clearTagSelection={clearTagSelection} importState={importState}
                         albumsList={albumsList} tagsList={tagsList}
+                        setEditorHasUnsavedChanges={setEditorHasUnsavedChanges}
                     />
                 )}
 

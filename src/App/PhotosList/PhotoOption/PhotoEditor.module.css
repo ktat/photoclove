@@ -206,7 +206,7 @@
 }
 
 .css-preview textarea {
-    width: 100%;
+    width: 95%;
     min-height: 60px;
     padding: 6px;
     border: 1px solid var(--color-bg-muted);
@@ -372,7 +372,7 @@
 
 /* CSS Preview textarea */
 .css-preview-textarea {
-    width: 100%;
+    width: calc(100% - 2px);
     min-height: 50px;
     padding: 4px;
     border: 1px solid var(--color-border-default);
@@ -387,5 +387,6 @@
 }
 
 .css-preview-textarea:focus {
-    border-color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary);
 }

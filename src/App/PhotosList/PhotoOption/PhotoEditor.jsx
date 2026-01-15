@@ -44,7 +44,6 @@ function PhotoEditor(props) {
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const [dragMode, setDragMode] = useState('create');
     const [savedCssStyle, setSavedCssStyle] = useState('');
-    const [previousPhotoPath, setPreviousPhotoPath] = useState(null);
     const [cssPreview, setCssPreview] = useState('');
 
     // Refs for checking unsaved changes (to avoid stale closure in useEffect)
@@ -90,23 +89,16 @@ function PhotoEditor(props) {
 
     // Load saved CSS styles when photo changes
     useEffect(() => {
-        // Check if there are unsaved changes before switching
-        if (previousPhotoPath && props.currentPhotoPath !== previousPhotoPath) {
-            const currentCss = generateCSSFromValues(editorStylesRef.current);
-            const hasChanges = currentCss !== savedCssStyleRef.current;
-
-            if (hasChanges) {
-                // Notify user that changes were discarded
-                props.addFooterMessage?.('editor', 'Unsaved changes discarded', false, 3000);
-            }
-        }
-
-        // Always reset visual styles and load new photo
+        // Immediately clear CSS preview and reset state
+        setCssPreview('');
+        setEditorStyles({ ...DEFAULT_EDITOR_VALUES });
+        setSavedCssStyle('');
         resetVisualStyles();
         setOriginalStyles(new Map());
-        setPreviousPhotoPath(props.currentPhotoPath);
         setCropMode(false);
         setCropSelection({ x: 0, y: 0, width: 100, height: 100 });
+        // Reset parent state - no unsaved changes when photo changes
+        props.setEditorHasUnsavedChanges?.(false);
 
         if (props.currentPhotoPath) {
             const loadingPhotoPath = props.currentPhotoPath;
@@ -124,12 +116,8 @@ function PhotoEditor(props) {
                         setEditorStyles(editorValues);
                         setSavedCssStyle(loadedCssStyle.trim());
                         setCssPreview(loadedCssStyle.trim());
-                    } else {
-                        // No saved CSS, use default values
-                        setEditorStyles({ ...DEFAULT_EDITOR_VALUES });
-                        setSavedCssStyle('');
-                        setCssPreview('');
                     }
+                    // No else needed - defaults already set at start of useEffect
                 })
                 .catch((error) => {
                     // Check if photo hasn't changed during async load
@@ -137,13 +125,8 @@ function PhotoEditor(props) {
                         return;
                     }
                     logger.error('PhotoEditor', 'css_load_failed', 'Failed to load CSS style', { photoPath: props.currentPhotoPath, error: error.message });
-                    // Fallback to reset editor styles
-                    setEditorStyles({ ...DEFAULT_EDITOR_VALUES });
-                    setSavedCssStyle('');
-                    setCssPreview('');
+                    // Defaults already set at start of useEffect
                 });
-        } else {
-            setCssPreview('');
         }
     }, [props.currentPhotoPath])
 
@@ -160,9 +143,12 @@ function PhotoEditor(props) {
         if (props.currentPhotoPath) {
             const css = generateCSSFromValues(editorStyles);
             setCssPreview(css);
-            logger.debug('PhotoEditor', 'css_preview_updated', 'CSS preview updated', { css });
+            // Update parent about unsaved changes
+            const hasChanges = css !== savedCssStyle;
+            props.setEditorHasUnsavedChanges?.(hasChanges);
+            logger.debug('PhotoEditor', 'css_preview_updated', 'CSS preview updated', { css, hasChanges });
         }
-    }, [editorStyles, props.currentPhotoPath])
+    }, [editorStyles, props.currentPhotoPath, savedCssStyle])
 
     // Editor functions
     function updateStyle(property, value) {
@@ -212,6 +198,8 @@ function PhotoEditor(props) {
                 cssStyle: css
             });
             setSavedCssStyle(css);
+            // Reset parent state - changes are now saved
+            props.setEditorHasUnsavedChanges?.(false);
             props.addFooterMessage('editor', 'Style applied successfully', false, 3000);
         } catch (error) {
             logger.error('PhotoEditor', 'style_apply_failed', 'Failed to apply style', { error: error.message });

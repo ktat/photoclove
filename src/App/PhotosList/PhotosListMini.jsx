@@ -101,7 +101,8 @@ function PhotosListMini(props) {
         imgCacheMap,
         setImgCacheMap,
         viewStartIndex,
-        setViewStartIndex
+        setViewStartIndex,
+        beforeNavigate: props.beforeNavigate
     });
 
     // Use star operations hook
