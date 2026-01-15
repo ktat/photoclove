@@ -74,39 +74,39 @@ function SelectionTab({
                                         {/* Import-specific operations (only in import mode) */}
                                         {viewModeObj?.shouldShowImportOperations() && (
                                             <>
-                                                {viewModeObj?.showImportSelected() && <option value="importSelected">Import Selected Photos</option>}
-                                                {viewModeObj?.showSelectAllInDirectory() && <option value="selectAllInDirectory">Select All in This Directory</option>}
-                                                <option value="unselectAll">Unselect All</option>
+                                                {viewModeObj?.showImportSelected() && <option value="importSelected">📥 Import Selected Photos</option>}
+                                                {viewModeObj?.showSelectAllInDirectory() && <option value="selectAllInDirectory">✅ Select All in This Directory</option>}
+                                                <option value="unselectAll">❎ Unselect All</option>
                                             </>
                                         )}
 
                                         {/* Album-specific operations (only in album mode) */}
                                         {viewModeObj?.shouldShowAlbumOperations() && (
                                             <>
-                                                {viewModeObj?.showRemoveFromAlbum() && <option value="removeFromAlbum">Remove from Album</option>}
+                                                {viewModeObj?.showRemoveFromAlbum() && <option value="removeFromAlbum">📤 Remove from Album</option>}
                                             </>
                                         )}
 
                                         {/* Trash mode operations */}
                                         {viewModeObj?.isTrashMode() && (
                                             <>
-                                                {viewModeObj?.showRestoreFromTrash() && <option value="restoreFromTrash">Restore</option>}
-                                                {viewModeObj?.showPermanentDelete() && <option value="permanentDelete">Delete Permanently</option>}
+                                                {viewModeObj?.showRestoreFromTrash() && <option value="restoreFromTrash">♻️ Restore</option>}
+                                                {viewModeObj?.showPermanentDelete() && <option value="permanentDelete">🗑️ Delete Permanently</option>}
                                             </>
                                         )}
 
                                         {/* Standard operations (non-import, non-trash modes) */}
                                         {viewModeObj?.shouldShowStandardOperations() && !viewModeObj?.isTrashMode() && (
                                             <>
-                                                {viewModeObj?.showUploadToGooglePhotos() && <option value="uploadToGooglePhotos">Upload to Google Photos</option>}
-                                                {viewModeObj?.showDeleteFiles() && <option value="deleteFiles">Delete files</option>}
+                                                {viewModeObj?.showUploadToGooglePhotos() && <option value="uploadToGooglePhotos">☁️ Upload to Google Photos</option>}
+                                                {viewModeObj?.showDeleteFiles() && <option value="deleteFiles">🗑️ Delete files</option>}
 
                                                 {/* Album operations (all modes) */}
-                                                {viewModeObj?.showCreateAlbum() && <option value="createAlbum">Create Album</option>}
-                                                {viewModeObj?.showAddToAlbum() && <option value="addToAlbum">Add to Existing Album</option>}
+                                                {viewModeObj?.showCreateAlbum() && <option value="createAlbum">📚 Create Album</option>}
+                                                {viewModeObj?.showAddToAlbum() && <option value="addToAlbum">📚 Add to Existing Album</option>}
 
                                                 {/* Tag operations */}
-                                                {viewModeObj?.showAddTags() && <option value="addTags">Add Tags</option>}
+                                                {viewModeObj?.showAddTags() && <option value="addTags">🏷️ Add Tags</option>}
                                             </>
                                         )}
                                     </select>
