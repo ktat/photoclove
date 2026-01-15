@@ -131,28 +131,25 @@ function VirtualPhotoGrid({
 
     // Calculate extra space needed for each theme beyond base iconSize
     // Each theme has different margin, padding, border requirements
-    // Base (41, 60) was too small - actual requirement is ~65px width for default theme:
-    // margin 16px + padding 8px + border 4px + thumbnailBorder 4px + menu 33px = 65px
+    // Values calibrated from actual rendering (default 61px confirmed working)
     const themeExtraSpace = useMemo(() => {
         switch (gridTheme) {
             case 'slide-mount':
             case 'slide-35mm':
-                // margin 24px + padding 24px + border ~8px + menu 33px = ~89px
-                return { width: 48, height: 24 };
+                // Similar to default but with larger margins/padding
+                return { width: 61, height: 48 };
             case 'lightbox':
-                // margin 16px + padding 16px + border ~4px + menu 33px = ~69px
-                return { width: 32, height: 8 };
+                // Similar to default
+                return { width: 61, height: 16 };
             case 'filmstrip':
-                // margin 0 + padding ~24px + menu 33px = ~57px
-                return { width: 24, height: 0 };
+                // No margin, minimal padding - should be smaller than default
+                return { width: 40, height: 24 };
             default:
-                // Default: margin 16px + padding 8px + border 8px + menu 33px = 65px
-                // Base 41 needs +24 to reach 65
-                return { width: 24, height: 0 };
+                return { width: 61, height: 0 };
         }
     }, [gridTheme]);
 
-    const cellWidth = iconSize + 41 + themeExtraSpace.width;
+    const cellWidth = iconSize + themeExtraSpace.width;
     const cellHeight = iconSize + 60 + themeExtraSpace.height;
 
     // Calculate column count based on container width
