@@ -119,21 +119,21 @@
 /* Slide mount theme - grid adjustments */
 [data-grid-theme="slide-mount"] .photos .scroll-box {
   gap: var(--space-4);
-  background-color: #d0d0d0;
+  background-color: var(--slide-mount-grid-bg);
   padding: var(--space-4);
 }
 
 /* Light box theme - grid adjustments */
 [data-grid-theme="lightbox"] .photos .scroll-box {
   gap: var(--space-3);
-  background: linear-gradient(180deg, rgba(160, 180, 220, 0.1) 0%, rgba(180, 200, 240, 0.15) 100%);
+  background: linear-gradient(180deg, var(--lightbox-bg-start) 0%, var(--lightbox-bg-end) 100%);
   padding: var(--space-3);
 }
 
 /* 35mm slide theme - grid adjustments */
 [data-grid-theme="slide-35mm"] .photos .scroll-box {
   gap: var(--space-4);
-  background: linear-gradient(135deg, #a09080 0%, #908070 100%);
+  background: linear-gradient(135deg, var(--slide-35mm-grid-bg-start) 0%, var(--slide-35mm-grid-bg-end) 100%);
   padding: var(--space-4);
 }
 
@@ -406,35 +406,35 @@
 
 /* ========== Slide Mount Theme for PhotosListMini ========== */
 [data-grid-theme="slide-mount"] #photos-list-mini {
-  background-color: #e8e8e8;
+  background-color: var(--slide-mount-mini-bg);
   padding: 10px;
 }
 
 [data-grid-theme="slide-mount"] #photos-list-mini div.row1 a {
-  color: #333;
+  color: var(--slide-mount-mini-text);
 }
 
 [data-grid-theme="slide-mount"] #photos-list-mini div.row2 {
-  background-color: #f5f5f5;
+  background-color: var(--slide-mount-card-bg);
   padding: 30px 8px 20px 8px;
   margin: 0 4px;
   border-radius: var(--radius-sm);
   box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.2),
+    0 2px 4px var(--slide-mount-card-shadow),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 [data-grid-theme="slide-mount"] #photos-list-mini div.row2 img {
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--slide-mount-card-border);
   box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3);
   max-height: 90px !important;
 }
 
 /* ========== Light Box Theme for PhotosListMini ========== */
 [data-grid-theme="lightbox"] #photos-list-mini {
-  background: linear-gradient(180deg, rgba(180, 200, 255, 0.1) 0%, rgba(200, 220, 255, 0.15) 100%);
+  background: linear-gradient(180deg, var(--lightbox-bg-start) 0%, var(--lightbox-bg-end) 100%);
   padding: 10px;
-  box-shadow: inset 0 0 50px rgba(180, 200, 255, 0.1);
+  box-shadow: inset 0 0 50px var(--lightbox-bg-start);
 }
 
 [data-grid-theme="lightbox"] #photos-list-mini div.row1 a {
@@ -451,22 +451,22 @@
 }
 
 [data-grid-theme="lightbox"] #photos-list-mini div.row2 img {
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--lightbox-card-border);
   max-height: 90px !important;
 }
 
 /* ========== 35mm Slide Theme for PhotosListMini ========== */
 [data-grid-theme="slide-35mm"] #photos-list-mini {
-  background: linear-gradient(135deg, #c4b498 0%, #b4a488 100%);
+  background: linear-gradient(135deg, var(--slide-35mm-mini-bg-start) 0%, var(--slide-35mm-mini-bg-end) 100%);
   padding: 10px;
 }
 
 [data-grid-theme="slide-35mm"] #photos-list-mini div.row1 a {
-  color: #4a4030;
+  color: var(--slide-35mm-mini-text);
 }
 
 [data-grid-theme="slide-35mm"] #photos-list-mini div.row2 {
-  background: linear-gradient(135deg, #d4c4a8 0%, #c4b498 100%);
+  background: linear-gradient(135deg, var(--slide-35mm-card-bg-start) 0%, var(--slide-35mm-card-bg-end) 100%);
   padding: 30px 8px 20px 8px;
   margin: 0 4px;
   border-radius: var(--radius-sm);
@@ -476,7 +476,7 @@
 }
 
 [data-grid-theme="slide-35mm"] #photos-list-mini div.row2 img {
-  border: 2px solid #8a7a5a;
+  border: 2px solid var(--slide-35mm-card-border);
   box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.4);
   max-height: 90px !important;
 }

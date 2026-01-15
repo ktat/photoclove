@@ -264,15 +264,15 @@
     padding: var(--space-3);
     border: none;
     border-radius: var(--radius-sm);
-    background-color: #f5f5f5;
+    background-color: var(--slide-mount-card-bg);
     box-shadow:
-        0 2px 4px rgba(0, 0, 0, 0.3),
+        0 2px 4px var(--slide-mount-card-shadow),
         inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 :global([data-grid-theme="slide-mount"]) .thumbnailContainer {
     border-radius: 0;
-    border: 2px solid #e0e0e0;
+    border: 2px solid var(--slide-mount-card-border);
     background-color: #000;
     box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
 }
@@ -291,13 +291,13 @@
 
 :global([data-grid-theme="slide-mount"]) .menu a,
 :global([data-grid-theme="slide-mount"]) .menu label {
-    color: #333;
+    color: var(--slide-mount-mini-text);
 }
 
 :global([data-grid-theme="slide-mount"]) .cardSelected {
     background-color: #e3e9f5;
     box-shadow:
-        0 2px 4px rgba(0, 0, 0, 0.3),
+        0 2px 4px var(--slide-mount-card-shadow),
         0 0 0 2px var(--color-primary);
 }
 
@@ -306,11 +306,11 @@
 :global([data-grid-theme="lightbox"]) .card {
     margin: var(--space-2);
     padding: var(--space-2);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--lightbox-card-border);
     border-radius: 0;
-    background-color: rgba(200, 220, 255, 0.15);
+    background-color: var(--lightbox-card-bg);
     box-shadow:
-        inset 0 0 30px rgba(180, 200, 255, 0.1),
+        inset 0 0 30px var(--lightbox-bg-start),
         0 0 2px rgba(255, 255, 255, 0.2);
 }
 
@@ -335,7 +335,7 @@
 }
 
 :global([data-grid-theme="lightbox"]) .cardSelected {
-    background-color: rgba(100, 150, 255, 0.2);
+    background-color: var(--lightbox-card-selected);
     border-color: var(--color-primary);
 }
 
@@ -346,7 +346,7 @@
     padding: var(--space-3);
     border: none;
     border-radius: var(--radius-sm);
-    background: linear-gradient(135deg, #d4c4a8 0%, #c4b498 50%, #b4a488 100%);
+    background: linear-gradient(135deg, var(--slide-35mm-card-bg-start) 0%, var(--slide-35mm-card-bg-mid) 50%, var(--slide-35mm-card-bg-end) 100%);
     box-shadow:
         0 3px 6px rgba(0, 0, 0, 0.4),
         inset 0 1px 0 rgba(255, 255, 255, 0.3),
@@ -368,7 +368,7 @@
 
 :global([data-grid-theme="slide-35mm"]) .thumbnailContainer {
     border-radius: 0;
-    border: 2px solid #8a7a5a;
+    border: 2px solid var(--slide-35mm-card-border);
     background-color: #000;
     box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.6);
 }
