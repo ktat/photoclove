@@ -27,6 +27,7 @@ import LogViewer from "./App/LogViewer.jsx";
 import DocumentViewer from "./components/DocumentViewer.jsx";
 import Tooltip from "./components/Tooltip.jsx";
 import NavigationIcons from "./App/NavigationIcons.jsx";
+import RecoveryQueueModal from "./App/RecoveryQueueModal.jsx";
 import { useError } from "./context/ErrorContext.jsx";
 import { logger } from "./services/LoggerService.js";
 import { useUI } from "./context/UIContext.jsx";
@@ -73,6 +74,7 @@ function App() {
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showTermsOfUse, setShowTermsOfUse] = useState(false);
   const [showJobQueueModal, setShowJobQueueModal] = useState(false);
+  const [showRecoveryQueueModal, setShowRecoveryQueueModal] = useState(false);
   const [tooltipText, setTooltipText] = useState("");
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0 });
@@ -126,6 +128,23 @@ function App() {
       }
     };
     clearImportCache();
+
+    // Cleanup old discarded recovery queue items (older than 30 days)
+    const cleanupRecoveryQueue = async () => {
+      try {
+        const deletedCount = await invoke('cleanup_recovery_items');
+        if (deletedCount > 0) {
+          logger.info('App', 'recovery_queue_cleanup', 'Old recovery items cleaned up', {
+            deletedCount
+          });
+        }
+      } catch (error) {
+        logger.warn('App', 'recovery_queue_cleanup_failed', 'Failed to cleanup recovery queue', {
+          error: error.message
+        });
+      }
+    };
+    cleanupRecoveryQueue();
   }, []);
 
   // Add keyboard shortcut for LogViewer (Ctrl+Shift+L)
@@ -147,6 +166,19 @@ function App() {
       if (event.ctrlKey && event.shiftKey && event.key === 'J') {
         event.preventDefault();
         setShowJobQueueModal(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Add keyboard shortcut for Recovery Queue (Ctrl+Shift+R)
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.ctrlKey && event.shiftKey && event.key === 'R') {
+        event.preventDefault();
+        setShowRecoveryQueueModal(prev => !prev);
       }
     };
 
@@ -339,15 +371,18 @@ function App() {
           togglePreferences={togglePreferences}
           toggleImporter={toggleImporter}
         />
-        <Footer />
+        <Footer onRecoveryQueueClick={() => setShowRecoveryQueueModal(true)} />
         {showLogViewer && (
           <LogViewer onClose={() => setShowLogViewer(false)} />
+        )}
+        {showRecoveryQueueModal && (
+          <RecoveryQueueModal onClose={() => setShowRecoveryQueueModal(false)} addFooterMessage={addFooterMessage} />
         )}
         <Tooltip show={leftMenuCollapsed && showTooltip} text={tooltipText} position={tooltipPosition} />
       </>
     );
   }
-  
+
   // Show search page - now using PhotosList directly
   if (showSearchPage) {
     return (
@@ -406,16 +441,19 @@ function App() {
             />
           </div>
         </div>
-        <Footer />
+        <Footer onRecoveryQueueClick={() => setShowRecoveryQueueModal(true)} />
         <ErrorDisplay />
         {showLogViewer && (
           <LogViewer onClose={() => setShowLogViewer(false)} />
+        )}
+        {showRecoveryQueueModal && (
+          <RecoveryQueueModal onClose={() => setShowRecoveryQueueModal(false)} addFooterMessage={addFooterMessage} />
         )}
         <Tooltip show={leftMenuCollapsed && showTooltip} text={tooltipText} position={tooltipPosition} />
       </>
     );
   }
-  
+
   return (
     <div className="container"
     // onKeyDown={(e) => { shortCutNavigation.onKeyDown(e) }}
@@ -510,7 +548,7 @@ function App() {
           </>
         }
       </div>
-      <Footer />
+      <Footer onRecoveryQueueClick={() => setShowRecoveryQueueModal(true)} />
       <ErrorDisplay />
       {showLogViewer && (
         <LogViewer onClose={() => setShowLogViewer(false)} />
@@ -531,6 +569,9 @@ function App() {
       )}
       {showJobQueueModal && (
         <JobQueue onClose={() => setShowJobQueueModal(false)} addFooterMessage={addFooterMessage} />
+      )}
+      {showRecoveryQueueModal && (
+        <RecoveryQueueModal onClose={() => setShowRecoveryQueueModal(false)} addFooterMessage={addFooterMessage} />
       )}
       <Tooltip show={leftMenuCollapsed && showTooltip} text={tooltipText} position={tooltipPosition} />
     </div >
