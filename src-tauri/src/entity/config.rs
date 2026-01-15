@@ -54,6 +54,10 @@ fn default_photo_grid_theme() -> String {
     "default".to_string()
 }
 
+fn default_progressive_image_loading() -> bool {
+    false
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub repository: RepositoryConfig,
@@ -86,6 +90,8 @@ pub struct Config {
     pub color_theme: String,
     #[serde(default = "default_photo_grid_theme")]
     pub photo_grid_theme: String,
+    #[serde(default = "default_progressive_image_loading")]
+    pub progressive_image_loading: bool,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryConfig {
@@ -119,6 +125,7 @@ impl Config {
         self.thumbnail_orientation_correction = config.thumbnail_orientation_correction;
         self.color_theme = config.color_theme;
         self.photo_grid_theme = config.photo_grid_theme;
+        self.progressive_image_loading = config.progressive_image_loading;
     }
 
     pub fn config_path() -> String {
@@ -216,6 +223,7 @@ impl Config {
             thumbnail_orientation_correction: default_thumbnail_orientation_correction(),
             color_theme: default_color_theme(),
             photo_grid_theme: default_photo_grid_theme(),
+            progressive_image_loading: default_progressive_image_loading(),
         }
     }
 
