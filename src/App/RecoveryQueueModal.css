@@ -1,0 +1,256 @@
+/* RecoveryQueueModal styles - matching JobQueue pattern */
+.recovery-queue-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.recovery-queue-modal {
+    background: var(--color-bg-elevated);
+    color: var(--color-text-primary);
+    border-radius: var(--radius-sm);
+    width: 90vw;
+    max-width: 1000px;
+    height: 70vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--color-border-default);
+}
+
+.recovery-queue-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-border-default);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.recovery-queue-title-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.recovery-queue-header h2 {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-xl);
+}
+
+.recovery-queue-subtitle {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.recovery-queue-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.recovery-queue-modal .recovery-queue-actions button {
+    background: var(--color-bg-elevated);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    font-size: var(--font-size-sm);
+    margin: 0;
+}
+
+.recovery-queue-modal .recovery-queue-actions button:hover {
+    background: var(--color-primary);
+    color: white;
+}
+
+.recovery-queue-modal .recovery-queue-actions button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.recovery-queue-modal .recovery-queue-actions .retry-all-button {
+    background: var(--color-warning);
+    color: white;
+    border-color: var(--color-warning);
+}
+
+.recovery-queue-modal .recovery-queue-actions .retry-all-button:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+
+.recovery-queue-error {
+    padding: 1rem;
+    background: rgba(239, 68, 68, 0.15);
+    border-left: 4px solid var(--color-danger);
+    color: var(--color-danger);
+}
+
+.recovery-queue-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    background: var(--color-bg-elevated);
+}
+
+.recovery-queue-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--color-text-secondary);
+}
+
+.recovery-queue-empty .empty-icon {
+    font-size: 48px;
+    margin-bottom: var(--space-3);
+}
+
+.recovery-queue-empty p {
+    font-size: var(--font-size-lg);
+}
+
+.recovery-table-container {
+    overflow-x: auto;
+}
+
+.recovery-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-sm);
+}
+
+.recovery-table th,
+.recovery-table td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border-default);
+}
+
+.recovery-table th {
+    background: var(--color-bg-surface);
+    color: var(--color-text-primary);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    white-space: nowrap;
+}
+
+.recovery-table .operation-type {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--color-bg-muted);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+}
+
+.recovery-table .file-name {
+    font-family: monospace;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+}
+
+.recovery-table .error-reason {
+    color: var(--color-danger);
+    font-size: var(--font-size-xs);
+}
+
+.recovery-table .unrecoverable-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    margin-right: var(--space-1);
+    background: var(--color-text-muted);
+    color: var(--color-bg-base);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-2xs);
+    font-weight: 600;
+}
+
+.recovery-table .date-cell {
+    white-space: nowrap;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+}
+
+.recovery-table .retry-count-cell {
+    text-align: center;
+    color: var(--color-text-secondary);
+}
+
+/* Error column takes more space */
+.recovery-table th:nth-child(3),
+.recovery-table td:nth-child(3) {
+    width: 35%;
+}
+
+/* Actions column - compact for 2 buttons */
+.recovery-table th:last-child,
+.recovery-table td:last-child {
+    min-width: 120px;
+}
+
+.item-actions {
+    display: flex;
+    gap: var(--space-1);
+    flex-wrap: nowrap;
+    min-width: max-content;
+}
+
+.item-actions button {
+    padding: 0.25rem 0.5rem;
+    font-size: var(--font-size-xs);
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.item-actions .retry-button {
+    background: var(--color-primary);
+    color: white;
+}
+
+.item-actions .retry-button:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+
+.item-actions .retry-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.item-actions .discard-button {
+    background: var(--color-bg-muted);
+    color: var(--color-text-secondary);
+}
+
+.item-actions .discard-button:hover {
+    background: var(--color-text-muted);
+    color: var(--color-text-primary);
+}
+
+.item-actions .delete-button {
+    background: var(--color-danger);
+    color: white;
+}
+
+.item-actions .delete-button:hover {
+    filter: brightness(0.85);
+}
+
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--color-text-secondary);
+}
