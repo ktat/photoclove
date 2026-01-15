@@ -150,6 +150,7 @@ body {
   --color-primary-hover: #1e40af;
   --color-primary-muted: rgba(37, 99, 235, 0.15);
   --color-primary-selected: rgba(37, 99, 235, 0.2);
+  --color-primary-text: #ffffff;
 
   /* --- State Colors (adjusted for light bg) --- */
   --color-success: #16a34a;
