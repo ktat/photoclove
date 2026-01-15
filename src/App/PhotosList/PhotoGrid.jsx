@@ -1,21 +1,20 @@
-import React, { useMemo } from 'react';
-import Scrollable from "../../Scrollable.jsx";
-import PhotoCard from "./PhotoCard.jsx";
+import React, { useMemo, useRef } from 'react';
+import VirtualPhotoGrid from "./VirtualPhotoGrid.jsx";
 import styles from './PhotoGrid.module.css';
 
 /**
  * PhotoGrid Component
- * Renders a grid of photo thumbnails with infinite scroll support
- * Refactored to use PhotoCard component for individual photo rendering
+ * Renders a virtualized grid of photo thumbnails
+ * Uses react-window for efficient rendering of large photo collections
  */
 function PhotoGrid({
     displayedPhotos,
     totalPhotosCount,
+    allPhotos,
     iconSize,
     photoSelectionDict,
     onAddSelection,
     onDisplayPhoto,
-    onInfiniteScroll,
     isLimitedByConfig,
     configLimit,
     starFilter,
@@ -23,12 +22,14 @@ function PhotoGrid({
     hasTagFilter,
     extensionFilter,
     onClearFilters,
-    showSideMenu,
     setShowSideMenu,
     importState,
-    isLoading = false,
     thumbnailOrientationCorrection = false
 }) {
+    const containerRef = useRef(null);
+
+    // Use all photos for virtualization
+    const photos = allPhotos || displayedPhotos;
 
     // Check if any filters are active
     const hasActiveFilters = useMemo(() => {
@@ -46,12 +47,12 @@ function PhotoGrid({
     }, [starFilter, hasCommentFilter, hasTagFilter, extensionFilter]);
 
     return (
-        <div className={styles.container}>
+        <div className={styles.container} ref={containerRef}>
             {/* Header with photo count and filters info */}
             <div className={styles.header}>
-                {displayedPhotos.length > 0 ? (
+                {photos.length > 0 ? (
                     <>
-                        <span>Showing {displayedPhotos.length} photo{displayedPhotos.length !== 1 ? 's' : ''}</span>
+                        <span>Showing {photos.length} photo{photos.length !== 1 ? 's' : ''}</span>
                         {hasActiveFilters && (
                             <div className={styles.filterSummary}>
                                 {getFilterSummary}
@@ -67,55 +68,20 @@ function PhotoGrid({
                 ) : null}
             </div>
 
-            {/* Photo Grid - using global .photos class for complex grid layout */}
-            <Scrollable f={onInfiniteScroll} className="photos">
-                {displayedPhotos.map((photo, index) => {
-                    // Include tag count in key to force re-render when tags change
-                    const tagCount = photo.getTags ? photo.getTags().length : (photo.tags?.length || 0);
-                    const photoKey = `${photo.originalPath}_${tagCount}`;
-
-                    return (
-                        <PhotoCard
-                            key={photoKey}
-                            photo={photo}
-                            index={index}
-                            iconSize={iconSize}
-                            isSelected={photoSelectionDict[photo.originalPath] || false}
-                            onAddSelection={onAddSelection}
-                            onDisplayPhoto={onDisplayPhoto}
-                            setShowSideMenu={setShowSideMenu}
-                            importState={importState}
-                            thumbnailOrientationCorrection={thumbnailOrientationCorrection}
-                        />
-                    );
-                })}
-
-                {/* Infinite scroll completion indicator */}
-                {displayedPhotos.length > 0 && (
-                    <div className={`${styles.scrollIndicator} scroll-indicator`}>
-                        {isLimitedByConfig ? (
-                            <div>
-                                <div>Showing {displayedPhotos.length} photos (limited by configuration)</div>
-                                <div className={styles.scrollIndicatorSubtext}>
-                                    Display limit: {configLimit} photos. There may be more photos available.
-                                </div>
-                            </div>
-                        ) : (
-                            displayedPhotos.length < totalPhotosCount ? (
-                                <div className={styles.scrollToLoad}>
-                                    <div className={styles.scrollArrow}>↓</div>
-                                    <div>Scroll to load more</div>
-                                    <div className={styles.scrollIndicatorSubtext}>
-                                        {displayedPhotos.length} / {totalPhotosCount} photos
-                                    </div>
-                                </div>
-                            ) : (
-                                <div>All photos displayed ({displayedPhotos.length} photos)</div>
-                            )
-                        )}
-                    </div>
-                )}
-            </Scrollable>
+            <VirtualPhotoGrid
+                displayedPhotos={photos}
+                totalPhotosCount={totalPhotosCount}
+                iconSize={iconSize}
+                photoSelectionDict={photoSelectionDict}
+                onAddSelection={onAddSelection}
+                onDisplayPhoto={onDisplayPhoto}
+                setShowSideMenu={setShowSideMenu}
+                importState={importState}
+                thumbnailOrientationCorrection={thumbnailOrientationCorrection}
+                containerRef={containerRef}
+                isLimitedByConfig={isLimitedByConfig}
+                configLimit={configLimit}
+            />
         </div>
     );
 }
