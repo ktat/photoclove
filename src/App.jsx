@@ -63,7 +63,7 @@ function App() {
     recentPhotosMode
   } = usePhoto();
   const { getDates } = useDateNavigation();
-  const { useCount, config } = useAppConfig();
+  const { useCount, config, loadConfig } = useAppConfig();
   
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
@@ -491,6 +491,7 @@ function App() {
             <div style={{ display: showPreferences ? "block" : "none" }}>
               <Preferences
                 togglePreferences={togglePreferences}
+                reloadConfig={loadConfig}
               ></Preferences>
             </div>
             <div style={{ display: (() => {

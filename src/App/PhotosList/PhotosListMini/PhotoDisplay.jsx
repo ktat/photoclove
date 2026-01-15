@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { openUrl } from '@tauri-apps/plugin-opener';
 import fileUrl from "../../../PathUtil.jsx";
 import { logger } from "../../../services/LoggerService.js";
+import { getCombinedTransformStyle } from "../../../utils/orientationUtils.js";
 
 // Layout and timing constants
 const CONTAINER_READY_DELAY_MS = 50;
@@ -15,6 +16,7 @@ const RETRY_DELAY_MS = 100;
 const FALLBACK_WIDTH = 800;
 const FALLBACK_HEIGHT = 600;
 const SCROLL_LOCK_DELAY_MS = 100;
+const FULL_IMAGE_LOAD_DELAY_MS = 300; // Delay before loading full image after navigation stops
 
 let currentFile = "";
 let width = 0;
@@ -28,6 +30,13 @@ function PhotoDisplay(props) {
     const [videoClass, setVideoClass] = useState("video-off");
     const [photoDisplayWidth, setPhotoDisplayWidth] = useState("pdWidth");
     const [photoDisplayHeight, setPhotoDisplayHeight] = useState("pdHeight");
+
+    // Progressive image loading state
+    const [displaySrc, setDisplaySrc] = useState(""); // Currently displayed image source
+    const [isLoadingFullImage, setIsLoadingFullImage] = useState(false);
+    const [isShowingThumbnail, setIsShowingThumbnail] = useState(false); // Track if currently showing thumbnail
+    const fullImageLoadTimeoutRef = useRef(null);
+    const fullImageRef = useRef(null); // Hidden img element for preloading
 
     // Function to parse CSS style string and convert to style object
     const parseCssStyle = (cssString) => {
@@ -82,6 +91,12 @@ function PhotoDisplay(props) {
         // Don't set opacity here - let handleImgLoad handle it when image is ready
         document.querySelector("#dummy-for-focus")?.focus();
 
+        // Cancel any pending full image load
+        if (fullImageLoadTimeoutRef.current) {
+            clearTimeout(fullImageLoadTimeoutRef.current);
+            fullImageLoadTimeoutRef.current = null;
+        }
+
         // Small delay to ensure container is ready when transitioning from thumbnail view
         setTimeout(() => {
             if (props.currentPhotoPath && props.currentPhotoPath.match(/(mp4|webm)$/i)) {
@@ -93,12 +108,67 @@ function PhotoDisplay(props) {
                 setPhotoDisplayWidth(width + "px");
                 setPhotoDisplayHeight(height + "px");
                 setVideoClass("video-on");
+                setDisplaySrc("");
             } else {
                 setVideoClass("video-off");
                 setVideoSource("");
+
+                // Get full image source
+                const fullImageSrc = (props.imgCacheMap[props.currentPhotoPath] && props.imgCacheMap[props.currentPhotoPath][0])
+                    || convertFileSrc(props.currentPhotoPath);
+                const thumbnailSrc = props.thumbnailSrc ? convertFileSrc(props.thumbnailSrc) : null;
+
+                // Progressive loading: Show thumbnail first if enabled and available
+                if (props.progressiveImageLoading && thumbnailSrc) {
+                    // Show thumbnail immediately
+                    setDisplaySrc(thumbnailSrc);
+                    setIsLoadingFullImage(true);
+                    setIsShowingThumbnail(true);
+
+                    // Schedule full image load after navigation stops
+                    fullImageLoadTimeoutRef.current = setTimeout(() => {
+                        // Preload full image in background
+                        const preloadImg = new Image();
+                        preloadImg.onload = () => {
+                            // Switch to full image once loaded
+                            setDisplaySrc(fullImageSrc);
+                            setIsLoadingFullImage(false);
+                            setIsShowingThumbnail(false);
+                            // Trigger resize calculation with full image dimensions
+                            width = preloadImg.naturalWidth;
+                            height = preloadImg.naturalHeight;
+                            logger.debug('PhotoDisplay', 'full_image_loaded', 'Switched to full image', {
+                                path: props.currentPhotoPath,
+                                width,
+                                height
+                            });
+                        };
+                        preloadImg.onerror = () => {
+                            // Keep thumbnail on error
+                            setIsLoadingFullImage(false);
+                            logger.warn('PhotoDisplay', 'full_image_error', 'Failed to load full image', {
+                                path: props.currentPhotoPath
+                            });
+                        };
+                        preloadImg.src = fullImageSrc;
+                    }, FULL_IMAGE_LOAD_DELAY_MS);
+                } else {
+                    // Progressive loading disabled or no thumbnail - show full image directly
+                    setDisplaySrc(fullImageSrc);
+                    setIsLoadingFullImage(false);
+                    setIsShowingThumbnail(false);
+                }
             }
         }, CONTAINER_READY_DELAY_MS);
-    }, [props.currentPhotoPath]);
+
+        // Cleanup on unmount or path change
+        return () => {
+            if (fullImageLoadTimeoutRef.current) {
+                clearTimeout(fullImageLoadTimeoutRef.current);
+                fullImageLoadTimeoutRef.current = null;
+            }
+        };
+    }, [props.currentPhotoPath, props.thumbnailSrc, props.imgCacheMap, props.progressiveImageLoading]);
 
     function dragPhotoStart(e) {
         setPhotoDisplayImgClass("photo_dragging");
@@ -240,6 +310,22 @@ function PhotoDisplay(props) {
     }
 
     const handleImgLoad = (e, retryCount = 0) => {
+        // When showing thumbnail, skip recalculating wrapper size
+        // Just scale thumbnail to fill existing wrapper using object-fit
+        if (isShowingThumbnail) {
+            // Apply style to fill wrapper while maintaining aspect ratio
+            props.SetImgStyle({
+                opacity: 1,
+                transition: "opacity 0.3s",
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                maxWidth: '100%',
+                maxHeight: '100%'
+            });
+            return;
+        }
+
         if (e !== undefined && e !== null) {
             height = e.naturalHeight;
             width = e.naturalWidth;
@@ -389,7 +475,7 @@ function PhotoDisplay(props) {
             </div>
             {props.currentPhotoPath && !props.currentPhotoPath.match(/\.(mp4|webm)$/i) &&
                 <div id="imageWrapper" style={{ overflow: 'auto', alignItems: 'center', justifyContent: 'center', maxWidth: '100%', maxHeight: '100%' }}>
-                    <img id="photoImgTag" className={photoDisplayImgClass}
+                    <img id="photoImgTag" className={photoDisplayImgClass + (isLoadingFullImage ? " loading-thumbnail" : "")}
                         loading="eager"
                         onDoubleClick={(e) => props.togglePhotoSelected()}
                         onError={(e) => {
@@ -397,7 +483,7 @@ function PhotoDisplay(props) {
                             if (e.target.src.includes('/img_error.png')) {
                                 return;
                             }
-                            
+
                             // Try thumbnail as fallback if main image fails and we have a thumbnail
                             if (props.thumbnailSrc && !e.target.dataset.triedThumbnail) {
                                 e.target.dataset.triedThumbnail = "true";
@@ -410,12 +496,14 @@ function PhotoDisplay(props) {
                         }}
                         style={{
                             ...props.imgStyle,
-                            ...parseCssStyle(props.currentPhotoCssStyle)
+                            ...(isShowingThumbnail && props.thumbnailOrientationCorrection
+                                ? getCombinedTransformStyle(props.orientation, props.currentPhotoCssStyle)
+                                : parseCssStyle(props.currentPhotoCssStyle))
                         }}
                         onLoad={(e) => {
                             handleImgLoad(e.target);
                         }}
-                        src={(props.imgCacheMap[props.currentPhotoPath] && props.imgCacheMap[props.currentPhotoPath][0]) || convertFileSrc(props.currentPhotoPath)}
+                        src={displaySrc || convertFileSrc(props.currentPhotoPath)}
                         onMouseDown={(e) => dragPhotoStart(e)}
                         onMouseMove={(e) => dragPhoto(e)}
                         onMouseUp={(e) => dragPhotoEnd(e)}

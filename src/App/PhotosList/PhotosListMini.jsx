@@ -46,6 +46,8 @@ function PhotosListMini(props) {
 
     // Thumbnail orientation correction setting
     const thumbnailOrientationCorrection = props.config?.thumbnail_orientation_correction || false;
+    // Progressive image loading setting
+    const progressiveImageLoading = props.config?.progressive_image_loading || false;
 
     // State
     const [showPhotosIndex, setShowPhotosIndex] = useState([]);
@@ -433,9 +435,9 @@ function PhotosListMini(props) {
                     )}
                     <a href="#" onClick={() => props.closePhotoDisplay()}>close</a>
                     {props.currentIndex < (photosListMiniAllPhotos.length - 1) ? (
-                        <> ||&nbsp;&nbsp;<a href="#" onClick={() => lockNavigate(nextPhoto)}>next &gt;&gt;</a><br /><br /></>
+                        <> ||&nbsp;&nbsp;<a href="#" onClick={() => lockNavigate(nextPhoto)}>next &gt;&gt;</a><br /></>
                     ) : (
-                        <> ||&nbsp;&nbsp;<s>next</s> &gt;&gt;<br /><br /></>
+                        <> ||&nbsp;&nbsp;<s>next</s> &gt;&gt;<br /></>
                     )}
 
                     {/* In trash mode, wait for photo data to be ready to get correct trash path */}
@@ -464,6 +466,9 @@ function PhotosListMini(props) {
                             selectedContent={selectedContent}
                             unselectedContent={unselectedContent}
                             currentPhotoCssStyle={photosWithMethods[props.currentIndex]?.cssStyle}
+                            orientation={photosWithMethods[props.currentIndex]?.meta_data?.orientation}
+                            thumbnailOrientationCorrection={thumbnailOrientationCorrection}
+                            progressiveImageLoading={progressiveImageLoading}
                         />
                     )}
                 </div>

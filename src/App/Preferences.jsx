@@ -92,6 +92,11 @@ function Preferences(props) {
             logger.setEnabled(updatedConfig.logging_enabled);
             logger.info('Preferences', 'config_saved', 'Configuration saved successfully', { updatedConfig });
 
+            // Reload config in parent to apply changes without restart
+            if (props.reloadConfig) {
+                props.reloadConfig();
+            }
+
             if (isFirstView) {
                 props.togglePreferences(false);
             }
@@ -101,8 +106,8 @@ function Preferences(props) {
             logger.error('Preferences', 'config_save_failed', 'Failed to save configuration', { error: error.message });
             message("Failed to save configuration. Please try again.");
         });
-        message("Changes are not reflected until restart application.").then((t) => {
-            props.addFooterMessage("restartRequired", "Preference changes are not reflected until restart app.");
+        message("Some changes may require restart to take effect.").then((t) => {
+            props.addFooterMessage("configSaved", "Configuration saved.");
         });
     }
 
@@ -386,6 +391,24 @@ function Preferences(props) {
                                     onChange={(e) => setConfig(prev => ({ ...prev, max_photos_per_fetch: e.target.value }))}
                                 />
                             </div>
+                        </div>
+
+                        <h2 className={styles['section-title']}>Photo Viewer</h2>
+                        <div className={styles['setting-group']}>
+                            <div className={styles['setting-item']}>
+                                <input
+                                    type="checkbox"
+                                    id="progressive-image-loading-check"
+                                    checked={config.progressive_image_loading || false}
+                                    onChange={(e) => setConfig(prev => ({ ...prev, progressive_image_loading: e.target.checked }))}
+                                />
+                                <label htmlFor="progressive-image-loading-check">
+                                    Progressive image loading (show thumbnail first during navigation)
+                                </label>
+                            </div>
+                            <p className={styles['setting-description']}>
+                                When enabled, shows thumbnail immediately while navigating photos, then loads full image after navigation stops. Improves responsiveness during rapid navigation.
+                            </p>
                         </div>
                     </div>
                 )}
