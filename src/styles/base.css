@@ -126,6 +126,34 @@ body {
   --font-size-lg: 16px;
   --font-size-xl: 18px;
   --font-size-2xl: 20px;
+
+  /* === Grid Theme Colors (Dark) === */
+
+  /* --- Slide Mount Theme --- */
+  --slide-mount-grid-bg: #d0d0d0;
+  --slide-mount-mini-bg: #e8e8e8;
+  --slide-mount-mini-text: #333333;
+  --slide-mount-card-bg: #f5f5f5;
+  --slide-mount-card-border: #e0e0e0;
+  --slide-mount-card-shadow: rgba(0, 0, 0, 0.2);
+
+  /* --- 35mm Slide Theme --- */
+  --slide-35mm-grid-bg-start: #a09080;
+  --slide-35mm-grid-bg-end: #908070;
+  --slide-35mm-mini-bg-start: #c4b498;
+  --slide-35mm-mini-bg-end: #b4a488;
+  --slide-35mm-mini-text: #4a4030;
+  --slide-35mm-card-bg-start: #d4c4a8;
+  --slide-35mm-card-bg-mid: #c4b498;
+  --slide-35mm-card-bg-end: #b4a488;
+  --slide-35mm-card-border: #8a7a5a;
+
+  /* --- Light Box Theme --- */
+  --lightbox-bg-start: rgba(160, 180, 220, 0.1);
+  --lightbox-bg-end: rgba(180, 200, 240, 0.15);
+  --lightbox-card-bg: rgba(200, 220, 255, 0.15);
+  --lightbox-card-border: rgba(255, 255, 255, 0.1);
+  --lightbox-card-selected: rgba(100, 150, 255, 0.2);
 }
 
 /* ========== Light Theme ========== */
@@ -134,21 +162,21 @@ body {
   background: var(--color-bg-base);
   color: var(--color-text-primary);
 
-  /* --- Background Colors --- */
-  --color-bg-base: #e8e8e8;
+  /* --- Background Colors (Warm Beige) --- */
+  --color-bg-base: #faf8f5;
   --color-bg-elevated: #ffffff;
-  --color-bg-surface: #f0f0f0;
-  --color-bg-muted: #d4d4d4;
-  --color-bg-film: #c0c0c0;
+  --color-bg-surface: #f0ebe5;
+  --color-bg-muted: #d4ccc4;
+  --color-bg-film: #a89888;
 
   /* --- Text Colors --- */
   --color-text-primary: #1f1f1f;
   --color-text-secondary: #525252;
   --color-text-muted: #737373;
 
-  /* --- Border Colors --- */
-  --color-border-default: #d4d4d4;
-  --color-border-subtle: #e5e5e5;
+  /* --- Border Colors (Warm tone) --- */
+  --color-border-default: #c8beb4;
+  --color-border-subtle: #e0d8d0;
   --color-border-strong: #a3a3a3;
 
   /* --- Primary (adjusted for light bg) --- */
@@ -178,9 +206,33 @@ body {
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.2);
   --shadow-glow-primary: 0 0 12px rgba(37, 99, 235, 0.3);
 
-  /* --- Photo Grid Theme Colors (Light theme overrides) --- */
-  --color-theme-lightbox-gradient-start: rgba(160, 180, 220, 0.3);
-  --color-theme-lightbox-gradient-end: rgba(180, 200, 240, 0.4);
+  /* === Grid Theme Colors (Light - adjusted for light bg) === */
+
+  /* --- Slide Mount Theme --- */
+  --slide-mount-grid-bg: #c8c0b8;
+  --slide-mount-mini-bg: #d8d0c8;
+  --slide-mount-mini-text: #3a3530;
+  --slide-mount-card-bg: #f0ebe5;
+  --slide-mount-card-border: #d0c8c0;
+  --slide-mount-card-shadow: rgba(0, 0, 0, 0.15);
+
+  /* --- 35mm Slide Theme --- */
+  --slide-35mm-grid-bg-start: #b0a090;
+  --slide-35mm-grid-bg-end: #a09080;
+  --slide-35mm-mini-bg-start: #d4c4a8;
+  --slide-35mm-mini-bg-end: #c4b498;
+  --slide-35mm-mini-text: #4a4030;
+  --slide-35mm-card-bg-start: #e4d4b8;
+  --slide-35mm-card-bg-mid: #d4c4a8;
+  --slide-35mm-card-bg-end: #c4b498;
+  --slide-35mm-card-border: #9a8a6a;
+
+  /* --- Light Box Theme --- */
+  --lightbox-bg-start: rgba(100, 140, 200, 0.25);
+  --lightbox-bg-end: rgba(120, 160, 220, 0.3);
+  --lightbox-card-bg: rgba(140, 170, 220, 0.35);
+  --lightbox-card-border: rgba(100, 140, 200, 0.3);
+  --lightbox-card-selected: rgba(100, 150, 255, 0.4);
 }
 
 /* start dark theme */
