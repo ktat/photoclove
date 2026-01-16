@@ -17,6 +17,7 @@
 //! - `albums` - Album management
 //! - `collections` - Unified collection operations
 //! - `job_queue` - Background job queue
+//! - `recovery_queue` - Recovery queue for failed operations
 
 use crate::entity::{config, photo, photo_meta};
 use crate::repository::{DatesNum, MetaInfoDB};
@@ -39,6 +40,7 @@ mod tags;
 mod albums;
 mod collections;
 mod job_queue;
+mod recovery_queue;
 
 #[derive(Clone)]
 pub struct SQLite {
@@ -341,6 +343,53 @@ impl SQLite {
 
     pub fn delete_job_unit(&self, job_unit_id: &str) -> Result<(), String> {
         job_queue::delete_job_unit(self, job_unit_id)
+    }
+
+    // ==================== Recovery Queue Operations ====================
+
+    pub fn add_to_recovery_queue(
+        &self,
+        operation_type: crate::entity::recovery_queue::OperationType,
+        target_path: &str,
+        error_reason: &str,
+    ) -> Result<i64, String> {
+        recovery_queue::add_to_recovery_queue(self, operation_type, target_path, error_reason)
+    }
+
+    pub fn get_recovery_pending_count(&self) -> Result<i32, String> {
+        recovery_queue::get_pending_count(self)
+    }
+
+    pub fn get_recovery_pending_items(&self) -> Result<Vec<crate::entity::recovery_queue::RecoveryItem>, String> {
+        recovery_queue::get_pending_items(self)
+    }
+
+    pub fn get_recovery_all_items(&self) -> Result<Vec<crate::entity::recovery_queue::RecoveryItem>, String> {
+        recovery_queue::get_all_items(self)
+    }
+
+    pub fn update_recovery_status(
+        &self,
+        id: i64,
+        status: crate::entity::recovery_queue::RecoveryStatus,
+    ) -> Result<(), String> {
+        recovery_queue::update_status(self, id, status)
+    }
+
+    pub fn increment_recovery_retry(&self, id: i64) -> Result<(), String> {
+        recovery_queue::increment_retry(self, id)
+    }
+
+    pub fn delete_recovery_item(&self, id: i64) -> Result<(), String> {
+        recovery_queue::delete_item(self, id)
+    }
+
+    pub fn cleanup_old_recovery_items(&self) -> Result<usize, String> {
+        recovery_queue::cleanup_old_items(self)
+    }
+
+    pub fn get_recovery_item(&self, id: i64) -> Result<Option<crate::entity::recovery_queue::RecoveryItem>, String> {
+        recovery_queue::get_item(self, id)
     }
 }
 
