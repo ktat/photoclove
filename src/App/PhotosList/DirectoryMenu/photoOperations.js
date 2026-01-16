@@ -286,3 +286,94 @@ export function useTrashOperations({
         permanentDeleteSelected
     };
 }
+
+/**
+ * Hook for startup image operations
+ * Adds selected photos to the startup image list in config
+ */
+export function useStartupImageOperations({
+    photoSelection,
+    clearPhotoSelection,
+    addFooterMessage,
+    config,
+    saveConfigWithStartupImages
+}) {
+    const addToStartupImages = useCallback(async () => {
+        if (!photoSelection || photoSelection.length === 0) {
+            addFooterMessage('startupImages', 'Please select photos first');
+            return;
+        }
+
+        // Filter to only include image files (not videos)
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif'];
+        const imagePhotos = photoSelection.filter(path => {
+            const ext = path.toLowerCase().substring(path.lastIndexOf('.'));
+            return imageExtensions.includes(ext);
+        });
+
+        if (imagePhotos.length === 0) {
+            addFooterMessage('startupImages', 'No image files selected (videos are not supported for startup images)');
+            return;
+        }
+
+        // Get existing startup images or create default structure
+        const currentStartupImages = config?.startup_images || { mode: 'default', images: [] };
+        const existingPaths = new Set((currentStartupImages.images || []).map(img => img.path));
+
+        // Create new startup image entries for photos not already in the list
+        const newImages = imagePhotos
+            .filter(path => !existingPaths.has(path))
+            .map(path => {
+                // Extract date from path (assumes format like .../YYYY/MM/DD/...)
+                const dateMatch = path.match(/(\d{4})\/(\d{2})\/(\d{2})/);
+                const photoDate = dateMatch ? `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}` : '';
+
+                return {
+                    path: path,
+                    enabled: true,
+                    photo_date: photoDate
+                };
+            });
+
+        if (newImages.length === 0) {
+            addFooterMessage('startupImages', 'Selected photos are already in startup images');
+            return;
+        }
+
+        // Merge with existing images
+        const updatedImages = [...(currentStartupImages.images || []), ...newImages];
+
+        // Update config with new startup images
+        const updatedStartupImages = {
+            mode: 'custom', // Automatically switch to custom mode when adding images
+            images: updatedImages
+        };
+
+        try {
+            await saveConfigWithStartupImages(updatedStartupImages);
+
+            clearPhotoSelection();
+
+            const addedCount = newImages.length;
+            const skippedCount = imagePhotos.length - addedCount;
+            let msg = `${addedCount} photo${addedCount !== 1 ? 's' : ''} added to startup images`;
+            if (skippedCount > 0) {
+                msg += ` (${skippedCount} already existed)`;
+            }
+            addFooterMessage('startupImages', msg, false, 3000);
+
+            logger.info('photoOperations', 'startup_images_added', 'Photos added to startup images', {
+                addedCount,
+                skippedCount,
+                totalImages: updatedImages.length
+            });
+        } catch (error) {
+            logger.error('photoOperations', 'startup_images_add_failed', 'Failed to add photos to startup images', {
+                error: error.message
+            });
+            addFooterMessage('startupImages', 'Failed to add photos to startup images');
+        }
+    }, [photoSelection, clearPhotoSelection, addFooterMessage, config, saveConfigWithStartupImages]);
+
+    return { addToStartupImages };
+}

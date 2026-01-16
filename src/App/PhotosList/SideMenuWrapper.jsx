@@ -56,6 +56,8 @@ function SideMenuWrapper({
     importState,
     albumsList,
     tagsList,
+    config,
+    saveConfigWithStartupImages,
 }) {
     // Destructure from state groups
     const { viewModeObj, currentDate } = viewState;
@@ -157,6 +159,8 @@ function SideMenuWrapper({
                     clearTagSelection={clearTagSelection}
                     deleteSelectedAlbums={deleteSelectedAlbums}
                     deleteSelectedTags={deleteSelectedTags}
+                    config={config}
+                    saveConfigWithStartupImages={saveConfigWithStartupImages}
                 />
             </div>
         </div>
