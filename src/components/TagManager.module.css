@@ -249,7 +249,7 @@
 }
 
 /* View Mode Toggle */
-.view-mode-toggle {
+.viewModeToggle {
     display: flex;
     gap: 4px;
     border: 1px solid var(--color-border-default);
@@ -257,7 +257,7 @@
     overflow: hidden;
 }
 
-.view-mode-button {
+.viewModeButton {
     width: 36px;
     height: 36px;
     border: none;
@@ -271,35 +271,35 @@
     transition: all 0.2s ease-out;
 }
 
-.view-mode-button:hover {
+.viewModeButton:hover {
     background: var(--color-bg-muted);
     color: var(--color-text-primary);
 }
 
-.view-mode-active {
+.viewModeActive {
     background: var(--color-primary);
     color: white;
 }
 
-.view-mode-active:hover {
+.viewModeActive:hover {
     background: var(--color-primary-hover);
     color: white;
 }
 
 /* Tag Item Info (list view) */
-.tag-item-info {
+.tagItemInfo {
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-.tag-photo-count {
+.tagPhotoCount {
     font-size: 12px;
     color: var(--color-text-muted);
 }
 
 /* Tag Cloud */
-.tag-cloud {
+.tagCloud {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -311,7 +311,7 @@
     overflow-y: auto;
 }
 
-.tag-cloud-item {
+.tagCloudItem {
     display: inline-flex;
     align-items: baseline;
     gap: 4px;
@@ -323,32 +323,32 @@
     white-space: nowrap;
 }
 
-.tag-cloud-item:hover {
+.tagCloudItem:hover {
     background: var(--color-bg-muted) !important;
     transform: scale(1.05);
 }
 
-.tag-cloud-count {
+.tagCloudCount {
     font-size: 0.7em;
     color: var(--color-text-muted);
     opacity: 0.8;
 }
 
 /* Scrollbar for tag cloud */
-.tag-cloud::-webkit-scrollbar {
+.tagCloud::-webkit-scrollbar {
     width: 8px;
 }
 
-.tag-cloud::-webkit-scrollbar-track {
+.tagCloud::-webkit-scrollbar-track {
     background: var(--color-bg-surface);
     border-radius: var(--radius-sm);
 }
 
-.tag-cloud::-webkit-scrollbar-thumb {
+.tagCloud::-webkit-scrollbar-thumb {
     background: var(--color-border-default);
     border-radius: var(--radius-sm);
 }
 
-.tag-cloud::-webkit-scrollbar-thumb:hover {
+.tagCloud::-webkit-scrollbar-thumb:hover {
     background: var(--color-text-muted);
 }
