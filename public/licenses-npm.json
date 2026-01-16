@@ -1,0 +1,134 @@
+{
+  "@tauri-apps/api@2.8.0": {
+    "licenses": "Apache-2.0 OR MIT",
+    "repository": "https://github.com/tauri-apps/tauri",
+    "path": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/api",
+    "licenseFile": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/api/README.md"
+  },
+  "@tauri-apps/plugin-cli@2.4.0": {
+    "licenses": "MIT OR Apache-2.0",
+    "repository": "https://github.com/tauri-apps/plugins-workspace",
+    "path": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/plugin-cli",
+    "licenseFile": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/plugin-cli/LICENSE.spdx"
+  },
+  "@tauri-apps/plugin-clipboard-manager@2.3.0": {
+    "licenses": "MIT OR Apache-2.0",
+    "repository": "https://github.com/tauri-apps/plugins-workspace",
+    "path": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/plugin-clipboard-manager",
+    "licenseFile": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/plugin-clipboard-manager/LICENSE.spdx"
+  },
+  "@tauri-apps/plugin-dialog@2.4.0": {
+    "licenses": "MIT OR Apache-2.0",
+    "repository": "https://github.com/tauri-apps/plugins-workspace",
+    "path": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/plugin-dialog",
+    "licenseFile": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/plugin-dialog/LICENSE.spdx"
+  },
+  "@tauri-apps/plugin-global-shortcut@2.3.0": {
+    "licenses": "MIT OR Apache-2.0",
+    "repository": "https://github.com/tauri-apps/plugins-workspace",
+    "path": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/plugin-global-shortcut",
+    "licenseFile": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/plugin-global-shortcut/LICENSE.spdx"
+  },
+  "@tauri-apps/plugin-notification@2.2.3": {
+    "licenses": "MIT OR Apache-2.0",
+    "repository": "https://github.com/tauri-apps/plugins-workspace",
+    "path": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/plugin-notification",
+    "licenseFile": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/plugin-notification/LICENSE.spdx"
+  },
+  "@tauri-apps/plugin-opener@2.2.7": {
+    "licenses": "MIT OR Apache-2.0",
+    "repository": "https://github.com/tauri-apps/plugins-workspace",
+    "path": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/plugin-opener",
+    "licenseFile": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/plugin-opener/LICENSE.spdx"
+  },
+  "@tauri-apps/plugin-process@2.2.2": {
+    "licenses": "MIT OR Apache-2.0",
+    "repository": "https://github.com/tauri-apps/plugins-workspace",
+    "path": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/plugin-process",
+    "licenseFile": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/plugin-process/LICENSE.spdx"
+  },
+  "@tauri-apps/plugin-shell@2.2.2": {
+    "licenses": "MIT OR Apache-2.0",
+    "repository": "https://github.com/tauri-apps/plugins-workspace",
+    "path": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/plugin-shell",
+    "licenseFile": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/plugin-shell/LICENSE.spdx"
+  },
+  "@tauri-apps/tauri-forage@1.0.0-beta.2": {
+    "licenses": "MIT",
+    "repository": "https://github.com/tauri-apps/tauri-forage",
+    "publisher": "Daniel Thompson-Yvetot",
+    "path": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/tauri-forage",
+    "licenseFile": "/home/ktat/git/github/photoclove/node_modules/@tauri-apps/tauri-forage/README.md"
+  },
+  "@welldone-software/why-did-you-render@7.0.1": {
+    "licenses": "MIT",
+    "repository": "https://github.com/welldone-software/why-did-you-render",
+    "path": "/home/ktat/git/github/photoclove/node_modules/@welldone-software/why-did-you-render",
+    "licenseFile": "/home/ktat/git/github/photoclove/node_modules/@welldone-software/why-did-you-render/LICENSE"
+  },
+  "axios@1.12.2": {
+    "licenses": "MIT",
+    "repository": "https://github.com/axios/axios",
+    "publisher": "Matt Zabriskie",
+    "path": "/home/ktat/git/github/photoclove/node_modules/axios",
+    "licenseFile": "/home/ktat/git/github/photoclove/node_modules/axios/LICENSE"
+  },
+  "classnames@2.5.1": {
+    "licenses": "MIT",
+    "repository": "https://github.com/JedWatson/classnames",
+    "publisher": "Jed Watson",
+    "path": "/home/ktat/git/github/photoclove/node_modules/classnames",
+    "licenseFile": "/home/ktat/git/github/photoclove/node_modules/classnames/LICENSE"
+  },
+  "clipboard-manager@1.0.1": {
+    "licenses": "GPL-3.0",
+    "repository": "https://github.com/dmfarcas/clipboard-manager",
+    "publisher": "Dan Farcas",
+    "email": "dan@farcas.me",
+    "path": "/home/ktat/git/github/photoclove/node_modules/clipboard-manager",
+    "licenseFile": "/home/ktat/git/github/photoclove/node_modules/clipboard-manager/LICENSE"
+  },
+  "firebase@9.23.0": {
+    "licenses": "Apache-2.0",
+    "repository": "https://github.com/firebase/firebase-js-sdk",
+    "publisher": "Firebase",
+    "email": "firebase-support@google.com",
+    "url": "https://firebase.google.com/",
+    "path": "/home/ktat/git/github/photoclove/node_modules/firebase",
+    "licenseFile": "/home/ktat/git/github/photoclove/node_modules/firebase/README.md"
+  },
+  "photoclove@0.0.0": {
+    "licenses": "UNLICENSED",
+    "private": true,
+    "path": "/home/ktat/git/github/photoclove",
+    "licenseFile": "/home/ktat/git/github/photoclove/LICENSE"
+  },
+  "react-datepicker@9.1.0": {
+    "licenses": "MIT",
+    "repository": "https://github.com/Hacker0x01/react-datepicker",
+    "publisher": "HackerOne",
+    "path": "/home/ktat/git/github/photoclove/node_modules/react-datepicker",
+    "licenseFile": "/home/ktat/git/github/photoclove/node_modules/react-datepicker/LICENSE"
+  },
+  "react-dom@18.3.1": {
+    "licenses": "MIT",
+    "repository": "https://github.com/facebook/react",
+    "path": "/home/ktat/git/github/photoclove/node_modules/react-dom",
+    "licenseFile": "/home/ktat/git/github/photoclove/node_modules/react-dom/LICENSE"
+  },
+  "react-window@2.2.5": {
+    "licenses": "MIT",
+    "repository": "https://github.com/bvaughn/react-window",
+    "publisher": "Brian Vaughn",
+    "email": "brian.david.vaughn@gmail.com",
+    "url": "https://github.com/bvaughn/",
+    "path": "/home/ktat/git/github/photoclove/node_modules/react-window",
+    "licenseFile": "/home/ktat/git/github/photoclove/node_modules/react-window/LICENSE.md"
+  },
+  "react@18.3.1": {
+    "licenses": "MIT",
+    "repository": "https://github.com/facebook/react",
+    "path": "/home/ktat/git/github/photoclove/node_modules/react",
+    "licenseFile": "/home/ktat/git/github/photoclove/node_modules/react/LICENSE"
+  }
+}

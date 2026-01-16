@@ -12,7 +12,8 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "build:licenses": "pnpm dlx license-checker --json --production --out public/licenses-npm.json && cd src-tauri && cargo license --json > ../public/licenses-rust.json"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",

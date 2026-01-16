@@ -112,6 +112,7 @@ pub fn run() {
                 .separator()
                 .text("privacy_policy", "Privacy Policy")
                 .text("terms_of_use", "Terms of Use")
+                .text("licenses", "Licenses")
                 .separator()
                 .text("about", "About")
                 .build()?;
@@ -140,6 +141,8 @@ pub fn run() {
                     app.emit("click_menu_static", "privacy_policy").unwrap();
                 } else if e.id == "terms_of_use" {
                     app.emit("click_menu_static", "terms_of_use").unwrap();
+                } else if e.id == "licenses" {
+                    app.emit("click_menu_static", "licenses").unwrap();
                 } else if e.id == "load_dates" {
                     app.emit("click_menu", "load_dates").unwrap();
                 } else if e.id == "create_db" {
