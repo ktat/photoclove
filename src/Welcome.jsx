@@ -8,8 +8,8 @@ function Welcome(props) {
     const [showSplash, setShowSplash] = useState(true);
 
     useEffect((e) => {
-        props.setWelcomeImage(WelcomeImage());
-    }, []);
+        props.setWelcomeImage(WelcomeImage(props.config));
+    }, [props.config]);
 
     useEffect((e) => {
         setTimeout(() => {

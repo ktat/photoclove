@@ -156,6 +156,16 @@ function PhotosList({
         return convertPhotosToEntities(photosData, appConfig, isFromTrash, toJSON);
     }, [appConfig]);
 
+    // Save config with startup images
+    const saveConfigWithStartupImages = useCallback(async (startupImages) => {
+        const updatedConfig = {
+            ...appConfig,
+            startup_images: startupImages
+        };
+        await invoke("save_config", { config: updatedConfig });
+        logger.info('PhotosList', 'startup_images_saved', 'Startup images saved to config');
+    }, [appConfig]);
+
     // Error handler
     const handleError = useCallback((error, operation, context = {}) => {
         const errorMessage = error?.message || error?.toString() || String(error) || 'Unknown error';
@@ -482,6 +492,7 @@ function PhotosList({
                     setShowJobQueueModal={setShowJobQueueModal} filterOptions={filterOptions}
                     loadFilterOptions={loadFilterOptions} isFilterOptionsLoading={isFilterOptionsLoading}
                     importState={importState} albumsList={albumsList} tagsList={tagsList}
+                    config={appConfig} saveConfigWithStartupImages={saveConfigWithStartupImages}
                 />
 
                 <AlbumCreationModal
