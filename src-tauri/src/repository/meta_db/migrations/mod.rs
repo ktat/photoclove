@@ -29,6 +29,11 @@ const MIGRATIONS: &[Migration] = &[
         name: "create_job_queue",
         sql: include_str!("004_create_job_queue.sql"),
     },
+    Migration {
+        version: 5,
+        name: "create_recovery_queue",
+        sql: include_str!("005_create_recovery_queue.sql"),
+    },
 ];
 
 /// Initialize the migrations table

@@ -255,6 +255,15 @@ pub fn run() {
             add_photos_to_collection_bulk,
             remove_photo_from_collection,
             get_collection_photos,
+            // Recovery Queue commands
+            get_recovery_pending_count,
+            get_recovery_pending_items,
+            get_recovery_all_items,
+            discard_recovery_item,
+            delete_recovery_item,
+            retry_recovery_item,
+            retry_all_recovery_items,
+            cleanup_recovery_items,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
