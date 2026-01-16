@@ -2,6 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { logger } from '../services/LoggerService.js';
 import styles from './LicensesView.module.css';
 
+// Compare semantic versions (e.g., "1.2.3" vs "1.2.4")
+// Returns: positive if a > b, negative if a < b, 0 if equal
+const compareVersions = (a, b) => {
+  const partsA = a.split('.').map(n => parseInt(n, 10) || 0);
+  const partsB = b.split('.').map(n => parseInt(n, 10) || 0);
+  const maxLen = Math.max(partsA.length, partsB.length);
+
+  for (let i = 0; i < maxLen; i++) {
+    const numA = partsA[i] || 0;
+    const numB = partsB[i] || 0;
+    if (numA !== numB) return numA - numB;
+  }
+  return 0;
+};
+
 const LicensesView = ({ onClose }) => {
   const [npmLicenses, setNpmLicenses] = useState([]);
   const [rustLicenses, setRustLicenses] = useState([]);
@@ -40,7 +55,17 @@ const LicensesView = ({ onClose }) => {
         const rustResponse = await fetch('/licenses-rust.json');
         if (rustResponse.ok) {
           const rustData = await rustResponse.json();
-          setRustLicenses(rustData.sort((a, b) => a.name.localeCompare(b.name)));
+          // Deduplicate by keeping only the latest version of each package
+          const deduped = Object.values(
+            rustData.reduce((acc, pkg) => {
+              const existing = acc[pkg.name];
+              if (!existing || compareVersions(pkg.version, existing.version) > 0) {
+                acc[pkg.name] = pkg;
+              }
+              return acc;
+            }, {})
+          );
+          setRustLicenses(deduped.sort((a, b) => a.name.localeCompare(b.name)));
         }
       } catch (err) {
         logger.error('LicensesView', 'licenses_load_failed', 'Error loading licenses', {
