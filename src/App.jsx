@@ -25,6 +25,7 @@ import WelcomeImage from "./WelcomeImage.jsx";
 import ErrorDisplay from "./components/ErrorDisplay.jsx";
 import LogViewer from "./App/LogViewer.jsx";
 import DocumentViewer from "./components/DocumentViewer.jsx";
+import LicensesView from "./App/LicensesView.jsx";
 import Tooltip from "./components/Tooltip.jsx";
 import NavigationIcons from "./App/NavigationIcons.jsx";
 import { useError } from "./context/ErrorContext.jsx";
@@ -73,6 +74,7 @@ function App() {
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showTermsOfUse, setShowTermsOfUse] = useState(false);
   const [showJobQueueModal, setShowJobQueueModal] = useState(false);
+  const [showLicenses, setShowLicenses] = useState(false);
   const [tooltipText, setTooltipText] = useState("");
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0 });
@@ -205,6 +207,8 @@ function App() {
             setShowPrivacyPolicy(true);
           } else if (e.payload === "terms_of_use") {
             setShowTermsOfUse(true);
+          } else if (e.payload === "licenses") {
+            setShowLicenses(true);
           } else {
             logger.warn('App', 'unhandled_menu_event', 'Unmatched menu payload', { payload: e.payload })
           }
@@ -532,6 +536,9 @@ function App() {
       )}
       {showJobQueueModal && (
         <JobQueue onClose={() => setShowJobQueueModal(false)} addFooterMessage={addFooterMessage} />
+      )}
+      {showLicenses && (
+        <LicensesView onClose={() => setShowLicenses(false)} />
       )}
       <Tooltip show={leftMenuCollapsed && showTooltip} text={tooltipText} position={tooltipPosition} />
     </div >
