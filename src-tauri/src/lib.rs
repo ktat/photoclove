@@ -109,6 +109,7 @@ pub fn run() {
             let help_submenu = SubmenuBuilder::new(app, "?")
                 .text("show_log", "Show log")
                 .text("github", "GitHub")
+                .text("sponsor", "Sponsor")
                 .separator()
                 .text("privacy_policy", "Privacy Policy")
                 .text("terms_of_use", "Terms of Use")
@@ -137,6 +138,8 @@ pub fn run() {
                     app.emit("click_menu_static", "about").unwrap();
                 } else if e.id == "github" {
                     app.emit("click_menu_static", "github").unwrap();
+                } else if e.id == "sponsor" {
+                    app.emit("click_menu_static", "sponsor").unwrap();
                 } else if e.id == "privacy_policy" {
                     app.emit("click_menu_static", "privacy_policy").unwrap();
                 } else if e.id == "terms_of_use" {
