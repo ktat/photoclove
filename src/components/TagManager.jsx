@@ -7,27 +7,15 @@ import TagChip from './TagChip.jsx';
 import TagInput from './TagInput.jsx';
 import styles from './TagManager.module.css';
 
-const STORAGE_KEY = 'photoclove-tag-view-mode';
-
 const TagManager = () => {
     const [tags, setTags] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState('name'); // 'name' or 'created'
-    const [viewMode, setViewMode] = useState(() => {
-        return localStorage.getItem(STORAGE_KEY) || 'list';
-    });
 
     useEffect(() => {
         loadTags();
     }, []);
-
-    // Persist viewMode to localStorage
-    const handleViewModeChange = (mode) => {
-        setViewMode(mode);
-        localStorage.setItem(STORAGE_KEY, mode);
-        logger.info('TagManager', 'view_mode_changed', 'Tag view mode changed', { mode });
-    };
 
     const loadTags = async () => {
         setIsLoading(true);
@@ -114,36 +102,6 @@ const TagManager = () => {
             return b.id - a.id; // Assuming higher ID = more recent
         });
 
-    // Calculate font size for tag cloud based on photo count
-    const calculateTagSize = (photoCount) => {
-        const minSize = 12;
-        const maxSize = 28;
-        const counts = tags.map(t => t.photoCount);
-        const maxPhotoCount = Math.max(...counts, 1);
-        const minPhotoCount = Math.min(...counts, 0);
-
-        if (maxPhotoCount === minPhotoCount) {
-            return (minSize + maxSize) / 2;
-        }
-        const ratio = (photoCount - minPhotoCount) / (maxPhotoCount - minPhotoCount);
-        return minSize + ratio * (maxSize - minSize);
-    };
-
-    // Sort tags for cloud view (larger tags in center)
-    const getCloudSortedTags = () => {
-        const sorted = [...filteredAndSortedTags].sort((a, b) => b.photoCount - a.photoCount);
-        // Interleave: place large tags at center by alternating left/right placement
-        const result = [];
-        for (let i = 0; i < sorted.length; i++) {
-            if (i % 2 === 0) {
-                result.push(sorted[i]);
-            } else {
-                result.unshift(sorted[i]);
-            }
-        }
-        return result;
-    };
-
     const handleTagSearch = async (tagIds) => {
         try {
             const result = await invoke('get_photos_unified', {
@@ -219,22 +177,6 @@ const TagManager = () => {
                             <option value="created">Sort by Created</option>
                         </select>
                     </div>
-                    <div className={styles.viewModeToggle}>
-                        <button
-                            className={classNames(styles.viewModeButton, { [styles.viewModeActive]: viewMode === 'list' })}
-                            onClick={() => handleViewModeChange('list')}
-                            title="List view"
-                        >
-                            ☰
-                        </button>
-                        <button
-                            className={classNames(styles.viewModeButton, { [styles.viewModeActive]: viewMode === 'cloud' })}
-                            onClick={() => handleViewModeChange('cloud')}
-                            title="Cloud view"
-                        >
-                            ☁
-                        </button>
-                    </div>
                 </div>
 
                 <div className={styles.tagCountInfo}>
@@ -242,72 +184,42 @@ const TagManager = () => {
                     {searchTerm && ` matching "${searchTerm}"`}
                 </div>
 
-                {viewMode === 'list' ? (
-                    <div className={styles.tagList}>
-                        {filteredAndSortedTags.length > 0 ? (
-                            filteredAndSortedTags.map(tag => (
-                                <div key={tag.id} className={styles.tagItem}>
-                                    <div className={styles.tagItemInfo}>
-                                        <TagChip tag={tag} />
-                                        <span className={styles.tagPhotoCount}>({tag.photoCount})</span>
-                                    </div>
-                                    <div className={styles.tagItemActions}>
-                                        <button
-                                            className={classNames(styles.tagActionButton, styles.tagSearchButton)}
-                                            onClick={() => handleTagSearch([tag.id])}
-                                            title="Search photos with this tag"
-                                        >
-                                            🔍
-                                        </button>
-                                        <button
-                                            className={classNames(styles.tagActionButton, styles.tagDeleteButton)}
-                                            onClick={() => handleTagDelete(tag.id)}
-                                            title="Delete this tag"
-                                        >
-                                            🗑️
-                                        </button>
-                                    </div>
+                <div className={styles.tagList}>
+                    {filteredAndSortedTags.length > 0 ? (
+                        filteredAndSortedTags.map(tag => (
+                            <div key={tag.id} className={styles.tagItem}>
+                                <div className={styles.tagItemInfo}>
+                                    <TagChip tag={tag} />
+                                    <span className={styles.tagPhotoCount}>({tag.photoCount})</span>
                                 </div>
-                            ))
-                        ) : searchTerm ? (
-                            <div className={styles.tagEmptyState}>
-                                No tags found matching "{searchTerm}"
+                                <div className={styles.tagItemActions}>
+                                    <button
+                                        className={classNames(styles.tagActionButton, styles.tagSearchButton)}
+                                        onClick={() => handleTagSearch([tag.id])}
+                                        title="Search photos with this tag"
+                                    >
+                                        🔍
+                                    </button>
+                                    <button
+                                        className={classNames(styles.tagActionButton, styles.tagDeleteButton)}
+                                        onClick={() => handleTagDelete(tag.id)}
+                                        title="Delete this tag"
+                                    >
+                                        🗑️
+                                    </button>
+                                </div>
                             </div>
-                        ) : (
-                            <div className={styles.tagEmptyState}>
-                                No tags created yet. Create your first tag above!
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className={styles.tagCloud}>
-                        {filteredAndSortedTags.length > 0 ? (
-                            getCloudSortedTags().map(tag => (
-                                <span
-                                    key={tag.id}
-                                    className={styles.tagCloudItem}
-                                    style={{
-                                        fontSize: `${calculateTagSize(tag.photoCount)}px`,
-                                        backgroundColor: tag.color || 'var(--color-bg-surface)'
-                                    }}
-                                    onClick={() => handleTagSearch([tag.id])}
-                                    title={`${tag.name} (${tag.photoCount} photos)`}
-                                >
-                                    {tag.name}
-                                    <span className={styles.tagCloudCount}>({tag.photoCount})</span>
-                                </span>
-                            ))
-                        ) : searchTerm ? (
-                            <div className={styles.tagEmptyState}>
-                                No tags found matching "{searchTerm}"
-                            </div>
-                        ) : (
-                            <div className={styles.tagEmptyState}>
-                                No tags created yet. Create your first tag above!
-                            </div>
-                        )}
-                    </div>
-                )}
+                        ))
+                    ) : searchTerm ? (
+                        <div className={styles.tagEmptyState}>
+                            No tags found matching "{searchTerm}"
+                        </div>
+                    ) : (
+                        <div className={styles.tagEmptyState}>
+                            No tags created yet. Create your first tag above!
+                        </div>
+                    )}
+                </div>
             </div>
 
             {tags.length > 0 && (
