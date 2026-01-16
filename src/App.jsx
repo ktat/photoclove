@@ -203,6 +203,8 @@ function App() {
             message("PhotoClove is an application to manage photos.\n (c)ktat");
           } else if (e.payload === "github") {
             open("https://github.com/ktat/photoclove/");
+          } else if (e.payload === "sponsor") {
+            open("https://github.com/sponsors/ktat");
           } else if (e.payload === "privacy_policy") {
             setShowPrivacyPolicy(true);
           } else if (e.payload === "terms_of_use") {
