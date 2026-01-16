@@ -107,6 +107,9 @@ function SelectionTab({
 
                                                 {/* Tag operations */}
                                                 {viewModeObj?.showAddTags() && <option value="addTags">🏷️ Add Tags</option>}
+
+                                                {/* Startup image operation */}
+                                                <option value="addToStartupImages">🚀 Add to Startup Images</option>
                                             </>
                                         )}
                                     </select>
