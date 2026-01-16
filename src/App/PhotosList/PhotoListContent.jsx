@@ -10,9 +10,11 @@
  * @see src/types/PageState.js for type definitions
  */
 
+import React, { useState, useEffect } from 'react';
 import { VIEW_MODES } from "../../constants/viewModes.js";
 import ListViewHeader from "./ListViewHeader.jsx";
 import GenericListView from "./GenericListView.jsx";
+import TagCloudView from "./TagCloudView.jsx";
 import BackNavigationLink from "../../components/BackNavigationLink.jsx";
 import StatusBar from "./StatusBar.jsx";
 import PhotosToolbar from "./PhotosToolbar.jsx";
@@ -143,6 +145,20 @@ function PhotoListContent({
         openTagsList,
         toggleHome
     } = handlers;
+
+    // Tag list view mode (list or cloud) with localStorage persistence
+    const TAG_VIEW_MODE_KEY = 'photoclove-tag-list-view-mode';
+    const [tagListViewMode, setTagListViewMode] = useState(() => {
+        return localStorage.getItem(TAG_VIEW_MODE_KEY) || 'list';
+    });
+
+    // Persist tag list view mode to localStorage
+    const handleTagListViewModeChange = (mode) => {
+        setTagListViewMode(mode);
+        localStorage.setItem(TAG_VIEW_MODE_KEY, mode);
+        logger.info('PhotoListContent', 'tag_list_view_mode_changed', 'Tag list view mode changed', { mode });
+    };
+
     return (
         <div className={(showSideMenu || !currentPhotoPath) ? "centerDisplay" : "centerDisplayMax"}
              id="photoList"
@@ -167,6 +183,9 @@ function PhotoListContent({
                         onSearchChange: isAlbumList ? setAlbumSearchTerm : setTagSearchTerm
                     };
 
+                    // Show cloud view for tags when tagListViewMode is 'cloud'
+                    const showCloudView = !isAlbumList && tagListViewMode === 'cloud';
+
                     return (
                         <>
                             <ListViewHeader
@@ -175,18 +194,31 @@ function PhotoListContent({
                                 itemType={listConfig.itemType}
                                 iconSize={iconSize}
                                 onIconSizeChange={setIconSize}
+                                viewMode={tagListViewMode}
+                                onViewModeChange={handleTagListViewModeChange}
+                                showViewModeToggle={!isAlbumList}
                             />
-                            <GenericListView
-                                items={listConfig.items}
-                                itemType={listConfig.itemTypeSingular}
-                                iconSize={iconSize}
-                                selectedItems={listConfig.selectedItems}
-                                onItemSelection={listConfig.onItemSelection}
-                                onItemClick={listConfig.onItemClick}
-                                onNewItemClick={listConfig.onNewItemClick}
-                                searchTerm={listConfig.searchTerm}
-                                onSearchChange={listConfig.onSearchChange}
-                            />
+                            {showCloudView ? (
+                                <TagCloudView
+                                    items={listConfig.items}
+                                    onItemClick={listConfig.onItemClick}
+                                    searchTerm={listConfig.searchTerm}
+                                    onSearchChange={listConfig.onSearchChange}
+                                    onNewItemClick={listConfig.onNewItemClick}
+                                />
+                            ) : (
+                                <GenericListView
+                                    items={listConfig.items}
+                                    itemType={listConfig.itemTypeSingular}
+                                    iconSize={iconSize}
+                                    selectedItems={listConfig.selectedItems}
+                                    onItemSelection={listConfig.onItemSelection}
+                                    onItemClick={listConfig.onItemClick}
+                                    onNewItemClick={listConfig.onNewItemClick}
+                                    searchTerm={listConfig.searchTerm}
+                                    onSearchChange={listConfig.onSearchChange}
+                                />
+                            )}
                         </>
                     );
                 })()}

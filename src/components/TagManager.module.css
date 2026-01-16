@@ -248,44 +248,6 @@
     background: var(--color-text-muted);
 }
 
-/* View Mode Toggle */
-.viewModeToggle {
-    display: flex;
-    gap: 4px;
-    border: 1px solid var(--color-border-default);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-}
-
-.viewModeButton {
-    width: 36px;
-    height: 36px;
-    border: none;
-    background: var(--color-bg-surface);
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    transition: all 0.2s ease-out;
-}
-
-.viewModeButton:hover {
-    background: var(--color-bg-muted);
-    color: var(--color-text-primary);
-}
-
-.viewModeActive {
-    background: var(--color-primary);
-    color: white;
-}
-
-.viewModeActive:hover {
-    background: var(--color-primary-hover);
-    color: white;
-}
-
 /* Tag Item Info (list view) */
 .tagItemInfo {
     display: flex;
@@ -298,57 +260,3 @@
     color: var(--color-text-muted);
 }
 
-/* Tag Cloud */
-.tagCloud {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-    padding: 20px;
-    min-height: 200px;
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.tagCloudItem {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 4px;
-    padding: 6px 12px;
-    border-radius: var(--radius-md);
-    color: var(--color-text-primary);
-    cursor: pointer;
-    transition: all 0.2s ease-out;
-    white-space: nowrap;
-}
-
-.tagCloudItem:hover {
-    background: var(--color-bg-muted) !important;
-    transform: scale(1.05);
-}
-
-.tagCloudCount {
-    font-size: 0.7em;
-    color: var(--color-text-muted);
-    opacity: 0.8;
-}
-
-/* Scrollbar for tag cloud */
-.tagCloud::-webkit-scrollbar {
-    width: 8px;
-}
-
-.tagCloud::-webkit-scrollbar-track {
-    background: var(--color-bg-surface);
-    border-radius: var(--radius-sm);
-}
-
-.tagCloud::-webkit-scrollbar-thumb {
-    background: var(--color-border-default);
-    border-radius: var(--radius-sm);
-}
-
-.tagCloud::-webkit-scrollbar-thumb:hover {
-    background: var(--color-text-muted);
-}
