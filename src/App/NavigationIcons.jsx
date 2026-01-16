@@ -11,7 +11,8 @@ function NavigationIcons({
   openTagsList,
   openTrash,
   handleMouseEnter,
-  handleMouseLeave
+  handleMouseLeave,
+  config
 }) {
   return (
     <div className="navigation-icons">
@@ -19,7 +20,7 @@ function NavigationIcons({
         updateCurrentDate("");
         resetPhotoState();
         toggleHome();
-        setWelcomeImage(WelcomeImage());
+        setWelcomeImage(WelcomeImage(config));
       }}
       onMouseEnter={(e) => handleMouseEnter("HOME", e)}
       onMouseLeave={handleMouseLeave}>🏠</a>

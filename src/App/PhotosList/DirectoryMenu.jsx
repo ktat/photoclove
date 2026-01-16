@@ -16,7 +16,7 @@ import Scrollable from "../../Scrollable.jsx";
 import SelectionTab from "./DirectoryMenu/SelectionTab.jsx";
 import FilterTab from "./DirectoryMenu/FilterTab.jsx";
 import { getTutorialContent } from "./DirectoryMenu/tutorialContent.jsx";
-import { usePhotoImport, useGooglePhotosUpload, useTrashOperations } from "./DirectoryMenu/photoOperations.js";
+import { usePhotoImport, useGooglePhotosUpload, useTrashOperations, useStartupImageOperations } from "./DirectoryMenu/photoOperations.js";
 import { useAlbumOperations, useTagOperations } from "./DirectoryMenu/collectionOperations.js";
 import { useDateOperations } from "./DirectoryMenu/dateOperations.js";
 
@@ -101,6 +101,15 @@ function DirectoryMenu(props) {
         setDateNum: props.setDateNum,
         dateList: props.dateList,
         setDateList: props.setDateList
+    });
+
+    // Startup image operations hook
+    const { addToStartupImages } = useStartupImageOperations({
+        photoSelection: props.photoSelection,
+        clearPhotoSelection: props.clearPhotoSelection,
+        addFooterMessage: props.addFooterMessage,
+        config: props.config,
+        saveConfigWithStartupImages: props.saveConfigWithStartupImages
     });
 
     // Tutorial state
@@ -188,6 +197,8 @@ function DirectoryMenu(props) {
             restoreSelectedFromTrash();
         } else if (selected == "permanentDelete") {
             permanentDeleteSelected();
+        } else if (selected == "addToStartupImages") {
+            addToStartupImages();
         }
         e.target.value = "";
     }

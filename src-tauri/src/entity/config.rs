@@ -58,6 +58,23 @@ fn default_progressive_image_loading() -> bool {
     false
 }
 
+fn default_startup_images() -> Option<StartupImageConfig> {
+    None
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct StartupImageConfig {
+    pub mode: String,  // "default" or "custom"
+    pub images: Vec<StartupImage>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct StartupImage {
+    pub path: String,       // Image path (relative to import_to)
+    pub enabled: bool,      // enabled/disabled
+    pub photo_date: String, // Photo date for sorting
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub repository: RepositoryConfig,
@@ -92,6 +109,8 @@ pub struct Config {
     pub photo_grid_theme: String,
     #[serde(default = "default_progressive_image_loading")]
     pub progressive_image_loading: bool,
+    #[serde(default = "default_startup_images")]
+    pub startup_images: Option<StartupImageConfig>,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryConfig {
@@ -126,6 +145,7 @@ impl Config {
         self.color_theme = config.color_theme;
         self.photo_grid_theme = config.photo_grid_theme;
         self.progressive_image_loading = config.progressive_image_loading;
+        self.startup_images = config.startup_images;
     }
 
     pub fn config_path() -> String {
@@ -224,6 +244,7 @@ impl Config {
             color_theme: default_color_theme(),
             photo_grid_theme: default_photo_grid_theme(),
             progressive_image_loading: default_progressive_image_loading(),
+            startup_images: default_startup_images(),
         }
     }
 

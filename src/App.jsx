@@ -260,7 +260,7 @@ function App() {
             updateCurrentDate("");
             resetPhotoState();
             toggleHome();
-            setWelcomeImage(WelcomeImage());
+            setWelcomeImage(WelcomeImage(config));
           } else if (e.payload === "import") {
             toggleImporter(true);
           } else if (e.payload === "pref") {
@@ -344,6 +344,7 @@ function App() {
           useCount={useCount}
           togglePreferences={togglePreferences}
           toggleImporter={toggleImporter}
+          config={config}
         />
         <Footer />
         {showLogViewer && (
@@ -373,6 +374,7 @@ function App() {
                 openTrash={openTrash}
                 handleMouseEnter={handleMouseEnter}
                 handleMouseLeave={handleMouseLeave}
+                config={config}
               />
               <div className="row">
                 <div style={{ display: "none" }}>
@@ -441,6 +443,7 @@ function App() {
             openTrash={openTrash}
             handleMouseEnter={handleMouseEnter}
             handleMouseLeave={handleMouseLeave}
+            config={config}
           />
           <div className="row">
             <div style={{ display: "none" }}>

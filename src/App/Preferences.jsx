@@ -5,6 +5,7 @@ import { relaunch } from "@tauri-apps/plugin-process";
 import classNames from 'classnames';
 import PickFolderSingle from "../FolderPicker.jsx";
 import { logger } from "../services/LoggerService.js";
+import StartupImageManager from "../components/StartupImageManager.jsx";
 // import TagManager from "../components/TagManager.jsx";
 import styles from './Preferences.module.css';
 
@@ -114,6 +115,7 @@ function Preferences(props) {
     const tabs = [
         { id: 'general', label: 'General', icon: '⚙️' },
         { id: 'appearance', label: 'Appearance', icon: '🎨' },
+        { id: 'startup', label: 'Startup', icon: '🚀' },
         { id: 'thumbnail', label: 'Thumbnail', icon: '🖼️' },
         { id: 'performance', label: 'Performance', icon: '⚡' },
         { id: 'logging', label: 'Logging', icon: '📝' },
@@ -278,6 +280,17 @@ function Preferences(props) {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {/* Startup Tab */}
+                {activeTab === 'startup' && (
+                    <div className={styles['preferences-section']}>
+                        <h2 className={styles['section-title']}>Startup Image Settings</h2>
+                        <p className={styles['setting-description']} style={{ marginBottom: 'var(--space-4)' }}>
+                            Choose what images are displayed when the application starts.
+                        </p>
+                        <StartupImageManager config={config} setConfig={setConfig} />
                     </div>
                 )}
 
