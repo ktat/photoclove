@@ -62,6 +62,8 @@ pub enum JobType {
     CreateDb,
     #[serde(rename = "google_photos_upload")]
     GooglePhotosUpload,
+    #[serde(rename = "recalculate_grouping")]
+    RecalculateGrouping,
 }
 
 impl ToString for JobType {
@@ -71,6 +73,7 @@ impl ToString for JobType {
             JobType::Thumbnail => "thumbnail".to_string(),
             JobType::CreateDb => "create_db".to_string(),
             JobType::GooglePhotosUpload => "google_photos_upload".to_string(),
+            JobType::RecalculateGrouping => "recalculate_grouping".to_string(),
         }
     }
 }
@@ -205,4 +208,11 @@ pub struct GooglePhotosUploadJob {
     pub album_id: Option<String>,
     pub chunk_index: usize,
     pub total_chunks: usize,
+}
+
+/// Job parameters for recalculating burst groups
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecalculateGroupingJob {
+    pub threshold_seconds: u32,
+    pub min_group_size: u32,
 }

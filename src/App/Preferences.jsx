@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { ask, message, confirm } from '@tauri-apps/plugin-dialog';
 import { relaunch } from "@tauri-apps/plugin-process";
 import classNames from 'classnames';
@@ -32,6 +33,36 @@ function Preferences(props) {
     const [useCount, setUseCount] = useState(-1);
     const [activeTab, setActiveTab] = useState('general');
     const [isRecalculatingGroups, setIsRecalculatingGroups] = useState(false);
+    const [groupingProgress, setGroupingProgress] = useState({ message: '', progress: 0 });
+
+    // Listen for grouping progress events
+    useEffect(() => {
+        let unlistenProgress;
+        let unlistenComplete;
+
+        const setupListeners = async () => {
+            unlistenProgress = await listen('grouping_progress', (event) => {
+                const [jobUnitId, message, progress] = event.payload;
+                setGroupingProgress({ message, progress });
+                logger.debug('Preferences', 'grouping_progress', 'Grouping progress update', { jobUnitId, message, progress });
+            });
+
+            unlistenComplete = await listen('grouping_recalculate_complete', (event) => {
+                const newGroups = event.payload;
+                setIsRecalculatingGroups(false);
+                setGroupingProgress({ message: '', progress: 0 });
+                props.addFooterMessage("grouping", `Recalculation complete: ${newGroups} groups created`);
+                logger.info('Preferences', 'grouping_complete', 'Grouping recalculation complete', { newGroups });
+            });
+        };
+
+        setupListeners();
+
+        return () => {
+            if (unlistenProgress) unlistenProgress();
+            if (unlistenComplete) unlistenComplete();
+        };
+    }, []);
 
     useEffect((e) => {
         invoke("get_config", {},).then((e) => {
@@ -439,23 +470,36 @@ function Preferences(props) {
                                 disabled={isRecalculatingGroups}
                                 onClick={async () => {
                                     setIsRecalculatingGroups(true);
+                                    setGroupingProgress({ message: 'Submitting job...', progress: 0 });
                                     try {
-                                        const result = await invoke('recalculate_grouping', {
+                                        const jobUnitId = await invoke('recalculate_grouping', {
                                             thresholdSeconds: config.grouping?.burst_threshold_seconds ?? 2,
                                             minGroupSize: config.grouping?.min_group_size ?? 2
                                         });
-                                        props.addFooterMessage("grouping", `Recalculated: ${result} groups created`);
-                                        logger.info('Preferences', 'recalculate_groups', 'Groups recalculated', { count: result });
+                                        props.addFooterMessage("grouping", `Recalculation started (Job: ${jobUnitId.substring(0, 8)}...)`);
+                                        logger.info('Preferences', 'recalculate_groups_submitted', 'Grouping job submitted', { jobUnitId });
+                                        // Progress will be tracked via events
                                     } catch (error) {
-                                        logger.error('Preferences', 'recalculate_groups_failed', 'Failed to recalculate groups', { error: error.message || error });
+                                        logger.error('Preferences', 'recalculate_groups_failed', 'Failed to submit grouping job', { error: error.message || error });
                                         props.addFooterMessage("grouping", `Error: ${error}`);
-                                    } finally {
                                         setIsRecalculatingGroups(false);
+                                        setGroupingProgress({ message: '', progress: 0 });
                                     }
                                 }}
                             >
                                 {isRecalculatingGroups ? 'Recalculating...' : 'Recalculate Groups'}
                             </button>
+                            {isRecalculatingGroups && groupingProgress.message && (
+                                <div className={styles['progress-container']} style={{ marginTop: 'var(--space-3)' }}>
+                                    <div className={styles['progress-bar']}>
+                                        <div
+                                            className={styles['progress-fill']}
+                                            style={{ width: `${groupingProgress.progress}%` }}
+                                        />
+                                    </div>
+                                    <p className={styles['progress-message']}>{groupingProgress.message}</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
