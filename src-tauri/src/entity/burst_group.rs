@@ -26,6 +26,15 @@ impl BurstGroup {
         }
     }
 
+    /// Create a new auto burst group (from automatic detection).
+    pub fn new_auto(id: String) -> Self {
+        Self {
+            id,
+            is_manual: false,
+            created_at: chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+        }
+    }
+
     /// Create a burst group from database row data.
     #[allow(dead_code)]
     pub fn from_db(id: String, is_manual: bool, created_at: String) -> Self {

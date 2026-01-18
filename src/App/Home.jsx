@@ -13,7 +13,7 @@ function Home(props) {
     };
 
     const handleAdvancedSearch = () => {
-        toggleSearchPage(true, "", true); // isAdvanced = true
+        toggleSearchPage(true, searchQuery, true); // isAdvanced = true, carry over query
     };
 
     const handleKeyPress = (e) => {

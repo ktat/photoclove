@@ -150,3 +150,50 @@ pub(super) fn get_photos_in_group(db: &SQLite, group_id: &str) -> Result<Vec<Str
 
     Ok(paths)
 }
+
+/// Get all photo paths that belong to manual burst groups.
+pub(super) fn get_manual_group_photo_paths(db: &SQLite) -> Result<std::collections::HashSet<String>, String> {
+    let conn = db
+        .get_connection()
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT pm.path FROM photo_metadata pm
+             INNER JOIN burst_groups bg ON pm.burst_group_id = bg.id
+             WHERE bg.is_manual = 1 AND (pm.delete_flg = 0 OR pm.delete_flg IS NULL)",
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let paths = stmt
+        .query_map([], |row| row.get(0))
+        .map_err(|e| format!("Failed to query manual group photos: {}", e))?
+        .collect::<Result<std::collections::HashSet<String>, _>>()
+        .map_err(|e| format!("Failed to collect photo paths: {}", e))?;
+
+    Ok(paths)
+}
+
+/// Clear all auto burst groups (is_manual = 0).
+/// This removes auto groups from burst_groups table and clears burst_group_id for affected photos.
+pub(super) fn clear_auto_burst_groups(db: &SQLite) -> Result<(), String> {
+    let conn = db
+        .get_connection()
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    // First, clear burst_group_id for photos in auto groups
+    conn.execute(
+        "UPDATE photo_metadata SET burst_group_id = NULL
+         WHERE burst_group_id IN (SELECT id FROM burst_groups WHERE is_manual = 0)",
+        [],
+    )
+    .map_err(|e| format!("Failed to clear auto group photos: {}", e))?;
+
+    // Then, delete auto groups
+    let deleted = conn
+        .execute("DELETE FROM burst_groups WHERE is_manual = 0", [])
+        .map_err(|e| format!("Failed to delete auto burst groups: {}", e))?;
+
+    log::info!(target: "burst_groups", "clear_auto_burst_groups; deleted_groups={}", deleted);
+    Ok(())
+}

@@ -345,6 +345,10 @@ div.tab-active {
   font-size: var(--font-size-2xs);
 }
 
+.back-to-home.no-home-icon::before {
+  content: none;
+}
+
 div#tab-selection img {
   padding: var(--space-3);
 }

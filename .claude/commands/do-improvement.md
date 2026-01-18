@@ -8,7 +8,7 @@ Execute pending improvement tasks from `improvement/*.md` files.
 2. **Read the task file**: Read the lowest numbered file to understand the task if `#number`(eg. #123) is not given, if `#number` is given, read the md file of the number.
 3. **Create feature branch**:
    - Branch naming: `improvement-#-summary` (e.g., `improvement-135-css-modules`)
-   - Branch from current branch
+   - Branch from the current branch (no need to checkout main first)
    ```bash
    git checkout -b improvement-#-summary
    ```

@@ -88,6 +88,35 @@ impl Photo {
         photo
     }
 
+    /// Create a Photo from database row data with pre-loaded exif data.
+    /// Used for bulk operations like grouping where we load from DB.
+    pub fn from_db_row(
+        file: file::File,
+        meta_data: exif::ExifData,
+        star: Option<i32>,
+        comment: Option<String>,
+        burst_group_id: Option<String>,
+    ) -> Photo {
+        Photo {
+            file,
+            time: String::new(),
+            dir: file::Dir::new(String::new()),
+            meta_data,
+            is_exif_not_loaded: false,
+            is_meta_not_loaded: false,
+            has_thumbnail: false,
+            import_to: String::new(),
+            thumbnail_store: String::new(),
+            has_config: false,
+            css_style: None,
+            star,
+            comment,
+            tags: None,
+            burst_group_id,
+            burst_count: None,
+        }
+    }
+
     pub fn embed_exif(&mut self, exif: exif::ExifData) {
         self.time = exif.date_time.clone();
         self.meta_data = exif;
@@ -266,6 +295,33 @@ impl Photo {
         }
 
         date::Date::from_string(&replaced, Option::Some("-"))
+    }
+
+    /// Get the datetime as milliseconds since epoch for grouping comparison.
+    /// Returns None if the date cannot be parsed.
+    pub fn get_datetime_ms(&self) -> Option<i64> {
+        let datetime_str = &self.meta_data.date_time_original;
+        if datetime_str.is_empty() {
+            return None;
+        }
+
+        // Parse format: "YYYY:MM:DD HH:MM:SS" or "YYYY-MM-DD HH:MM:SS"
+        let re = regex::Regex::new(r"^(\d{4})[:\-](\d{2})[:\-](\d{2})\s+(\d{2}):(\d{2}):(\d{2})").ok()?;
+        let caps = re.captures(datetime_str)?;
+
+        let year: i32 = caps.get(1)?.as_str().parse().ok()?;
+        let month: u32 = caps.get(2)?.as_str().parse().ok()?;
+        let day: u32 = caps.get(3)?.as_str().parse().ok()?;
+        let hour: u32 = caps.get(4)?.as_str().parse().ok()?;
+        let min: u32 = caps.get(5)?.as_str().parse().ok()?;
+        let sec: u32 = caps.get(6)?.as_str().parse().ok()?;
+
+        use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+        let date = NaiveDate::from_ymd_opt(year, month, day)?;
+        let time = NaiveTime::from_hms_opt(hour, min, sec)?;
+        let datetime = NaiveDateTime::new(date, time);
+
+        Some(datetime.and_utc().timestamp_millis())
     }
 }
 

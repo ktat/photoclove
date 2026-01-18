@@ -267,6 +267,7 @@ pub fn run() {
             // Burst Group commands
             create_burst_group,
             remove_from_burst_group,
+            recalculate_grouping,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

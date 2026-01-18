@@ -232,6 +232,7 @@
 
 /* Photo display area */
 .photoDisplay {
+  position: relative;
   padding: 0 var(--space-5) var(--space-3) var(--space-5);
   height: calc(100vh - 250px);
 }

@@ -67,8 +67,9 @@ function PhotosListMini(props) {
     const [showHelp, setShowHelp] = useState(false);
     const [viewStartIndex, setViewStartIndex] = useState(null); // null means auto-center on selected photo
 
-    // Check if we're in album mode
+    // Check if we're in album mode or tag mode
     const isAlbumMode = props.albumId !== undefined && props.albumId !== null;
+    const isTagMode = props.tagId !== undefined && props.tagId !== null;
 
     // Check if current photo is a burst representative (has burst badge)
     // Selection/edit/tag operations are disabled for burst representatives when burst mode is ON
@@ -151,7 +152,10 @@ function PhotosListMini(props) {
         currentIndex: props.currentIndex,
         albumId: props.albumId,
         albumName: props.albumName,
+        tagId: props.tagId,
+        tagName: props.tagName,
         isAlbumMode,
+        isTagMode,
         isTrashMode,
         removePhotoFromList: props.removePhotoFromList,
         deletePhotos: props.deletePhotos,
@@ -188,7 +192,9 @@ function PhotosListMini(props) {
             isImportMode,
             isTrashMode,
             isAlbumMode,
+            isTagMode,
             albumId: props.albumId,
+            tagId: props.tagId,
             currentPhotoPath: props.currentPhotoPath,
             showSideMenu: props.showSideMenu,
             showHelp,
@@ -504,8 +510,10 @@ function PhotosListMini(props) {
 
                     <AlbumModeIndicator
                         isAlbumMode={isAlbumMode}
+                        isTagMode={isTagMode}
                         isInBurstGroupMode={isInBurstGroupMode}
                         albumName={props.albumName}
+                        tagName={props.tagName}
                     />
                 </div>
 
@@ -531,6 +539,7 @@ function PhotosListMini(props) {
                     isImportMode={isImportMode}
                     isTrashMode={isTrashMode}
                     isAlbumMode={isAlbumMode}
+                    isTagMode={isTagMode}
                 />
             </div>
 
@@ -539,6 +548,7 @@ function PhotosListMini(props) {
                 operation={deleteOperation}
                 photoPath={deleteTargetPath}
                 albumName={props.albumName}
+                tagName={props.tagName}
                 onConfirm={handleConfirmAction}
                 onCancel={closeDeleteModal}
             />

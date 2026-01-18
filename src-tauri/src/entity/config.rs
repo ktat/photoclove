@@ -62,6 +62,27 @@ fn default_startup_images() -> Option<StartupImageConfig> {
     None
 }
 
+fn default_grouping() -> GroupingConfig {
+    GroupingConfig::default()
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GroupingConfig {
+    pub enabled: bool,
+    pub burst_threshold_seconds: u32,
+    pub min_group_size: u32,
+}
+
+impl Default for GroupingConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            burst_threshold_seconds: 2,
+            min_group_size: 2,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StartupImageConfig {
     pub mode: String,  // "default" or "custom"
@@ -111,6 +132,8 @@ pub struct Config {
     pub progressive_image_loading: bool,
     #[serde(default = "default_startup_images")]
     pub startup_images: Option<StartupImageConfig>,
+    #[serde(default = "default_grouping")]
+    pub grouping: GroupingConfig,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryConfig {
@@ -146,6 +169,7 @@ impl Config {
         self.photo_grid_theme = config.photo_grid_theme;
         self.progressive_image_loading = config.progressive_image_loading;
         self.startup_images = config.startup_images;
+        self.grouping = config.grouping;
     }
 
     pub fn config_path() -> String {
@@ -245,6 +269,7 @@ impl Config {
             photo_grid_theme: default_photo_grid_theme(),
             progressive_image_loading: default_progressive_image_loading(),
             startup_images: default_startup_images(),
+            grouping: default_grouping(),
         }
     }
 

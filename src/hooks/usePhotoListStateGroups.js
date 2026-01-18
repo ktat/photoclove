@@ -49,6 +49,7 @@ export function usePhotoListStateGroups({
 
     // SearchState params
     searchQuery,
+    searchInitialQuery,
     searchFilters,
     searchResults,
     currentSearchParams,
@@ -136,10 +137,11 @@ export function usePhotoListStateGroups({
     // isSearchMode and isAdvancedSearchMode are derived from viewModeObj
     const searchState = useMemo(() => ({
         query: searchQuery,
+        initialQuery: searchInitialQuery,
         filters: searchFilters,
         results: searchResults,
         currentParams: currentSearchParams
-    }), [searchQuery, searchFilters, searchResults, currentSearchParams]);
+    }), [searchQuery, searchInitialQuery, searchFilters, searchResults, currentSearchParams]);
 
     /** @type {import('../types/PageState.js').PhotoDataState} */
     const photoDataState = useMemo(() => ({

@@ -50,7 +50,12 @@ function PhotoDisplayWrapper({
 
     // Derive values from viewModeObj
     const currentAlbumId = viewModeObj.getCurrentAlbumId();
-    const currentAlbumName = viewModeObj.getCollectionName();
+    const currentTagId = viewModeObj.getCurrentTagId();
+    // For collection name, prefer album name over tag name when both could exist
+    const currentAlbumName = viewModeObj.isAlbumMode() || (viewModeObj.isInBurstGroupMode() && viewModeObj.getCurrentAlbumId())
+        ? viewModeObj.getCollectionName() : null;
+    const currentTagName = viewModeObj.isTagMode() || (viewModeObj.isInBurstGroupMode() && viewModeObj.getCurrentTagId())
+        ? viewModeObj.getCollectionName() : null;
     const recentPhotosMode = viewModeObj.isRecentMode();
     const isSearchMode = viewModeObj.isSearchMode();
     const { star: starFilter, comment: hasCommentFilter, extension: extensionFilter } = filterState;
@@ -120,6 +125,8 @@ function PhotoDisplayWrapper({
                             recentPhotosMode={recentPhotosMode}
                             albumId={currentAlbumId}
                             albumName={currentAlbumName}
+                            tagId={currentTagId}
+                            tagName={currentTagName}
                             removePhotoFromList={removePhotoFromList}
                             permanentlyDeletePhoto={permanentlyDeletePhoto}
                             updatePhotosAfterTrashOperation={updatePhotosAfterTrashOperation}
