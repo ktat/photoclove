@@ -95,7 +95,7 @@ function DirectoryMenu(props) {
     });
 
     // Date operations hook
-    const { createDbInDate, movePhotosToExifDate, createThumbnails, applyDateChanges } = useDateOperations({
+    const { createDbInDate, movePhotosToExifDate, createThumbnails, recalculateGroupsInDate, applyDateChanges } = useDateOperations({
         currentDate: props.currentDate,
         setCurrentDateNum: props.setCurrentDateNum,
         dateNum: props.dateNum,
@@ -241,6 +241,7 @@ function DirectoryMenu(props) {
                         <li><a href="#" onClick={() => { createDbInDate() }}>(re)Create database of the date</a></li>
                         <li><a href="#" onClick={() => { movePhotosToExifDate() }}>Move files according to Exif date</a></li>
                         <li><a href="#" onClick={() => { createThumbnails() }}>Make thumbnails</a></li>
+                        <li><a href="#" onClick={() => { recalculateGroupsInDate() }}>Recalculate Groups of the date</a></li>
                     </ul>
                 </div>
             )}

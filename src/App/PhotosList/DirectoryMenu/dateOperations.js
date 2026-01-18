@@ -102,6 +102,42 @@ export function useDateOperations({
     }, [currentDate]);
 
     /**
+     * Recalculate burst groups for photos in the current date
+     */
+    const recalculateGroupsInDate = useCallback(async () => {
+        if (lockRef.current) {
+            message("Currently, this operation is locked. Please wait for a while", "This operation is locked");
+            return;
+        }
+
+        const answer = await confirm("This will recalculate auto burst groups for photos in this date. Manual groups will be preserved.", "Recalculate Groups");
+        if (answer) {
+            lockRef.current = true;
+            try {
+                // Use default threshold (2 seconds) and min group size (3)
+                const newGroups = await invokeWithErrorHandling(
+                    "recalculate_grouping_in_date",
+                    {
+                        dateStr: currentDate,
+                        thresholdSeconds: 2,
+                        minGroupSize: 3
+                    },
+                    'dateOperations'
+                );
+                lockRef.current = false;
+                logger.info('dateOperations', 'groups_recalculated', 'Burst groups recalculated for date', {
+                    date: currentDate,
+                    newGroups
+                });
+                message(`Created ${newGroups} burst group(s)`, "Groups Recalculated");
+            } catch (error) {
+                lockRef.current = false;
+                throw error;
+            }
+        }
+    }, [currentDate]);
+
+    /**
      * Apply date count changes from batch operation result to local state
      * @param {Object} dateChanges - Map of date -> count delta from backend
      */
@@ -137,6 +173,7 @@ export function useDateOperations({
         createDbInDate,
         movePhotosToExifDate,
         createThumbnails,
+        recalculateGroupsInDate,
         applyDateChanges
     };
 }
