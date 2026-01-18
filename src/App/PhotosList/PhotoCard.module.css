@@ -422,7 +422,7 @@
     top: var(--space-1);
     right: var(--space-1);
     background: var(--color-primary);
-    color: var(--color-text-primary);
+    color: white;
     padding: 2px var(--space-1);
     border-radius: var(--radius-sm);
     font-size: var(--font-size-2xs);

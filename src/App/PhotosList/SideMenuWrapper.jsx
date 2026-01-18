@@ -66,7 +66,7 @@ function SideMenuWrapper({
     const { allForCurrentFetch: allPhotosForCurrentFetch, setAllForCurrentFetch: setAllPhotosForCurrentFetch } = photoDataState;
     const { photoList: photoSelection, albums: selectedAlbums, tags: selectedTags } = selectionState;
     const { currentPhotoPath, showSideMenu } = displayState;
-    const { query: searchQuery, filters: searchFilters, results: searchResults, currentParams: currentSearchParams } = searchState;
+    const { query: searchQuery, initialQuery: searchInitialQuery, filters: searchFilters, results: searchResults, currentParams: currentSearchParams } = searchState;
     const isAdvancedSearchMode = viewModeObj.isAdvancedSearchMode();
     const {
         clearPhotoSelection,
@@ -139,7 +139,7 @@ function SideMenuWrapper({
                             onSearch={handleSearch}
                             onClear={clearSearch}
                             searchResults={searchResults}
-                            initialQuery={searchQuery}
+                            initialQuery={searchQuery || searchInitialQuery}
                             onFiltersChange={handleFiltersChange}
                             initialFilters={searchFilters}
                             onSearchSelect={handleSavedSearchSelect}

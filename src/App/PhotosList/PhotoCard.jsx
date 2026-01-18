@@ -427,7 +427,7 @@ function PhotoCard({
                         )}
                     </div>
                 )}
-                {/* Burst group badge - shows count of photos in burst group (hidden in IN_BURST_GROUP mode) */}
+                {/* Burst group badge - shows count when NOT in burst group, shows "Grouped" when IN burst group */}
                 {photo.burst_group_id && photo.burst_count > 1 && !isInBurstGroupMode && (
                     <div
                         className={styles.burstBadge}

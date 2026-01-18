@@ -434,6 +434,43 @@ impl SQLite {
         burst_groups::get_photos_in_group(self, group_id)
     }
 
+    pub fn get_manual_group_photo_paths(&self) -> Result<std::collections::HashSet<String>, String> {
+        burst_groups::get_manual_group_photo_paths(self)
+    }
+
+    pub fn clear_auto_burst_groups(&self) -> Result<(), String> {
+        burst_groups::clear_auto_burst_groups(self)
+    }
+
+    pub fn get_all_photos_for_grouping(&self) -> Result<Vec<photo::Photo>, String> {
+        // Get all photos with EXIF date for grouping
+        let conn = self.get_connection().map_err(|e| format!("Failed to connect: {}", e))?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT path, file_name, size, created, photo_date, star,
+                        exif_make, exif_model, exif_date_time_original, exif_f_number,
+                        exif_iso, exif_exposure_time, exif_focal_length, exif_lens,
+                        exif_software, exif_gps_latitude, exif_gps_longitude,
+                        exif_image_width, exif_image_height, exif_shutter_speed_value,
+                        comment, delete_flg, burst_group_id, exif_orientation
+                 FROM photo_metadata
+                 WHERE (delete_flg = 0 OR delete_flg IS NULL)
+                   AND exif_date_time_original IS NOT NULL
+                 ORDER BY exif_date_time_original ASC",
+            )
+            .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+        let photos = stmt
+            .query_map([], |row| {
+                Ok(utils::row_to_photo(row))
+            })
+            .map_err(|e| format!("Failed to query photos: {}", e))?
+            .filter_map(|r| r.ok())
+            .collect::<Vec<_>>();
+
+        Ok(photos)
+    }
+
 }
 
 // ==================== MetaInfoDB Trait Implementation ====================

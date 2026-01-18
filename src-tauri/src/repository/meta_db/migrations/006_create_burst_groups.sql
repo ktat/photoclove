@@ -8,4 +8,7 @@ CREATE TABLE IF NOT EXISTS burst_groups (
 );
 
 -- Create index for efficient group queries
-CREATE INDEX IF NOT EXISTS idx_burst_groups_is_manual ON burst_groups(is_manual)
+CREATE INDEX IF NOT EXISTS idx_burst_groups_is_manual ON burst_groups(is_manual);
+
+-- Create composite index for camera-based grouping queries (exif_make + exif_model + exif_date_time_original)
+CREATE INDEX IF NOT EXISTS idx_photo_camera_datetime ON photo_metadata(exif_make, exif_model, exif_date_time_original)

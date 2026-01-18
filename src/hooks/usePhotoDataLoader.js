@@ -25,7 +25,8 @@ export function usePhotoDataLoader({
     setIsFilterOptionsLoading,
     filterOptions,
     isFilterOptionsLoading,
-    appConfig
+    appConfig,
+    burstModeEnabled = false
 }) {
     // Async cancellation for stale request handling
     const { startNewRequest, isRequestValid } = useAsyncCancellation();
@@ -96,10 +97,13 @@ export function usePhotoDataLoader({
         // Start new request, invalidating any previous pending requests
         const requestId = startNewRequest();
 
+        // Use burst_album search type when burst mode is enabled
+        const searchType = burstModeEnabled ? 'burst_album' : 'album_photos';
+
         try {
-            const data = await loadUnifiedData('album_photos',
+            const data = await loadUnifiedData(searchType,
                 { params: { album_id: albumId } },
-                { operation: 'album photos', albumId, requestId });
+                { operation: 'album photos', albumId, requestId, burstModeEnabled });
 
             // Check if this request was cancelled while waiting
             if (!isRequestValid(requestId)) {
@@ -124,7 +128,7 @@ export function usePhotoDataLoader({
             }
             // Error already handled by loadUnifiedData
         }
-    }, [updateAlbumPhotos, loadUnifiedData, setPhotosList, convertPhotosToEntities, startNewRequest, isRequestValid]);
+    }, [updateAlbumPhotos, loadUnifiedData, setPhotosList, convertPhotosToEntities, startNewRequest, isRequestValid, burstModeEnabled]);
 
     // Handle album click to switch to album view
     const handleAlbumClick = useCallback((album) => {
@@ -170,10 +174,13 @@ export function usePhotoDataLoader({
         // Start new request, invalidating any previous pending requests
         const requestId = startNewRequest();
 
+        // Use burst_tag search type when burst mode is enabled
+        const searchType = burstModeEnabled ? 'burst_tag' : 'tag';
+
         try {
-            const data = await loadUnifiedData('tag',
+            const data = await loadUnifiedData(searchType,
                 { query: tagId.toString() },
-                { operation: 'tag photos', tagId, requestId });
+                { operation: 'tag photos', tagId, requestId, burstModeEnabled });
 
             // Check if this request was cancelled while waiting
             if (!isRequestValid(requestId)) {
@@ -200,7 +207,7 @@ export function usePhotoDataLoader({
             }
             // Error already handled by loadUnifiedData
         }
-    }, [loadUnifiedData, setTagPhotos, setPhotosList, convertPhotosToEntities, startNewRequest, isRequestValid]);
+    }, [loadUnifiedData, setTagPhotos, setPhotosList, convertPhotosToEntities, startNewRequest, isRequestValid, burstModeEnabled]);
 
     // Load trash photos
     const loadTrashPhotos = useCallback(async () => {

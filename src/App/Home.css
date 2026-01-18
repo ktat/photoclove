@@ -52,22 +52,26 @@
   transition: background-color 0.2s ease-out;
 }
 
-.home-search-button:hover, .home-advanced-search-button:hover {
+.home-search-button:hover:not(:disabled) {
   background: var(--color-primary-hover);
 }
 
 .home-search-button:disabled {
-  background: var(--color-text-muted);
+  background: var(--color-bg-muted);
+  color: var(--color-text-muted);
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .home-advanced-search-button {
-  background: var(--color-text-muted);
-  color: var(--color-text-primary);
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
 }
 
 .home-advanced-search-button:hover {
-  background: var(--color-text-secondary);
+  background: var(--color-primary);
+  color: white;
 }
 
 /* Responsive design */

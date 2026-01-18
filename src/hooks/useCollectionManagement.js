@@ -224,10 +224,12 @@ export function useCollectionManagement({
         }
 
         // Clear names when not in specific modes
-        if (viewMode !== VIEW_MODES.ALBUM) {
+        // Keep album name when in burst group (opened from album)
+        if (viewMode !== VIEW_MODES.ALBUM && viewMode !== VIEW_MODES.IN_BURST_GROUP) {
             setCurrentAlbumName('');
         }
-        if (viewMode !== VIEW_MODES.TAG) {
+        // Keep tag name when in burst group (opened from tag)
+        if (viewMode !== VIEW_MODES.TAG && viewMode !== VIEW_MODES.IN_BURST_GROUP) {
             setCurrentTagName('');
         }
     }, [viewMode, modeLoaders, setCurrentAlbumName, setCurrentTagName]);
