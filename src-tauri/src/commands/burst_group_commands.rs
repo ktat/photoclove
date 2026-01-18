@@ -3,12 +3,14 @@
 //! This module contains Tauri commands for manual burst group operations:
 //! - Creating burst groups from selected photos
 //! - Removing individual photos from burst groups
+//! - Recalculating burst groups based on threshold settings
 
 use crate::app_state::AppState;
+use crate::domain_service::job_queue_service::submission::submit_recalculate_grouping_job;
 use crate::entity::burst_group::BurstGroup;
-use crate::entity::photo::Photo;
+use crate::repository::meta_db::sqlite::SQLite;
+use std::sync::Arc;
 use uuid::Uuid;
-use std::collections::HashMap;
 
 /// Creates a new manual burst group from selected photos.
 ///
@@ -134,118 +136,53 @@ pub async fn remove_from_burst_group(
 
 /// Recalculates auto burst groups based on new threshold settings.
 /// Manual groups (is_manual=true) are preserved.
+/// This operation runs asynchronously in the job queue.
 ///
 /// # Arguments
 /// * `threshold_seconds` - Time threshold in seconds for grouping consecutive shots
 /// * `min_group_size` - Minimum number of photos required to form a group
+/// * `app_handle` - Tauri app handle for job queue
 /// * `state` - Application state
 ///
 /// # Returns
-/// * `Ok(u32)` - Number of new groups created
-/// * `Err(String)` - Error message if operation fails
+/// * `Ok(String)` - Job unit ID for tracking progress
+/// * `Err(String)` - Error message if job submission fails
 #[tauri::command]
 pub async fn recalculate_grouping(
     threshold_seconds: u32,
     min_group_size: u32,
+    app_handle: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
-) -> Result<u32, String> {
-    let meta_db = &state.meta_db;
+) -> Result<String, String> {
     let logging_service = &state.logging_service;
+    let config = &state.config;
 
     let correlation_id = logging_service.generate_correlation_id();
-    log::info!(target: "burst_groups", "recalculate_grouping_start; correlation_id={}; threshold_seconds={}; min_group_size={}",
-        correlation_id, threshold_seconds, min_group_size);
+    log::info!(
+        target: "burst_groups",
+        "recalculate_grouping_submit; correlation_id={}; threshold_seconds={}; min_group_size={}",
+        correlation_id,
+        threshold_seconds,
+        min_group_size
+    );
 
-    // Step 1: Get all manual groups to preserve them
-    let manual_group_photos = meta_db.get_manual_group_photo_paths()?;
-    log::info!(target: "burst_groups", "recalculate_grouping_preserve_manual; correlation_id={}; manual_photo_count={}",
-        correlation_id, manual_group_photos.len());
+    // Create database connection for job queue
+    let db = Arc::new(SQLite::new(config.import_to.clone()));
 
-    // Step 2: Clear all auto burst groups
-    meta_db.clear_auto_burst_groups()?;
-    log::debug!(target: "burst_groups", "recalculate_grouping_cleared_auto; correlation_id={}", correlation_id);
+    // Submit job to queue
+    let job_unit_id = submit_recalculate_grouping_job(
+        db,
+        threshold_seconds,
+        min_group_size,
+        app_handle,
+    )?;
 
-    // Step 3: Get all photos (excluding those in manual groups)
-    let all_photos = meta_db.get_all_photos_for_grouping()?;
-    let photos_to_group: Vec<Photo> = all_photos
-        .into_iter()
-        .filter(|p| !manual_group_photos.contains(&p.file.path))
-        .collect();
+    log::info!(
+        target: "burst_groups",
+        "recalculate_grouping_submitted; correlation_id={}; job_unit_id={}",
+        correlation_id,
+        job_unit_id
+    );
 
-    log::info!(target: "burst_groups", "recalculate_grouping_photos; correlation_id={}; total_photos={}",
-        correlation_id, photos_to_group.len());
-
-    // Step 4: Group photos by camera (make + model)
-    let mut photos_by_camera: HashMap<String, Vec<&Photo>> = HashMap::new();
-    for photo in &photos_to_group {
-        let make = if photo.meta_data.make.is_empty() { "unknown" } else { &photo.meta_data.make };
-        let model = if photo.meta_data.model.is_empty() { "unknown" } else { &photo.meta_data.model };
-        let camera_key = format!("{}_{}", make, model);
-        photos_by_camera.entry(camera_key).or_default().push(photo);
-    }
-
-    // Step 5: For each camera, sort by time and group consecutive shots
-    let threshold_ms = (threshold_seconds as i64) * 1000;
-    let min_size = min_group_size as usize;
-    let mut new_groups = 0u32;
-
-    for (camera_key, mut camera_photos) in photos_by_camera {
-        // Sort by datetime
-        camera_photos.sort_by(|a, b| {
-            let a_time = &a.meta_data.date_time_original;
-            let b_time = &b.meta_data.date_time_original;
-            a_time.cmp(b_time)
-        });
-
-        // Group consecutive shots within threshold
-        let mut current_group: Vec<&Photo> = Vec::new();
-        let mut last_time_ms: Option<i64> = None;
-
-        for photo in camera_photos {
-            let photo_time_ms = photo.get_datetime_ms();
-
-            let should_start_new_group = match (last_time_ms, photo_time_ms) {
-                (Some(last), Some(current)) => (current - last).abs() > threshold_ms,
-                _ => true, // Start new group if time is unknown
-            };
-
-            if should_start_new_group {
-                // Save previous group if it meets minimum size
-                if current_group.len() >= min_size {
-                    let group_id = format!("auto_{}", Uuid::new_v4());
-                    let group = BurstGroup::new_auto(group_id.clone());
-                    meta_db.save_burst_group(&group)?;
-
-                    for group_photo in &current_group {
-                        meta_db.update_photo_burst_group(&group_photo.file.path, &group_id)?;
-                    }
-                    new_groups += 1;
-                }
-                current_group.clear();
-            }
-
-            current_group.push(photo);
-            last_time_ms = photo_time_ms;
-        }
-
-        // Don't forget the last group
-        if current_group.len() >= min_size {
-            let group_id = format!("auto_{}", Uuid::new_v4());
-            let group = BurstGroup::new_auto(group_id.clone());
-            meta_db.save_burst_group(&group)?;
-
-            for group_photo in &current_group {
-                meta_db.update_photo_burst_group(&group_photo.file.path, &group_id)?;
-            }
-            new_groups += 1;
-        }
-
-        log::debug!(target: "burst_groups", "recalculate_grouping_camera; correlation_id={}; camera={}; groups_created={}",
-            correlation_id, camera_key, new_groups);
-    }
-
-    log::info!(target: "burst_groups", "recalculate_grouping_complete; correlation_id={}; new_groups={}",
-        correlation_id, new_groups);
-
-    Ok(new_groups)
+    Ok(job_unit_id)
 }

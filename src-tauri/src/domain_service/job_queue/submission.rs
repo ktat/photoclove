@@ -160,3 +160,65 @@ pub fn submit_create_db_job(
 
     Ok(job_unit_id)
 }
+
+/// Submit recalculate grouping job
+pub fn submit_recalculate_grouping_job(
+    db: Arc<SQLite>,
+    threshold_seconds: u32,
+    min_group_size: u32,
+    app_handle: tauri::AppHandle,
+) -> Result<String, String> {
+    log::info!(
+        target: "job_queue",
+        "submit_recalculate_grouping; threshold_seconds={}; min_group_size={}",
+        threshold_seconds,
+        min_group_size
+    );
+
+    // Create job unit for recalculate_grouping
+    let job_types = vec!["recalculate_grouping".to_string()];
+    let job_unit = job_queue::JobUnit::new(job_types);
+    let job_unit_id = job_unit.id.clone();
+
+    log::info!(
+        target: "job_queue",
+        "recalculate_grouping_job_unit; job_unit_id={}",
+        job_unit_id
+    );
+
+    // Save job unit
+    db.create_job_unit(&job_unit)?;
+
+    // Create job data with parameters
+    let job_data = job_queue::RecalculateGroupingJob {
+        threshold_seconds,
+        min_group_size,
+    };
+
+    // Serialize job data
+    let job_data_json = serde_json::to_string(&job_data)
+        .map_err(|e| format!("Failed to serialize job data: {}", e))?;
+
+    // Create the job
+    let grouping_job = job_queue::Job::new(
+        job_unit_id.clone(),
+        job_queue::JobType::RecalculateGrouping,
+        vec![job_data_json],
+    );
+
+    // Queue the job
+    let queued = job_queue::QueuedJob::new(job_unit_id.clone(), grouping_job);
+    let job_id = db.create_job(&queued)?;
+
+    log::info!(
+        target: "job_queue",
+        "recalculate_grouping_job_created; job_unit_id={}; job_id={}",
+        job_unit_id,
+        job_id
+    );
+
+    // Start processing (sequential, only 1 concurrent)
+    process_new_jobs(db, 1, app_handle);
+
+    Ok(job_unit_id)
+}
