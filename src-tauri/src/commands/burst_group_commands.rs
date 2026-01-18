@@ -10,6 +10,7 @@ use crate::domain_service::job_queue_service::submission::submit_recalculate_gro
 use crate::entity::burst_group::BurstGroup;
 use crate::entity::photo::Photo;
 use crate::repository::meta_db::sqlite::SQLite;
+use crate::value::date::Date;
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -211,6 +212,11 @@ pub async fn recalculate_grouping_in_date(
 ) -> Result<u32, String> {
     let meta_db = &state.meta_db;
     let logging_service = &state.logging_service;
+
+    // Parse date using Date value object and convert to YYYY-MM-DD format for SQLite
+    let date = Date::try_from_string(&date_str, Some("/"))
+        .map_err(|e| format!("Invalid date format: {}", e))?;
+    let date_str = date.to_string();
 
     let correlation_id = logging_service.generate_correlation_id();
     log::info!(
