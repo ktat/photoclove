@@ -101,7 +101,8 @@ function DirectoryMenu(props) {
         dateNum: props.dateNum,
         setDateNum: props.setDateNum,
         dateList: props.dateList,
-        setDateList: props.setDateList
+        setDateList: props.setDateList,
+        config: props.config
     });
 
     // Startup image operations hook

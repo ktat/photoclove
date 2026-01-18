@@ -16,7 +16,8 @@ export function useDateOperations({
     dateNum,
     setDateNum,
     dateList,
-    setDateList
+    setDateList,
+    config
 }) {
     const lockRef = useRef(false);
     const lockThumbnailRef = useRef(false);
@@ -110,23 +111,33 @@ export function useDateOperations({
             return;
         }
 
-        const answer = await confirm("This will recalculate auto burst groups for photos in this date. Manual groups will be preserved.", "Recalculate Groups");
+        // Use config values or defaults
+        const thresholdSeconds = config?.grouping?.burst_threshold_seconds ?? 2;
+        const minGroupSize = config?.grouping?.min_group_size ?? 2;
+
+        const answer = await confirm(
+            `This will recalculate auto burst groups for photos in this date.\n` +
+            `Threshold: ${thresholdSeconds} seconds, Min group size: ${minGroupSize}\n` +
+            `Manual groups will be preserved.`,
+            "Recalculate Groups"
+        );
         if (answer) {
             lockRef.current = true;
             try {
-                // Use default threshold (2 seconds) and min group size (3)
                 const newGroups = await invokeWithErrorHandling(
                     "recalculate_grouping_in_date",
                     {
                         dateStr: currentDate,
-                        thresholdSeconds: 2,
-                        minGroupSize: 3
+                        thresholdSeconds,
+                        minGroupSize
                     },
                     'dateOperations'
                 );
                 lockRef.current = false;
                 logger.info('dateOperations', 'groups_recalculated', 'Burst groups recalculated for date', {
                     date: currentDate,
+                    thresholdSeconds,
+                    minGroupSize,
                     newGroups
                 });
                 message(`Created ${newGroups} burst group(s)`, "Groups Recalculated");
@@ -135,7 +146,7 @@ export function useDateOperations({
                 throw error;
             }
         }
-    }, [currentDate]);
+    }, [currentDate, config]);
 
     /**
      * Apply date count changes from batch operation result to local state
