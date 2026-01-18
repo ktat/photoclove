@@ -126,6 +126,7 @@ function PhotosListMini(props) {
         changeStar,
         togglePhotoSelected,
         favoritePhoto,
+        showBlockedMessage,
         selectedInfoHidden,
         unselectedInfoHidden,
         selectedContent,
@@ -178,6 +179,7 @@ function PhotosListMini(props) {
             togglePhotoSelected,
             changeStar,
             favoritePhoto,
+            showBlockedMessage,
             setShowSideMenu: props.setShowSideMenu,
             showRemoveFromAlbumModal,
             showDeleteFileModal,
@@ -540,6 +542,7 @@ function PhotosListMini(props) {
                     isTrashMode={isTrashMode}
                     isAlbumMode={isAlbumMode}
                     isTagMode={isTagMode}
+                    burstRestrictionsActive={burstRestrictionsActive}
                 />
             </div>
 

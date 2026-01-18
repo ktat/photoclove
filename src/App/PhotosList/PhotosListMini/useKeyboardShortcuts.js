@@ -75,11 +75,17 @@ export function useKeyboardShortcuts(handlers, state) {
                 logger.info('useKeyboardShortcuts', 'star_blocked', 'Star operation blocked for burst representative', {
                     photoPath: f
                 });
+                handlers.showBlockedMessage("Cannot change star for burst group photo. Open burst group to edit individual photos.");
             }
         } else if (e.keyCode === 68) { // d - decrease star
             // Disable in import, trash modes, and for burst representatives
             if (!isImportMode && !isTrashMode && !burstRestrictionsActive) {
                 handlers.changeStar(false);
+            } else if (burstRestrictionsActive) {
+                logger.info('useKeyboardShortcuts', 'star_blocked', 'Star operation blocked for burst representative', {
+                    photoPath: f
+                });
+                handlers.showBlockedMessage("Cannot change star for burst group photo. Open burst group to edit individual photos.");
             }
         } else if (e.keyCode === 73) { // i - toggle show photo info
             handlers.setShowSideMenu(!state.showSideMenu);
@@ -91,15 +97,21 @@ export function useKeyboardShortcuts(handlers, state) {
                 logger.info('useKeyboardShortcuts', 'favorite_blocked', 'Favorite operation blocked for burst representative', {
                     photoPath: f
                 });
+                handlers.showBlockedMessage("Cannot favorite burst group photo. Open burst group to favorite individual photos.");
             }
         } else if (e.keyCode === 191) { // ? - show help
             handlers.setShowHelp(!state.showHelp);
         } else if (e.keyCode === 46) { // Del
-            // Disable in import mode (cannot delete import photos)
+            // Disable in import mode (cannot delete import photos) and for burst representatives
             if (!isImportMode) {
                 e.preventDefault();
 
-                if (isTrashMode) {
+                if (burstRestrictionsActive) {
+                    logger.info('useKeyboardShortcuts', 'delete_blocked', 'Delete operation blocked for burst representative', {
+                        photoPath: f
+                    });
+                    handlers.showBlockedMessage("Cannot delete burst group photo. Open burst group to delete individual photos.");
+                } else if (isTrashMode) {
                     // Trash mode: DEL permanently deletes
                     logger.info('useKeyboardShortcuts', 'delete_key_pressed', 'DEL pressed in trash mode - permanent delete', {
                         photoPath: f

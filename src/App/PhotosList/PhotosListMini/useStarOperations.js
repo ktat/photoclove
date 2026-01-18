@@ -70,17 +70,25 @@ export function useStarOperations({
     }, [currentPhotoPath, setStar]);
 
     /**
+     * Show a blocked operation message
+     * @param {string} message - The message to display
+     */
+    const showBlockedMessage = useCallback((message) => {
+        setUnselectedContent(message);
+        setTimeout(() => {
+            setUnselectedInfoHidden(true);
+        }, 1500);
+        setUnselectedInfoHidden(false);
+    }, []);
+
+    /**
      * Toggle photo selection with feedback
      * @param {boolean} blocked - If true, show blocked message instead of toggling
      */
     const togglePhotoSelected = useCallback((blocked = false) => {
         if (blocked) {
             // Show blocked message for burst representatives
-            setUnselectedContent("Cannot select burst group photo. Open burst group to select individual photos.");
-            setTimeout(() => {
-                setUnselectedInfoHidden(true);
-            }, 1500); // Longer timeout for blocked message
-            setUnselectedInfoHidden(false);
+            showBlockedMessage("Cannot select burst group photo. Open burst group to select individual photos.");
             return;
         }
 
@@ -101,7 +109,7 @@ export function useStarOperations({
             setUnselectedContent("Photo is unselected");
             setUnselectedInfoHidden(false);
         }
-    }, [currentPhotoPath, toggleSelection]);
+    }, [currentPhotoPath, toggleSelection, showBlockedMessage]);
 
     /**
      * Favorite operation - select and increase star
@@ -121,6 +129,7 @@ export function useStarOperations({
         changeStar,
         togglePhotoSelected,
         favoritePhoto,
+        showBlockedMessage,
         // Feedback state
         selectedInfoHidden,
         unselectedInfoHidden,
