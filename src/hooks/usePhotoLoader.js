@@ -46,6 +46,7 @@ import { useAsyncCancellation } from './useAsyncCancellation.js';
  * @param {Object} params.datePage - Page number mapping by mode
  * @param {Function} params.updateDatePage - Update datePage function
  * @param {Function} params.addFooterMessage - Footer message function
+ * @param {boolean} params.burstModeEnabled - Burst grouping mode flag
  * @returns {Object} Photo loader functions and state
  */
 export function usePhotoLoader({
@@ -74,7 +75,8 @@ export function usePhotoLoader({
     handleError,
     datePage,
     updateDatePage,
-    addFooterMessage
+    addFooterMessage,
+    burstModeEnabled = false
 }) {
     // Loading state
     const [photoLoading, setPhotoLoading] = useState(false);
@@ -118,7 +120,8 @@ export function usePhotoLoader({
         }
 
         // Some view modes don't require a value (e.g., search with filters only, recent, trash)
-        if (!viewMode.isSearchMode() && !viewMode.isRecentMode() && !viewMode.isTrashMode() && !viewMode.getCurrentDate() && !viewMode.getCurrentAlbumId() && !viewMode.getCurrentTagId()) {
+        // IN_BURST_GROUP mode requires burstGroupId from viewMode data
+        if (!viewMode.isSearchMode() && !viewMode.isRecentMode() && !viewMode.isTrashMode() && !viewMode.isInBurstGroupMode() && !viewMode.getCurrentDate() && !viewMode.getCurrentAlbumId() && !viewMode.getCurrentTagId()) {
             return;
         }
 
@@ -151,7 +154,8 @@ export function usePhotoLoader({
                     sort_value: parseInt(sortOfPhotos),
                     star: starFilter || -1,
                     has_comment: hasCommentFilter || false,
-                    extension: extensionFilter || "all"
+                    extension: extensionFilter || "all",
+                    burstModeEnabled: burstModeEnabled
                 });
 
                 logger.info('PhotosList', 'viewmode_params_generated', 'Generated parameters using ViewMode', {
@@ -325,6 +329,7 @@ export function usePhotoLoader({
         hasCommentFilter,
         extensionFilter,
         isSearchMode,
+        burstModeEnabled,
         setPhotoLoading,
         setAllPhotosForCurrentFetch,
         setIsLimitedByConfig,
@@ -424,7 +429,16 @@ export function usePhotoLoader({
             let collection;
 
             // Create appropriate PhotoCollection based on view mode
+            // When burst mode is enabled, use loadAllPhotosBasedOnViewMode for proper burst grouping
             if (viewMode.isDateMode()) {
+                if (burstModeEnabled) {
+                    logger.info('PhotosList', 'date_burst_mode', 'Date mode with burst enabled, using unified loader', {
+                        date: viewMode.getCurrentDate(),
+                        burstModeEnabled
+                    });
+                    setPhotoLoading(false);
+                    return await loadAllPhotosBasedOnViewMode(viewMode, appConfig);
+                }
                 logger.info('PhotosList', 'creating_date_collection', 'Creating date collection', {
                     date: viewMode.getCurrentDate(),
                     sortOfPhotos: sortOfPhotos
@@ -559,6 +573,7 @@ export function usePhotoLoader({
         appConfig,
         sortOfPhotos,
         importState,
+        burstModeEnabled,
         setPhotoLoading,
         setPhotoCollection,
         setPhotosList,

@@ -22,6 +22,7 @@ export function useViewModeSync({
     currentDate,
     currentAlbumId,
     currentTagId,
+    currentBurstGroupId,
     searchQuery,
     currentSearchParams,
     isSearchMode,
@@ -57,6 +58,7 @@ export function useViewModeSync({
             date: currentDate,
             albumId: currentAlbumId,
             tagId: currentTagId,
+            burstGroupId: currentBurstGroupId,
             searchQuery: searchQuery,
             searchParams: currentSearchParams
         });
@@ -79,6 +81,7 @@ export function useViewModeSync({
         currentDate,
         currentAlbumId,
         currentTagId,
+        currentBurstGroupId,
         searchQuery,
         searchParamsStr,
         appConfig,

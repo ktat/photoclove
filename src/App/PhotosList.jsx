@@ -36,6 +36,7 @@ import {
     usePhotoSyncEffect,
     useSelectionTabEffect,
     useSortChangeEffect,
+    useBurstModeChangeEffect,
     useAutoClosePhotoDisplayEffect,
     useConfigAndCleanupEffect,
     useSideMenuToggleEffect,
@@ -84,7 +85,8 @@ function PhotosList({
 
     const {
         toggleSearchPage, searchInitialQuery, currentAlbumId, currentTagId,
-        viewMode, openAlbum, toggleAlbumListMode, openTag, openTagsList, toggleHome
+        viewMode, openAlbum, toggleAlbumListMode, openTag, openTagsList, toggleHome,
+        openBurstGroup, goBackFromBurstGroup, currentBurstGroupId, burstModeEnabled
     } = useUI();
 
     const { handleTauriError, addError } = useError();
@@ -145,7 +147,7 @@ function PhotosList({
 
     // Create ViewMode object using factory hook
     const { viewModeObj, isSearchMode, isAlbumMode, isAlbumListMode, isTagMode, isTagListMode, isTrashMode } = useViewModeFactory({
-        viewMode, currentAlbumId, currentAlbumName, currentTagId, currentTagName, searchInitialQuery, currentDate
+        viewMode, currentAlbumId, currentAlbumName, currentTagId, currentTagName, currentBurstGroupId, searchInitialQuery, currentDate
     });
 
     // View mode change effect
@@ -230,7 +232,8 @@ function PhotosList({
         setIsLimitedByConfig, setConfigLimit, setPhotosListMiniAllPhotos,
         setPhotoCollection, setPhotosListImgSrc, setCurrentPhotoPath, setCurrentPhotoIndex,
         convertPhotosToEntities: convertPhotosWithConfig, handleError,
-        datePage: datePage || {}, updateDatePage, addFooterMessage
+        datePage: datePage || {}, updateDatePage, addFooterMessage,
+        burstModeEnabled
     });
 
     // Album/Tag photo loading wrappers
@@ -295,6 +298,12 @@ function PhotosList({
     useSortChangeEffect({
         sortOfPhotos, importSortOfPhotos, viewModeObj, appConfig,
         sortInitialized, loadAllPhotosBasedOnViewMode, handleError
+    });
+
+    // Burst mode change effect
+    useBurstModeChangeEffect({
+        burstModeEnabled, viewModeObj, appConfig,
+        loadAllPhotosBasedOnViewMode, handleError
     });
 
     // Infinite scroll
@@ -363,7 +372,7 @@ function PhotosList({
 
     // View mode sync hooks
     useViewModeSync({
-        viewMode, currentDate, currentAlbumId, currentTagId, searchQuery,
+        viewMode, currentDate, currentAlbumId, currentTagId, currentBurstGroupId, searchQuery,
         currentSearchParams, isSearchMode, photoLoading, currentPhotoLoadingController,
         setCurrentPhotoLoadingController, setShowSideMenu, setPhotosList,
         setCurrentPhotoIndex, setPhotosListMiniCurrentIndex, setCurrentPhotoPath,
@@ -405,7 +414,7 @@ function PhotosList({
 
     // Handlers object using extracted hook
     const handlers = usePhotosListHandlers({
-        closePhotoDisplay, displayPhoto, toggleSelection, isPhotoSelected, addSelection,
+        closePhotoDisplay, displayPhoto, openBurstGroup, goBackFromBurstGroup, toggleSelection, isPhotoSelected, addSelection,
         clearPhotoSelection, selectAllPhotoToSelection, getPhotos, handleInfiniteScroll,
         reloadCurrentModeData, refreshPhotosOnly, moveToTrashCan, updatePhotosAfterTrashOperation,
         deletePhotosHandler, restorePhotosHandler, permanentlyDeletePhoto,
@@ -465,6 +474,7 @@ function PhotosList({
                     <PhotoOption
                         setShowSideMenu={setShowSideMenu} showSideMenu={showSideMenu}
                         currentPhotoPath={currentPhotoPath} closePhotoDisplay={closePhotoDisplay}
+                        currentPhoto={photosListMiniAllPhotos[currentPhotoIndex]}
                         path={currentPhotoPath} searchMode={isSearchMode} searchQuery={searchQuery}
                         searchResultsCount={displayedPhotos.length} onClearSearch={clearSearch}
                         searchTools={searchTools} addFooterMessage={handlers.addFooterMessage}

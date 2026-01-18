@@ -20,11 +20,12 @@ function PhotosListMini(props) {
     // Context
     const { imgCacheMap, setImgCacheMap } = useContext(ImgCacheContext);
     const { photosListMiniAllPhotos, setPhotosListMiniAllPhotos } = useContext(AllPhotosContext);
-    const { viewMode } = useUI();
+    const { viewMode, burstModeEnabled } = useUI();
 
     // Determine modes from viewMode
     const isImportMode = viewMode === VIEW_MODES.IMPORT;
     const isTrashMode = viewMode === VIEW_MODES.TRASH;
+    const isInBurstGroupMode = viewMode === VIEW_MODES.IN_BURST_GROUP;
 
     // Convert JSON back to Photo entities for all photos operations
     const photosWithMethods = useMemo(() => {
@@ -68,6 +69,18 @@ function PhotosListMini(props) {
 
     // Check if we're in album mode
     const isAlbumMode = props.albumId !== undefined && props.albumId !== null;
+
+    // Check if current photo is a burst representative (has burst badge)
+    // Selection/edit/tag operations are disabled for burst representatives when burst mode is ON
+    const currentPhoto = useMemo(() => {
+        if (props.currentIndex >= 0 && props.currentIndex < photosWithMethods.length) {
+            return photosWithMethods[props.currentIndex];
+        }
+        return null;
+    }, [photosWithMethods, props.currentIndex]);
+
+    const isBurstRepresentative = currentPhoto?.burst_group_id && currentPhoto?.burst_count > 1;
+    const burstRestrictionsActive = burstModeEnabled && isBurstRepresentative && !isInBurstGroupMode;
 
     // Helper function to get the correct date key for pagination
     const getDateKey = useCallback(() => {
@@ -179,7 +192,8 @@ function PhotosListMini(props) {
             currentPhotoPath: props.currentPhotoPath,
             showSideMenu: props.showSideMenu,
             showHelp,
-            photoZoomReady
+            photoZoomReady,
+            burstRestrictionsActive
         }
     );
 
@@ -469,6 +483,21 @@ function PhotosListMini(props) {
                             orientation={photosWithMethods[props.currentIndex]?.meta_data?.orientation}
                             thumbnailOrientationCorrection={thumbnailOrientationCorrection}
                             progressiveImageLoading={progressiveImageLoading}
+                            togglePhotoSelected={togglePhotoSelected}
+                            burstRestrictionsActive={burstRestrictionsActive}
+                            burstModeEnabled={burstModeEnabled}
+                            isBurstRepresentative={isBurstRepresentative}
+                            burstGroupId={currentPhoto?.burst_group_id}
+                            burstCount={currentPhoto?.burst_count}
+                            openBurstGroup={props.openBurstGroup}
+                            currentViewMode={viewMode}
+                            currentViewModeData={{
+                                date: props.currentDate,
+                                albumId: props.albumId,
+                                albumName: props.albumName,
+                                currentPhotoPath: props.currentPhotoPath,
+                                currentPhotoIndex: props.currentIndex
+                            }}
                         />
                     )}
                 </div>

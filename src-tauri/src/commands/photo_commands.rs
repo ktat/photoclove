@@ -182,6 +182,11 @@ pub async fn get_photos_unified(
                 "all_tags_with_count" => {
                     photo_handlers::collections::handle_tags_with_count(&ctx).await
                 }
+                // Burst grouping handlers
+                "burst_date" => photo_handlers::burst::handle_burst_date(&ctx, &search_params).await,
+                "burst_album" => photo_handlers::burst::handle_burst_album(&ctx, &search_params).await,
+                "burst_tag" => photo_handlers::burst::handle_burst_tag(&ctx, &search_params).await,
+                "burst_group" => photo_handlers::burst::handle_burst_group(&ctx, &search_params).await,
                 _ => {
                     log::error!(target: "get_photos", "unsupported_search_type; search_type={}", search_type);
                     Err(())

@@ -5,20 +5,9 @@ use crate::entity::{config, photo, photo_meta};
 use crate::repository::{self, RepoDB, RepositoryDB, Sort};
 use crate::value::{date, exif, file};
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fs;
-
-#[derive(Debug, Deserialize, Serialize)]
-struct PhotoInfo {
-    path: String,
-    date: String,
-}
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct DatesNum {
-    data: HashMap<String, i32>,
-}
 
 #[derive(Clone)]
 pub struct Directory {

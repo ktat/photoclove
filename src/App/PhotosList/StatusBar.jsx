@@ -15,6 +15,7 @@ function StatusBar({
     searchQuery,
     toggleAlbumListMode,
     openTagsList,
+    goBackFromBurstGroup,
     isLimitedByConfig
 }) {
     // Create ViewMode object for title generation
@@ -43,6 +44,15 @@ function StatusBar({
                 <>
                     <a className="back-to-home" href="#" onClick={(e) => { e.preventDefault(); openTagsList(); }}>
                         Back to Tag List
+                    </a>
+                    <span style={{ marginLeft: "10px" }}>{title}</span>
+                </>
+            );
+        } else if (viewMode === VIEW_MODES.IN_BURST_GROUP) {
+            return (
+                <>
+                    <a className="back-to-home" href="#" onClick={(e) => { e.preventDefault(); goBackFromBurstGroup && goBackFromBurstGroup(); }}>
+                        ← Back
                     </a>
                     <span style={{ marginLeft: "10px" }}>{title}</span>
                 </>

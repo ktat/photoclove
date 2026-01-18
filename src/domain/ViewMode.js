@@ -92,6 +92,10 @@ export class ViewMode {
         return this._mode === VIEW_MODES.LOGIN;
     }
 
+    isInBurstGroupMode() {
+        return this._mode === VIEW_MODES.IN_BURST_GROUP;
+    }
+
     // Complex mode categories
     isPhotoViewingMode() {
         return [
@@ -100,7 +104,8 @@ export class ViewMode {
             VIEW_MODES.SEARCH,
             VIEW_MODES.ALBUM,
             VIEW_MODES.TAG,
-            VIEW_MODES.TRASH
+            VIEW_MODES.TRASH,
+            VIEW_MODES.IN_BURST_GROUP
         ].includes(this._mode);
     }
 
@@ -123,7 +128,8 @@ export class ViewMode {
             VIEW_MODES.ALBUM_LIST,
             VIEW_MODES.TAG,
             VIEW_MODES.TAG_LIST,
-            VIEW_MODES.TRASH
+            VIEW_MODES.TRASH,
+            VIEW_MODES.IN_BURST_GROUP
         ].includes(this._mode);
     }
 
@@ -297,17 +303,31 @@ export class ViewMode {
             extension: additionalParams.extension || "all"
         };
 
+        const burstModeEnabled = additionalParams.burstModeEnabled || false;
+
         switch (this._mode) {
             case VIEW_MODES.DATE:
-                return { ...baseParams, search_type: "date", query: this._data.date };
+                return {
+                    ...baseParams,
+                    search_type: burstModeEnabled ? "burst_date" : "date",
+                    query: this._data.date
+                };
             case VIEW_MODES.RECENT:
                 return { ...baseParams, search_type: "recent" };
             case VIEW_MODES.ALBUM:
-                return { ...baseParams, search_type: "album_photos", params: { album_id: this._data.albumId } };
+                return {
+                    ...baseParams,
+                    search_type: burstModeEnabled ? "burst_album" : "album_photos",
+                    params: { album_id: this._data.albumId }
+                };
             case VIEW_MODES.ALBUM_LIST:
                 return { ...baseParams, search_type: "all_albums" };
             case VIEW_MODES.TAG:
-                return { ...baseParams, search_type: "tag", query: this._data.tagId?.toString() };
+                return {
+                    ...baseParams,
+                    search_type: burstModeEnabled ? "burst_tag" : "tag",
+                    query: this._data.tagId?.toString()
+                };
             case VIEW_MODES.TAG_LIST:
                 return { ...baseParams, search_type: "all_tags_with_count" };
             case VIEW_MODES.SEARCH:
@@ -318,6 +338,12 @@ export class ViewMode {
                 // IMPORT mode uses separate loading mechanism (ImportState + show_importer)
                 // and should not call get_photos_unified
                 throw new Error(`IMPORT mode uses ImportState.changeDirectory(), not get_photos_unified`);
+            case VIEW_MODES.IN_BURST_GROUP:
+                return {
+                    ...baseParams,
+                    search_type: "burst_group",
+                    query: this._data.burstGroupId
+                };
             default:
                 throw new Error(`No photo params defined for mode: ${this._mode}`);
         }
@@ -651,6 +677,20 @@ export class ViewMode {
 
     showViewEXIF() {
         return !this.isImportMode();
+    }
+
+    // Burst group operations
+    showBurstGroupOperations() {
+        return !this.isImportMode() && !this.isTrashMode() && !this.isListMode();
+    }
+
+    showCreateBurstGroup() {
+        return this.showBurstGroupOperations();
+    }
+
+    showRemoveFromBurstGroup() {
+        // Remove from burst group is ONLY available when viewing photos inside a burst group
+        return this.isInBurstGroupMode();
     }
 }
 

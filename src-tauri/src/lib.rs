@@ -264,6 +264,9 @@ pub fn run() {
             retry_recovery_item,
             retry_all_recovery_items,
             cleanup_recovery_items,
+            // Burst Group commands
+            create_burst_group,
+            remove_from_burst_group,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

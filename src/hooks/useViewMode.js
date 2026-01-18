@@ -30,7 +30,8 @@ const TRANSITIONS = {
     TO_TRASH: VIEW_MODES.TRASH,
     TO_IMPORT: VIEW_MODES.IMPORT,
     TO_PREFERENCES: VIEW_MODES.PREFERENCES,
-    TO_JOB_QUEUE: VIEW_MODES.JOB_QUEUE
+    TO_JOB_QUEUE: VIEW_MODES.JOB_QUEUE,
+    TO_IN_BURST_GROUP: VIEW_MODES.IN_BURST_GROUP
   },
   [VIEW_MODES.RECENT]: {
     TO_HOME: VIEW_MODES.HOME,
@@ -76,7 +77,8 @@ const TRANSITIONS = {
     TO_TRASH: VIEW_MODES.TRASH,
     TO_IMPORT: VIEW_MODES.IMPORT,
     TO_PREFERENCES: VIEW_MODES.PREFERENCES,
-    TO_JOB_QUEUE: VIEW_MODES.JOB_QUEUE
+    TO_JOB_QUEUE: VIEW_MODES.JOB_QUEUE,
+    TO_IN_BURST_GROUP: VIEW_MODES.IN_BURST_GROUP
   },
   [VIEW_MODES.TAG_LIST]: {
     TO_HOME: VIEW_MODES.HOME,
@@ -100,7 +102,8 @@ const TRANSITIONS = {
     TO_TRASH: VIEW_MODES.TRASH,
     TO_IMPORT: VIEW_MODES.IMPORT,
     TO_PREFERENCES: VIEW_MODES.PREFERENCES,
-    TO_JOB_QUEUE: VIEW_MODES.JOB_QUEUE
+    TO_JOB_QUEUE: VIEW_MODES.JOB_QUEUE,
+    TO_IN_BURST_GROUP: VIEW_MODES.IN_BURST_GROUP
   },
   [VIEW_MODES.IMPORT]: {
     TO_HOME: VIEW_MODES.HOME,
@@ -150,6 +153,20 @@ const TRANSITIONS = {
     TO_HOME: VIEW_MODES.HOME,
     TO_DATE: VIEW_MODES.DATE,
     TO_RECENT: VIEW_MODES.RECENT
+  },
+  [VIEW_MODES.IN_BURST_GROUP]: {
+    TO_HOME: VIEW_MODES.HOME,
+    TO_DATE: VIEW_MODES.DATE,
+    TO_RECENT: VIEW_MODES.RECENT,
+    TO_SEARCH: VIEW_MODES.SEARCH,
+    TO_ALBUM_LIST: VIEW_MODES.ALBUM_LIST,
+    TO_ALBUM: VIEW_MODES.ALBUM,
+    TO_TAG_LIST: VIEW_MODES.TAG_LIST,
+    TO_TAG: VIEW_MODES.TAG,
+    TO_TRASH: VIEW_MODES.TRASH,
+    TO_IMPORT: VIEW_MODES.IMPORT,
+    TO_PREFERENCES: VIEW_MODES.PREFERENCES,
+    TO_JOB_QUEUE: VIEW_MODES.JOB_QUEUE
   }
 };
 
@@ -240,7 +257,7 @@ export const useViewMode = (initialMode = VIEW_MODES.HOME) => {
   // Screen visibility state computed from current mode
   const screenVisibility = useMemo(() => ({
     showImporter: currentMode === VIEW_MODES.IMPORT,
-    showPhotosList: [VIEW_MODES.DATE, VIEW_MODES.RECENT, VIEW_MODES.ALBUM, VIEW_MODES.ALBUM_LIST, VIEW_MODES.TAG, VIEW_MODES.TAG_LIST, VIEW_MODES.TRASH].includes(currentMode),
+    showPhotosList: [VIEW_MODES.DATE, VIEW_MODES.RECENT, VIEW_MODES.ALBUM, VIEW_MODES.ALBUM_LIST, VIEW_MODES.TAG, VIEW_MODES.TAG_LIST, VIEW_MODES.TRASH, VIEW_MODES.IN_BURST_GROUP].includes(currentMode),
     showSearchPage: currentMode === VIEW_MODES.SEARCH,
     showAlbumsList: currentMode === VIEW_MODES.ALBUM_LIST,
     showTagsList: currentMode === VIEW_MODES.TAG_LIST,
@@ -320,6 +337,32 @@ export const useViewMode = (initialMode = VIEW_MODES.HOME) => {
     transitionTo(VIEW_MODES.TRASH);
   }, [transitionTo]);
 
+  const openBurstGroup = useCallback((burstGroupId, returnMode, returnModeData) => {
+    transitionTo(VIEW_MODES.IN_BURST_GROUP, {
+      burstGroupId,
+      returnMode,
+      returnModeData
+    });
+  }, [transitionTo]);
+
+  const goBackFromBurstGroup = useCallback(() => {
+    // Get the stored return mode and data
+    const returnMode = modeData.returnMode;
+    const returnModeData = modeData.returnModeData || {};
+
+    if (returnMode) {
+      // Return to the specific mode with its data
+      transitionTo(returnMode, returnModeData);
+    } else {
+      // Fallback to goBack or HOME
+      if (history.length > 1) {
+        goBack();
+      } else {
+        transitionTo(VIEW_MODES.HOME);
+      }
+    }
+  }, [modeData, transitionTo, goBack, history.length]);
+
   return {
     // State
     currentMode,
@@ -347,9 +390,11 @@ export const useViewMode = (initialMode = VIEW_MODES.HOME) => {
     openTag,
     openTagsList,
     openTrash,
+    openBurstGroup,
+    goBackFromBurstGroup,
     showDatePhotos,
     showRecentPhotos,
-    
+
     // Additional computed values
     isSearchMode: isMode(VIEW_MODES.SEARCH),
     isAdvancedSearchMode: isMode(VIEW_MODES.SEARCH), // Kept for backward compatibility
@@ -361,6 +406,11 @@ export const useViewMode = (initialMode = VIEW_MODES.HOME) => {
     currentAlbumId: modeData.albumId || null,
     currentTagId: modeData.tagId || null,
     searchInitialQuery: modeData.searchQuery || "",
-    canGoBack: history.length > 1
+    canGoBack: history.length > 1,
+    // Burst group mode
+    isInBurstGroupMode: isMode(VIEW_MODES.IN_BURST_GROUP),
+    currentBurstGroupId: modeData.burstGroupId || null,
+    burstReturnMode: modeData.returnMode || null,
+    burstReturnModeData: modeData.returnModeData || null
   };
 };

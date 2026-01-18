@@ -435,3 +435,130 @@ pub(super) fn get_collection_photos(
     log::debug!(target: "photo_collections", "get_collection_photos_tags_complete; collection_id={}; photos_with_tags_count={}", collection_id, photos_with_tags.len());
     Ok(photos_with_tags)
 }
+
+/// Unified function to get photos by one or more collection IDs.
+/// For multiple IDs, uses AND logic (photos must be in ALL specified collections).
+///
+/// # Arguments
+/// * `sqlite` - Database connection
+/// * `collection_ids` - One or more collection IDs to search
+/// * `sort_value` - Sort order (0=PhotoTimeDesc, 1=PhotoTimeAsc, etc.)
+/// * `config` - Optional app config for thumbnail checking
+///
+/// # Returns
+/// Vector of Photo entities with tags populated
+pub(super) fn get_photos_by_collection_ids(
+    sqlite: &SQLite,
+    collection_ids: &[i32],
+    sort_value: i32,
+    config: Option<config::Config>,
+) -> Result<Vec<photo::Photo>, String> {
+    if collection_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let conn = sqlite
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    // Build ORDER BY clause based on sort_value
+    let order_clause = match sort_value {
+        0 => "ORDER BY pm.exif_date_time_original DESC, pm.photo_date DESC, pm.path DESC",
+        1 => "ORDER BY pm.exif_date_time_original ASC, pm.photo_date ASC, pm.path ASC",
+        2 => "ORDER BY pm.photo_date DESC, pm.exif_date_time_original DESC, pm.path DESC",
+        3 => "ORDER BY pm.photo_date ASC, pm.exif_date_time_original ASC, pm.path ASC",
+        4 => "ORDER BY pm.star DESC NULLS LAST, pm.exif_date_time_original DESC, pm.photo_date DESC, pm.path DESC",
+        5 => "ORDER BY pm.star ASC NULLS LAST, pm.exif_date_time_original ASC, pm.photo_date ASC, pm.path ASC",
+        6 => "ORDER BY pm.path DESC, pm.exif_date_time_original DESC, pm.photo_date DESC",
+        7 => "ORDER BY pm.path ASC, pm.exif_date_time_original ASC, pm.photo_date ASC",
+        _ => "ORDER BY pm.exif_date_time_original DESC, pm.photo_date DESC, pm.path DESC",
+    };
+
+    let placeholders = collection_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+    let collection_count = collection_ids.len() as i32;
+
+    // Query: get photos that are in ALL specified collections (AND logic)
+    let query = format!(
+        "SELECT pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style,
+                pm.google_photos_url, pm.exif_orientation, pm.burst_group_id
+         FROM photo_metadata pm
+         WHERE pm.path IN (
+             SELECT pci.photo_path
+             FROM photo_collection_items pci
+             WHERE pci.collection_id IN ({})
+             GROUP BY pci.photo_path
+             HAVING COUNT(DISTINCT pci.collection_id) = ?
+         ) AND (pm.delete_flg = 0 OR pm.delete_flg IS NULL)
+         {}",
+        placeholders, order_clause
+    );
+
+    let mut stmt = conn
+        .prepare(&query)
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    // Build params: collection_ids + collection_count
+    let mut query_params: Vec<Box<dyn rusqlite::ToSql>> = collection_ids
+        .iter()
+        .map(|id| Box::new(*id) as Box<dyn rusqlite::ToSql>)
+        .collect();
+    query_params.push(Box::new(collection_count));
+
+    let params_refs: Vec<&dyn rusqlite::ToSql> = query_params.iter().map(|p| p.as_ref()).collect();
+
+    let photos_data = stmt
+        .query_map(params_refs.as_slice(), |row| {
+            let path: String = row.get("path")?;
+            let photo_date: String = row.get("photo_date")?;
+            let star: i32 = row.get("star")?;
+            let comment: Option<String> = row.get("comment")?;
+            let css_style: Option<String> = row.get("css_style")?;
+            let exif_orientation: Option<String> = row.get("exif_orientation")?;
+            let burst_group_id: Option<String> = row.get("burst_group_id")?;
+
+            Ok((path, photo_date, star, comment, css_style, exif_orientation, burst_group_id))
+        })
+        .map_err(|e| format!("Failed to query photos: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect photos: {}", e))?;
+
+    // Fetch tags in bulk
+    let photo_paths: Vec<String> = photos_data.iter().map(|(path, ..)| path.clone()).collect();
+    let tags_map = tags::get_tags_for_photos_bulk(sqlite, &photo_paths)
+        .map_err(|e| format!("Failed to fetch tags: {}", e))?;
+
+    // Build Photo entities
+    let mut photos = Vec::new();
+    for (path, photo_date, star, comment, css_style, exif_orientation, burst_group_id) in photos_data {
+        let file = file::File::new(path.clone());
+        let mut photo = photo::Photo::new(file, config.clone());
+
+        photo.set_time(photo_date);
+        photo.star = if star > 0 { Some(star) } else { None };
+        photo.comment = comment.filter(|c| !c.is_empty());
+        photo.css_style = css_style;
+        photo.burst_group_id = burst_group_id;
+
+        if let Some(ref orientation) = exif_orientation {
+            if !orientation.is_empty() {
+                photo.meta_data.orientation = orientation.clone();
+            }
+        }
+
+        if let Some(photo_tags) = tags_map.get(&path) {
+            if !photo_tags.is_empty() {
+                let tags: Vec<photo::PhotoTag> = photo_tags.iter()
+                    .map(|(id, name, color)| photo::PhotoTag::new(*id, name.clone(), color.clone()))
+                    .collect();
+                photo.tags = Some(tags);
+            }
+        }
+
+        photos.push(photo);
+    }
+
+    log::info!(target: "photo_collections", "get_photos_by_collection_ids; ids={:?}; sort={}; count={}",
+        collection_ids, sort_value, photos.len());
+
+    Ok(photos)
+}

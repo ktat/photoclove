@@ -14,6 +14,8 @@ export function usePhotosListHandlers({
     // Photo display handlers
     closePhotoDisplay,
     displayPhoto,
+    openBurstGroup,
+    goBackFromBurstGroup,
     // Selection handlers
     toggleSelection,
     isPhotoSelected,
@@ -79,6 +81,8 @@ export function usePhotosListHandlers({
         // Photo display
         closePhotoDisplay,
         displayPhoto,
+        openBurstGroup,
+        goBackFromBurstGroup,
         // Selection
         toggleSelection,
         isSelected: isPhotoSelected,
@@ -140,7 +144,7 @@ export function usePhotosListHandlers({
         addFooterMessage,
         handleTauriError
     }), [
-        closePhotoDisplay, displayPhoto,
+        closePhotoDisplay, displayPhoto, openBurstGroup, goBackFromBurstGroup,
         toggleSelection, isPhotoSelected, addSelection, clearPhotoSelection, selectAllPhotoToSelection,
         getPhotos, handleInfiniteScroll, reloadCurrentModeData, refreshPhotosOnly,
         moveToTrashCan, updatePhotosAfterTrashOperation, deletePhotosHandler, restorePhotosHandler,

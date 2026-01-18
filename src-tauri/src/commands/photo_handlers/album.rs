@@ -1,6 +1,7 @@
 //! Album photos handler.
 //!
 //! Handles retrieval of photos from a specific album.
+//! Uses unified collection search for consistency with tag handler.
 
 use super::{HandlerContext, SearchParams};
 use crate::entity::photo;
@@ -8,6 +9,7 @@ use crate::entity::photo;
 /// Handle album photos search request.
 ///
 /// Retrieves all photos in a specific album.
+/// Uses the unified get_photos_by_collection_ids function for consistency.
 ///
 /// # Arguments
 /// * `ctx` - Handler context with database connections
@@ -28,28 +30,22 @@ pub async fn handle(ctx: &HandlerContext<'_>, params: &SearchParams) -> Result<S
         return Err(());
     };
 
-    log::info!(target: "get_photos", "album_photos_request_using_unified_collections; album_id={}", album_id);
+    log::info!(target: "get_photos", "album_photos_request; album_id={}; sort_value={}", album_id, params.sort_value);
 
-    // Use get_collection_photos which includes tag information and config
-    let mut photos = ctx
-        .meta_db
-        .get_collection_photos(album_id, true, Some(ctx.config.clone()))
+    // Use unified collection search function
+    let mut photos_vec = ctx.meta_db
+        .get_photos_by_collection_ids(&[album_id], params.sort_value, Some(ctx.config.clone()))
         .map_err(|e| {
             log::error!(target: "get_photos", "album_photos_failed; error={}", e);
         })?;
 
     // Set has_thumbnail flag for each photo
-    for p in photos.iter_mut() {
+    for p in photos_vec.iter_mut() {
         p.set_has_thumbnail();
-        // Debug: log photos with tags
-        if p.tags.is_some() {
-            log::debug!(target: "get_photos", "album_photo_with_tags; path={}; tags={:?}", p.file.path, p.tags);
-        }
     }
 
-    // Convert to Photos format to match other responses
     let photos_response = photo::Photos {
-        photos,
+        photos: photos_vec,
         has_next: false,
         has_prev: false,
     };

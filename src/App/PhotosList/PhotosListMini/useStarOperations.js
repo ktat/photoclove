@@ -71,8 +71,19 @@ export function useStarOperations({
 
     /**
      * Toggle photo selection with feedback
+     * @param {boolean} blocked - If true, show blocked message instead of toggling
      */
-    const togglePhotoSelected = useCallback(() => {
+    const togglePhotoSelected = useCallback((blocked = false) => {
+        if (blocked) {
+            // Show blocked message for burst representatives
+            setUnselectedContent("Cannot select burst group photo. Open burst group to select individual photos.");
+            setTimeout(() => {
+                setUnselectedInfoHidden(true);
+            }, 1500); // Longer timeout for blocked message
+            setUnselectedInfoHidden(false);
+            return;
+        }
+
         const wasSelected = toggleSelection(currentPhotoPath);
 
         setTimeout(() => {

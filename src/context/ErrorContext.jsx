@@ -24,10 +24,10 @@ export const ErrorProvider = ({ children }) => {
 
   const addError = useCallback((error, operation = null, userAction = null) => {
     const id = Date.now() + Math.random();
-    
+
     // Handle PhotoClove structured errors from Rust
     let errorData;
-    if (typeof error === 'object' && error.error && error.correlation_id) {
+    if (error != null && typeof error === 'object' && error.error && error.correlation_id) {
       // This is a PhotoClove ErrorWithContext
       const rustError = error.error;
       errorData = {

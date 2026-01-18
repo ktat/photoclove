@@ -72,7 +72,8 @@ function PhotoDisplayWrapper({
         addFooterMessage,
         handleTauriError,
         setShowSideMenu,
-        clearSearch
+        clearSearch,
+        openBurstGroup
     } = handlers;
     // Compute derived values
     const shouldDisplay = !photoLoading && currentPhotoPath;
@@ -126,6 +127,7 @@ function PhotoDisplayWrapper({
                             handleTauriError={handleTauriError}
                             importState={importState}
                             beforeNavigate={beforeNavigate}
+                            openBurstGroup={openBurstGroup}
                         />
                     </div>
                 </ImgCacheContext.Provider>
