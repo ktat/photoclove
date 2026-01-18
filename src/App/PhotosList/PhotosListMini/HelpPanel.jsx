@@ -3,6 +3,23 @@
  */
 import React from 'react';
 
+// Disabled row style for burst restrictions
+const disabledRowStyle = {
+    opacity: 0.5,
+    color: 'var(--color-text-muted)',
+};
+
+const disabledKeyStyle = {
+    color: 'var(--color-text-muted)',
+    textDecoration: 'line-through',
+};
+
+const disabledNoteStyle = {
+    fontSize: 'var(--font-size-xs)',
+    color: 'var(--color-warning)',
+    fontStyle: 'italic',
+};
+
 /**
  * HelpPanel component displays keyboard shortcuts
  * @param {Object} props
@@ -11,12 +28,28 @@ import React from 'react';
  * @param {boolean} props.isImportMode - Whether in import mode
  * @param {boolean} props.isTrashMode - Whether in trash mode
  * @param {boolean} props.isAlbumMode - Whether in album mode
+ * @param {boolean} props.burstRestrictionsActive - Whether burst restrictions are active
  */
-function HelpPanel({ show, onClose, isImportMode, isTrashMode, isAlbumMode }) {
+function HelpPanel({ show, onClose, isImportMode, isTrashMode, isAlbumMode, burstRestrictionsActive }) {
     const handleClick = () => {
         onClose();
         document.querySelector("#dummy-for-focus")?.focus();
     };
+
+    // Helper to render a shortcut row with optional disabled state
+    const ShortcutRow = ({ shortcut, description, disabled, disabledReason }) => (
+        <tr style={disabled ? disabledRowStyle : {}}>
+            <th style={disabled ? disabledKeyStyle : {}}>{shortcut}</th>
+            <td>
+                {description}
+                {disabled && disabledReason && (
+                    <div style={disabledNoteStyle}>{disabledReason}</div>
+                )}
+            </td>
+        </tr>
+    );
+
+    const burstDisabledReason = burstRestrictionsActive ? "Disabled for burst group photo" : null;
 
     return (
         <div
@@ -32,22 +65,59 @@ function HelpPanel({ show, onClose, isImportMode, isTrashMode, isAlbumMode }) {
                     <tr><th>Ctrl + Mouse Wheel</th><td>zoom photo</td></tr>
                     <tr><th>Ctrl + Drag</th><td>drag photo while zooming</td></tr>
                     <tr><th>Ctrl + 0</th><td>reset zoom</td></tr>
-                    <tr><th>C</th><td>toggle photo selection</td></tr>
+                    <ShortcutRow
+                        shortcut="C"
+                        description="toggle photo selection"
+                        disabled={burstRestrictionsActive}
+                        disabledReason={burstDisabledReason}
+                    />
 
                     {/* Hide metadata shortcuts in import mode and trash mode */}
                     {!isImportMode && !isTrashMode && (
                         <>
-                            <tr><th>S</th><td>increase star</td></tr>
-                            <tr><th>D</th><td>decrease star</td></tr>
-                            <tr><th>F</th><td>favorite (select + 5 stars)</td></tr>
-                            <tr><th>Del</th><td>{isAlbumMode ? "remove from album" : "move to trash can"}</td></tr>
-                            {isAlbumMode && <tr><th>Ctrl + Del</th><td>delete file permanently</td></tr>}
+                            <ShortcutRow
+                                shortcut="S"
+                                description="increase star"
+                                disabled={burstRestrictionsActive}
+                                disabledReason={burstDisabledReason}
+                            />
+                            <ShortcutRow
+                                shortcut="D"
+                                description="decrease star"
+                                disabled={burstRestrictionsActive}
+                                disabledReason={burstDisabledReason}
+                            />
+                            <ShortcutRow
+                                shortcut="F"
+                                description="favorite (select + 5 stars)"
+                                disabled={burstRestrictionsActive}
+                                disabledReason={burstDisabledReason}
+                            />
+                            <ShortcutRow
+                                shortcut="Del"
+                                description={isAlbumMode ? "remove from album" : "move to trash can"}
+                                disabled={burstRestrictionsActive}
+                                disabledReason={burstDisabledReason}
+                            />
+                            {isAlbumMode && (
+                                <ShortcutRow
+                                    shortcut="Ctrl + Del"
+                                    description="delete file permanently"
+                                    disabled={burstRestrictionsActive}
+                                    disabledReason={burstDisabledReason}
+                                />
+                            )}
                         </>
                     )}
 
                     {/* Trash mode specific shortcuts */}
                     {isTrashMode && (
-                        <tr><th>Del</th><td>permanently delete</td></tr>
+                        <ShortcutRow
+                            shortcut="Del"
+                            description="permanently delete"
+                            disabled={burstRestrictionsActive}
+                            disabledReason={burstDisabledReason}
+                        />
                     )}
 
                     <tr><th>I</th><td>toggle photo info</td></tr>
