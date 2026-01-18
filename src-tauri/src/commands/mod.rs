@@ -5,6 +5,7 @@
 
 // Re-export all command modules
 pub mod album_commands;
+pub mod burst_group_commands;
 pub mod collection_commands;
 pub mod config_commands;
 pub mod database_commands;
@@ -24,6 +25,7 @@ pub mod utility_commands;
 
 // Re-export all commands for convenient access
 pub use album_commands::*;
+pub use burst_group_commands::*;
 pub use collection_commands::*;
 pub use config_commands::*;
 pub use database_commands::*;

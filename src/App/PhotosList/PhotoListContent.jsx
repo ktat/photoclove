@@ -12,6 +12,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { VIEW_MODES } from "../../constants/viewModes.js";
+import { useUI } from "../../context/UIContext.jsx";
 import ListViewHeader from "./ListViewHeader.jsx";
 import GenericListView from "./GenericListView.jsx";
 import TagCloudView from "./TagCloudView.jsx";
@@ -61,6 +62,9 @@ function PhotoListContent({
     renderFilterClearingUI,
     filterButtonRef,
 }) {
+    // Get burst mode from UI context
+    const { burstModeEnabled } = useUI();
+
     // Destructure from state groups
     const { viewModeObj, mode: viewMode, currentDate } = viewState;
 
@@ -125,6 +129,8 @@ function PhotoListContent({
     const {
         addSelection,
         displayPhoto,
+        openBurstGroup,
+        goBackFromBurstGroup,
         loadMorePhotos: handleInfiniteScroll,
         handleAlbumSelection,
         handleTagSelection,
@@ -245,6 +251,7 @@ function PhotoListContent({
                                     searchQuery={searchQuery}
                                     toggleAlbumListMode={toggleAlbumListMode}
                                     openTagsList={openTagsList}
+                                    goBackFromBurstGroup={goBackFromBurstGroup}
                                     isLimitedByConfig={isLimitedByConfig}
                                 />
                                 <PhotosToolbar
@@ -278,6 +285,9 @@ function PhotoListContent({
                                 photoSelectionDict={photoSelectionDict}
                                 onAddSelection={addSelection}
                                 onDisplayPhoto={displayPhoto}
+                                onOpenBurstGroup={openBurstGroup}
+                                isInBurstGroupMode={viewModeObj?.isInBurstGroupMode()}
+                                burstModeEnabled={burstModeEnabled}
                                 starFilter={viewModeObj.isImportMode() ? 0 : starFilter}
                                 hasCommentFilter={viewModeObj.isImportMode() ? false : hasCommentFilter}
                                 hasTagFilter={viewModeObj.isImportMode() ? false : hasTagFilter}

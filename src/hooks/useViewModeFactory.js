@@ -15,6 +15,7 @@ import { logger } from '../services/LoggerService.js';
  * @param {string} options.currentAlbumName - Current album name
  * @param {string} options.currentTagId - Current tag ID
  * @param {string} options.currentTagName - Current tag name
+ * @param {string} options.currentBurstGroupId - Current burst group ID
  * @param {string} options.searchInitialQuery - Initial search query
  * @param {string} options.currentDate - Current date
  * @returns {Object} ViewMode object and mode flags
@@ -25,6 +26,7 @@ export function useViewModeFactory({
     currentAlbumName,
     currentTagId,
     currentTagName,
+    currentBurstGroupId,
     searchInitialQuery,
     currentDate
 }) {
@@ -36,6 +38,7 @@ export function useViewModeFactory({
             viewMode: safeViewMode,
             albumId: currentAlbumId,
             tagId: currentTagId,
+            burstGroupId: currentBurstGroupId,
             date: currentDate
         });
 
@@ -45,6 +48,7 @@ export function useViewModeFactory({
                 albumName: currentAlbumName,
                 tagId: currentTagId,
                 tagName: currentTagName,
+                burstGroupId: currentBurstGroupId,
                 searchQuery: searchInitialQuery,
                 date: currentDate
             });
@@ -56,7 +60,7 @@ export function useViewModeFactory({
             // Fallback to HOME mode
             return new ViewMode(VIEW_MODES.HOME, {});
         }
-    }, [viewMode, currentAlbumId, currentAlbumName, currentTagId, currentTagName, searchInitialQuery, currentDate]);
+    }, [viewMode, currentAlbumId, currentAlbumName, currentTagId, currentTagName, currentBurstGroupId, searchInitialQuery, currentDate]);
 
     // Compute mode flags
     const modeFlags = useMemo(() => ({

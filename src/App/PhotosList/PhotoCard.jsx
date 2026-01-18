@@ -19,10 +19,16 @@ function PhotoCard({
     isSelected,
     onAddSelection,
     onDisplayPhoto,
+    onOpenBurstGroup,
+    isInBurstGroupMode = false,
+    burstModeEnabled = false,
     setShowSideMenu,
     importState,
     thumbnailOrientationCorrection = false
 }) {
+    // Check if this photo is a burst representative (has badge) and selection should be disabled
+    const isBurstRepresentative = photo.burst_group_id && photo.burst_count > 1;
+    const selectionDisabled = burstModeEnabled && isBurstRepresentative && !isInBurstGroupMode;
     const image_for_not_found = "/img_error.png";
 
     // Helper function to parse CSS style string
@@ -421,6 +427,23 @@ function PhotoCard({
                         )}
                     </div>
                 )}
+                {/* Burst group badge - shows count of photos in burst group (hidden in IN_BURST_GROUP mode) */}
+                {photo.burst_group_id && photo.burst_count > 1 && !isInBurstGroupMode && (
+                    <div
+                        className={styles.burstBadge}
+                        title={`Burst group: ${photo.burst_count} photos - Click to view all`}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (onOpenBurstGroup) {
+                                onOpenBurstGroup(photo.burst_group_id);
+                            }
+                        }}
+                        style={{ cursor: 'pointer' }}
+                    >
+                        +{photo.burst_count - 1}
+                    </div>
+                )}
             </div>
 
             {/* Photo actions menu - using global CSS for backward compatibility */}
@@ -429,11 +452,14 @@ function PhotoCard({
                     type="checkbox"
                     id={"photo-checkbox-" + index}
                     checked={isSelected}
+                    disabled={selectionDisabled}
                     onChange={(e) => onAddSelection(e.target.checked, photo.originalPath)}
+                    title={selectionDisabled ? "Cannot select burst group representative. Open burst group to select individual photos." : ""}
                 />
                 <label
-                    className="checkbox-photo checkbox hover"
+                    className={`checkbox-photo checkbox hover ${selectionDisabled ? 'disabled' : ''}`}
                     htmlFor={"photo-checkbox-" + index}
+                    style={selectionDisabled ? { opacity: 0.3, cursor: 'not-allowed' } : {}}
                 ></label>
                 <a href="#" onClick={() => {
                     onDisplayPhoto(photo.originalPath, index);

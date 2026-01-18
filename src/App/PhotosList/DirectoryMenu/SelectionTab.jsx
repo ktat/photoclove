@@ -108,6 +108,14 @@ function SelectionTab({
                                                 {/* Tag operations */}
                                                 {viewModeObj?.showAddTags() && <option value="addTags">🏷️ Add Tags</option>}
 
+                                                {/* Burst group operations */}
+                                                {viewModeObj?.showCreateBurstGroup() && photoSelection.length >= 2 && (
+                                                    <option value="createBurstGroup">📸 Create Burst Group</option>
+                                                )}
+                                                {viewModeObj?.showRemoveFromBurstGroup() && (
+                                                    <option value="removeFromBurstGroup">📤 Remove from Burst Group</option>
+                                                )}
+
                                                 {/* Startup image operation */}
                                                 <option value="addToStartupImages">🚀 Add to Startup Images</option>
                                             </>

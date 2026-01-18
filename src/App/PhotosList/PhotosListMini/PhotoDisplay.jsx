@@ -477,7 +477,7 @@ function PhotoDisplay(props) {
                 <div id="imageWrapper" style={{ overflow: 'auto', alignItems: 'center', justifyContent: 'center', maxWidth: '100%', maxHeight: '100%' }}>
                     <img id="photoImgTag" className={photoDisplayImgClass + (isLoadingFullImage ? " loading-thumbnail" : "")}
                         loading="eager"
-                        onDoubleClick={(e) => props.togglePhotoSelected()}
+                        onDoubleClick={(e) => props.togglePhotoSelected(props.burstRestrictionsActive)}
                         onError={(e) => {
                             // Only handle error if not already showing error image
                             if (e.target.src.includes('/img_error.png')) {
@@ -509,6 +509,40 @@ function PhotoDisplay(props) {
                         onMouseUp={(e) => dragPhotoEnd(e)}
                         onWheel={(e) => photoScroll(e)}
                     />
+                    {/* Burst badge - shows when viewing burst representative in burst mode */}
+                    {props.burstModeEnabled && props.isBurstRepresentative && props.burstGroupId && (
+                        <div
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (props.openBurstGroup) {
+                                    // Pass current view mode and data so we can return to this photo
+                                    props.openBurstGroup(
+                                        props.burstGroupId,
+                                        props.currentViewMode,
+                                        props.currentViewModeData
+                                    );
+                                }
+                            }}
+                            style={{
+                                position: 'absolute',
+                                top: '20px',
+                                right: '20px',
+                                backgroundColor: 'var(--color-primary)',
+                                color: 'white',
+                                padding: '8px 16px',
+                                borderRadius: 'var(--radius-lg)',
+                                fontSize: 'var(--font-size-lg)',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                zIndex: 100,
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                            }}
+                            title="Click to view all photos in this burst group"
+                        >
+                            +{props.burstCount - 1} photos in group
+                        </div>
+                    )}
                 </div>
             }
         </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useUI } from '../../context/UIContext.jsx';
-import { VIEW_MODES } from '../../constants/viewModes.js';
+import { VIEW_MODES, supportsBurstGrouping } from '../../constants/viewModes.js';
 import styles from './PhotosToolbar.module.css';
 
 /**
@@ -23,8 +23,9 @@ function PhotosToolbar({
     hasActiveFilters
 }) {
     // Determine mode from viewMode
-    const { viewMode } = useUI();
+    const { viewMode, burstModeEnabled, toggleBurstMode } = useUI();
     const isImportMode = viewMode === VIEW_MODES.IMPORT;
+    const showBurstToggle = supportsBurstGrouping(viewMode);
 
     // Calculate active filter count (mode-aware)
     const activeFilterCount = isImportMode
@@ -33,9 +34,18 @@ function PhotosToolbar({
 
     return (
         <div className="photo-operation">
-            Icon:<select 
-                name="icon_size" 
-                value={iconSize} 
+            {showBurstToggle && (
+                <button
+                    className={burstModeEnabled ? styles.burstButtonActive : styles.burstButton}
+                    onClick={toggleBurstMode}
+                    title={burstModeEnabled ? "Show all photos" : "Group burst photos"}
+                >
+                    {burstModeEnabled ? "Burst ON" : "Burst"}
+                </button>
+            )}
+            Icon:<select
+                name="icon_size"
+                value={iconSize}
                 onChange={(e) => setIconSize(parseInt(e.target.value))}
             >
                 <option value={50}>small</option>

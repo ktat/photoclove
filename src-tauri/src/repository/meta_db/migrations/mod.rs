@@ -34,6 +34,11 @@ const MIGRATIONS: &[Migration] = &[
         name: "create_recovery_queue",
         sql: include_str!("005_create_recovery_queue.sql"),
     },
+    Migration {
+        version: 6,
+        name: "create_burst_groups",
+        sql: include_str!("006_create_burst_groups.sql"),
+    },
 ];
 
 /// Initialize the migrations table
@@ -92,6 +97,46 @@ pub fn run_migrations(conn: &Connection) -> Result<()> {
             mark_migration_applied(conn, migration.version, migration.name)?;
             log::info!(target: "migrations", "migration_applied; version={}; name={}", migration.version, migration.name);
         }
+    }
+
+    // Add burst_group_id column if it doesn't exist
+    ensure_burst_group_id_column(conn)?;
+
+    Ok(())
+}
+
+/// Ensure burst_group_id column exists in photo_metadata table
+fn ensure_burst_group_id_column(conn: &Connection) -> Result<()> {
+    // Check if column exists
+    let has_burst_group_id = conn
+        .prepare("PRAGMA table_info(photo_metadata)")
+        .and_then(|mut stmt| {
+            let rows = stmt.query_map([], |row| {
+                let column_name: String = row.get(1)?;
+                Ok(column_name)
+            })?;
+            for row in rows {
+                if let Ok(name) = row {
+                    if name == "burst_group_id" {
+                        return Ok(true);
+                    }
+                }
+            }
+            Ok(false)
+        })
+        .unwrap_or(false);
+
+    if !has_burst_group_id {
+        log::info!(target: "migrations", "adding_burst_group_id_column");
+        conn.execute(
+            "ALTER TABLE photo_metadata ADD COLUMN burst_group_id TEXT",
+            [],
+        )?;
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_burst_group_id ON photo_metadata(burst_group_id)",
+            [],
+        )?;
+        log::info!(target: "migrations", "burst_group_id_column_added");
     }
 
     Ok(())

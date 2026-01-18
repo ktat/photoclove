@@ -20,6 +20,8 @@ export class Photo {
         this.tags = data.tags || []; // Array of tag objects: [{id, name, color}]
         this.created_at = data.created_at || ''; // File creation time from backend
         this.meta_data = data.meta_data || null; // EXIF data including orientation
+        this.burst_group_id = data.burst_group_id || null; // Burst group ID for grouped photos
+        this.burst_count = data.burst_count || null; // Number of photos in burst group
 
         // State flags
         this.inTrashBin = data.inTrashBin || false;
@@ -273,6 +275,8 @@ export class Photo {
             albumId: this.albumId,
             import_source: this.import_source,
             meta_data: this.meta_data, // EXIF data including orientation
+            burst_group_id: this.burst_group_id,
+            burst_count: this.burst_count,
             // Store config data needed for path generation
             configData: this.config ? {
                 thumbnail_store: this.config.thumbnail_store,
@@ -364,7 +368,9 @@ export class Photo {
             inTrashBin: isFromTrash,
             inAlbum: false,
             albumId: null,
-            meta_data: backendData.meta_data || null // EXIF data including orientation
+            meta_data: backendData.meta_data || null, // EXIF data including orientation
+            burst_group_id: backendData.burst_group_id || null,
+            burst_count: backendData.burst_count || null
         };
 
         const newPhoto = new Photo(data, config);
@@ -416,7 +422,9 @@ export class Photo {
             inTrashBin: false,
             inAlbum: true,
             albumId: albumId,
-            meta_data: albumPhotoData.meta_data || null // EXIF data including orientation
+            meta_data: albumPhotoData.meta_data || null, // EXIF data including orientation
+            burst_group_id: albumPhotoData.burst_group_id || null,
+            burst_count: albumPhotoData.burst_count || null
         };
         return new Photo(data, config);
     }
@@ -448,7 +456,9 @@ export class Photo {
             inAlbum: jsonData.inAlbum || false,
             albumId: jsonData.albumId || null,
             import_source: jsonData.import_source || false,
-            meta_data: jsonData.meta_data || null // EXIF data including orientation
+            meta_data: jsonData.meta_data || null, // EXIF data including orientation
+            burst_group_id: jsonData.burst_group_id || null,
+            burst_count: jsonData.burst_count || null
         };
 
         // Restore config from stored configData

@@ -32,6 +32,8 @@ pub struct Photo {
     pub star: Option<i32>,
     pub comment: Option<String>,
     pub tags: Option<Vec<PhotoTag>>,
+    pub burst_group_id: Option<String>,
+    pub burst_count: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -69,6 +71,8 @@ impl Photo {
             star: None,
             comment: None,
             tags: None,
+            burst_group_id: None,
+            burst_count: None,
         }
     }
 
@@ -202,6 +206,14 @@ impl Photo {
     #[allow(dead_code)]
     pub fn set_tags(&mut self, tags: Vec<PhotoTag>) {
         self.tags = Some(tags);
+    }
+
+    pub fn set_burst_group_id(&mut self, burst_group_id: Option<String>) {
+        self.burst_group_id = burst_group_id;
+    }
+
+    pub fn set_burst_count(&mut self, burst_count: u32) {
+        self.burst_count = Some(burst_count);
     }
 
     pub fn set_tags_from_string(&mut self, tags_string: Option<String>) {

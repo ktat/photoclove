@@ -17,7 +17,9 @@ export const VIEW_MODES = {
   IMPORT: 'import',
   PREFERENCES: 'preferences',
   JOB_QUEUE: 'job_queue',
-  LOGIN: 'login'
+  LOGIN: 'login',
+  // Burst grouping mode - shows all photos within a burst group
+  IN_BURST_GROUP: 'in_burst_group'
 };
 
 // Helper functions for common mode checks
@@ -28,7 +30,17 @@ export const isPhotoViewingMode = (mode) => {
     VIEW_MODES.SEARCH,
     VIEW_MODES.ALBUM,
     VIEW_MODES.TAG,
-    VIEW_MODES.TRASH
+    VIEW_MODES.TRASH,
+    VIEW_MODES.IN_BURST_GROUP
+  ].includes(mode);
+};
+
+// Modes that support burst grouping display
+export const supportsBurstGrouping = (mode) => {
+  return [
+    VIEW_MODES.DATE,
+    VIEW_MODES.ALBUM,
+    VIEW_MODES.TAG
   ].includes(mode);
 };
 

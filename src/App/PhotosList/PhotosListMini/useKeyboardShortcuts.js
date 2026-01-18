@@ -31,6 +31,7 @@ import { logger } from '../../../services/LoggerService.js';
  * @param {boolean} state.showSideMenu - Show side menu flag
  * @param {boolean} state.showHelp - Show help flag
  * @param {boolean} state.photoZoomReady - Photo zoom ready flag
+ * @param {boolean} state.burstRestrictionsActive - Whether burst mode restrictions are active for current photo
  * @returns {Object} Keyboard navigation handlers
  */
 export function useKeyboardShortcuts(handlers, state) {
@@ -40,7 +41,7 @@ export function useKeyboardShortcuts(handlers, state) {
 
     const photoNavigation = useCallback((e) => {
         const f = state.currentPhotoPath;
-        const { isImportMode, isTrashMode, isAlbumMode } = state;
+        const { isImportMode, isTrashMode, isAlbumMode, burstRestrictionsActive } = state;
 
         if (e.keyCode === 39) { // right arrow
             e.preventDefault();
@@ -55,23 +56,41 @@ export function useKeyboardShortcuts(handlers, state) {
             e.preventDefault();
             handlers.setPhotosListMiniClosed(true);
         } else if (e.keyCode === 67) { // c - choose as selected
-            handlers.togglePhotoSelected();
+            // Disable for burst representatives when burst mode is ON
+            if (burstRestrictionsActive) {
+                logger.info('useKeyboardShortcuts', 'selection_blocked', 'Selection blocked for burst representative', {
+                    photoPath: f,
+                    reason: 'burst_mode_active'
+                });
+                // Show notification via togglePhotoSelected with blocked flag
+                handlers.togglePhotoSelected(true); // Pass true to indicate blocked
+            } else {
+                handlers.togglePhotoSelected();
+            }
         } else if (e.keyCode === 83) { // s - increase star
-            // Disable in import and trash modes (DB operation / read-only)
-            if (!isImportMode && !isTrashMode) {
+            // Disable in import, trash modes, and for burst representatives
+            if (!isImportMode && !isTrashMode && !burstRestrictionsActive) {
                 handlers.changeStar(true);
+            } else if (burstRestrictionsActive) {
+                logger.info('useKeyboardShortcuts', 'star_blocked', 'Star operation blocked for burst representative', {
+                    photoPath: f
+                });
             }
         } else if (e.keyCode === 68) { // d - decrease star
-            // Disable in import and trash modes (DB operation / read-only)
-            if (!isImportMode && !isTrashMode) {
+            // Disable in import, trash modes, and for burst representatives
+            if (!isImportMode && !isTrashMode && !burstRestrictionsActive) {
                 handlers.changeStar(false);
             }
         } else if (e.keyCode === 73) { // i - toggle show photo info
             handlers.setShowSideMenu(!state.showSideMenu);
         } else if (e.keyCode === 70) { // f - favorite (select + star)
-            // Disable in import and trash modes (DB operation / read-only)
-            if (!isImportMode && !isTrashMode) {
+            // Disable in import, trash modes, and for burst representatives
+            if (!isImportMode && !isTrashMode && !burstRestrictionsActive) {
                 handlers.favoritePhoto();
+            } else if (burstRestrictionsActive) {
+                logger.info('useKeyboardShortcuts', 'favorite_blocked', 'Favorite operation blocked for burst representative', {
+                    photoPath: f
+                });
             }
         } else if (e.keyCode === 191) { // ? - show help
             handlers.setShowHelp(!state.showHelp);

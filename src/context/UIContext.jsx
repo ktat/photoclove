@@ -25,6 +25,9 @@ export const UIProvider = ({ children }) => {
   const [welcomeImage, setWelcomeImage] = useState(WelcomeImage());
   const [useCount, setUseCount] = useState(0);
 
+  // Burst grouping mode state
+  const [burstModeEnabled, setBurstModeEnabled] = useState(false);
+
   const addFooterMessage = useCallback((k, v, withDialog, deleteAfter) => {
     setFooterMessages(prev => ({
       ...prev,
@@ -83,6 +86,15 @@ export const UIProvider = ({ children }) => {
     viewMode.showRecentPhotos();
   }, [viewMode]);
 
+  // Toggle burst grouping mode
+  const toggleBurstMode = useCallback(() => {
+    setBurstModeEnabled(prev => {
+      const newValue = !prev;
+      logger.info('UIContext', 'toggle_burst_mode', `Burst mode ${newValue ? 'enabled' : 'disabled'}`);
+      return newValue;
+    });
+  }, []);
+
   const value = {
     // View mode state (from state machine)
     ...viewMode,
@@ -94,7 +106,11 @@ export const UIProvider = ({ children }) => {
     footerMessages,
     welcomeImage,
     useCount,
-    
+
+    // Burst grouping state
+    burstModeEnabled,
+    toggleBurstMode,
+
     // Enhanced navigation actions
     toggleHome,
     toggleAlbumListMode,

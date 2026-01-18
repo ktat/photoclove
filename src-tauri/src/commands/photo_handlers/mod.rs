@@ -4,6 +4,7 @@
 //! extracted from the main photo_commands.rs to improve maintainability.
 
 pub mod album;
+pub mod burst;
 pub mod collections;
 pub mod date;
 pub mod navigation;

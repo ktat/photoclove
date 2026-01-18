@@ -15,12 +15,19 @@ import styles from './PhotoOption.module.css';
 
 function PhotoOption(props) {
     const [activeTab, setActiveTab] = useState("info");
-    const { viewMode, currentAlbumId } = useUI();
+    const { viewMode, currentAlbumId, burstModeEnabled } = useUI();
 
     // Determine modes from viewMode
     const isAlbumMode = viewMode === VIEW_MODES.ALBUM && currentAlbumId;
     const isTrashMode = viewMode === VIEW_MODES.TRASH;
     const isImportMode = viewMode === VIEW_MODES.IMPORT;
+    const isInBurstGroupMode = viewMode === VIEW_MODES.IN_BURST_GROUP;
+
+    // Check if current photo is a burst representative (has burst badge)
+    // Editor and Tags are disabled for burst representatives when burst mode is ON
+    const currentPhoto = props.currentPhoto;
+    const isBurstRepresentative = currentPhoto?.burst_group_id && currentPhoto?.burst_count > 1;
+    const burstRestrictionsActive = burstModeEnabled && isBurstRepresentative && !isInBurstGroupMode;
 
     // Tutorial state (Feature #152/#153)
     const [showTutorial, setShowTutorial] = useState(false);
@@ -177,23 +184,33 @@ function PhotoOption(props) {
                     <span className={styles['vertical-text']}>Info</span>
                 </button>
 
-                {/* Hide Editor tab in import and trash modes */}
+                {/* Hide Editor tab in import and trash modes, disable for burst representatives */}
                 {!isImportMode && !isTrashMode && (
                     <button
-                        className={classNames(styles['vertical-tab-button'], { [styles.active]: activeTab === "editor" && props.showSideMenu })}
-                        onClick={() => handleTabClick("editor")}
-                        title="Photo Editor"
+                        className={classNames(styles['vertical-tab-button'], {
+                            [styles.active]: activeTab === "editor" && props.showSideMenu,
+                            [styles.disabled]: burstRestrictionsActive
+                        })}
+                        onClick={() => !burstRestrictionsActive && handleTabClick("editor")}
+                        title={burstRestrictionsActive ? "Editor disabled for burst group photo" : "Photo Editor"}
+                        disabled={burstRestrictionsActive}
+                        style={burstRestrictionsActive ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
                     >
                         <span className={styles['vertical-text']}>Editor</span>
                     </button>
                 )}
 
-                {/* Hide Tags tab in import and trash modes */}
+                {/* Hide Tags tab in import and trash modes, disable for burst representatives */}
                 {!isImportMode && !isTrashMode && (
                     <button
-                        className={classNames(styles['vertical-tab-button'], { [styles.active]: activeTab === "tags" && props.showSideMenu })}
-                        onClick={() => handleTabClick("tags")}
-                        title="Photo Tags"
+                        className={classNames(styles['vertical-tab-button'], {
+                            [styles.active]: activeTab === "tags" && props.showSideMenu,
+                            [styles.disabled]: burstRestrictionsActive
+                        })}
+                        onClick={() => !burstRestrictionsActive && handleTabClick("tags")}
+                        title={burstRestrictionsActive ? "Tags disabled for burst group photo" : "Photo Tags"}
+                        disabled={burstRestrictionsActive}
+                        style={burstRestrictionsActive ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
                     >
                         <span className={styles['vertical-text']}>Tags</span>
                     </button>

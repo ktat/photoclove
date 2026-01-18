@@ -19,6 +19,7 @@ import { getTutorialContent } from "./DirectoryMenu/tutorialContent.jsx";
 import { usePhotoImport, useGooglePhotosUpload, useTrashOperations, useStartupImageOperations } from "./DirectoryMenu/photoOperations.js";
 import { useAlbumOperations, useTagOperations } from "./DirectoryMenu/collectionOperations.js";
 import { useDateOperations } from "./DirectoryMenu/dateOperations.js";
+import { useGroupOperations } from "./DirectoryMenu/groupOperations.js";
 
 function DirectoryMenu(props) {
     const { handleTauriError } = useError();
@@ -112,6 +113,15 @@ function DirectoryMenu(props) {
         saveConfigWithStartupImages: props.saveConfigWithStartupImages
     });
 
+    // Burst group operations hook
+    const { createBurstGroup, removeFromBurstGroup } = useGroupOperations({
+        photoSelection: props.photoSelection,
+        clearPhotoSelection: props.clearPhotoSelection,
+        addFooterMessage: props.addFooterMessage,
+        handleTauriError,
+        reloadPhotos: props.onPhotosRefresh
+    });
+
     // Tutorial state
     const [showTutorial, setShowTutorial] = useState(false);
     const [tutorialContent, setTutorialContent] = useState('');
@@ -199,6 +209,10 @@ function DirectoryMenu(props) {
             permanentDeleteSelected();
         } else if (selected == "addToStartupImages") {
             addToStartupImages();
+        } else if (selected == "createBurstGroup") {
+            createBurstGroup();
+        } else if (selected == "removeFromBurstGroup") {
+            removeFromBurstGroup();
         }
         e.target.value = "";
     }

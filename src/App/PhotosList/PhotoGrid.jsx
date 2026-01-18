@@ -14,6 +14,9 @@ function PhotoGrid({
     photoSelectionDict,
     onAddSelection,
     onDisplayPhoto,
+    onOpenBurstGroup,
+    isInBurstGroupMode = false,
+    burstModeEnabled = false,
     starFilter,
     hasCommentFilter,
     hasTagFilter,
@@ -72,6 +75,9 @@ function PhotoGrid({
                 photoSelectionDict={photoSelectionDict}
                 onAddSelection={onAddSelection}
                 onDisplayPhoto={onDisplayPhoto}
+                onOpenBurstGroup={onOpenBurstGroup}
+                isInBurstGroupMode={isInBurstGroupMode}
+                burstModeEnabled={burstModeEnabled}
                 setShowSideMenu={setShowSideMenu}
                 showSideMenu={showSideMenu}
                 importState={importState}

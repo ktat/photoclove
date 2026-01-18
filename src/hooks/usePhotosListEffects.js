@@ -2,7 +2,7 @@
  * usePhotosListEffects - Hook for PhotosList side effects
  */
 import { useEffect, useRef, useCallback } from 'react';
-import { VIEW_MODES } from '../constants/viewModes.js';
+import { VIEW_MODES, supportsBurstGrouping } from '../constants/viewModes.js';
 import { logger } from '../services/LoggerService.js';
 
 /**
@@ -107,6 +107,45 @@ export function useSortChangeEffect({
 }
 
 /**
+ * Hook for burst mode change effects
+ * Reloads photos when burst grouping is toggled
+ */
+export function useBurstModeChangeEffect({
+    burstModeEnabled,
+    viewModeObj,
+    appConfig,
+    loadAllPhotosBasedOnViewMode,
+    handleError
+}) {
+    const prevBurstModeEnabled = useRef(burstModeEnabled);
+
+    useEffect(() => {
+        // Skip if no change (initial render)
+        if (prevBurstModeEnabled.current === burstModeEnabled) return;
+        prevBurstModeEnabled.current = burstModeEnabled;
+
+        if (!viewModeObj || !appConfig) return;
+
+        // Only reload for modes that support burst grouping
+        if (!supportsBurstGrouping(viewModeObj.mode)) {
+            logger.debug('usePhotosListEffects', 'burst_mode_skip', 'Mode does not support burst grouping', {
+                viewMode: viewModeObj.mode
+            });
+            return;
+        }
+
+        logger.info('usePhotosListEffects', 'burst_mode_reload', 'Burst mode changed, reloading', {
+            viewMode: viewModeObj.mode,
+            burstModeEnabled
+        });
+
+        loadAllPhotosBasedOnViewMode(viewModeObj, appConfig).catch(error => {
+            handleError(error, 'Reload photos after burst mode change');
+        });
+    }, [burstModeEnabled, viewModeObj, appConfig, loadAllPhotosBasedOnViewMode, handleError]);
+}
+
+/**
  * Hook for auto-closing photo display in list modes
  */
 export function useAutoClosePhotoDisplayEffect({
@@ -183,6 +222,7 @@ export default {
     usePhotoSyncEffect,
     useSelectionTabEffect,
     useSortChangeEffect,
+    useBurstModeChangeEffect,
     useAutoClosePhotoDisplayEffect,
     useConfigAndCleanupEffect,
     useSideMenuToggleEffect,

@@ -41,6 +41,7 @@ mod albums;
 mod collections;
 mod job_queue;
 mod recovery_queue;
+mod burst_groups;
 
 #[derive(Clone)]
 pub struct SQLite {
@@ -216,10 +217,6 @@ impl SQLite {
         tags::get_tags_for_photo(self, photo_path)
     }
 
-    pub fn get_photos_with_tags(&self, tag_ids: &[i32]) -> Result<Vec<String>, String> {
-        tags::get_photos_with_tags(self, tag_ids)
-    }
-
     // ==================== Album Operations ====================
 
     pub fn get_album_photos(&self, album_id: i32) -> Result<Vec<String>, String> {
@@ -288,6 +285,17 @@ impl SQLite {
         config: Option<config::Config>,
     ) -> Result<Vec<photo::Photo>, String> {
         collections::get_collection_photos(self, collection_id, ordered, config)
+    }
+
+    /// Get photos by one or more collection IDs with unified sort order.
+    /// For multiple IDs, uses AND logic (photos must be in ALL specified collections).
+    pub fn get_photos_by_collection_ids(
+        &self,
+        collection_ids: &[i32],
+        sort_value: i32,
+        config: Option<config::Config>,
+    ) -> Result<Vec<photo::Photo>, String> {
+        collections::get_photos_by_collection_ids(self, collection_ids, sort_value, config)
     }
 
     // ==================== Job Queue Operations ====================
@@ -391,6 +399,41 @@ impl SQLite {
     pub fn get_recovery_item(&self, id: i64) -> Result<Option<crate::entity::recovery_queue::RecoveryItem>, String> {
         recovery_queue::get_item(self, id)
     }
+
+    // ==================== Burst Group Operations ====================
+
+    pub fn save_burst_group(&self, group: &crate::entity::burst_group::BurstGroup) -> Result<(), String> {
+        burst_groups::save_burst_group(self, group)
+    }
+
+    pub fn update_photo_burst_group(&self, photo_path: &str, group_id: &str) -> Result<(), String> {
+        burst_groups::update_photo_burst_group(self, photo_path, group_id)
+    }
+
+    pub fn clear_photo_burst_group(&self, photo_path: &str) -> Result<(), String> {
+        burst_groups::clear_photo_burst_group(self, photo_path)
+    }
+
+    pub fn clear_burst_group_photos(&self, group_id: &str) -> Result<usize, String> {
+        burst_groups::clear_burst_group_photos(self, group_id)
+    }
+
+    pub fn delete_burst_group(&self, group_id: &str) -> Result<(), String> {
+        burst_groups::delete_burst_group(self, group_id)
+    }
+
+    pub fn count_photos_in_group(&self, group_id: &str) -> Result<usize, String> {
+        burst_groups::count_photos_in_group(self, group_id)
+    }
+
+    pub fn get_photo_burst_group_id(&self, photo_path: &str) -> Result<Option<String>, String> {
+        burst_groups::get_photo_burst_group_id(self, photo_path)
+    }
+
+    pub fn get_photos_in_group(&self, group_id: &str) -> Result<Vec<String>, String> {
+        burst_groups::get_photos_in_group(self, group_id)
+    }
+
 }
 
 // ==================== MetaInfoDB Trait Implementation ====================
@@ -469,31 +512,7 @@ impl MetaInfoDB for SQLite {
         photo_metadata::get_recent_photos_metadata(self, limit)
     }
 
-    // Tag management trait implementations
-    fn get_all_tags(&self) -> Result<Vec<(i32, String, Option<String>)>, String> {
-        tags::get_all_tags(self)
-    }
-
-    fn get_all_tags_with_photo_count(&self) -> Result<Vec<(i32, String, Option<String>, i32)>, String> {
-        tags::get_all_tags_with_photo_count(self)
-    }
-
-    fn create_tag(&self, name: &str, color: Option<&str>) -> Result<i32, String> {
-        tags::create_tag(self, name, color)
-    }
-
-    fn delete_tag(&self, tag_id: i32) -> Result<bool, String> {
-        tags::delete_tag(self, tag_id)
-    }
-
-    fn add_tag_to_photo(&self, photo_path: &str, tag_id: i32) -> Result<(), String> {
-        tags::add_tag_to_photo(self, photo_path, tag_id)
-    }
-
-    fn remove_tag_from_photo(&self, photo_path: &str, tag_id: i32) -> Result<bool, String> {
-        tags::remove_tag_from_photo(self, photo_path, tag_id)
-    }
-
+    // Tag management trait implementations (used by tag_commands.rs)
     fn remove_all_tags_from_photo(&self, photo_path: &str) -> Result<i32, String> {
         tags::remove_all_tags_from_photo(self, photo_path)
     }
@@ -502,41 +521,7 @@ impl MetaInfoDB for SQLite {
         tags::get_tags_for_photo(self, photo_path)
     }
 
-    fn get_photos_with_tags(&self, tag_ids: &[i32]) -> Result<Vec<String>, String> {
-        tags::get_photos_with_tags(self, tag_ids)
-    }
-
-    // Album management trait implementations
-    fn get_all_albums(&self) -> Result<Vec<(i32, String, String, Option<String>, i32)>, String> {
-        albums::get_all_albums(self)
-    }
-
-    fn create_album(&self, name: &str, description: &str) -> Result<i32, String> {
-        albums::create_album(self, name, description)
-    }
-
-    fn update_album(
-        &self,
-        id: i32,
-        name: &str,
-        description: &str,
-        cover_photo_path: Option<&str>,
-    ) -> Result<bool, String> {
-        albums::update_album(self, id, name, description, cover_photo_path)
-    }
-
-    fn delete_album(&self, id: i32) -> Result<bool, String> {
-        albums::delete_album(self, id)
-    }
-
-    fn add_photo_to_album(&self, album_id: i32, photo_path: &str) -> Result<(), String> {
-        albums::add_photo_to_album(self, album_id, photo_path)
-    }
-
-    fn remove_photo_from_album(&self, album_id: i32, photo_path: &str) -> Result<bool, String> {
-        albums::remove_photo_from_album(self, album_id, photo_path)
-    }
-
+    // Album management trait implementations (used by album_commands.rs)
     fn get_album_photos(&self, album_id: i32) -> Result<Vec<String>, String> {
         albums::get_album_photos(self, album_id)
     }
@@ -602,5 +587,14 @@ impl MetaInfoDB for SQLite {
         config: Option<config::Config>,
     ) -> Result<Vec<photo::Photo>, String> {
         collections::get_collection_photos(self, collection_id, ordered, config)
+    }
+
+    fn get_photos_by_collection_ids(
+        &self,
+        collection_ids: &[i32],
+        sort_value: i32,
+        config: Option<config::Config>,
+    ) -> Result<Vec<photo::Photo>, String> {
+        collections::get_photos_by_collection_ids(self, collection_ids, sort_value, config)
     }
 }

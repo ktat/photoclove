@@ -19,6 +19,9 @@ const PhotoCell = memo(function PhotoCell({
     photoSelectionDict,
     onAddSelection,
     onDisplayPhoto,
+    onOpenBurstGroup,
+    isInBurstGroupMode,
+    burstModeEnabled,
     setShowSideMenu,
     importState,
     thumbnailOrientationCorrection
@@ -63,6 +66,9 @@ const PhotoCell = memo(function PhotoCell({
                 isSelected={photoSelectionDict[photo.originalPath] || false}
                 onAddSelection={onAddSelection}
                 onDisplayPhoto={onDisplayPhoto}
+                onOpenBurstGroup={onOpenBurstGroup}
+                isInBurstGroupMode={isInBurstGroupMode}
+                burstModeEnabled={burstModeEnabled}
                 setShowSideMenu={setShowSideMenu}
                 importState={importState}
                 thumbnailOrientationCorrection={thumbnailOrientationCorrection}
@@ -87,6 +93,9 @@ function VirtualPhotoGrid({
     photoSelectionDict,
     onAddSelection,
     onDisplayPhoto,
+    onOpenBurstGroup,
+    isInBurstGroupMode = false,
+    burstModeEnabled = false,
     setShowSideMenu,
     showSideMenu,
     importState,
@@ -238,6 +247,9 @@ function VirtualPhotoGrid({
         photoSelectionDict,
         onAddSelection,
         onDisplayPhoto,
+        onOpenBurstGroup,
+        isInBurstGroupMode,
+        burstModeEnabled,
         setShowSideMenu,
         importState,
         thumbnailOrientationCorrection
@@ -248,6 +260,9 @@ function VirtualPhotoGrid({
         photoSelectionDict,
         onAddSelection,
         onDisplayPhoto,
+        onOpenBurstGroup,
+        isInBurstGroupMode,
+        burstModeEnabled,
         setShowSideMenu,
         importState,
         thumbnailOrientationCorrection

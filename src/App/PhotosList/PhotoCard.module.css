@@ -415,3 +415,44 @@
     color: white;
     pointer-events: none;
 }
+
+/* Burst group badge - positioned at top-right of thumbnail */
+.burstBadge {
+    position: absolute;
+    top: var(--space-1);
+    right: var(--space-1);
+    background: var(--color-primary);
+    color: var(--color-text-primary);
+    padding: 2px var(--space-1);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-2xs);
+    font-weight: bold;
+    z-index: 4;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* Burst badge size adjustments */
+.size50 .burstBadge {
+    top: 1px;
+    right: 1px;
+    padding: 0 2px;
+    font-size: 8px;
+    min-width: 14px;
+}
+
+.size100 .burstBadge {
+    top: 2px;
+    right: 2px;
+    padding: 1px var(--space-1);
+    font-size: var(--font-size-2xs);
+    min-width: 16px;
+}
+
+.size300 .burstBadge {
+    top: var(--space-2);
+    right: var(--space-2);
+    padding: 2px var(--space-2);
+    font-size: var(--font-size-sm);
+    min-width: 24px;
+}

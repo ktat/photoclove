@@ -3,6 +3,7 @@
 //! This module serves as a routing layer that re-exports all entity submodules.
 //! Actual implementations are in the respective submodules.
 
+pub mod burst_group;
 pub mod config;
 pub mod google_photos;
 pub mod importer;
