@@ -197,3 +197,57 @@ pub(super) fn clear_auto_burst_groups(db: &SQLite) -> Result<(), String> {
     log::info!(target: "burst_groups", "clear_auto_burst_groups; deleted_groups={}", deleted);
     Ok(())
 }
+
+/// Clear auto burst groups for photos in a specific date.
+/// Only clears burst_group_id for photos in that date, and deletes orphaned auto groups.
+pub(super) fn clear_auto_burst_groups_in_date(db: &SQLite, date_str: &str) -> Result<(), String> {
+    let conn = db
+        .get_connection()
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    // Get auto group IDs that have photos in this date
+    let mut stmt = conn
+        .prepare(
+            "SELECT DISTINCT pm.burst_group_id FROM photo_metadata pm
+             INNER JOIN burst_groups bg ON pm.burst_group_id = bg.id
+             WHERE bg.is_manual = 0
+               AND date(pm.photo_date) = ?1
+               AND pm.burst_group_id IS NOT NULL",
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let affected_group_ids: Vec<String> = stmt
+        .query_map(params![date_str], |row| row.get(0))
+        .map_err(|e| format!("Failed to query affected groups: {}", e))?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    // Clear burst_group_id for photos in this date that are in auto groups
+    conn.execute(
+        "UPDATE photo_metadata SET burst_group_id = NULL
+         WHERE date(photo_date) = ?1
+           AND burst_group_id IN (SELECT id FROM burst_groups WHERE is_manual = 0)",
+        params![date_str],
+    )
+    .map_err(|e| format!("Failed to clear auto group photos in date: {}", e))?;
+
+    // Check each affected group and delete if empty
+    for group_id in &affected_group_ids {
+        let remaining: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM photo_metadata WHERE burst_group_id = ?1",
+                params![group_id],
+                |row| row.get(0),
+            )
+            .unwrap_or(0);
+
+        if remaining == 0 {
+            conn.execute("DELETE FROM burst_groups WHERE id = ?1", params![group_id])
+                .map_err(|e| format!("Failed to delete empty burst group: {}", e))?;
+        }
+    }
+
+    log::info!(target: "burst_groups", "clear_auto_burst_groups_in_date; date={}; affected_groups={}",
+        date_str, affected_group_ids.len());
+    Ok(())
+}

@@ -268,6 +268,7 @@ pub fn run() {
             create_burst_group,
             remove_from_burst_group,
             recalculate_grouping,
+            recalculate_grouping_in_date,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

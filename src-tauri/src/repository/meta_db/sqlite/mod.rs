@@ -442,6 +442,10 @@ impl SQLite {
         burst_groups::clear_auto_burst_groups(self)
     }
 
+    pub fn clear_auto_burst_groups_in_date(&self, date_str: &str) -> Result<(), String> {
+        burst_groups::clear_auto_burst_groups_in_date(self, date_str)
+    }
+
     pub fn get_all_photos_for_grouping(&self) -> Result<Vec<photo::Photo>, String> {
         // Get all photos with EXIF date for grouping
         let conn = self.get_connection().map_err(|e| format!("Failed to connect: {}", e))?;
@@ -469,6 +473,58 @@ impl SQLite {
             .collect::<Vec<_>>();
 
         Ok(photos)
+    }
+
+    pub fn get_photos_for_grouping_in_date(&self, date_str: &str) -> Result<Vec<photo::Photo>, String> {
+        // Get photos with EXIF date for grouping in a specific date
+        let conn = self.get_connection().map_err(|e| format!("Failed to connect: {}", e))?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT path, file_name, size, created, photo_date, star,
+                        exif_make, exif_model, exif_date_time_original, exif_f_number,
+                        exif_iso, exif_exposure_time, exif_focal_length, exif_lens,
+                        exif_software, exif_gps_latitude, exif_gps_longitude,
+                        exif_image_width, exif_image_height, exif_shutter_speed_value,
+                        comment, delete_flg, burst_group_id, exif_orientation
+                 FROM photo_metadata
+                 WHERE (delete_flg = 0 OR delete_flg IS NULL)
+                   AND exif_date_time_original IS NOT NULL
+                   AND date(photo_date) = ?1
+                 ORDER BY exif_date_time_original ASC",
+            )
+            .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+        let photos = stmt
+            .query_map(rusqlite::params![date_str], |row| {
+                Ok(utils::row_to_photo(row))
+            })
+            .map_err(|e| format!("Failed to query photos: {}", e))?
+            .filter_map(|r| r.ok())
+            .collect::<Vec<_>>();
+
+        Ok(photos)
+    }
+
+    pub fn get_manual_group_photo_paths_in_date(&self, date_str: &str) -> Result<std::collections::HashSet<String>, String> {
+        let conn = self.get_connection().map_err(|e| format!("Failed to connect: {}", e))?;
+
+        let mut stmt = conn
+            .prepare(
+                "SELECT pm.path FROM photo_metadata pm
+                 INNER JOIN burst_groups bg ON pm.burst_group_id = bg.id
+                 WHERE bg.is_manual = 1
+                   AND (pm.delete_flg = 0 OR pm.delete_flg IS NULL)
+                   AND date(pm.photo_date) = ?1",
+            )
+            .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+        let paths = stmt
+            .query_map(rusqlite::params![date_str], |row| row.get(0))
+            .map_err(|e| format!("Failed to query manual group photos: {}", e))?
+            .collect::<Result<std::collections::HashSet<String>, _>>()
+            .map_err(|e| format!("Failed to collect photo paths: {}", e))?;
+
+        Ok(paths)
     }
 
 }

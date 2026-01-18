@@ -8,7 +8,9 @@
 use crate::app_state::AppState;
 use crate::domain_service::job_queue_service::submission::submit_recalculate_grouping_job;
 use crate::entity::burst_group::BurstGroup;
+use crate::entity::photo::Photo;
 use crate::repository::meta_db::sqlite::SQLite;
+use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -185,4 +187,150 @@ pub async fn recalculate_grouping(
     );
 
     Ok(job_unit_id)
+}
+
+/// Recalculates auto burst groups for a specific date.
+/// Manual groups (is_manual=true) are preserved.
+/// This operation runs synchronously since it only processes one date's worth of photos.
+///
+/// # Arguments
+/// * `date_str` - Date in YYYY-MM-DD format
+/// * `threshold_seconds` - Time threshold in seconds for grouping consecutive shots
+/// * `min_group_size` - Minimum number of photos required to form a group
+/// * `state` - Application state
+///
+/// # Returns
+/// * `Ok(u32)` - Number of new groups created
+/// * `Err(String)` - Error message if operation fails
+#[tauri::command]
+pub async fn recalculate_grouping_in_date(
+    date_str: String,
+    threshold_seconds: u32,
+    min_group_size: u32,
+    state: tauri::State<'_, AppState>,
+) -> Result<u32, String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(
+        target: "burst_groups",
+        "recalculate_grouping_in_date; correlation_id={}; date={}; threshold_seconds={}; min_group_size={}",
+        correlation_id,
+        date_str,
+        threshold_seconds,
+        min_group_size
+    );
+
+    // Step 1: Get manual group photos for this date to preserve them
+    let manual_group_photos = meta_db.get_manual_group_photo_paths_in_date(&date_str)?;
+    log::debug!(
+        target: "burst_groups",
+        "preserve_manual; correlation_id={}; manual_photo_count={}",
+        correlation_id,
+        manual_group_photos.len()
+    );
+
+    // Step 2: Clear auto burst groups for this date
+    meta_db.clear_auto_burst_groups_in_date(&date_str)?;
+
+    // Step 3: Get photos for grouping in this date (excluding manual group photos)
+    let all_photos = meta_db.get_photos_for_grouping_in_date(&date_str)?;
+    let photos_to_group: Vec<Photo> = all_photos
+        .into_iter()
+        .filter(|p| !manual_group_photos.contains(&p.file.path))
+        .collect();
+
+    let total_photos = photos_to_group.len();
+    log::debug!(
+        target: "burst_groups",
+        "photos_to_process; correlation_id={}; total={}",
+        correlation_id,
+        total_photos
+    );
+
+    // Step 4: Group photos by camera (make + model)
+    let mut photos_by_camera: HashMap<String, Vec<&Photo>> = HashMap::new();
+    for photo in &photos_to_group {
+        let make = if photo.meta_data.make.is_empty() {
+            "unknown"
+        } else {
+            &photo.meta_data.make
+        };
+        let model = if photo.meta_data.model.is_empty() {
+            "unknown"
+        } else {
+            &photo.meta_data.model
+        };
+        let camera_key = format!("{}_{}", make, model);
+        photos_by_camera.entry(camera_key).or_default().push(photo);
+    }
+
+    // Step 5: For each camera, sort by time and group consecutive shots
+    let threshold_ms = (threshold_seconds as i64) * 1000;
+    let min_size = min_group_size as usize;
+    let mut new_groups = 0u32;
+
+    for (_camera_key, mut camera_photos) in photos_by_camera {
+        // Sort by datetime
+        camera_photos.sort_by(|a, b| {
+            let a_time = &a.meta_data.date_time_original;
+            let b_time = &b.meta_data.date_time_original;
+            a_time.cmp(b_time)
+        });
+
+        // Group consecutive shots within threshold
+        let mut current_group: Vec<&Photo> = Vec::new();
+        let mut last_time_ms: Option<i64> = None;
+
+        for photo in camera_photos {
+            let photo_time_ms = photo.get_datetime_ms();
+
+            let should_start_new_group = match (last_time_ms, photo_time_ms) {
+                (Some(last), Some(current)) => (current - last).abs() > threshold_ms,
+                _ => true,
+            };
+
+            if should_start_new_group {
+                // Save previous group if it meets minimum size
+                if current_group.len() >= min_size {
+                    let group_id = format!("auto_{}", Uuid::new_v4());
+                    let group = BurstGroup::new_auto(group_id.clone());
+                    meta_db.save_burst_group(&group)?;
+
+                    for group_photo in &current_group {
+                        meta_db.update_photo_burst_group(&group_photo.file.path, &group_id)?;
+                    }
+                    new_groups += 1;
+                }
+                current_group.clear();
+            }
+
+            current_group.push(photo);
+            last_time_ms = photo_time_ms;
+        }
+
+        // Don't forget the last group
+        if current_group.len() >= min_size {
+            let group_id = format!("auto_{}", Uuid::new_v4());
+            let group = BurstGroup::new_auto(group_id.clone());
+            meta_db.save_burst_group(&group)?;
+
+            for group_photo in &current_group {
+                meta_db.update_photo_burst_group(&group_photo.file.path, &group_id)?;
+            }
+            new_groups += 1;
+        }
+    }
+
+    log::info!(
+        target: "burst_groups",
+        "recalculate_grouping_in_date_complete; correlation_id={}; date={}; new_groups={}; photos_processed={}",
+        correlation_id,
+        date_str,
+        new_groups,
+        total_photos
+    );
+
+    Ok(new_groups)
 }
