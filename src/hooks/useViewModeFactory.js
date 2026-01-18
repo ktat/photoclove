@@ -18,6 +18,8 @@ import { logger } from '../services/LoggerService.js';
  * @param {string} options.currentBurstGroupId - Current burst group ID
  * @param {string} options.searchInitialQuery - Initial search query
  * @param {string} options.currentDate - Current date
+ * @param {string} options.burstReturnMode - Return mode for burst group navigation
+ * @param {Object} options.burstReturnModeData - Return mode data for burst group navigation
  * @returns {Object} ViewMode object and mode flags
  */
 export function useViewModeFactory({
@@ -28,7 +30,9 @@ export function useViewModeFactory({
     currentTagName,
     currentBurstGroupId,
     searchInitialQuery,
-    currentDate
+    currentDate,
+    burstReturnMode,
+    burstReturnModeData
 }) {
     const viewModeObj = useMemo(() => {
         // Defensive programming: ensure viewMode is valid
@@ -43,7 +47,8 @@ export function useViewModeFactory({
         });
 
         try {
-            return new ViewMode(safeViewMode, {
+            // Build data object - include return mode data for burst group mode
+            const data = {
                 albumId: currentAlbumId,
                 albumName: currentAlbumName,
                 tagId: currentTagId,
@@ -51,7 +56,15 @@ export function useViewModeFactory({
                 burstGroupId: currentBurstGroupId,
                 searchQuery: searchInitialQuery,
                 date: currentDate
-            });
+            };
+
+            // Add burst group return mode data when in burst group mode
+            if (safeViewMode === VIEW_MODES.IN_BURST_GROUP && burstReturnMode) {
+                data.returnMode = burstReturnMode;
+                data.returnModeData = burstReturnModeData;
+            }
+
+            return new ViewMode(safeViewMode, data);
         } catch (error) {
             logger.error('useViewModeFactory', 'creation_error', 'Failed to create ViewMode', {
                 viewMode: safeViewMode,
@@ -60,7 +73,7 @@ export function useViewModeFactory({
             // Fallback to HOME mode
             return new ViewMode(VIEW_MODES.HOME, {});
         }
-    }, [viewMode, currentAlbumId, currentAlbumName, currentTagId, currentTagName, currentBurstGroupId, searchInitialQuery, currentDate]);
+    }, [viewMode, currentAlbumId, currentAlbumName, currentTagId, currentTagName, currentBurstGroupId, searchInitialQuery, currentDate, burstReturnMode, burstReturnModeData]);
 
     // Compute mode flags
     const modeFlags = useMemo(() => ({

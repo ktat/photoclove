@@ -86,7 +86,8 @@ function PhotosList({
     const {
         toggleSearchPage, searchInitialQuery, currentAlbumId, currentTagId,
         viewMode, openAlbum, toggleAlbumListMode, openTag, openTagsList, toggleHome,
-        openBurstGroup, goBackFromBurstGroup, currentBurstGroupId, burstModeEnabled
+        openBurstGroup, goBackFromBurstGroup, currentBurstGroupId, burstModeEnabled,
+        burstReturnMode, burstReturnModeData
     } = useUI();
 
     const { handleTauriError, addError } = useError();
@@ -147,7 +148,8 @@ function PhotosList({
 
     // Create ViewMode object using factory hook
     const { viewModeObj, isSearchMode, isAlbumMode, isAlbumListMode, isTagMode, isTagListMode, isTrashMode } = useViewModeFactory({
-        viewMode, currentAlbumId, currentAlbumName, currentTagId, currentTagName, currentBurstGroupId, searchInitialQuery, currentDate
+        viewMode, currentAlbumId, currentAlbumName, currentTagId, currentTagName, currentBurstGroupId, searchInitialQuery, currentDate,
+        burstReturnMode, burstReturnModeData
     });
 
     // View mode change effect
@@ -188,7 +190,8 @@ function PhotosList({
         updateAlbumsList, setFilteredAlbums, updateAlbumPhotos, setPhotosList,
         setTagsList, setFilteredTags, setTagPhotos, setTrashPhotos, setCurrentAlbumName,
         openAlbum, setFilterOptions, setIsFilterOptionsLoading,
-        filterOptions, isFilterOptionsLoading, appConfig
+        filterOptions, isFilterOptionsLoading, appConfig,
+        burstModeEnabled
     });
 
     // Filter state computations

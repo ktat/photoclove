@@ -10,7 +10,7 @@
  * @see src/types/PageState.js for type definitions
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { VIEW_MODES } from "../../constants/viewModes.js";
 import { useUI } from "../../context/UIContext.jsx";
 import ListViewHeader from "./ListViewHeader.jsx";
@@ -152,6 +152,36 @@ function PhotoListContent({
         toggleHome
     } = handlers;
 
+    // Wrapper for openBurstGroup to include current view mode data
+    // This ensures that when returning from burst group, the context (album/tag) is preserved
+    const handleOpenBurstGroup = useCallback((burstGroupId) => {
+        // Determine return mode based on current view mode
+        let returnMode = null;
+        let returnModeData = null;
+
+        if (viewModeObj.isAlbumMode()) {
+            returnMode = VIEW_MODES.ALBUM;
+            returnModeData = {
+                albumId: viewModeObj.getCurrentAlbumId(),
+                albumName: viewModeObj.getCollectionName()
+            };
+        } else if (viewModeObj.isTagMode()) {
+            returnMode = VIEW_MODES.TAG;
+            returnModeData = {
+                tagId: viewModeObj.getCurrentTagId(),
+                tagName: viewModeObj.getCollectionName()
+            };
+        }
+
+        logger.info('PhotoListContent', 'open_burst_group', 'Opening burst group with return mode data', {
+            burstGroupId,
+            returnMode,
+            returnModeData
+        });
+
+        openBurstGroup(burstGroupId, returnMode, returnModeData);
+    }, [viewModeObj, openBurstGroup]);
+
     // Tag list view mode (list or cloud) with localStorage persistence
     const TAG_VIEW_MODE_KEY = 'photoclove-tag-list-view-mode';
     const [tagListViewMode, setTagListViewMode] = useState(() => {
@@ -285,7 +315,7 @@ function PhotoListContent({
                                 photoSelectionDict={photoSelectionDict}
                                 onAddSelection={addSelection}
                                 onDisplayPhoto={displayPhoto}
-                                onOpenBurstGroup={openBurstGroup}
+                                onOpenBurstGroup={handleOpenBurstGroup}
                                 isInBurstGroupMode={viewModeObj?.isInBurstGroupMode()}
                                 burstModeEnabled={burstModeEnabled}
                                 starFilter={viewModeObj.isImportMode() ? 0 : starFilter}

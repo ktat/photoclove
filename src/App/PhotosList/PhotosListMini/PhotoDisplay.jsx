@@ -509,8 +509,8 @@ function PhotoDisplay(props) {
                         onMouseUp={(e) => dragPhotoEnd(e)}
                         onWheel={(e) => photoScroll(e)}
                     />
-                    {/* Burst badge - shows when viewing burst representative in burst mode */}
-                    {props.burstModeEnabled && props.isBurstRepresentative && props.burstGroupId && (
+                    {/* Burst badge - shows when viewing burst representative in burst mode (clickable to open group) */}
+                    {props.burstModeEnabled && props.isBurstRepresentative && props.burstGroupId && !props.isInBurstGroupMode && (
                         <div
                             onClick={(e) => {
                                 e.preventDefault();
@@ -541,6 +541,28 @@ function PhotoDisplay(props) {
                             title="Click to view all photos in this burst group"
                         >
                             +{props.burstCount - 1} photos in group
+                        </div>
+                    )}
+                    {/* Burst group indicator - shows when viewing photos inside a burst group */}
+                    {props.isInBurstGroupMode && props.burstGroupId && (
+                        <div
+                            style={{
+                                position: 'absolute',
+                                top: '20px',
+                                right: '20px',
+                                backgroundColor: 'var(--color-primary)',
+                                color: 'white',
+                                padding: '8px 16px',
+                                borderRadius: 'var(--radius-lg)',
+                                fontSize: 'var(--font-size-lg)',
+                                fontWeight: 'bold',
+                                cursor: 'default',
+                                zIndex: 100,
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                            }}
+                            title="Viewing photos in burst group"
+                        >
+                            Burst Group
                         </div>
                     )}
                 </div>
