@@ -490,6 +490,7 @@ function PhotosListMini(props) {
                             burstGroupId={currentPhoto?.burst_group_id}
                             burstCount={currentPhoto?.burst_count}
                             openBurstGroup={props.openBurstGroup}
+                            isInBurstGroupMode={isInBurstGroupMode}
                             currentViewMode={viewMode}
                             currentViewModeData={{
                                 date: props.currentDate,
@@ -500,6 +501,12 @@ function PhotosListMini(props) {
                             }}
                         />
                     )}
+
+                    <AlbumModeIndicator
+                        isAlbumMode={isAlbumMode}
+                        isInBurstGroupMode={isInBurstGroupMode}
+                        albumName={props.albumName}
+                    />
                 </div>
 
                 <div id="photos-list-mini" className={photosListMiniClosed ? "photosListMiniClosed" : "photosListMini"}>
@@ -524,11 +531,6 @@ function PhotosListMini(props) {
                     isImportMode={isImportMode}
                     isTrashMode={isTrashMode}
                     isAlbumMode={isAlbumMode}
-                />
-
-                <AlbumModeIndicator
-                    isAlbumMode={isAlbumMode}
-                    albumName={props.albumName}
                 />
             </div>
 

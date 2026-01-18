@@ -51,7 +51,7 @@ function StatusBar({
         } else if (viewMode === VIEW_MODES.IN_BURST_GROUP) {
             return (
                 <>
-                    <a className="back-to-home" href="#" onClick={(e) => { e.preventDefault(); goBackFromBurstGroup && goBackFromBurstGroup(); }}>
+                    <a className="back-to-home no-home-icon" href="#" onClick={(e) => { e.preventDefault(); goBackFromBurstGroup && goBackFromBurstGroup(); }}>
                         ← Back
                     </a>
                     <span style={{ marginLeft: "10px" }}>{title}</span>
