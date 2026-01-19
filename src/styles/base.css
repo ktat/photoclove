@@ -89,14 +89,30 @@ body {
 
   --color-warning: #f59e0b;
   --color-warning-dark: #b57208;
+  --color-warning-darker: #92400e;
   --color-warning-muted: rgba(245, 158, 11, 0.2);
+  --color-warning-bg: #fefce8;
+  --color-warning-bg-strong: #fcd34d;
 
   --color-danger: #ef4444;
   --color-danger-dark: #b91c1c;
+  --color-danger-darker: #7f1d1d;
   --color-danger-muted: rgba(239, 68, 68, 0.2);
+  --color-danger-bg: #fef2f2;
+  --color-danger-bg-strong: #fee2e2;
+  --color-danger-border: #fecaca;
 
-  --color-info: #3b82f6;
+  --color-info: #0ea5e9;
   --color-info-dark: #1e3a8a; /* Tutorial/onboarding tooltip background */
+  --color-info-bg: #e0f2fe;
+  --color-info-muted: rgba(14, 165, 233, 0.2);
+
+  /* --- Status Colors (for job queue, badges) --- */
+  --color-status-pending: #ffa500;
+  --color-status-running: #0066cc;
+  --color-status-success: #008000;
+  --color-status-error: #cc0000;
+  --color-status-default: #666666;
 
   /* --- Spacing Scale (4px base) --- */
   --space-1: 4px;

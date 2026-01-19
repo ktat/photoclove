@@ -32,15 +32,15 @@ const JobQueue = ({ onClose, ...props }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case "pending":
-        return "#ffa500";
+        return "var(--color-status-pending)";
       case "running":
-        return "#0066cc";
+        return "var(--color-status-running)";
       case "completed":
-        return "#008000";
+        return "var(--color-status-success)";
       case "failed":
-        return "#cc0000";
+        return "var(--color-status-error)";
       default:
-        return "#666666";
+        return "var(--color-status-default)";
     }
   };
 
