@@ -382,6 +382,12 @@ fn add_search_condition(
 }
 
 /// Add ORDER BY clause with primary and secondary sort fields
+///
+/// # Security
+/// This function uses whitelist validation for both sort_field and sort_order:
+/// - sort_field: Only recognized column names are used (via match expression)
+/// - sort_order: Normalized to "ASC" or "DESC" only
+/// Unknown values fall through to safe defaults, preventing SQL injection.
 fn add_order_by_clause(sql_query: &mut String, sort_field: &str, sort_order: &str) {
     let order_direction = if sort_order.to_lowercase() == "asc" {
         "ASC"
@@ -419,6 +425,11 @@ fn add_order_by_clause(sql_query: &mut String, sort_field: &str, sort_order: &st
                 order_direction, null_handling, secondary_direction, secondary_direction, secondary_direction));
         }
         _ => {
+            // Unknown sort_field - log for debugging and use safe default
+            // This provides defense-in-depth against SQL injection attempts
+            if !sort_field.is_empty() && !["exif_date_time_original", "photo_date", "path", "star"].contains(&sort_field) {
+                log::warn!(target: "search", "unknown_sort_field; field={}; using_default=exif_date_time_original", sort_field);
+            }
             sql_query.push_str(&format!(
                 " ORDER BY pm.exif_date_time_original {}, pm.photo_date {}, pm.path {}",
                 order_direction, secondary_direction, secondary_direction

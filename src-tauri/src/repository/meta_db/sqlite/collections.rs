@@ -562,3 +562,36 @@ pub(super) fn get_photos_by_collection_ids(
 
     Ok(photos)
 }
+
+/// Reorder items within a collection by updating their order_index values
+pub(super) fn reorder_collection_items(
+    sqlite: &SQLite,
+    collection_id: i32,
+    photo_order: Vec<String>,
+) -> Result<(), String> {
+    let conn = sqlite
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    // Update each photo's order_index based on position in the array
+    for (index, photo_path) in photo_order.iter().enumerate() {
+        conn.execute(
+            "UPDATE photo_collection_items SET order_index = ?1 WHERE collection_id = ?2 AND photo_path = ?3",
+            params![index as i32, collection_id, photo_path],
+        )
+        .map_err(|e| format!("Failed to update order for photo {}: {}", photo_path, e))?;
+    }
+
+    // Update the collection's updated_at timestamp
+    conn.execute(
+        "UPDATE photo_collections SET updated_at = ?1 WHERE id = ?2",
+        params![now, collection_id],
+    )
+    .map_err(|e| format!("Failed to update collection timestamp: {}", e))?;
+
+    log::info!(target: "collections", "reorder_complete; collection_id={}; items_reordered={}", collection_id, photo_order.len());
+
+    Ok(())
+}

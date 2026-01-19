@@ -164,6 +164,10 @@ pub(crate) trait MetaInfoDB {
     fn get_recent_photos_metadata(&self, limit: u32) -> Result<photo_meta::PhotoMetas, String>;
 
     // Tag management methods (used by tag_commands.rs)
+    fn get_all_tags(&self) -> Result<Vec<(i32, String, Option<String>)>, String>;
+    fn get_all_tags_with_photo_count(
+        &self,
+    ) -> Result<Vec<(i32, String, Option<String>, i32)>, String>;
     fn remove_all_tags_from_photo(&self, photo_path: &str) -> Result<i32, String>;
     fn get_tags_for_photo(
         &self,

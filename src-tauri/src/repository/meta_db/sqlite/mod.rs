@@ -209,6 +209,14 @@ impl SQLite {
 
     // ==================== Tag Operations ====================
 
+    pub fn get_all_tags(&self) -> Result<Vec<(i32, String, Option<String>)>, String> {
+        tags::get_all_tags(self)
+    }
+
+    pub fn get_all_tags_with_photo_count(&self) -> Result<Vec<(i32, String, Option<String>, i32)>, String> {
+        tags::get_all_tags_with_photo_count(self)
+    }
+
     pub fn remove_all_tags_from_photo(&self, photo_path: &str) -> Result<i32, String> {
         tags::remove_all_tags_from_photo(self, photo_path)
     }
@@ -296,6 +304,14 @@ impl SQLite {
         config: Option<config::Config>,
     ) -> Result<Vec<photo::Photo>, String> {
         collections::get_photos_by_collection_ids(self, collection_ids, sort_value, config)
+    }
+
+    pub fn reorder_collection_items(
+        &self,
+        collection_id: i32,
+        photo_order: Vec<String>,
+    ) -> Result<(), String> {
+        collections::reorder_collection_items(self, collection_id, photo_order)
     }
 
     // ==================== Job Queue Operations ====================
@@ -600,6 +616,14 @@ impl MetaInfoDB for SQLite {
     }
 
     // Tag management trait implementations (used by tag_commands.rs)
+    fn get_all_tags(&self) -> Result<Vec<(i32, String, Option<String>)>, String> {
+        tags::get_all_tags(self)
+    }
+
+    fn get_all_tags_with_photo_count(&self) -> Result<Vec<(i32, String, Option<String>, i32)>, String> {
+        tags::get_all_tags_with_photo_count(self)
+    }
+
     fn remove_all_tags_from_photo(&self, photo_path: &str) -> Result<i32, String> {
         tags::remove_all_tags_from_photo(self, photo_path)
     }

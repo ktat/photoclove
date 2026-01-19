@@ -111,18 +111,21 @@ impl Dir {
     }
 
     pub fn to_date(&mut self) -> Option<date::Date> {
+        // Helper function to safely parse date from regex captures
+        fn parse_date_from_captures(cap: &regex::Captures) -> Option<date::Date> {
+            let year: i32 = cap.get(1)?.as_str().parse().ok()?;
+            let month: u32 = cap.get(2)?.as_str().parse().ok()?;
+            let day: u32 = cap.get(3)?.as_str().parse().ok()?;
+            date::Date::new(year, month, day)
+        }
+
         // First try the original pattern for backward compatibility (date at end)
         let re_end =
             Regex::new(r"([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)/?$").unwrap();
         if let Some(cap) = re_end.captures(self.path.as_str()) {
-            return Option::Some(
-                date::Date::new(
-                    cap[1].parse::<i32>().unwrap(),
-                    cap[2].parse::<u32>().unwrap(),
-                    cap[3].parse::<u32>().unwrap(),
-                )
-                .unwrap(),
-            );
+            if let Some(date) = parse_date_from_captures(&cap) {
+                return Some(date);
+            }
         }
 
         // If not found at end, search for date pattern anywhere in the path (for UUID subdirectories)
@@ -130,18 +133,13 @@ impl Dir {
         let re_anywhere =
             Regex::new(r"/([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)(/|$)").unwrap();
         if let Some(cap) = re_anywhere.captures(self.path.as_str()) {
-            return Option::Some(
-                date::Date::new(
-                    cap[1].parse::<i32>().unwrap(),
-                    cap[2].parse::<u32>().unwrap(),
-                    cap[3].parse::<u32>().unwrap(),
-                )
-                .unwrap(),
-            );
+            if let Some(date) = parse_date_from_captures(&cap) {
+                return Some(date);
+            }
         }
 
-        print!("capture error: {}", self.path);
-        return Option::None;
+        log::debug!(target: "file", "to_date_capture_failed; path={}", self.path);
+        None
     }
     pub fn child(&self, path: String) -> Dir {
         Dir::new(
