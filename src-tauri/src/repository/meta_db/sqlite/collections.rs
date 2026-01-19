@@ -2,7 +2,17 @@ use crate::entity::{config, photo};
 use crate::repository::meta_db::sqlite::SQLite;
 use crate::repository::meta_db::sqlite::tags;
 use crate::value::{date, file};
-use rusqlite::{params, Result};
+use rusqlite::{params, Connection, Result};
+
+/// Get the next order_index for a collection
+fn get_next_order_index(conn: &Connection, collection_id: i32) -> i32 {
+    conn.query_row(
+        "SELECT COALESCE(MAX(order_index), -1) + 1 FROM photo_collection_items WHERE collection_id = ?1",
+        params![collection_id],
+        |row| row.get(0),
+    )
+    .unwrap_or(0)
+}
 
 pub(super) fn create_collection(
     sqlite: &SQLite,
@@ -193,13 +203,7 @@ pub(super) fn add_photo_to_collection(
         .map_err(|_| "Failed to connect to database".to_string())?;
 
     let now = date::DateTime::now().to_db_string();
-
-    // Get the next order_index for albums
-    let order_index: i32 = conn.query_row(
-        "SELECT COALESCE(MAX(order_index), -1) + 1 FROM photo_collection_items WHERE collection_id = ?1",
-        params![collection_id],
-        |row| row.get(0)
-    ).unwrap_or(0);
+    let order_index = get_next_order_index(&conn, collection_id);
 
     conn.execute(
         "INSERT OR IGNORE INTO photo_collection_items (collection_id, photo_path, order_index, added_at) VALUES (?1, ?2, ?3, ?4)",
@@ -256,11 +260,7 @@ pub(super) fn add_photos_to_collection_bulk(
         collection_id, new_paths.len(), photo_paths.len() - new_paths.len());
 
     // 3. Get the starting order_index
-    let start_order_index: i32 = conn.query_row(
-        "SELECT COALESCE(MAX(order_index), -1) + 1 FROM photo_collection_items WHERE collection_id = ?1",
-        params![collection_id],
-        |row| row.get(0)
-    ).unwrap_or(0);
+    let start_order_index = get_next_order_index(&conn, collection_id);
 
     let now = date::DateTime::now().to_db_string();
     let mut total_inserted = 0;
