@@ -1,7 +1,62 @@
 use crate::entity::photo;
+use crate::entity::recovery_queue::{OperationType, RecoveryItem, RecoveryStatus};
 use crate::repository::meta_db;
 use crate::value::{exif, file};
-use rusqlite::Row;
+use rusqlite::{Connection, Row};
+
+use super::SQLite;
+
+/// Execute a database operation with a connection.
+/// Handles connection opening and error mapping.
+pub(super) fn with_connection<F, T>(sqlite: &SQLite, f: F) -> Result<T, String>
+where
+    F: FnOnce(&Connection) -> Result<T, String>,
+{
+    let conn = Connection::open(sqlite.db_path())
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+    f(&conn)
+}
+
+/// Convert a database row to a RecoveryItem entity.
+/// Row must have columns in order:
+/// id, operation_type, target_path, error_reason, failed_at, retry_count, last_retry_at, status, created_at, updated_at
+pub(super) fn row_to_recovery_item(row: &Row) -> rusqlite::Result<RecoveryItem> {
+    Ok(RecoveryItem {
+        id: row.get(0)?,
+        operation_type: OperationType::from(row.get::<_, String>(1)?),
+        target_path: row.get(2)?,
+        error_reason: row.get(3)?,
+        failed_at: row.get(4)?,
+        retry_count: row.get(5)?,
+        last_retry_at: row.get(6)?,
+        status: RecoveryStatus::from(row.get::<_, String>(7)?),
+        created_at: row.get(8)?,
+        updated_at: row.get(9)?,
+    })
+}
+
+use crate::entity::job_queue::{Job, JobStatus, QueuedJob};
+
+/// Convert a database row to a QueuedJob entity.
+/// Row must have columns in order:
+/// id, job_unit_id, job (JSON), status, created_at, started_at, completed_at, error_message
+pub(super) fn row_to_queued_job(row: &Row) -> rusqlite::Result<QueuedJob> {
+    let job_json: String = row.get(2)?;
+    let job: Job = serde_json::from_str(&job_json).map_err(|_e| {
+        rusqlite::Error::InvalidColumnType(2, "job".to_string(), rusqlite::types::Type::Text)
+    })?;
+
+    Ok(QueuedJob {
+        id: Some(row.get(0)?),
+        job_unit_id: row.get(1)?,
+        job,
+        status: JobStatus::from(row.get::<_, String>(3)?),
+        created_at: row.get(4)?,
+        started_at: row.get(5)?,
+        completed_at: row.get(6)?,
+        error_message: row.get(7)?,
+    })
+}
 
 /// Create PhotoInfo from database row data without tags
 pub(super) fn photo_info_from_row(

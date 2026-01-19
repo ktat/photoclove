@@ -258,25 +258,18 @@ pub fn get_photo_meta_data_in_date(
     Ok(photo_metas)
 }
 
-/// Get photo metadata for a specific photo
-pub fn get_photo_meta(sqlite: &SQLite, photo: photo::Photo) -> photo_meta::PhotoMeta {
-    let conn = match sqlite.get_connection() {
-        Ok(conn) => conn,
-        Err(_e) => {
-            return photo_meta::PhotoMeta::new(photo.clone());
-        }
-    };
+const PHOTO_META_QUERY: &str =
+    "SELECT path, COALESCE(exif_date_time_original, exif_date_time, photo_date) as photo_time, star, comment, css_style, google_photos_url, exif_orientation FROM photo_metadata WHERE path = ?1";
 
-    let mut stmt = match conn
-        .prepare("SELECT path, COALESCE(exif_date_time_original, exif_date_time, photo_date) as photo_time, star, comment, css_style, google_photos_url, exif_orientation FROM photo_metadata WHERE path = ?1")
-    {
-        Ok(stmt) => stmt,
-        Err(_e) => {
-            return photo_meta::PhotoMeta::new(photo.clone());
-        }
-    };
+/// Internal helper to fetch photo info from database
+fn fetch_photo_info(
+    sqlite: &SQLite,
+    photo_path: &str,
+) -> Option<crate::repository::meta_db::PhotoInfo> {
+    let conn = sqlite.get_connection().ok()?;
+    let mut stmt = conn.prepare(PHOTO_META_QUERY).ok()?;
 
-    let result = stmt.query_row(params![photo.file.path], |row| {
+    stmt.query_row(params![photo_path], |row| {
         Ok(utils::photo_info_from_row(
             row.get(0)?,
             row.get(1)?,
@@ -286,17 +279,16 @@ pub fn get_photo_meta(sqlite: &SQLite, photo: photo::Photo) -> photo_meta::Photo
             row.get(5)?,
             row.get(6)?,
         ))
-    });
+    })
+    .ok()
+}
 
-    match result {
-        Ok(record) => {
-            if let Some(photo_meta) = photo_meta::PhotoMeta::new_from_photo_info(&record) {
-                photo_meta
-            } else {
-                photo_meta::PhotoMeta::new(photo.clone())
-            }
-        }
-        Err(_e) => photo_meta::PhotoMeta::new(photo.clone()),
+/// Get photo metadata for a specific photo
+pub fn get_photo_meta(sqlite: &SQLite, photo: photo::Photo) -> photo_meta::PhotoMeta {
+    match fetch_photo_info(sqlite, &photo.file.path) {
+        Some(record) => photo_meta::PhotoMeta::new_from_photo_info(&record)
+            .unwrap_or_else(|| photo_meta::PhotoMeta::new(photo.clone())),
+        None => photo_meta::PhotoMeta::new(photo.clone()),
     }
 }
 
@@ -307,47 +299,12 @@ pub fn get_photo_meta_from_trash(
     trash_path: String,
     library_path: String,
 ) -> photo_meta::PhotoMeta {
-    let conn = match sqlite.get_connection() {
-        Ok(conn) => conn,
-        Err(_e) => {
-            return photo_meta::PhotoMeta::new(photo.clone());
+    match fetch_photo_info(sqlite, &photo.file.path) {
+        Some(record) => {
+            photo_meta::PhotoMeta::new_from_photo_info_from_trash(&record, &trash_path, &library_path)
+                .unwrap_or_else(|| photo_meta::PhotoMeta::new(photo.clone()))
         }
-    };
-
-    let mut stmt = match conn
-        .prepare("SELECT path, COALESCE(exif_date_time_original, exif_date_time, photo_date) as photo_time, star, comment, css_style, google_photos_url, exif_orientation FROM photo_metadata WHERE path = ?1")
-    {
-        Ok(stmt) => stmt,
-        Err(_e) => {
-            return photo_meta::PhotoMeta::new(photo.clone());
-        }
-    };
-
-    let result = stmt.query_row(params![photo.file.path], |row| {
-        Ok(utils::photo_info_from_row(
-            row.get(0)?,
-            row.get(1)?,
-            row.get(2)?,
-            row.get(3)?,
-            row.get(4)?,
-            row.get(5)?,
-            row.get(6)?,
-        ))
-    });
-
-    match result {
-        Ok(record) => {
-            if let Some(photo_meta) = photo_meta::PhotoMeta::new_from_photo_info_from_trash(
-                &record,
-                &trash_path,
-                &library_path,
-            ) {
-                photo_meta
-            } else {
-                photo_meta::PhotoMeta::new(photo.clone())
-            }
-        }
-        Err(_e) => photo_meta::PhotoMeta::new(photo.clone()),
+        None => photo_meta::PhotoMeta::new(photo.clone()),
     }
 }
 
