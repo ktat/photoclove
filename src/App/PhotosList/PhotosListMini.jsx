@@ -171,6 +171,23 @@ function PhotosListMini(props) {
         allPhotos: photosListMiniAllPhotos
     });
 
+    // Wrapper for goBackFromBurstGroup to restore currentPhotoIndex after returning
+    const handleGoBackFromBurstGroup = useCallback(() => {
+        if (props.goBackFromBurstGroup) {
+            const returnModeData = props.goBackFromBurstGroup();
+            // Restore currentPhotoIndex after a delay to allow photos to reload
+            // Using 500ms to ensure the photo list has been fully reloaded
+            if (returnModeData && typeof returnModeData.currentPhotoIndex === 'number') {
+                logger.info('PhotosListMini', 'restore_index', 'Restoring photo index after burst group exit', {
+                    currentPhotoIndex: returnModeData.currentPhotoIndex
+                });
+                setTimeout(() => {
+                    props.setCurrentIndex(returnModeData.currentPhotoIndex);
+                }, 500);
+            }
+        }
+    }, [props.goBackFromBurstGroup, props.setCurrentIndex]);
+
     // Use keyboard shortcuts hook
     const { photoNavigation, photoNavigationUp } = useKeyboardShortcuts(
         {
@@ -529,7 +546,7 @@ function PhotosListMini(props) {
                             burstGroupId={currentPhoto?.burst_group_id}
                             burstCount={currentPhoto?.burst_count}
                             openBurstGroup={props.openBurstGroup}
-                            goBackFromBurstGroup={props.goBackFromBurstGroup}
+                            goBackFromBurstGroup={handleGoBackFromBurstGroup}
                             isInBurstGroupMode={isInBurstGroupMode}
                             currentViewMode={viewMode}
                             currentViewModeData={{

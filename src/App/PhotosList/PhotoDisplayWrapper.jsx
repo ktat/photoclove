@@ -10,8 +10,10 @@
  * @see src/types/PageState.js for type definitions
  */
 
+import { useCallback } from 'react';
 import { AllPhotosContext, ImgCacheContext } from "../ImgCacheContext.jsx";
 import PhotosListMini from "./PhotosListMini.jsx";
+import { VIEW_MODES } from "../../constants/viewModes.js";
 
 /**
  * @param {Object} props
@@ -81,6 +83,37 @@ function PhotoDisplayWrapper({
         openBurstGroup,
         goBackFromBurstGroup
     } = handlers;
+
+    // Wrapper for openBurstGroup to include current view context and photo index
+    // This ensures that when returning from burst group, the context and position are restored
+    const handleOpenBurstGroup = useCallback((burstGroupId) => {
+        let returnMode = null;
+        let returnModeData = null;
+
+        if (viewModeObj.isAlbumMode()) {
+            returnMode = VIEW_MODES.ALBUM;
+            returnModeData = {
+                albumId: viewModeObj.getCurrentAlbumId(),
+                albumName: viewModeObj.getCollectionName(),
+                currentPhotoIndex: currentPhotoIndex
+            };
+        } else if (viewModeObj.isTagMode()) {
+            returnMode = VIEW_MODES.TAG;
+            returnModeData = {
+                tagId: viewModeObj.getCurrentTagId(),
+                tagName: viewModeObj.getCollectionName(),
+                currentPhotoIndex: currentPhotoIndex
+            };
+        } else {
+            // For date view or other modes, store the photo index
+            returnModeData = {
+                currentPhotoIndex: currentPhotoIndex
+            };
+        }
+
+        openBurstGroup(burstGroupId, returnMode, returnModeData);
+    }, [viewModeObj, currentPhotoIndex, openBurstGroup]);
+
     // Compute derived values
     const shouldDisplay = !photoLoading && currentPhotoPath;
 
@@ -135,7 +168,7 @@ function PhotoDisplayWrapper({
                             handleTauriError={handleTauriError}
                             importState={importState}
                             beforeNavigate={beforeNavigate}
-                            openBurstGroup={openBurstGroup}
+                            openBurstGroup={handleOpenBurstGroup}
                             goBackFromBurstGroup={goBackFromBurstGroup}
                         />
                     </div>

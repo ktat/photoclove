@@ -361,6 +361,9 @@ export const useViewMode = (initialMode = VIEW_MODES.HOME) => {
         transitionTo(VIEW_MODES.HOME);
       }
     }
+
+    // Return the returnModeData so callers can restore state like currentPhotoIndex
+    return returnModeData;
   }, [modeData, transitionTo, goBack, history.length]);
 
   return {
