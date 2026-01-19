@@ -436,7 +436,7 @@ function PhotoCard({
                             e.preventDefault();
                             e.stopPropagation();
                             if (onOpenBurstGroup) {
-                                onOpenBurstGroup(photo.burst_group_id);
+                                onOpenBurstGroup(photo.burst_group_id, index);
                             }
                         }}
                         style={{ cursor: 'pointer' }}

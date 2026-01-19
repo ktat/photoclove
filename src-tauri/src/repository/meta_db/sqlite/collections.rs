@@ -48,13 +48,19 @@ pub(super) fn get_all_collections(
     let (query, params): (String, Vec<Box<dyn rusqlite::ToSql>>) = match collection_type {
         Some(ctype) => (
             "SELECT id, type, name, color, description, cover_photo_path, settings, created_at, updated_at,
-                    (SELECT COUNT(*) FROM photo_collection_items WHERE collection_id = photo_collections.id) as photo_count
+                    (SELECT COUNT(*) FROM photo_collection_items pci
+                     JOIN photo_metadata pm ON pci.photo_path = pm.path
+                     WHERE pci.collection_id = photo_collections.id
+                       AND (pm.delete_flg = 0 OR pm.delete_flg IS NULL)) as photo_count
              FROM photo_collections WHERE type = ?1 ORDER BY name".to_string(),
             vec![Box::new(ctype.to_string())]
         ),
         None => (
             "SELECT id, type, name, color, description, cover_photo_path, settings, created_at, updated_at,
-                    (SELECT COUNT(*) FROM photo_collection_items WHERE collection_id = photo_collections.id) as photo_count
+                    (SELECT COUNT(*) FROM photo_collection_items pci
+                     JOIN photo_metadata pm ON pci.photo_path = pm.path
+                     WHERE pci.collection_id = photo_collections.id
+                       AND (pm.delete_flg = 0 OR pm.delete_flg IS NULL)) as photo_count
              FROM photo_collections ORDER BY type, name".to_string(),
             vec![]
         )

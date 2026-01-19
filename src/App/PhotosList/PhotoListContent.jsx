@@ -114,6 +114,7 @@ function PhotoListContent({
 
     const {
         currentPhotoPath,
+        currentPhotoIndex,
         showSideMenu,
         iconSize,
         sort: sortOfPhotos,
@@ -153,34 +154,47 @@ function PhotoListContent({
     } = handlers;
 
     // Wrapper for openBurstGroup to include current view mode data
-    // This ensures that when returning from burst group, the context (album/tag) is preserved
-    const handleOpenBurstGroup = useCallback((burstGroupId) => {
+    // This ensures that when returning from burst group, the context (album/tag) and photo position are preserved
+    // photoIndex parameter is passed from PhotoCard when clicking burst badge in PhotoGrid
+    const handleOpenBurstGroup = useCallback((burstGroupId, photoIndex) => {
         // Determine return mode based on current view mode
         let returnMode = null;
         let returnModeData = null;
+
+        // Use photoIndex if provided (from PhotoGrid click), otherwise use currentPhotoIndex (from PhotoViewer)
+        const indexToRestore = typeof photoIndex === 'number' ? photoIndex : currentPhotoIndex;
 
         if (viewModeObj.isAlbumMode()) {
             returnMode = VIEW_MODES.ALBUM;
             returnModeData = {
                 albumId: viewModeObj.getCurrentAlbumId(),
-                albumName: viewModeObj.getCollectionName()
+                albumName: viewModeObj.getCollectionName(),
+                currentPhotoIndex: indexToRestore
             };
         } else if (viewModeObj.isTagMode()) {
             returnMode = VIEW_MODES.TAG;
             returnModeData = {
                 tagId: viewModeObj.getCurrentTagId(),
-                tagName: viewModeObj.getCollectionName()
+                tagName: viewModeObj.getCollectionName(),
+                currentPhotoIndex: indexToRestore
+            };
+        } else {
+            // For date view or other modes, store the photo index
+            returnModeData = {
+                currentPhotoIndex: indexToRestore
             };
         }
 
         logger.info('PhotoListContent', 'open_burst_group', 'Opening burst group with return mode data', {
             burstGroupId,
             returnMode,
-            returnModeData
+            returnModeData,
+            photoIndex,
+            currentPhotoIndex
         });
 
         openBurstGroup(burstGroupId, returnMode, returnModeData);
-    }, [viewModeObj, openBurstGroup]);
+    }, [viewModeObj, openBurstGroup, currentPhotoIndex]);
 
     // Tag list view mode (list or cloud) with localStorage persistence
     const TAG_VIEW_MODE_KEY = 'photoclove-tag-list-view-mode';
