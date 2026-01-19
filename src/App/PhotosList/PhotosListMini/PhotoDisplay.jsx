@@ -543,9 +543,16 @@ function PhotoDisplay(props) {
                             +{props.burstCount - 1} photos in group
                         </div>
                     )}
-                    {/* Burst group indicator - shows when viewing photos inside a burst group */}
+                    {/* Burst group indicator - clickable button to go back to burst representative view */}
                     {props.isInBurstGroupMode && props.burstGroupId && (
                         <div
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (props.goBackFromBurstGroup) {
+                                    props.goBackFromBurstGroup();
+                                }
+                            }}
                             style={{
                                 position: 'absolute',
                                 top: '20px',
@@ -556,13 +563,16 @@ function PhotoDisplay(props) {
                                 borderRadius: 'var(--radius-lg)',
                                 fontSize: 'var(--font-size-lg)',
                                 fontWeight: 'bold',
-                                cursor: 'default',
+                                cursor: 'pointer',
                                 zIndex: 100,
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                                transition: 'background-color 0.2s ease'
                             }}
-                            title="Viewing photos in burst group"
+                            onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--color-primary-hover)'}
+                            onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--color-primary)'}
+                            title="Click to exit burst group view"
                         >
-                            Burst Group
+                            Burst Group ✕
                         </div>
                     )}
                 </div>

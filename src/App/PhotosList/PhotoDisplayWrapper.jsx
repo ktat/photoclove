@@ -78,7 +78,8 @@ function PhotoDisplayWrapper({
         handleTauriError,
         setShowSideMenu,
         clearSearch,
-        openBurstGroup
+        openBurstGroup,
+        goBackFromBurstGroup
     } = handlers;
     // Compute derived values
     const shouldDisplay = !photoLoading && currentPhotoPath;
@@ -135,6 +136,7 @@ function PhotoDisplayWrapper({
                             importState={importState}
                             beforeNavigate={beforeNavigate}
                             openBurstGroup={openBurstGroup}
+                            goBackFromBurstGroup={goBackFromBurstGroup}
                         />
                     </div>
                 </ImgCacheContext.Provider>
