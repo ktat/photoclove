@@ -251,6 +251,8 @@ function PhotoListContent({
                             {showCloudView ? (
                                 <TagCloudView
                                     items={listConfig.items}
+                                    selectedItems={listConfig.selectedItems}
+                                    onItemSelection={listConfig.onItemSelection}
                                     onItemClick={listConfig.onItemClick}
                                     searchTerm={listConfig.searchTerm}
                                     onSearchChange={listConfig.onSearchChange}

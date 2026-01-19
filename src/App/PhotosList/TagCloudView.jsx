@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import Scrollable from "../../Scrollable.jsx";
 import { logger } from "../../services/LoggerService.js";
 
@@ -8,6 +8,8 @@ import { logger } from "../../services/LoggerService.js";
  *
  * @param {Object} props
  * @param {Array} props.items - Array of tag objects with id, name, color, photoCount
+ * @param {Array} props.selectedItems - Array of selected tag IDs
+ * @param {Function} props.onItemSelection - Handler for tag selection (id, isSelected)
  * @param {Function} props.onItemClick - Handler when tag is clicked
  * @param {string} props.searchTerm - Current search filter term
  * @param {Function} props.onSearchChange - Search term change handler
@@ -15,12 +17,19 @@ import { logger } from "../../services/LoggerService.js";
  */
 function TagCloudView({
     items,
+    selectedItems = [],
+    onItemSelection,
     onItemClick,
     searchTerm,
     onSearchChange,
     onNewItemClick
 }) {
     const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm || '');
+
+    // Long press detection
+    const longPressTimeout = useRef(null);
+    const isLongPress = useRef(false);
+    const LONG_PRESS_DURATION = 200; // milliseconds
 
     // Use provided search term if available, otherwise use local state
     const effectiveSearchTerm = searchTerm !== undefined ? searchTerm : localSearchTerm;
@@ -131,13 +140,46 @@ function TagCloudView({
         return positions;
     }, [filteredItems, items]);
 
-    const handleTagClick = (tag) => {
+    // Handle long press start
+    const handlePressStart = useCallback((tag) => {
+        isLongPress.current = false;
+        longPressTimeout.current = setTimeout(() => {
+            isLongPress.current = true;
+            // Toggle selection on long press
+            if (onItemSelection) {
+                const isCurrentlySelected = selectedItems.includes(tag.id);
+                logger.info('TagCloudView', 'tag_long_press', 'Tag long-pressed for selection', {
+                    tagId: tag.id,
+                    tagName: tag.name,
+                    willSelect: !isCurrentlySelected
+                });
+                onItemSelection(tag.id, !isCurrentlySelected);
+            }
+        }, LONG_PRESS_DURATION);
+    }, [selectedItems, onItemSelection]);
+
+    // Handle press end (cancel long press if not completed)
+    const handlePressEnd = useCallback(() => {
+        if (longPressTimeout.current) {
+            clearTimeout(longPressTimeout.current);
+            longPressTimeout.current = null;
+        }
+    }, []);
+
+    // Handle tag click (only if not a long press)
+    const handleTagClick = useCallback((tag) => {
+        // If it was a long press, don't trigger click
+        if (isLongPress.current) {
+            isLongPress.current = false;
+            return;
+        }
+
         logger.info('TagCloudView', 'tag_click', 'Tag clicked in cloud view', {
             tagId: tag.id,
             tagName: tag.name
         });
         onItemClick(tag);
-    };
+    }, [onItemClick]);
 
     return (
         <div className="tag-cloud-view">
@@ -194,7 +236,7 @@ function TagCloudView({
             <Scrollable className="tag-cloud-container">
                 <div style={{
                     position: 'relative',
-                    minHeight: '400px',
+                    minHeight: '500px',
                     width: '100%'
                 }}>
                     {filteredItems.length === 0 ? (
@@ -212,21 +254,31 @@ function TagCloudView({
                         <div style={{
                             position: 'relative',
                             width: '100%',
-                            height: '400px',
-                            overflow: 'visible'
+                            height: '500px',
+                            overflow: 'hidden'
                         }}>
                             {calculateTagPositions.map((pos, index) => {
                                 const { tag, x, y, rotation } = pos;
                                 const fontSize = calculateTagSize(tag.photoCount || 0);
+                                const isSelected = selectedItems.includes(tag.id);
 
                                 return (
                                     <span
                                         key={tag.id}
                                         onClick={() => handleTagClick(tag)}
+                                        onMouseDown={() => handlePressStart(tag)}
+                                        onMouseUp={handlePressEnd}
+                                        onMouseLeave={(e) => {
+                                            handlePressEnd();
+                                            e.currentTarget.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${rotation}deg) scale(1)`;
+                                            e.currentTarget.style.zIndex = index === 0 ? '10' : String(5 - Math.floor(index / 3));
+                                        }}
+                                        onTouchStart={() => handlePressStart(tag)}
+                                        onTouchEnd={handlePressEnd}
                                         style={{
                                             position: 'absolute',
                                             left: '50%',
-                                            top: '45%',
+                                            top: '50%',
                                             transform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${rotation}deg)`,
                                             padding: '6px 12px',
                                             borderRadius: 'var(--radius-md)',
@@ -238,18 +290,37 @@ function TagCloudView({
                                             transition: 'all 0.2s ease-out',
                                             whiteSpace: 'nowrap',
                                             textShadow: tag.color ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
-                                            zIndex: index === 0 ? 10 : 5 - Math.floor(index / 3)
+                                            zIndex: index === 0 ? 10 : 5 - Math.floor(index / 3),
+                                            border: isSelected ? '3px solid var(--color-primary)' : 'none',
+                                            boxShadow: isSelected ? '0 0 8px var(--color-primary)' : 'none'
                                         }}
-                                        title={`${tag.name} (${tag.photoCount || 0} photos) - Click to view`}
+                                        title={`${tag.name} (${tag.photoCount || 0} photos) - Click to view, long press to select`}
                                         onMouseEnter={(e) => {
                                             e.currentTarget.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${rotation}deg) scale(1.15)`;
                                             e.currentTarget.style.zIndex = '20';
                                         }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${rotation}deg) scale(1)`;
-                                            e.currentTarget.style.zIndex = index === 0 ? '10' : String(5 - Math.floor(index / 3));
-                                        }}
                                     >
+                                        {/* Selection checkmark */}
+                                        {isSelected && (
+                                            <span style={{
+                                                position: 'absolute',
+                                                top: '-8px',
+                                                right: '-8px',
+                                                backgroundColor: 'var(--color-primary)',
+                                                color: 'white',
+                                                borderRadius: '50%',
+                                                width: '20px',
+                                                height: '20px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                fontSize: '12px',
+                                                fontWeight: 'bold',
+                                                boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                                            }}>
+                                                ✓
+                                            </span>
+                                        )}
                                         {tag.name}
                                         <span style={{
                                             fontSize: '0.6em',

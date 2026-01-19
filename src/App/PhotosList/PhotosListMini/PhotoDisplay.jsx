@@ -515,6 +515,12 @@ function PhotoDisplay(props) {
                             onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
+                                logger.info('PhotoDisplay', 'burst_badge_click', 'Burst badge clicked', {
+                                    burstGroupId: props.burstGroupId,
+                                    currentViewMode: props.currentViewMode,
+                                    currentViewModeData: props.currentViewModeData,
+                                    hasOpenBurstGroup: !!props.openBurstGroup
+                                });
                                 if (props.openBurstGroup) {
                                     // Pass current view mode and data so we can return to this photo
                                     props.openBurstGroup(
