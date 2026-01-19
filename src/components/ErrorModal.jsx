@@ -127,12 +127,12 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
               Technical Details
             </summary>
             <div style={{
-              backgroundColor: '#f8f9fa',
+              backgroundColor: 'var(--color-bg-surface)',
               padding: '12px',
               borderRadius: '4px',
               fontSize: 'var(--font-size-sm)',
               fontFamily: 'monospace',
-              border: '1px solid #e9ecef'
+              border: '1px solid var(--color-border-default)'
             }}>
               {error.correlationId && (
                 <div style={{ marginBottom: '8px' }}>
@@ -173,7 +173,7 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
           justifyContent: 'flex-end',
           alignItems: 'center',
           paddingTop: '12px',
-          borderTop: '1px solid #e9ecef'
+          borderTop: '1px solid var(--color-border-default)'
         }}>
           {/* Retry Button */}
           {error.recoverable && onRetry && (
@@ -202,7 +202,7 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
             onClick={onClose}
             style={{
               padding: '10px 20px',
-              backgroundColor: isCritical ? '#dc2626' : '#6b7280',
+              backgroundColor: isCritical ? 'var(--color-danger-dark)' : 'var(--color-text-muted)',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
@@ -220,10 +220,10 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
           <div style={{
             marginTop: '16px',
             padding: '12px',
-            backgroundColor: '#fef2f2',
-            border: '1px solid #fecaca',
+            backgroundColor: 'var(--color-danger-bg)',
+            border: '1px solid var(--color-danger-border)',
             borderRadius: '6px',
-            color: '#dc2626',
+            color: 'var(--color-danger-dark)',
             fontSize: 'var(--font-size-sm)',
             textAlign: 'center'
           }}>

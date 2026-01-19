@@ -28,10 +28,10 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
     <div style={{
       padding: '24px',
       margin: isApplicationLevel ? '0' : '20px',
-      border: '2px solid #ef4444',
+      border: '2px solid var(--color-danger)',
       borderRadius: '12px',
-      backgroundColor: '#fef2f2',
-      color: '#dc2626',
+      backgroundColor: 'var(--color-danger-bg)',
+      color: 'var(--color-danger-dark)',
       fontFamily: 'system-ui, -apple-system, sans-serif',
       minHeight: isApplicationLevel ? '200px' : 'auto',
       display: 'flex',
@@ -52,13 +52,13 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
             margin: 0,
             fontSize: 'var(--font-size-xl)',
             fontWeight: 'bold',
-            color: '#dc2626'
+            color: 'var(--color-danger-dark)'
           }}>
             {errorTitle}
           </h2>
           <div style={{
             fontSize: 'var(--font-size-base)',
-            color: '#7f1d1d',
+            color: 'var(--color-danger-darker)',
             marginTop: '4px'
           }}>
             {new Date().toLocaleString()}
@@ -71,7 +71,7 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
         fontSize: 'var(--font-size-lg)',
         lineHeight: '1.5',
         marginBottom: '12px',
-        color: '#991b1b'
+        color: 'var(--color-danger-dark)'
       }}>
         {getFriendlyMessage()}
       </div>
@@ -79,23 +79,23 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
       {/* Suggestion */}
       <div style={{
         padding: '12px 16px',
-        backgroundColor: '#fee2e2',
-        border: '1px solid #fecaca',
+        backgroundColor: 'var(--color-danger-bg-strong)',
+        border: '1px solid var(--color-danger-border)',
         borderRadius: '6px',
         marginBottom: '16px',
-        borderLeft: '4px solid #ef4444'
+        borderLeft: '4px solid var(--color-danger)'
       }}>
         <div style={{
           fontSize: 'var(--font-size-base)',
           fontWeight: 'bold',
           marginBottom: '4px',
-          color: '#dc2626'
+          color: 'var(--color-danger-dark)'
         }}>
           💡 What you can do:
         </div>
         <div style={{
           fontSize: 'var(--font-size-base)',
-          color: '#7f1d1d'
+          color: 'var(--color-danger-darker)'
         }}>
           {getSuggestion()}
         </div>
@@ -106,8 +106,8 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
         onClick={() => setShowDetails(!showDetails)}
         style={{
           backgroundColor: 'transparent',
-          border: '1px solid #ef4444',
-          color: '#dc2626',
+          border: '1px solid var(--color-danger)',
+          color: 'var(--color-danger-dark)',
           padding: '8px 12px',
           borderRadius: '4px',
           cursor: 'pointer',
@@ -122,8 +122,8 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
       {/* Technical Details */}
       {showDetails && (
         <div style={{
-          backgroundColor: '#fee2e2',
-          border: '1px solid #fecaca',
+          backgroundColor: 'var(--color-danger-bg-strong)',
+          border: '1px solid var(--color-danger-border)',
           borderRadius: '6px',
           padding: '12px',
           marginBottom: '16px',
@@ -132,12 +132,12 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
         }}>
           <div style={{ marginBottom: '12px' }}>
             <strong>Error Message:</strong>
-            <div style={{ 
-              marginTop: '4px', 
-              padding: '8px', 
-              backgroundColor: 'white',
+            <div style={{
+              marginTop: '4px',
+              padding: '8px',
+              backgroundColor: 'var(--color-danger-bg)',
               borderRadius: '4px',
-              border: '1px solid #fecaca'
+              border: '1px solid var(--color-danger-border)'
             }}>
               {error?.message || error?.toString() || 'Unknown error'}
             </div>
@@ -149,9 +149,9 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
               <pre style={{
                 marginTop: '4px',
                 padding: '8px',
-                backgroundColor: 'white',
+                backgroundColor: 'var(--color-danger-bg)',
                 borderRadius: '4px',
-                border: '1px solid #fecaca',
+                border: '1px solid var(--color-danger-border)',
                 fontSize: 'var(--font-size-xs)',
                 overflow: 'auto',
                 maxHeight: '200px',
@@ -168,9 +168,9 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
               <pre style={{
                 marginTop: '4px',
                 padding: '8px',
-                backgroundColor: 'white',
+                backgroundColor: 'var(--color-danger-bg)',
                 borderRadius: '4px',
-                border: '1px solid #fecaca',
+                border: '1px solid var(--color-danger-border)',
                 fontSize: 'var(--font-size-xs)',
                 overflow: 'auto',
                 maxHeight: '150px',
@@ -189,11 +189,11 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
         gap: '12px',
         alignItems: 'center'
       }}>
-        <button 
+        <button
           onClick={resetError}
           style={{
             padding: '12px 24px',
-            backgroundColor: '#dc2626',
+            backgroundColor: 'var(--color-danger-dark)',
             color: 'white',
             border: 'none',
             borderRadius: '6px',
@@ -209,11 +209,11 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
         </button>
 
         {isApplicationLevel && (
-          <button 
+          <button
             onClick={() => window.location.reload()}
             style={{
               padding: '12px 24px',
-              backgroundColor: '#6b7280',
+              backgroundColor: 'var(--color-text-muted)',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
@@ -232,8 +232,8 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
         <div style={{
           marginTop: '16px',
           padding: '8px',
-          backgroundColor: '#fcd34d',
-          color: '#92400e',
+          backgroundColor: 'var(--color-warning-bg-strong)',
+          color: 'var(--color-warning-darker)',
           borderRadius: '4px',
           fontSize: 'var(--font-size-sm)',
           textAlign: 'center'

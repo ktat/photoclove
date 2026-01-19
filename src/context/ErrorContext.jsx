@@ -12,11 +12,12 @@ export const useError = () => {
 };
 
 // Error severity mapping for UI display
+// Uses CSS variable strings that work in inline styles
 const SEVERITY_CONFIG = {
-  Info: { color: '#0ea5e9', bgColor: '#e0f2fe', timeout: 5000 },
-  Warning: { color: '#eab308', bgColor: '#fefce8', timeout: 8000 },
-  Error: { color: '#ef4444', bgColor: '#fef2f2', timeout: 12000 },
-  Critical: { color: '#dc2626', bgColor: '#fef2f2', timeout: 0 } // No auto-dismiss for critical
+  Info: { color: 'var(--color-info)', bgColor: 'var(--color-info-bg)', timeout: 5000 },
+  Warning: { color: 'var(--color-warning)', bgColor: 'var(--color-warning-bg)', timeout: 8000 },
+  Error: { color: 'var(--color-danger)', bgColor: 'var(--color-danger-bg)', timeout: 12000 },
+  Critical: { color: 'var(--color-danger-dark)', bgColor: 'var(--color-danger-bg)', timeout: 0 } // No auto-dismiss for critical
 };
 
 export const ErrorProvider = ({ children }) => {
