@@ -92,10 +92,19 @@ if let Some(val) = opt {
 **DRY (Don't Repeat Yourself)**:
 - 同じロジックが3回以上出現したら抽出
 - ただし、早すぎる抽象化は避ける
+- 重複コードの検出には `make check-duplicate` を使用:
+  ```bash
+  make check-duplicate       # JS + Rust 両方
+  make check-duplicate-rust  # Rust のみ
+  make check-duplicate-js    # JS のみ
+  ```
 
 **KISS (Keep It Simple, Stupid)**:
 - 最もシンプルな解決策を選ぶ
 - 将来の要件を予測しすぎない
+
+**不要コードの削除**
+- 使わなくなったコードは削除すること
 
 ---
 
@@ -198,6 +207,8 @@ git diff <base>..HEAD
 - [ ] 「指摘しない項目」に該当しないか確認
 - [ ] エラーハンドリング
 - [ ] テストの有無/更新
+- [ ] コード重複チェック（`make check-duplicate`）
+- [ ] 使わなくなった不要コードが残っていないか
 
 ### 3. 出力フォーマット
 
