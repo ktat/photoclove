@@ -21,7 +21,6 @@ import { getCurrentSortConfig } from '../utils/UIStateUtils.js';
  * Search and filter management hook
  * @param {Object} params
  * @param {Object} params.viewModeObj - ViewMode object
- * @param {boolean} params.isSearchMode - Search mode flag
  * @param {string} params.searchQuery - Current search query
  * @param {string} params.searchInitialQuery - Initial query from HOME
  * @param {Object} params.currentSearchParams - Current search parameters
@@ -47,7 +46,6 @@ import { getCurrentSortConfig } from '../utils/UIStateUtils.js';
  */
 export function useSearchAndFilterManagement({
     viewModeObj,
-    isSearchMode,
     searchQuery,
     searchInitialQuery,
     currentSearchParams,
@@ -173,10 +171,10 @@ export function useSearchAndFilterManagement({
      * Auto-execute search when coming from HOME with initial query
      */
     useEffect(() => {
-        if (isSearchMode && searchInitialQuery && searchInitialQuery.trim() && !searchQuery) {
+        if (viewModeObj.isSearchMode() && searchInitialQuery && searchInitialQuery.trim() && !searchQuery) {
             handleSearch(searchInitialQuery, 'all', {});
         }
-    }, [isSearchMode, searchInitialQuery, searchQuery, handleSearch]);
+    }, [viewModeObj, searchInitialQuery, searchQuery, handleSearch]);
 
     // Note: Sort-based search re-execution removed
     // Search mode is now handled uniformly by useViewModeSync

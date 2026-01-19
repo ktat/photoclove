@@ -9,27 +9,8 @@
 
 use super::{HandlerContext, SearchParams};
 use crate::entity::photo;
+use crate::repository::{sort_to_order_by_clause, MetaInfoDB};
 use crate::value::date as date_value;
-
-/// Generate ORDER BY clause based on sort_value
-/// Matches the Sort enum in repository.rs:
-/// 0: PhotoTimeDesc, 1: PhotoTimeAsc, 2: AddedTimeDesc, 3: AddedTimeAsc,
-/// 4: StarDesc, 5: StarAsc, 6: NameDesc, 7: NameAsc
-/// Uses fallback chain matching search.rs: exif_date_time_original, photo_date, path
-fn get_order_by_clause(sort_value: i32, table_alias: &str) -> String {
-    let a = table_alias;
-    match sort_value {
-        0 => format!("ORDER BY {a}.exif_date_time_original DESC, {a}.photo_date DESC, {a}.path DESC"),
-        1 => format!("ORDER BY {a}.exif_date_time_original ASC, {a}.photo_date ASC, {a}.path ASC"),
-        2 => format!("ORDER BY {a}.photo_date DESC, {a}.exif_date_time_original DESC, {a}.path DESC"),
-        3 => format!("ORDER BY {a}.photo_date ASC, {a}.exif_date_time_original ASC, {a}.path ASC"),
-        4 => format!("ORDER BY {a}.star DESC NULLS LAST, {a}.exif_date_time_original DESC, {a}.photo_date DESC, {a}.path DESC"),
-        5 => format!("ORDER BY {a}.star ASC NULLS LAST, {a}.exif_date_time_original ASC, {a}.photo_date ASC, {a}.path ASC"),
-        6 => format!("ORDER BY {a}.path DESC, {a}.exif_date_time_original DESC, {a}.photo_date DESC"),
-        7 => format!("ORDER BY {a}.path ASC, {a}.exif_date_time_original ASC, {a}.photo_date ASC"),
-        _ => format!("ORDER BY {a}.exif_date_time_original DESC, {a}.photo_date DESC, {a}.path DESC"),
-    }
-}
 
 /// Apply burst grouping to a list of photos.
 /// Groups photos by burst_group_id, keeping only the representative (first) photo of each group.
@@ -105,7 +86,7 @@ pub async fn handle_burst_date(ctx: &HandlerContext<'_>, params: &SearchParams) 
     // SQL using CTE with ROW_NUMBER to get representative photos
     // Representative = oldest photo in each group (by exif_date_time_original, then path)
     // Use date() function to extract date part from photo_date (format: YYYY-MM-DD HH:MM:SS)
-    let order_by = get_order_by_clause(params.sort_value, "r");
+    let order_by = sort_to_order_by_clause(params.sort_value, "r");
     let query_sql = format!(r#"
         WITH ranked AS (
             SELECT
@@ -264,7 +245,7 @@ pub async fn handle_burst_group(ctx: &HandlerContext<'_>, params: &SearchParams)
     })?;
 
     // Simple query to get all photos in the burst group
-    let order_by = get_order_by_clause(params.sort_value, "pm");
+    let order_by = sort_to_order_by_clause(params.sort_value, "pm");
     let query_sql = format!(r#"
         SELECT pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url,
                pm.exif_orientation, pm.burst_group_id,

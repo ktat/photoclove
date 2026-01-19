@@ -1,3 +1,4 @@
+use crate::value::date;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -128,7 +129,7 @@ impl From<String> for JobStatus {
 impl JobUnit {
     pub fn new(jobs: Vec<String>) -> Self {
         let uuid = Uuid::new_v4().to_string();
-        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        let now = date::DateTime::now().to_db_string();
 
         JobUnit {
             id: uuid,
@@ -141,7 +142,7 @@ impl JobUnit {
 
 impl Job {
     pub fn new(job_unit_id: String, job_type: JobType, target: Vec<String>) -> Self {
-        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        let now = date::DateTime::now().to_db_string();
 
         Job {
             job_unit_id,
@@ -154,7 +155,7 @@ impl Job {
 
 impl QueuedJob {
     pub fn new(job_unit_id: String, job: Job) -> Self {
-        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        let now = date::DateTime::now().to_db_string();
 
         QueuedJob {
             id: None,

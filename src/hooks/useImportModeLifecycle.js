@@ -21,7 +21,7 @@ import { logger } from '../services/LoggerService.js';
 
 export function useImportModeLifecycle({
     viewMode,
-    isSearchMode,
+    viewModeObj,
     importState,
     setImportState,
     setTabClass,
@@ -89,7 +89,7 @@ export function useImportModeLifecycle({
                     });
                 });
             }
-        } else if (isSearchMode) {
+        } else if (viewModeObj?.isSearchMode()) {
             // Set tab state for search mode
             setTabClass({
                 'directory': false,
@@ -132,7 +132,7 @@ export function useImportModeLifecycle({
         }
     }, [
         viewMode,
-        isSearchMode,
+        viewModeObj,
         importState
         // Note: Intentionally excluding setter functions to prevent infinite loops
         // These functions are stable and don't need to trigger re-runs

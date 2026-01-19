@@ -1,4 +1,5 @@
 use crate::AppState;
+use crate::repository::MetaInfoDB;
 
 /// Creates a new tag in the metadata database
 ///
@@ -143,7 +144,7 @@ pub async fn remove_all_tags_from_photo(
     let correlation_id = logging_service.generate_correlation_id();
     log::info!(target: "tags", "remove_all_tags_from_photo_request; correlation_id={}; photo_path={}", correlation_id, photo_path);
 
-    match meta_db.remove_all_tags_from_photo(&photo_path) {
+    match meta_db.remove_all_collections_from_photo(&photo_path, Some("tag")) {
         Ok(removed_count) => {
             log::info!(target: "tags", "remove_all_tags_from_photo_success; correlation_id={}; removed_count={}", correlation_id, removed_count);
             Ok(removed_count)
@@ -174,7 +175,7 @@ pub async fn get_tags_for_photo(
     let correlation_id = logging_service.generate_correlation_id();
     log::info!(target: "tags", "get_tags_for_photo_request; correlation_id={}; photo_path={}", correlation_id, photo_path);
 
-    match meta_db.get_tags_for_photo(&photo_path) {
+    match meta_db.get_collections_for_photo(&photo_path, Some("tag")) {
         Ok(tags) => {
             log::info!(target: "tags", "get_tags_for_photo_success; correlation_id={}; count={}", correlation_id, tags.len());
             Ok(tags)

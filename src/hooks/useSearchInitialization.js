@@ -13,7 +13,7 @@ import { logger } from '../services/LoggerService.js';
  * not by this hook. This keeps search mode consistent with other view modes.
  *
  * @param {Object} params
- * @param {boolean} params.isSearchMode - Whether in search mode
+ * @param {Object} params.viewModeObj - ViewMode object for mode checks
  * @param {boolean} params.isAdvancedSearchMode - Whether in advanced search mode
  * @param {string} params.searchQuery - Current search query
  * @param {string} params.searchInitialQuery - Initial search query from URL/props
@@ -26,7 +26,7 @@ import { logger } from '../services/LoggerService.js';
  * @param {Function} params.loadFilterOptions - Function to load filter options
  */
 export function useSearchInitialization({
-    isSearchMode,
+    viewModeObj,
     isAdvancedSearchMode,
     searchQuery,
     searchInitialQuery,
@@ -40,22 +40,22 @@ export function useSearchInitialization({
 }) {
     // Initialize search parameters when in search mode
     useEffect(() => {
-        if (isSearchMode && searchQuery && !currentSearchParams) {
+        if (viewModeObj.isSearchMode() && searchQuery && !currentSearchParams) {
             updateSearchParams({
                 query: searchQuery,
                 searchType: "all",
                 filters: searchFilters
             });
         }
-    }, [isSearchMode, searchQuery, currentSearchParams, searchFilters, updateSearchParams]);
+    }, [viewModeObj, searchQuery, currentSearchParams, searchFilters, updateSearchParams]);
 
     // Perform initial search when component mounts with searchInitialQuery
     useEffect(() => {
-        if (isSearchMode && searchInitialQuery && !currentSearchParams) {
+        if (viewModeObj.isSearchMode() && searchInitialQuery && !currentSearchParams) {
             handleSearch(searchInitialQuery, "all", {});
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isSearchMode, searchInitialQuery, currentSearchParams]);
+    }, [viewModeObj, searchInitialQuery, currentSearchParams]);
     // Note: handleSearch is intentionally omitted - only search state changes should trigger this
 
     // Note: Photo loading for search results is now handled by useViewModeSync

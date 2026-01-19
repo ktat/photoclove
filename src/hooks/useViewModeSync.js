@@ -19,13 +19,13 @@ import { logger } from '../services/LoggerService.js';
 
 export function useViewModeSync({
     viewMode,
+    viewModeObj,
     currentDate,
     currentAlbumId,
     currentTagId,
     currentBurstGroupId,
     searchQuery,
     currentSearchParams,
-    isSearchMode,
     photoLoading,
     currentPhotoLoadingController,
     setCurrentPhotoLoadingController,
@@ -46,22 +46,12 @@ export function useViewModeSync({
 
     useEffect(() => {
         // Skip on initial mount if no viewMode
-        if (!viewMode) {
+        if (!viewMode || !viewModeObj) {
             return;
         }
 
         // Set side menu visibility based on search mode
-        setShowSideMenu(isSearchMode);
-
-        // Create ViewMode object from current state
-        const viewModeObj = new ViewMode(viewMode, {
-            date: currentDate,
-            albumId: currentAlbumId,
-            tagId: currentTagId,
-            burstGroupId: currentBurstGroupId,
-            searchQuery: searchQuery,
-            searchParams: currentSearchParams
-        });
+        setShowSideMenu(viewModeObj.isSearchMode());
 
         // Skip photo loading if in album or tag mode - these photos are managed separately
         if (viewModeObj.isAlbumMode() || viewModeObj.isTagMode()) {
@@ -78,6 +68,7 @@ export function useViewModeSync({
 
     }, [
         viewMode,
+        viewModeObj,
         currentDate,
         currentAlbumId,
         currentTagId,

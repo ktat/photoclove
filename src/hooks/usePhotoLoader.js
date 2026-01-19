@@ -28,9 +28,6 @@ import { useAsyncCancellation } from './useAsyncCancellation.js';
  * @param {string} params.extensionFilter - Extension filter value
  * @param {Array} params.filteredPhotos - Filtered photos array
  * @param {number} params.numOfPhoto - Number of photos per page
- * @param {boolean} params.recentPhotosMode - Recent photos mode flag
- * @param {boolean} params.isSearchMode - Search mode flag
- * @param {Array} params.searchResults - Search results array
  * @param {Object} params.importState - Import state object
  * @param {Function} params.setPhotosList - Set photos list function
  * @param {Function} params.setAllPhotosForCurrentFetch - Set all photos function
@@ -58,9 +55,6 @@ export function usePhotoLoader({
     extensionFilter,
     filteredPhotos,
     numOfPhoto,
-    recentPhotosMode,
-    isSearchMode,
-    searchResults,
     importState,
     setPhotosList,
     setAllPhotosForCurrentFetch,
@@ -86,185 +80,34 @@ export function usePhotoLoader({
     const { startNewRequest, isRequestValid } = useAsyncCancellation();
 
     /**
-     * Load all photos based on current view mode
+     * Internal: Load photos via unified API with filters
      * @param {Object} viewMode - ViewMode object
      * @param {Object} config - App configuration
-     * @param {boolean} silent - If true, don't show loading indicator (for metadata-only updates)
+     * @param {number} requestId - Request ID for cancellation tracking
+     * @param {boolean} silent - If true, don't show loading indicator
      */
-    const loadAllPhotosBasedOnViewMode = useCallback(async (viewMode, config, silent = false) => {
-        // Start new request, invalidating any previous pending requests
-        const requestId = startNewRequest();
-
-        const callStack = new Error().stack;
-        logger.info('PhotosList', 'load_photos_viewmode', 'loadAllPhotosBasedOnViewMode called', {
-            viewMode: viewMode.mode,
-            viewModeData: viewMode.data,
-            hasConfig: !!config,
-            silent,
-            requestId,
-            callStack: callStack.split('\n').slice(1, 4).join('\n')
-        });
-
-        if (!viewMode || !config) {
-            logger.error("PhotosList", "error", "no viewModeObj or appConfig", {
-                viewModeObj: viewMode,
-                config: config
-            });
-            return;
-        }
-
-        // IMPORT mode uses separate loading mechanism (ImportState + show_importer)
-        if (viewMode.isImportMode()) {
-            logger.info('PhotosList', 'import_mode_skip', 'Import mode uses ImportState, skipping get_photos_unified');
-            return;
-        }
-
-        // Some view modes don't require a value (e.g., search with filters only, recent, trash)
-        // IN_BURST_GROUP mode requires burstGroupId from viewMode data
-        if (!viewMode.isSearchMode() && !viewMode.isRecentMode() && !viewMode.isTrashMode() && !viewMode.isInBurstGroupMode() && !viewMode.getCurrentDate() && !viewMode.getCurrentAlbumId() && !viewMode.getCurrentTagId()) {
-            return;
-        }
-
-        logger.info('PhotosList', 'load_all_start', 'Loading all photos', {
-            viewMode: viewMode.mode,
-            viewModeData: viewMode.data,
-            appConfig: config,
-            silent,
-            requestId,
-            isSearchMode,
-            searchResultsLength: searchResults.length
-        });
-
-        // Show loading indicator (unless silent mode)
-        if (!silent) {
-            setPhotoLoading(true);
-        }
-
+    const loadViaUnifiedAPI = useCallback(async (viewMode, config, requestId, silent = false) => {
         try {
-            let result;
-
-            logger.debug('PhotosList', 'load_all_viewmode', 'Using ViewMode to generate parameters', {
-                mode: viewMode.mode,
-                viewModeData: viewMode.data
+            // Generate parameters using ViewMode with current filters
+            const photoParams = viewMode.getUnifiedPhotoParams(config, {
+                sort_value: parseInt(sortOfPhotos),
+                star: starFilter || -1,
+                has_comment: hasCommentFilter || false,
+                extension: extensionFilter || "all",
+                burstModeEnabled: burstModeEnabled
             });
 
-            try {
-                // Generate parameters using ViewMode
-                const photoParams = viewMode.getUnifiedPhotoParams(config, {
-                    sort_value: parseInt(sortOfPhotos),
-                    star: starFilter || -1,
-                    has_comment: hasCommentFilter || false,
-                    extension: extensionFilter || "all",
-                    burstModeEnabled: burstModeEnabled
-                });
+            const result = await invoke("get_photos_unified", { request: photoParams });
 
-                logger.info('PhotosList', 'viewmode_params_generated', 'Generated parameters using ViewMode', {
-                    mode: viewMode.mode,
-                    params: photoParams
-                });
-
-                result = await invoke("get_photos_unified", {
-                    request: photoParams
-                });
-
-                // Check if this request was cancelled while waiting
-                if (!isRequestValid(requestId)) {
-                    logger.debug('PhotosList', 'request_cancelled', 'Request cancelled, ignoring stale response', {
-                        requestId,
-                        mode: viewMode.mode
-                    });
-                    return;
-                }
-
-                logger.info('PhotosList', 'viewmode_result', 'Unified get_photos result from ViewMode', {
-                    resultType: typeof result,
-                    hasResult: !!result,
-                    mode: viewMode.mode,
-                    requestId
-                });
-            } catch (error) {
-                // Ignore errors from cancelled requests
-                if (!isRequestValid(requestId)) {
-                    logger.debug('PhotosList', 'request_cancelled_error', 'Ignoring error from cancelled request', {
-                        requestId
-                    });
-                    return;
-                }
-                handleError(error, `Unsupported mode ${viewMode.mode}`, { mode: viewMode.mode });
-                if (!silent) setPhotoLoading(false);
-                return;
+            if (!isRequestValid(requestId)) {
+                return null;
             }
-
-            logger.info('PhotosList', 'about_to_parse', 'About to parse result', {
-                resultType: typeof result,
-                resultLength: result ? result.length : 'null',
-                hasResult: !!result
-            });
 
             const data = JSON.parse(result);
 
-            logger.info('PhotosList', 'parse_success', 'JSON parse successful', {
-                hasPhotos: !!(data && data.photos),
-                photoCount: data && data.photos ? data.photos.length : 'no photos key'
-            });
-
-            // Validate data structure before proceeding
             if (!data || !data.photos || !Array.isArray(data.photos)) {
-                logger.error('PhotosList', 'invalid_data_structure', 'Invalid data structure from backend', {
-                    hasData: !!data,
-                    hasPhotos: !!(data && data.photos),
-                    photosType: data && data.photos ? typeof data.photos : 'undefined',
-                    isArray: data && data.photos ? Array.isArray(data.photos) : false
-                });
-                if (!silent) setPhotoLoading(false);
-                return;
-            }
-
-            logger.info('PhotosList', 'load_all_parsed', 'Photos loaded and parsed', {
-                photoCount: data.photos.length,
-                viewMode: viewMode.mode,
-                hasNext: data.has_next,
-                hasPrev: data.has_prev
-            });
-
-            // Debug: Check if metadata is included
-            if (data.photos.length > 0) {
-                const firstPhoto = data.photos[0];
-                logger.info('PhotosList', 'backend_data_sample', 'First photo from backend', {
-                    path: firstPhoto?.file?.path || firstPhoto?.path,
-                    hasTags: !!firstPhoto.tags,
-                    tagsType: typeof firstPhoto.tags,
-                    tagsLength: Array.isArray(firstPhoto.tags) ? firstPhoto.tags.length : 'not array',
-                    tagsContent: firstPhoto.tags,
-                    fullPhotoKeys: Object.keys(firstPhoto || {}),
-                    hasMetaData: !!firstPhoto.meta_data,
-                    metaDataOrientation: firstPhoto.meta_data?.orientation
-                });
-
-                // Check meta_data for photos at different indices
-                const indicesToCheck = [0, 10, 49, 50, 51, 100].filter(i => i < data.photos.length);
-                const metaDataCheck = indicesToCheck.map(i => ({
-                    index: i,
-                    path: data.photos[i]?.file?.path?.slice(-30),
-                    hasMeta: !!data.photos[i]?.meta_data,
-                    orientation: data.photos[i]?.meta_data?.orientation || 'NONE'
-                }));
-                logger.info('PhotosList', 'backend_meta_data_check', 'Checking meta_data at different indices', {
-                    totalPhotos: data.photos.length,
-                    samples: metaDataCheck
-                });
-
-                // Also check photos with tags
-                const photosWithTags = data.photos.filter(p => p.tags && p.tags.length > 0);
-                if (photosWithTags.length > 0) {
-                    logger.info('PhotosList', 'backend_data_with_tags', 'Found photos with tags', {
-                        count: photosWithTags.length,
-                        sample: {
-                            path: photosWithTags[0]?.file?.path || photosWithTags[0]?.path,
-                            tags: photosWithTags[0].tags
-                        }
-                    });
-                }
+                logger.error('PhotosList', 'invalid_data_structure', 'Invalid data structure from backend');
+                return null;
             }
 
             // Check if we hit the configuration limit
@@ -273,34 +116,136 @@ export function usePhotoLoader({
             setIsLimitedByConfig(isLimited);
             setConfigLimit(effectiveLimit);
 
-            // Store all photos unfiltered - convert to Photo entities then to JSON for React state
-            logger.info('PhotosList', 'setting_photos', 'Setting allPhotosForCurrentFetch', {
-                photoCount: data.photos.length,
-                firstPhotoPath: data.photos[0]?.file?.path || 'no photos'
-            });
-
-            // Wrapper signature: (photosData, isFromTrash, toJSON) - appConfig via closure
+            // Convert to Photo entities and store
             const photoEntities = convertPhotosToEntities(data.photos, false, false);
-            logger.info('PhotosList', 'before_set_photos', 'About to update allPhotosForCurrentFetch', {
-                photoCount: photoEntities.length
-            });
             setAllPhotosForCurrentFetch(photoEntities);
-            logger.info('PhotosList', 'photos_set', 'allPhotosForCurrentFetch state updated');
 
-            // Don't apply filters here - let the memoized filteredPhotos handle it
-            // This ensures consistency between all components
+            return photoEntities;
+        } catch (error) {
+            if (!isRequestValid(requestId)) {
+                return null;
+            }
+            handleError(error, `Load photos mode ${viewMode.mode}`, { mode: viewMode.mode });
+            return null;
+        }
+    }, [
+        sortOfPhotos,
+        starFilter,
+        hasCommentFilter,
+        extensionFilter,
+        burstModeEnabled,
+        setIsLimitedByConfig,
+        setConfigLimit,
+        setAllPhotosForCurrentFetch,
+        convertPhotosToEntities,
+        handleError,
+        isRequestValid
+    ]);
 
-            // Hide loading indicator (unless in silent mode where it was never shown)
-            if (!silent) {
-                setPhotoLoading(false);
+    /**
+     * Unified photo loading function
+     * @param {Object} viewMode - ViewMode object (optional, uses viewModeObj if not provided)
+     * @param {Object} options - Loading options
+     * @param {boolean} options.silent - If true, don't show loading indicator (for metadata-only updates)
+     * @param {boolean} options.applyFilters - If true, apply current star/comment/extension filters
+     */
+    const loadPhotos = useCallback(async (viewMode, options = {}) => {
+        const { silent = false, applyFilters = false } = options;
+        const config = appConfig;
+        const requestId = startNewRequest();
+
+        if (!viewMode || !config) {
+            return;
+        }
+
+        // IMPORT mode uses separate loading mechanism
+        if (viewMode.isImportMode() && !importState) {
+            return;
+        }
+
+        // Some view modes require specific data
+        if (!viewMode.isSearchMode() && !viewMode.isRecentMode() && !viewMode.isTrashMode() &&
+            !viewMode.isInBurstGroupMode() && !viewMode.isImportMode() &&
+            !viewMode.getCurrentDate() && !viewMode.getCurrentAlbumId() && !viewMode.getCurrentTagId()) {
+            return;
+        }
+
+        if (!silent) {
+            setPhotoLoading(true);
+        }
+
+        try {
+            let photoEntities;
+
+            // Modes that need unified API: album, tag, burst group, date with burst enabled
+            const needsUnifiedAPI = viewMode.isAlbumMode() || viewMode.isTagMode() ||
+                viewMode.isInBurstGroupMode() || (viewMode.isDateMode() && burstModeEnabled) ||
+                applyFilters;
+
+            if (needsUnifiedAPI) {
+                photoEntities = await loadViaUnifiedAPI(viewMode, config, requestId, silent);
+                if (photoEntities === null) {
+                    if (!silent) setPhotoLoading(false);
+                    return;
+                }
+            } else {
+                // Use PhotoCollection for supported modes
+                let collection;
+
+                if (viewMode.isDateMode()) {
+                    collection = PhotoCollection.createDateCollection([], viewMode.getCurrentDate(), config, parseInt(sortOfPhotos));
+                } else if (viewMode.isRecentMode()) {
+                    collection = PhotoCollection.createRecentCollection([], config, parseInt(sortOfPhotos));
+                } else if (viewMode.isSearchMode()) {
+                    const searchParams = viewMode.data.searchParams;
+                    collection = PhotoCollection.createSearchCollection([], viewMode.getSearchQuery(), config, searchParams, parseInt(sortOfPhotos));
+                } else if (viewMode.isImportMode()) {
+                    collection = PhotoCollection.createImportCollection(
+                        [],
+                        importState.currentImportPath || '',
+                        importState.importPaths || [],
+                        importState.importFilter || '',
+                        config,
+                        parseInt(sortOfPhotos)
+                    );
+                } else if (viewMode.isTrashMode()) {
+                    collection = PhotoCollection.createTrashCollection([], config, parseInt(sortOfPhotos));
+                } else {
+                    // Fallback to unified API
+                    photoEntities = await loadViaUnifiedAPI(viewMode, config, requestId, silent);
+                    if (photoEntities === null) {
+                        if (!silent) setPhotoLoading(false);
+                        return;
+                    }
+                }
+
+                if (collection) {
+                    const filters = { star: -1, hasComment: false, extension: "all" };
+                    const updatedCollection = await collection.fetchPhotos(1, Math.min(9999, config?.max_photos_per_fetch || 1000), filters);
+
+                    if (!isRequestValid(requestId)) {
+                        return;
+                    }
+
+                    setPhotoCollection(updatedCollection);
+                    setPhotosList({
+                        photos: updatedCollection.photos,
+                        has_next: updatedCollection.metadata.hasNext,
+                        has_prev: updatedCollection.metadata.hasPrev
+                    });
+
+                    photoEntities = updatedCollection.photos.filter(photo => photo !== null);
+                    setAllPhotosForCurrentFetch(photoEntities);
+
+                    // Clear related states
+                    setPhotosListImgSrc({});
+                    setCurrentPhotoPath("");
+                    setCurrentPhotoIndex(undefined);
+                }
             }
 
         } catch (error) {
-            // Ignore errors from cancelled requests
             if (!isRequestValid(requestId)) {
-                logger.debug('PhotosList', 'request_cancelled_catch', 'Ignoring error from cancelled request', {
-                    requestId
-                });
                 return;
             }
 
@@ -311,37 +256,44 @@ export function usePhotoLoader({
             setIsLimitedByConfig(false);
             setConfigLimit(null);
 
-            // Hide loading indicator on error (unless in silent mode)
-            if (!silent) {
-                setPhotoLoading(false);
-            }
-
-            // Use enhanced error handling
-            handleError(error, 'Load photos', { appConfig: config });
-
-            // Fallback footer message
+            handleError(error, 'Load photos', { mode: viewMode.mode });
             const errorMsg = error?.message || error?.toString() || String(error) || 'Unknown error';
             addFooterMessage && addFooterMessage(`Failed to load photos: ${errorMsg}`);
+        } finally {
+            if (isRequestValid(requestId) && !silent) {
+                setPhotoLoading(false);
+            }
         }
     }, [
+        appConfig,
         sortOfPhotos,
-        starFilter,
-        hasCommentFilter,
-        extensionFilter,
-        isSearchMode,
+        importState,
         burstModeEnabled,
         setPhotoLoading,
+        setPhotoCollection,
+        setPhotosList,
         setAllPhotosForCurrentFetch,
+        setPhotosListMiniAllPhotos,
+        setPhotosListImgSrc,
+        setCurrentPhotoPath,
+        setCurrentPhotoIndex,
         setIsLimitedByConfig,
         setConfigLimit,
-        setPhotosListMiniAllPhotos,
-        setPhotosList,
-        convertPhotosToEntities,
         handleError,
         addFooterMessage,
+        loadViaUnifiedAPI,
         startNewRequest,
         isRequestValid
     ]);
+
+    // Legacy aliases for backward compatibility
+    const loadAllPhotosBasedOnViewMode = useCallback(async (viewMode, config, silent = false) => {
+        return loadPhotos(viewMode, { silent, applyFilters: true });
+    }, [loadPhotos]);
+
+    const loadPhotosWithCollection = useCallback(async (viewMode) => {
+        return loadPhotos(viewMode, { silent: false, applyFilters: false });
+    }, [loadPhotos]);
 
     /**
      * Get photos for current page (pagination)
@@ -355,7 +307,16 @@ export function usePhotoLoader({
 
         setPhotoLoading(true);
 
-        let date = recentPhotosMode ? "recent" : (isSearchMode ? "search_results" : viewModeObj.getDataAttribute());
+        // Derive date key from viewModeObj
+        let date;
+        if (viewModeObj.isRecentMode()) {
+            date = "recent";
+        } else if (viewModeObj.isSearchMode()) {
+            date = "search_results";
+        } else {
+            date = viewModeObj.getDataAttribute();
+        }
+
         let page = datePage[date] || 1;
 
         if (!page || page == "NaN") {
@@ -386,205 +347,14 @@ export function usePhotoLoader({
         const newDatePage = { ...datePage, [date]: page };
         updateDatePage(newDatePage);
         setPhotoLoading(false);
-        // Removed scrollLock for infinite scroll
     }, [
         filteredPhotos,
         numOfPhoto,
-        recentPhotosMode,
-        isSearchMode,
         viewModeObj,
         datePage,
         updateDatePage,
         setPhotosList,
         setPhotoLoading
-    ]);
-
-    /**
-     * Load photos using PhotoCollection (supports Date, Recent, Search, Import, Trash modes)
-     */
-    const loadPhotosWithCollection = useCallback(async (viewMode) => {
-        // Start new request, invalidating any previous pending requests
-        const requestId = startNewRequest();
-
-        if (!viewMode) {
-            logger.warn('PhotosList', 'load_photos_collection_no_viewmode', 'ViewMode not provided, skipping photo loading');
-            return;
-        }
-
-        if (!appConfig) {
-            logger.warn('PhotosList', 'load_photos_collection_no_config', 'Config not loaded yet, skipping photo loading');
-            return;
-        }
-
-        logger.info('PhotosList', 'load_photos_collection', 'Loading photos with PhotoCollection', {
-            viewMode: viewMode.mode,
-            viewModeData: viewMode.data,
-            hasAppConfig: !!appConfig,
-            requestId
-        });
-
-        setPhotoLoading(true);
-
-        try {
-            let collection;
-
-            // Create appropriate PhotoCollection based on view mode
-            // When burst mode is enabled, use loadAllPhotosBasedOnViewMode for proper burst grouping
-            if (viewMode.isDateMode()) {
-                if (burstModeEnabled) {
-                    logger.info('PhotosList', 'date_burst_mode', 'Date mode with burst enabled, using unified loader', {
-                        date: viewMode.getCurrentDate(),
-                        burstModeEnabled
-                    });
-                    setPhotoLoading(false);
-                    return await loadAllPhotosBasedOnViewMode(viewMode, appConfig);
-                }
-                logger.info('PhotosList', 'creating_date_collection', 'Creating date collection', {
-                    date: viewMode.getCurrentDate(),
-                    sortOfPhotos: sortOfPhotos
-                });
-                collection = PhotoCollection.createDateCollection([], viewMode.getCurrentDate(), appConfig, parseInt(sortOfPhotos));
-            } else if (viewMode.isRecentMode()) {
-                logger.info('PhotosList', 'creating_recent_collection', 'Creating recent collection', {
-                    sortOfPhotos: parseInt(sortOfPhotos)
-                });
-                collection = PhotoCollection.createRecentCollection([], appConfig, parseInt(sortOfPhotos));
-            } else if (viewMode.isSearchMode()) {
-                // For search, pass searchParams from viewMode
-                const searchParams = viewMode.data.searchParams;
-                logger.info('PhotosList', 'creating_search_collection', 'Creating search collection', {
-                    searchQuery: viewMode.getSearchQuery(),
-                    hasSearchParams: !!searchParams,
-                    searchParams: searchParams,
-                    sortOfPhotos: parseInt(sortOfPhotos)
-                });
-                collection = PhotoCollection.createSearchCollection([], viewMode.getSearchQuery(), appConfig, searchParams, parseInt(sortOfPhotos));
-            } else if (viewMode.isImportMode()) {
-                // For import mode, need to get values from importState
-                if (!importState) {
-                    logger.warn('PhotosList', 'import_state_missing', 'Import state not initialized, skipping photo load');
-                    setPhotoLoading(false);
-                    return;
-                }
-                logger.info('PhotosList', 'creating_import_collection', 'Creating import collection', {
-                    currentImportPath: importState.currentImportPath,
-                    importPaths: importState.importPaths,
-                    importFilter: importState.importFilter,
-                    sortOfPhotos: parseInt(sortOfPhotos)
-                });
-                collection = PhotoCollection.createImportCollection(
-                    [],
-                    importState.currentImportPath || '',
-                    importState.importPaths || [],
-                    importState.importFilter || '',
-                    appConfig,
-                    parseInt(sortOfPhotos)
-                );
-            } else if (viewMode.isTrashMode()) {
-                logger.info('PhotosList', 'creating_trash_collection', 'Creating trash collection', {
-                    sortOfPhotos: parseInt(sortOfPhotos)
-                });
-                collection = PhotoCollection.createTrashCollection([], appConfig, parseInt(sortOfPhotos));
-            } else {
-                logger.warn('PhotosList', 'unsupported_view_mode', 'View mode not yet supported in PhotoCollection', {
-                    mode: viewMode.mode
-                });
-                // Fallback to new unified method
-                setPhotoLoading(false);
-                return await loadAllPhotosBasedOnViewMode(viewMode, appConfig);
-            }
-
-            // Fetch photos using PhotoCollection
-            const filters = {
-                star: -1,
-                hasComment: false,
-                extension: "all"
-            };
-
-            logger.info('PhotosList', 'fetching_photos', 'About to fetch photos using PhotoCollection', {
-                mode: collection.mode,
-                pageSize: Math.min(9999, appConfig?.max_photos_per_fetch || 1000),
-                filters,
-                requestId
-            });
-            const updatedCollection = await collection.fetchPhotos(1, Math.min(9999, appConfig?.max_photos_per_fetch || 1000), filters);
-
-            // Check if this request was cancelled while waiting
-            if (!isRequestValid(requestId)) {
-                logger.debug('PhotosList', 'request_cancelled_collection', 'Request cancelled, ignoring stale collection response', {
-                    requestId,
-                    mode: viewMode.mode
-                });
-                return;
-            }
-
-            logger.info('PhotosList', 'fetch_photos_result', 'Photos fetched from PhotoCollection', {
-                mode: collection.mode,
-                photoCount: updatedCollection.photos.length,
-                hasNext: updatedCollection.metadata.hasNext,
-                hasPrev: updatedCollection.metadata.hasPrev,
-                requestId
-            });
-
-            // Update states
-            setPhotoCollection(updatedCollection);
-            setPhotosList({
-                photos: updatedCollection.photos,
-                has_next: updatedCollection.metadata.hasNext,
-                has_prev: updatedCollection.metadata.hasPrev
-            });
-
-            // CRITICAL: Set allPhotosForCurrentFetch to enable filtering
-            // Store Photo entities directly to preserve methods
-            const photoEntities = updatedCollection.photos
-                .filter(photo => photo !== null);
-            setAllPhotosForCurrentFetch(photoEntities);
-
-            // Clear related states (but NOT selection - it should persist across mode changes)
-            setPhotosListImgSrc({});
-            setCurrentPhotoPath("");
-            setCurrentPhotoIndex(undefined);
-
-            logger.info('PhotosList', 'load_photos_collection_success', 'Successfully loaded photos with PhotoCollection', {
-                photoCount: updatedCollection.photos.length,
-                hasNext: updatedCollection.metadata.hasNext
-            });
-
-        } catch (error) {
-            // Ignore errors from cancelled requests
-            if (!isRequestValid(requestId)) {
-                logger.debug('PhotosList', 'request_cancelled_collection_error', 'Ignoring error from cancelled request', {
-                    requestId
-                });
-                return;
-            }
-            handleError(error, 'Load photos collection', {
-                viewMode: viewMode.mode,
-                viewModeData: viewMode.data,
-                requestId
-            });
-        } finally {
-            // Only reset loading state if this is still the current request
-            if (isRequestValid(requestId)) {
-                setPhotoLoading(false);
-            }
-        }
-    }, [
-        appConfig,
-        sortOfPhotos,
-        importState,
-        burstModeEnabled,
-        setPhotoLoading,
-        setPhotoCollection,
-        setPhotosList,
-        setAllPhotosForCurrentFetch,
-        setPhotosListImgSrc,
-        setCurrentPhotoPath,
-        setCurrentPhotoIndex,
-        handleError,
-        loadAllPhotosBasedOnViewMode,
-        startNewRequest,
-        isRequestValid
     ]);
 
     return {
@@ -596,6 +366,8 @@ export function usePhotoLoader({
 
         // Functions
         getPhotos,
+        loadPhotos,
+        // Legacy aliases (for backward compatibility)
         loadAllPhotosBasedOnViewMode,
         loadPhotosWithCollection
     };

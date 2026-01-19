@@ -14,16 +14,13 @@ import { VIEW_MODES } from '../constants/viewModes.js';
  *
  * @param {Object} params
  * @param {string} params.viewMode - Current view mode
- * @param {boolean} params.isSearchMode - Whether in search mode
+ * @param {Object} params.viewModeObj - ViewMode object for mode checks
  * @returns {Object} Tab management state and functions
  */
-export function useTabManagement({ viewMode, isSearchMode }) {
+export function useTabManagement({ viewMode, viewModeObj }) {
     // Initialize tabs based on current view mode
     const [tabClass, setTabClass] = useState(() => {
-        logger.debug('useTabManagement', 'init_tabs', 'Initializing tab state', {
-            viewMode,
-            isSearchMode
-        });
+        const isSearchMode = viewModeObj?.isSearchMode() || false;
 
         if (viewMode === VIEW_MODES.IMPORT) {
             return {

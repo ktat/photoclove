@@ -2,7 +2,7 @@
 
 use super::{date_summary, photo_metadata, SQLite};
 use crate::entity::photo;
-use crate::value::{comment, star};
+use crate::value::{comment, date, star};
 use rusqlite::params;
 
 /// Save star rating for a photo
@@ -12,7 +12,7 @@ pub fn save_star(sqlite: &SQLite, photo: &photo::Photo, star: star::Star) {
         Err(_) => return,
     };
 
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
     // Use UPDATE to preserve other columns (especially exif_orientation)
     let _ = conn.execute(
         "UPDATE photo_metadata SET star = ?1, updated_at = ?2 WHERE path = ?3",
@@ -27,7 +27,7 @@ pub fn save_comment(sqlite: &SQLite, photo: &photo::Photo, comment: comment::Com
         Err(_) => return,
     };
 
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
     // Use UPDATE to preserve other columns (especially exif_orientation)
     let _ = conn.execute(
         "UPDATE photo_metadata SET comment = ?1, updated_at = ?2 WHERE path = ?3",
@@ -47,7 +47,7 @@ pub fn delete_photo(sqlite: &SQLite, photo: &photo::Photo) {
     let photo_date = existing_meta.photo_time();
 
     // Soft delete: set delete_flg = 1 instead of DELETE
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
     let _ = conn.execute(
         "UPDATE photo_metadata SET delete_flg = 1, updated_at = ? WHERE path = ?",
         params![now, photo.file.path],
@@ -107,7 +107,7 @@ pub fn restore_photo_from_trash(sqlite: &SQLite, photo: &photo::Photo) {
     let photo_date = existing_meta.photo_time();
 
     // Restore: set delete_flg = 0
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
     let _ = conn.execute(
         "UPDATE photo_metadata SET delete_flg = 0, updated_at = ? WHERE path = ?",
         params![now, photo.file.path],
@@ -125,7 +125,7 @@ pub fn restore_photo_from_trash_no_summary(sqlite: &SQLite, photo: &photo::Photo
     };
 
     // Restore: set delete_flg = 0
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
     let _ = conn.execute(
         "UPDATE photo_metadata SET delete_flg = 0, updated_at = ? WHERE path = ?",
         params![now, photo.file.path],
@@ -297,7 +297,7 @@ pub fn save_google_photos_url(
         .get_connection()
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
 
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
     let affected_rows = conn
         .execute(
             "UPDATE photo_metadata SET google_photos_url = ?1, updated_at = ?2 WHERE path = ?3",
@@ -318,7 +318,7 @@ pub fn save_css_style(sqlite: &SQLite, photo_path: &str, css_style: &str) -> Res
         .get_connection()
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
 
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
     let affected_rows = conn
         .execute(
             "UPDATE photo_metadata SET css_style = ?1, updated_at = ?2 WHERE path = ?3",

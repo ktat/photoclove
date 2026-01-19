@@ -40,10 +40,10 @@
 /* Tab Navigation */
 .preferences-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-1);
   margin-bottom: var(--space-6);
   border-bottom: 1px solid var(--color-border-default);
-  overflow-x: auto;
   flex-shrink: 0;
 }
 
@@ -51,7 +51,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-2) var(--space-4);
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
@@ -74,11 +74,32 @@
 }
 
 .tab-icon {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-lg);
 }
 
 .tab-label {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
+}
+
+/* Compact tabs when narrow */
+@media screen and (max-width: 900px) {
+  .preferences-tab {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .tab-label {
+    display: none;
+  }
+
+  .tab-icon {
+    font-size: var(--font-size-xl);
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .preferences-tab {
+    padding: var(--space-2);
+  }
 }
 
 /* Tab Content */
@@ -383,287 +404,6 @@
 
 .preferences-content::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-muted);
-}
-
-/* ========== Theme Preview Styles ========== */
-.theme-preview-container {
-    border: 1px solid var(--color-border-default);
-    border-radius: var(--radius-md);
-    padding: var(--space-4);
-    min-height: 100px;
-    transition: background-color 0.3s ease-out;
-}
-
-/* Light/Dark theme backgrounds for preview */
-.theme-preview-container[data-theme="dark"] {
-    background-color: #1b1b1b;
-}
-
-.theme-preview-container[data-theme="light"] {
-    background-color: #e8e8e8;
-}
-
-.theme-preview-grid {
-    display: flex;
-    gap: var(--space-3);
-    justify-content: center;
-    align-items: center;
-}
-
-/* Default theme cards - flex row like actual PhotoCard */
-.preview-card {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    padding: var(--space-1);
-    border: 2px solid #444;
-    border-radius: var(--radius-sm);
-    transition: all 0.3s ease-out;
-}
-
-.theme-preview-container[data-theme="dark"] .preview-card {
-    background-color: #242424;
-    border-color: #444;
-}
-
-.theme-preview-container[data-theme="light"] .preview-card {
-    background-color: #ffffff;
-    border-color: #ccc;
-}
-
-.preview-thumbnail {
-    width: 50px;
-    height: 50px;
-    background: linear-gradient(135deg, #4a9eff 0%, #2563eb 100%);
-    border-radius: var(--radius-sm);
-    border: 2px solid transparent;
-    transition: border-color 0.2s ease-out;
-}
-
-.preview-thumbnail.selected {
-    border-color: var(--color-primary);
-}
-
-/* Menu area on right side of card */
-.preview-menu {
-    width: 18px;
-    min-height: 50px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    padding-top: 2px;
-}
-
-/* Checkmark in menu area */
-.preview-check {
-    color: var(--color-text-primary);
-    font-size: 14px;
-    font-weight: bold;
-}
-
-.preview-card.selected {
-    border-color: var(--color-primary);
-    background-color: rgba(74, 158, 255, 0.1);
-}
-
-/* Override global div.selected::after checkmark */
-.preview-card.selected::after,
-.preview-thumbnail.selected::after {
-    content: none;
-}
-
-/* But keep filmstrip sprocket holes */
-.theme-preview-container[data-grid-theme="filmstrip"] .preview-card.selected::after {
-    content: '';
-}
-
-/* ===== Filmstrip Theme Preview ===== */
-.theme-preview-container[data-grid-theme="filmstrip"] {
-    background-color: var(--color-bg-elevated);
-    padding: var(--space-3);
-}
-
-.theme-preview-container[data-grid-theme="filmstrip"] .theme-preview-grid {
-    gap: 0;
-}
-
-.theme-preview-container[data-grid-theme="filmstrip"] .preview-card {
-    background-color: var(--color-bg-film);
-    border: none;
-    border-radius: 0;
-    padding: 20px 4px;
-    position: relative;
-}
-
-/* Sprocket holes on each card - top */
-.theme-preview-container[data-grid-theme="filmstrip"] .preview-card::before {
-    content: '';
-    position: absolute;
-    top: 3px;
-    left: 0;
-    right: 0;
-    height: 6px;
-    background: repeating-linear-gradient(
-        to right,
-        transparent 0px,
-        transparent 3px,
-        var(--color-film-sprocket) 3px,
-        var(--color-film-sprocket) 9px,
-        transparent 9px,
-        transparent 12px
-    );
-    pointer-events: none;
-}
-
-/* Sprocket holes on each card - bottom */
-.theme-preview-container[data-grid-theme="filmstrip"] .preview-card::after {
-    content: '' !important;
-    position: absolute;
-    bottom: 3px;
-    left: 0;
-    right: 0;
-    top: auto;
-    height: 6px;
-    width: auto;
-    margin: 0;
-    padding: 0;
-    font-size: 0;
-    color: transparent;
-    background: repeating-linear-gradient(
-        to right,
-        transparent 0px,
-        transparent 3px,
-        var(--color-film-sprocket) 3px,
-        var(--color-film-sprocket) 9px,
-        transparent 9px,
-        transparent 12px
-    );
-    pointer-events: none;
-}
-
-.theme-preview-container[data-grid-theme="filmstrip"] .preview-thumbnail {
-    border-radius: 0;
-    border: none;
-}
-
-.theme-preview-container[data-grid-theme="filmstrip"] .preview-card.selected {
-    background-color: var(--color-primary-selected);
-}
-
-.theme-preview-container[data-grid-theme="filmstrip"] .preview-thumbnail.selected {
-    border: none;
-    box-shadow: 0 0 0 3px var(--color-primary);
-}
-
-.theme-preview-container[data-grid-theme="filmstrip"] .preview-menu {
-    width: 14px;
-}
-
-.theme-preview-container[data-grid-theme="filmstrip"] .preview-check {
-    color: var(--color-text-primary);
-}
-
-/* ===== Slide Mount Theme Preview ===== */
-.theme-preview-container[data-grid-theme="slide-mount"] {
-    background-color: var(--slide-mount-grid-bg) !important;
-}
-
-.theme-preview-container[data-grid-theme="slide-mount"] .preview-card {
-    background-color: var(--slide-mount-card-bg);
-    border: none;
-    border-radius: var(--radius-sm);
-    padding: var(--space-2);
-    box-shadow:
-        0 2px 4px var(--slide-mount-card-shadow),
-        inset 0 1px 0 rgba(255, 255, 255, 0.8);
-}
-
-.theme-preview-container[data-grid-theme="slide-mount"] .preview-thumbnail {
-    border: 2px solid var(--slide-mount-card-border);
-    border-radius: 0;
-    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.4);
-}
-
-.theme-preview-container[data-grid-theme="slide-mount"] .preview-check {
-    color: var(--slide-mount-mini-text);
-}
-
-.theme-preview-container[data-grid-theme="slide-mount"] .preview-card.selected {
-    background-color: #e3e9f5;
-    box-shadow:
-        0 2px 4px var(--slide-mount-card-shadow),
-        0 0 0 2px var(--color-primary);
-}
-
-.theme-preview-container[data-grid-theme="slide-mount"] .preview-thumbnail.selected {
-    border-color: var(--color-primary);
-}
-
-/* ===== Light Box Theme Preview ===== */
-.theme-preview-container[data-grid-theme="lightbox"] {
-    background: linear-gradient(180deg, var(--lightbox-bg-start) 0%, var(--lightbox-bg-end) 100%);
-    background-color: var(--color-bg-base);
-}
-
-.theme-preview-container[data-grid-theme="lightbox"] .preview-card {
-    background-color: var(--lightbox-card-bg);
-    border: 1px solid var(--lightbox-card-border);
-    border-radius: 0;
-    padding: var(--space-2);
-}
-
-.theme-preview-container[data-grid-theme="lightbox"] .preview-thumbnail {
-    background: linear-gradient(135deg, #4a9eff 0%, #2563eb 100%);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 0;
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-}
-
-.theme-preview-container[data-grid-theme="lightbox"] .preview-card.selected {
-    background-color: var(--lightbox-card-selected);
-    border-color: var(--color-primary);
-}
-
-.theme-preview-container[data-grid-theme="lightbox"] .preview-thumbnail.selected {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 20px rgba(100, 150, 255, 0.5);
-}
-
-/* ===== 35mm Slide Theme Preview ===== */
-.theme-preview-container[data-grid-theme="slide-35mm"] {
-    background: linear-gradient(135deg, var(--slide-35mm-grid-bg-start) 0%, var(--slide-35mm-grid-bg-end) 100%) !important;
-}
-
-.theme-preview-container[data-grid-theme="slide-35mm"] .preview-card {
-    background: linear-gradient(135deg, var(--slide-35mm-card-bg-start) 0%, var(--slide-35mm-card-bg-mid) 50%, var(--slide-35mm-card-bg-end) 100%);
-    border: none;
-    border-radius: var(--radius-sm);
-    padding: var(--space-2);
-    box-shadow:
-        0 3px 6px rgba(0, 0, 0, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.3);
-}
-
-.theme-preview-container[data-grid-theme="slide-35mm"] .preview-thumbnail {
-    border: 2px solid var(--slide-35mm-card-border);
-    border-radius: 0;
-    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
-}
-
-.theme-preview-container[data-grid-theme="slide-35mm"] .preview-check {
-    color: var(--slide-35mm-mini-text);
-}
-
-.theme-preview-container[data-grid-theme="slide-35mm"] .preview-card.selected {
-    background: linear-gradient(135deg, #c4d4e8 0%, #b4c4d8 50%, #a4b4c8 100%);
-    box-shadow:
-        0 3px 6px rgba(0, 0, 0, 0.4),
-        0 0 0 2px var(--color-primary);
-}
-
-.theme-preview-container[data-grid-theme="slide-35mm"] .preview-thumbnail.selected {
-    border-color: var(--color-primary);
 }
 
 /* Responsive */

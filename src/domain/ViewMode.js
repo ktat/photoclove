@@ -197,7 +197,7 @@ export class ViewMode {
             case VIEW_MODES.TAG:
                 return { ...baseParams, search_type: burstModeEnabled ? "burst_tag" : "tag", query: this._data.tagId?.toString() };
             case VIEW_MODES.TAG_LIST:
-                return { ...baseParams, search_type: "all_tags_with_count" };
+                return { ...baseParams, search_type: "all_tags" };
             case VIEW_MODES.SEARCH:
                 return { ...baseParams, search_type: "search", query: this._data.searchQuery, params: this._data.searchParams };
             case VIEW_MODES.TRASH:

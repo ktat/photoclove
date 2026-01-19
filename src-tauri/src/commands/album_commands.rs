@@ -9,6 +9,7 @@
 //! All album operations use the unified PhotoCollection system internally.
 
 use crate::app_state::AppState;
+use crate::repository::MetaInfoDB;
 
 /// Creates a new album
 ///

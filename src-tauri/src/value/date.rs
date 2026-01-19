@@ -1,4 +1,4 @@
-use chrono::{LocalResult, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
+use chrono::{Datelike, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -127,6 +127,27 @@ impl DateTime {
             (Ok(d1), Ok(d2)) => d1 == d2,
             _ => false,
         }
+    }
+
+    /// Create DateTime from current UTC time
+    pub fn now() -> DateTime {
+        let now = Utc::now();
+        DateTime {
+            year: now.year(),
+            month: now.month(),
+            day: now.day(),
+            hour: now.hour(),
+            minute: now.minute(),
+            second: now.second(),
+        }
+    }
+
+    /// Format for database storage: "YYYY-MM-DD HH:MM:SS"
+    pub fn to_db_string(&self) -> String {
+        format!(
+            "{:04}-{:02}-{:02} {:02}:{:02}:{:02}",
+            self.year, self.month, self.day, self.hour, self.minute, self.second
+        )
     }
 }
 

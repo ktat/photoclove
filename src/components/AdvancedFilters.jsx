@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import TagChip from './TagChip.jsx';
 import { logger } from '../services/LoggerService.js';
+import { unifiedCollectionService } from '../services/UnifiedCollectionService.js';
 import './AdvancedFilters.css';
 
 const AdvancedFilters = ({
@@ -52,19 +52,11 @@ const AdvancedFilters = ({
   useEffect(() => {
     const loadTags = async () => {
       try {
-        const tagsResult = await invoke('get_photos_unified', {
-          request: {
-            type: 'search',
-            search_type: 'all_tags'
-          }
-        });
-        const tags = JSON.parse(tagsResult);
-        logger.debug('AdvancedFilters', 'tags_loaded', 'Tags loaded from backend', {
-          tagCount: tags.length,
-          sampleTag: tags[0]
+        const tags = await unifiedCollectionService.getTags();
+        logger.debug('AdvancedFilters', 'tags_loaded', 'Tags loaded from service', {
+          tagCount: tags.length
         });
 
-        // Backend returns array of objects: [{id, type, name, color, ...}, ...]
         // Convert to format expected by TagChip: [{id, name, color}, ...]
         const formattedTags = tags.map(tag => ({
           id: tag.id,

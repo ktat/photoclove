@@ -9,14 +9,13 @@ import './VerticalTabBar.css';
  */
 function VerticalTabBar({
     viewMode,
-    isSearchMode,
+    viewModeObj,
     showSideMenu,
     tabClass,
     changeTab,
     setShowSideMenu,
     closeRightColumn,
     clearAllTabs,
-    viewModeObj,
     photoSelectionCount = 0,
     selectedAlbumsCount = 0,
     selectedTagsCount = 0
@@ -24,7 +23,7 @@ function VerticalTabBar({
     // Define tab configurations based on view mode
     const getAvailableTabs = () => {
         const tabs = [];
-        
+
         // Directory tab - only in import mode
         if (viewMode === VIEW_MODES.IMPORT) {
             tabs.push({
@@ -34,9 +33,9 @@ function VerticalTabBar({
                 targetTab: '#tab-directory'
             });
         }
-        
+
         // Search tab - only in search mode
-        if (isSearchMode) {
+        if (viewModeObj?.isSearchMode()) {
             tabs.push({
                 id: 'search',
                 label: 'Search',
