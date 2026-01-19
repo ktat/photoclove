@@ -498,6 +498,7 @@ function PhotosListMini(props) {
                             burstGroupId={currentPhoto?.burst_group_id}
                             burstCount={currentPhoto?.burst_count}
                             openBurstGroup={props.openBurstGroup}
+                            goBackFromBurstGroup={props.goBackFromBurstGroup}
                             isInBurstGroupMode={isInBurstGroupMode}
                             currentViewMode={viewMode}
                             currentViewModeData={{
