@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import PhotoDisplay from "./PhotosListMini/PhotoDisplay.jsx";
 import { ImgCacheContext, AllPhotosContext } from "../ImgCacheContext.jsx";
@@ -26,6 +26,14 @@ function PhotosListMini(props) {
     const isImportMode = viewMode === VIEW_MODES.IMPORT;
     const isTrashMode = viewMode === VIEW_MODES.TRASH;
     const isInBurstGroupMode = viewMode === VIEW_MODES.IN_BURST_GROUP;
+
+    // Debug log for burst group mode
+    logger.debug('PhotosListMini', 'render_state', 'PhotosListMini render state', {
+        viewMode,
+        isInBurstGroupMode,
+        photosCount: photosListMiniAllPhotos?.length,
+        propsCurrentIndex: props.currentIndex
+    });
 
     // Convert JSON back to Photo entities for all photos operations
     const photosWithMethods = useMemo(() => {
@@ -82,6 +90,36 @@ function PhotosListMini(props) {
 
     const isBurstRepresentative = currentPhoto?.burst_group_id && currentPhoto?.burst_count > 1;
     const burstRestrictionsActive = burstModeEnabled && isBurstRepresentative && !isInBurstGroupMode;
+
+    // Reset currentIndex when in Burst Group mode and index is out of bounds
+    // This is necessary because the photo list changes to a much smaller burst group list
+    useEffect(() => {
+        // Only act when in burst group mode with loaded photos and invalid index
+        if (isInBurstGroupMode && photosWithMethods.length > 0 &&
+            (props.currentIndex >= photosWithMethods.length || props.currentIndex < 0)) {
+            // Find the current photo's position in the burst group
+            const currentPath = props.currentPhotoPath;
+            let newIndex = 0;
+
+            if (currentPath) {
+                const foundIndex = photosWithMethods.findIndex(p => p.originalPath === currentPath);
+                if (foundIndex >= 0) {
+                    newIndex = foundIndex;
+                }
+            }
+
+            logger.info('PhotosListMini', 'burst_group_index_reset', 'Resetting out-of-bounds index for burst group mode', {
+                previousIndex: props.currentIndex,
+                newIndex,
+                photosCount: photosWithMethods.length,
+                currentPath
+            });
+
+            props.setCurrentIndex(newIndex);
+            // Also reset viewStartIndex to auto-center on the selected photo
+            setViewStartIndex(null);
+        }
+    }, [isInBurstGroupMode, photosWithMethods.length, props.currentPhotoPath, props.currentIndex]);
 
     // Helper function to get the correct date key for pagination
     const getDateKey = useCallback(() => {
