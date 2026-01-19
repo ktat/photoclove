@@ -3,6 +3,7 @@
 //! Represents a group of photos taken in rapid succession.
 //! Groups can be created automatically during import or manually by user.
 
+use crate::value::date;
 use serde::{Deserialize, Serialize};
 
 /// Represents a burst group of photos.
@@ -22,7 +23,7 @@ impl BurstGroup {
         Self {
             id,
             is_manual: true,
-            created_at: chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+            created_at: date::DateTime::now().to_db_string(),
         }
     }
 
@@ -31,7 +32,7 @@ impl BurstGroup {
         Self {
             id,
             is_manual: false,
-            created_at: chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+            created_at: date::DateTime::now().to_db_string(),
         }
     }
 

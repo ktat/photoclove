@@ -14,8 +14,7 @@
 //! - `exif` - EXIF data operations
 //! - `counts` - Photo count operations
 //! - `tags` - Tag management
-//! - `albums` - Album management
-//! - `collections` - Unified collection operations
+//! - `collections` - Unified collection operations (albums and tags)
 //! - `job_queue` - Background job queue
 //! - `recovery_queue` - Recovery queue for failed operations
 
@@ -37,7 +36,6 @@ mod search;
 mod exif;
 mod counts;
 mod tags;
-mod albums;
 mod collections;
 mod job_queue;
 mod recovery_queue;
@@ -78,7 +76,7 @@ impl SQLite {
 
         if count == 0 {
             log::info!(target: "date_summary", "initial_population; status=populating");
-            let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+            let now = date::DateTime::now().to_db_string();
             conn.execute(
                 "INSERT INTO date_summary (date, photo_count, created_at, updated_at)
                  SELECT date(photo_date) as date_only, COUNT(*) as count, ? as created_at, ? as updated_at
@@ -207,104 +205,7 @@ impl SQLite {
         date_summary::update_date_summary_for_date(self, date, delta)
     }
 
-    // ==================== Tag Operations ====================
-
-    pub fn get_all_tags(&self) -> Result<Vec<(i32, String, Option<String>)>, String> {
-        tags::get_all_tags(self)
-    }
-
-    pub fn get_all_tags_with_photo_count(&self) -> Result<Vec<(i32, String, Option<String>, i32)>, String> {
-        tags::get_all_tags_with_photo_count(self)
-    }
-
-    pub fn remove_all_tags_from_photo(&self, photo_path: &str) -> Result<i32, String> {
-        tags::remove_all_tags_from_photo(self, photo_path)
-    }
-
-    pub fn get_tags_for_photo(&self, photo_path: &str) -> Result<Vec<(i32, String, Option<String>)>, String> {
-        tags::get_tags_for_photo(self, photo_path)
-    }
-
-    // ==================== Album Operations ====================
-
-    pub fn get_album_photos(&self, album_id: i32) -> Result<Vec<String>, String> {
-        albums::get_album_photos(self, album_id)
-    }
-
-    pub fn get_album_photos_with_metadata(&self, album_id: i32, config: config::Config) -> Result<Vec<photo::Photo>, String> {
-        albums::get_album_photos_with_metadata(self, album_id, config)
-    }
-
-    pub fn reorder_album_photos(&self, album_id: i32, photo_order: Vec<String>) -> Result<(), String> {
-        albums::reorder_album_photos(self, album_id, photo_order)
-    }
-
-    // ==================== Collection Operations ====================
-
-    pub fn create_collection(
-        &self,
-        collection_type: &str,
-        name: &str,
-        description: Option<&str>,
-        color: Option<&str>,
-    ) -> Result<i32, String> {
-        collections::create_collection(self, collection_type, name, description, color)
-    }
-
-    pub fn get_all_collections(
-        &self,
-        collection_type: Option<&str>,
-        config: config::Config,
-    ) -> Result<Vec<serde_json::Value>, String> {
-        collections::get_all_collections(self, collection_type, config)
-    }
-
-    pub fn update_collection(
-        &self,
-        id: i32,
-        name: Option<&str>,
-        description: Option<&str>,
-        color: Option<&str>,
-        cover_photo_path: Option<&str>,
-    ) -> Result<(), String> {
-        collections::update_collection(self, id, name, description, color, cover_photo_path)
-    }
-
-    pub fn delete_collection(&self, id: i32) -> Result<bool, String> {
-        collections::delete_collection(self, id)
-    }
-
-    pub fn add_photo_to_collection(&self, collection_id: i32, photo_path: &str) -> Result<(), String> {
-        collections::add_photo_to_collection(self, collection_id, photo_path)
-    }
-
-    pub fn add_photos_to_collection_bulk(&self, collection_id: i32, photo_paths: &[String]) -> Result<usize, String> {
-        collections::add_photos_to_collection_bulk(self, collection_id, photo_paths)
-    }
-
-    pub fn remove_photo_from_collection(&self, collection_id: i32, photo_path: &str) -> Result<(), String> {
-        collections::remove_photo_from_collection(self, collection_id, photo_path)
-    }
-
-    pub fn get_collection_photos(
-        &self,
-        collection_id: i32,
-        ordered: bool,
-        config: Option<config::Config>,
-    ) -> Result<Vec<photo::Photo>, String> {
-        collections::get_collection_photos(self, collection_id, ordered, config)
-    }
-
-    /// Get photos by one or more collection IDs with unified sort order.
-    /// For multiple IDs, uses AND logic (photos must be in ALL specified collections).
-    pub fn get_photos_by_collection_ids(
-        &self,
-        collection_ids: &[i32],
-        sort_value: i32,
-        config: Option<config::Config>,
-    ) -> Result<Vec<photo::Photo>, String> {
-        collections::get_photos_by_collection_ids(self, collection_ids, sort_value, config)
-    }
+    // ==================== Collection Operations (non-trait) ====================
 
     pub fn reorder_collection_items(
         &self,
@@ -615,34 +516,21 @@ impl MetaInfoDB for SQLite {
         photo_metadata::get_recent_photos_metadata(self, limit)
     }
 
-    // Tag management trait implementations (used by tag_commands.rs)
-    fn get_all_tags(&self) -> Result<Vec<(i32, String, Option<String>)>, String> {
-        tags::get_all_tags(self)
+    // Collection-photo relationship trait implementations
+    fn get_collections_for_photo(
+        &self,
+        photo_path: &str,
+        collection_type: Option<&str>,
+    ) -> Result<Vec<(i32, String, Option<String>)>, String> {
+        collections::get_collections_for_photo(self, photo_path, collection_type)
     }
 
-    fn get_all_tags_with_photo_count(&self) -> Result<Vec<(i32, String, Option<String>, i32)>, String> {
-        tags::get_all_tags_with_photo_count(self)
-    }
-
-    fn remove_all_tags_from_photo(&self, photo_path: &str) -> Result<i32, String> {
-        tags::remove_all_tags_from_photo(self, photo_path)
-    }
-
-    fn get_tags_for_photo(&self, photo_path: &str) -> Result<Vec<(i32, String, Option<String>)>, String> {
-        tags::get_tags_for_photo(self, photo_path)
-    }
-
-    // Album management trait implementations (used by album_commands.rs)
-    fn get_album_photos(&self, album_id: i32) -> Result<Vec<String>, String> {
-        albums::get_album_photos(self, album_id)
-    }
-
-    fn get_album_photos_with_metadata(&self, album_id: i32, config: config::Config) -> Result<Vec<photo::Photo>, String> {
-        albums::get_album_photos_with_metadata(self, album_id, config)
-    }
-
-    fn reorder_album_photos(&self, album_id: i32, photo_order: Vec<String>) -> Result<(), String> {
-        albums::reorder_album_photos(self, album_id, photo_order)
+    fn remove_all_collections_from_photo(
+        &self,
+        photo_path: &str,
+        collection_type: Option<&str>,
+    ) -> Result<i32, String> {
+        collections::remove_all_collections_from_photo(self, photo_path, collection_type)
     }
 
     // Unified PhotoCollection trait implementations

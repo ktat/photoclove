@@ -108,7 +108,7 @@ describe('ViewMode.getUnifiedPhotoParams()', () => {
             const viewMode = new ViewMode(VIEW_MODES.TAG_LIST);
             const params = viewMode.getUnifiedPhotoParams(mockAppConfig);
             
-            expect(params.search_type).toBe("all_tags_with_count");
+            expect(params.search_type).toBe("all_tags");
             expect(params.type).toBe("search");
         });
     });

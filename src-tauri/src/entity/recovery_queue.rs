@@ -3,6 +3,7 @@
 //! This module defines entities for tracking operations that failed
 //! and can be retried when the user is ready.
 
+use crate::value::date;
 use serde::{Deserialize, Serialize};
 
 /// Type of operation that failed
@@ -95,7 +96,7 @@ pub struct RecoveryItem {
 impl RecoveryItem {
     /// Create a new recovery item (before insertion to DB)
     pub fn new(operation_type: OperationType, target_path: String, error_reason: String) -> Self {
-        let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        let now = date::DateTime::now().to_db_string();
         RecoveryItem {
             id: 0, // Will be set by DB
             operation_type,

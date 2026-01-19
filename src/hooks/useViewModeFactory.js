@@ -20,7 +20,7 @@ import { logger } from '../services/LoggerService.js';
  * @param {string} options.currentDate - Current date
  * @param {string} options.burstReturnMode - Return mode for burst group navigation
  * @param {Object} options.burstReturnModeData - Return mode data for burst group navigation
- * @returns {Object} ViewMode object and mode flags
+ * @returns {Object} Object containing viewModeObj (use viewModeObj.isXxxMode() for mode checks)
  */
 export function useViewModeFactory({
     viewMode,
@@ -75,23 +75,7 @@ export function useViewModeFactory({
         }
     }, [viewMode, currentAlbumId, currentAlbumName, currentTagId, currentTagName, currentBurstGroupId, searchInitialQuery, currentDate, burstReturnMode, burstReturnModeData]);
 
-    // Compute mode flags
-    const modeFlags = useMemo(() => ({
-        isSearchMode: viewModeObj.isSearchMode(),
-        isAlbumMode: viewModeObj.isAlbumMode(),
-        isAlbumListMode: viewModeObj.isAlbumListMode(),
-        isTagMode: viewModeObj.isTagMode(),
-        isTagListMode: viewModeObj.isTagListMode(),
-        isTrashMode: viewModeObj.isTrashMode(),
-        isImportMode: viewModeObj.isImportMode(),
-        isDateMode: viewModeObj.isDateMode(),
-        isRecentMode: viewModeObj.isRecentMode()
-    }), [viewModeObj]);
-
-    return {
-        viewModeObj,
-        ...modeFlags
-    };
+    return { viewModeObj };
 }
 
 export default useViewModeFactory;

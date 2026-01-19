@@ -1,7 +1,7 @@
 //! EXIF data operations for SQLite repository
 
 use super::SQLite;
-use crate::value::exif::ExifData;
+use crate::value::{date, exif::ExifData};
 use rusqlite::params;
 
 /// Update EXIF data for a photo if values differ from database
@@ -117,7 +117,7 @@ pub fn update_exif_if_changed(
         .map(|(i, (col, _))| format!("{} = ?{}", col, i + 1))
         .collect();
 
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
     let sql = format!(
         "UPDATE photo_metadata SET {}, updated_at = ?{} WHERE path = ?{}",
         set_clauses.join(", "),

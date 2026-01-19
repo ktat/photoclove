@@ -5,6 +5,7 @@
 
 use crate::entity::recovery_queue::{RecoveryItem, RecoveryStatus, OperationType};
 use crate::repository::meta_db::sqlite::SQLite;
+use crate::value::date;
 use rusqlite::{params, Connection, OptionalExtension};
 
 /// Add a failed operation to the recovery queue
@@ -17,7 +18,7 @@ pub(super) fn add_to_recovery_queue(
     let conn = Connection::open(&sqlite.db_path)
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
 
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
 
     conn.execute(
         "INSERT INTO recovery_queue (operation_type, target_path, error_reason, failed_at, status)
@@ -128,7 +129,7 @@ pub(super) fn update_status(
     let conn = Connection::open(&sqlite.db_path)
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
 
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
 
     conn.execute(
         "UPDATE recovery_queue SET status = ?1, updated_at = ?2 WHERE id = ?3",
@@ -144,7 +145,7 @@ pub(super) fn increment_retry(sqlite: &SQLite, id: i64) -> Result<(), String> {
     let conn = Connection::open(&sqlite.db_path)
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
 
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
 
     conn.execute(
         "UPDATE recovery_queue SET retry_count = retry_count + 1, last_retry_at = ?1, updated_at = ?1 WHERE id = ?2",

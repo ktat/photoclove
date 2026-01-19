@@ -1,7 +1,7 @@
 use crate::entity::{config, photo};
 use crate::repository::meta_db::sqlite::SQLite;
 use crate::repository::meta_db::sqlite::tags;
-use crate::value::file;
+use crate::value::{date, file};
 use rusqlite::{params, Result};
 
 pub(super) fn create_collection(
@@ -15,7 +15,7 @@ pub(super) fn create_collection(
         .get_connection()
         .map_err(|_| "Failed to connect to database".to_string())?;
 
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
 
     conn.execute(
         "INSERT INTO photo_collections (type, name, description, color, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
@@ -133,7 +133,7 @@ pub(super) fn update_collection(
         .get_connection()
         .map_err(|_| "Failed to connect to database".to_string())?;
 
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
 
     // Build separate updates for each field to avoid borrow checker issues
     if let Some(n) = name {
@@ -192,7 +192,7 @@ pub(super) fn add_photo_to_collection(
         .get_connection()
         .map_err(|_| "Failed to connect to database".to_string())?;
 
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
 
     // Get the next order_index for albums
     let order_index: i32 = conn.query_row(
@@ -262,7 +262,7 @@ pub(super) fn add_photos_to_collection_bulk(
         |row| row.get(0)
     ).unwrap_or(0);
 
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
     let mut total_inserted = 0;
 
     // 4. Batch insert
@@ -461,18 +461,7 @@ pub(super) fn get_photos_by_collection_ids(
         .get_connection()
         .map_err(|_| "Failed to connect to database".to_string())?;
 
-    // Build ORDER BY clause based on sort_value
-    let order_clause = match sort_value {
-        0 => "ORDER BY pm.exif_date_time_original DESC, pm.photo_date DESC, pm.path DESC",
-        1 => "ORDER BY pm.exif_date_time_original ASC, pm.photo_date ASC, pm.path ASC",
-        2 => "ORDER BY pm.photo_date DESC, pm.exif_date_time_original DESC, pm.path DESC",
-        3 => "ORDER BY pm.photo_date ASC, pm.exif_date_time_original ASC, pm.path ASC",
-        4 => "ORDER BY pm.star DESC NULLS LAST, pm.exif_date_time_original DESC, pm.photo_date DESC, pm.path DESC",
-        5 => "ORDER BY pm.star ASC NULLS LAST, pm.exif_date_time_original ASC, pm.photo_date ASC, pm.path ASC",
-        6 => "ORDER BY pm.path DESC, pm.exif_date_time_original DESC, pm.photo_date DESC",
-        7 => "ORDER BY pm.path ASC, pm.exif_date_time_original ASC, pm.photo_date ASC",
-        _ => "ORDER BY pm.exif_date_time_original DESC, pm.photo_date DESC, pm.path DESC",
-    };
+    let order_clause = crate::repository::sort_to_order_by_clause(sort_value, "pm");
 
     let placeholders = collection_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
     let collection_count = collection_ids.len() as i32;
@@ -573,7 +562,7 @@ pub(super) fn reorder_collection_items(
         .get_connection()
         .map_err(|_| "Failed to connect to database".to_string())?;
 
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
 
     // Update each photo's order_index based on position in the array
     for (index, photo_path) in photo_order.iter().enumerate() {
@@ -594,4 +583,102 @@ pub(super) fn reorder_collection_items(
     log::info!(target: "collections", "reorder_complete; collection_id={}; items_reordered={}", collection_id, photo_order.len());
 
     Ok(())
+}
+
+/// Get all collections (albums or tags) associated with a photo
+///
+/// # Arguments
+/// * `sqlite` - Database connection
+/// * `photo_path` - Path to the photo
+/// * `collection_type` - Optional filter: "album", "tag", or None for all
+///
+/// # Returns
+/// Vector of (id, name, color) tuples
+pub(super) fn get_collections_for_photo(
+    sqlite: &SQLite,
+    photo_path: &str,
+    collection_type: Option<&str>,
+) -> Result<Vec<(i32, String, Option<String>)>, String> {
+    let conn = sqlite
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    let collections: Vec<(i32, String, Option<String>)> = match collection_type {
+        Some(t) => {
+            let mut stmt = conn
+                .prepare(
+                    "SELECT pc.id, pc.name, pc.color FROM photo_collections pc
+                     JOIN photo_collection_items pci ON pc.id = pci.collection_id
+                     WHERE pci.photo_path = ?1 AND pc.type = ?2
+                     ORDER BY pc.name",
+                )
+                .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+            let result = stmt.query_map(params![photo_path, t], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+            })
+            .map_err(|e| format!("Failed to query collections: {}", e))?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| format!("Failed to collect results: {}", e))?;
+            result
+        }
+        None => {
+            let mut stmt = conn
+                .prepare(
+                    "SELECT pc.id, pc.name, pc.color FROM photo_collections pc
+                     JOIN photo_collection_items pci ON pc.id = pci.collection_id
+                     WHERE pci.photo_path = ?1
+                     ORDER BY pc.name",
+                )
+                .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+            let result = stmt.query_map(params![photo_path], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+            })
+            .map_err(|e| format!("Failed to query collections: {}", e))?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| format!("Failed to collect results: {}", e))?;
+            result
+        }
+    };
+
+    Ok(collections)
+}
+
+/// Remove all collections of a specific type from a photo
+///
+/// # Arguments
+/// * `sqlite` - Database connection
+/// * `photo_path` - Path to the photo
+/// * `collection_type` - Optional filter: "album", "tag", or None for all
+///
+/// # Returns
+/// Number of collections removed
+pub(super) fn remove_all_collections_from_photo(
+    sqlite: &SQLite,
+    photo_path: &str,
+    collection_type: Option<&str>,
+) -> Result<i32, String> {
+    let conn = sqlite
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    let rows_affected = match collection_type {
+        Some(t) => conn.execute(
+            "DELETE FROM photo_collection_items
+             WHERE photo_path = ?1
+             AND collection_id IN (SELECT id FROM photo_collections WHERE type = ?2)",
+            params![photo_path, t],
+        ),
+        None => conn.execute(
+            "DELETE FROM photo_collection_items WHERE photo_path = ?1",
+            params![photo_path],
+        ),
+    }
+    .map_err(|e| format!("Failed to remove collections from photo: {}", e))?;
+
+    log::info!(target: "collections", "remove_all_from_photo; photo={}; type={:?}; removed={}",
+        photo_path, collection_type, rows_affected);
+
+    Ok(rows_affected as i32)
 }

@@ -74,6 +74,48 @@ pub fn sort_from_int(i: i32) -> Sort {
     }
 }
 
+/// Convert sort field name and order to sort value integer.
+///
+/// # Arguments
+/// * `sort_field` - Column name: "exif_date_time_original", "photo_date", "star", "path"
+/// * `sort_order` - Direction: "ASC" or "DESC" (case insensitive)
+///
+/// # Returns
+/// Sort value integer (0-7)
+pub fn sort_field_to_value(sort_field: &str, sort_order: &str) -> i32 {
+    let is_asc = sort_order.to_lowercase() == "asc";
+    match sort_field {
+        "exif_date_time_original" => if is_asc { 1 } else { 0 },
+        "photo_date" => if is_asc { 3 } else { 2 },
+        "star" => if is_asc { 5 } else { 4 },
+        "path" => if is_asc { 7 } else { 6 },
+        _ => if is_asc { 1 } else { 0 }, // Default to PhotoTime
+    }
+}
+
+/// Generate ORDER BY clause for SQL queries based on sort value.
+///
+/// # Arguments
+/// * `sort_value` - Integer representing sort type (0-7, see Sort enum)
+/// * `table_alias` - Table alias to use in column references (e.g., "pm", "p")
+///
+/// # Returns
+/// SQL ORDER BY clause string
+pub fn sort_to_order_by_clause(sort_value: i32, table_alias: &str) -> String {
+    let a = table_alias;
+    match sort_value {
+        0 => format!("ORDER BY {a}.exif_date_time_original DESC, {a}.photo_date DESC, {a}.path DESC"),
+        1 => format!("ORDER BY {a}.exif_date_time_original ASC, {a}.photo_date ASC, {a}.path ASC"),
+        2 => format!("ORDER BY {a}.photo_date DESC, {a}.exif_date_time_original DESC, {a}.path DESC"),
+        3 => format!("ORDER BY {a}.photo_date ASC, {a}.exif_date_time_original ASC, {a}.path ASC"),
+        4 => format!("ORDER BY {a}.star DESC NULLS LAST, {a}.exif_date_time_original DESC, {a}.photo_date DESC, {a}.path DESC"),
+        5 => format!("ORDER BY {a}.star ASC NULLS LAST, {a}.exif_date_time_original ASC, {a}.photo_date ASC, {a}.path ASC"),
+        6 => format!("ORDER BY {a}.path DESC, {a}.exif_date_time_original DESC, {a}.photo_date DESC"),
+        7 => format!("ORDER BY {a}.path ASC, {a}.exif_date_time_original ASC, {a}.photo_date ASC"),
+        _ => format!("ORDER BY {a}.exif_date_time_original DESC, {a}.photo_date DESC, {a}.path DESC"),
+    }
+}
+
 #[allow(dead_code)]
 #[async_trait]
 pub(crate) trait RepositoryDB {
@@ -163,27 +205,19 @@ pub(crate) trait MetaInfoDB {
     fn get_photo_count_per_dates(&self, dates: date::Dates) -> DatesNum;
     fn get_recent_photos_metadata(&self, limit: u32) -> Result<photo_meta::PhotoMetas, String>;
 
-    // Tag management methods (used by tag_commands.rs)
-    fn get_all_tags(&self) -> Result<Vec<(i32, String, Option<String>)>, String>;
-    fn get_all_tags_with_photo_count(
-        &self,
-    ) -> Result<Vec<(i32, String, Option<String>, i32)>, String>;
-    fn remove_all_tags_from_photo(&self, photo_path: &str) -> Result<i32, String>;
-    fn get_tags_for_photo(
+    // Collection-photo relationship methods
+    fn get_collections_for_photo(
         &self,
         photo_path: &str,
+        collection_type: Option<&str>,
     ) -> Result<Vec<(i32, String, Option<String>)>, String>;
-
-    // Album management methods (used by album_commands.rs)
-    fn get_album_photos(&self, album_id: i32) -> Result<Vec<String>, String>;
-    fn get_album_photos_with_metadata(
+    fn remove_all_collections_from_photo(
         &self,
-        album_id: i32,
-        config: config::Config,
-    ) -> Result<Vec<photo::Photo>, String>;
-    fn reorder_album_photos(&self, album_id: i32, photo_order: Vec<String>) -> Result<(), String>;
+        photo_path: &str,
+        collection_type: Option<&str>,
+    ) -> Result<i32, String>;
 
-    // Unified PhotoCollection methods
+    // Unified PhotoCollection methods (albums and tags share the same API)
     fn create_collection(
         &self,
         collection_type: &str,

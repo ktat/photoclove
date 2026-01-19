@@ -14,7 +14,7 @@ import "./components/Splash.css";
 import "./components/PhotoLoading.css";
 import PhotosList from "./App/PhotosList.jsx"
 import DateList from "./App/DateList.jsx"
-import Preferences from "./App/Preferences.jsx"
+import Preferences from "./App/Preferences"
 import JobQueue from "./App/JobQueue.jsx"
 import Welcome from "./Welcome.jsx"
 import Home from "./App/Home.jsx"

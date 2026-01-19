@@ -8,8 +8,7 @@ import { useError } from "../../context/ErrorContext.jsx";
 import { VIEW_MODES } from "../../constants/viewModes.js";
 import { useTutorial } from "../../hooks/useTutorial.js";
 import AlbumCreationModal from "../../components/AlbumCreationModal.jsx";
-import AlbumSelectorModal from "../../components/AlbumSelectorModal.jsx";
-import BulkTagSelectorModal from "../../components/BulkTagSelectorModal.jsx";
+import CollectionSelectorModal from "../../components/CollectionSelectorModal.jsx";
 import ContextualDeleteModal from "../../components/ContextualDeleteModal.jsx";
 import TutorialTooltip from "../../components/TutorialTooltip.jsx";
 import Scrollable from "../../Scrollable.jsx";
@@ -388,19 +387,24 @@ function DirectoryMenu(props) {
             />
 
             {/* Album Selector Modal */}
-            <AlbumSelectorModal
+            <CollectionSelectorModal
                 isOpen={showAlbumSelectorModal}
                 onClose={() => setShowAlbumSelectorModal(false)}
                 onConfirm={addPhotosToAlbum}
                 selectedPhotosCount={props.photoSelection.length}
+                collectionType="album"
+                selectionMode="single"
             />
 
             {/* Bulk Tag Selector Modal */}
-            <BulkTagSelectorModal
+            <CollectionSelectorModal
                 isOpen={showBulkTagModal}
                 onClose={() => setShowBulkTagModal(false)}
                 onConfirm={addTagsToPhotos}
                 selectedPhotosCount={props.photoSelection.length}
+                collectionType="tag"
+                selectionMode="multiple"
+                allowCreate={true}
             />
 
             {/* Contextual Delete Modal */}

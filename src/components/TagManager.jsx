@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 import classNames from 'classnames';
 import { logger } from '../services/LoggerService.js';
 import { unifiedCollectionService } from '../services/UnifiedCollectionService.js';
@@ -20,19 +19,13 @@ const TagManager = () => {
     const loadTags = async () => {
         setIsLoading(true);
         try {
-            const tagsResult = await invoke('get_photos_unified', {
-                request: {
-                    type: 'search',
-                    search_type: 'all_tags'
-                }
-            });
-            const result = JSON.parse(tagsResult);
-            // Parse as collection objects (id, name, color, photo_count)
-            const formattedTags = result.map(tag => ({
+            const tagList = await unifiedCollectionService.getTags();
+            // Map to consistent format (id, name, color, photoCount)
+            const formattedTags = tagList.map(tag => ({
                 id: tag.id,
                 name: tag.name,
                 color: tag.color,
-                photoCount: tag.photo_count || 0
+                photoCount: tag.photoCount || 0
             }));
             setTags(formattedTags);
             logger.info('TagManager', 'tags_loaded', 'Tags loaded successfully', {
@@ -62,29 +55,26 @@ const TagManager = () => {
     const handleTagDelete = async (tagId) => {
         const tag = tags.find(t => t.id === tagId);
         const confirmMessage = `Are you sure you want to delete the tag "${tag?.name}"? This will remove it from all photos.`;
-        
+
         if (!confirm(confirmMessage)) {
             return;
         }
 
         try {
-            const deleted = await invoke('delete_tag', { tagId });
-            
+            const deleted = await unifiedCollectionService.deleteCollection(tagId);
+
             if (deleted) {
                 setTags(prev => prev.filter(t => t.id !== tagId));
-                
-                // Clear the unified collection service cache to ensure other components refresh
-                unifiedCollectionService.clearCache();
-                
-                logger.info('TagManager', 'tag_deleted', 'Tag deleted successfully', { 
+
+                logger.info('TagManager', 'tag_deleted', 'Tag deleted successfully', {
                     tagId,
-                    tagName: tag?.name 
+                    tagName: tag?.name
                 });
             }
         } catch (error) {
-            logger.error('TagManager', 'delete_tag_error', 'Failed to delete tag', { 
+            logger.error('TagManager', 'delete_tag_error', 'Failed to delete tag', {
                 tagId,
-                error: error.toString() 
+                error: error.toString()
             });
             alert('Failed to delete tag: ' + error);
         }

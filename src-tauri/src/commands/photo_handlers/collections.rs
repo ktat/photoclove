@@ -3,6 +3,7 @@
 //! Handles retrieval of album and tag lists.
 
 use super::HandlerContext;
+use crate::repository::MetaInfoDB;
 
 /// Handle all albums list request.
 ///
@@ -50,25 +51,3 @@ pub async fn handle_tags(ctx: &HandlerContext<'_>) -> Result<String, ()> {
     }
 }
 
-/// Handle all tags with count request.
-///
-/// Same as handle_tags but explicitly named for clarity.
-///
-/// # Arguments
-/// * `ctx` - Handler context with database connections
-///
-/// # Returns
-/// JSON string containing array of tag objects with counts
-pub async fn handle_tags_with_count(ctx: &HandlerContext<'_>) -> Result<String, ()> {
-    log::info!(target: "get_photos", "all_tags_with_count_request; using_unified_collections=true");
-    match ctx
-        .meta_db
-        .get_all_collections(Some("tag"), ctx.config.clone())
-    {
-        Ok(tags) => Ok(serde_json::to_string(&tags).unwrap_or_else(|_| "[]".to_string())),
-        Err(e) => {
-            log::error!(target: "get_photos", "all_tags_with_count_error; error={}", e);
-            Err(())
-        }
-    }
-}

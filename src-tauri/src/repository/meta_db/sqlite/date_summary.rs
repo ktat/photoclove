@@ -1,6 +1,7 @@
 use rusqlite::{params, Result};
 
 use super::SQLite;
+use crate::value::date;
 
 /// Check if date_summary cache is current with photo_metadata
 pub(super) fn check_date_summary_currency(db: &SQLite) -> Result<bool, String> {
@@ -66,7 +67,7 @@ pub(super) fn rebuild_date_summary(db: &SQLite) -> Result<(), String> {
         .map_err(|e| format!("Failed to clear date_summary: {}", e))?;
 
     // Populate from photo_metadata using GROUP BY (exclude deleted photos)
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
     conn.execute(
         "INSERT INTO date_summary (date, photo_count, created_at, updated_at)
          SELECT date(photo_date) as date_only, COUNT(*) as count, ? as created_at, ? as updated_at
@@ -104,7 +105,7 @@ pub(super) fn update_date_summary_for_photo(db: &SQLite, photo_date: &str, delta
     };
 
     // Update or insert date summary
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
     tx.execute(
         "INSERT OR REPLACE INTO date_summary (date, photo_count, updated_at, created_at)
          VALUES (?1, COALESCE((SELECT photo_count FROM date_summary WHERE date = ?1), 0) + ?2, ?3,
@@ -141,7 +142,7 @@ pub(super) fn update_date_summary_for_date(db: &SQLite, date: &str, _delta: i32)
         .map_err(|e| format!("Failed to count photos: {}", e))?;
 
     // Update or insert date summary with actual count
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
 
     if actual_count > 0 {
         tx.execute(

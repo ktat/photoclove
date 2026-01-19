@@ -24,7 +24,7 @@ pub fn record_photo_metas(
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28)")
         .map_err(|_| "Failed to prepare statement")?;
 
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
     for (path, meta) in photo_metas.iter() {
         stmt.execute(params![
             path,
@@ -77,7 +77,7 @@ pub fn record_photos_meta_data(sqlite: &SQLite, photos: Vec<photo::Photo>) -> Re
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28)")
         .map_err(|_| "Failed to prepare statement")?;
 
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
     for mut photo in photos {
         photo.load_exif();
         let date = match photo.dir.to_date() {

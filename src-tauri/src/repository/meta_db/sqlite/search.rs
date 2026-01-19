@@ -254,7 +254,9 @@ pub fn search_photos(
     sql_query.push_str(" GROUP BY pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url, pm.exif_date_time_original, pm.exif_make, pm.exif_model, pm.exif_lens_model");
 
     // Add ORDER BY clause with primary and secondary sort fields
-    add_order_by_clause(&mut sql_query, sort_field, sort_order);
+    let sort_value = crate::repository::sort_field_to_value(sort_field, sort_order);
+    sql_query.push_str(" ");
+    sql_query.push_str(&crate::repository::sort_to_order_by_clause(sort_value, "pm"));
 
     // Add LIMIT clause
     sql_query.push_str(&format!(" LIMIT {}", max_photos_per_fetch));
@@ -377,63 +379,6 @@ fn add_search_condition(
         _ => {
             sql_query.push_str(" AND path LIKE ?");
             params.push(Box::new(format!("%{}%", query)));
-        }
-    }
-}
-
-/// Add ORDER BY clause with primary and secondary sort fields
-///
-/// # Security
-/// This function uses whitelist validation for both sort_field and sort_order:
-/// - sort_field: Only recognized column names are used (via match expression)
-/// - sort_order: Normalized to "ASC" or "DESC" only
-/// Unknown values fall through to safe defaults, preventing SQL injection.
-fn add_order_by_clause(sql_query: &mut String, sort_field: &str, sort_order: &str) {
-    let order_direction = if sort_order.to_lowercase() == "asc" {
-        "ASC"
-    } else {
-        "DESC"
-    };
-    let secondary_direction = "DESC";
-
-    match sort_field {
-        "exif_date_time_original" => {
-            sql_query.push_str(&format!(
-                " ORDER BY pm.exif_date_time_original {}, pm.photo_date {}, pm.path {}",
-                order_direction, secondary_direction, secondary_direction
-            ));
-        }
-        "photo_date" => {
-            sql_query.push_str(&format!(
-                " ORDER BY pm.photo_date {}, pm.exif_date_time_original {}, pm.path {}",
-                order_direction, secondary_direction, secondary_direction
-            ));
-        }
-        "path" => {
-            sql_query.push_str(&format!(
-                " ORDER BY pm.path {}, pm.exif_date_time_original {}, pm.photo_date {}",
-                order_direction, secondary_direction, secondary_direction
-            ));
-        }
-        "star" => {
-            let null_handling = if sort_order.to_lowercase() == "desc" {
-                "NULLS LAST"
-            } else {
-                "NULLS FIRST"
-            };
-            sql_query.push_str(&format!(" ORDER BY pm.star {} {}, pm.exif_date_time_original {}, pm.photo_date {}, pm.path {}",
-                order_direction, null_handling, secondary_direction, secondary_direction, secondary_direction));
-        }
-        _ => {
-            // Unknown sort_field - log for debugging and use safe default
-            // This provides defense-in-depth against SQL injection attempts
-            if !sort_field.is_empty() && !["exif_date_time_original", "photo_date", "path", "star"].contains(&sort_field) {
-                log::warn!(target: "search", "unknown_sort_field; field={}; using_default=exif_date_time_original", sort_field);
-            }
-            sql_query.push_str(&format!(
-                " ORDER BY pm.exif_date_time_original {}, pm.photo_date {}, pm.path {}",
-                order_direction, secondary_direction, secondary_direction
-            ));
         }
     }
 }

@@ -1,3 +1,4 @@
+use crate::value::date;
 use rusqlite::{params, Connection, Result};
 
 /// Migration definition
@@ -226,7 +227,7 @@ fn migrate_legacy_schema(
     has_css_style: bool,
     has_delete_flg: bool,
 ) -> Result<()> {
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
 
     // Get full current schema
     let full_schema = include_str!("001_initial_schema.sql");

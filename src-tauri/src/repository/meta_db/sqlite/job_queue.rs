@@ -1,5 +1,6 @@
 use crate::entity::job_queue::{Job, JobProgress, JobStatus, JobUnit, QueuedJob};
 use crate::repository::meta_db::sqlite::SQLite;
+use crate::value::date;
 use rusqlite::{params, Connection, Result};
 
 pub(super) fn create_job_unit(sqlite: &SQLite, job_unit: &JobUnit) -> Result<(), String> {
@@ -96,7 +97,7 @@ pub(super) fn update_job_status(
     let conn = Connection::open(&sqlite.db_path)
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
 
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let now = date::DateTime::now().to_db_string();
 
     match status {
         JobStatus::Running => {

@@ -1,0 +1,291 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background-color: var(--color-bg-elevated);
+  border-radius: 8px;
+  padding: 24px;
+  min-width: 400px;
+  max-width: 500px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Header */
+.header {
+  margin-bottom: 20px;
+}
+
+.headerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: bold;
+  color: var(--color-text-primary);
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: var(--font-size-xl);
+  cursor: pointer;
+  color: var(--color-text-primary);
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton:disabled {
+  cursor: not-allowed;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+}
+
+/* Selected Items Section */
+.selectedSection {
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: var(--color-bg-surface);
+  border-radius: 4px;
+  border: 1px solid var(--color-border-default);
+}
+
+.selectedLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.selectedChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.selectedChip {
+  padding: 4px 10px;
+  background-color: var(--color-primary-selected);
+  border: 1px solid var(--color-primary);
+  border-radius: 12px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+/* Search */
+.searchSection {
+  margin-bottom: 16px;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 4px;
+  font-size: var(--font-size-base);
+  box-sizing: border-box;
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* List Container */
+.listContainer {
+  flex: 1;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 4px;
+  background-color: var(--color-bg-surface);
+}
+
+.emptyState {
+  padding: 20px;
+  text-align: center;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+}
+
+/* Single-select List Item */
+.listItem {
+  padding: 12px;
+  cursor: pointer;
+  background-color: transparent;
+  border-bottom: 1px solid var(--color-border-default);
+  transition: background-color 0.2s;
+}
+
+.listItem:hover {
+  background-color: var(--color-bg-elevated);
+}
+
+.listItem:last-child {
+  border-bottom: none;
+}
+
+.listItemSelected {
+  background-color: var(--color-primary-selected);
+  border: 2px solid var(--color-primary);
+}
+
+.listItemSelected:hover {
+  background-color: var(--color-primary-selected);
+}
+
+.listItemName {
+  font-size: var(--font-size-base);
+  margin-bottom: 4px;
+  color: var(--color-text-primary);
+}
+
+.listItemSelected .listItemName {
+  font-weight: bold;
+}
+
+.listItemMeta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.listItemDescription {
+  font-style: italic;
+}
+
+/* Multi-select Chip Grid */
+.chipGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+}
+
+.chipItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-default);
+  border-radius: 16px;
+  transition: all 0.2s;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  user-select: none;
+}
+
+.chipItem:hover {
+  background-color: var(--color-bg-muted);
+}
+
+.chipItemSelected {
+  background-color: var(--color-primary-selected);
+  border-color: var(--color-primary);
+}
+
+.chipItemSelected:hover {
+  background-color: var(--color-primary-selected);
+}
+
+.checkbox {
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
+/* Create Section */
+.createSection {
+  margin-bottom: 20px;
+  padding: 12px;
+  background-color: var(--color-bg-surface);
+  border-radius: 4px;
+  border: 1px solid var(--color-border-default);
+}
+
+.createLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.cancelButton {
+  padding: 10px 20px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 6px;
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.cancelButton:hover {
+  background-color: var(--color-bg-muted);
+}
+
+.cancelButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.confirmButton {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  color: white;
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.confirmButton:hover {
+  opacity: 0.9;
+}
+
+.confirmButton:disabled {
+  background: var(--color-bg-muted);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+}

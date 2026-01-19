@@ -147,7 +147,7 @@ function PhotosList({
     const { savePageState, loadPageState } = usePageState();
 
     // Create ViewMode object using factory hook
-    const { viewModeObj, isSearchMode, isAlbumMode, isAlbumListMode, isTagMode, isTagListMode, isTrashMode } = useViewModeFactory({
+    const { viewModeObj } = useViewModeFactory({
         viewMode, currentAlbumId, currentAlbumName, currentTagId, currentTagName, currentBurstGroupId, searchInitialQuery, currentDate,
         burstReturnMode, burstReturnModeData
     });
@@ -208,7 +208,7 @@ function PhotosList({
         handleSearch, clearSearch, handleSavedSearchSelect, handleFiltersChange,
         clearAllFilters, applyFiltersWithConfig, renderFilterClearingUI
     } = useSearchAndFilterManagement({
-        viewModeObj, isSearchMode, searchQuery, searchInitialQuery,
+        viewModeObj, searchQuery, searchInitialQuery,
         currentSearchParams, searchResults, sortOfPhotos,
         starFilter, hasCommentFilter, hasTagFilter, extensionFilter, importExtensionFilter,
         setStarFilter, setHasCommentFilter, setHasTagFilter, setExtensionFilter, setImportExtensionFilter,
@@ -230,10 +230,10 @@ function PhotosList({
         getPhotos, loadAllPhotosBasedOnViewMode, loadPhotosWithCollection
     } = usePhotoLoader({
         viewModeObj, appConfig, sortOfPhotos, starFilter, hasCommentFilter,
-        extensionFilter, filteredPhotos, numOfPhoto, recentPhotosMode, isSearchMode,
-        searchResults, importState, setPhotosList, setAllPhotosForCurrentFetch,
-        setIsLimitedByConfig, setConfigLimit, setPhotosListMiniAllPhotos,
-        setPhotoCollection, setPhotosListImgSrc, setCurrentPhotoPath, setCurrentPhotoIndex,
+        extensionFilter, filteredPhotos, numOfPhoto, importState,
+        setPhotosList, setAllPhotosForCurrentFetch, setIsLimitedByConfig, setConfigLimit,
+        setPhotosListMiniAllPhotos, setPhotoCollection, setPhotosListImgSrc,
+        setCurrentPhotoPath, setCurrentPhotoIndex,
         convertPhotosToEntities: convertPhotosWithConfig, handleError,
         datePage: datePage || {}, updateDatePage, addFooterMessage,
         burstModeEnabled
@@ -286,7 +286,7 @@ function PhotosList({
         tagsList, albumsList, appConfig, currentViewMode: viewMode,
         currentDate, currentAlbumName, currentTagName, searchQuery, handleError,
         addFooterMessage, loadAlbums, loadTags, currentAlbumId, toggleAlbumListMode,
-        isTrashMode, photosListMiniAllPhotos, setPhotosListMiniAllPhotos,
+        viewModeObj, photosListMiniAllPhotos, setPhotosListMiniAllPhotos,
         allPhotosForCurrentFetch, setAllPhotosForCurrentFetch,
         photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex,
         setCurrentPhotoPath, setCurrentPhotoIndex, currentPhotoIndex, closePhotoDisplay,
@@ -327,7 +327,7 @@ function PhotosList({
     });
 
     // Tab management
-    const { tabClass, setTabClass, changeTab, clearAllTabs } = useTabManagement({ viewMode, isSearchMode });
+    const { tabClass, setTabClass, changeTab, clearAllTabs } = useTabManagement({ viewMode, viewModeObj });
 
     // Selection tab auto-open effect
     useSelectionTabEffect({
@@ -341,7 +341,7 @@ function PhotosList({
 
     // Search initialization
     useSearchInitialization({
-        isSearchMode, isAdvancedSearchMode, searchQuery, searchInitialQuery,
+        viewModeObj, isAdvancedSearchMode, searchQuery, searchInitialQuery,
         currentSearchParams, searchFilters, updateSearchParams, handleSearch,
         filterOptions, isFilterOptionsLoading, loadFilterOptions
     });
@@ -375,8 +375,8 @@ function PhotosList({
 
     // View mode sync hooks
     useViewModeSync({
-        viewMode, currentDate, currentAlbumId, currentTagId, currentBurstGroupId, searchQuery,
-        currentSearchParams, isSearchMode, photoLoading, currentPhotoLoadingController,
+        viewMode, viewModeObj, currentDate, currentAlbumId, currentTagId, currentBurstGroupId, searchQuery,
+        currentSearchParams, photoLoading, currentPhotoLoadingController,
         setCurrentPhotoLoadingController, setShowSideMenu, setPhotosList,
         setCurrentPhotoIndex, setPhotosListMiniCurrentIndex, setCurrentPhotoPath,
         loadPhotosWithCollection, appConfig, sortOfPhotos
@@ -390,7 +390,7 @@ function PhotosList({
     });
 
     useImportModeLifecycle({
-        viewMode, isSearchMode, importState, setImportState, setTabClass,
+        viewMode, viewModeObj, importState, setImportState, setTabClass,
         setShowSideMenu, setAllPhotosForCurrentFetch, setPhotosListMiniAllPhotos, setPhotosList
     });
 
@@ -465,9 +465,9 @@ function PhotosList({
 
                 {!currentPhotoPath && (
                     <VerticalTabBar
-                        viewMode={viewMode} isSearchMode={isSearchMode} showSideMenu={showSideMenu}
+                        viewMode={viewMode} viewModeObj={viewModeObj} showSideMenu={showSideMenu}
                         tabClass={tabClass} changeTab={changeTab} setShowSideMenu={setShowSideMenu}
-                        closeRightColumn={closeRightColumn} clearAllTabs={clearAllTabs} viewModeObj={viewModeObj}
+                        closeRightColumn={closeRightColumn} clearAllTabs={clearAllTabs}
                         photoSelectionCount={photoSelection.length}
                         selectedAlbumsCount={selectedAlbums.length} selectedTagsCount={selectedTags.length}
                     />
@@ -478,14 +478,13 @@ function PhotosList({
                         setShowSideMenu={setShowSideMenu} showSideMenu={showSideMenu}
                         currentPhotoPath={currentPhotoPath} closePhotoDisplay={closePhotoDisplay}
                         currentPhoto={photosListMiniAllPhotos[currentPhotoIndex]}
-                        path={currentPhotoPath} searchMode={isSearchMode} searchQuery={searchQuery}
+                        path={currentPhotoPath} viewModeObj={viewModeObj} searchQuery={searchQuery}
                         searchResultsCount={displayedPhotos.length} onClearSearch={clearSearch}
                         searchTools={searchTools} addFooterMessage={handlers.addFooterMessage}
                         imgCacheMap={imgCacheMap} setStar={setStarWithUpdate} star={star}
                         onPhotosRefresh={refreshPhotosOnly} onCommentUpdate={updatePhotoComment}
                         onAlbumUpdate={handleAlbumUpdate} onAlbumDelete={handleAlbumDelete}
-                        isImportMode={viewModeObj.isImportMode()} isTrashMode={viewModeObj.isTrashMode()}
-                        viewModeObj={viewModeObj} photoSelection={photoSelection}
+                        photoSelection={photoSelection}
                         selectedAlbums={selectedAlbums} selectedTags={selectedTags}
                         selectAllPhotoToSelection={selectAllPhotoToSelection}
                         clearPhotoSelection={clearPhotoSelection} deleteSelectedAlbums={deleteSelectedAlbums}

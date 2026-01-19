@@ -179,9 +179,6 @@ pub async fn get_photos_unified(
                 "trash" => photo_handlers::trash::handle(&ctx).await,
                 "all_albums" => photo_handlers::collections::handle_albums(&ctx).await,
                 "all_tags" => photo_handlers::collections::handle_tags(&ctx).await,
-                "all_tags_with_count" => {
-                    photo_handlers::collections::handle_tags_with_count(&ctx).await
-                }
                 // Burst grouping handlers
                 "burst_date" => photo_handlers::burst::handle_burst_date(&ctx, &search_params).await,
                 "burst_album" => photo_handlers::burst::handle_burst_album(&ctx, &search_params).await,
