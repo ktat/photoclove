@@ -429,9 +429,40 @@ function PhotosListMini(props) {
                         {v.comment && <span>💬</span>}
                     </div>
                 )}
+
+                {/* Burst group badge - shows +N when photo has burst group */}
+                {v.burst_group_id && v.burst_count > 1 && !isInBurstGroupMode && (
+                    <div
+                        style={{
+                            position: "absolute",
+                            top: "2px",
+                            right: "2px",
+                            background: "var(--color-primary)",
+                            color: "white",
+                            padding: "1px 4px",
+                            borderRadius: "var(--radius-sm)",
+                            fontSize: "var(--font-size-2xs)",
+                            fontWeight: "bold",
+                            minWidth: "16px",
+                            textAlign: "center",
+                            cursor: "pointer",
+                            zIndex: 4
+                        }}
+                        title={`Burst group: ${v.burst_count} photos`}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (props.openBurstGroup) {
+                                props.openBurstGroup(v.burst_group_id);
+                            }
+                        }}
+                    >
+                        +{v.burst_count - 1}
+                    </div>
+                )}
             </div>
         );
-    }, [photosWithMethods, photosListImgSrc, borderStyle, thumbnailOrientationCorrection, importState, goToPhoto]);
+    }, [photosWithMethods, photosListImgSrc, borderStyle, thumbnailOrientationCorrection, importState, goToPhoto, isInBurstGroupMode, props.openBurstGroup]);
 
     const { showPrev, showNext } = calculateThumbnailDisplayWithViewOffset(photosWithMethods, props.currentIndex, viewStartIndex);
 
