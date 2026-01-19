@@ -245,10 +245,13 @@ pub async fn get_album_photos(
     let correlation_id = logging_service.generate_correlation_id();
     log::info!(target: "albums", "get_album_photos_request; correlation_id={}; album_id={}", correlation_id, album_id);
 
-    match meta_db.get_album_photos(album_id) {
+    // Use unified collection API - ordered=true for album photo order
+    match meta_db.get_collection_photos(album_id, true, None) {
         Ok(photos) => {
-            log::info!(target: "albums", "get_album_photos_success; correlation_id={}; count={}", correlation_id, photos.len());
-            Ok(photos)
+            // Extract just the paths from Photo objects
+            let paths: Vec<String> = photos.iter().map(|p| p.file.path.clone()).collect();
+            log::info!(target: "albums", "get_album_photos_success; correlation_id={}; count={}", correlation_id, paths.len());
+            Ok(paths)
         }
         Err(e) => {
             log::error!(target: "albums", "get_album_photos_error; correlation_id={}; error={}", correlation_id, e);
@@ -278,7 +281,8 @@ pub async fn get_album_photos_with_metadata(
     let correlation_id = logging_service.generate_correlation_id();
     log::info!(target: "albums", "get_album_photos_with_metadata_request; correlation_id={}; album_id={}", correlation_id, album_id);
 
-    match meta_db.get_album_photos_with_metadata(album_id, config.clone()) {
+    // Use unified collection API - ordered=true for album photo order
+    match meta_db.get_collection_photos(album_id, true, Some(config.clone())) {
         Ok(photos) => {
             log::info!(target: "albums", "get_album_photos_with_metadata_success; correlation_id={}; count={}", correlation_id, photos.len());
             let photos_json = serde_json::to_string(&photos).map_err(|e| e.to_string())?;
@@ -313,7 +317,8 @@ pub async fn reorder_album_photos(
     let correlation_id = logging_service.generate_correlation_id();
     log::info!(target: "albums", "reorder_album_photos_request; correlation_id={}; album_id={}; photo_count={}", correlation_id, album_id, photo_order.len());
 
-    match meta_db.reorder_album_photos(album_id, photo_order) {
+    // Use unified collection API
+    match meta_db.reorder_collection_items(album_id, photo_order) {
         Ok(()) => {
             log::info!(target: "albums", "reorder_album_photos_success; correlation_id={}", correlation_id);
             Ok(())

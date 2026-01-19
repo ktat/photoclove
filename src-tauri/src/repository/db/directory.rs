@@ -89,11 +89,8 @@ impl RepositoryDB for Directory {
         let _ = has_comment; // Suppress unused variable warning (filtering done by DB query)
         let dir = self.path.child(date.to_string());
         let mut photos = photo::Photos::new();
-        let mut conf: config::Config = config::Config::template();
         let has_opt = opt_conf.is_some();
-        if has_opt {
-            conf = opt_conf.unwrap();
-        }
+        let conf = opt_conf.unwrap_or_else(config::Config::template);
 
         // Parse extension filter
         let extension_filters: Vec<&str> = if extension == "all" || extension.is_empty() {
@@ -331,11 +328,8 @@ impl RepositoryDB for Directory {
         opt_conf: Option<config::Config>,
     ) -> photo::Photos {
         let mut photos = photo::Photos::new();
-        let mut conf: config::Config = config::Config::template();
         let has_opt = opt_conf.is_some();
-        if has_opt {
-            conf = opt_conf.unwrap();
-        }
+        let conf = opt_conf.unwrap_or_else(config::Config::template);
 
         // Parse extension filter
         let extension_filters: Vec<&str> = if extension == "all" || extension.is_empty() {

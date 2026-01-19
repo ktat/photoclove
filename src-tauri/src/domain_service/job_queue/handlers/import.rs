@@ -2,7 +2,6 @@ use crate::entity::job_queue;
 use crate::repository::MetaInfoDB;
 use crate::value::file;
 use chrono::Datelike;
-use regex::Regex;
 use sha2::{Digest, Sha256};
 use tauri::{Emitter, Manager};
 
@@ -75,52 +74,19 @@ pub(crate) fn process_import_job(
             log::debug!(target: "import_job", "date; created_date={}-{:02}-{:02}", created_date.year, created_date.month, created_date.day);
             created_date
         } else {
-            log::debug!(target: "import_job", "date; method=filename_extraction; reason=empty_photo_time");
-            // Try to extract date from filename (like IMG_20250710_190245626.jpg)
-            let filename = std::path::Path::new(file_path)
-                .file_name()
-                .ok_or_else(|| format!("Cannot get filename from: {}", file_path))?
-                .to_string_lossy();
+            // Use file modification time for files without EXIF date information
+            // Note: Filename pattern extraction (e.g., IMG_20250710_xxx.jpg) was removed
+            // because it's not universal and file modification time is more reliable
+            log::debug!(target: "import_job", "date; method=file_modification_time; reason=empty_photo_time");
+            let metadata = std::fs::metadata(file_path)
+                .map_err(|e| format!("Cannot get file metadata: {}", e))?;
+            let modified = metadata
+                .modified()
+                .map_err(|e| format!("Cannot get file modification time: {}", e))?;
+            let datetime = chrono::DateTime::<chrono::Utc>::from(modified);
 
-            log::debug!(target: "import_job", "date; filename_analysis={}", filename);
-
-            // Pattern for filenames like IMG_20250710_xxxxxx.jpg
-            if let Some(captures) = Regex::new(r"(\d{4})(\d{2})(\d{2})")
-                .unwrap()
-                .captures(&filename)
-            {
-                let year = captures.get(1).unwrap().as_str().parse::<i32>().unwrap();
-                let month = captures.get(2).unwrap().as_str().parse::<u32>().unwrap();
-                let day = captures.get(3).unwrap().as_str().parse::<u32>().unwrap();
-
-                if let Some(date) = crate::value::date::Date::new(year, month, day) {
-                    log::debug!(target: "import_job", "date; filename_extracted={}-{:02}-{:02}", year, month, day);
-                    date
-                } else {
-                    return Err(format!(
-                        "Invalid date extracted from filename: {}-{:02}-{:02}",
-                        year, month, day
-                    ));
-                }
-            } else {
-                log::debug!(target: "import_job", "date; method=file_modification_time; reason=no_filename_pattern");
-                // Use file modification time as fallback for files without date information
-                let metadata = std::fs::metadata(file_path)
-                    .map_err(|e| format!("Cannot get file metadata: {}", e))?;
-                let modified = metadata
-                    .modified()
-                    .map_err(|e| format!("Cannot get file modification time: {}", e))?;
-                let datetime = chrono::DateTime::<chrono::Utc>::from(modified);
-
-                if let Some(date) =
-                    crate::value::date::Date::new(datetime.year(), datetime.month(), datetime.day())
-                {
-                    log::debug!(target: "import_job", "date; modification_time={}-{:02}-{:02}", datetime.year(), datetime.month(), datetime.day());
-                    date
-                } else {
-                    return Err(format!("Failed to create date from file modification time"));
-                }
-            }
+            crate::value::date::Date::new(datetime.year(), datetime.month(), datetime.day())
+                .ok_or_else(|| "Failed to create date from file modification time".to_string())?
         };
 
         log::debug!(target: "import_job", "date; final_date={}", date.to_string());

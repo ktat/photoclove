@@ -2,6 +2,62 @@ use rusqlite::params;
 
 use super::SQLite;
 
+/// Get all tags
+pub(super) fn get_all_tags(db: &SQLite) -> Result<Vec<(i32, String, Option<String>)>, String> {
+    let conn = db
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    let mut stmt = conn
+        .prepare("SELECT id, name, color FROM photo_collections WHERE type = 'tag' ORDER BY name")
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let tags = stmt
+        .query_map([], |row| {
+            let id: i32 = row.get(0)?;
+            let name: String = row.get(1)?;
+            let color: Option<String> = row.get(2)?;
+            Ok((id, name, color))
+        })
+        .map_err(|e| format!("Failed to query tags: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect tags: {}", e))?;
+
+    Ok(tags)
+}
+
+/// Get all tags with photo count
+pub(super) fn get_all_tags_with_photo_count(db: &SQLite) -> Result<Vec<(i32, String, Option<String>, i32)>, String> {
+    let conn = db
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT pc.id, pc.name, pc.color,
+                    (SELECT COUNT(*) FROM photo_collection_items WHERE collection_id = pc.id) as photo_count
+             FROM photo_collections pc
+             WHERE pc.type = 'tag'
+             ORDER BY pc.name"
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let tags = stmt
+        .query_map([], |row| {
+            let id: i32 = row.get(0)?;
+            let name: String = row.get(1)?;
+            let color: Option<String> = row.get(2)?;
+            let count: i32 = row.get(3)?;
+            Ok((id, name, color, count))
+        })
+        .map_err(|e| format!("Failed to query tags: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect tags: {}", e))?;
+
+    Ok(tags)
+}
+
+
 /// Remove all tags from a photo
 pub(super) fn remove_all_tags_from_photo(db: &SQLite, photo_path: &str) -> Result<i32, String> {
     let conn = db
