@@ -86,11 +86,24 @@ function PhotoDisplayWrapper({
 
     // Wrapper for openBurstGroup to include current view context and photo index
     // This ensures that when returning from burst group, the context and position are restored
-    const handleOpenBurstGroup = useCallback((burstGroupId) => {
+    // When called from PhotoDisplay, it passes currentViewMode and currentViewModeData
+    const handleOpenBurstGroup = useCallback((burstGroupId, passedViewMode, passedViewModeData) => {
         let returnMode = null;
         let returnModeData = null;
 
-        if (viewModeObj.isAlbumMode()) {
+        // Use passed data if available (from PhotoDisplay click), otherwise derive from viewModeObj
+        if (passedViewMode && passedViewModeData) {
+            // Map VIEW_MODES constant to returnMode
+            if (passedViewMode === VIEW_MODES.ALBUM) {
+                returnMode = VIEW_MODES.ALBUM;
+            } else if (passedViewMode === VIEW_MODES.TAG) {
+                returnMode = VIEW_MODES.TAG;
+            }
+            returnModeData = {
+                ...passedViewModeData,
+                currentPhotoIndex: passedViewModeData.currentPhotoIndex ?? currentPhotoIndex
+            };
+        } else if (viewModeObj.isAlbumMode()) {
             returnMode = VIEW_MODES.ALBUM;
             returnModeData = {
                 albumId: viewModeObj.getCurrentAlbumId(),
