@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import Scrollable from "../../Scrollable.jsx";
 import { logger } from "../../services/LoggerService.js";
+import { getTagColor } from "../../utils/tagColorUtils.js";
 
 /**
  * Tag Cloud View Component
@@ -59,6 +60,12 @@ function TagCloudView({
         const ratio = (photoCount - minPhotoCount) / (maxPhotoCount - minPhotoCount);
         return minSize + ratio * (maxSize - minSize);
     };
+
+    // Calculate tag color using shared utility
+    const calculateTagColor = useCallback((tagName, photoCount) => {
+        return getTagColor(tagName, photoCount, items);
+    }, [items]);
+
 
     // Calculate positions for all tags to avoid overlaps
     const calculateTagPositions = useMemo(() => {
@@ -260,6 +267,7 @@ function TagCloudView({
                             {calculateTagPositions.map((pos, index) => {
                                 const { tag, x, y, rotation } = pos;
                                 const fontSize = calculateTagSize(tag.photoCount || 0);
+                                const tagColor = calculateTagColor(tag.name, tag.photoCount || 0);
                                 const isSelected = selectedItems.includes(tag.id);
 
                                 return (
@@ -280,19 +288,14 @@ function TagCloudView({
                                             left: '50%',
                                             top: '50%',
                                             transform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${rotation}deg)`,
-                                            padding: '6px 12px',
-                                            borderRadius: 'var(--radius-md)',
-                                            backgroundColor: tag.color || 'var(--color-bg-surface)',
-                                            color: tag.color ? 'white' : 'var(--color-text-primary)',
                                             cursor: 'pointer',
                                             fontSize: `${fontSize}px`,
-                                            fontWeight: fontSize > 30 ? 'bold' : 'normal',
+                                            fontWeight: tagColor.fontWeight,
+                                            color: isSelected ? 'var(--color-primary)' : tagColor.color,
                                             transition: 'all 0.2s ease-out',
                                             whiteSpace: 'nowrap',
-                                            textShadow: tag.color ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
                                             zIndex: index === 0 ? 10 : 5 - Math.floor(index / 3),
-                                            border: isSelected ? '3px solid var(--color-primary)' : 'none',
-                                            boxShadow: isSelected ? '0 0 8px var(--color-primary)' : 'none'
+                                            textDecoration: isSelected ? 'underline' : 'none'
                                         }}
                                         title={`${tag.name} (${tag.photoCount || 0} photos) - Click to view, long press to select`}
                                         onMouseEnter={(e) => {
@@ -300,33 +303,15 @@ function TagCloudView({
                                             e.currentTarget.style.zIndex = '20';
                                         }}
                                     >
-                                        {/* Selection checkmark */}
+                                        {/* Selection indicator */}
                                         {isSelected && (
-                                            <span style={{
-                                                position: 'absolute',
-                                                top: '-8px',
-                                                right: '-8px',
-                                                backgroundColor: 'var(--color-primary)',
-                                                color: 'white',
-                                                borderRadius: '50%',
-                                                width: '20px',
-                                                height: '20px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                fontSize: '12px',
-                                                fontWeight: 'bold',
-                                                boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
-                                            }}>
-                                                ✓
-                                            </span>
+                                            <span style={{ marginRight: '4px' }}>✓</span>
                                         )}
                                         {tag.name}
                                         <span style={{
                                             fontSize: '0.6em',
                                             opacity: 0.7,
-                                            marginLeft: '4px',
-                                            color: tag.color ? 'rgba(255,255,255,0.7)' : 'var(--color-text-muted)'
+                                            marginLeft: '4px'
                                         }}>
                                             {tag.photoCount || 0}
                                         </span>
