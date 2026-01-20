@@ -319,6 +319,7 @@ export class ViewMode {
     shouldShowSelectionTab() { return this.isPhotoViewingMode() || this.isListMode(); }
     shouldShowImportOperations() { return this.isImportMode(); }
     shouldShowAlbumOperations() { return this.isAlbumMode() && !this.isImportMode(); }
+    shouldShowTagOperations() { return this.isTagMode() && !this.isImportMode(); }
     shouldShowStandardOperations() { return !this.isImportMode(); }
     shouldShowPhotoSelection() { return !this.isAlbumListMode() && !this.isTagListMode(); }
     shouldShowAlbumSelection() { return this.isAlbumListMode(); }
@@ -354,6 +355,7 @@ export class ViewMode {
     showSelectAllInDirectory() { return this.isImportMode(); }
     showSelectAllInPage() { return this.isImportMode(); }
     showRemoveFromAlbum() { return this.isAlbumMode() && !this.isImportMode(); }
+    showRemoveFromTag() { return this.isTagMode() && !this.isImportMode(); }
     showUploadToGooglePhotos() { return !this.isImportMode() && !this.isTrashMode(); }
     showDeleteFiles() { return !this.isImportMode() && !this.isTrashMode(); }
     showPermanentDelete() { return this.isTrashMode(); }

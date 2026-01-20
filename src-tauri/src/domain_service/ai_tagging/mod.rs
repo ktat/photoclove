@@ -5,10 +5,10 @@
 //! - ONNX Runtime (MobileNetV3, EfficientNet)
 //! - Future: Candle, Cloud APIs, etc.
 
+// Suppress dead_code warnings for this module as it contains API surface
+// that will be used when the full feature is integrated (Preferences UI, etc.)
+#![allow(dead_code)]
+
 pub mod backend;
 pub mod categories;
 pub mod service;
-
-pub use backend::AIClassifierBackend;
-pub use categories::AutoTagCategory;
-pub use service::AITaggingService;

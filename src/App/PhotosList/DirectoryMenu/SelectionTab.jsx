@@ -87,6 +87,13 @@ function SelectionTab({
                                             </>
                                         )}
 
+                                        {/* Tag-specific operations (only in tag mode) */}
+                                        {viewModeObj?.shouldShowTagOperations() && (
+                                            <>
+                                                {viewModeObj?.showRemoveFromTag() && <option value="removeFromTag">🏷️ Remove from Tag</option>}
+                                            </>
+                                        )}
+
                                         {/* Trash mode operations */}
                                         {viewModeObj?.isTrashMode() && (
                                             <>

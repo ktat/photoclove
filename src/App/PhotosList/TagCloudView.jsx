@@ -4,6 +4,21 @@ import { logger } from "../../services/LoggerService.js";
 import { getTagColor } from "../../utils/tagColorUtils.js";
 
 /**
+ * Check if a tag is an AI-generated tag
+ */
+const isAITag = (tagName) => tagName?.startsWith('ai:');
+
+/**
+ * Get display name for a tag (removes ai: prefix for cleaner display)
+ */
+const getTagDisplayName = (tagName) => {
+    if (isAITag(tagName)) {
+        return tagName.substring(3); // Remove 'ai:' prefix
+    }
+    return tagName;
+};
+
+/**
  * Tag Cloud View Component
  * Displays tags in a word cloud format with size based on photo count
  *
@@ -297,7 +312,7 @@ function TagCloudView({
                                             zIndex: index === 0 ? 10 : 5 - Math.floor(index / 3),
                                             textDecoration: isSelected ? 'underline' : 'none'
                                         }}
-                                        title={`${tag.name} (${tag.photoCount || 0} photos) - Click to view, long press to select`}
+                                        title={`${isAITag(tag.name) ? '🤖 AI: ' : ''}${getTagDisplayName(tag.name)} (${tag.photoCount || 0} photos) - Click to view, long press to select`}
                                         onMouseEnter={(e) => {
                                             e.currentTarget.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${rotation}deg) scale(1.15)`;
                                             e.currentTarget.style.zIndex = '20';
@@ -307,7 +322,11 @@ function TagCloudView({
                                         {isSelected && (
                                             <span style={{ marginRight: '4px' }}>✓</span>
                                         )}
-                                        {tag.name}
+                                        {/* AI tag indicator */}
+                                        {isAITag(tag.name) && (
+                                            <span style={{ marginRight: '4px', fontSize: '0.8em' }}>🤖</span>
+                                        )}
+                                        {getTagDisplayName(tag.name)}
                                         <span style={{
                                             fontSize: '0.6em',
                                             opacity: 0.7,

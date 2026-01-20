@@ -166,3 +166,249 @@ pub fn cleanup_completed_jobs(state: tauri::State<'_, AppState>) -> Result<Strin
         Err(e) => Err(format!("Failed to cleanup completed jobs: {}", e)),
     }
 }
+
+/// Runs AI tagging for all photos in the library
+///
+/// # Arguments
+/// * `window` - Tauri window handle for emitting events
+/// * `state` - Application state
+///
+/// # Returns
+/// JSON string containing the job unit ID or an error message
+#[tauri::command]
+pub fn run_ai_tagging_for_all(
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    use crate::domain_service::job_queue::executor::process_new_jobs;
+    use crate::entity::config::Config;
+    use crate::entity::job_queue::{Job, JobType, QueuedJob};
+    use crate::repository::meta_db::sqlite::SQLite;
+    use std::sync::Arc;
+
+    let logging_service = &state.logging_service;
+    let correlation_id = logging_service.generate_correlation_id();
+
+    log::info!(
+        target: "ai_tagging",
+        "all_photos_tagging_request; correlation_id={}",
+        correlation_id
+    );
+
+    // Reload config to get latest settings
+    let config = Config::new();
+
+    // Check if AI tagging is enabled
+    if !config.ai_tagging.enabled {
+        return Err("AI tagging is disabled. Enable it in Preferences first.".to_string());
+    }
+
+    // Get all photos using meta_db
+    let photos = state
+        .meta_db
+        .get_all_photos_for_grouping()
+        .map_err(|e| format!("Failed to get photos: {}", e))?;
+
+    if photos.is_empty() {
+        log::info!(
+            target: "ai_tagging",
+            "all_photos_tagging_request; correlation_id={}; status=no_photos",
+            correlation_id
+        );
+        return Ok(r#"{"result": "no_photos", "count": 0}"#.to_string());
+    }
+
+    // Filter to only include image files
+    let image_paths: Vec<String> = photos
+        .iter()
+        .filter(|p| {
+            let lower = p.file.path.to_lowercase();
+            lower.ends_with(".jpg")
+                || lower.ends_with(".jpeg")
+                || lower.ends_with(".png")
+                || lower.ends_with(".webp")
+                || lower.ends_with(".heic")
+                || lower.ends_with(".heif")
+        })
+        .map(|p| p.file.path.clone())
+        .collect();
+
+    if image_paths.is_empty() {
+        log::info!(
+            target: "ai_tagging",
+            "all_photos_tagging_request; correlation_id={}; status=no_images",
+            correlation_id
+        );
+        return Ok(r#"{"result": "no_images", "count": 0}"#.to_string());
+    }
+
+    let photo_count = image_paths.len();
+
+    // Create job unit first (required for foreign key constraint)
+    use crate::entity::job_queue::JobUnit;
+    let job_types = vec!["ai_tagging".to_string()];
+    let job_unit = JobUnit::new(job_types);
+    let job_unit_id = job_unit.id.clone();
+
+    // Save job unit first
+    state
+        .meta_db
+        .create_job_unit(&job_unit)
+        .map_err(|e| format!("Failed to create job unit: {}", e))?;
+
+    // Create AI tagging job
+    let job = Job::new(job_unit_id.clone(), JobType::AiTagging, image_paths);
+    let queued_job = QueuedJob::new(job_unit_id.clone(), job);
+
+    // Add job to queue using meta_db
+    let job_id = state
+        .meta_db
+        .create_job(&queued_job)
+        .map_err(|e| format!("Failed to create job: {}", e))?;
+
+    log::info!(
+        target: "ai_tagging",
+        "all_photos_tagging_job_created; correlation_id={}; job_id={}; job_unit_id={}; photos={}",
+        correlation_id,
+        job_id,
+        job_unit_id,
+        photo_count
+    );
+
+    // Trigger job processing with a new SQLite instance wrapped in Arc
+    let db = Arc::new(SQLite::new(config.import_to.clone()));
+    let app_handle = window.app_handle().clone();
+    process_new_jobs(db, 1, app_handle); // Use 1 concurrent job for AI tagging
+
+    Ok(format!(
+        r#"{{"result": "started", "job_unit_id": "{}", "job_id": {}, "photo_count": {}}}"#,
+        job_unit_id, job_id, photo_count
+    ))
+}
+
+/// Runs AI tagging for photos on a specific date
+///
+/// # Arguments
+/// * `date` - Date string in format "YYYY-MM-DD" or "YYYY/MM/DD"
+/// * `window` - Tauri window handle for emitting events
+/// * `state` - Application state
+///
+/// # Returns
+/// JSON string containing the job unit ID or an error message
+#[tauri::command]
+pub fn run_ai_tagging_for_date(
+    date: String,
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    use crate::domain_service::job_queue::executor::process_new_jobs;
+    use crate::entity::config::Config;
+    use crate::entity::job_queue::{Job, JobType, QueuedJob};
+    use crate::repository::meta_db::sqlite::SQLite;
+    use std::sync::Arc;
+
+    let logging_service = &state.logging_service;
+    let correlation_id = logging_service.generate_correlation_id();
+
+    log::info!(
+        target: "ai_tagging",
+        "date_tagging_request; correlation_id={}; date={}",
+        correlation_id,
+        date
+    );
+
+    // Reload config to get latest settings
+    let config = Config::new();
+
+    // Check if AI tagging is enabled
+    if !config.ai_tagging.enabled {
+        return Err("AI tagging is disabled. Enable it in Preferences first.".to_string());
+    }
+
+    // Normalize date format (convert YYYY/MM/DD to YYYY-MM-DD if needed)
+    let normalized_date = date.replace('/', "-");
+
+    // Get photos for the specified date using meta_db
+    let photos = state
+        .meta_db
+        .get_photos_for_grouping_in_date(&normalized_date)
+        .map_err(|e| format!("Failed to get photos for date: {}", e))?;
+
+    if photos.is_empty() {
+        log::info!(
+            target: "ai_tagging",
+            "date_tagging_request; correlation_id={}; status=no_photos; date={}",
+            correlation_id,
+            normalized_date
+        );
+        return Ok(r#"{"result": "no_photos", "count": 0}"#.to_string());
+    }
+
+    // Filter to only include image files
+    let image_paths: Vec<String> = photos
+        .iter()
+        .filter(|p| {
+            let lower = p.file.path.to_lowercase();
+            lower.ends_with(".jpg")
+                || lower.ends_with(".jpeg")
+                || lower.ends_with(".png")
+                || lower.ends_with(".webp")
+                || lower.ends_with(".heic")
+                || lower.ends_with(".heif")
+        })
+        .map(|p| p.file.path.clone())
+        .collect();
+
+    if image_paths.is_empty() {
+        log::info!(
+            target: "ai_tagging",
+            "date_tagging_request; correlation_id={}; status=no_images; date={}",
+            correlation_id,
+            normalized_date
+        );
+        return Ok(r#"{"result": "no_images", "count": 0}"#.to_string());
+    }
+
+    let photo_count = image_paths.len();
+
+    // Create job unit first (required for foreign key constraint)
+    use crate::entity::job_queue::JobUnit;
+    let job_types = vec!["ai_tagging".to_string()];
+    let job_unit = JobUnit::new(job_types);
+    let job_unit_id = job_unit.id.clone();
+
+    // Save job unit first
+    state
+        .meta_db
+        .create_job_unit(&job_unit)
+        .map_err(|e| format!("Failed to create job unit: {}", e))?;
+
+    // Create AI tagging job
+    let job = Job::new(job_unit_id.clone(), JobType::AiTagging, image_paths);
+    let queued_job = QueuedJob::new(job_unit_id.clone(), job);
+
+    // Add job to queue using meta_db
+    let job_id = state
+        .meta_db
+        .create_job(&queued_job)
+        .map_err(|e| format!("Failed to create job: {}", e))?;
+
+    log::info!(
+        target: "ai_tagging",
+        "date_tagging_job_created; correlation_id={}; job_id={}; job_unit_id={}; photos={}",
+        correlation_id,
+        job_id,
+        job_unit_id,
+        photo_count
+    );
+
+    // Trigger job processing with a new SQLite instance wrapped in Arc
+    let db = Arc::new(SQLite::new(config.import_to.clone()));
+    let app_handle = window.app_handle().clone();
+    process_new_jobs(db, 1, app_handle); // Use 1 concurrent job for AI tagging
+
+    Ok(format!(
+        r#"{{"result": "started", "job_unit_id": "{}", "job_id": {}, "photo_count": {}}}"#,
+        job_unit_id, job_id, photo_count
+    ))
+}

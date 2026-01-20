@@ -5,6 +5,21 @@ import { logger } from '../services/LoggerService.js';
 import TagInput from './TagInput.jsx';
 import styles from './TagSelector.module.css';
 
+/**
+ * Check if a tag is an AI-generated tag
+ */
+const isAITag = (tagName) => tagName?.startsWith('ai:');
+
+/**
+ * Get display name for a tag (removes ai: prefix for cleaner display)
+ */
+const getTagDisplayName = (tagName) => {
+    if (isAITag(tagName)) {
+        return tagName.substring(3); // Remove 'ai:' prefix
+    }
+    return tagName;
+};
+
 const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
     const [allTags, setAllTags] = useState([]);
     const [filteredTags, setFilteredTags] = useState([]);
@@ -149,44 +164,64 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
                 gap: '8px',
                 alignItems: 'center'
             }}>
-                {selectedTags.map(tag => (
-                    <span
-                        key={tag.id}
-                        style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            padding: '6px 12px',
-                            backgroundColor: 'var(--color-primary-selected)',
-                            border: '1px solid var(--color-primary)',
-                            borderRadius: '16px',
-                            fontSize: 'var(--font-size-sm)',
-                            color: 'var(--color-text-primary)',
-                            whiteSpace: 'nowrap'
-                        }}
-                    >
-                        <span>{tag.name}</span>
-                        <button
-                            onClick={() => handleTagRemove(tag.id)}
-                            disabled={isLoading}
+                {selectedTags.map(tag => {
+                    const isAI = isAITag(tag.name);
+                    const displayName = getTagDisplayName(tag.name);
+
+                    return (
+                        <span
+                            key={tag.id}
                             style={{
-                                background: 'none',
-                                border: 'none',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '6px 12px',
+                                backgroundColor: isAI ? 'var(--color-bg-surface)' : 'var(--color-primary-selected)',
+                                border: isAI ? '1px solid var(--color-warning)' : '1px solid var(--color-primary)',
+                                borderRadius: '16px',
+                                fontSize: 'var(--font-size-sm)',
                                 color: 'var(--color-text-primary)',
-                                cursor: isLoading ? 'not-allowed' : 'pointer',
-                                padding: '0 0 0 4px',
-                                fontSize: 'var(--font-size-lg)',
-                                lineHeight: '1',
-                                opacity: isLoading ? 0.5 : 0.7
+                                whiteSpace: 'nowrap'
                             }}
-                            title="Remove tag"
-                            onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                            onMouseLeave={(e) => e.currentTarget.style.opacity = isLoading ? '0.5' : '0.7'}
+                            title={isAI && tag.confidence ? `AI confidence: ${tag.confidence}%` : undefined}
                         >
-                            ×
-                        </button>
-                    </span>
-                ))}
+                            {isAI && (
+                                <span style={{ fontSize: 'var(--font-size-xs)', opacity: 0.8 }}>🤖</span>
+                            )}
+                            <span>{displayName}</span>
+                            {isAI && tag.confidence && (
+                                <span style={{
+                                    fontSize: 'var(--font-size-2xs)',
+                                    padding: '1px 4px',
+                                    backgroundColor: 'var(--color-bg-muted)',
+                                    borderRadius: '8px',
+                                    color: 'var(--color-text-muted)'
+                                }}>
+                                    {tag.confidence}%
+                                </span>
+                            )}
+                            <button
+                                onClick={() => handleTagRemove(tag.id)}
+                                disabled={isLoading}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--color-text-primary)',
+                                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                                    padding: '0 0 0 4px',
+                                    fontSize: 'var(--font-size-lg)',
+                                    lineHeight: '1',
+                                    opacity: isLoading ? 0.5 : 0.7
+                                }}
+                                title="Remove tag"
+                                onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                                onMouseLeave={(e) => e.currentTarget.style.opacity = isLoading ? '0.5' : '0.7'}
+                            >
+                                ×
+                            </button>
+                        </span>
+                    );
+                })}
 
                 <button
                     className={styles.addTagButton}
@@ -231,35 +266,41 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
                                 gap: '8px',
                                 padding: '4px'
                             }}>
-                                {filteredTags.map(tag => (
-                                    <button
-                                        key={tag.id}
-                                        className={styles.tagOptionPill}
-                                        onClick={() => handleTagSelect(tag)}
-                                        style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: '6px',
-                                            padding: '6px 12px',
-                                            cursor: 'pointer',
-                                            backgroundColor: 'var(--color-bg-elevated)',
-                                            border: '1px solid var(--color-border-default)',
-                                            borderRadius: '16px',
-                                            transition: 'all 0.2s',
-                                            fontSize: 'var(--font-size-sm)',
-                                            color: 'var(--color-text-primary)',
-                                            whiteSpace: 'nowrap'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.backgroundColor = 'var(--color-bg-muted)';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.backgroundColor = 'var(--color-bg-elevated)';
-                                        }}
-                                    >
-                                        {tag.name} ({tag.photoCount || 0})
-                                    </button>
-                                ))}
+                                {filteredTags.map(tag => {
+                                    const isAI = isAITag(tag.name);
+                                    const displayName = getTagDisplayName(tag.name);
+
+                                    return (
+                                        <button
+                                            key={tag.id}
+                                            className={styles.tagOptionPill}
+                                            onClick={() => handleTagSelect(tag)}
+                                            style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '6px',
+                                                padding: '6px 12px',
+                                                cursor: 'pointer',
+                                                backgroundColor: 'var(--color-bg-elevated)',
+                                                border: isAI ? '1px solid var(--color-warning)' : '1px solid var(--color-border-default)',
+                                                borderRadius: '16px',
+                                                transition: 'all 0.2s',
+                                                fontSize: 'var(--font-size-sm)',
+                                                color: 'var(--color-text-primary)',
+                                                whiteSpace: 'nowrap'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.backgroundColor = 'var(--color-bg-muted)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.backgroundColor = 'var(--color-bg-elevated)';
+                                            }}
+                                        >
+                                            {isAI && <span style={{ fontSize: 'var(--font-size-xs)' }}>🤖</span>}
+                                            {displayName} ({tag.photoCount || 0})
+                                        </button>
+                                    );
+                                })}
                             </div>
                         ) : searchTerm ? (
                             <div className={styles.tagNoResults}>

@@ -128,7 +128,7 @@ impl AITaggingService {
             return Err("AI tagging is disabled".to_string());
         }
 
-        let backend = self
+        let mut backend = self
             .backend
             .lock()
             .map_err(|e| format!("Failed to acquire backend lock: {}", e))?;
@@ -241,9 +241,14 @@ pub fn get_service() -> &'static Mutex<AITaggingService> {
 /// Initialize the global service with configuration
 pub fn init_global_service(config: AITaggingConfig) -> Result<(), String> {
     let service = get_service();
-    let mut svc = service
-        .lock()
-        .map_err(|e| format!("Failed to acquire service lock: {}", e))?;
+    // Use unwrap_or_else to recover from poisoned lock (can happen if previous operation panicked)
+    let mut svc = service.lock().unwrap_or_else(|poisoned| {
+        log::warn!(
+            target: "ai_tagging",
+            "recovering_poisoned_lock; status=recovered"
+        );
+        poisoned.into_inner()
+    });
 
     svc.set_config(config);
 

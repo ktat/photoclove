@@ -4049,6 +4049,7 @@ dependencies = [
  "keyring",
  "linked-hash-map",
  "log",
+ "ndarray",
  "ort",
  "path_abs",
  "regex",

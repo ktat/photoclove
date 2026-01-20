@@ -84,17 +84,20 @@ function DirectoryMenu(props) {
         showBulkTagModal,
         setShowBulkTagModal,
         showAddTagsModal,
-        addTagsToPhotos
+        addTagsToPhotos,
+        removeFromCurrentTag
     } = useTagOperations({
         photoSelection: props.photoSelection,
         clearPhotoSelection: props.clearPhotoSelection,
         addFooterMessage: props.addFooterMessage,
         handleTauriError,
-        onPhotosRefresh: props.onPhotosRefresh
+        onPhotosRefresh: props.onPhotosRefresh,
+        viewModeObj: props.viewModeObj,
+        removePhotoFromList: props.removePhotoFromList
     });
 
     // Date operations hook
-    const { createDbInDate, movePhotosToExifDate, createThumbnails, recalculateGroupsInDate, applyDateChanges } = useDateOperations({
+    const { createDbInDate, movePhotosToExifDate, createThumbnails, recalculateGroupsInDate, runAiTaggingInDate, applyDateChanges } = useDateOperations({
         currentDate: props.currentDate,
         setCurrentDateNum: props.setCurrentDateNum,
         dateNum: props.dateNum,
@@ -191,6 +194,8 @@ function DirectoryMenu(props) {
             deleteFiles();
         } else if (selected == "removeFromAlbum") {
             removeFromCurrentAlbum();
+        } else if (selected == "removeFromTag") {
+            removeFromCurrentTag();
         } else if (selected == "createAlbum") {
             showCreateAlbumModal();
         } else if (selected == "addToAlbum") {
@@ -223,7 +228,7 @@ function DirectoryMenu(props) {
     // - deleteFiles, restoreSelectedFromTrash, permanentDeleteSelected -> useTrashOperations
     // - createDbInDate, movePhotosToExifDate, createThumbnails, applyDateChanges -> useDateOperations
     // - showCreateAlbumModal, showAddToAlbumModal, createAlbumFromSelection, addPhotosToAlbum, removeFromCurrentAlbum -> useAlbumOperations
-    // - showAddTagsModal, addTagsToPhotos -> useTagOperations
+    // - showAddTagsModal, addTagsToPhotos, removeFromCurrentTag -> useTagOperations
 
     return (
         <div id="directory-maintenance">
@@ -242,6 +247,7 @@ function DirectoryMenu(props) {
                         <li><a href="#" onClick={() => { movePhotosToExifDate() }}>Move files according to Exif date</a></li>
                         <li><a href="#" onClick={() => { createThumbnails() }}>Make thumbnails</a></li>
                         <li><a href="#" onClick={() => { recalculateGroupsInDate() }}>Recalculate Groups of the date</a></li>
+                        <li><a href="#" onClick={() => { runAiTaggingInDate() }}>Run AI Tagging</a></li>
                     </ul>
                 </div>
             )}

@@ -61,8 +61,11 @@ pub trait AIClassifierBackend: Send + Sync {
     ///
     /// # Returns
     /// Vector of classification results, sorted by confidence (highest first)
+    ///
+    /// Note: Takes &mut self because some backends (e.g., ONNX Runtime)
+    /// require mutable access for inference.
     fn classify(
-        &self,
+        &mut self,
         image_path: &Path,
         config: &ClassifierConfig,
     ) -> Result<Vec<ClassificationResult>, String>;

@@ -688,3 +688,84 @@ pub(super) fn remove_all_collections_from_photo(
 
     Ok(rows_affected as i32)
 }
+
+/// Get or create a collection by name and type
+///
+/// # Arguments
+/// * `sqlite` - Database connection
+/// * `name` - Collection name
+/// * `collection_type` - Collection type ("album" or "tag")
+///
+/// # Returns
+/// The collection ID (existing or newly created)
+pub(super) fn get_or_create_collection(
+    sqlite: &SQLite,
+    name: &str,
+    collection_type: &str,
+) -> Result<i32, String> {
+    let conn = sqlite
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    // Try to find existing collection
+    let existing: Option<i32> = conn
+        .query_row(
+            "SELECT id FROM photo_collections WHERE name = ?1 AND type = ?2",
+            params![name, collection_type],
+            |row| row.get(0),
+        )
+        .ok();
+
+    if let Some(id) = existing {
+        log::debug!(target: "collections", "get_or_create; name={}; type={}; found_id={}", name, collection_type, id);
+        return Ok(id);
+    }
+
+    // Create new collection
+    let now = date::DateTime::now().to_db_string();
+    conn.execute(
+        "INSERT INTO photo_collections (type, name, created_at, updated_at) VALUES (?1, ?2, ?3, ?4)",
+        params![collection_type, name, now, now],
+    )
+    .map_err(|e| format!("Failed to create collection: {}", e))?;
+
+    let collection_id = conn.last_insert_rowid() as i32;
+    log::info!(target: "collections", "get_or_create; name={}; type={}; created_id={}", name, collection_type, collection_id);
+
+    Ok(collection_id)
+}
+
+/// Add a photo to a collection with optional metadata
+///
+/// # Arguments
+/// * `sqlite` - Database connection
+/// * `collection_id` - Collection ID
+/// * `photo_path` - Path to the photo
+/// * `metadata` - Optional JSON metadata string
+pub(super) fn add_photo_to_collection_with_metadata(
+    sqlite: &SQLite,
+    collection_id: i32,
+    photo_path: &str,
+    metadata: Option<String>,
+) -> Result<(), String> {
+    let conn = sqlite
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    let now = date::DateTime::now().to_db_string();
+    let order_index = get_next_order_index(&conn, collection_id);
+
+    // Use INSERT OR REPLACE to update metadata if photo already exists
+    conn.execute(
+        "INSERT INTO photo_collection_items (collection_id, photo_path, order_index, added_at, metadata)
+         VALUES (?1, ?2, ?3, ?4, ?5)
+         ON CONFLICT(collection_id, photo_path) DO UPDATE SET metadata = ?5",
+        params![collection_id, photo_path, order_index, now, metadata],
+    )
+    .map_err(|e| format!("Failed to add photo to collection with metadata: {}", e))?;
+
+    log::debug!(target: "collections", "add_with_metadata; collection_id={}; photo={}; has_metadata={}",
+        collection_id, photo_path, metadata.is_some());
+
+    Ok(())
+}
