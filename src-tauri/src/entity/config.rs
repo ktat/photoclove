@@ -98,10 +98,20 @@ pub struct AiTaggingConfig {
     pub confidence_threshold: f32,
     /// Maximum number of tags to apply per photo
     pub max_tags_per_image: u32,
-    /// Model preset: "light", "standard", or "accurate"
+    /// Model type: "mobilenet", "openclip", or "siglip"
+    #[serde(default = "default_model_type")]
+    pub model_type: String,
+    /// Model preset: "light", "standard", or "accurate" (for MobileNet only)
     pub model_preset: String,
-    /// Enabled categories (empty = all enabled)
+    /// Enabled categories (empty = all enabled) - for MobileNet
     pub enabled_categories: Vec<String>,
+    /// Custom labels for OpenCLIP/SigLIP models
+    #[serde(default)]
+    pub custom_labels: Vec<String>,
+}
+
+fn default_model_type() -> String {
+    "mobilenet".to_string()
 }
 
 impl Default for AiTaggingConfig {
@@ -111,8 +121,10 @@ impl Default for AiTaggingConfig {
             auto_tag_on_import: false,
             confidence_threshold: 0.7,
             max_tags_per_image: 5,
+            model_type: "mobilenet".to_string(),
             model_preset: "standard".to_string(),
             enabled_categories: Vec::new(), // empty = all enabled
+            custom_labels: Vec::new(),
         }
     }
 }

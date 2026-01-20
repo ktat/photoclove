@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { logger } from "../../../services/LoggerService.js";
 import styles from '../Preferences.module.css';
+import AIModelSelector, { AI_MODELS } from './AIModelSelector.jsx';
+import AICustomLabels from './AICustomLabels.jsx';
 
 // AI Tagging category groups
 const CATEGORY_GROUPS = {
@@ -35,9 +37,32 @@ const CATEGORY_GROUPS = {
 function AITaggingTab({ config, setConfig, addFooterMessage }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState({ message: '', progress: 0 });
+    const [modelStatuses, setModelStatuses] = useState({});
+    const [isDownloading, setIsDownloading] = useState(false);
+
+    // Fetch model statuses on mount
+    useEffect(() => {
+        const fetchModelStatuses = async () => {
+            try {
+                const result = await invoke("get_ai_models");
+                const data = JSON.parse(result);
+                const statuses = {};
+                data.models.forEach(model => {
+                    statuses[model.id] = {
+                        downloaded: model.downloaded,
+                        status: model.status,
+                    };
+                });
+                setModelStatuses(statuses);
+            } catch (error) {
+                logger.error('AITaggingTab', 'model_statuses_error', 'Failed to load model statuses', { error });
+            }
+        };
+        fetchModelStatuses();
+    }, []);
 
     // Listen for AI tagging progress events
-    React.useEffect(() => {
+    useEffect(() => {
         let unlistenProgress;
         let unlistenTagsUpdated;
 
@@ -45,8 +70,6 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
             unlistenProgress = await listen('ai_tagging_progress', (event) => {
                 const [jobUnitId, message, progressValue] = event.payload;
                 setProgress({ message, progress: progressValue });
-                logger.debug('AITaggingTab', 'ai_tagging_progress', 'Progress update', { jobUnitId, message, progressValue });
-
                 if (progressValue >= 100) {
                     setIsProcessing(false);
                     setProgress({ message: '', progress: 0 });
@@ -75,18 +98,34 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
         auto_tag_on_import: false,
         confidence_threshold: 0.7,
         max_tags_per_image: 5,
+        model_type: "mobilenet",
         model_preset: "standard",
-        enabled_categories: []
+        enabled_categories: [],
+        custom_labels: []
     };
 
     const updateAIConfig = (updates) => {
         setConfig(prev => ({
             ...prev,
-            ai_tagging: {
-                ...aiConfig,
-                ...updates
-            }
+            ai_tagging: { ...aiConfig, ...updates }
         }));
+    };
+
+    const selectedModel = AI_MODELS.find(m => m.id === aiConfig.model_type) || AI_MODELS[0];
+
+    const handleDownloadModel = async (modelId) => {
+        setIsDownloading(true);
+        try {
+            if (addFooterMessage) addFooterMessage("ai_model_download", `Downloading ${modelId} model...`);
+            await invoke("download_ai_model", { modelId });
+            setModelStatuses(prev => ({ ...prev, [modelId]: { downloaded: true, status: "ready" } }));
+            if (addFooterMessage) addFooterMessage("ai_model_download", `${modelId} model downloaded successfully`);
+        } catch (error) {
+            logger.error('AITaggingTab', 'model_download_error', 'Failed to download model', { modelId, error });
+            if (addFooterMessage) addFooterMessage("ai_model_download_error", `Failed to download ${modelId}: ${error}`);
+        } finally {
+            setIsDownloading(false);
+        }
     };
 
     const handleToggleCategory = (category) => {
@@ -103,26 +142,18 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
         const allInGroup = group.categories.every(c => current.includes(c));
 
         if (allInGroup) {
-            // Remove all categories in this group
-            updateAIConfig({
-                enabled_categories: current.filter(c => !group.categories.includes(c))
-            });
+            updateAIConfig({ enabled_categories: current.filter(c => !group.categories.includes(c)) });
         } else {
-            // Add all categories in this group
-            const newCategories = [...new Set([...current, ...group.categories])];
-            updateAIConfig({ enabled_categories: newCategories });
+            updateAIConfig({ enabled_categories: [...new Set([...current, ...group.categories])] });
         }
     };
 
     const handleSelectAll = () => {
-        const allCategories = Object.values(CATEGORY_GROUPS)
-            .flatMap(g => g.categories);
+        const allCategories = Object.values(CATEGORY_GROUPS).flatMap(g => g.categories);
         updateAIConfig({ enabled_categories: allCategories });
     };
 
-    const handleSelectNone = () => {
-        updateAIConfig({ enabled_categories: [] });
-    };
+    const handleSelectNone = () => updateAIConfig({ enabled_categories: [] });
 
     const handleRunForAll = async () => {
         if (!window.confirm("This will run AI tagging for ALL photos in your library. This may take a long time. Continue?")) {
@@ -139,22 +170,15 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
             if (data.result === "no_photos" || data.result === "no_images") {
                 setIsProcessing(false);
                 setProgress({ message: '', progress: 0 });
-                if (addFooterMessage) {
-                    addFooterMessage("ai_tagging", "No photos found in library");
-                }
+                if (addFooterMessage) addFooterMessage("ai_tagging", "No photos found in library");
             } else {
-                logger.info('AITaggingTab', 'ai_tagging_all_started', 'AI tagging job started for all photos', data);
-                if (addFooterMessage) {
-                    addFooterMessage("ai_tagging", `Processing ${data.photo_count} photos...`);
-                }
+                if (addFooterMessage) addFooterMessage("ai_tagging", `Processing ${data.photo_count} photos...`);
             }
         } catch (error) {
             setIsProcessing(false);
             setProgress({ message: '', progress: 0 });
-            logger.error('AITaggingTab', 'ai_tagging_all_error', 'Failed to start AI tagging for all', { error: error.message || error });
-            if (addFooterMessage) {
-                addFooterMessage("ai_tagging_error", `Error: ${error.message || error}`);
-            }
+            logger.error('AITaggingTab', 'ai_tagging_all_error', 'Failed to start AI tagging', { error });
+            if (addFooterMessage) addFooterMessage("ai_tagging_error", `Error: ${error.message || error}`);
         }
     };
 
@@ -165,7 +189,7 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
         <div className={styles['preferences-section']}>
             <h2 className={styles['section-title']}>AI Auto-Tagging</h2>
             <p className={styles['setting-description']} style={{ marginBottom: 'var(--space-4)' }}>
-                Automatically classify and tag photos using AI. Tags are prefixed with <code>ai:</code> (e.g., <code>ai:dog</code>, <code>ai:beach</code>).
+                Automatically classify and tag photos using AI. Tags are prefixed with <code>ai:</code>.
             </p>
 
             {/* Main Toggle */}
@@ -210,9 +234,6 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                                 style={{ width: '200px' }}
                             />
                         </div>
-                        <p className={styles['setting-description']}>
-                            Only apply tags when AI confidence is above this threshold
-                        </p>
                     </div>
 
                     {/* Max Tags per Image */}
@@ -230,184 +251,101 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                         </div>
                     </div>
 
-                    {/* Model Preset */}
-                    <div className={styles['setting-group']}>
-                        <div className={styles['setting-row']}>
-                            <label>Model Preset</label>
-                            <select
-                                value={aiConfig.model_preset || 'standard'}
-                                onChange={(e) => updateAIConfig({ model_preset: e.target.value })}
-                                style={{ width: '200px' }}
-                            >
-                                <option value="light">Light (Fast, ~50ms/photo)</option>
-                                <option value="standard">Standard (Balanced, ~100ms/photo)</option>
-                                <option value="accurate">Accurate (Slow, ~200ms/photo)</option>
-                            </select>
-                        </div>
-                    </div>
+                    {/* AI Model Selection */}
+                    <AIModelSelector
+                        selectedModelId={aiConfig.model_type}
+                        modelStatuses={modelStatuses}
+                        isDownloading={isDownloading}
+                        onModelSelect={(id) => updateAIConfig({ model_type: id })}
+                        onDownloadModel={handleDownloadModel}
+                    />
 
-                    {/* Category Selection */}
-                    <div style={{ marginTop: 'var(--space-5)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
-                            <h3 style={{ margin: 0 }}>Enabled Categories ({enabledCount}/{totalCategories})</h3>
-                            <div>
-                                <button
-                                    onClick={handleSelectAll}
-                                    style={{
-                                        marginRight: 'var(--space-2)',
-                                        padding: 'var(--space-1) var(--space-2)',
-                                        fontSize: 'var(--font-size-xs)',
-                                        background: 'var(--color-bg-surface)',
-                                        border: '1px solid var(--color-border-default)',
-                                        borderRadius: 'var(--radius-sm)',
-                                        cursor: 'pointer',
-                                        color: 'var(--color-text-primary)'
-                                    }}
+                    {/* Model Preset (MobileNet only) */}
+                    {aiConfig.model_type === 'mobilenet' && (
+                        <div className={styles['setting-group']} style={{ marginTop: 'var(--space-4)' }}>
+                            <div className={styles['setting-row']}>
+                                <label>Model Preset</label>
+                                <select
+                                    value={aiConfig.model_preset || 'standard'}
+                                    onChange={(e) => updateAIConfig({ model_preset: e.target.value })}
+                                    style={{ width: '200px' }}
                                 >
-                                    Select All
-                                </button>
-                                <button
-                                    onClick={handleSelectNone}
-                                    style={{
-                                        padding: 'var(--space-1) var(--space-2)',
-                                        fontSize: 'var(--font-size-xs)',
-                                        background: 'var(--color-bg-surface)',
-                                        border: '1px solid var(--color-border-default)',
-                                        borderRadius: 'var(--radius-sm)',
-                                        cursor: 'pointer',
-                                        color: 'var(--color-text-primary)'
-                                    }}
-                                >
-                                    Select None
-                                </button>
+                                    <option value="light">Light (Fast)</option>
+                                    <option value="standard">Standard (Balanced)</option>
+                                    <option value="accurate">Accurate (Slow)</option>
+                                </select>
                             </div>
                         </div>
+                    )}
 
-                        {Object.entries(CATEGORY_GROUPS).map(([groupKey, group]) => {
-                            const enabledInGroup = group.categories.filter(c =>
-                                (aiConfig.enabled_categories || []).includes(c)
-                            ).length;
-                            const allEnabled = enabledInGroup === group.categories.length;
+                    {/* Custom Labels (OpenCLIP/SigLIP only) */}
+                    {selectedModel.supportsCustomLabels && (
+                        <AICustomLabels
+                            customLabels={aiConfig.custom_labels || []}
+                            onAddLabel={(label) => updateAIConfig({ custom_labels: [...(aiConfig.custom_labels || []), label] })}
+                            onRemoveLabel={(label) => updateAIConfig({ custom_labels: (aiConfig.custom_labels || []).filter(l => l !== label) })}
+                        />
+                    )}
 
-                            return (
-                                <div key={groupKey} style={{ marginBottom: 'var(--space-3)' }}>
-                                    <div
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            marginBottom: 'var(--space-1)',
-                                            cursor: 'pointer'
-                                        }}
-                                        onClick={() => handleToggleGroup(groupKey)}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={allEnabled}
-                                            onChange={() => handleToggleGroup(groupKey)}
-                                            style={{ marginRight: 'var(--space-2)' }}
-                                        />
-                                        <strong>{group.label}</strong>
-                                        <span style={{
-                                            marginLeft: 'var(--space-2)',
-                                            color: 'var(--color-text-muted)',
-                                            fontSize: 'var(--font-size-xs)'
-                                        }}>
-                                            ({enabledInGroup}/{group.categories.length})
-                                        </span>
-                                    </div>
-                                    <div style={{
-                                        display: 'flex',
-                                        flexWrap: 'wrap',
-                                        gap: 'var(--space-2)',
-                                        marginLeft: 'var(--space-5)'
-                                    }}>
-                                        {group.categories.map(category => (
-                                            <label
-                                                key={category}
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    padding: 'var(--space-1) var(--space-2)',
-                                                    background: (aiConfig.enabled_categories || []).includes(category)
-                                                        ? 'var(--color-primary-selected)'
-                                                        : 'var(--color-bg-surface)',
-                                                    border: '1px solid var(--color-border-default)',
-                                                    borderRadius: 'var(--radius-sm)',
-                                                    cursor: 'pointer',
-                                                    fontSize: 'var(--font-size-sm)'
-                                                }}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={(aiConfig.enabled_categories || []).includes(category)}
-                                                    onChange={() => handleToggleCategory(category)}
-                                                    style={{ marginRight: 'var(--space-1)' }}
-                                                />
-                                                {category}
-                                            </label>
-                                        ))}
-                                    </div>
+                    {/* Category Selection (MobileNet only) */}
+                    {aiConfig.model_type === 'mobilenet' && (
+                        <div style={{ marginTop: 'var(--space-5)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
+                                <h3 style={{ margin: 0 }}>Enabled Categories ({enabledCount}/{totalCategories})</h3>
+                                <div>
+                                    <button onClick={handleSelectAll} style={smallButtonStyle}>Select All</button>
+                                    <button onClick={handleSelectNone} style={{ ...smallButtonStyle, marginLeft: 'var(--space-2)' }}>Select None</button>
                                 </div>
-                            );
-                        })}
-                    </div>
+                            </div>
+
+                            {Object.entries(CATEGORY_GROUPS).map(([groupKey, group]) => {
+                                const enabledInGroup = group.categories.filter(c => (aiConfig.enabled_categories || []).includes(c)).length;
+                                const allEnabled = enabledInGroup === group.categories.length;
+
+                                return (
+                                    <div key={groupKey} style={{ marginBottom: 'var(--space-3)' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 'var(--space-1)', cursor: 'pointer' }} onClick={() => handleToggleGroup(groupKey)}>
+                                            <input type="checkbox" checked={allEnabled} onChange={() => handleToggleGroup(groupKey)} style={{ marginRight: 'var(--space-2)' }} />
+                                            <strong>{group.label}</strong>
+                                            <span style={{ marginLeft: 'var(--space-2)', color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)' }}>
+                                                ({enabledInGroup}/{group.categories.length})
+                                            </span>
+                                        </div>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', marginLeft: 'var(--space-5)' }}>
+                                            {group.categories.map(category => (
+                                                <label key={category} style={categoryLabelStyle((aiConfig.enabled_categories || []).includes(category))}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={(aiConfig.enabled_categories || []).includes(category)}
+                                                        onChange={() => handleToggleCategory(category)}
+                                                        style={{ marginRight: 'var(--space-1)' }}
+                                                    />
+                                                    {category}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
 
                     {/* Apply to All Photos */}
-                    <div style={{
-                        marginTop: 'var(--space-5)',
-                        padding: 'var(--space-4)',
-                        background: 'var(--color-bg-surface)',
-                        borderRadius: 'var(--radius-md)',
-                        border: '1px solid var(--color-border-default)'
-                    }}>
-                        <h3 style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>
-                            Run AI Tagging for Existing Photos
-                        </h3>
-                        <p style={{
-                            color: 'var(--color-text-secondary)',
-                            fontSize: 'var(--font-size-sm)',
-                            marginBottom: 'var(--space-3)'
-                        }}>
-                            Apply AI tags to all photos in your library. For date-specific tagging, use the Maintenance menu when viewing photos by date.
+                    <div style={{ marginTop: 'var(--space-5)', padding: 'var(--space-4)', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-default)' }}>
+                        <h3 style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>Run AI Tagging for Existing Photos</h3>
+                        <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--space-3)' }}>
+                            Apply AI tags to all photos in your library.
                         </p>
-                        <button
-                            onClick={handleRunForAll}
-                            disabled={isProcessing}
-                            style={{
-                                padding: 'var(--space-2) var(--space-4)',
-                                background: isProcessing ? 'var(--color-bg-muted)' : 'var(--color-warning)',
-                                color: 'var(--color-bg-base)',
-                                border: 'none',
-                                borderRadius: 'var(--radius-sm)',
-                                cursor: isProcessing ? 'not-allowed' : 'pointer',
-                                opacity: isProcessing ? 0.6 : 1,
-                                fontWeight: 500
-                            }}
-                        >
+                        <button onClick={handleRunForAll} disabled={isProcessing} style={runButtonStyle(isProcessing)}>
                             {isProcessing ? 'Processing...' : 'Apply to All Photos'}
                         </button>
 
-                        {/* Progress Bar */}
                         {isProcessing && (
                             <div style={{ marginTop: 'var(--space-3)' }}>
-                                <div style={{
-                                    height: '4px',
-                                    background: 'var(--color-bg-muted)',
-                                    borderRadius: 'var(--radius-sm)',
-                                    overflow: 'hidden'
-                                }}>
-                                    <div style={{
-                                        height: '100%',
-                                        width: `${progress.progress}%`,
-                                        background: 'var(--color-primary)',
-                                        transition: 'width 0.3s ease'
-                                    }} />
+                                <div style={{ height: '4px', background: 'var(--color-bg-muted)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                                    <div style={{ height: '100%', width: `${progress.progress}%`, background: 'var(--color-primary)', transition: 'width 0.3s ease' }} />
                                 </div>
-                                <p style={{
-                                    marginTop: 'var(--space-2)',
-                                    fontSize: 'var(--font-size-xs)',
-                                    color: 'var(--color-text-muted)'
-                                }}>
+                                <p style={{ marginTop: 'var(--space-2)', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
                                     {progress.message}
                                 </p>
                             </div>
@@ -424,5 +362,38 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
         </div>
     );
 }
+
+// Inline styles
+const smallButtonStyle = {
+    padding: 'var(--space-1) var(--space-2)',
+    fontSize: 'var(--font-size-xs)',
+    background: 'var(--color-bg-surface)',
+    border: '1px solid var(--color-border-default)',
+    borderRadius: 'var(--radius-sm)',
+    cursor: 'pointer',
+    color: 'var(--color-text-primary)'
+};
+
+const categoryLabelStyle = (isSelected) => ({
+    display: 'flex',
+    alignItems: 'center',
+    padding: 'var(--space-1) var(--space-2)',
+    background: isSelected ? 'var(--color-primary-selected)' : 'var(--color-bg-surface)',
+    border: '1px solid var(--color-border-default)',
+    borderRadius: 'var(--radius-sm)',
+    cursor: 'pointer',
+    fontSize: 'var(--font-size-sm)'
+});
+
+const runButtonStyle = (isProcessing) => ({
+    padding: 'var(--space-2) var(--space-4)',
+    background: isProcessing ? 'var(--color-bg-muted)' : 'var(--color-warning)',
+    color: 'var(--color-bg-base)',
+    border: 'none',
+    borderRadius: 'var(--radius-sm)',
+    cursor: isProcessing ? 'not-allowed' : 'pointer',
+    opacity: isProcessing ? 0.6 : 1,
+    fontWeight: 500
+});
 
 export default AITaggingTab;

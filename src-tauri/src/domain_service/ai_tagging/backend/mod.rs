@@ -3,7 +3,11 @@
 //! This module defines the trait for AI classification backends.
 //! Implementations can use different ML frameworks (ONNX, Candle, etc.)
 
+pub mod clip_common;
+pub mod model_manager;
 pub mod onnx;
+pub mod openclip;
+pub mod siglip;
 
 use crate::domain_service::ai_tagging::categories::AutoTagCategory;
 use std::path::Path;
@@ -26,6 +30,8 @@ pub struct ClassifierConfig {
     pub max_tags_per_image: usize,
     /// Enabled categories (None = all enabled)
     pub enabled_categories: Option<Vec<AutoTagCategory>>,
+    /// Custom labels for CLIP-based models
+    pub custom_labels: Option<Vec<String>>,
 }
 
 impl Default for ClassifierConfig {
@@ -34,6 +40,7 @@ impl Default for ClassifierConfig {
             confidence_threshold: 0.7,
             max_tags_per_image: 5,
             enabled_categories: None,
+            custom_labels: None,
         }
     }
 }
@@ -41,8 +48,9 @@ impl Default for ClassifierConfig {
 /// Trait defining the interface for AI classification backends
 ///
 /// This trait allows swapping between different ML implementations:
-/// - ONNX Runtime (default)
-/// - Candle (Hugging Face Rust ML)
+/// - ONNX Runtime (MobileNet - default)
+/// - OpenCLIP (LAION trained CLIP)
+/// - SigLIP (Google's improved CLIP)
 /// - Cloud APIs (future)
 pub trait AIClassifierBackend: Send + Sync {
     /// Initialize the classifier and load the model
@@ -77,4 +85,16 @@ pub trait AIClassifierBackend: Send + Sync {
     fn model_info(&self) -> String;
 }
 
+pub use model_manager::{ModelInfo, ModelManager, ModelStatus};
 pub use onnx::OnnxClassifier;
+pub use openclip::OpenClipClassifier;
+pub use siglip::SigLipClassifier;
+
+/// Create a classifier backend based on model type
+pub fn create_backend(model_type: &str) -> Box<dyn AIClassifierBackend> {
+    match model_type {
+        "openclip" => Box::new(OpenClipClassifier::new()),
+        "siglip" => Box::new(SigLipClassifier::new()),
+        _ => Box::new(OnnxClassifier::default()), // "mobilenet" or default
+    }
+}
