@@ -96,6 +96,19 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - **Implementation**: `src/components/TagSelector.jsx`
 - **Description**: Multi-select tag assignment interface
 
+### AI Auto-Tagging Components
+- **Term**: AITaggingTab
+- **Implementation**: `src/App/Preferences/tabs/AITaggingTab.jsx`
+- **Description**: AI auto-tagging preferences panel
+
+- **Term**: AIModelSelector
+- **Implementation**: `src/App/Preferences/tabs/AIModelSelector.jsx`
+- **Description**: AI model selection cards with download status
+
+- **Term**: AICustomLabels
+- **Implementation**: `src/App/Preferences/tabs/AICustomLabels.jsx`
+- **Description**: Custom label input for CLIP-based models
+
 ## Backend Services
 
 ### Core Services
@@ -114,6 +127,18 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - **Term**: TokenStorageService
 - **Implementation**: `src-tauri/src/domain_service/token_storage_service.rs`
 - **Description**: Secure OAuth token management
+
+- **Term**: AITaggingService
+- **Implementation**: `src-tauri/src/domain_service/ai_tagging/service.rs`
+- **Description**: AI-powered photo classification and tagging
+
+- **Term**: AIClassifierBackend
+- **Implementation**: `src-tauri/src/domain_service/ai_tagging/backend/mod.rs`
+- **Description**: Trait for AI classifier backends (MobileNet, OpenCLIP, SigLIP)
+
+- **Term**: ModelManager
+- **Implementation**: `src-tauri/src/domain_service/ai_tagging/backend/model_manager.rs`
+- **Description**: AI model download and management
 
 ### Entities
 - **Term**: PhotoMeta
@@ -191,6 +216,7 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - Photo Import: `JOB_TYPE_COPY`
 - Thumbnail Generation: `JOB_TYPE_THUMBNAIL`
 - Google Photos Upload: `JOB_TYPE_GOOGLE_PHOTOS_UPLOAD`
+- AI Tagging: `JOB_TYPE_AI_TAGGING`
 
 ## Database Tables
 
@@ -271,6 +297,12 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - `google_photos_upload`: Upload photo to Google Photos
 - `refresh_google_token`: Refresh OAuth token
 - `clear_google_auth`: Remove stored credentials
+
+### AI Tagging Operations
+- `get_ai_models`: List available AI models with download status
+- `download_ai_model`: Download an AI model
+- `delete_ai_model`: Delete a downloaded AI model
+- `run_ai_tagging_for_all`: Run AI tagging for all photos in library
 
 ## Error Handling
 

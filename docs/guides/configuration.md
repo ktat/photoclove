@@ -153,6 +153,67 @@ logging_level: debug                     # Log level: debug, info, warn, error
 - **Options**: `debug`, `info`, `warn`, `error`
 - **Impact**: Higher levels capture fewer but more important events
 
+### AI Auto-Tagging Settings
+
+```yaml
+ai_tagging:
+  enabled: false                    # Enable/disable AI tagging
+  auto_tag_on_import: false         # Auto-tag photos during import
+  confidence_threshold: 0.7         # Minimum confidence for tags (0.0-1.0)
+  max_tags_per_image: 5             # Maximum tags applied per image
+  model_type: "mobilenet"           # AI model: mobilenet, openclip, siglip
+  model_preset: "standard"          # MobileNet preset: light, standard, accurate
+  enabled_categories: []            # Enabled categories (empty = all)
+  custom_labels: []                 # Custom labels for CLIP models
+```
+
+#### enabled
+- **Purpose**: Enable or disable AI-powered photo tagging
+- **Default**: `false`
+- **Access**: Preferences → AI Auto-Tagging
+
+#### auto_tag_on_import
+- **Purpose**: Automatically run AI tagging when photos are imported
+- **Default**: `false`
+- **Impact**: Import process takes longer when enabled
+
+#### confidence_threshold
+- **Purpose**: Minimum confidence score required to apply a tag
+- **Default**: `0.7` (70%)
+- **Range**: `0.5` to `0.95`
+- **Impact**: Lower values = more tags, higher values = more accurate tags
+
+#### max_tags_per_image
+- **Purpose**: Maximum number of AI tags to apply per photo
+- **Default**: `5`
+- **Range**: `1` to `10`
+
+#### model_type
+- **Purpose**: Select which AI model to use for classification
+- **Default**: `mobilenet`
+- **Options**:
+  - `mobilenet` - Fast classification with 32 predefined categories (15MB)
+  - `openclip` - Flexible tagging with custom labels, person detection (350MB)
+  - `siglip` - Improved CLIP variant with better accuracy (400MB)
+- **Note**: OpenCLIP and SigLIP require separate model download
+
+#### model_preset
+- **Purpose**: Performance preset for MobileNet model
+- **Default**: `standard`
+- **Options**: `light` (fast), `standard` (balanced), `accurate` (slow)
+- **Applies to**: MobileNet model only
+
+#### enabled_categories
+- **Purpose**: Filter which categories can be detected (MobileNet only)
+- **Default**: `[]` (all categories enabled)
+- **Categories**: person, face, group, dog, cat, bird, fish, horse, cow, insect, wildlife, sea, beach, mountain, forest, river, lake, sky, sunset, flower, tree, plant, garden, food, building, street, indoor, outdoor, night, wedding, birthday, travel
+
+#### custom_labels
+- **Purpose**: Custom detection labels for CLIP-based models
+- **Default**: `[]`
+- **Applies to**: OpenCLIP and SigLIP models
+- **Examples**: "a birthday party", "my cat", "family dinner"
+
 ### Legacy/System Fields
 
 #### repository
