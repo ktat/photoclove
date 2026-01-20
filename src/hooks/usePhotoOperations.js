@@ -209,9 +209,28 @@ export function usePhotoOperations({
     }, [handleError, addFooterMessage]);
 
     // Photo list management - uses shared navigation helper
-    const removePhotoFromList = useCallback((indexToRemove) => {
+    // Accepts either an index (number) or a photo path (string)
+    const removePhotoFromList = useCallback((indexOrPath) => {
         if (!photosListMiniAllPhotos) return;
-        const photoPath = getPhotoPath(photosListMiniAllPhotos[indexToRemove]);
+
+        let indexToRemove;
+        let photoPath;
+
+        if (typeof indexOrPath === 'number') {
+            // Called with an index
+            indexToRemove = indexOrPath;
+            photoPath = getPhotoPath(photosListMiniAllPhotos[indexToRemove]);
+        } else if (typeof indexOrPath === 'string') {
+            // Called with a photo path - find the index
+            indexToRemove = photosListMiniAllPhotos.findIndex(
+                photo => getPhotoPath(photo) === indexOrPath
+            );
+            if (indexToRemove === -1) return; // Photo not found
+            photoPath = indexOrPath;
+        } else {
+            return; // Invalid argument
+        }
+
         handlePhotoRemovalNavigation(indexToRemove, photoPath);
     }, [photosListMiniAllPhotos, handlePhotoRemovalNavigation]);
 
