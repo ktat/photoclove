@@ -172,6 +172,7 @@ trait RepositoryConfig {
     fn get_cofnig(&mut self) -> config::Config;
 }
 
+#[allow(dead_code)] // Some trait methods are reserved for future use
 pub(crate) trait MetaInfoDB {
     fn connect(&self, path: String);
     fn new_connect(&self) -> MetaDB;

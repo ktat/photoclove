@@ -130,27 +130,6 @@ pub(super) fn get_photo_burst_group_id(db: &SQLite, photo_path: &str) -> Result<
     }
 }
 
-/// Get all photo paths in a burst group.
-pub(super) fn get_photos_in_group(db: &SQLite, group_id: &str) -> Result<Vec<String>, String> {
-    let conn = db
-        .get_connection()
-        .map_err(|e| format!("Failed to connect to database: {}", e))?;
-
-    let mut stmt = conn
-        .prepare(
-            "SELECT path FROM photo_metadata WHERE burst_group_id = ?1 AND (delete_flg = 0 OR delete_flg IS NULL) ORDER BY exif_date_time_original ASC, path ASC",
-        )
-        .map_err(|e| format!("Failed to prepare query: {}", e))?;
-
-    let paths = stmt
-        .query_map(params![group_id], |row| row.get(0))
-        .map_err(|e| format!("Failed to query photos in group: {}", e))?
-        .collect::<Result<Vec<String>, _>>()
-        .map_err(|e| format!("Failed to collect photo paths: {}", e))?;
-
-    Ok(paths)
-}
-
 /// Get all photo paths that belong to manual burst groups.
 pub(super) fn get_manual_group_photo_paths(db: &SQLite) -> Result<std::collections::HashSet<String>, String> {
     let conn = db
