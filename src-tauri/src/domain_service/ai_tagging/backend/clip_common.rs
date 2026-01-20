@@ -1,0 +1,297 @@
+//! Common utilities for CLIP-based models (OpenCLIP, SigLIP)
+//!
+//! This module provides shared functionality for CLIP-style vision-language models.
+
+use super::{ClassificationResult, ClassifierConfig};
+use crate::domain_service::ai_tagging::categories::AutoTagCategory;
+
+/// Default labels for CLIP-based classification
+pub const DEFAULT_CLIP_LABELS: &[&str] = &[
+    // People
+    "a photo of a person",
+    "a photo of people",
+    "a photo of a face",
+    "a group photo",
+    "a selfie",
+    // Animals
+    "a photo of a dog",
+    "a photo of a cat",
+    "a photo of a bird",
+    "a photo of fish",
+    "a photo of a horse",
+    "a photo of wildlife",
+    "a photo of an insect",
+    "a photo of a cow",
+    // Nature
+    "a photo of the ocean",
+    "a photo of a beach",
+    "a photo of mountains",
+    "a photo of a forest",
+    "a photo of a sunset",
+    "a photo of the sky",
+    "a photo of a lake",
+    "a photo of a river",
+    // Plants
+    "a photo of flowers",
+    "a photo of trees",
+    "a photo of a garden",
+    "a photo of plants",
+    // Scenes
+    "a photo of food",
+    "a photo of a building",
+    "a photo of a street",
+    "an indoor photo",
+    "an outdoor photo",
+    "a night photo",
+    // Events
+    "a wedding photo",
+    "a birthday party photo",
+    "a travel photo",
+    "a vacation photo",
+];
+
+/// Map a CLIP label to an AutoTagCategory
+pub fn label_to_category(label: &str) -> Option<AutoTagCategory> {
+    let lower = label.to_lowercase();
+
+    // People
+    if lower.contains("person") || lower.contains("selfie") {
+        return Some(AutoTagCategory::Person);
+    }
+    if lower.contains("people") || lower.contains("group photo") {
+        return Some(AutoTagCategory::Group);
+    }
+    if lower.contains("face") {
+        return Some(AutoTagCategory::Face);
+    }
+
+    // Animals
+    if lower.contains("dog") {
+        return Some(AutoTagCategory::Dog);
+    }
+    if lower.contains("cat") {
+        return Some(AutoTagCategory::Cat);
+    }
+    if lower.contains("bird") {
+        return Some(AutoTagCategory::Bird);
+    }
+    if lower.contains("fish") {
+        return Some(AutoTagCategory::Fish);
+    }
+    if lower.contains("horse") {
+        return Some(AutoTagCategory::Horse);
+    }
+    if lower.contains("cow") {
+        return Some(AutoTagCategory::Cow);
+    }
+    if lower.contains("wildlife") {
+        return Some(AutoTagCategory::Wildlife);
+    }
+    if lower.contains("insect") {
+        return Some(AutoTagCategory::Insect);
+    }
+
+    // Nature
+    if lower.contains("ocean") || lower.contains("sea") {
+        return Some(AutoTagCategory::Sea);
+    }
+    if lower.contains("beach") {
+        return Some(AutoTagCategory::Beach);
+    }
+    if lower.contains("mountain") {
+        return Some(AutoTagCategory::Mountain);
+    }
+    if lower.contains("forest") {
+        return Some(AutoTagCategory::Forest);
+    }
+    if lower.contains("sunset") {
+        return Some(AutoTagCategory::Sunset);
+    }
+    if lower.contains("sky") {
+        return Some(AutoTagCategory::Sky);
+    }
+    if lower.contains("lake") {
+        return Some(AutoTagCategory::Lake);
+    }
+    if lower.contains("river") {
+        return Some(AutoTagCategory::River);
+    }
+
+    // Plants
+    if lower.contains("flower") {
+        return Some(AutoTagCategory::Flower);
+    }
+    if lower.contains("tree") {
+        return Some(AutoTagCategory::Tree);
+    }
+    if lower.contains("garden") {
+        return Some(AutoTagCategory::Garden);
+    }
+    if lower.contains("plant") {
+        return Some(AutoTagCategory::Plant);
+    }
+
+    // Scenes
+    if lower.contains("food") {
+        return Some(AutoTagCategory::Food);
+    }
+    if lower.contains("building") {
+        return Some(AutoTagCategory::Building);
+    }
+    if lower.contains("street") {
+        return Some(AutoTagCategory::Street);
+    }
+    if lower.contains("indoor") {
+        return Some(AutoTagCategory::Indoor);
+    }
+    if lower.contains("outdoor") {
+        return Some(AutoTagCategory::Outdoor);
+    }
+    if lower.contains("night") {
+        return Some(AutoTagCategory::Night);
+    }
+
+    // Events
+    if lower.contains("wedding") {
+        return Some(AutoTagCategory::Wedding);
+    }
+    if lower.contains("birthday") {
+        return Some(AutoTagCategory::Birthday);
+    }
+    if lower.contains("travel") || lower.contains("vacation") {
+        return Some(AutoTagCategory::Travel);
+    }
+
+    None
+}
+
+/// Calculate cosine similarity between two vectors
+pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
+    if a.len() != b.len() || a.is_empty() {
+        return 0.0;
+    }
+
+    let dot: f32 = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum();
+    let norm_a: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
+    let norm_b: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
+
+    if norm_a == 0.0 || norm_b == 0.0 {
+        return 0.0;
+    }
+
+    dot / (norm_a * norm_b)
+}
+
+/// Softmax normalization for converting logits to probabilities
+pub fn softmax(logits: &[f32]) -> Vec<f32> {
+    if logits.is_empty() {
+        return Vec::new();
+    }
+
+    let max_logit = logits.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+    let exp_sum: f32 = logits.iter().map(|x| (x - max_logit).exp()).sum();
+
+    logits
+        .iter()
+        .map(|x| (x - max_logit).exp() / exp_sum)
+        .collect()
+}
+
+/// Convert similarity scores to classification results
+pub fn similarities_to_results(
+    labels: &[String],
+    similarities: &[f32],
+    config: &ClassifierConfig,
+) -> Vec<ClassificationResult> {
+    // Convert to probabilities using softmax
+    let probabilities = softmax(similarities);
+
+    // Create (label, probability) pairs and sort by probability
+    let mut label_probs: Vec<(&String, f32)> = labels.iter().zip(probabilities.iter().cloned()).collect();
+    label_probs.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+    // Convert to ClassificationResult, filtering by threshold
+    let mut results = Vec::new();
+    let mut seen_categories = std::collections::HashSet::new();
+
+    for (label, prob) in label_probs {
+        if prob < config.confidence_threshold {
+            continue;
+        }
+
+        if let Some(category) = label_to_category(label) {
+            // Skip if we've already seen this category
+            if seen_categories.contains(&category) {
+                continue;
+            }
+
+            // Check if category is enabled
+            if let Some(ref enabled) = config.enabled_categories {
+                if !enabled.contains(&category) {
+                    continue;
+                }
+            }
+
+            seen_categories.insert(category);
+            results.push(ClassificationResult {
+                category,
+                confidence: prob,
+            });
+
+            if results.len() >= config.max_tags_per_image {
+                break;
+            }
+        }
+    }
+
+    results
+}
+
+/// ImageNet normalization constants (used by CLIP models)
+pub const CLIP_MEAN: [f32; 3] = [0.48145466, 0.4578275, 0.40821073];
+pub const CLIP_STD: [f32; 3] = [0.26862954, 0.26130258, 0.27577711];
+
+/// Preprocess image for CLIP models
+/// Returns tensor in NCHW format (batch=1, channels=3, height, width)
+pub fn preprocess_clip_image(
+    image_path: &std::path::Path,
+    target_size: u32,
+) -> Result<Vec<f32>, String> {
+    // Load image
+    let img = image::open(image_path)
+        .map_err(|e| format!("Failed to load image {}: {}", image_path.display(), e))?;
+
+    // Resize to target size (center crop + resize)
+    let (width, height) = (img.width(), img.height());
+    let min_dim = width.min(height);
+
+    // Center crop to square
+    let crop_x = (width - min_dim) / 2;
+    let crop_y = (height - min_dim) / 2;
+    let cropped = img.crop_imm(crop_x, crop_y, min_dim, min_dim);
+
+    // Resize to target size
+    let resized = cropped.resize_exact(target_size, target_size, image::imageops::FilterType::Triangle);
+
+    // Convert to RGB
+    let rgb = resized.to_rgb8();
+
+    // Create tensor in NCHW format with CLIP normalization
+    let mut tensor = vec![0.0f32; (3 * target_size * target_size) as usize];
+
+    for y in 0..target_size {
+        for x in 0..target_size {
+            let pixel = rgb.get_pixel(x, y);
+            let idx = (y * target_size + x) as usize;
+
+            // Normalize: (pixel / 255.0 - mean) / std
+            tensor[idx] = ((pixel[0] as f32 / 255.0) - CLIP_MEAN[0]) / CLIP_STD[0]; // R
+            tensor[(target_size * target_size) as usize + idx] =
+                ((pixel[1] as f32 / 255.0) - CLIP_MEAN[1]) / CLIP_STD[1]; // G
+            tensor[(2 * target_size * target_size) as usize + idx] =
+                ((pixel[2] as f32 / 255.0) - CLIP_MEAN[2]) / CLIP_STD[2]; // B
+        }
+    }
+
+    Ok(tensor)
+}

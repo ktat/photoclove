@@ -67,6 +67,8 @@ pub(crate) fn process_ai_tagging_job(
         confidence_threshold: config.ai_tagging.confidence_threshold,
         max_tags_per_image: config.ai_tagging.max_tags_per_image as usize,
         enabled_categories,
+        model_type: config.ai_tagging.model_type.clone(),
+        custom_labels: config.ai_tagging.custom_labels.clone(),
     };
 
     // Get the global service and initialize if needed

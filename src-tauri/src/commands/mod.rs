@@ -4,6 +4,7 @@
 //! Each submodule handles a specific domain of commands.
 
 // Re-export all command modules
+pub mod ai_model_commands;
 pub mod album_commands;
 pub mod burst_group_commands;
 pub mod collection_commands;
@@ -24,6 +25,7 @@ pub mod trash_commands;
 pub mod utility_commands;
 
 // Re-export all commands for convenient access
+pub use ai_model_commands::*;
 pub use album_commands::*;
 pub use burst_group_commands::*;
 pub use collection_commands::*;

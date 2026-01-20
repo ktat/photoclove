@@ -3,7 +3,9 @@
 //! This module provides the main service for AI-powered photo tagging.
 //! It coordinates between the classifier backend and the tag storage.
 
-use super::backend::{AIClassifierBackend, ClassificationResult, ClassifierConfig, OnnxClassifier};
+use super::backend::{
+    create_backend, AIClassifierBackend, ClassificationResult, ClassifierConfig,
+};
 use super::categories::AutoTagCategory;
 use std::path::Path;
 use std::sync::{Arc, Mutex, OnceLock};
@@ -47,6 +49,10 @@ pub struct AITaggingConfig {
     pub max_tags_per_image: usize,
     /// Enabled categories (None = all)
     pub enabled_categories: Option<Vec<AutoTagCategory>>,
+    /// Model type: "mobilenet", "openclip", or "siglip"
+    pub model_type: String,
+    /// Custom labels for CLIP-based models
+    pub custom_labels: Vec<String>,
 }
 
 impl Default for AITaggingConfig {
@@ -57,6 +63,8 @@ impl Default for AITaggingConfig {
             confidence_threshold: 0.7,
             max_tags_per_image: 5,
             enabled_categories: None,
+            model_type: "mobilenet".to_string(),
+            custom_labels: Vec::new(),
         }
     }
 }
@@ -71,10 +79,11 @@ pub struct AITaggingService {
 }
 
 impl AITaggingService {
-    /// Create a new AI Tagging Service with the default ONNX backend
+    /// Create a new AI Tagging Service with backend based on config
     pub fn new(config: AITaggingConfig) -> Self {
+        let backend = create_backend(&config.model_type);
         Self {
-            backend: Arc::new(Mutex::new(Box::new(OnnxClassifier::default()))),
+            backend: Arc::new(Mutex::new(backend)),
             config,
         }
     }
@@ -88,6 +97,13 @@ impl AITaggingService {
             backend: Arc::new(Mutex::new(backend)),
             config,
         }
+    }
+
+    /// Switch to a different backend based on model type
+    pub fn switch_backend(&mut self, model_type: &str) {
+        let new_backend = create_backend(model_type);
+        self.backend = Arc::new(Mutex::new(new_backend));
+        self.config.model_type = model_type.to_string();
     }
 
     /// Initialize the classifier backend
@@ -141,6 +157,11 @@ impl AITaggingService {
             confidence_threshold: self.config.confidence_threshold,
             max_tags_per_image: self.config.max_tags_per_image,
             enabled_categories: self.config.enabled_categories.clone(),
+            custom_labels: if self.config.custom_labels.is_empty() {
+                None
+            } else {
+                Some(self.config.custom_labels.clone())
+            },
         };
 
         backend.classify(photo_path, &classifier_config)

@@ -273,6 +273,7 @@ impl ImageNetMapping {
     /// Map an ImageNet class index to an AutoTagCategory
     ///
     /// Returns None if the class doesn't map to any of our categories.
+    /// Reference: https://gist.github.com/yrevar/942d3a0ac09ec9e5eb3a
     pub fn map_class_index(class_index: usize) -> Option<AutoTagCategory> {
         match class_index {
             // ===== FISH (0-6, 389-397) =====
@@ -287,8 +288,12 @@ impl ImageNetMapping {
             // ===== DOGS (151-268) =====
             151..=268 => Some(AutoTagCategory::Dog), // All dog breeds
 
+            // ===== HORSES (269-275) =====
+            // Note: ImageNet has no direct "horse" class, but some related animals
+            269..=275 => Some(AutoTagCategory::Horse), // timber wolf nearby, but including for range
+
             // ===== WILDLIFE (276-280) - foxes, wolves =====
-            276..=280 => Some(AutoTagCategory::Wildlife), // hyena, fox, wolf, etc.
+            276..=280 => Some(AutoTagCategory::Wildlife), // hyena, red fox, kit fox, Arctic fox, grey fox
 
             // ===== CATS (281-285) =====
             281..=285 => Some(AutoTagCategory::Cat), // tabby, tiger cat, Persian, Siamese, Egyptian
@@ -299,11 +304,14 @@ impl ImageNetMapping {
             // ===== INSECTS (300-326) =====
             300..=326 => Some(AutoTagCategory::Insect), // fly, bee, ant, grasshopper, cricket, etc.
 
-            // ===== WILDLIFE & FARM ANIMALS (339-354) =====
-            // More specific mappings within the range
+            // ===== HORSES & ZEBRAS (339-340 actually panda, but 353-354 for equines) =====
+            // Note: 339=lesser panda, 340=giant panda. Zebra is at 340 range end
+            353..=354 => Some(AutoTagCategory::Horse), // gazelle, impala can look horse-like
+
+            // ===== WILDLIFE & FARM ANIMALS (339-352) =====
             345..=347 => Some(AutoTagCategory::Cow),      // ox, water buffalo, bison
             339..=344 => Some(AutoTagCategory::Wildlife), // lesser panda, giant panda, etc.
-            348..=354 => Some(AutoTagCategory::Wildlife), // badger, skunk, otter, etc.
+            348..=352 => Some(AutoTagCategory::Wildlife), // badger, skunk, otter, etc.
 
             // ===== VEHICLES (for TRAVEL) =====
             403..=407 => Some(AutoTagCategory::Travel), // aircraft carrier, airliner, etc.
@@ -369,15 +377,30 @@ impl ImageNetMapping {
             924..=969 => Some(AutoTagCategory::Food), // guacamole to banana
 
             // ===== NATURE - LANDSCAPES (970-980) =====
-            // Specific items first, then the range
+            // Lakes and water
             972 => Some(AutoTagCategory::Lake),     // lakeside
-            973 => Some(AutoTagCategory::Sea),      // cliff, coast
+
+            // Mountains and valleys
+            970 => Some(AutoTagCategory::Mountain), // alp
+            971 => Some(AutoTagCategory::Mountain), // volcano
+            973 => Some(AutoTagCategory::Sea),      // cliff, coast (can be sea-related)
+            974 => Some(AutoTagCategory::Mountain), // geyser
             975 => Some(AutoTagCategory::Forest),   // valley (often forested)
-            978 => Some(AutoTagCategory::Sea),      // coral reef (underwater)
-            970 | 971 | 974 | 976 | 977 | 979 | 980 => Some(AutoTagCategory::Mountain), // alp, volcano, etc.
+            976 => Some(AutoTagCategory::Mountain), // promontory
+            977 => Some(AutoTagCategory::Beach),    // sandbar, beach
+            978 => Some(AutoTagCategory::Beach),    // seashore (corrected from coral reef)
+            979 => Some(AutoTagCategory::Mountain), // valley
+            980 => Some(AutoTagCategory::Mountain), // cliff
+
+            // Sky-related (sunset, sunrise often have these)
+            981 => Some(AutoTagCategory::Sky),      // balloons (often sky background)
 
             // ===== PLANTS & FLOWERS =====
             985..=992 => Some(AutoTagCategory::Flower), // daisy, yellow lady's slipper, corn
+
+            // ===== TREES & PLANTS (additional) =====
+            // Note: ImageNet doesn't have explicit "tree" category, but some plant-related classes
+            // Many tree images would be classified as part of landscape classes above
 
             // Default: no mapping
             _ => None,
@@ -387,38 +410,38 @@ impl ImageNetMapping {
     /// Get a description of what ImageNet classes map to a category
     pub fn category_description(category: &AutoTagCategory) -> &'static str {
         match category {
-            AutoTagCategory::Person => "Detected from face/body recognition (not ImageNet)",
-            AutoTagCategory::Face => "Detected from face recognition (not ImageNet)",
-            AutoTagCategory::Group => "Multiple people detected",
-            AutoTagCategory::Dog => "ImageNet classes 151-268 (dog breeds)",
+            AutoTagCategory::Person => "Use OpenCLIP/SigLIP for person detection (not supported by MobileNet)",
+            AutoTagCategory::Face => "Use OpenCLIP/SigLIP for face detection (not supported by MobileNet)",
+            AutoTagCategory::Group => "Use OpenCLIP/SigLIP for group detection (not supported by MobileNet)",
+            AutoTagCategory::Dog => "ImageNet classes 151-268 (all dog breeds)",
             AutoTagCategory::Cat => "ImageNet classes 281-285 (cat breeds)",
-            AutoTagCategory::Bird => "ImageNet classes 7-24, 80-100, 126-146",
-            AutoTagCategory::Fish => "ImageNet classes 0-6, 389-397",
-            AutoTagCategory::Horse => "ImageNet class 339",
-            AutoTagCategory::Cow => "ImageNet classes 345-347",
-            AutoTagCategory::Insect => "ImageNet classes 300-326",
-            AutoTagCategory::Wildlife => "ImageNet classes 276-295, 339-354",
-            AutoTagCategory::Sea => "ImageNet classes 955, 973, 978",
-            AutoTagCategory::Beach => "ImageNet class 956",
-            AutoTagCategory::Mountain => "ImageNet classes 970-980",
-            AutoTagCategory::Forest => "ImageNet class 975",
-            AutoTagCategory::River => "River scenes (limited in ImageNet)",
-            AutoTagCategory::Lake => "ImageNet class 972",
-            AutoTagCategory::Sky => "Sky detection (not direct ImageNet)",
-            AutoTagCategory::Sunset => "Sunset detection (not direct ImageNet)",
-            AutoTagCategory::Flower => "ImageNet classes 985-992",
-            AutoTagCategory::Tree => "Tree detection (various classes)",
-            AutoTagCategory::Plant => "Plant detection (various classes)",
-            AutoTagCategory::Garden => "Garden scenes",
-            AutoTagCategory::Food => "ImageNet classes 924-969",
-            AutoTagCategory::Building => "ImageNet architecture classes",
-            AutoTagCategory::Street => "ImageNet street scene classes",
-            AutoTagCategory::Indoor => "Indoor object detection",
-            AutoTagCategory::Outdoor => "Outdoor object detection",
-            AutoTagCategory::Night => "Night scene indicators",
-            AutoTagCategory::Wedding => "Wedding detection (custom)",
-            AutoTagCategory::Birthday => "Birthday detection (custom)",
-            AutoTagCategory::Travel => "Vehicle/transport detection",
+            AutoTagCategory::Bird => "ImageNet classes 7-24, 80-100, 126-146 (various bird species)",
+            AutoTagCategory::Fish => "ImageNet classes 0-6, 389-397 (fish and aquatic animals)",
+            AutoTagCategory::Horse => "ImageNet classes 269-275, 353-354 (equine-related)",
+            AutoTagCategory::Cow => "ImageNet classes 345-347 (ox, water buffalo, bison)",
+            AutoTagCategory::Insect => "ImageNet classes 300-326 (insects and bugs)",
+            AutoTagCategory::Wildlife => "ImageNet classes 276-295, 339-354 (wild animals)",
+            AutoTagCategory::Sea => "ImageNet classes 955, 957, 973 (ocean and coastal scenes)",
+            AutoTagCategory::Beach => "ImageNet classes 956, 958, 977, 978 (beach and seashore)",
+            AutoTagCategory::Mountain => "ImageNet classes 970-980 (mountains, volcanoes, valleys)",
+            AutoTagCategory::Forest => "ImageNet class 975 (forested valleys)",
+            AutoTagCategory::River => "Limited support in ImageNet - use OpenCLIP/SigLIP",
+            AutoTagCategory::Lake => "ImageNet class 972 (lakeside scenes)",
+            AutoTagCategory::Sky => "ImageNet class 981 (sky backgrounds)",
+            AutoTagCategory::Sunset => "Limited support in ImageNet - use OpenCLIP/SigLIP",
+            AutoTagCategory::Flower => "ImageNet classes 985-992 (flowers and plants)",
+            AutoTagCategory::Tree => "Limited support in ImageNet - use OpenCLIP/SigLIP",
+            AutoTagCategory::Plant => "Limited support in ImageNet - use OpenCLIP/SigLIP",
+            AutoTagCategory::Garden => "Limited support in ImageNet - use OpenCLIP/SigLIP",
+            AutoTagCategory::Food => "ImageNet classes 924-969 (various food items)",
+            AutoTagCategory::Building => "ImageNet architecture classes (castle, church, mosque, etc.)",
+            AutoTagCategory::Street => "ImageNet classes 699-710, 722 (street scenes)",
+            AutoTagCategory::Indoor => "ImageNet indoor object classes",
+            AutoTagCategory::Outdoor => "ImageNet outdoor object classes",
+            AutoTagCategory::Night => "ImageNet classes 457, 818, 846 (night indicators)",
+            AutoTagCategory::Wedding => "Limited support in ImageNet - use OpenCLIP/SigLIP",
+            AutoTagCategory::Birthday => "Limited support in ImageNet - use OpenCLIP/SigLIP",
+            AutoTagCategory::Travel => "ImageNet transport classes (vehicles, ships, etc.)",
         }
     }
 }
