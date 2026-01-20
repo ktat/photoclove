@@ -37,8 +37,10 @@ function Preferences(props) {
             auto_tag_on_import: false,
             confidence_threshold: 0.7,
             max_tags_per_image: 5,
+            model_type: 'mobilenet',
             model_preset: 'standard',
-            enabled_categories: []
+            enabled_categories: [],
+            custom_labels: []
         }
     });
     const [additionalExportFrom, setAdditionalExportFrom] = useState(0);
@@ -134,8 +136,10 @@ function Preferences(props) {
                 auto_tag_on_import: config.ai_tagging?.auto_tag_on_import || false,
                 confidence_threshold: parseFloat(config.ai_tagging?.confidence_threshold) || 0.7,
                 max_tags_per_image: parseInt(config.ai_tagging?.max_tags_per_image) || 5,
+                model_type: config.ai_tagging?.model_type || 'mobilenet',
                 model_preset: config.ai_tagging?.model_preset || 'standard',
-                enabled_categories: config.ai_tagging?.enabled_categories || []
+                enabled_categories: config.ai_tagging?.enabled_categories || [],
+                custom_labels: config.ai_tagging?.custom_labels || []
             }
         };
 
