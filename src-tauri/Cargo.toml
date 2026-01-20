@@ -53,6 +53,9 @@ base64 = "0.21"
 log = "0.4"
 env_logger = "0.10"
 keyring = "2.3"
+
+# AI Auto-Tagging (ONNX Runtime)
+ort = { version = "2.0.0-rc.11", features = ["load-dynamic"] }
 # tauri-plugin-shell = "2"
 # turbojpeg-sys = {version = "0.2.3", features = ["bindgen"] }
 # turbojpeg = {version = "0.5", features = ["image"] }

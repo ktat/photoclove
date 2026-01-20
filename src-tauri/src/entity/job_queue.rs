@@ -65,6 +65,8 @@ pub enum JobType {
     GooglePhotosUpload,
     #[serde(rename = "recalculate_grouping")]
     RecalculateGrouping,
+    #[serde(rename = "ai_tagging")]
+    AiTagging,
 }
 
 impl ToString for JobType {
@@ -75,6 +77,7 @@ impl ToString for JobType {
             JobType::CreateDb => "create_db".to_string(),
             JobType::GooglePhotosUpload => "google_photos_upload".to_string(),
             JobType::RecalculateGrouping => "recalculate_grouping".to_string(),
+            JobType::AiTagging => "ai_tagging".to_string(),
         }
     }
 }
@@ -216,4 +219,15 @@ pub struct GooglePhotosUploadJob {
 pub struct RecalculateGroupingJob {
     pub threshold_seconds: u32,
     pub min_group_size: u32,
+}
+
+/// Job parameters for AI auto-tagging
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AiTaggingJob {
+    /// Photo paths to process
+    pub photo_paths: Vec<String>,
+    /// Confidence threshold (0.0 to 1.0)
+    pub confidence_threshold: f32,
+    /// Optional: specific date to process (for maintenance tab)
+    pub target_date: Option<String>,
 }

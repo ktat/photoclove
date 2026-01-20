@@ -3,6 +3,7 @@
 //! This module serves as a routing layer that re-exports all domain service submodules.
 //! Actual implementations are in the respective submodules.
 
+pub mod ai_tagging;
 pub mod dir_service;
 pub mod file_service;
 pub mod job_queue;
