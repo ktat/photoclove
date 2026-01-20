@@ -9,6 +9,61 @@ import { invokeWithErrorHandling } from "../../../services/TauriService.js";
 import { UnifiedPhotoCollection } from "../../../domain/UnifiedPhotoCollection.js";
 
 /**
+ * Shared helper function to remove photos from a collection (album or tag)
+ * @param {Object} options - Options object
+ * @param {number} collectionId - The collection ID (album or tag)
+ * @param {string} collectionType - 'album' or 'tag'
+ * @param {Array<string>} photoSelection - Selected photo paths
+ * @param {Function} clearPhotoSelection - Function to clear selection
+ * @param {Function} addFooterMessage - Function to show footer message
+ * @param {Function} handleTauriError - Function to handle errors
+ * @param {Function} removePhotoFromList - Function to remove photo from UI list
+ */
+async function removePhotosFromCollection({
+    collectionId,
+    collectionType,
+    photoSelection,
+    clearPhotoSelection,
+    addFooterMessage,
+    handleTauriError,
+    removePhotoFromList
+}) {
+    if (!collectionId || photoSelection.length === 0) return;
+
+    const count = photoSelection.length;
+    const typeName = collectionType === 'album' ? 'album' : 'tag';
+    const confirmed = await confirm(
+        `Remove ${count} photo${count > 1 ? 's' : ''} from this ${typeName}?\n\nPhotos will remain in your library.`,
+        `Remove from ${typeName.charAt(0).toUpperCase() + typeName.slice(1)}`
+    );
+
+    if (confirmed) {
+        try {
+            for (const photoPath of photoSelection) {
+                await invokeWithErrorHandling(
+                    "remove_photo_from_collection",
+                    { collectionId: collectionId, photoPath: photoPath },
+                    'collectionOperations',
+                    { silent: true }
+                );
+                removePhotoFromList?.(photoPath);
+            }
+
+            clearPhotoSelection();
+            addFooterMessage(`${count} photo${count > 1 ? 's' : ''} removed from ${typeName}`);
+
+            logger.info('collectionOperations', `photos_removed_from_${typeName}`, `Photos removed from ${typeName} successfully`, {
+                collectionId,
+                collectionType,
+                photoCount: count
+            });
+        } catch (error) {
+            handleTauriError(error, `Remove from ${typeName}`);
+        }
+    }
+}
+
+/**
  * Hook for album operations
  */
 export function useAlbumOperations({
@@ -123,38 +178,15 @@ export function useAlbumOperations({
 
     const removeFromCurrentAlbum = useCallback(async () => {
         const currentAlbumId = viewModeObj?.getCurrentAlbumId();
-
-        if (!currentAlbumId || photoSelection.length === 0) return;
-
-        const count = photoSelection.length;
-        const confirmed = await confirm(
-            `Remove ${count} photo${count > 1 ? 's' : ''} from this album?\n\nPhotos will remain in your library.`,
-            "Remove from Album"
-        );
-
-        if (confirmed) {
-            try {
-                for (const photoPath of photoSelection) {
-                    await invokeWithErrorHandling(
-                        "remove_photo_from_album",
-                        { albumId: currentAlbumId, photoPath: photoPath },
-                        'collectionOperations',
-                        { silent: true }
-                    );
-                    removePhotoFromList?.(photoPath);
-                }
-
-                clearPhotoSelection();
-                addFooterMessage(`${count} photo${count > 1 ? 's' : ''} removed from album`);
-
-                logger.info('collectionOperations', 'photos_removed_from_album', 'Photos removed from album successfully', {
-                    albumId: currentAlbumId,
-                    photoCount: count
-                });
-            } catch (error) {
-                handleTauriError(error, 'Remove from album');
-            }
-        }
+        await removePhotosFromCollection({
+            collectionId: currentAlbumId,
+            collectionType: 'album',
+            photoSelection,
+            clearPhotoSelection,
+            addFooterMessage,
+            handleTauriError,
+            removePhotoFromList
+        });
     }, [photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError, viewModeObj, removePhotoFromList]);
 
     return {
@@ -234,38 +266,15 @@ export function useTagOperations({
 
     const removeFromCurrentTag = useCallback(async () => {
         const currentTagId = viewModeObj?.getCurrentTagId();
-
-        if (!currentTagId || photoSelection.length === 0) return;
-
-        const count = photoSelection.length;
-        const confirmed = await confirm(
-            `Remove ${count} photo${count > 1 ? 's' : ''} from this tag?\n\nPhotos will remain in your library.`,
-            "Remove from Tag"
-        );
-
-        if (confirmed) {
-            try {
-                for (const photoPath of photoSelection) {
-                    await invokeWithErrorHandling(
-                        "remove_photo_from_collection",
-                        { collectionId: currentTagId, photoPath: photoPath },
-                        'collectionOperations',
-                        { silent: true }
-                    );
-                    removePhotoFromList?.(photoPath);
-                }
-
-                clearPhotoSelection();
-                addFooterMessage(`${count} photo${count > 1 ? 's' : ''} removed from tag`);
-
-                logger.info('collectionOperations', 'photos_removed_from_tag', 'Photos removed from tag successfully', {
-                    tagId: currentTagId,
-                    photoCount: count
-                });
-            } catch (error) {
-                handleTauriError(error, 'Remove from tag');
-            }
-        }
+        await removePhotosFromCollection({
+            collectionId: currentTagId,
+            collectionType: 'tag',
+            photoSelection,
+            clearPhotoSelection,
+            addFooterMessage,
+            handleTauriError,
+            removePhotoFromList
+        });
     }, [photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError, viewModeObj, removePhotoFromList]);
 
     return {
