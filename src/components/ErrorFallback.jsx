@@ -42,9 +42,9 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        marginBottom: '16px'
+        marginBottom: 'var(--space-4)'
       }}>
-        <span style={{ fontSize: '32px' /* Icon size - intentionally large */, marginRight: '12px' }}>
+        <span style={{ fontSize: 'var(--font-size-2xl)', marginRight: 'var(--space-3)' }}>
           {isApplicationLevel ? '🚨' : '⚠️'}
         </span>
         <div>
@@ -70,7 +70,7 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
       <div style={{
         fontSize: 'var(--font-size-lg)',
         lineHeight: '1.5',
-        marginBottom: '12px',
+        marginBottom: 'var(--space-3)',
         color: 'var(--color-danger-dark)'
       }}>
         {getFriendlyMessage()}
@@ -78,17 +78,17 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
 
       {/* Suggestion */}
       <div style={{
-        padding: '12px 16px',
+        padding: 'var(--space-3) var(--space-4)',
         backgroundColor: 'var(--color-danger-bg-strong)',
         border: '1px solid var(--color-danger-border)',
-        borderRadius: '6px',
-        marginBottom: '16px',
+        borderRadius: 'var(--radius-md)',
+        marginBottom: 'var(--space-4)',
         borderLeft: '4px solid var(--color-danger)'
       }}>
         <div style={{
           fontSize: 'var(--font-size-base)',
           fontWeight: 'bold',
-          marginBottom: '4px',
+          marginBottom: 'var(--space-1)',
           color: 'var(--color-danger-dark)'
         }}>
           💡 What you can do:
@@ -108,11 +108,11 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
           backgroundColor: 'transparent',
           border: '1px solid var(--color-danger)',
           color: 'var(--color-danger-dark)',
-          padding: '8px 12px',
-          borderRadius: '4px',
+          padding: 'var(--space-2) var(--space-3)',
+          borderRadius: 'var(--radius-sm)',
           cursor: 'pointer',
           fontSize: 'var(--font-size-base)',
-          marginBottom: '16px',
+          marginBottom: 'var(--space-4)',
           alignSelf: 'flex-start'
         }}
       >
@@ -124,19 +124,19 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
         <div style={{
           backgroundColor: 'var(--color-danger-bg-strong)',
           border: '1px solid var(--color-danger-border)',
-          borderRadius: '6px',
-          padding: '12px',
-          marginBottom: '16px',
+          borderRadius: 'var(--radius-md)',
+          padding: 'var(--space-3)',
+          marginBottom: 'var(--space-4)',
           fontSize: 'var(--font-size-sm)',
           fontFamily: 'monospace'
         }}>
-          <div style={{ marginBottom: '12px' }}>
+          <div style={{ marginBottom: 'var(--space-3)' }}>
             <strong>Error Message:</strong>
             <div style={{
-              marginTop: '4px',
-              padding: '8px',
+              marginTop: 'var(--space-1)',
+              padding: 'var(--space-2)',
               backgroundColor: 'var(--color-danger-bg)',
-              borderRadius: '4px',
+              borderRadius: 'var(--radius-sm)',
               border: '1px solid var(--color-danger-border)'
             }}>
               {error?.message || error?.toString() || 'Unknown error'}
@@ -144,13 +144,13 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
           </div>
 
           {error?.stack && (
-            <div style={{ marginBottom: '12px' }}>
+            <div style={{ marginBottom: 'var(--space-3)' }}>
               <strong>Stack Trace:</strong>
               <pre style={{
-                marginTop: '4px',
-                padding: '8px',
+                marginTop: 'var(--space-1)',
+                padding: 'var(--space-2)',
                 backgroundColor: 'var(--color-danger-bg)',
-                borderRadius: '4px',
+                borderRadius: 'var(--radius-sm)',
                 border: '1px solid var(--color-danger-border)',
                 fontSize: 'var(--font-size-xs)',
                 overflow: 'auto',
@@ -166,10 +166,10 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
             <div>
               <strong>Component Stack:</strong>
               <pre style={{
-                marginTop: '4px',
-                padding: '8px',
+                marginTop: 'var(--space-1)',
+                padding: 'var(--space-2)',
                 backgroundColor: 'var(--color-danger-bg)',
-                borderRadius: '4px',
+                borderRadius: 'var(--radius-sm)',
                 border: '1px solid var(--color-danger-border)',
                 fontSize: 'var(--font-size-xs)',
                 overflow: 'auto',
@@ -186,23 +186,23 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
       {/* Action Buttons */}
       <div style={{
         display: 'flex',
-        gap: '12px',
+        gap: 'var(--space-3)',
         alignItems: 'center'
       }}>
         <button
           onClick={resetError}
           style={{
-            padding: '12px 24px',
+            padding: 'var(--space-3) var(--space-6)',
             backgroundColor: 'var(--color-danger-dark)',
             color: 'white',
             border: 'none',
-            borderRadius: '6px',
+            borderRadius: 'var(--radius-md)',
             cursor: 'pointer',
             fontSize: 'var(--font-size-base)',
             fontWeight: 'bold',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: 'var(--space-2)'
           }}
         >
           🔄 {isApplicationLevel ? 'Reset Application' : 'Try Again'}
@@ -212,11 +212,11 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
           <button
             onClick={() => window.location.reload()}
             style={{
-              padding: '12px 24px',
+              padding: 'var(--space-3) var(--space-6)',
               backgroundColor: 'var(--color-text-muted)',
               color: 'white',
               border: 'none',
-              borderRadius: '6px',
+              borderRadius: 'var(--radius-md)',
               cursor: 'pointer',
               fontSize: 'var(--font-size-base)',
               fontWeight: 'bold'
@@ -230,11 +230,11 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
       {/* Debug Info */}
       {process.env.NODE_ENV === 'development' && (
         <div style={{
-          marginTop: '16px',
-          padding: '8px',
+          marginTop: 'var(--space-4)',
+          padding: 'var(--space-2)',
           backgroundColor: 'var(--color-warning-bg-strong)',
           color: 'var(--color-warning-darker)',
-          borderRadius: '4px',
+          borderRadius: 'var(--radius-sm)',
           fontSize: 'var(--font-size-sm)',
           textAlign: 'center'
         }}>

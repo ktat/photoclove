@@ -1,20 +1,20 @@
 import React, { useState, useEffect, useContext, useMemo, useCallback } from 'react';
-import { invoke, convertFileSrc } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import PhotoDisplay from "./PhotosListMini/PhotoDisplay.jsx";
 import { ImgCacheContext, AllPhotosContext } from "../ImgCacheContext.jsx";
 import ContextualDeleteModal from "../../components/ContextualDeleteModal.jsx";
 import { logger } from "../../services/LoggerService.js";
 import { Photo } from "../../domain/Photo.js";
-import { parseCssStyle, calculateSimpleThumbnailDisplay, calculateThumbnailDisplayWithViewOffset, getDateKey as utilGetDateKey, createBorderStyles } from "./PhotosListMini/photoUtils.js";
+import { calculateThumbnailDisplayWithViewOffset, getDateKey as utilGetDateKey, createBorderStyles } from "./PhotosListMini/photoUtils.js";
 import { useKeyboardShortcuts } from "./PhotosListMini/useKeyboardShortcuts.js";
 import { useDeletionOperations } from "./PhotosListMini/useDeletionOperations.js";
 import { usePhotoNavigation } from "./PhotosListMini/usePhotoNavigation.js";
 import { useStarOperations } from "./PhotosListMini/useStarOperations.js";
 import HelpPanel from "./PhotosListMini/HelpPanel.jsx";
 import AlbumModeIndicator from "./PhotosListMini/AlbumModeIndicator.jsx";
+import ThumbnailRenderer from "./PhotosListMini/ThumbnailRenderer.jsx";
 import { useUI } from "../../context/UIContext.jsx";
 import { VIEW_MODES } from "../../constants/viewModes.js";
-import { getCombinedTransformStyle } from "../../utils/orientationUtils.js";
 
 function PhotosListMini(props) {
     // Context
@@ -327,197 +327,10 @@ function PhotosListMini(props) {
         setBorderStyle(newBorderStyle);
     }
 
-    // Render thumbnail for a photo
-    const renderThumbnail = useCallback((vIndex, i) => {
-        if (typeof vIndex !== 'number' || vIndex < 0 || vIndex >= photosWithMethods.length) {
-            return null;
-        }
-
-        let v = photosWithMethods[vIndex];
-        if (!v || !v.originalPath) {
-            return null;
-        }
-
-        const clientHeight = document.querySelector('#photos-list-mini')?.clientHeight - 50 || 80;
-
-        // Initialize image source if not already set - use functional state update to avoid mutation
-        let imgSrc = photosListImgSrc[v.originalPath];
-        if (!imgSrc) {
-            if (v.import_source === true) {
-                if (!v._cachedThumbnailPath) {
-                    const importDir = (v.import_source === true && importState?.currentImportPath && importState.currentImportPath !== '')
-                        ? importState.currentImportPath
-                        : null;
-                    invoke('get_thumbnail_path', {
-                        photoPath: v.originalPath,
-                        importDirectory: importDir
-                    })
-                        .then(cachePath => {
-                            v._cachedThumbnailPath = convertFileSrc(cachePath);
-                            setPhotosListImgSrc(prev => {
-                                if (!prev[v.originalPath] || prev[v.originalPath] === "") {
-                                    return { ...prev, [v.originalPath]: v._cachedThumbnailPath };
-                                }
-                                return prev;
-                            });
-                        })
-                        .catch(err => {
-                            logger.debug('PhotosListMini', 'thumbnail_path_error', 'Failed to get thumbnail path', {
-                                photoPath: v.originalPath,
-                                error: err?.message || String(err)
-                            });
-                        });
-                }
-                imgSrc = v._cachedThumbnailPath || "";
-            } else if (v.hasThumbnail) {
-                imgSrc = convertFileSrc(v.thumbnailPath());
-            } else {
-                imgSrc = convertFileSrc(v.displayPath());
-            }
-            // Update state immutably if we computed a new value
-            if (imgSrc) {
-                setPhotosListImgSrc(prev => {
-                    if (!prev[v.originalPath]) {
-                        return { ...prev, [v.originalPath]: imgSrc };
-                    }
-                    return prev;
-                });
-            }
-        }
-
-        const handleThumbnailClick = () => {
-            goToPhoto(vIndex);
-        };
-
-        const handleImgError = (e) => {
-            if (e.target.src.includes('/img_error.png')) return;
-
-            if (v.import_source === true) {
-                if (!e.target.dataset.thumbnailGenerated) {
-                    e.target.dataset.thumbnailGenerated = 'true';
-                    const imgElement = e.target;
-                    const importDir = (v.import_source === true && importState?.currentImportPath && importState.currentImportPath !== '')
-                        ? importState.currentImportPath
-                        : null;
-                    invoke('get_resized_image', {
-                        pathStr: v.originalPath,
-                        maxSize: 200,
-                        importDirectory: importDir,
-                        skipResizeFallback: true
-                    })
-                        .then(() => invoke('get_thumbnail_path', { photoPath: v.originalPath, importDirectory: importDir }))
-                        .then(cachePath => {
-                            imgElement.src = convertFileSrc(cachePath) + '?t=' + Date.now();
-                        })
-                        .catch(() => {
-                            if (imgElement && !imgElement.dataset.triedOriginal) {
-                                imgElement.dataset.triedOriginal = 'true';
-                                imgElement.src = convertFileSrc(v.originalPath);
-                            }
-                        });
-                    return;
-                }
-                if (!e.target.dataset.triedOriginal) {
-                    e.target.dataset.triedOriginal = 'true';
-                    e.target.src = convertFileSrc(v.originalPath);
-                    return;
-                }
-                e.target.src = "/img_error.png";
-                return;
-            }
-
-            if (v.hasThumbnail && !e.target.dataset.triedOriginal) {
-                e.target.dataset.triedOriginal = "true";
-                e.target.src = convertFileSrc(v.displayPath());
-            } else {
-                e.target.src = "/img_error.png";
-            }
-        };
-
-        const isMovie = !v.hasThumbnail && v.originalPath?.match(/\.(mp4|webm)$/i);
-
-        return (
-            <div className="row2" key={`${vIndex}-${v.originalPath}`} style={{ position: "relative" }}>
-                <a onClick={handleThumbnailClick}>
-                    {isMovie ? (
-                        <div className="photo-list-movie" style={{ border: borderStyle[i], maxHeight: clientHeight + "px" }}>
-                            <span>🎬</span>
-                        </div>
-                    ) : (
-                        <>
-                            <img
-                                src={imgSrc || photosListImgSrc[v.originalPath]}
-                                style={{
-                                    border: borderStyle[i],
-                                    maxHeight: clientHeight + "px",
-                                    ...(thumbnailOrientationCorrection
-                                        ? getCombinedTransformStyle(v.meta_data?.orientation, v.cssStyle)
-                                        : parseCssStyle(v.cssStyle))
-                                }}
-                                alt={"photo-" + i}
-                                onError={handleImgError}
-                            />
-                            {v.originalPath?.match(/\.(mp4|webm)$/i) && (
-                                <div style={{ color: "white", position: "relative", top: clientHeight / -4 }}>▶</div>
-                            )}
-                        </>
-                    )}
-                </a>
-
-                {/* Metadata overlay - stars and comments */}
-                {(v.star > 0 || v.comment) && (
-                    <div style={{
-                        position: "absolute",
-                        bottom: "2px",
-                        left: "2px",
-                        backgroundColor: "rgba(0, 0, 0, 0.5)",
-                        color: "white",
-                        padding: "2px 4px",
-                        borderRadius: "3px",
-                        fontSize: "var(--font-size-2xs)",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "2px",
-                        pointerEvents: "none"
-                    }}>
-                        {v.star > 0 && <span>⭐{v.star}</span>}
-                        {v.comment && <span>💬</span>}
-                    </div>
-                )}
-
-                {/* Burst group badge - shows +N when photo has burst group */}
-                {v.burst_group_id && v.burst_count > 1 && !isInBurstGroupMode && (
-                    <div
-                        style={{
-                            position: "absolute",
-                            top: "2px",
-                            right: "2px",
-                            background: "var(--color-primary)",
-                            color: "white",
-                            padding: "1px 4px",
-                            borderRadius: "var(--radius-sm)",
-                            fontSize: "var(--font-size-2xs)",
-                            fontWeight: "bold",
-                            minWidth: "16px",
-                            textAlign: "center",
-                            cursor: "pointer",
-                            zIndex: 4
-                        }}
-                        title={`Burst group: ${v.burst_count} photos`}
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (props.openBurstGroup) {
-                                props.openBurstGroup(v.burst_group_id);
-                            }
-                        }}
-                    >
-                        +{v.burst_count - 1}
-                    </div>
-                )}
-            </div>
-        );
-    }, [photosWithMethods, photosListImgSrc, borderStyle, thumbnailOrientationCorrection, importState, goToPhoto, isInBurstGroupMode, props.openBurstGroup]);
+    // Calculate thumbnail max height
+    const thumbnailMaxHeight = useMemo(() => {
+        return document.querySelector('#photos-list-mini')?.clientHeight - 50 || 80;
+    }, []);
 
     const { showPrev, showNext } = calculateThumbnailDisplayWithViewOffset(photosWithMethods, props.currentIndex, viewStartIndex);
 
@@ -610,7 +423,27 @@ function PhotosListMini(props) {
                     <div className="row1">
                         <a style={{ display: showPrev ? "" : "none" }} onClick={backwardPhotos}>◁</a>
                     </div>
-                    {showPhotosIndex.map((vIndex, i) => renderThumbnail(vIndex, i))}
+                    {showPhotosIndex.map((vIndex, i) => {
+                        const photo = photosWithMethods[vIndex];
+                        if (!photo || !photo.originalPath) return null;
+                        return (
+                            <ThumbnailRenderer
+                                key={`${vIndex}-${photo.originalPath}`}
+                                photo={photo}
+                                vIndex={vIndex}
+                                displayIndex={i}
+                                borderStyle={borderStyle[i]}
+                                maxHeight={thumbnailMaxHeight}
+                                thumbnailOrientationCorrection={thumbnailOrientationCorrection}
+                                onThumbnailClick={goToPhoto}
+                                onBurstBadgeClick={props.openBurstGroup}
+                                importState={importState}
+                                imgSrcCache={photosListImgSrc}
+                                setImgSrcCache={setPhotosListImgSrc}
+                                isInBurstGroupMode={isInBurstGroupMode}
+                            />
+                        );
+                    })}
                     <div className="row1">
                         <a style={{ display: showNext ? "" : "none" }} onClick={forwardPhotos}>▷</a>
                     </div>
