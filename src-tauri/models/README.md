@@ -2,6 +2,19 @@
 
 This directory contains ONNX models for AI auto-tagging feature.
 
+## Quick Setup
+
+From the project root, run:
+
+```bash
+# Download model and ONNX Runtime
+make setup-ai
+
+# Or download separately:
+make download-model        # Download ONNX model
+make download-onnxruntime  # Download ONNX Runtime library
+```
+
 ## Required Models
 
 | File | Preset | Size | Source |
