@@ -63,9 +63,9 @@ const FilterPopover = ({
                 right: `${position.right}px`,
                 backgroundColor: 'var(--color-bg-elevated)',
                 border: '1px solid var(--color-border-default)',
-                borderRadius: '8px',
+                borderRadius: 'var(--radius-lg)',
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-                padding: '12px 16px',
+                padding: 'var(--space-3) var(--space-4)',
                 minWidth: '280px',
                 maxWidth: '350px',
                 zIndex: 10000,
@@ -74,10 +74,10 @@ const FilterPopover = ({
         >
             {/* Star Filter - Hide in import mode */}
             {!isImportMode && (
-                <div style={{ marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ marginBottom: 'var(--space-3)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                         <span style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-text-primary)', minWidth: '50px' }}>Stars</span>
-                        <div style={{ display: 'flex', gap: '4px' }}>
+                        <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
                             {[0, 1, 2, 3, 4, 5].map((v) => (
                                 <span
                                     key={v}
@@ -93,7 +93,7 @@ const FilterPopover = ({
                                         cursor: 'pointer',
                                         fontSize: 'var(--font-size-lg)',
                                         padding: '2px 4px',
-                                        borderRadius: '4px',
+                                        borderRadius: 'var(--radius-sm)',
                                         backgroundColor: starFilter === v ? 'var(--color-bg-surface)' : 'transparent',
                                         border: starFilter === v ? '1px solid var(--color-primary)' : '1px solid transparent',
                                         color: starFilter >= v ? 'var(--color-warning)' : 'var(--color-text-muted)',
@@ -111,7 +111,7 @@ const FilterPopover = ({
             
             {/* Comment Filter - Switch Style - Hide in import mode */}
             {!isImportMode && (
-                <div style={{ marginBottom: '12px' }}>
+                <div style={{ marginBottom: 'var(--space-3)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <span style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-text-primary)' }}>Has Comment</span>
                         <label style={{
@@ -150,7 +150,7 @@ const FilterPopover = ({
                                     top: '2px',
                                     width: '20px',
                                     height: '20px',
-                                    backgroundColor: 'white',
+                                    backgroundColor: 'var(--color-bg-elevated)',
                                     borderRadius: '50%',
                                     transition: 'left 0.2s'
                                 }}></span>
@@ -162,7 +162,7 @@ const FilterPopover = ({
             
             {/* Tag Filter - Switch Style - Hide in import mode */}
             {!isImportMode && (
-                <div style={{ marginBottom: '12px' }}>
+                <div style={{ marginBottom: 'var(--space-3)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <span style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-text-primary)' }}>Has Tag</span>
                         <label style={{
@@ -201,7 +201,7 @@ const FilterPopover = ({
                                     top: '2px',
                                     width: '20px',
                                     height: '20px',
-                                    backgroundColor: 'white',
+                                    backgroundColor: 'var(--color-bg-elevated)',
                                     borderRadius: '50%',
                                     transition: 'left 0.2s'
                                 }}></span>
@@ -212,10 +212,10 @@ const FilterPopover = ({
             )}
             
             {/* Extension Filter */}
-            <div style={{ marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ marginBottom: 'var(--space-3)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                     <span style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-text-primary)', minWidth: '70px' }}>Extensions</span>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', flex: 1 }}>
                         {/* All Extensions */}
                         <div style={{ display: 'flex', alignItems: 'center' }}>
                             <input 
@@ -230,13 +230,13 @@ const FilterPopover = ({
                             <label 
                                 className="checkbox checkbox-normal" 
                                 htmlFor="extension-filter-all"
-                                style={{ marginRight: '8px' }}
+                                style={{ marginRight: 'var(--space-2)' }}
                             ></label>
                             <span style={{ fontSize: 'var(--font-size-base)', cursor: 'pointer' }} onClick={() => setExtensionFilter("all")}>All</span>
                         </div>
                         
                         {/* Individual Extensions */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-2)' }}>
                             {[
                                 { value: 'jpg', label: 'JPG', extensions: ['jpg', 'jpeg'] },
                                 { value: 'png', label: 'PNG', extensions: ['png'] },
@@ -270,7 +270,7 @@ const FilterPopover = ({
                                     <label 
                                         className="checkbox checkbox-normal" 
                                         htmlFor={`extension-filter-${item.value}`}
-                                        style={{ marginRight: '6px' }}
+                                        style={{ marginRight: 'var(--space-2)' }}
                                     ></label>
                                     <span 
                                         style={{ fontSize: 'var(--font-size-sm)', cursor: 'pointer' }} 
@@ -299,8 +299,8 @@ const FilterPopover = ({
             {/* Clear Filters Button */}
             {((!isImportMode && (starFilter > 0 || hasCommentFilter || hasTagFilter)) || extensionFilter !== 'all') && (
                 <div style={{ 
-                    marginTop: '16px', 
-                    paddingTop: '12px', 
+                    marginTop: 'var(--space-4)', 
+                    paddingTop: 'var(--space-3)', 
                     borderTop: '1px solid var(--color-border-default)',
                     textAlign: 'center'
                 }}>
@@ -315,10 +315,10 @@ const FilterPopover = ({
                             setExtensionFilter('all');
                         }}
                         style={{
-                            padding: '8px 16px',
+                            padding: 'var(--space-2) var(--space-4)',
                             backgroundColor: 'var(--color-bg-elevated)',
                             border: '1px solid var(--color-border-default)',
-                            borderRadius: '4px',
+                            borderRadius: 'var(--radius-sm)',
                             cursor: 'pointer',
                             color: 'var(--color-text-primary)',
                             fontSize: 'var(--font-size-base)',

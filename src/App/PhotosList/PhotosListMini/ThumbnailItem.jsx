@@ -206,7 +206,7 @@ function ThumbnailItem({
                             onError={handleError}
                         />
                         {isVideo && (
-                            <div style={{ color: "white", position: "relative", top: maxHeight / -4 }}>▶</div>
+                            <div style={{ color: "var(--color-text-primary)", position: "relative", top: maxHeight / -4 }}>▶</div>
                         )}
                     </>
                 )}
@@ -219,7 +219,7 @@ function ThumbnailItem({
                     top: "28px",
                     left: "2px",
                     backgroundColor: "rgba(0, 0, 0, 0.5)",
-                    color: "white",
+                    color: "var(--color-text-primary)",
                     padding: "2px 4px",
                     borderRadius: "3px",
                     fontSize: "var(--font-size-2xs)",

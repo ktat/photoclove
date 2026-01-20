@@ -26,6 +26,7 @@ import {
     saveStyledCopy
 } from './PhotoEditor/photoExportUtils.js';
 import CropTool from './CropTool.jsx';
+import AdjustmentSlider from './PhotoEditor/AdjustmentSlider.jsx';
 
 function PhotoEditor(props) {
     const [originalStyles, setOriginalStyles] = useState(new Map());
@@ -410,108 +411,60 @@ function PhotoEditor(props) {
                     <div className={styles['editor-controls']}>
                         <table className={styles['editor-table']}>
                             <tbody>
-                                <tr>
-                                    <td rowSpan="2" className={styles['label-cell']}>Rotation<br />(deg):</td>
-                                    <td rowSpan="2">
-                                        <input type="range" min={0} max={360} value={editorStyles.rotate}
-                                            className={styles['editor-slider']}
-                                            onChange={(e) => updateStyle('rotate', e.target.value)} />
-                                    </td>
-                                    <td>
-                                        <input type="number" min={0} max={360} value={editorStyles.rotate}
-                                            className={styles['value-input']}
-                                            onChange={(e) => updateStyle('rotate', e.target.value)} />
-                                    </td>
-                                    <td>
-                                        <button className={styles['reset-btn']} onClick={() => resetSingleControl('rotate')} title="Reset rotation">↻</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td colSpan="2" className={styles['shortcuts-cell']}>
-                                        <button className={styles['shortcut-btn']} onClick={() => rotateBy(-90)} title="Turn left 90°">↶ 90°</button>
-                                        <button className={styles['shortcut-btn']} onClick={() => rotateBy(90)} title="Turn right 90°">↷ 90°</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className={styles['label-cell']}>Brightness:</td>
-                                    <td>
-                                        <input type="range" min={0} max={200} value={editorStyles.brightness}
-                                            className={styles['editor-slider']}
-                                            onChange={(e) => updateStyle('brightness', e.target.value)} />
-                                    </td>
-                                    <td>
-                                        <input type="number" min={0} max={200} value={editorStyles.brightness}
-                                            className={styles['value-input']}
-                                            onChange={(e) => updateStyle('brightness', e.target.value)} />
-                                    </td>
-                                    <td>
-                                        <button className={styles['reset-btn']} onClick={() => resetSingleControl('brightness')} title="Reset brightness">↻</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className={styles['label-cell']}>Contrast:</td>
-                                    <td>
-                                        <input type="range" min={0} max={200} value={editorStyles.contrast}
-                                            className={styles['editor-slider']}
-                                            onChange={(e) => updateStyle('contrast', e.target.value)} />
-                                    </td>
-                                    <td>
-                                        <input type="number" min={0} max={200} value={editorStyles.contrast}
-                                            className={styles['value-input']}
-                                            onChange={(e) => updateStyle('contrast', e.target.value)} />
-                                    </td>
-                                    <td>
-                                        <button className={styles['reset-btn']} onClick={() => resetSingleControl('contrast')} title="Reset contrast">↻</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className={styles['label-cell']}>Saturation:</td>
-                                    <td>
-                                        <input type="range" min={0} max={200} value={editorStyles.saturation}
-                                            className={styles['editor-slider']}
-                                            onChange={(e) => updateStyle('saturation', e.target.value)} />
-                                    </td>
-                                    <td>
-                                        <input type="number" min={0} max={200} value={editorStyles.saturation}
-                                            className={styles['value-input']}
-                                            onChange={(e) => updateStyle('saturation', e.target.value)} />
-                                    </td>
-                                    <td>
-                                        <button className={styles['reset-btn']} onClick={() => resetSingleControl('saturation')} title="Reset saturation">↻</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className={styles['label-cell']}>Hue(deg):</td>
-                                    <td>
-                                        <input type="range" min={0} max={360} value={editorStyles.hue}
-                                            className={styles['editor-slider']}
-                                            onChange={(e) => updateStyle('hue', e.target.value)} />
-                                    </td>
-                                    <td>
-                                        <input type="number" min={0} max={360} value={editorStyles.hue}
-                                            className={styles['value-input']}
-                                            onChange={(e) => updateStyle('hue', e.target.value)} />
-                                    </td>
-                                    <td>
-                                        <button className={styles['reset-btn']} onClick={() => resetSingleControl('hue')} title="Reset hue">↻</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className={styles['label-cell']}>Scale:</td>
-                                    <td>
-                                        <input type="range" min={50} max={200} value={editorStyles.scale}
-                                            className={styles['editor-slider']}
-                                            onChange={(e) => updateStyle('scale', e.target.value)} />
-                                    </td>
-                                    <td>
-                                        <input type="number" min={50} max={200} value={editorStyles.scale}
-                                            className={styles['value-input']}
-                                            onChange={(e) => updateStyle('scale', e.target.value)} />
-                                    </td>
-                                    <td>
-                                        <button className={styles['reset-btn']} onClick={() => resetSingleControl('scale')} title="Reset scale">↻</button>
-                                    </td>
-                                </tr>
+                                <AdjustmentSlider
+                                    label={<>Rotation<br />(deg)</>}
+                                    value={editorStyles.rotate}
+                                    onChange={(val) => updateStyle('rotate', val)}
+                                    onReset={() => resetSingleControl('rotate')}
+                                    min={0}
+                                    max={360}
+                                    extraRow={
+                                        <>
+                                            <button className={styles['shortcut-btn']} onClick={() => rotateBy(-90)} title="Turn left 90°">↶ 90°</button>
+                                            <button className={styles['shortcut-btn']} onClick={() => rotateBy(90)} title="Turn right 90°">↷ 90°</button>
+                                        </>
+                                    }
+                                />
+                                <AdjustmentSlider
+                                    label="Brightness"
+                                    value={editorStyles.brightness}
+                                    onChange={(val) => updateStyle('brightness', val)}
+                                    onReset={() => resetSingleControl('brightness')}
+                                    min={0}
+                                    max={200}
+                                />
+                                <AdjustmentSlider
+                                    label="Contrast"
+                                    value={editorStyles.contrast}
+                                    onChange={(val) => updateStyle('contrast', val)}
+                                    onReset={() => resetSingleControl('contrast')}
+                                    min={0}
+                                    max={200}
+                                />
+                                <AdjustmentSlider
+                                    label="Saturation"
+                                    value={editorStyles.saturation}
+                                    onChange={(val) => updateStyle('saturation', val)}
+                                    onReset={() => resetSingleControl('saturation')}
+                                    min={0}
+                                    max={200}
+                                />
+                                <AdjustmentSlider
+                                    label="Hue(deg)"
+                                    value={editorStyles.hue}
+                                    onChange={(val) => updateStyle('hue', val)}
+                                    onReset={() => resetSingleControl('hue')}
+                                    min={0}
+                                    max={360}
+                                />
+                                <AdjustmentSlider
+                                    label="Scale"
+                                    value={editorStyles.scale}
+                                    onChange={(val) => updateStyle('scale', val)}
+                                    onReset={() => resetSingleControl('scale')}
+                                    min={50}
+                                    max={200}
+                                />
                             </tbody>
                         </table>
                         <div className={styles['editor-control-crop']}>

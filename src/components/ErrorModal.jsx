@@ -48,11 +48,11 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          marginBottom: '16px',
-          paddingBottom: '12px',
+          marginBottom: 'var(--space-4)',
+          paddingBottom: 'var(--space-3)',
           borderBottom: `2px solid ${severityConfig.color}20`
         }}>
-          <span style={{ fontSize: 'var(--font-size-xl)', marginRight: '12px' }}>
+          <span style={{ fontSize: 'var(--font-size-xl)', marginRight: 'var(--space-3)' }}>
             {getSeverityIcon(error.severity)}
           </span>
           <div>
@@ -79,7 +79,7 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
 
         {/* Error Message */}
         <div style={{
-          marginBottom: '16px',
+          marginBottom: 'var(--space-4)',
           fontSize: 'var(--font-size-lg)',
           lineHeight: '1.5',
           color: 'var(--color-text-primary)'
@@ -90,18 +90,18 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
         {/* Suggestion */}
         {error.suggestion && (
           <div style={{
-            padding: '12px 16px',
+            padding: 'var(--space-3) var(--space-4)',
             backgroundColor: severityConfig.bgColor,
             border: `1px solid ${severityConfig.color}30`,
-            borderRadius: '6px',
-            marginBottom: '16px',
+            borderRadius: 'var(--radius-md)',
+            marginBottom: 'var(--space-4)',
             borderLeft: `4px solid ${severityConfig.color}`
           }}>
             <div style={{
               fontSize: 'var(--font-size-base)',
               fontWeight: 'bold',
               color: severityConfig.color,
-              marginBottom: '4px'
+              marginBottom: 'var(--space-1)'
             }}>
               💡 Suggestion:
             </div>
@@ -117,35 +117,35 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
 
         {/* Technical Details (collapsible) */}
         {(error.correlationId || error.stack) && (
-          <details style={{ marginBottom: '16px' }}>
+          <details style={{ marginBottom: 'var(--space-4)' }}>
             <summary style={{
               cursor: 'pointer',
               fontSize: 'var(--font-size-base)',
               color: 'var(--color-text-muted)',
-              marginBottom: '8px'
+              marginBottom: 'var(--space-2)'
             }}>
               Technical Details
             </summary>
             <div style={{
               backgroundColor: 'var(--color-bg-surface)',
-              padding: '12px',
-              borderRadius: '4px',
+              padding: 'var(--space-3)',
+              borderRadius: 'var(--radius-sm)',
               fontSize: 'var(--font-size-sm)',
               fontFamily: 'monospace',
               border: '1px solid var(--color-border-default)'
             }}>
               {error.correlationId && (
-                <div style={{ marginBottom: '8px' }}>
+                <div style={{ marginBottom: 'var(--space-2)' }}>
                   <strong>Correlation ID:</strong> {error.correlationId}
                 </div>
               )}
               {error.timestamp && (
-                <div style={{ marginBottom: '8px' }}>
+                <div style={{ marginBottom: 'var(--space-2)' }}>
                   <strong>Timestamp:</strong> {error.timestamp}
                 </div>
               )}
               {error.userAction && (
-                <div style={{ marginBottom: '8px' }}>
+                <div style={{ marginBottom: 'var(--space-2)' }}>
                   <strong>User Action:</strong> {error.userAction}
                 </div>
               )}
@@ -153,7 +153,7 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
                 <div>
                   <strong>Stack Trace:</strong>
                   <pre style={{
-                    marginTop: '4px',
+                    marginTop: 'var(--space-1)',
                     overflow: 'auto',
                     maxHeight: '200px',
                     fontSize: 'var(--font-size-xs)'
@@ -169,10 +169,10 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
         {/* Action Buttons */}
         <div style={{
           display: 'flex',
-          gap: '12px',
+          gap: 'var(--space-3)',
           justifyContent: 'flex-end',
           alignItems: 'center',
-          paddingTop: '12px',
+          paddingTop: 'var(--space-3)',
           borderTop: '1px solid var(--color-border-default)'
         }}>
           {/* Retry Button */}
@@ -180,17 +180,17 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
             <button
               onClick={onRetry}
               style={{
-                padding: '10px 20px',
+                padding: 'var(--space-2) var(--space-5)',
                 backgroundColor: severityConfig.color,
                 color: 'white',
                 border: 'none',
-                borderRadius: '6px',
+                borderRadius: 'var(--radius-md)',
                 cursor: 'pointer',
                 fontSize: 'var(--font-size-base)',
                 fontWeight: 'bold',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: 'var(--space-2)'
               }}
             >
               🔄 Retry
@@ -201,11 +201,11 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
           <button
             onClick={onClose}
             style={{
-              padding: '10px 20px',
+              padding: 'var(--space-2) var(--space-5)',
               backgroundColor: isCritical ? 'var(--color-danger-dark)' : 'var(--color-text-muted)',
               color: 'white',
               border: 'none',
-              borderRadius: '6px',
+              borderRadius: 'var(--radius-md)',
               cursor: 'pointer',
               fontSize: 'var(--font-size-base)',
               fontWeight: 'bold'
@@ -218,11 +218,11 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
         {/* Critical Error Warning */}
         {isCritical && (
           <div style={{
-            marginTop: '16px',
-            padding: '12px',
+            marginTop: 'var(--space-4)',
+            padding: 'var(--space-3)',
             backgroundColor: 'var(--color-danger-bg)',
             border: '1px solid var(--color-danger-border)',
-            borderRadius: '6px',
+            borderRadius: 'var(--radius-md)',
             color: 'var(--color-danger-dark)',
             fontSize: 'var(--font-size-sm)',
             textAlign: 'center'

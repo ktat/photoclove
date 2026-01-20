@@ -82,7 +82,7 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: '20px'
+            marginBottom: 'var(--space-5)'
           }}>
             <h2 style={{ margin: 0, fontSize: 'var(--font-size-2xl)', fontWeight: 'bold', color: 'var(--color-text-primary)' }}>Create New Album</h2>
             <button
@@ -108,7 +108,7 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
           </div>
 
           <p style={{
-            margin: '0 0 20px 0',
+            margin: '0 0 var(--space-5) 0',
             color: 'var(--color-text-primary)',
             fontSize: 'var(--font-size-base)'
           }}>
@@ -116,10 +116,10 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
           </p>
 
           {/* Album Name Input */}
-          <div style={{ marginBottom: '16px' }}>
+          <div style={{ marginBottom: 'var(--space-4)' }}>
             <label style={{
               display: 'block',
-              marginBottom: '6px',
+              marginBottom: 'var(--space-2)',
               fontWeight: 'bold',
               fontSize: 'var(--font-size-base)',
               color: 'var(--color-text-primary)'
@@ -135,9 +135,9 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
               required
               style={{
                 width: '100%',
-                padding: '8px 12px',
+                padding: 'var(--space-2) var(--space-3)',
                 border: '1px solid var(--color-border-default)',
-                borderRadius: '4px',
+                borderRadius: 'var(--radius-sm)',
                 fontSize: 'var(--font-size-base)',
                 boxSizing: 'border-box',
                 backgroundColor: 'var(--color-bg-elevated)',
@@ -147,10 +147,10 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
           </div>
 
           {/* Album Description Input */}
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: 'var(--space-6)' }}>
             <label style={{
               display: 'block',
-              marginBottom: '6px',
+              marginBottom: 'var(--space-2)',
               fontWeight: 'bold',
               fontSize: 'var(--font-size-base)',
               color: 'var(--color-text-primary)'
@@ -165,9 +165,9 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
               rows={3}
               style={{
                 width: '100%',
-                padding: '8px 12px',
+                padding: 'var(--space-2) var(--space-3)',
                 border: '1px solid var(--color-border-default)',
-                borderRadius: '4px',
+                borderRadius: 'var(--radius-sm)',
                 fontSize: 'var(--font-size-base)',
                 boxSizing: 'border-box',
                 resize: 'vertical',
@@ -181,7 +181,7 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
           {/* Action Buttons */}
           <div style={{
             display: 'flex',
-            gap: '12px',
+            gap: 'var(--space-3)',
             justifyContent: 'flex-end'
           }}>
             <button
@@ -189,9 +189,9 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
               onClick={handleClose}
               disabled={isCreating}
               style={{
-                padding: '8px 16px',
+                padding: 'var(--space-2) var(--space-4)',
                 border: '1px solid var(--color-border-default)',
-                borderRadius: '4px',
+                borderRadius: 'var(--radius-sm)',
                 backgroundColor: 'var(--color-bg-elevated)',
                 color: 'var(--color-text-primary)',
                 cursor: isCreating ? 'not-allowed' : 'pointer',
@@ -205,9 +205,9 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
               type="submit"
               disabled={!albumName.trim() || isCreating}
               style={{
-                padding: '8px 16px',
+                padding: 'var(--space-2) var(--space-4)',
                 border: 'none',
-                borderRadius: '4px',
+                borderRadius: 'var(--radius-sm)',
                 backgroundColor: (!albumName.trim() || isCreating) ? 'var(--color-bg-muted)' : 'var(--color-success)',
                 color: (!albumName.trim() || isCreating) ? 'var(--color-text-muted)' : 'white',
                 cursor: (!albumName.trim() || isCreating) ? 'not-allowed' : 'pointer',
