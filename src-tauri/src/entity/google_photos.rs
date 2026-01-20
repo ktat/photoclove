@@ -25,6 +25,7 @@ pub struct GooglePhotosAlbum {
     cover_photo_media_item_id: String,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GooglePhotosAlbumResponse {

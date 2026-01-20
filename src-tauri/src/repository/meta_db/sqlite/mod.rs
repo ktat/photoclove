@@ -272,6 +272,7 @@ impl SQLite {
 
     // ==================== Recovery Queue Operations ====================
 
+    #[allow(dead_code)] // Reserved for future implementation - see improvement/todo-recovery-queue.md
     pub fn add_to_recovery_queue(
         &self,
         operation_type: crate::entity::recovery_queue::OperationType,
@@ -345,10 +346,6 @@ impl SQLite {
 
     pub fn get_photo_burst_group_id(&self, photo_path: &str) -> Result<Option<String>, String> {
         burst_groups::get_photo_burst_group_id(self, photo_path)
-    }
-
-    pub fn get_photos_in_group(&self, group_id: &str) -> Result<Vec<String>, String> {
-        burst_groups::get_photos_in_group(self, group_id)
     }
 
     pub fn get_manual_group_photo_paths(&self) -> Result<std::collections::HashSet<String>, String> {

@@ -15,7 +15,7 @@ fn get_jobs_with_filter(
 ) -> Result<Vec<QueuedJob>, String> {
     with_connection(sqlite, |conn| {
         let query = match status_filter {
-            Some(status) => format!(
+            Some(_) => format!(
                 "SELECT {} FROM job_queue WHERE status = ? ORDER BY created_at {}",
                 JOB_COLUMNS, order
             ),
