@@ -4,6 +4,24 @@ import { logger } from '../../../services/LoggerService.js';
 import TagSelector from '../../../components/TagSelector.jsx';
 import styles from './PhotoTags.module.css';
 
+/**
+ * Check if a tag is an AI-generated tag
+ */
+const isAITag = (tagName) => tagName?.startsWith('ai:');
+
+/**
+ * Parse confidence from tag metadata
+ */
+const parseConfidence = (metadata) => {
+    if (!metadata) return null;
+    try {
+        const parsed = JSON.parse(metadata);
+        return parsed.confidence ? Math.round(parsed.confidence * 100) : null;
+    } catch {
+        return null;
+    }
+};
+
 function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
     const [photoTags, setPhotoTags] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -16,19 +34,28 @@ function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
 
     const loadPhotoTags = async () => {
         if (!currentPhotoPath) return;
-        
+
         setIsLoading(true);
         try {
-            const tags = await invoke('get_tags_for_photo', {
+            // Use the new command that includes metadata for AI tags
+            const tags = await invoke('get_tags_for_photo_with_metadata', {
                 photoPath: currentPhotoPath
             });
-            
-            const formattedTags = tags.map(([id, name, color]) => ({ id, name, color }));
+
+            const formattedTags = tags.map(([id, name, color, metadata]) => ({
+                id,
+                name,
+                color,
+                metadata,
+                isAI: isAITag(name),
+                confidence: parseConfidence(metadata)
+            }));
             setPhotoTags(formattedTags);
-            
+
             logger.info('PhotoTags', 'tags_loaded', 'Photo tags loaded', {
                 photoPath: currentPhotoPath,
-                tagCount: formattedTags.length
+                tagCount: formattedTags.length,
+                aiTagCount: formattedTags.filter(t => t.isAI).length
             });
         } catch (error) {
             logger.error('PhotoTags', 'load_tags_error', 'Failed to load photo tags', {

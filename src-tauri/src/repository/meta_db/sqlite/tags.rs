@@ -63,3 +63,39 @@ pub(super) fn get_tags_for_photos_bulk(
 
     Ok(tags_map)
 }
+
+/// Get tags for a photo with metadata (for AI tag confidence display)
+///
+/// # Arguments
+/// * `db` - Database connection
+/// * `photo_path` - Path to the photo
+///
+/// # Returns
+/// Vector of (id, name, color, metadata) tuples where metadata contains AI tag info
+pub(super) fn get_tags_for_photo_with_metadata(
+    db: &SQLite,
+    photo_path: &str,
+) -> Result<Vec<(i32, String, Option<String>, Option<String>)>, String> {
+    let conn = db
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT pc.id, pc.name, pc.color, pci.metadata FROM photo_collections pc
+             JOIN photo_collection_items pci ON pc.id = pci.collection_id
+             WHERE pci.photo_path = ?1 AND pc.type = 'tag'
+             ORDER BY pc.name",
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let result = stmt
+        .query_map(rusqlite::params![photo_path], |row| {
+            Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+        })
+        .map_err(|e| format!("Failed to query tags: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect results: {}", e))?;
+
+    Ok(result)
+}

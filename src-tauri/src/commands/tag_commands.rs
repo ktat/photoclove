@@ -186,3 +186,34 @@ pub async fn get_tags_for_photo(
         }
     }
 }
+
+/// Retrieves all tags associated with a photo, including metadata (for AI tags with confidence)
+///
+/// # Arguments
+/// * `photo_path` - Path to the photo
+/// * `state` - Application state containing the metadata database
+///
+/// # Returns
+/// Vector of tuples containing (tag_id, tag_name, tag_color, metadata_json)
+#[tauri::command]
+pub async fn get_tags_for_photo_with_metadata(
+    photo_path: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<Vec<(i32, String, Option<String>, Option<String>)>, String> {
+    let meta_db = &state.meta_db;
+    let logging_service = &state.logging_service;
+
+    let correlation_id = logging_service.generate_correlation_id();
+    log::info!(target: "tags", "get_tags_for_photo_with_metadata_request; correlation_id={}; photo_path={}", correlation_id, photo_path);
+
+    match meta_db.get_tags_for_photo_with_metadata(&photo_path) {
+        Ok(tags) => {
+            log::info!(target: "tags", "get_tags_for_photo_with_metadata_success; correlation_id={}; count={}", correlation_id, tags.len());
+            Ok(tags)
+        }
+        Err(e) => {
+            log::error!(target: "tags", "get_tags_for_photo_with_metadata_error; correlation_id={}; error={}", correlation_id, e);
+            Err(e)
+        }
+    }
+}

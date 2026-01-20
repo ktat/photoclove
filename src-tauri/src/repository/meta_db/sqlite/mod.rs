@@ -591,3 +591,33 @@ impl MetaInfoDB for SQLite {
         collections::get_photos_by_collection_ids(self, collection_ids, sort_value, config)
     }
 }
+
+/// Additional methods for AI tagging support
+impl SQLite {
+    /// Get or create a collection by name and type
+    pub fn get_or_create_collection(
+        &self,
+        name: &str,
+        collection_type: &str,
+    ) -> Result<i32, String> {
+        collections::get_or_create_collection(self, name, collection_type)
+    }
+
+    /// Add a photo to a collection with optional metadata
+    pub fn add_photo_to_collection_with_metadata(
+        &self,
+        collection_id: i32,
+        photo_path: &str,
+        metadata: Option<String>,
+    ) -> Result<(), String> {
+        collections::add_photo_to_collection_with_metadata(self, collection_id, photo_path, metadata)
+    }
+
+    /// Get tags for a photo with metadata (for AI tag confidence display)
+    pub fn get_tags_for_photo_with_metadata(
+        &self,
+        photo_path: &str,
+    ) -> Result<Vec<(i32, String, Option<String>, Option<String>)>, String> {
+        tags::get_tags_for_photo_with_metadata(self, photo_path)
+    }
+}

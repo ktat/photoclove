@@ -149,6 +149,62 @@ export function useDateOperations({
     }, [currentDate, config]);
 
     /**
+     * Run AI tagging for photos in the current date
+     */
+    const runAiTaggingInDate = useCallback(async () => {
+        if (lockRef.current) {
+            message("Currently, this operation is locked. Please wait for a while", "This operation is locked");
+            return;
+        }
+
+        // Check if AI tagging is enabled
+        if (!config?.ai_tagging?.enabled) {
+            message(
+                "AI Auto-Tagging is not enabled.\n\n" +
+                "To use this feature:\n" +
+                "1. Go to Preferences (File menu → Preferences)\n" +
+                "2. Select the 'AI Tagging' tab\n" +
+                "3. Enable 'AI Auto-Tagging'\n" +
+                "4. Save your settings",
+                "AI Tagging Not Enabled"
+            );
+            return;
+        }
+
+        const answer = await confirm(
+            "This will run AI auto-tagging for photos in this date.\n" +
+            "Tags will be prefixed with 'ai:' (e.g., ai:dog, ai:beach).",
+            "Run AI Tagging"
+        );
+        if (answer) {
+            lockRef.current = true;
+            try {
+                const result = await invokeWithErrorHandling(
+                    "run_ai_tagging_for_date",
+                    { date: currentDate },
+                    'dateOperations',
+                    { parseJson: true }
+                );
+                lockRef.current = false;
+
+                if (result.result === "no_photos" || result.result === "no_images") {
+                    message("No photos found for AI tagging in this date.", "AI Tagging");
+                } else {
+                    logger.info('dateOperations', 'ai_tagging_started', 'AI tagging job started for date', {
+                        date: currentDate,
+                        jobUnitId: result.job_unit_id,
+                        photoCount: result.photo_count
+                    });
+                    message(`AI tagging started for ${result.photo_count} photos. Check progress in footer.`, "AI Tagging Started");
+                }
+            } catch (error) {
+                lockRef.current = false;
+                throw error;
+            }
+        }
+    }, [currentDate, config]);
+
+    /**
      * Apply date count changes from batch operation result to local state
      * @param {Object} dateChanges - Map of date -> count delta from backend
      */
@@ -185,6 +241,7 @@ export function useDateOperations({
         movePhotosToExifDate,
         createThumbnails,
         recalculateGroupsInDate,
+        runAiTaggingInDate,
         applyDateChanges
     };
 }

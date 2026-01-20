@@ -178,7 +178,9 @@ export function useTagOperations({
     clearPhotoSelection,
     addFooterMessage,
     handleTauriError,
-    onPhotosRefresh
+    onPhotosRefresh,
+    viewModeObj,
+    removePhotoFromList
 }) {
     const [showBulkTagModal, setShowBulkTagModal] = useState(false);
 
@@ -230,10 +232,47 @@ export function useTagOperations({
         }
     }, [photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError, onPhotosRefresh]);
 
+    const removeFromCurrentTag = useCallback(async () => {
+        const currentTagId = viewModeObj?.getCurrentTagId();
+
+        if (!currentTagId || photoSelection.length === 0) return;
+
+        const count = photoSelection.length;
+        const confirmed = await confirm(
+            `Remove ${count} photo${count > 1 ? 's' : ''} from this tag?\n\nPhotos will remain in your library.`,
+            "Remove from Tag"
+        );
+
+        if (confirmed) {
+            try {
+                for (const photoPath of photoSelection) {
+                    await invokeWithErrorHandling(
+                        "remove_photo_from_collection",
+                        { collectionId: currentTagId, photoPath: photoPath },
+                        'collectionOperations',
+                        { silent: true }
+                    );
+                    removePhotoFromList?.(photoPath);
+                }
+
+                clearPhotoSelection();
+                addFooterMessage(`${count} photo${count > 1 ? 's' : ''} removed from tag`);
+
+                logger.info('collectionOperations', 'photos_removed_from_tag', 'Photos removed from tag successfully', {
+                    tagId: currentTagId,
+                    photoCount: count
+                });
+            } catch (error) {
+                handleTauriError(error, 'Remove from tag');
+            }
+        }
+    }, [photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError, viewModeObj, removePhotoFromList]);
+
     return {
         showBulkTagModal,
         setShowBulkTagModal,
         showAddTagsModal,
-        addTagsToPhotos
+        addTagsToPhotos,
+        removeFromCurrentTag
     };
 }

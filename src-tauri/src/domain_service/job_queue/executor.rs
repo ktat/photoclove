@@ -173,13 +173,15 @@ pub(crate) fn process_specific_jobs_immediately(
     });
 }
 
-/// Create dependent jobs (thumbnail and create_db) after import completes
+/// Create dependent jobs (thumbnail, create_db, and optionally ai_tagging) after import completes
 fn create_dependent_jobs(
     db: &Arc<SQLite>,
     job_unit_id: &str,
     imported_files: Vec<String>,
     app_handle: &tauri::AppHandle,
 ) -> Result<(), String> {
+    use tauri::Manager;
+
     log::info!(target: "job_queue", "dependent_jobs; status=creating; job_unit_id={}", job_unit_id);
     log::info!(target: "job_queue", "dependent_jobs; imported_files={}", imported_files.len());
 
@@ -199,7 +201,7 @@ fn create_dependent_jobs(
     let create_db_job = job_queue::Job::new(
         job_unit_id.to_string(),
         job_queue::JobType::CreateDb,
-        imported_files,
+        imported_files.clone(),
     );
 
     // Queue the dependent jobs
@@ -209,11 +211,45 @@ fn create_dependent_jobs(
     let thumbnail_id = db.create_job(&thumbnail_queued)?;
     let create_db_id = db.create_job(&create_db_queued)?;
 
+    let mut job_ids = vec![thumbnail_id, create_db_id];
+
     log::info!(target: "job_queue", "dependent_jobs; status=created; thumbnail_id={}; create_db_id={}", thumbnail_id, create_db_id);
+
+    // Check if AI tagging on import is enabled
+    let state = app_handle.state::<crate::AppState>();
+    let config = &state.config;
+
+    if config.ai_tagging.enabled && config.ai_tagging.auto_tag_on_import {
+        // Filter to only include image files (not videos)
+        let image_files: Vec<String> = imported_files
+            .into_iter()
+            .filter(|f| {
+                let lower = f.to_lowercase();
+                lower.ends_with(".jpg")
+                    || lower.ends_with(".jpeg")
+                    || lower.ends_with(".png")
+                    || lower.ends_with(".webp")
+                    || lower.ends_with(".heic")
+                    || lower.ends_with(".heif")
+            })
+            .collect();
+
+        if !image_files.is_empty() {
+            let ai_tagging_job = job_queue::Job::new(
+                job_unit_id.to_string(),
+                job_queue::JobType::AiTagging,
+                image_files,
+            );
+            let ai_tagging_queued = job_queue::QueuedJob::new(job_unit_id.to_string(), ai_tagging_job);
+            let ai_tagging_id = db.create_job(&ai_tagging_queued)?;
+
+            log::info!(target: "job_queue", "dependent_jobs; ai_tagging_id={}", ai_tagging_id);
+            job_ids.push(ai_tagging_id);
+        }
+    }
 
     // Immediately process the newly created dependent jobs in order
     log::info!(target: "job_queue", "dependent_jobs; status=starting_processing");
-    let job_ids = vec![thumbnail_id, create_db_id]; // Process thumbnail first, then create_db
     process_specific_jobs_immediately(db.clone(), job_ids, app_handle.clone());
 
     Ok(())

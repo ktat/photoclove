@@ -223,6 +223,7 @@ pub struct RecalculateGroupingJob {
 
 /// Job parameters for AI auto-tagging
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct AiTaggingJob {
     /// Photo paths to process
     pub photo_paths: Vec<String>,

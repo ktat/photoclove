@@ -9,6 +9,7 @@ import AppearanceTab from "./tabs/AppearanceTab.jsx";
 import StartupTab from "./tabs/StartupTab.jsx";
 import ThumbnailTab from "./tabs/ThumbnailTab.jsx";
 import GroupingTab from "./tabs/GroupingTab.jsx";
+import AITaggingTab from "./tabs/AITaggingTab.jsx";
 import PerformanceTab from "./tabs/PerformanceTab.jsx";
 import LoggingTab from "./tabs/LoggingTab.jsx";
 import AdvancedTab from "./tabs/AdvancedTab.jsx";
@@ -30,7 +31,15 @@ function Preferences(props) {
         use_exif_thumbnail: false,
         google_auth_auto_reauth: false,
         photo_grid_theme: 'default',
-        color_theme: 'dark'
+        color_theme: 'dark',
+        ai_tagging: {
+            enabled: false,
+            auto_tag_on_import: false,
+            confidence_threshold: 0.7,
+            max_tags_per_image: 5,
+            model_preset: 'standard',
+            enabled_categories: []
+        }
     });
     const [additionalExportFrom, setAdditionalExportFrom] = useState(0);
     const [configLoaded, setConfigLoaded] = useState(false);
@@ -119,7 +128,15 @@ function Preferences(props) {
             thumbnail_compression_quality: parseFloat(config.thumbnail_compression_quality) || 0,
             thumbnail_minimize_rate: parseFloat(config.thumbnail_minimize_rate) || 0,
             max_photos_per_fetch: parseInt(config.max_photos_per_fetch) || 1000,
-            use_count: isFirstView ? 1 : parseInt(config.use_count)
+            use_count: isFirstView ? 1 : parseInt(config.use_count),
+            ai_tagging: {
+                enabled: config.ai_tagging?.enabled || false,
+                auto_tag_on_import: config.ai_tagging?.auto_tag_on_import || false,
+                confidence_threshold: parseFloat(config.ai_tagging?.confidence_threshold) || 0.7,
+                max_tags_per_image: parseInt(config.ai_tagging?.max_tags_per_image) || 5,
+                model_preset: config.ai_tagging?.model_preset || 'standard',
+                enabled_categories: config.ai_tagging?.enabled_categories || []
+            }
         };
 
         invoke("save_config", { config: updatedConfig }).then(() => {
@@ -150,6 +167,7 @@ function Preferences(props) {
         { id: 'startup', label: 'Startup', icon: '🚀' },
         { id: 'thumbnail', label: 'Thumbnail', icon: '🖼️' },
         { id: 'grouping', label: 'Grouping', icon: '📸' },
+        { id: 'ai_tagging', label: 'AI Tagging', icon: '🤖' },
         { id: 'performance', label: 'Performance', icon: '⚡' },
         { id: 'logging', label: 'Logging', icon: '📝' },
         { id: 'advanced', label: 'Advanced', icon: '🔧' }
@@ -181,6 +199,14 @@ function Preferences(props) {
                         setIsRecalculatingGroups={setIsRecalculatingGroups}
                         groupingProgress={groupingProgress}
                         setGroupingProgress={setGroupingProgress}
+                        addFooterMessage={props.addFooterMessage}
+                    />
+                );
+            case 'ai_tagging':
+                return (
+                    <AITaggingTab
+                        config={config}
+                        setConfig={setConfig}
                         addFooterMessage={props.addFooterMessage}
                     />
                 );

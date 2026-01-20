@@ -39,7 +39,9 @@
       "providerShortName": null,
       "signingIdentity": null
     },
-    "resources": [],
+    "resources": [
+      "models/*.onnx"
+    ],
     "shortDescription": ""
   },
   "productName": "PhotoClove",
