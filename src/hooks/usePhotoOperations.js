@@ -208,8 +208,9 @@ export function usePhotoOperations({
         }
     }, [handleError, addFooterMessage]);
 
-    // Photo list management - uses shared navigation helper
+    // Photo list management - removes photo from lists without triggering navigation
     // Accepts either an index (number) or a photo path (string)
+    // Used by Selection tab operations (Remove from Album/Tag)
     const removePhotoFromList = useCallback((indexOrPath) => {
         if (!photosListMiniAllPhotos) return;
 
@@ -231,8 +232,19 @@ export function usePhotoOperations({
             return; // Invalid argument
         }
 
-        handlePhotoRemovalNavigation(indexToRemove, photoPath);
-    }, [photosListMiniAllPhotos, handlePhotoRemovalNavigation]);
+        // Only update lists, don't trigger navigation (for Selection tab operations)
+        const newAllPhotos = [...photosListMiniAllPhotos];
+        newAllPhotos.splice(indexToRemove, 1);
+        setPhotosListMiniAllPhotos(newAllPhotos);
+
+        // Also update allPhotosForCurrentFetch if available
+        if (photoPath && allPhotosForCurrentFetch && setAllPhotosForCurrentFetch) {
+            const updatedAllPhotos = allPhotosForCurrentFetch.filter(
+                photo => getPhotoPath(photo) !== photoPath
+            );
+            setAllPhotosForCurrentFetch(updatedAllPhotos);
+        }
+    }, [photosListMiniAllPhotos, setPhotosListMiniAllPhotos, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch]);
 
     // Photo deletion and trash operations
     const permanentlyDeletePhoto = useCallback((photoPath) => {
