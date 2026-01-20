@@ -45,6 +45,7 @@ function ListViewHeader({
                             style={{
                                 width: '32px',
                                 height: '28px',
+                                margin: 0,
                                 border: 'none',
                                 background: viewMode === 'list' ? 'var(--color-primary)' : 'var(--color-bg-surface)',
                                 color: viewMode === 'list' ? 'white' : 'var(--color-text-secondary)',
@@ -64,6 +65,7 @@ function ListViewHeader({
                             style={{
                                 width: '32px',
                                 height: '28px',
+                                margin: 0,
                                 border: 'none',
                                 background: viewMode === 'cloud' ? 'var(--color-primary)' : 'var(--color-bg-surface)',
                                 color: viewMode === 'cloud' ? 'white' : 'var(--color-text-secondary)',

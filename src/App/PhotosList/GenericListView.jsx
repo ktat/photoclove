@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { convertFileSrc } from "@tauri-apps/api/core";
 import Scrollable from "../../Scrollable.jsx";
 import { logger } from "../../services/LoggerService.js";
+import { getTagColor } from "../../utils/tagColorUtils.js";
 
 /**
  * Unified list view component for albums and tags
@@ -167,6 +168,11 @@ function GenericListView({
                     </div>
                 ) : (
                     filteredItems.map((item) => {
+                        // Calculate tag color for tags
+                        const tagColorStyle = itemType === 'tag'
+                            ? getTagColor(item.name, item.photoCount || 0, items)
+                            : null;
+
                         logger.debug('GenericListView', 'render_item', 'Rendering item', {
                             itemId: item.id,
                             itemName: item.name,
@@ -227,7 +233,7 @@ function GenericListView({
                                 <div className={currentConfig.coverClass} style={{
                                     width: `${iconSize}px`,
                                     height: `${iconSize}px`,
-                                    backgroundColor: currentConfig.backgroundColor || item.color || 'var(--color-bg-muted)',
+                                    backgroundColor: currentConfig.backgroundColor || 'var(--color-bg-muted)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -269,7 +275,8 @@ function GenericListView({
                                     ) : (
                                         <div style={{
                                             fontSize: `${iconSize * 0.3}px`,
-                                            color: itemType === 'tag' && item.color ? 'white' : 'var(--color-text-muted)'
+                                            color: tagColorStyle ? tagColorStyle.color : 'var(--color-text-muted)',
+                                            fontWeight: tagColorStyle ? tagColorStyle.fontWeight : 'normal'
                                         }}>{currentConfig.defaultIcon}</div>
                                     )}
                                 </div>
@@ -279,11 +286,12 @@ function GenericListView({
                                     overflow: 'hidden'
                                 }}>
                                     <div className={currentConfig.nameClass} style={{
-                                        fontWeight: 'bold',
+                                        fontWeight: tagColorStyle ? tagColorStyle.fontWeight : 'bold',
                                         marginBottom: '2px',
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap'
+                                        whiteSpace: 'nowrap',
+                                        color: tagColorStyle ? tagColorStyle.color : 'inherit'
                                     }} title={item.name}>
                                         {item.name}
                                     </div>
