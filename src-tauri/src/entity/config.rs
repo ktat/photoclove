@@ -66,6 +66,10 @@ fn default_grouping() -> GroupingConfig {
     GroupingConfig::default()
 }
 
+fn default_ai_tagging() -> AiTaggingConfig {
+    AiTaggingConfig::default()
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GroupingConfig {
     pub enabled: bool,
@@ -79,6 +83,36 @@ impl Default for GroupingConfig {
             enabled: true,
             burst_threshold_seconds: 2,
             min_group_size: 2,
+        }
+    }
+}
+
+/// AI Auto-Tagging configuration
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AiTaggingConfig {
+    /// Whether AI tagging is enabled
+    pub enabled: bool,
+    /// Whether to auto-tag photos on import
+    pub auto_tag_on_import: bool,
+    /// Confidence threshold (0.0 to 1.0) - tags below this are not applied
+    pub confidence_threshold: f32,
+    /// Maximum number of tags to apply per photo
+    pub max_tags_per_image: u32,
+    /// Model preset: "light", "standard", or "accurate"
+    pub model_preset: String,
+    /// Enabled categories (empty = all enabled)
+    pub enabled_categories: Vec<String>,
+}
+
+impl Default for AiTaggingConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            auto_tag_on_import: false,
+            confidence_threshold: 0.7,
+            max_tags_per_image: 5,
+            model_preset: "standard".to_string(),
+            enabled_categories: Vec::new(), // empty = all enabled
         }
     }
 }
@@ -134,6 +168,8 @@ pub struct Config {
     pub startup_images: Option<StartupImageConfig>,
     #[serde(default = "default_grouping")]
     pub grouping: GroupingConfig,
+    #[serde(default = "default_ai_tagging")]
+    pub ai_tagging: AiTaggingConfig,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryConfig {
@@ -170,6 +206,7 @@ impl Config {
         self.progressive_image_loading = config.progressive_image_loading;
         self.startup_images = config.startup_images;
         self.grouping = config.grouping;
+        self.ai_tagging = config.ai_tagging;
     }
 
     pub fn config_path() -> String {
@@ -270,6 +307,7 @@ impl Config {
             progressive_image_loading: default_progressive_image_loading(),
             startup_images: default_startup_images(),
             grouping: default_grouping(),
+            ai_tagging: default_ai_tagging(),
         }
     }
 

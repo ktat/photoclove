@@ -277,6 +277,10 @@ fn process_job(db: Arc<SQLite>, job: job_queue::QueuedJob, app_handle: tauri::Ap
             log::info!(target: "job_queue", "recalculate_grouping_job; job_id={}; status=calling_process", job_id);
             handlers::process_recalculate_grouping_job(&job, &app_handle, &db)
         }
+        job_queue::JobType::AiTagging => {
+            log::info!(target: "job_queue", "ai_tagging_job; job_id={}; status=calling_process", job_id);
+            handlers::process_ai_tagging_job(&job, &app_handle, &db)
+        }
     };
 
     log::info!(target: "job_queue", "job_execution; job_id={}; status=completed; success={}", job_id, result.is_ok());
