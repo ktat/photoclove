@@ -208,7 +208,7 @@ function App() {
 
   useEffect((e) => {
 
-    let unlisten0, unlisten1, unlisten2, unlisten3, unlisten4, menuUnlisten;
+    let unlisten0, unlisten1, unlisten2, unlisten3, unlisten4, unlisten5, menuUnlisten;
 
     const setupListeners = async () => {
       // Listen for new menu events (Privacy Policy and Terms of Use)
@@ -282,6 +282,22 @@ function App() {
       }
     });
 
+      // Listen for pending jobs found at startup
+      unlisten5 = await listen("pending_jobs_found", async (e) => {
+        const pendingCount = e.payload;
+        logger.info('App', 'pending_jobs_found', 'Pending jobs found at startup', { count: pendingCount });
+
+        // Ask user if they want to view/manage pending jobs
+        const shouldOpen = await ask(
+          `${pendingCount} pending job(s) found from previous session.\nWould you like to open the Job Queue to manage them?`,
+          { title: 'Pending Jobs Found', kind: 'info' }
+        );
+
+        if (shouldOpen) {
+          setShowJobQueueModal(true);
+        }
+      });
+
       unlisten2 = await listen("click_menu", (e) => {
       logger.debug('App', 'menu_click_event', 'Menu click event received', { event: e });
       invoke("lock", { t: true }).then((le) => {
@@ -340,9 +356,10 @@ function App() {
       if (menuUnlisten) menuUnlisten();
       if (unlisten0) unlisten0();
       if (unlisten1) unlisten1();
-      if (unlisten2) unlisten2(); 
+      if (unlisten2) unlisten2();
       if (unlisten3) unlisten3();
       if (unlisten4) unlisten4();
+      if (unlisten5) unlisten5();
       window.removeEventListener('refreshDates', handleRefreshDates);
     };
   }, []);

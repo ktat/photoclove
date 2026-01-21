@@ -1,8 +1,9 @@
-use super::executor::{process_specific_jobs_immediately, process_startup_jobs};
+use super::executor::process_specific_jobs_immediately;
 use super::submission::{submit_create_db_job, submit_google_photos_upload_jobs, submit_import_jobs};
 use crate::entity::job_queue;
 use crate::repository::meta_db::sqlite::SQLite;
 use std::sync::{Arc, Mutex};
+use tauri::Emitter;
 
 /// Job queue manager - coordinates job submission and processing
 pub struct JobQueueManager {
@@ -21,7 +22,7 @@ impl JobQueueManager {
         }
     }
 
-    /// Start background processing - resets interrupted jobs and processes pending jobs
+    /// Start background processing - resets interrupted jobs and notifies about pending jobs
     pub fn start_background_processing(&self, app_handle: tauri::AppHandle) {
         let is_running = Arc::clone(&self.is_running);
 
@@ -41,13 +42,25 @@ impl JobQueueManager {
             log::error!(target: "job_queue", "reset_running_jobs_error; error={}", e);
         }
 
-        // 2. At startup: Process any existing pending jobs once
-        log::info!(target: "job_queue", "startup; status=processing_pending_jobs");
-        process_startup_jobs(
-            Arc::clone(&self.db),
-            self.max_concurrent_jobs,
-            app_handle.clone(),
-        );
+        // 2. At startup: Check for pending jobs and notify user (don't process - let user decide)
+        log::info!(target: "job_queue", "startup; status=checking_pending_jobs");
+        match self.db.get_pending_jobs() {
+            Ok(pending_jobs) => {
+                if !pending_jobs.is_empty() {
+                    log::info!(target: "job_queue", "startup; pending_jobs_found; count={}", pending_jobs.len());
+
+                    // Emit notification event for frontend
+                    if let Err(e) = app_handle.emit("pending_jobs_found", pending_jobs.len()) {
+                        log::error!(target: "job_queue", "startup; event_emit_error; error={}", e);
+                    }
+                } else {
+                    log::info!(target: "job_queue", "startup; pending_jobs=none");
+                }
+            }
+            Err(e) => {
+                log::error!(target: "job_queue", "startup; get_pending_jobs_error; error={}", e);
+            }
+        }
 
         log::info!(target: "job_queue", "startup; status=complete");
         log::info!(target: "job_queue", "startup; status=ready_for_jobs");
