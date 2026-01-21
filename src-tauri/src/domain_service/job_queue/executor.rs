@@ -7,6 +7,8 @@ use std::thread;
 use tauri::Emitter;
 
 /// Process pending jobs at startup
+/// Note: Currently not called at startup to avoid blocking. Kept for potential future use.
+#[allow(dead_code)]
 pub(crate) fn process_startup_jobs(
     db: Arc<SQLite>,
     max_concurrent: usize,
