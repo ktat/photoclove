@@ -261,11 +261,54 @@ function PhotosList({
         viewModeObj, allPhotosForCurrentFetch, updateAlbumPhotos, setTagPhotos
     });
 
-    // Refresh photos helper
+    // Minimum loading display time (ms) for better UX
+    const MIN_LOADING_TIME = 500;
+
+    // Helper to ensure minimum loading time
+    const withMinLoadingTime = useCallback(async (asyncFn) => {
+        const startTime = Date.now();
+        try {
+            await asyncFn();
+        } finally {
+            const elapsed = Date.now() - startTime;
+            if (elapsed < MIN_LOADING_TIME) {
+                await new Promise(resolve => setTimeout(resolve, MIN_LOADING_TIME - elapsed));
+            }
+        }
+    }, []);
+
+    // Refresh photos helper with loading state
     const refreshPhotosOnly = useCallback(async () => {
-        logger.info('PhotosList', 'refresh_photos_only', 'Refreshing photos silently', { viewMode });
-        await loadAllPhotosBasedOnViewMode(viewModeObj, appConfig, true);
-    }, [loadAllPhotosBasedOnViewMode, viewModeObj, appConfig, viewMode]);
+        logger.info('PhotosList', 'refresh_photos_only', 'Refreshing photos with loading indicator', { viewMode });
+        setPhotoLoading(true);
+        try {
+            await withMinLoadingTime(() => loadAllPhotosBasedOnViewMode(viewModeObj, appConfig, true));
+        } finally {
+            setPhotoLoading(false);
+        }
+    }, [loadAllPhotosBasedOnViewMode, viewModeObj, appConfig, viewMode, setPhotoLoading, withMinLoadingTime]);
+
+    // Reload albums list with loading state
+    const reloadAlbums = useCallback(async () => {
+        logger.info('PhotosList', 'reload_albums', 'Reloading albums list with loading indicator');
+        setPhotoLoading(true);
+        try {
+            await withMinLoadingTime(loadAlbums);
+        } finally {
+            setPhotoLoading(false);
+        }
+    }, [loadAlbums, setPhotoLoading, withMinLoadingTime]);
+
+    // Reload tags list with loading state
+    const reloadTags = useCallback(async () => {
+        logger.info('PhotosList', 'reload_tags', 'Reloading tags list with loading indicator');
+        setPhotoLoading(true);
+        try {
+            await withMinLoadingTime(loadTags);
+        } finally {
+            setPhotoLoading(false);
+        }
+    }, [loadTags, setPhotoLoading, withMinLoadingTime]);
 
     // Photo display hook
     const { displayPhoto, closePhotoDisplay, closeRightColumn } = usePhotoDisplay({
@@ -419,7 +462,7 @@ function PhotosList({
     const handlers = usePhotosListHandlers({
         closePhotoDisplay, displayPhoto, openBurstGroup, goBackFromBurstGroup, toggleSelection, isPhotoSelected, addSelection,
         clearPhotoSelection, selectAllPhotoToSelection, getPhotos, handleInfiniteScroll,
-        reloadCurrentModeData, refreshPhotosOnly, moveToTrashCan, updatePhotosAfterTrashOperation,
+        reloadCurrentModeData, refreshPhotosOnly, reloadAlbums, reloadTags, moveToTrashCan, updatePhotosAfterTrashOperation,
         deletePhotosHandler, restorePhotosHandler, permanentlyDeletePhoto,
         setStarWithUpdate, updatePhotoComment, removePhotoFromList,
         handleAlbumClick, handleAlbumSelection, handleNewAlbumClick, handleAlbumUpdate,

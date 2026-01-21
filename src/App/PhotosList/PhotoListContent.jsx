@@ -151,7 +151,9 @@ function PhotoListContent({
         toggleAlbumListMode,
         openTagsList,
         toggleHome,
-        refreshPhotosOnly
+        refreshPhotosOnly,
+        reloadAlbums,
+        reloadTags
     } = handlers;
 
     // Wrapper for openBurstGroup to include current view mode data
@@ -248,6 +250,7 @@ function PhotoListContent({
                                 viewMode={tagListViewMode}
                                 onViewModeChange={handleTagListViewModeChange}
                                 showViewModeToggle={!isAlbumList}
+                                onRefresh={isAlbumList ? reloadAlbums : reloadTags}
                             />
                             {showCloudView ? (
                                 <TagCloudView
