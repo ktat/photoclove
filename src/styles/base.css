@@ -340,3 +340,13 @@ body {
   max-width: var(--vw);
   min-width: var(--vw);
 }
+
+/* Global spin animation for reload buttons */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -27,6 +27,8 @@ export function usePhotosListHandlers({
     handleInfiniteScroll,
     reloadCurrentModeData,
     refreshPhotosOnly,
+    reloadAlbums,
+    reloadTags,
     // Trash handlers
     moveToTrashCan,
     updatePhotosAfterTrashOperation,
@@ -94,6 +96,8 @@ export function usePhotosListHandlers({
         loadMorePhotos: handleInfiniteScroll,
         reloadCurrentModeData,
         refreshPhotosOnly,
+        reloadAlbums,
+        reloadTags,
         // Trash operations
         moveToTrashCan,
         updatePhotosAfterTrashOperation,
@@ -146,7 +150,7 @@ export function usePhotosListHandlers({
     }), [
         closePhotoDisplay, displayPhoto, openBurstGroup, goBackFromBurstGroup,
         toggleSelection, isPhotoSelected, addSelection, clearPhotoSelection, selectAllPhotoToSelection,
-        getPhotos, handleInfiniteScroll, reloadCurrentModeData, refreshPhotosOnly,
+        getPhotos, handleInfiniteScroll, reloadCurrentModeData, refreshPhotosOnly, reloadAlbums, reloadTags,
         moveToTrashCan, updatePhotosAfterTrashOperation, deletePhotosHandler, restorePhotosHandler,
         permanentlyDeletePhoto,
         setStarWithUpdate, updatePhotoComment, removePhotoFromList,

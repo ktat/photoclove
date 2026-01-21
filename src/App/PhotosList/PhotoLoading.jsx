@@ -26,10 +26,24 @@ function PhotoLoading({ viewModeObj }) {
                 subtext: 'Please wait a moment'
             };
         }
+        if (viewModeObj?.isAlbumListMode()) {
+            return {
+                emoji: '📚',
+                message: 'Loading albums',
+                subtext: 'Please wait a moment'
+            };
+        }
         if (viewModeObj?.isAlbumMode()) {
             return {
                 emoji: '📚',
                 message: 'Loading album',
+                subtext: 'Please wait a moment'
+            };
+        }
+        if (viewModeObj?.isTagListMode()) {
+            return {
+                emoji: '🏷️',
+                message: 'Loading tags',
                 subtext: 'Please wait a moment'
             };
         }
