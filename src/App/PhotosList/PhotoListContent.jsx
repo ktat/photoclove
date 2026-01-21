@@ -150,7 +150,8 @@ function PhotoListContent({
         setTagSearchTerm,
         toggleAlbumListMode,
         openTagsList,
-        toggleHome
+        toggleHome,
+        refreshPhotosOnly
     } = handlers;
 
     // Wrapper for openBurstGroup to include current view mode data
@@ -299,6 +300,7 @@ function PhotoListContent({
                                     openTagsList={openTagsList}
                                     goBackFromBurstGroup={goBackFromBurstGroup}
                                     isLimitedByConfig={isLimitedByConfig}
+                                    onRefresh={refreshPhotosOnly}
                                 />
                                 <PhotosToolbar
                                     iconSize={iconSize}
