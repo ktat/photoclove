@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { ViewMode } from '../../domain/ViewMode.js';
 import { VIEW_MODES } from '../../constants/viewModes.js';
+import { logger } from '../../services/LoggerService.js';
+import styles from './StatusBar.module.css';
 
 /**
  * StatusBar Component
@@ -16,7 +18,8 @@ function StatusBar({
     toggleAlbumListMode,
     openTagsList,
     goBackFromBurstGroup,
-    isLimitedByConfig
+    isLimitedByConfig,
+    onRefresh
 }) {
     // Create ViewMode object for title generation
     const viewModeObj = new ViewMode(viewMode, {
@@ -28,6 +31,36 @@ function StatusBar({
 
     const title = viewModeObj.getModeTitle();
 
+    // Reload button state
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const handleRefresh = useCallback(async () => {
+        if (!onRefresh || isRefreshing) return;
+
+        logger.info('StatusBar', 'refresh_clicked', 'Reload button clicked', { viewMode });
+        setIsRefreshing(true);
+        try {
+            await onRefresh();
+        } finally {
+            setIsRefreshing(false);
+        }
+    }, [onRefresh, isRefreshing, viewMode]);
+
+    // Reload button component
+    const ReloadButton = () => (
+        onRefresh ? (
+            <button
+                className={`${styles.reloadButton} ${isRefreshing ? styles.spinning : ''}`}
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                title="Reload photos"
+                aria-label="Reload photos"
+            >
+                ↻
+            </button>
+        ) : null
+    );
+
     // Render navigation and title based on current mode
     const renderTitleAndNavigation = () => {
         if (viewMode === VIEW_MODES.ALBUM) {
@@ -37,6 +70,7 @@ function StatusBar({
                         Back to Album List
                     </a>
                     <span style={{ marginLeft: "10px" }}>{title}</span>
+                    <ReloadButton />
                 </>
             );
         } else if (viewMode === VIEW_MODES.TAG) {
@@ -46,6 +80,7 @@ function StatusBar({
                         Back to Tag List
                     </a>
                     <span style={{ marginLeft: "10px" }}>{title}</span>
+                    <ReloadButton />
                 </>
             );
         } else if (viewMode === VIEW_MODES.IN_BURST_GROUP) {
@@ -55,11 +90,17 @@ function StatusBar({
                         ← Back
                     </a>
                     <span style={{ marginLeft: "10px" }}>{title}</span>
+                    <ReloadButton />
                 </>
             );
         } else {
-            // For SEARCH, TRASH, and other modes - no back link
-            return <span>{title}</span>;
+            // For SEARCH, TRASH, DATE, RECENT, and other modes - no back link
+            return (
+                <>
+                    <span>{title}</span>
+                    <ReloadButton />
+                </>
+            );
         }
     };
 
