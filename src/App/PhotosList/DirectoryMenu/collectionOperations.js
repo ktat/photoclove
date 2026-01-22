@@ -28,7 +28,20 @@ async function removePhotosFromCollection({
     handleTauriError,
     removePhotoFromList
 }) {
-    if (!collectionId || photoSelection.length === 0) return;
+    logger.info('collectionOperations', 'remove_photos_start', 'Starting remove photos from collection', {
+        collectionId,
+        collectionType,
+        photoSelectionCount: photoSelection?.length
+    });
+
+    if (!collectionId || photoSelection.length === 0) {
+        logger.warn('collectionOperations', 'remove_photos_skipped', 'Remove photos skipped - no collection or no selection', {
+            hasCollectionId: !!collectionId,
+            collectionId,
+            photoSelectionCount: photoSelection?.length
+        });
+        return;
+    }
 
     const count = photoSelection.length;
     const typeName = collectionType === 'album' ? 'album' : 'tag';

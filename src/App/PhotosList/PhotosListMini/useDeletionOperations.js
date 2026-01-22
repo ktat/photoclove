@@ -51,9 +51,16 @@ export function useDeletionOperations({
     const [deleteOperation, setDeleteOperation] = useState(null);
 
     const showRemoveFromAlbumModal = useCallback(() => {
+        logger.info('useDeletionOperations', 'show_remove_from_album_modal', 'Opening Remove from Album modal', {
+            albumId,
+            albumName,
+            isAlbumMode,
+            currentPhotoIndex: currentIndex,
+            currentPhotoPath: photos[currentIndex]?.originalPath
+        });
         setDeleteOperation('removeFromAlbum');
         setShowDeleteModal(true);
-    }, []);
+    }, [albumId, albumName, isAlbumMode, currentIndex, photos]);
 
     const showDeleteFileModal = useCallback(() => {
         setDeleteOperation('deleteFile');
@@ -82,6 +89,11 @@ export function useDeletionOperations({
 
         try {
             if (deleteOperation === 'removeFromAlbum') {
+                logger.info('useDeletionOperations', 'remove_from_album_execute', 'Executing remove from album', {
+                    albumId,
+                    photoPath: currentPhoto.originalPath,
+                    isAlbumIdValid: albumId !== null && albumId !== undefined
+                });
                 await invoke('remove_photo_from_album', {
                     albumId: albumId,
                     photoPath: currentPhoto.originalPath

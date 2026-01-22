@@ -20,6 +20,7 @@ export function useViewModeChangeEffect({
 
 /**
  * Hook for syncing photos to album/tag mode state
+ * Note: Must sync even when photo count is 0 (e.g., after removing all photos from a tag)
  */
 export function usePhotoSyncEffect({
     viewModeObj,
@@ -28,12 +29,16 @@ export function usePhotoSyncEffect({
     setTagPhotos
 }) {
     useEffect(() => {
-        if (viewModeObj.isAlbumMode() && allPhotosForCurrentFetch.length > 0) {
+        // Only sync when in album/tag mode and allPhotosForCurrentFetch is an array
+        // (including empty arrays to handle cases where all photos are removed)
+        if (!Array.isArray(allPhotosForCurrentFetch)) return;
+
+        if (viewModeObj.isAlbumMode()) {
             updateAlbumPhotos(allPhotosForCurrentFetch);
             logger.debug('usePhotosListEffects', 'sync_album', 'Synced to albumPhotos', {
                 photoCount: allPhotosForCurrentFetch.length
             });
-        } else if (viewModeObj.isTagMode() && allPhotosForCurrentFetch.length > 0) {
+        } else if (viewModeObj.isTagMode()) {
             setTagPhotos(allPhotosForCurrentFetch);
             logger.debug('usePhotosListEffects', 'sync_tag', 'Synced to tagPhotos', {
                 photoCount: allPhotosForCurrentFetch.length
