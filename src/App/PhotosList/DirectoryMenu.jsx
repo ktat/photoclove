@@ -188,11 +188,22 @@ function DirectoryMenu(props) {
     // doOperation handler for dropdown menu
     function doOperation(e) {
         const selected = e.target.value;
+        logger.debug('DirectoryMenu', 'do_operation', 'doOperation called', {
+            selected,
+            viewMode: props.viewModeObj?.mode,
+            isAlbumMode: props.viewModeObj?.isAlbumMode(),
+            currentAlbumId: props.viewModeObj?.getCurrentAlbumId(),
+            photoSelectionCount: props.photoSelection?.length
+        });
         if (selected == "uploadToGooglePhotos") {
             uploadToGooglePhotos()
         } else if (selected == "deleteFiles") {
             deleteFiles();
         } else if (selected == "removeFromAlbum") {
+            logger.info('DirectoryMenu', 'remove_from_album_selected', 'User selected Remove from Album', {
+                currentAlbumId: props.viewModeObj?.getCurrentAlbumId(),
+                photoSelectionCount: props.photoSelection?.length
+            });
             removeFromCurrentAlbum();
         } else if (selected == "removeFromTag") {
             removeFromCurrentTag();

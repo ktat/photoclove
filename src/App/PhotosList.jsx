@@ -58,6 +58,7 @@ import { convertPhotosToEntities } from "../utils/PhotoProcessingUtils.js";
 import { hasActiveFilters, getFilterSummary } from "../utils/UIStateUtils.js";
 
 import { logger } from "../services/LoggerService.js";
+import { unifiedCollectionService } from "../services/UnifiedCollectionService.js";
 
 import './PhotosList.css';
 import '../scrollable.css';
@@ -288,22 +289,24 @@ function PhotosList({
         }
     }, [loadAllPhotosBasedOnViewMode, viewModeObj, appConfig, viewMode, setPhotoLoading, withMinLoadingTime]);
 
-    // Reload albums list with loading state
+    // Reload albums list with loading state (clears cache first)
     const reloadAlbums = useCallback(async () => {
         logger.info('PhotosList', 'reload_albums', 'Reloading albums list with loading indicator');
         setPhotoLoading(true);
         try {
+            unifiedCollectionService.clearCache(); // Clear cache to get fresh data
             await withMinLoadingTime(loadAlbums);
         } finally {
             setPhotoLoading(false);
         }
     }, [loadAlbums, setPhotoLoading, withMinLoadingTime]);
 
-    // Reload tags list with loading state
+    // Reload tags list with loading state (clears cache first)
     const reloadTags = useCallback(async () => {
         logger.info('PhotosList', 'reload_tags', 'Reloading tags list with loading indicator');
         setPhotoLoading(true);
         try {
+            unifiedCollectionService.clearCache(); // Clear cache to get fresh data
             await withMinLoadingTime(loadTags);
         } finally {
             setPhotoLoading(false);
@@ -535,6 +538,8 @@ function PhotosList({
                         clearTagSelection={clearTagSelection} importState={importState}
                         albumsList={albumsList} tagsList={tagsList}
                         setEditorHasUnsavedChanges={setEditorHasUnsavedChanges}
+                        removePhotoFromList={removePhotoFromList}
+                        totalPhotosCount={photosListMiniAllPhotos.length}
                     />
                 )}
 

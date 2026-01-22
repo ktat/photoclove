@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import classNames from 'classnames';
+import { confirm } from "@tauri-apps/plugin-dialog";
 import PhotoInfo from "./PhotoOption/PhotoInfo.jsx";
 import PhotoEditor from "./PhotoOption/PhotoEditor.jsx";
 import PhotoTags from "./PhotoOption/PhotoTags.jsx";
@@ -11,14 +12,19 @@ import { VIEW_MODES } from "../../constants/viewModes.js";
 import { useTutorial } from "../../hooks/useTutorial.js";
 import { getTutorialContent } from "./DirectoryMenu/tutorialContent.jsx";
 import { logger } from "../../services/LoggerService.js";
+import { invokeWithErrorHandling } from "../../services/TauriService.js";
 import styles from './PhotoOption.module.css';
 
 function PhotoOption(props) {
     const [activeTab, setActiveTab] = useState("info");
     const { viewMode, currentAlbumId, burstModeEnabled } = useUI();
 
+    // Get current tag ID from viewModeObj
+    const currentTagId = props.viewModeObj?.getCurrentTagId();
+
     // Determine modes from viewMode
     const isAlbumMode = viewMode === VIEW_MODES.ALBUM && currentAlbumId;
+    const isTagMode = viewMode === VIEW_MODES.TAG && currentTagId;
     const isTrashMode = viewMode === VIEW_MODES.TRASH;
     const isImportMode = viewMode === VIEW_MODES.IMPORT;
     const isInBurstGroupMode = viewMode === VIEW_MODES.IN_BURST_GROUP;
@@ -128,12 +134,81 @@ function PhotoOption(props) {
         document.querySelector("#dummy-for-focus").focus();
     };
 
+    // Helper function to remove photos from a collection (album or tag)
+    const removePhotosFromCollection = async (collectionId, collectionType) => {
+        if (!collectionId || !props.photoSelection?.length) {
+            logger.warn('PhotoOption', 'remove_from_collection_skipped', 'Remove skipped - no collection or no selection', {
+                collectionId,
+                collectionType,
+                photoSelectionCount: props.photoSelection?.length
+            });
+            return;
+        }
+
+        const count = props.photoSelection.length;
+        const totalPhotos = props.totalPhotosCount || 0;
+        const willBeEmpty = count >= totalPhotos;
+        const typeName = collectionType === 'album' ? 'album' : 'tag';
+        const confirmed = await confirm(
+            `Remove ${count} photo${count > 1 ? 's' : ''} from this ${typeName}?\n\nPhotos will remain in your library.`,
+            `Remove from ${typeName.charAt(0).toUpperCase() + typeName.slice(1)}`
+        );
+
+        if (confirmed) {
+            try {
+                for (const photoPath of props.photoSelection) {
+                    await invokeWithErrorHandling(
+                        "remove_photo_from_collection",
+                        { collectionId, photoPath },
+                        'PhotoOption',
+                        { silent: true }
+                    );
+                    props.removePhotoFromList?.(photoPath);
+                }
+
+                props.clearPhotoSelection?.();
+                props.addFooterMessage?.(`${count} photo${count > 1 ? 's' : ''} removed from ${typeName}`);
+
+                logger.info('PhotoOption', `photos_removed_from_${typeName}`, `Photos removed from ${typeName} in PhotoViewer`, {
+                    collectionId,
+                    collectionType,
+                    photoCount: count,
+                    willBeEmpty
+                });
+
+                // Close PhotoViewer if no photos remain in the collection
+                if (willBeEmpty) {
+                    logger.info('PhotoOption', 'close_photo_viewer', 'Closing PhotoViewer - no photos remaining in collection', {
+                        collectionType
+                    });
+                    props.closePhotoDisplay?.();
+                }
+            } catch (error) {
+                logger.error('PhotoOption', `remove_from_${typeName}_failed`, `Failed to remove photos from ${typeName}`, {
+                    error: error.message
+                });
+                props.addFooterMessage?.(`Failed to remove photos from ${typeName}`);
+            }
+        }
+    };
+
     // doOperation handler for SelectionTab (Feature #153)
-    const doOperation = (e) => {
+    const doOperation = async (e) => {
         const selected = e.target.value;
-        // Note: Full implementation would require additional handlers
-        // For now, supporting basic operations that are available via props
-        if (selected === "deleteFiles") {
+        logger.debug('PhotoOption', 'do_operation', 'doOperation called in PhotoViewer', {
+            selected,
+            isAlbumMode,
+            currentAlbumId,
+            isTagMode,
+            currentTagId,
+            photoSelectionCount: props.photoSelection?.length
+        });
+
+        if (selected === "removeFromAlbum") {
+            await removePhotosFromCollection(currentAlbumId, 'album');
+        } else if (selected === "removeFromTag") {
+            await removePhotosFromCollection(currentTagId, 'tag');
+        } else if (selected === "deleteFiles") {
             // TODO: Implement delete operation
             if (props.addFooterMessage) {
                 props.addFooterMessage("Delete operation not yet implemented in photo viewer");
