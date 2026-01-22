@@ -160,9 +160,8 @@ export function useCollectionManagement({
             // Reload albums to show the new album
             loadAlbums();
 
-            // Navigate to the new album
-            openAlbum(newAlbum.id);
-            setCurrentAlbumName(newAlbum.name);
+            // Don't navigate to the new album - it's empty
+            // User can click on it from the album list if they want to add photos
 
         } catch (error) {
             handleError(error, 'Create album', { albumName: albumData.name });
