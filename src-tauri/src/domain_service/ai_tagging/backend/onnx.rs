@@ -325,6 +325,7 @@ impl AIClassifierBackend for OnnxClassifier {
 
         // Run inference in a separate scope to limit the mutable borrow
         let output_vec = {
+            // Safe: session existence is guaranteed by is_none() check at line 305
             let session = self.session.as_mut().unwrap();
 
             // Run inference using ort 2.0 API

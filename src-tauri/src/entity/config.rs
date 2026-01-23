@@ -70,6 +70,92 @@ fn default_ai_tagging() -> AiTaggingConfig {
     AiTaggingConfig::default()
 }
 
+fn default_s3() -> Option<S3Config> {
+    None
+}
+
+/// S3 Backup configuration
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct S3Config {
+    /// Whether S3 backup is enabled
+    pub enabled: bool,
+    /// Storage type (AWS S3 or S3-compatible)
+    pub storage_type: S3StorageType,
+    /// Bucket URI (e.g., s3://my-bucket/photos/)
+    pub bucket_uri: String,
+    /// AWS Region (e.g., ap-northeast-1)
+    pub region: String,
+    /// Authentication method
+    pub auth_method: S3AuthMethod,
+    /// AWS profile name (for AwsCredentials auth method)
+    #[serde(default)]
+    pub profile: Option<String>,
+    /// Custom endpoint URL (for S3-compatible storage)
+    #[serde(default)]
+    pub custom_endpoint: Option<String>,
+    /// Auto sync on import
+    #[serde(default)]
+    pub auto_sync: bool,
+    /// Backup SQLite database
+    #[serde(default)]
+    pub backup_db: bool,
+    /// Maximum file size in MB (None = no limit)
+    #[serde(default)]
+    pub max_file_size_mb: Option<u32>,
+    /// Last sync timestamp
+    #[serde(default)]
+    pub last_sync_at: Option<String>,
+}
+
+impl Default for S3Config {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            storage_type: S3StorageType::AwsS3,
+            bucket_uri: String::new(),
+            region: "ap-northeast-1".to_string(),
+            auth_method: S3AuthMethod::AwsCredentials,
+            profile: None,
+            custom_endpoint: None,
+            auto_sync: false,
+            backup_db: true,
+            max_file_size_mb: None,
+            last_sync_at: None,
+        }
+    }
+}
+
+/// S3 storage provider types
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum S3StorageType {
+    #[serde(rename = "aws_s3")]
+    AwsS3,
+    #[serde(rename = "minio")]
+    MinIO,
+    #[serde(rename = "wasabi")]
+    Wasabi,
+    #[serde(rename = "cloudflare_r2")]
+    CloudflareR2,
+    #[serde(rename = "digitalocean")]
+    DigitalOcean,
+    #[serde(rename = "custom")]
+    Custom,
+}
+
+/// S3 authentication methods
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum S3AuthMethod {
+    /// Use AWS CLI credentials (~/.aws/credentials)
+    #[serde(rename = "aws_credentials")]
+    AwsCredentials,
+    /// Use IAM Role (EC2/ECS environment)
+    #[serde(rename = "iam_role")]
+    IAMRole,
+    /// Use Access Key ID + Secret Access Key directly
+    #[serde(rename = "access_key")]
+    AccessKey,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GroupingConfig {
     pub enabled: bool,
@@ -182,6 +268,8 @@ pub struct Config {
     pub grouping: GroupingConfig,
     #[serde(default = "default_ai_tagging")]
     pub ai_tagging: AiTaggingConfig,
+    #[serde(default = "default_s3")]
+    pub s3: Option<S3Config>,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryConfig {
@@ -219,6 +307,7 @@ impl Config {
         self.startup_images = config.startup_images;
         self.grouping = config.grouping;
         self.ai_tagging = config.ai_tagging;
+        self.s3 = config.s3;
     }
 
     pub fn config_path() -> String {
@@ -320,6 +409,7 @@ impl Config {
             startup_images: default_startup_images(),
             grouping: default_grouping(),
             ai_tagging: default_ai_tagging(),
+            s3: default_s3(),
         }
     }
 

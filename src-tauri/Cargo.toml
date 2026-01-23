@@ -61,6 +61,11 @@ ort = { version = "2.0.0-rc.11", features = ["load-dynamic"] }
 ndarray = "0.17"
 # Sync HTTP client for model downloads
 ureq = "2.9"
+
+# S3 Backup
+aws-config = { version = "1.1", features = ["behavior-version-latest"] }
+aws-sdk-s3 = "1.15"
+aws-credential-types = "1.1"
 # tauri-plugin-shell = "2"
 # turbojpeg-sys = {version = "0.2.3", features = ["bindgen"] }
 # turbojpeg = {version = "0.5", features = ["image"] }

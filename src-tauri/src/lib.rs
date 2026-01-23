@@ -279,6 +279,15 @@ pub fn run() {
             remove_from_burst_group,
             recalculate_grouping,
             recalculate_grouping_in_date,
+            // S3 Backup commands
+            list_aws_profiles,
+            test_s3_connection,
+            save_s3_config,
+            get_s3_config,
+            get_s3_sync_stats,
+            enqueue_s3_incremental_sync,
+            enqueue_s3_full_sync,
+            enqueue_s3_sync_by_date,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

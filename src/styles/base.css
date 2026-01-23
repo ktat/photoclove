@@ -133,6 +133,7 @@ body {
 
   /* --- Toggle Switch --- */
   --toggle-height: 22px;
+  --toggle-knob-color: #ffffff;
 
   /* --- Font Sizes --- */
   --font-size-2xs: 9px;
@@ -152,6 +153,7 @@ body {
   --slide-mount-card-bg: #f5f5f5;
   --slide-mount-card-border: #e0e0e0;
   --slide-mount-card-shadow: rgba(0, 0, 0, 0.2);
+  --slide-mount-card-selected: #e3e9f5;
 
   /* --- 35mm Slide Theme --- */
   --slide-35mm-grid-bg-start: #a09080;
@@ -170,6 +172,7 @@ body {
   --lightbox-card-bg: rgba(200, 220, 255, 0.15);
   --lightbox-card-border: rgba(255, 255, 255, 0.1);
   --lightbox-card-selected: rgba(100, 150, 255, 0.2);
+  --lightbox-thumbnail-bg: rgba(255, 255, 255, 0.95);
 }
 
 /* ========== Light Theme ========== */
@@ -231,6 +234,7 @@ body {
   --slide-mount-card-bg: #f0ebe5;
   --slide-mount-card-border: #d0c8c0;
   --slide-mount-card-shadow: rgba(0, 0, 0, 0.15);
+  --slide-mount-card-selected: #d8e4f5;
 
   /* --- 35mm Slide Theme --- */
   --slide-35mm-grid-bg-start: #b0a090;
@@ -249,6 +253,7 @@ body {
   --lightbox-card-bg: rgba(140, 170, 220, 0.35);
   --lightbox-card-border: rgba(100, 140, 200, 0.3);
   --lightbox-card-selected: rgba(100, 150, 255, 0.4);
+  --lightbox-thumbnail-bg: rgba(255, 255, 255, 0.98);
 }
 
 /* start dark theme */

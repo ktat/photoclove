@@ -52,7 +52,7 @@ const ContextualDeleteModal = ({
           message: `Remove ${fileLabel} from album "${albumName}"?`,
           description: 'Files will remain in your library and other albums.',
           confirmText: 'Remove from Album',
-          confirmStyle: { backgroundColor: '#F59E0B' } // Orange
+          confirmStyle: { backgroundColor: 'var(--color-warning)' }
         };
 
       case 'deleteFile':
@@ -62,7 +62,7 @@ const ContextualDeleteModal = ({
           message: `Move ${fileLabel} to trash?`,
           description: 'Files will be removed from library and moved to trash.',
           confirmText: 'Move to Trash',
-          confirmStyle: { backgroundColor: '#DC2626' } // Red
+          confirmStyle: { backgroundColor: 'var(--color-danger)' }
         };
 
       case 'restoreFromTrash':
@@ -71,7 +71,7 @@ const ContextualDeleteModal = ({
           message: `Restore ${fileLabel} to original location?`,
           description: 'Files will be restored from trash to library.',
           confirmText: 'Restore',
-          confirmStyle: { backgroundColor: '#10B981' } // Green
+          confirmStyle: { backgroundColor: 'var(--color-success)' }
         };
 
       case 'permanentDelete':
@@ -80,7 +80,7 @@ const ContextualDeleteModal = ({
           message: `Permanently delete ${fileLabel}?`,
           description: '⚠️ This action CANNOT be undone!\nFiles will be completely removed from your system.',
           confirmText: 'Delete Permanently',
-          confirmStyle: { backgroundColor: '#DC2626' } // Red
+          confirmStyle: { backgroundColor: 'var(--color-danger)' }
         };
 
       default:
@@ -89,7 +89,7 @@ const ContextualDeleteModal = ({
           message: `Process ${fileLabel}?`,
           description: '',
           confirmText: 'Confirm',
-          confirmStyle: { backgroundColor: '#3B82F6' } // Blue
+          confirmStyle: { backgroundColor: 'var(--color-primary)' }
         };
     }
   };

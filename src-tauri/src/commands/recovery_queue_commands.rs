@@ -87,6 +87,11 @@ pub fn retry_recovery_item(
         OperationType::PermanentlyDelete => {
             retry_permanently_delete(&item.target_path, config)
         }
+        OperationType::S3Sync => {
+            // S3 sync retry would need the S3 service to be initialized
+            // For now, we indicate it needs manual intervention via Preferences
+            Err("S3 sync operations need to be re-initiated via Preferences > S3 Backup".to_string())
+        }
     };
 
     match result {
@@ -149,6 +154,9 @@ pub fn retry_all_recovery_items(
             }
             OperationType::PermanentlyDelete => {
                 retry_permanently_delete(&item.target_path, config)
+            }
+            OperationType::S3Sync => {
+                Err("S3 sync operations need to be re-initiated via Preferences > S3 Backup".to_string())
             }
         };
 

@@ -319,6 +319,12 @@ fn process_job(db: Arc<SQLite>, job: job_queue::QueuedJob, app_handle: tauri::Ap
             log::info!(target: "job_queue", "ai_tagging_job; job_id={}; status=calling_process", job_id);
             handlers::process_ai_tagging_job(&job, &app_handle, &db)
         }
+        job_queue::JobType::S3Sync => {
+            log::info!(target: "job_queue", "s3_sync_job; job_id={}; status=calling_process", job_id);
+            // S3 sync handler will be implemented in Phase 2
+            // For now, return an error indicating it's not yet implemented
+            Err("S3 sync is not yet implemented".to_string())
+        }
     };
 
     log::info!(target: "job_queue", "job_execution; job_id={}; status=completed; success={}", job_id, result.is_ok());

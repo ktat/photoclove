@@ -12,4 +12,5 @@ pub mod photo;
 pub mod photo_collection;
 pub mod photo_meta;
 pub mod recovery_queue;
+pub mod storage_sync;
 pub mod trash;
