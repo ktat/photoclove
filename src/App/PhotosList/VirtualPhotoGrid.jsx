@@ -106,6 +106,7 @@ function VirtualPhotoGrid({
     const localContainerRef = useRef(null);
     const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
     const [shadow, setShadow] = useState({ top: false, bottom: true });
+    const [overlayMargin, setOverlayMargin] = useState(0);
     const [gridTheme, setGridTheme] = useState(() =>
         document.documentElement.getAttribute('data-grid-theme') || 'default'
     );
@@ -194,15 +195,51 @@ function VirtualPhotoGrid({
             // Calculate available height
             const availableHeight = window.innerHeight - topOffset - bottomOffset;
 
-            // Calculate width based on container parent or viewport
-            let availableWidth = window.innerWidth - 300; // Default: minus left menu
+            // Measure actual widths of left and right columns from DOM
+            const leftMenu = document.getElementById('leftMenu');
+            const rightMenu = document.querySelector('.rightMenu');
+            const verticalTabBar = document.querySelector('.directory-vertical-tabs');
+            const photoOptionTabs = document.querySelector('[class*="vertical-tabs"]'); // PhotoOption tabs
 
-            if (localContainerRef?.current?.parentElement) {
-                const parentRect = localContainerRef.current.parentElement.getBoundingClientRect();
-                if (parentRect.width > 0) {
-                    availableWidth = parentRect.width - 20; // Account for padding
+            // Get actual left menu width
+            // On narrow screens (< 1000px), when left menu is expanded it becomes position: absolute (overlay mode)
+            // In overlay mode, use collapsed width (60px) to reserve space for the overlay
+            let leftMenuWidth = 0;
+            if (leftMenu) {
+                const isNarrowScreen = window.innerWidth < 1000;
+                const isCollapsed = leftMenu.classList.contains('collapsed');
+                // On narrow screens, expanded left menu (not collapsed) is in overlay mode
+                const isOverlay = isNarrowScreen && !isCollapsed;
+                if (isOverlay) {
+                    // In overlay mode, use 0 for width calculation but set margin to push content right
+                    leftMenuWidth = 0;
+                    setOverlayMargin(72); // collapsed menu (60px) + padding (12px)
+                } else {
+                    const leftRect = leftMenu.getBoundingClientRect();
+                    leftMenuWidth = leftRect.width;
+                    setOverlayMargin(0);
                 }
             }
+
+            // Get actual right side width (rightMenu content + tab bar)
+            let rightSideWidth = 0;
+            if (rightMenu) {
+                const rightRect = rightMenu.getBoundingClientRect();
+                rightSideWidth = rightRect.width;
+            }
+            // Add vertical tab bar width if it exists and is separate from rightMenu
+            if (verticalTabBar && !rightMenu) {
+                const tabBarRect = verticalTabBar.getBoundingClientRect();
+                rightSideWidth = tabBarRect.width;
+            }
+            // Check for PhotoOption vertical tabs (in PhotoViewer mode)
+            if (photoOptionTabs && !rightMenu && !verticalTabBar) {
+                const photoOptionRect = photoOptionTabs.getBoundingClientRect();
+                rightSideWidth = Math.max(rightSideWidth, photoOptionRect.width);
+            }
+
+            const padding = 40; // Account for padding and margins
+            let availableWidth = window.innerWidth - leftMenuWidth - rightSideWidth - padding;
 
             setContainerSize({
                 width: Math.max(400, availableWidth),
@@ -214,9 +251,46 @@ function VirtualPhotoGrid({
         const timeoutId = setTimeout(updateSize, 150);
 
         window.addEventListener('resize', updateSize);
+
+        // Watch for class changes on inner-container (left menu collapse state)
+        const innerContainer = document.querySelector('.inner-container');
+        const leftMenu = document.getElementById('leftMenu');
+        let observers = [];
+
+        if (innerContainer) {
+            const innerObserver = new MutationObserver((mutations) => {
+                for (const mutation of mutations) {
+                    if (mutation.attributeName === 'class') {
+                        // Delay to allow CSS transition to complete
+                        setTimeout(updateSize, 350);
+                    }
+                }
+            });
+            innerObserver.observe(innerContainer, { attributes: true });
+            observers.push(innerObserver);
+        }
+
+        // Also watch left menu for size/style changes
+        if (leftMenu) {
+            const leftMenuObserver = new MutationObserver(() => {
+                const isNarrowScreen = window.innerWidth < 1000;
+                if (isNarrowScreen) {
+                    // On narrow screens, only update overlay margin without recalculating grid size
+                    const isCollapsed = leftMenu.classList.contains('collapsed');
+                    setOverlayMargin(isCollapsed ? 0 : 72);
+                } else {
+                    // On wide screens, recalculate grid size
+                    setTimeout(updateSize, 350);
+                }
+            });
+            leftMenuObserver.observe(leftMenu, { attributes: true, attributeFilter: ['class', 'style'] });
+            observers.push(leftMenuObserver);
+        }
+
         return () => {
             clearTimeout(timeoutId);
             window.removeEventListener('resize', updateSize);
+            observers.forEach(obs => obs.disconnect());
         };
     }, [showSideMenu]); // Re-run when side menu toggles
 
@@ -275,7 +349,8 @@ function VirtualPhotoGrid({
             style={{
                 width: '100%',
                 height: `${containerSize.height}px`,
-                overflow: 'hidden'
+                overflow: 'hidden',
+                marginLeft: overlayMargin > 0 ? `${overlayMargin}px` : undefined
             }}
         >
             {/* Fade effects for scroll indication */}
