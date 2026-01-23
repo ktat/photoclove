@@ -35,6 +35,7 @@ import { useUI } from "./context/UIContext.jsx";
 import { usePhoto } from "./context/PhotoContext.jsx";
 import { useDateNavigation } from "./hooks/useDateNavigation.js";
 import { useAppConfig } from "./hooks/useAppConfig.js";
+import { useRef } from "react";
 
 function App() {
   const { handleTauriError } = useError();
@@ -66,6 +67,10 @@ function App() {
   } = usePhoto();
   const { getDates } = useDateNavigation();
   const { useCount, config, loadConfig } = useAppConfig();
+
+  // Use ref to access current config in event listeners (avoids stale closure)
+  const configRef = useRef(config);
+  configRef.current = config;
   
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
@@ -103,6 +108,13 @@ function App() {
     setShowTooltip(false);
     setTooltipText("");
   };
+
+  // Update welcome image when config loads (ensures custom images work on startup)
+  useEffect(() => {
+    if (config) {
+      setWelcomeImage(WelcomeImage(config));
+    }
+  }, [config, setWelcomeImage]);
 
   // Initialize logger from config on app start
   useEffect(() => {
@@ -308,7 +320,7 @@ function App() {
             updateCurrentDate("");
             resetPhotoState();
             toggleHome();
-            setWelcomeImage(WelcomeImage(config));
+            setWelcomeImage(WelcomeImage(configRef.current));
           } else if (e.payload === "import") {
             toggleImporter(true);
           } else if (e.payload === "pref") {
