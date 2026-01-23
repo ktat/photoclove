@@ -42,6 +42,11 @@
   max-width: calc(100vw - 230px);
 }
 
+/* Desktop: Adjust center column when right menu is open (left menu expanded) */
+.inner-container.menu-open .centerDisplay {
+  max-width: calc(100vw - 550px);
+}
+
 /* Desktop: Expand center column when left menu is collapsed */
 .inner-container.left-menu-collapsed.menu-closed .centerDisplay {
   max-width: calc(100vw - 80px);
