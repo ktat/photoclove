@@ -67,6 +67,8 @@ pub enum JobType {
     RecalculateGrouping,
     #[serde(rename = "ai_tagging")]
     AiTagging,
+    #[serde(rename = "s3_sync")]
+    S3Sync,
 }
 
 impl ToString for JobType {
@@ -78,6 +80,7 @@ impl ToString for JobType {
             JobType::GooglePhotosUpload => "google_photos_upload".to_string(),
             JobType::RecalculateGrouping => "recalculate_grouping".to_string(),
             JobType::AiTagging => "ai_tagging".to_string(),
+            JobType::S3Sync => "s3_sync".to_string(),
         }
     }
 }
@@ -229,6 +232,17 @@ pub struct AiTaggingJob {
     pub photo_paths: Vec<String>,
     /// Confidence threshold (0.0 to 1.0)
     pub confidence_threshold: f32,
+    /// Optional: specific date to process (for maintenance tab)
+    pub target_date: Option<String>,
+}
+
+/// Job parameters for S3 sync
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct S3SyncJob {
+    /// Photo paths to sync
+    pub photo_paths: Vec<String>,
+    /// Storage provider name (e.g., "aws_s3", "wasabi")
+    pub provider: String,
     /// Optional: specific date to process (for maintenance tab)
     pub target_date: Option<String>,
 }

@@ -16,6 +16,8 @@ pub enum OperationType {
     Import,
     #[serde(rename = "permanently_delete")]
     PermanentlyDelete,
+    #[serde(rename = "s3_sync")]
+    S3Sync,
 }
 
 impl ToString for OperationType {
@@ -25,6 +27,7 @@ impl ToString for OperationType {
             OperationType::Restore => "restore".to_string(),
             OperationType::Import => "import".to_string(),
             OperationType::PermanentlyDelete => "permanently_delete".to_string(),
+            OperationType::S3Sync => "s3_sync".to_string(),
         }
     }
 }
@@ -36,6 +39,7 @@ impl From<String> for OperationType {
             "restore" => OperationType::Restore,
             "import" => OperationType::Import,
             "permanently_delete" => OperationType::PermanentlyDelete,
+            "s3_sync" => OperationType::S3Sync,
             _ => OperationType::MoveToTrash, // default
         }
     }
@@ -101,6 +105,7 @@ impl RecoveryItem {
             OperationType::Restore => "Restore from Trash",
             OperationType::Import => "Import",
             OperationType::PermanentlyDelete => "Permanently Delete",
+            OperationType::S3Sync => "S3 Sync",
         }
     }
 }

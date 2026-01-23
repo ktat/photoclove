@@ -40,6 +40,11 @@ const MIGRATIONS: &[Migration] = &[
         name: "create_burst_groups",
         sql: include_str!("006_create_burst_groups.sql"),
     },
+    Migration {
+        version: 7,
+        name: "add_storage_sync",
+        sql: include_str!("007_add_storage_sync.sql"),
+    },
 ];
 
 /// Initialize the migrations table

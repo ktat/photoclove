@@ -295,7 +295,7 @@
 }
 
 :global([data-grid-theme="slide-mount"]) .cardSelected {
-    background-color: #e3e9f5;
+    background-color: var(--slide-mount-card-selected);
     box-shadow:
         0 2px 4px var(--slide-mount-card-shadow),
         0 0 0 2px var(--color-primary);
@@ -317,7 +317,7 @@
 :global([data-grid-theme="lightbox"]) .thumbnailContainer {
     border-radius: 0;
     border: 1px solid rgba(255, 255, 255, 0.3);
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: var(--lightbox-thumbnail-bg);
     box-shadow:
         0 0 20px rgba(255, 255, 255, 0.3),
         inset 0 0 5px rgba(0, 0, 0, 0.1);

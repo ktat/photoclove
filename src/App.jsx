@@ -419,77 +419,8 @@ function App() {
     );
   }
 
-  // Show search page - now using PhotosList directly
-  if (showSearchPage) {
-    return (
-      <>
-        <div className="container">
-          <div className={`inner-container ${rightMenuOpen ? 'menu-open' : 'menu-closed'} ${leftMenuCollapsed ? 'left-menu-collapsed' : ''}`}>
-            <div id="leftMenu" className={`leftMenu ${leftMenuCollapsed ? 'collapsed' : ''}`} aria-label="Main navigation sidebar" role="navigation">
-              <NavigationIcons
-                updateCurrentDate={updateCurrentDate}
-                resetPhotoState={resetPhotoState}
-                toggleHome={toggleHome}
-                setWelcomeImage={setWelcomeImage}
-                toggleSearchPage={toggleSearchPage}
-                toggleImporter={toggleImporter}
-                toggleAlbumListMode={toggleAlbumListMode}
-                openTagsList={openTagsList}
-                openTrash={openTrash}
-                handleMouseEnter={handleMouseEnter}
-                handleMouseLeave={handleMouseLeave}
-                config={config}
-              />
-              <div className="row">
-                <div style={{ display: "none" }}>
-                  <input
-                    id="greet-input"
-                    onChange={(e) => setName(e.currentTarget.value)}
-                    placeholder="Enter a name..."
-                  />
-                  <button type="button" onClick={() => greet()}>
-                    Search
-                  </button>
-                  <p>{greetMsg}</p>
-                </div>
-              </div>
-              <DateList
-                getDates={getDates}
-                toggleImporter={toggleImporter}
-                toggleSearchPage={toggleSearchPage}
-                leftMenuCollapsed={leftMenuCollapsed}
-                setLeftMenuCollapsed={setLeftMenuCollapsed}
-                handleMouseEnter={handleMouseEnter}
-                handleMouseLeave={handleMouseLeave}
-                showTooltip={showTooltip}
-                tooltipText={tooltipText}
-                tooltipPosition={tooltipPosition}
-              />
-            </div>
-            <PhotosList
-              config={config}
-              shortCutNavigation={shortCutNavigation}
-              addFooterMessage={addFooterMessage}
-              onRightMenuToggle={setRightMenuOpen}
-              searchMode={showSearchPage}
-              isAdvancedSearchMode={isAdvancedSearchMode}
-              setShowJobQueueModal={setShowJobQueueModal}
-              getDatesNum={getDates}
-            />
-          </div>
-        </div>
-        <Footer onRecoveryQueueClick={() => setShowRecoveryQueueModal(true)} />
-        <ErrorDisplay />
-        {showLogViewer && (
-          <LogViewer onClose={() => setShowLogViewer(false)} />
-        )}
-        {showRecoveryQueueModal && (
-          <RecoveryQueueModal onClose={() => setShowRecoveryQueueModal(false)} addFooterMessage={addFooterMessage} />
-        )}
-        <Tooltip show={leftMenuCollapsed && showTooltip} text={tooltipText} position={tooltipPosition} />
-      </>
-    );
-  }
+  // Determine if PhotosList should be shown (including search mode)
+  const shouldShowPhotosList = showPhotosList || showImporter || showSearchPage;
 
   return (
     <div className="container"
@@ -539,22 +470,25 @@ function App() {
           />
         </div>
         {(() => {
-          logger.debug('App', 'render_decision', 'App render decision', { 
-            showPhotosList, showImporter, showPreferences, showJobQueueModal, 
-            showSearchPage, currentDate, recentPhotosMode 
+          logger.debug('App', 'render_decision', 'App render decision', {
+            showPhotosList, showImporter, showPreferences, showJobQueueModal,
+            showSearchPage, currentDate, recentPhotosMode, shouldShowPhotosList
           });
-          if (showPhotosList || showImporter) {
-            logger.debug('App', 'rendering_photos_list', 'Rendering PhotosList component', { 
-              isImportMode: showImporter 
+          if (shouldShowPhotosList) {
+            logger.debug('App', 'rendering_photos_list', 'Rendering PhotosList component', {
+              isImportMode: showImporter,
+              isSearchMode: showSearchPage
             });
           }
-          return showPhotosList || showImporter;
+          return shouldShowPhotosList;
         })() ? <>
           <PhotosList
             config={config}
             shortCutNavigation={shortCutNavigation}
             addFooterMessage={addFooterMessage}
             onRightMenuToggle={setRightMenuOpen}
+            searchMode={showSearchPage}
+            isAdvancedSearchMode={isAdvancedSearchMode}
             setShowJobQueueModal={setShowJobQueueModal}
             getDatesNum={getDates}
           />
