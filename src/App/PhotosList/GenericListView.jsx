@@ -3,6 +3,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import Scrollable from "../../Scrollable.jsx";
 import { logger } from "../../services/LoggerService.js";
 import { getTagColor } from "../../utils/tagColorUtils.js";
+import { useOverlayMargin } from "../../hooks/useOverlayMargin.js";
 
 /**
  * Unified list view component for albums and tags
@@ -20,7 +21,8 @@ function GenericListView({
     onSearchChange
 }) {
     const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm || '');
-    
+    const overlayMargin = useOverlayMargin();
+
     // Use provided search term if available, otherwise use local state
     const effectiveSearchTerm = searchTerm !== undefined ? searchTerm : localSearchTerm;
     const effectiveOnSearchChange = onSearchChange || setLocalSearchTerm;
@@ -312,7 +314,10 @@ function GenericListView({
     };
 
     return (
-        <div className={`${itemType}-list-view`}>
+        <div
+            className={`${itemType}-list-view`}
+            style={{ marginLeft: overlayMargin > 0 ? `${overlayMargin}px` : undefined }}
+        >
             {renderSearchFilter()}
             {renderItemGrid()}
         </div>
