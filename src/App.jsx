@@ -386,7 +386,7 @@ function App() {
 
   if (!showPreferences && !showImporter && !showSearchPage && useCount <= 2) {
     return (
-      <>
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <Welcome
           welcomeImage={welcomeImage}
           setWelcomeImage={setWelcomeImage}
@@ -403,7 +403,7 @@ function App() {
           <RecoveryQueueModal onClose={() => setShowRecoveryQueueModal(false)} addFooterMessage={addFooterMessage} />
         )}
         <Tooltip show={leftMenuCollapsed && showTooltip} text={tooltipText} position={tooltipPosition} />
-      </>
+      </div>
     );
   }
 
