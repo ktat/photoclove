@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useEffect, useState, memo, useCallback } from '
 import { Grid } from 'react-window';
 import PhotoCard from "./PhotoCard.jsx";
 import { Photo } from "../../domain/Photo.js";
+import { useOverlayMargin } from "../../hooks/useOverlayMargin.js";
 import styles from './PhotoGrid.module.css';
 
 /**
@@ -106,7 +107,7 @@ function VirtualPhotoGrid({
     const localContainerRef = useRef(null);
     const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
     const [shadow, setShadow] = useState({ top: false, bottom: true });
-    const [overlayMargin, setOverlayMargin] = useState(0);
+    const overlayMargin = useOverlayMargin();
     const [gridTheme, setGridTheme] = useState(() =>
         document.documentElement.getAttribute('data-grid-theme') || 'default'
     );
@@ -203,7 +204,7 @@ function VirtualPhotoGrid({
 
             // Get actual left menu width
             // On narrow screens (< 1000px), when left menu is expanded it becomes position: absolute (overlay mode)
-            // In overlay mode, use collapsed width (60px) to reserve space for the overlay
+            // In overlay mode, marginLeft is handled by useOverlayMargin hook
             let leftMenuWidth = 0;
             if (leftMenu) {
                 const isNarrowScreen = window.innerWidth < 1000;
@@ -211,13 +212,11 @@ function VirtualPhotoGrid({
                 // On narrow screens, expanded left menu (not collapsed) is in overlay mode
                 const isOverlay = isNarrowScreen && !isCollapsed;
                 if (isOverlay) {
-                    // In overlay mode, use 0 for width calculation but set margin to push content right
+                    // In overlay mode, don't subtract left menu width (margin handles positioning)
                     leftMenuWidth = 0;
-                    setOverlayMargin(72); // collapsed menu (60px) + padding (12px)
                 } else {
                     const leftRect = leftMenu.getBoundingClientRect();
                     leftMenuWidth = leftRect.width;
-                    setOverlayMargin(0);
                 }
             }
 
@@ -270,16 +269,12 @@ function VirtualPhotoGrid({
             observers.push(innerObserver);
         }
 
-        // Also watch left menu for size/style changes
+        // Also watch left menu for size/style changes (only on wide screens)
+        // On narrow screens, overlay margin is handled by useOverlayMargin hook
         if (leftMenu) {
             const leftMenuObserver = new MutationObserver(() => {
-                const isNarrowScreen = window.innerWidth < 1000;
-                if (isNarrowScreen) {
-                    // On narrow screens, only update overlay margin without recalculating grid size
-                    const isCollapsed = leftMenu.classList.contains('collapsed');
-                    setOverlayMargin(isCollapsed ? 0 : 72);
-                } else {
-                    // On wide screens, recalculate grid size
+                // Only recalculate grid size on wide screens
+                if (window.innerWidth >= 1000) {
                     setTimeout(updateSize, 350);
                 }
             });
