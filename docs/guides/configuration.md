@@ -214,6 +214,99 @@ ai_tagging:
 - **Applies to**: OpenCLIP and SigLIP models
 - **Examples**: "a birthday party", "my cat", "family dinner"
 
+### S3 Backup Settings
+
+```yaml
+s3:
+  enabled: false                    # Enable/disable S3 backup
+  storage_type: "aws_s3"           # Provider: aws_s3, wasabi, minio, cloudflare_r2, digitalocean, custom
+  bucket_uri: ""                   # Bucket URI: s3://bucket-name/prefix/
+  region: "ap-northeast-1"         # AWS region
+  auth_method: "aws_credentials"   # Auth: aws_credentials, iam_role, access_key
+  profile: null                    # AWS profile name (for aws_credentials auth)
+  custom_endpoint: null            # Custom S3 endpoint URL (for non-AWS providers)
+  auto_sync: false                 # Auto-sync photos on import
+  backup_db: true                  # Include database backup
+  max_file_size_mb: null           # Max file size to sync (null = no limit)
+  last_sync_at: null               # Last sync timestamp (auto-managed)
+```
+
+#### enabled
+- **Purpose**: Enable or disable S3 backup functionality
+- **Default**: `false`
+- **Access**: Preferences → S3 Backup
+
+#### storage_type
+- **Purpose**: Select the S3-compatible storage provider
+- **Default**: `aws_s3`
+- **Options**:
+  - `aws_s3` - Amazon S3
+  - `wasabi` - Wasabi Hot Cloud Storage
+  - `minio` - MinIO (self-hosted)
+  - `cloudflare_r2` - Cloudflare R2
+  - `digitalocean` - DigitalOcean Spaces
+  - `custom` - Other S3-compatible storage
+
+#### bucket_uri
+- **Purpose**: S3 bucket URI with optional prefix path
+- **Format**: `s3://bucket-name/optional/prefix/`
+- **Example**: `s3://my-photos-backup/photoclove/`
+
+#### region
+- **Purpose**: AWS region for the S3 bucket
+- **Default**: `ap-northeast-1` (Tokyo)
+- **Common regions**: us-east-1, us-west-2, eu-west-1, ap-northeast-1
+
+#### auth_method
+- **Purpose**: Authentication method for S3 access
+- **Default**: `aws_credentials`
+- **Options**:
+  - `aws_credentials` - Use AWS CLI credentials from ~/.aws/credentials
+  - `iam_role` - Use IAM role (EC2/ECS instances)
+  - `access_key` - Manual access key entry
+
+#### profile
+- **Purpose**: AWS profile name to use from ~/.aws/credentials
+- **Default**: `null` (uses default profile)
+- **Applies to**: `aws_credentials` auth method only
+
+#### custom_endpoint
+- **Purpose**: Custom S3 endpoint URL for non-AWS providers
+- **Default**: `null`
+- **Required for**: wasabi, minio, cloudflare_r2, digitalocean, custom
+- **Example**: `https://s3.wasabisys.com`
+
+#### auto_sync
+- **Purpose**: Automatically sync photos to S3 when imported
+- **Default**: `false`
+- **Impact**: Import process triggers background S3 upload job
+
+#### backup_db
+- **Purpose**: Include database backup (metadata, tags, edits) in S3 sync
+- **Default**: `true`
+- **Behavior**: Periodically uploads SQLite database to S3
+
+#### max_file_size_mb
+- **Purpose**: Maximum file size to upload to S3
+- **Default**: `null` (no limit)
+- **Options**: `50`, `100`, `200`, `500` MB, or `null`
+- **Behavior**: Files exceeding this size are skipped during sync
+
+#### last_sync_at
+- **Purpose**: Timestamp of last successful sync (auto-managed)
+- **Default**: `null`
+- **Behavior**: Automatically updated after successful sync operations
+
+### S3 Sync Operations
+
+PhotoClove supports three types of S3 sync operations:
+
+1. **Full Sync**: Uploads all photos not yet synced to the configured provider
+2. **Incremental Sync**: Uploads photos imported after the last sync
+3. **Date-based Sync**: Uploads photos from a specific date
+
+Sync status is tracked per photo in the `storage_sync` metadata field, which stores JSON with provider-specific sync information including URL and timestamp.
+
 ### Legacy/System Fields
 
 #### repository
