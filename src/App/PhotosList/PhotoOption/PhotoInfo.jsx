@@ -75,7 +75,7 @@ function PhotoInfo(props) {
     function toggleStar(i) {
         const newStar = [false, false, false, false, false];
         const currentStarRate = getCurrentStarRate();
-        
+
         // If clicking on an empty star or a star that's not the last filled one
         if (!props.star[i] || (i < 4 && props.star[i + 1])) {
             // Fill all stars up to and including the clicked one
@@ -89,25 +89,103 @@ function PhotoInfo(props) {
             }
             // newStar[i] remains false
         }
-        
+
         const newStarRate = getStarRate(newStar);
         logger.info('PhotoInfo', 'star_clicked', 'Star rating changed', {
             index: i,
             currentRate: currentStarRate,
             newRate: newStarRate
         });
-        
+
         invoke("save_star", { pathStr: props.currentPhotoPath, starNum: newStarRate });
         props.setStar(newStar);
     }
 
     function saveComment() {
         invoke("save_comment", { pathStr: props.currentPhotoPath, commentStr: comment });
-        
+
         // Notify parent component about comment update
         if (props.onCommentUpdate) {
             props.onCommentUpdate(props.currentPhotoPath, comment && comment.trim() !== "");
         }
+    }
+
+    function renderCloudBackupStatus() {
+        const storageSync = photoInfo.meta?.storage_sync;
+        const googlePhotoUrl = photoInfo.meta?.google_photo_url;
+        let syncData = null;
+
+        if (storageSync) {
+            try {
+                syncData = JSON.parse(storageSync);
+            } catch (e) {
+                logger.error('PhotoInfo', 'parse_storage_sync', 'Failed to parse storage_sync', { error: e.message });
+            }
+        }
+
+        const providers = [
+            { key: 'aws_s3', name: 'AWS S3', icon: '☁️' },
+            { key: 'wasabi', name: 'Wasabi', icon: '☁️' },
+            { key: 'minio', name: 'MinIO', icon: '☁️' },
+            { key: 'cloudflare_r2', name: 'Cloudflare R2', icon: '☁️' },
+            { key: 'digitalocean', name: 'DO Spaces', icon: '☁️' },
+            { key: 'custom', name: 'S3 Storage', icon: '☁️' },
+        ];
+
+        const syncedProviders = providers.filter(p => syncData && syncData[p.key]);
+        const hasGooglePhotos = !!googlePhotoUrl;
+
+        if (!syncedProviders.length && !hasGooglePhotos) {
+            return (
+                <div className={styles['backup-status-empty']}>
+                    No cloud backup configured
+                </div>
+            );
+        }
+
+        return (
+            <div className={styles['backup-status-list']}>
+                {syncedProviders.map(provider => {
+                    const info = syncData[provider.key];
+                    const syncedAt = info.synced_at ? new Date(info.synced_at).toLocaleDateString() : '';
+                    return (
+                        <div key={provider.key} className={styles['backup-status-item']}>
+                            <span className={styles['backup-provider']}>
+                                {provider.icon} {provider.name}: <span className={styles['backup-synced']}>✓ Synced</span>
+                                {syncedAt && <span className={styles['backup-date']}> ({syncedAt})</span>}
+                            </span>
+                            <button
+                                className={styles['copy-url-btn']}
+                                onClick={() => {
+                                    writeText(info.url);
+                                    props.addFooterMessage("clipboard", "S3 URL copied to clipboard", false, 5000);
+                                }}
+                                title="Copy S3 URL"
+                            >
+                                📋
+                            </button>
+                        </div>
+                    );
+                })}
+                {hasGooglePhotos && (
+                    <div className={styles['backup-status-item']}>
+                        <span className={styles['backup-provider']}>
+                            📤 Google Photos: <span className={styles['backup-synced']}>✓ Uploaded</span>
+                        </span>
+                        <button
+                            className={styles['copy-url-btn']}
+                            onClick={() => {
+                                writeText(googlePhotoUrl);
+                                props.addFooterMessage("clipboard", "Google Photos URL copied to clipboard", false, 5000);
+                            }}
+                            title="Copy URL"
+                        >
+                            📋
+                        </button>
+                    </div>
+                )}
+            </div>
+        );
     }
 
     return (
@@ -164,6 +242,14 @@ function PhotoInfo(props) {
                     </tbody>
                 </table>
             </div>
+
+            {/* Cloud Backup Status Section */}
+            {photoInfo.meta && (
+                <div className={styles['cloud-backup-section']}>
+                    <div className={styles['section-header']}>Cloud Backup</div>
+                    {renderCloudBackupStatus()}
+                </div>
+            )}
 
             {/* Only show stars/comment forms for non-import and non-trash photos */}
             {!props.isImportMode && !props.isTrashMode && (
