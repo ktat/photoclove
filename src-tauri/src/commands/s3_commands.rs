@@ -231,28 +231,183 @@ pub fn get_s3_sync_stats(state: State<'_, AppState>) -> Result<String, String> {
 
 /// Enqueue S3 incremental sync (photos since last_sync_at)
 #[tauri::command]
-pub async fn enqueue_s3_incremental_sync(
-    _state: State<'_, AppState>,
+pub fn enqueue_s3_incremental_sync(
+    window: tauri::Window,
+    state: State<'_, AppState>,
 ) -> Result<String, String> {
-    // TODO: Implement in Phase 4
-    Err("S3 incremental sync is not yet implemented".to_string())
+    let s3_config = state.config.s3.clone()
+        .ok_or("S3 backup is not configured")?;
+
+    if !s3_config.enabled {
+        return Err("S3 backup is not enabled".to_string());
+    }
+
+    let provider = get_provider_name(&s3_config.storage_type);
+    let last_sync_at = s3_config.last_sync_at.clone()
+        .ok_or("No previous sync found. Use Full Sync instead.")?;
+
+    // Get photos imported after last_sync_at that are not synced
+    let conn = state.meta_db.get_connection()
+        .map_err(|e| format!("Database error: {}", e))?;
+
+    let mut stmt = conn.prepare(&format!(
+        "SELECT file_path FROM photo_metadata
+         WHERE (delete_flg = 0 OR delete_flg IS NULL)
+           AND created_at > ?1
+           AND (storage_sync IS NULL OR storage_sync NOT LIKE '%\"{}\":%')",
+        provider
+    )).map_err(|e| format!("Query error: {}", e))?;
+
+    let photo_paths: Vec<String> = stmt.query_map([&last_sync_at], |row| row.get(0))
+        .map_err(|e| format!("Query error: {}", e))?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    if photo_paths.is_empty() {
+        return Ok(r#"{"result": "no_photos_to_sync", "count": 0}"#.to_string());
+    }
+
+    create_s3_sync_job(&window, &state, photo_paths)
 }
 
 /// Enqueue S3 full sync (all unsynced photos)
 #[tauri::command]
-pub async fn enqueue_s3_full_sync(
-    _state: State<'_, AppState>,
+pub fn enqueue_s3_full_sync(
+    window: tauri::Window,
+    state: State<'_, AppState>,
 ) -> Result<String, String> {
-    // TODO: Implement in Phase 4
-    Err("S3 full sync is not yet implemented".to_string())
+    let s3_config = state.config.s3.clone()
+        .ok_or("S3 backup is not configured")?;
+
+    if !s3_config.enabled {
+        return Err("S3 backup is not enabled".to_string());
+    }
+
+    let provider = get_provider_name(&s3_config.storage_type);
+
+    // Get all photos that are not synced to this provider
+    let conn = state.meta_db.get_connection()
+        .map_err(|e| format!("Database error: {}", e))?;
+
+    let mut stmt = conn.prepare(&format!(
+        "SELECT file_path FROM photo_metadata
+         WHERE (delete_flg = 0 OR delete_flg IS NULL)
+           AND (storage_sync IS NULL OR storage_sync NOT LIKE '%\"{}\":%')",
+        provider
+    )).map_err(|e| format!("Query error: {}", e))?;
+
+    let photo_paths: Vec<String> = stmt.query_map([], |row| row.get(0))
+        .map_err(|e| format!("Query error: {}", e))?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    if photo_paths.is_empty() {
+        return Ok(r#"{"result": "no_photos_to_sync", "count": 0}"#.to_string());
+    }
+
+    create_s3_sync_job(&window, &state, photo_paths)
 }
 
 /// Enqueue S3 sync for a specific date
 #[tauri::command]
-pub async fn enqueue_s3_sync_by_date(
-    _state: State<'_, AppState>,
-    _date: String,
+pub fn enqueue_s3_sync_by_date(
+    date: String,
+    window: tauri::Window,
+    state: State<'_, AppState>,
 ) -> Result<String, String> {
-    // TODO: Implement in Phase 4
-    Err("S3 date sync is not yet implemented".to_string())
+    let s3_config = state.config.s3.clone()
+        .ok_or("S3 backup is not configured")?;
+
+    if !s3_config.enabled {
+        return Err("S3 backup is not enabled".to_string());
+    }
+
+    let provider = get_provider_name(&s3_config.storage_type);
+
+    // Get photos for the specified date that are not synced
+    let conn = state.meta_db.get_connection()
+        .map_err(|e| format!("Database error: {}", e))?;
+
+    // Support both YYYY-MM-DD and YYYY/MM/DD formats
+    let date_pattern = date.replace('/', "-");
+
+    let mut stmt = conn.prepare(&format!(
+        "SELECT file_path FROM photo_metadata
+         WHERE (delete_flg = 0 OR delete_flg IS NULL)
+           AND date = ?1
+           AND (storage_sync IS NULL OR storage_sync NOT LIKE '%\"{}\":%')",
+        provider
+    )).map_err(|e| format!("Query error: {}", e))?;
+
+    let photo_paths: Vec<String> = stmt.query_map([&date_pattern], |row| row.get(0))
+        .map_err(|e| format!("Query error: {}", e))?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    if photo_paths.is_empty() {
+        return Ok(r#"{"result": "no_photos_to_sync", "count": 0}"#.to_string());
+    }
+
+    create_s3_sync_job(&window, &state, photo_paths)
+}
+
+/// Helper function to get provider name string from storage type
+fn get_provider_name(storage_type: &S3StorageType) -> &'static str {
+    match storage_type {
+        S3StorageType::AwsS3 => "aws_s3",
+        S3StorageType::MinIO => "minio",
+        S3StorageType::Wasabi => "wasabi",
+        S3StorageType::CloudflareR2 => "cloudflare_r2",
+        S3StorageType::DigitalOcean => "digitalocean",
+        S3StorageType::Custom => "custom",
+    }
+}
+
+/// Helper function to create an S3 sync job
+fn create_s3_sync_job(
+    window: &tauri::Window,
+    state: &State<'_, AppState>,
+    photo_paths: Vec<String>,
+) -> Result<String, String> {
+    use crate::domain_service::job_queue::executor::process_new_jobs;
+    use crate::entity::job_queue::{Job, JobType, JobUnit, QueuedJob};
+    use crate::repository::meta_db::sqlite::SQLite;
+    use std::sync::Arc;
+    use tauri::Manager;
+
+    let photo_count = photo_paths.len();
+
+    // Create job unit
+    let job_types = vec!["s3_sync".to_string()];
+    let job_unit = JobUnit::new(job_types);
+    let job_unit_id = job_unit.id.clone();
+
+    // Save job unit
+    state
+        .meta_db
+        .create_job_unit(&job_unit)
+        .map_err(|e| format!("Failed to create job unit: {}", e))?;
+
+    // Create S3 sync job
+    let job = Job::new(job_unit_id.clone(), JobType::S3Sync, photo_paths);
+    let queued_job = QueuedJob::new(job_unit_id.clone(), job);
+
+    // Add job to queue
+    let job_id = state
+        .meta_db
+        .create_job(&queued_job)
+        .map_err(|e| format!("Failed to create job: {}", e))?;
+
+    log::info!(target: "s3_sync", "sync_job_created; job_id={}; job_unit_id={}; photos={}",
+        job_id, job_unit_id, photo_count);
+
+    // Trigger job processing
+    let db = Arc::new(SQLite::new(state.config.import_to.clone()));
+    let app_handle = window.app_handle().clone();
+    process_new_jobs(db, state.config.copy_parallel as usize, app_handle);
+
+    Ok(format!(
+        r#"{{"result": "started", "job_unit_id": "{}", "job_id": {}, "to_sync": {}}}"#,
+        job_unit_id, job_id, photo_count
+    ))
 }
