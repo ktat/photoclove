@@ -29,6 +29,7 @@ This index helps you quickly navigate to the right documentation for PhotoClove 
 - **[PhotosList Modes](photoslist-modes-operations.md)** - Photo view modes
 - **[CSS Design System](css-reference.md)** - CSS variables, themes, and styling guidelines
 - **[AI Auto-Tagging](../improvement/179-ai-auto-tagging-update.md)** - AI-powered photo tagging with multiple models
+- **[S3 Backup](guides/configuration.md#s3-backup-settings)** - Cloud backup to S3-compatible storage
 
 ### Development Workflows
 - **[Feature Sequences](feature-sequences.md)** - Frontend/backend interaction flows
