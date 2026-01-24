@@ -49,13 +49,31 @@ This document helps you quickly find the relevant documentation when working on 
   - Album operations: Add to album, remove from album
   - Trash operations: Move to trash, restore, permanent delete
   - List management: Remove from list with proper navigation
+- **PhotoGrid Reload Button**: Refresh photo grid after external changes (file additions/deletions outside the app)
+  - Located in StatusBar component
+  - Triggers full photo list reload
 - **Related Files**:
   - `src/App/PhotosList.jsx`
   - `src/App/PhotosList/PhotosListMini.jsx`
   - `src/App/PhotosList/PhotosListMini/photoUtils.js`
   - `src/App/PhotosList/PhotosListMini/useKeyboardShortcuts.js`
   - `src/App/PhotosList/PhotoDisplay.jsx`
+  - `src/App/PhotosList/StatusBar.jsx`
   - `src/hooks/usePhotoOperations.js` (510 lines)
+
+### 📷 Burst Photo Grouping
+**When you need to understand**: Burst mode detection, photo grouping, rapid succession photos
+- **Purpose**: Group photos taken in rapid succession (burst mode) for better organization
+- **UI Components**:
+  - Grouping options in PhotosList for viewing grouped/ungrouped photos
+  - GroupingTab in Preferences for configuration settings
+- **Backend**: `burst_groups` table for storing group relationships, `burst_group_commands.rs` for command handlers
+- **Key Operations**:
+  - Auto-detect bursts based on timestamp proximity
+  - Manual grouping and ungrouping of photos
+  - Recalculate groups when settings change
+- **Configuration**: Adjustable time threshold for burst detection
+- **Related Files**: `src/App/Preferences/GroupingTab.jsx`, `src-tauri/src/commands/burst_group_commands.rs`, `src-tauri/src/repository/meta_db/burst_groups.rs`
 
 ### 🎨 Photo Editing & Transformations
 **When you need to understand**: Image filters, cropping, CSS transformations, save-as-copy
@@ -170,6 +188,18 @@ This document helps you quickly find the relevant documentation when working on 
 - **Enhanced Retry**: Manual job retry now executes immediately instead of waiting for next app startup
 - **Related Files**: `src/App/JobQueue.jsx`, `src-tauri/src/domain_service/job_queue_service.rs`, `src-tauri/src/entity/job_queue.rs`
 
+### 🔄 Recovery Queue
+**When you need to understand**: Failed operation tracking, retry mechanisms, error recovery
+- **Purpose**: Track and retry failed operations (file moves, deletions, etc.) that couldn't complete due to errors
+- **UI Components**: RecoveryQueueModal accessible from application menu
+- **Backend**: `recovery_queue` table for persistent storage, `recovery_queue_commands.rs` for command handlers
+- **Key Operations**:
+  - View pending items awaiting retry
+  - Retry failed items manually or automatically
+  - Discard items that are no longer needed
+- **Features**: Persistent tracking across app restarts, detailed error information, batch retry support
+- **Related Files**: `src/App/RecoveryQueueModal.jsx`, `src-tauri/src/repository/meta_db/recovery_queue.rs`, `src-tauri/src/commands/recovery_queue_commands.rs`
+
 ### 🔐 Google OAuth Token Management
 **When you need to understand**: Google Photos authentication, token storage, automatic refresh, secure credential management
 - **Documentation**: [OAuth Token Management](oauth-token-management.md)
@@ -262,6 +292,42 @@ This document helps you quickly find the relevant documentation when working on 
 - **Token Management**: Automatic refresh using external service, secure keyring storage
 - **Related Files**: `src-tauri/src/entity/google_photos.rs`, `src-tauri/src/domain_service/token_storage_service.rs`, `src/services/firebase/auth.js`
 
+### ☁️ S3 Backup
+**When you need to understand**: Cloud backup to S3-compatible storage, sync status, multi-provider support
+- **Purpose**: Backup photos to S3-compatible cloud storage providers for offsite backup and redundancy
+- **Supported Providers**:
+  - AWS S3
+  - Wasabi
+  - MinIO
+  - Cloudflare R2
+  - DigitalOcean Spaces
+- **UI Components**:
+  - S3BackupTab in Preferences for configuration (credentials, bucket, endpoint)
+  - Sync status indicator in PhotoInfo panel
+- **Backend**: `s3_service.rs` for S3 operations, `s3_commands.rs` for Tauri commands, `storage_sync` column for tracking sync status
+- **Key Operations**:
+  - Full sync: Upload all photos to S3
+  - Incremental sync: Upload only new/modified photos
+  - Auto-sync on import: Automatically backup newly imported photos
+- **Configuration**: Provider selection, credentials, bucket name, endpoint URL, sync preferences
+- **Related Files**: `src/App/Preferences/S3BackupTab.jsx`, `src-tauri/src/domain_service/s3_service.rs`, `src-tauri/src/commands/s3_commands.rs`
+
+### 🤖 AI Auto-Tagging
+**When you need to understand**: Automatic photo tagging using AI/ML models, image classification
+- **Purpose**: Automatic photo tagging using AI models for content recognition and classification
+- **Supported Models**:
+  - MobileNet: Fast, lightweight classification
+  - OpenCLIP: Open-source CLIP model for zero-shot classification
+  - SigLIP: Google's improved vision-language model
+- **UI Components**: AITaggingTab in Preferences for model selection and configuration
+- **Backend**: AI tagging service for model inference, `ai_model_commands.rs` for Tauri commands
+- **Key Operations**:
+  - Auto-tag on import: Automatically tag newly imported photos
+  - Batch tagging: Tag existing photos in bulk
+  - Custom labels: Define custom tag categories for classification
+- **Configuration**: Model selection, confidence threshold, custom label definitions, auto-tag preferences
+- **Related Files**: `src/App/Preferences/AITaggingTab.jsx`, `src-tauri/src/domain_service/ai_tagging/`, `src-tauri/src/commands/ai_model_commands.rs`
+
 ### 🎨 UI Theme & Dark Mode
 **When you need to understand**: Application theming, dark mode implementation, UI consistency, color management
 - **Architecture**: Dark theme as primary design system with CSS variables for consistency
@@ -275,16 +341,27 @@ This document helps you quickly find the relevant documentation when working on 
 ### 🏛️ Domain-Driven Design (DDD) Architecture
 **When you need to understand**: Photo entity management, domain models, business logic encapsulation
 - **Architecture**: Domain-Driven Design approach with entity objects and domain services
-- **Entities**: 
+- **Entities**:
   - `Photo` entity with business logic methods (`displayPath()`, `thumbnailPath()`)
   - `PhotoCollection` for managing photo collections
 - **Services**: `PhotoService` for domain operations and transformations
 - **Implementation**: Centralized business logic prevents ad-hoc fixes and ensures consistent behavior
-- **Benefits**: 
+- **Benefits**:
   - Proper handling of trash bin vs normal photo paths
   - Consistent photo display across all viewing modes
   - Encapsulated domain logic separate from UI concerns
 - **Related Files**: `src/domain/Photo.js`, `src/domain/PhotoCollection.js`, `src/services/PhotoService.js`
+
+### ℹ️ Licenses/About Screen
+**When you need to understand**: Open source license display, third-party attributions, about information
+- **Purpose**: Display open source licenses for all third-party dependencies used in the application
+- **UI Components**: LicensesView accessible from Help menu
+- **Features**:
+  - Displays licenses for frontend (npm) and backend (Rust) dependencies
+  - Searchable license list
+  - Full license text viewing
+- **Access**: Help menu → "Licenses" or "About"
+- **Related Files**: `src/App/LicensesView.jsx`
 
 ## Quick Reference by Technology
 

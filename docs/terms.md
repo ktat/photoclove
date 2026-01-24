@@ -22,6 +22,18 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - **Implementation**: `src/App/PhotosList/PhotoDisplay.jsx`
 - **Description**: Individual photo display component
 
+- **Term**: VirtualPhotoGrid
+- **Implementation**: `src/App/PhotosList/VirtualPhotoGrid.jsx`
+- **Description**: Virtualized grid for efficient photo rendering
+
+- **Term**: StatusBar
+- **Implementation**: `src/App/PhotosList/StatusBar.jsx`
+- **Description**: Status bar showing photo count and actions
+
+- **Term**: TagCloudView
+- **Implementation**: `src/App/PhotosList/TagCloudView.jsx`
+- **Description**: Tag cloud visualization for browsing by tags
+
 ### Navigation
 - **Term**: DateList
 - **Implementation**: `src/App/DateList.jsx`
@@ -83,6 +95,14 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - **Implementation**: `src/App/LogViewer.jsx`
 - **Description**: Debug log viewing interface
 
+- **Term**: RecoveryQueueModal
+- **Implementation**: `src/App/RecoveryQueueModal.jsx`
+- **Description**: Modal for managing failed operation recovery
+
+- **Term**: LicensesView
+- **Implementation**: `src/App/LicensesView.jsx`
+- **Description**: Third-party license information display
+
 ### Tag Components
 - **Term**: TagChip
 - **Implementation**: `src/components/TagChip.jsx`
@@ -96,6 +116,11 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - **Implementation**: `src/components/TagSelector.jsx`
 - **Description**: Multi-select tag assignment interface
 
+### Modal Components
+- **Term**: ContextualDeleteModal
+- **Implementation**: `src/components/ContextualDeleteModal.jsx`
+- **Description**: Context-aware deletion confirmation modal
+
 ### AI Auto-Tagging Components
 - **Term**: AITaggingTab
 - **Implementation**: `src/App/Preferences/tabs/AITaggingTab.jsx`
@@ -108,6 +133,43 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - **Term**: AICustomLabels
 - **Implementation**: `src/App/Preferences/tabs/AICustomLabels.jsx`
 - **Description**: Custom label input for CLIP-based models
+
+### Preferences Tabs
+- **Term**: GeneralTab
+- **Implementation**: `src/App/Preferences/tabs/GeneralTab.jsx`
+- **Description**: General application settings
+
+- **Term**: StartupTab
+- **Implementation**: `src/App/Preferences/tabs/StartupTab.jsx`
+- **Description**: Application startup behavior settings
+
+- **Term**: ThumbnailTab
+- **Implementation**: `src/App/Preferences/tabs/ThumbnailTab.jsx`
+- **Description**: Thumbnail generation settings
+
+- **Term**: GroupingTab
+- **Implementation**: `src/App/Preferences/tabs/GroupingTab.jsx`
+- **Description**: Photo grouping (burst, similar) settings
+
+- **Term**: PerformanceTab
+- **Implementation**: `src/App/Preferences/tabs/PerformanceTab.jsx`
+- **Description**: Performance tuning settings
+
+- **Term**: AppearanceTab
+- **Implementation**: `src/App/Preferences/tabs/AppearanceTab.jsx`
+- **Description**: UI theme and appearance settings
+
+- **Term**: LoggingTab
+- **Implementation**: `src/App/Preferences/tabs/LoggingTab.jsx`
+- **Description**: Logging configuration settings
+
+- **Term**: AdvancedTab
+- **Implementation**: `src/App/Preferences/tabs/AdvancedTab.jsx`
+- **Description**: Advanced and experimental settings
+
+- **Term**: S3BackupTab
+- **Implementation**: `src/App/Preferences/tabs/S3BackupTab.jsx`
+- **Description**: S3-compatible storage backup configuration
 
 ## Backend Services
 
@@ -140,6 +202,27 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - **Implementation**: `src-tauri/src/domain_service/ai_tagging/backend/model_manager.rs`
 - **Description**: AI model download and management
 
+- **Term**: S3Service
+- **Implementation**: `src-tauri/src/domain_service/s3_service.rs`
+- **Description**: S3-compatible storage backup service
+
+### Commands
+- **Term**: recovery_queue_commands
+- **Implementation**: `src-tauri/src/commands/recovery_queue_commands.rs`
+- **Description**: Tauri commands for recovery queue operations
+
+- **Term**: s3_commands
+- **Implementation**: `src-tauri/src/commands/s3_commands.rs`
+- **Description**: Tauri commands for S3 backup operations
+
+- **Term**: ai_model_commands
+- **Implementation**: `src-tauri/src/commands/ai_model_commands.rs`
+- **Description**: Tauri commands for AI model management
+
+- **Term**: burst_group_commands
+- **Implementation**: `src-tauri/src/commands/burst_group_commands.rs`
+- **Description**: Tauri commands for burst photo grouping
+
 ### Entities
 - **Term**: PhotoMeta
 - **Implementation**: `src-tauri/src/entity/photo_meta.rs`
@@ -156,6 +239,18 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - **Term**: GooglePhotos
 - **Implementation**: `src-tauri/src/entity/google_photos.rs`
 - **Description**: Google Photos integration types
+
+- **Term**: RecoveryQueue
+- **Implementation**: `src-tauri/src/entity/recovery_queue.rs`
+- **Description**: Queue for recovering failed operations
+
+- **Term**: StorageSync
+- **Implementation**: `src-tauri/src/entity/storage_sync.rs`
+- **Description**: Storage synchronization state and tracking
+
+- **Term**: BurstGroup
+- **Implementation**: `src-tauri/src/entity/burst_group.rs`
+- **Description**: Burst photo grouping definitions
 
 ### Repositories
 - **Term**: MetaDB
@@ -185,6 +280,14 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - **Term**: usePhotos
 - **Implementation**: `src/hooks/usePhotos.js`
 - **Description**: Photo data management hook
+
+- **Term**: useOverlayMargin
+- **Implementation**: `src/hooks/useOverlayMargin.js`
+- **Description**: Hook for overlay positioning margins
+
+- **Term**: useSearchAndFilters
+- **Implementation**: `src/hooks/useSearchAndFilters.jsx`
+- **Description**: Combined search and filter state management
 
 ### React Contexts
 - **Term**: PhotoContext

@@ -30,6 +30,8 @@ This index helps you quickly navigate to the right documentation for PhotoClove 
 - **[CSS Design System](css-reference.md)** - CSS variables, themes, and styling guidelines
 - **[AI Auto-Tagging](../improvement/179-ai-auto-tagging-update.md)** - AI-powered photo tagging with multiple models
 - **[S3 Backup](guides/configuration.md#s3-backup-settings)** - Cloud backup to S3-compatible storage
+- **[Recovery Queue](feature-quick-reference.md#recovery-queue)** - Failed operation tracking and retry
+- **[Burst Photo Grouping](feature-quick-reference.md#burst-photo-grouping)** - Group photos taken in rapid succession
 
 ### Development Workflows
 - **[Feature Sequences](feature-sequences.md)** - Frontend/backend interaction flows
