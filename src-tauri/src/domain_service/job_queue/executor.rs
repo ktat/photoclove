@@ -221,6 +221,9 @@ fn create_dependent_jobs(
     let state = app_handle.state::<crate::AppState>();
     let config = &state.config;
 
+    // Clone imported_files for potential S3 sync use
+    let imported_files_for_s3 = imported_files.clone();
+
     if config.ai_tagging.enabled && config.ai_tagging.auto_tag_on_import {
         // Filter to only include image files (not videos)
         let image_files: Vec<String> = imported_files
@@ -247,6 +250,22 @@ fn create_dependent_jobs(
 
             log::info!(target: "job_queue", "dependent_jobs; ai_tagging_id={}", ai_tagging_id);
             job_ids.push(ai_tagging_id);
+        }
+    }
+
+    // Check if S3 auto-sync on import is enabled
+    if let Some(s3_config) = &config.s3 {
+        if s3_config.enabled && s3_config.auto_sync && !imported_files_for_s3.is_empty() {
+            let s3_sync_job = job_queue::Job::new(
+                job_unit_id.to_string(),
+                job_queue::JobType::S3Sync,
+                imported_files_for_s3,
+            );
+            let s3_sync_queued = job_queue::QueuedJob::new(job_unit_id.to_string(), s3_sync_job);
+            let s3_sync_id = db.create_job(&s3_sync_queued)?;
+
+            log::info!(target: "job_queue", "dependent_jobs; s3_sync_id={}", s3_sync_id);
+            job_ids.push(s3_sync_id);
         }
     }
 
@@ -321,9 +340,10 @@ fn process_job(db: Arc<SQLite>, job: job_queue::QueuedJob, app_handle: tauri::Ap
         }
         job_queue::JobType::S3Sync => {
             log::info!(target: "job_queue", "s3_sync_job; job_id={}; status=calling_process", job_id);
-            // S3 sync handler will be implemented in Phase 2
-            // For now, return an error indicating it's not yet implemented
-            Err("S3 sync is not yet implemented".to_string())
+            // Use a blocking runtime for async S3 sync handler
+            tokio::runtime::Runtime::new().unwrap().block_on(
+                handlers::process_s3_sync_job(&job, &app_handle, &db),
+            )
         }
     };
 
