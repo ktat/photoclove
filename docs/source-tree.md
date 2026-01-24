@@ -50,15 +50,33 @@ src/
 │   ├── 📄 ImgCacheContext.jsx  # React context for image caching
 │   ├── 📄 Importer.jsx         # Photo import interface
 │   ├── 📄 JobQueue.jsx         # Background job monitoring
+│   ├── 📄 LicensesView.jsx     # Open source licenses display
 │   ├── 📄 Login.jsx            # Authentication (Google login)
+│   ├── 📄 NavigationIcons.jsx  # Navigation icon components
 │   ├── 📄 PhotosList.jsx       # Main photo grid view
 │   ├── 📄 Preferences.jsx      # Application settings
+│   ├── 📄 RecoveryQueueModal.jsx # Recovery queue management modal
 │   │
 │   ├── 📁 Footer/
 │   │   └── 📄 RandomMessages.jsx    # Random footer messages
 │   │
 │   ├── 📁 Importer/
 │   │   └── 📄 SelectedPhotoInfo.jsx # Import batch information
+│   │
+│   ├── 📁 Preferences/         # Settings components
+│   │   └── 📁 tabs/            # Individual preference tabs
+│   │       ├── 📄 GeneralTab.jsx       # General settings
+│   │       ├── 📄 StartupTab.jsx       # Startup options
+│   │       ├── 📄 ThumbnailTab.jsx     # Thumbnail settings
+│   │       ├── 📄 GroupingTab.jsx      # Photo grouping settings
+│   │       ├── 📄 PerformanceTab.jsx   # Performance settings
+│   │       ├── 📄 AppearanceTab.jsx    # Appearance/theme settings
+│   │       ├── 📄 LoggingTab.jsx       # Logging configuration
+│   │       ├── 📄 AdvancedTab.jsx      # Advanced settings
+│   │       ├── 📄 AITaggingTab.jsx     # AI auto-tagging settings
+│   │       ├── 📄 AIModelSelector.jsx  # AI model selection component
+│   │       ├── 📄 AICustomLabels.jsx   # Custom AI label configuration
+│   │       └── 📄 S3BackupTab.jsx      # S3 cloud backup settings
 │   │
 │   └── 📁 PhotosList/          # Photo viewing components
 │       ├── 📄 DirectoryMenu.jsx     # Right sidebar menu
@@ -72,9 +90,12 @@ src/
 │       ├── 📄 PhotosToolbar.jsx     # Toolbar for photo actions
 │       ├── 📄 SideMenuWrapper.jsx   # Side menu wrapper component
 │       ├── 📄 StatusBar.jsx         # Status bar component
+│       ├── 📄 StatusBar.module.css  # Status bar styles
 │       ├── 📄 ListViewHeader.jsx    # List view header
 │       ├── 📄 GenericListView.jsx   # Generic list view component
 │       ├── 📄 AlbumTab.jsx          # Album tab component
+│       ├── 📄 TagCloudView.jsx      # Tag cloud visualization
+│       ├── 📄 VirtualPhotoGrid.jsx  # Virtualized photo grid for performance
 │       │
 │       ├── 📁 DirectoryMenu/
 │       │   ├── 📄 FilterTab.jsx          # Filter options tab
@@ -119,6 +140,7 @@ src/
 │   ├── 📄 useImportModeLifecycle.js # Import mode lifecycle management
 │   ├── 📄 useInfiniteScroll.js      # Infinite scroll pagination
 │   ├── 📄 useModalState.js          # Modal state management
+│   ├── 📄 useOverlayMargin.js       # Overlay margin calculations
 │   ├── 📄 usePageState.js           # Page state management
 │   ├── 📄 usePhotoDataLoader.js     # Photo data loading logic
 │   ├── 📄 usePhotoDataSync.js       # Photo data synchronization
@@ -140,6 +162,7 @@ src/
 │   ├── 📄 usePhotosState.js         # Photos state management
 │   ├── 📄 useSearch.js              # Search functionality
 │   ├── 📄 useSearchAndFilterManagement.jsx # Search and filter management
+│   ├── 📄 useSearchAndFilters.jsx   # Search and filters combined hook
 │   ├── 📄 useSearchHistory.js       # Search history management
 │   ├── 📄 useSearchInitialization.js # Search initialization
 │   ├── 📄 useTabManagement.js       # Tab management logic
@@ -151,6 +174,40 @@ src/
 │   ├── 📄 useViewModeHelpers.js     # ViewMode helper functions
 │   ├── 📄 useViewModeObject.js      # ViewMode DDD value object integration
 │   └── 📄 useViewModeSync.js        # ViewMode synchronization
+│
+├── 📁 components/              # Reusable UI components
+│   ├── 📄 AdvancedFilters.jsx       # Advanced filter controls
+│   ├── 📄 AlbumCreationModal.jsx    # Album creation dialog
+│   ├── 📄 BackNavigationLink.jsx    # Back navigation component
+│   ├── 📄 CollectionSelectorModal.jsx # Collection selection dialog
+│   ├── 📄 ContextualDeleteModal.jsx # Context-aware delete confirmation
+│   ├── 📄 DocumentViewer.jsx        # Document viewer component
+│   ├── 📄 ErrorBoundary.jsx         # React error boundary
+│   ├── 📄 ErrorDisplay.jsx          # Error display component
+│   ├── 📄 ErrorFallback.jsx         # Error fallback UI
+│   ├── 📄 ErrorModal.jsx            # Error modal dialog
+│   ├── 📄 ErrorToast.jsx            # Error toast notification
+│   ├── 📄 FilterPopover.jsx         # Filter popover component
+│   ├── 📄 SavedSearches.jsx         # Saved searches component
+│   ├── 📄 SearchBar.jsx             # Search bar component
+│   ├── 📄 SearchTools.jsx           # Search tools container
+│   ├── 📄 StartupImageManager.jsx   # Startup image management
+│   ├── 📄 TagChip.jsx               # Tag chip component
+│   ├── 📄 TagInput.jsx              # Tag input component
+│   ├── 📄 TagManager.jsx            # Tag management component
+│   ├── 📄 TagSelector.jsx           # Tag selection component
+│   ├── 📄 Tooltip.jsx               # Tooltip component
+│   ├── 📄 TutorialTooltip.jsx       # Tutorial tooltip component
+│   └── 📄 VerticalTabBar.jsx        # Vertical tab bar component
+│
+├── 📁 domain/                  # Domain entities and value objects
+│   ├── 📄 Photo.js                  # Photo domain entity
+│   ├── 📄 PhotoCollection.js        # Photo collection entity
+│   ├── 📄 PhotoCollectionFetchers.js # Collection data fetchers
+│   ├── 📄 UnifiedPhotoCollection.js # Unified collection model
+│   ├── 📄 ImportState.js            # Import state machine
+│   ├── 📄 SinglePhotoDisplay.js     # Single photo display logic
+│   └── 📄 ViewMode.js               # ViewMode value object
 │
 ├── 📁 services/                # External service integrations
 │   ├── 📄 LoggerService.js     # Structured logging service
@@ -267,7 +324,9 @@ src-tauri/
 │   │
 │   ├── 📁 commands/            # Tauri command handlers (refactored)
 │   │   ├── 📄 mod.rs           # Commands module declaration
+│   │   ├── 📄 ai_model_commands.rs   # AI model management commands
 │   │   ├── 📄 album_commands.rs    # Album management commands
+│   │   ├── 📄 burst_group_commands.rs # Burst group commands
 │   │   ├── 📄 collection_commands.rs # Collection commands
 │   │   ├── 📄 config_commands.rs   # Configuration commands
 │   │   ├── 📄 database_commands.rs # Database commands
@@ -277,6 +336,8 @@ src-tauri/
 │   │   ├── 📄 job_queue_commands.rs # Job queue commands
 │   │   ├── 📄 logging_commands.rs  # Logging commands
 │   │   ├── 📄 photo_commands.rs    # Main photo commands
+│   │   ├── 📄 recovery_queue_commands.rs # Recovery queue commands
+│   │   ├── 📄 s3_commands.rs       # S3 cloud storage commands
 │   │   ├── 📄 search_commands.rs   # Search commands
 │   │   ├── 📄 style_commands.rs    # Style commands
 │   │   ├── 📄 tag_commands.rs      # Tag commands
@@ -296,6 +357,7 @@ src-tauri/
 │   │
 │   ├── 📄 entity.rs            # Domain entities module declaration
 │   ├── 📁 entity/              # Business domain entities
+│   │   ├── 📄 burst_group.rs   # Burst photo group entity
 │   │   ├── 📄 config.rs        # Application configuration entity
 │   │   ├── 📄 google_photos.rs # Google Photos integration entity
 │   │   ├── 📄 importer.rs      # Import operation state entity
@@ -303,6 +365,8 @@ src-tauri/
 │   │   ├── 📄 photo.rs         # Photo entity with metadata
 │   │   ├── 📄 photo_collection.rs # Unified collection entity
 │   │   ├── 📄 photo_meta.rs    # Photo metadata entities
+│   │   ├── 📄 recovery_queue.rs # Recovery queue entity
+│   │   ├── 📄 storage_sync.rs  # Storage synchronization entity
 │   │   └── 📄 trash.rs         # Trash/recycle bin entity
 │   │
 │   ├── 📄 domain_service.rs    # Domain services module declaration
@@ -313,8 +377,22 @@ src-tauri/
 │   │   ├── 📄 logging_service.rs # Structured logging service
 │   │   ├── 📄 photo_service.rs # Photo processing services
 │   │   ├── 📄 repository_dir_service.rs # Repository directory services
+│   │   ├── 📄 s3_service.rs    # S3 cloud storage service
 │   │   ├── 📄 thumbnail_service.rs # Thumbnail generation service
 │   │   ├── 📄 token_storage_service.rs # OAuth token management
+│   │   │
+│   │   ├── 📁 ai_tagging/      # AI auto-tagging subsystem
+│   │   │   ├── 📄 mod.rs       # AI tagging module
+│   │   │   ├── 📄 service.rs   # AI tagging service
+│   │   │   ├── 📄 categories.rs # Tag categories and labels
+│   │   │   │
+│   │   │   └── 📁 backend/     # AI model backends
+│   │   │       ├── 📄 mod.rs   # Backend module
+│   │   │       ├── 📄 clip_common.rs # Common CLIP utilities
+│   │   │       ├── 📄 model_manager.rs # Model download/management
+│   │   │       ├── 📄 onnx.rs  # ONNX runtime backend
+│   │   │       ├── 📄 openclip.rs # OpenCLIP backend
+│   │   │       └── 📄 siglip.rs # SigLIP backend
 │   │   │
 │   │   └── 📁 job_queue/       # Job queue subsystem
 │   │       ├── 📄 mod.rs       # Job queue module
@@ -347,28 +425,39 @@ src-tauri/
 │   │   │   └── 📄 directory.rs # Filesystem-based repository
 │   │   │
 │   │   └── 📁 meta_db/         # Metadata database (refactored)
-│   │       ├── 📄 mod.rs       # SQLite module
-│   │       ├── 📄 albums.rs    # Album operations
-│   │       ├── 📄 collections.rs # Collection operations
-│   │       ├── 📄 counts.rs    # Count operations
-│   │       ├── 📄 date_summary.rs # Date summary operations
-│   │       ├── 📄 dates.rs     # Date operations
-│   │       ├── 📄 exif.rs      # EXIF operations
-│   │       ├── 📄 job_queue.rs # Job queue operations
-│   │       ├── 📄 photo_crud.rs # Photo CRUD operations
-│   │       ├── 📄 photo_metadata.rs # Photo metadata operations
-│   │       ├── 📄 search.rs    # Search operations
-│   │       ├── 📄 search_debug.rs # Search debugging utilities
-│   │       ├── 📄 filter_options.rs # Filter options builder
-│   │       ├── 📄 tags.rs      # Tag operations
-│   │       ├── 📄 utils.rs     # SQLite utilities
+│   │       │
+│   │       ├── 📁 sqlite/      # SQLite database implementation
+│   │       │   ├── 📄 mod.rs       # SQLite module
+│   │       │   ├── 📄 burst_groups.rs # Burst group operations
+│   │       │   ├── 📄 counts.rs    # Count operations
+│   │       │   ├── 📄 date_summary.rs # Date summary operations
+│   │       │   ├── 📄 dates.rs     # Date operations
+│   │       │   ├── 📄 exif.rs      # EXIF operations
+│   │       │   ├── 📄 filter_options.rs # Filter options builder
+│   │       │   ├── 📄 job_queue.rs # Job queue operations
+│   │       │   ├── 📄 photo_crud.rs # Photo CRUD operations
+│   │       │   ├── 📄 photo_metadata.rs # Photo metadata operations
+│   │       │   ├── 📄 recovery_queue.rs # Recovery queue operations
+│   │       │   ├── 📄 search.rs    # Search operations
+│   │       │   ├── 📄 search_debug.rs # Search debugging utilities
+│   │       │   ├── 📄 tags.rs      # Tag operations
+│   │       │   ├── 📄 utils.rs     # SQLite utilities
+│   │       │   │
+│   │       │   └── 📁 collections/ # Collection operations
+│   │       │       ├── 📄 mod.rs   # Collections module
+│   │       │       ├── 📄 crud.rs  # Collection CRUD operations
+│   │       │       ├── 📄 items.rs # Collection item operations
+│   │       │       └── 📄 queries.rs # Collection queries
 │   │       │
 │   │       └── 📁 migrations/  # Database migrations
 │   │           ├── 📄 mod.rs   # Migrations module
 │   │           ├── 📄 001_initial_schema.sql
 │   │           ├── 📄 002_create_date_summary.sql
 │   │           ├── 📄 003_create_collections.sql
-│   │           └── 📄 004_create_job_queue.sql
+│   │           ├── 📄 004_create_job_queue.sql
+│   │           ├── 📄 005_create_recovery_queue.sql
+│   │           ├── 📄 006_create_burst_groups.sql
+│   │           └── 📄 007_add_storage_sync.sql
 │   │
 │   ├── 📄 value.rs             # Value objects module declaration
 │   ├── 📁 value/               # Domain value objects
@@ -413,40 +502,48 @@ src-tauri/
 #### Domain-Driven Design Structure
 
 **Entities** (`entity/`): Core business objects that represent the main concepts
+- **`burst_group.rs`**: Burst photo grouping entity
 - **`config.rs`**: Application configuration settings and preferences
-- **`photo.rs`**: Photo object with file information, EXIF data, and metadata
-- **`photo_meta.rs`**: Photo metadata like ratings, comments, and user annotations
-- **`photo_collection.rs`**: Unified collection entity for albums and tags
+- **`google_photos.rs`**: Google Photos integration entity
 - **`importer.rs`**: Import operation state and progress tracking
 - **`job_queue.rs`**: Background job definitions and status tracking
-- **`google_photos.rs`**: Google Photos integration entity
+- **`photo.rs`**: Photo object with file information, EXIF data, and metadata
+- **`photo_collection.rs`**: Unified collection entity for albums and tags
+- **`photo_meta.rs`**: Photo metadata like ratings, comments, and user annotations
+- **`recovery_queue.rs`**: Recovery queue for failed operations
+- **`storage_sync.rs`**: Cloud storage synchronization entity
 - **`trash.rs`**: Deleted photo management
 
 **Domain Services** (`domain_service/`): Business logic operations
-- **`photo_service.rs`**: Photo processing (thumbnails, EXIF extraction, transformations)
+- **`dir_service.rs`**: Directory scanning and organization
 - **`file_service.rs`**: File system operations (copy, move, delete)
 - **`job_queue_service.rs`**: Asynchronous job processing and queue management
-- **`token_storage_service.rs`**: OAuth token management with keyring storage
 - **`logging_service.rs`**: Structured logging service with correlation tracking
-- **`dir_service.rs`**: Directory scanning and organization
+- **`photo_service.rs`**: Photo processing (thumbnails, EXIF extraction, transformations)
+- **`s3_service.rs`**: S3 cloud storage backup and sync operations
+- **`token_storage_service.rs`**: OAuth token management with keyring storage
+- **`ai_tagging/`**: AI auto-tagging subsystem with multiple model backends (CLIP, SigLIP, OpenCLIP)
 
 **Repositories** (`repository/`): Data access and persistence
 - **`db/directory.rs`**: Filesystem-based photo storage and retrieval
 - **`meta_db/sqlite/`**: SQLite database modules (refactored into separate files):
   - `mod.rs`: Main SQLite module
-  - `albums.rs`: Album CRUD operations
-  - `collections.rs`: Unified collection operations
+  - `burst_groups.rs`: Burst group operations
   - `counts.rs`: Count queries
+  - `date_summary.rs`: Date summary operations
   - `dates.rs`: Date-related queries
   - `exif.rs`: EXIF data operations
+  - `filter_options.rs`: Filter options builder pattern
+  - `job_queue.rs`: Job queue operations
   - `photo_crud.rs`: Photo CRUD operations
   - `photo_metadata.rs`: Photo metadata operations
+  - `recovery_queue.rs`: Recovery queue operations
   - `search.rs`: Search functionality
   - `search_debug.rs`: Search debugging utilities
-  - `filter_options.rs`: Filter options builder pattern
   - `tags.rs`: Tag operations
   - `utils.rs`: SQLite utilities
-- **`meta_db/migrations/`**: Database migration SQL files
+  - `collections/`: Collection operations subdirectory (crud, items, queries)
+- **`meta_db/migrations/`**: Database migration SQL files (001-007)
 - **`config/json.rs`**: JSON-based configuration file management
 
 **Commands** (`commands/`): Tauri command handlers (refactored from lib.rs)
