@@ -130,16 +130,79 @@ impl SigLipClassifier {
         }
     }
 
+    /// Load pre-computed text embeddings from JSON file
+    fn load_precomputed_embeddings(&mut self) -> Result<bool, String> {
+        let embeddings_path = self.models_dir.join("siglip_text_embeddings.json");
+
+        if !embeddings_path.exists() {
+            log::debug!(
+                target: "ai_tagging",
+                "precomputed_embeddings_not_found; path={}",
+                embeddings_path.display()
+            );
+            return Ok(false);
+        }
+
+        let data = std::fs::read_to_string(&embeddings_path)
+            .map_err(|e| format!("Failed to read embeddings file: {}", e))?;
+
+        let parsed: HashMap<String, Vec<f32>> = serde_json::from_str(&data)
+            .map_err(|e| format!("Failed to parse embeddings JSON: {}", e))?;
+
+        // Validate embedding dimensions
+        if let Some(first_emb) = parsed.values().next() {
+            if first_emb.len() != SIGLIP_EMBED_DIM {
+                return Err(format!(
+                    "Embedding dimension mismatch: expected {}, got {}",
+                    SIGLIP_EMBED_DIM,
+                    first_emb.len()
+                ));
+            }
+        }
+
+        self.text_embeddings = parsed;
+        self.current_labels = self.text_embeddings.keys().cloned().collect();
+
+        log::info!(
+            target: "ai_tagging",
+            "loaded_precomputed_embeddings; count={}; dim={}",
+            self.text_embeddings.len(),
+            SIGLIP_EMBED_DIM
+        );
+
+        Ok(true)
+    }
+
     /// Pre-compute text embeddings for all labels
     fn precompute_text_embeddings(&mut self) -> Result<(), String> {
+        // 1. Try loading pre-computed embeddings first (highest priority)
+        match self.load_precomputed_embeddings() {
+            Ok(true) => {
+                return Ok(());
+            }
+            Ok(false) => {
+                // File not found
+            }
+            Err(e) => {
+                log::warn!(
+                    target: "ai_tagging",
+                    "precomputed_embeddings_load_error; error={}",
+                    e
+                );
+            }
+        }
+
+        // 2. If no text encoder available, warn (pre-computed file is required)
         if self.text_session.is_none() {
             log::warn!(
                 target: "ai_tagging",
-                "siglip_text_encoder_not_available; using_placeholder_embeddings"
+                "no_text_embeddings_available; siglip_classification_disabled; \
+                 please_place_siglip_text_embeddings.json_in_models_directory"
             );
-            return Ok(());
+            return Ok(()); // Don't error, but classification won't work
         }
 
+        // 3. If text encoder is available (future extension)
         for label in &self.current_labels.clone() {
             if !self.text_embeddings.contains_key(label) {
                 match self.encode_text(label) {
