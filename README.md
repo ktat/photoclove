@@ -21,6 +21,8 @@ PhotoClove is a desktop photo manager designed for speed and simplicity. Built w
 - **📊 Debug Logging**: Real-time log viewer with frontend/backend correlation for troubleshooting (Ctrl+Shift+L)
 - **🎬 Video Support**: View and manage MP4/WebM videos with thumbnail generation
 - **☁️ Google Photos Integration**: Secure OAuth authentication with automatic token refresh and seamless photo uploads
+- **☁️ S3 Cloud Backup**: Backup photos to Amazon S3 or S3-compatible storage (Wasabi, MinIO, Cloudflare R2, DigitalOcean Spaces) with auto-sync on import
+- **🤖 AI Auto-Tagging**: Automatic photo classification using MobileNet (fast, 32 categories), OpenCLIP, or SigLIP models with customizable labels
 - **🔄 Background Processing**: Advanced job queue with immediate retry, progress tracking, and comprehensive logging
 - **🔐 Secure Authentication**: Platform-native keyring storage for OAuth tokens with external service integration
 - **📚 Album Management**: Create custom photo collections with descriptions, cover photos, and custom ordering
@@ -209,6 +211,52 @@ PhotoClove provides powerful organization features for managing your photo colle
 - **Search Integration**: Filter photos by tags in advanced search
 - **Visual Indicators**: Tags displayed on photo thumbnails
 
+## 🤖 AI Auto-Tagging
+
+PhotoClove includes AI-powered automatic photo tagging with multiple model options:
+
+### Model Options
+- **MobileNet** (Default): Fast classification with 32 predefined categories (animals, landscapes, events, etc.) - ~15MB model
+- **OpenCLIP**: Flexible tagging with custom labels and person detection - ~350MB model
+- **SigLIP**: Improved CLIP variant with better accuracy - ~400MB model
+
+### Features
+- **Auto-tag on Import**: Automatically tag photos during the import process
+- **Confidence Threshold**: Adjustable threshold (0.5-0.95) for tag accuracy
+- **Category Filtering**: Enable/disable specific categories for MobileNet
+- **Custom Labels**: Define your own detection labels for CLIP-based models (e.g., "birthday party", "family dinner")
+- **Batch Processing**: Tag multiple photos via background job queue
+
+### Configuration
+Configure AI tagging in Preferences → AI Auto-Tagging. Models are downloaded on first use.
+
+## ☁️ S3 Cloud Backup
+
+PhotoClove supports backing up photos to S3-compatible cloud storage:
+
+### Supported Providers
+- **Amazon S3**: Full AWS integration with credential profiles
+- **Wasabi**: Hot Cloud Storage with S3 compatibility
+- **MinIO**: Self-hosted S3-compatible storage
+- **Cloudflare R2**: S3-compatible object storage
+- **DigitalOcean Spaces**: S3-compatible object storage
+- **Custom Endpoints**: Any S3-compatible storage
+
+### Features
+- **Auto-sync on Import**: Automatically upload photos after import
+- **Full Sync**: Upload all unsynced photos
+- **Incremental Sync**: Upload only new photos since last sync
+- **Date-based Sync**: Sync photos from specific dates
+- **Sync Status Tracking**: Per-photo sync status with provider information
+- **Database Backup**: Option to backup SQLite database to S3
+
+### Authentication
+- **AWS Credentials**: Use profiles from ~/.aws/credentials
+- **IAM Role**: For EC2/ECS deployments
+- **Access Keys**: Manual key entry for non-AWS providers
+
+Configure S3 backup in Preferences → S3 Backup.
+
 ## 🔍 Search & Filtering
 
 PhotoClove includes a comprehensive search system with advanced features:
@@ -247,6 +295,8 @@ PhotoClove uses an advanced job queue system with enhanced capabilities:
 - **Thumbnail Generation**: Create preview images with batch processing
 - **Database Updates**: Index new photos and metadata efficiently
 - **Google Photos Upload**: Secure cloud uploads with automatic token refresh
+- **AI Tagging**: Automatic photo classification with configurable models
+- **S3 Sync**: Upload photos to S3-compatible cloud storage
 
 ### Enhanced Features
 - **Immediate Retry**: Manual job retry executes instantly instead of waiting for next startup
@@ -334,6 +384,8 @@ PhotoClove uses a structured development workflow with the `improvement/` direct
 - [x] **Crop Tool**: Complete the photo cropping functionality with real-time preview
 - [x] **Thumbnail Display**: Display Window Algorithm for efficient thumbnail loading
 - [x] **Database Migrations**: Automatic schema updates on app startup with versioned migration system
+- [x] **AI Auto-Tagging**: Multi-model support (MobileNet, OpenCLIP, SigLIP) with customizable labels and auto-tag on import
+- [x] **S3 Cloud Backup**: Amazon S3 and S3-compatible storage backup with auto-sync, incremental sync, and per-photo tracking
 
 ### Current Focus 🎯
 - [ ] **CSS Modules Migration Completion**: Migrate remaining components (search/, modals, utilities) to CSS Modules
@@ -341,10 +393,10 @@ PhotoClove uses a structured development workflow with the `improvement/` direct
 - [ ] **Performance Optimization**: Further optimize large collection handling and memory management
 
 ### Future Plans
-- [ ] **Cloud Storage**: Amazon Photos integration
 - [ ] **Slide Show**: Full-screen photo presentation mode
 - [ ] **Internationalization**: Multi-language support
 - [ ] **Advanced Editing**: More sophisticated photo editing tools (filters, adjustments, layers)
+- [ ] **Amazon Photos Integration**: Direct upload to Amazon Photos service
 
 See [`CHANGES.md`](./CHANGES.md) for detailed version history and recent updates.
 
