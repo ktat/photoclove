@@ -218,12 +218,12 @@ pub fn get_photo_meta_data_in_date(
     );
 
     let query_sql = "SELECT pm.path, COALESCE(pm.exif_date_time_original, pm.exif_date_time, pm.photo_date) as photo_time, pm.star, pm.comment, pm.css_style, pm.google_photos_url,
-                        GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags, pm.exif_orientation
+                        GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags, pm.exif_orientation, pm.storage_sync
                  FROM photo_metadata pm
                  LEFT JOIN photo_collection_items pt ON pm.path = pt.photo_path
                  LEFT JOIN photo_collections t ON pt.collection_id = t.id AND t.type = 'tag'
                  WHERE pm.photo_date >= ?1 AND pm.photo_date < ?2 AND (pm.delete_flg = 0 OR pm.delete_flg IS NULL)
-                 GROUP BY pm.path, photo_time, pm.star, pm.comment, pm.css_style, pm.google_photos_url, pm.exif_orientation";
+                 GROUP BY pm.path, photo_time, pm.star, pm.comment, pm.css_style, pm.google_photos_url, pm.exif_orientation, pm.storage_sync";
 
     log::info!(target: "database", "get_photo_meta_data_in_date_query; query={}; date={}; next_date={}", query_sql, date_str, next_date);
 
@@ -243,6 +243,7 @@ pub fn get_photo_meta_data_in_date(
                 row.get(5)?,
                 row.get(6)?,
                 row.get(7)?,
+                row.get(8)?,
             ))
         })
         .map_err(|e| format!("Failed to execute query: {}", e))?;
@@ -259,7 +260,7 @@ pub fn get_photo_meta_data_in_date(
 }
 
 const PHOTO_META_QUERY: &str =
-    "SELECT path, COALESCE(exif_date_time_original, exif_date_time, photo_date) as photo_time, star, comment, css_style, google_photos_url, exif_orientation FROM photo_metadata WHERE path = ?1";
+    "SELECT path, COALESCE(exif_date_time_original, exif_date_time, photo_date) as photo_time, star, comment, css_style, google_photos_url, exif_orientation, storage_sync FROM photo_metadata WHERE path = ?1";
 
 /// Internal helper to fetch photo info from database
 fn fetch_photo_info(
@@ -278,6 +279,7 @@ fn fetch_photo_info(
             row.get(4)?,
             row.get(5)?,
             row.get(6)?,
+            row.get(7)?,
         ))
     })
     .ok()

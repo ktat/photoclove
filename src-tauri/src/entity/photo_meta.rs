@@ -12,6 +12,7 @@ pub struct PhotoMeta {
     pub comment: comment::Comment,
     pub google_photo_url: Option<String>,
     pub tags: Option<Vec<photo::PhotoTag>>,
+    pub storage_sync: Option<String>,
 }
 #[derive(Debug)]
 pub struct PhotoMetas {
@@ -41,6 +42,7 @@ impl PhotoMeta {
             comment: comment::Comment::new(""),
             google_photo_url: None,
             tags: None,
+            storage_sync: None,
         }
     }
 
@@ -102,6 +104,7 @@ impl PhotoMeta {
             comment: comment::Comment::new(""),
             google_photo_url: None,
             tags: None,
+            storage_sync: None,
         }
     }
 
@@ -123,6 +126,7 @@ impl PhotoMeta {
             comment: comment::Comment::new(&record.comment),
             google_photo_url: record.google_photo_url.clone(),
             tags: record.tags.clone(),
+            storage_sync: record.storage_sync.clone(),
         });
     }
 
@@ -156,6 +160,7 @@ impl PhotoMeta {
             comment: comment::Comment::new(&record.comment),
             google_photo_url: record.google_photo_url.clone(),
             tags: record.tags.clone(),
+            storage_sync: record.storage_sync.clone(),
         })
     }
 
@@ -166,6 +171,7 @@ impl PhotoMeta {
             comment: self.comment.clone(),
             google_photo_url: self.google_photo_url.clone(),
             tags: self.tags.clone(),
+            storage_sync: self.storage_sync.clone(),
         }
     }
 
