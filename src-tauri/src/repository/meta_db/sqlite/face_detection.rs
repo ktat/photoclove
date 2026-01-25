@@ -54,6 +54,20 @@ pub struct NamedFaceEmbedding {
     pub embedding: Vec<f32>,
 }
 
+/// Person with face thumbnail for list display
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PersonListItem {
+    pub person_id: i64,
+    pub person_name: Option<String>,
+    pub face_count: i32,
+    pub photo_count: i32,
+    pub photo_path: Option<String>,
+    pub bbox_x: Option<f32>,
+    pub bbox_y: Option<f32>,
+    pub bbox_width: Option<f32>,
+    pub bbox_height: Option<f32>,
+}
+
 /// Get photo_id from photo_metadata by path
 fn get_photo_id(conn: &rusqlite::Connection, photo_path: &str) -> Result<i64, String> {
     conn.query_row(
@@ -350,6 +364,60 @@ pub fn get_all_persons(sqlite: &SQLite) -> Result<Vec<PersonRecord>, String> {
                 photo_count: row.get(3)?,
                 created_at: row.get(4)?,
                 updated_at: row.get(5)?,
+            })
+        })
+        .map_err(|e| format!("Failed to query persons: {}", e))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect persons: {}", e))?;
+
+    Ok(persons)
+}
+
+/// Get all persons with face count and thumbnail for list display
+/// Sorted by face count (most detected first)
+pub fn get_all_persons_for_list(sqlite: &SQLite) -> Result<Vec<PersonListItem>, String> {
+    let conn = sqlite
+        .get_connection()
+        .map_err(|e| format!("Database error: {}", e))?;
+
+    // Get all persons with face count and one representative face for thumbnail
+    let mut stmt = conn
+        .prepare(
+            "SELECT
+                p.id as person_id,
+                p.name as person_name,
+                (SELECT COUNT(*) FROM detected_faces df WHERE df.person_id = p.id) as face_count,
+                p.photo_count,
+                pm.path as photo_path,
+                df.bbox_x,
+                df.bbox_y,
+                df.bbox_width,
+                df.bbox_height
+             FROM persons p
+             LEFT JOIN (
+                SELECT df.*, pdf.photo_id,
+                       ROW_NUMBER() OVER (PARTITION BY df.person_id ORDER BY df.confidence DESC) as rn
+                FROM detected_faces df
+                JOIN photo_detected_faces pdf ON df.id = pdf.detected_face_id
+                WHERE df.person_id IS NOT NULL
+             ) df ON df.person_id = p.id AND df.rn = 1
+             LEFT JOIN photo_metadata pm ON df.photo_id = pm.id
+             ORDER BY face_count DESC, p.name ASC NULLS LAST",
+        )
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let persons = stmt
+        .query_map([], |row| {
+            Ok(PersonListItem {
+                person_id: row.get(0)?,
+                person_name: row.get(1)?,
+                face_count: row.get(2)?,
+                photo_count: row.get(3)?,
+                photo_path: row.get(4)?,
+                bbox_x: row.get(5)?,
+                bbox_y: row.get(6)?,
+                bbox_width: row.get(7)?,
+                bbox_height: row.get(8)?,
             })
         })
         .map_err(|e| format!("Failed to query persons: {}", e))?

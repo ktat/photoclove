@@ -160,7 +160,7 @@ export function useAutoClosePhotoDisplayEffect({
 }) {
     useEffect(() => {
         // Close photo display when switching to modes that show lists instead of photos
-        if (viewMode === VIEW_MODES.ALBUM_LIST || viewMode === VIEW_MODES.TAG_LIST || viewMode === VIEW_MODES.HOME) {
+        if (viewMode === VIEW_MODES.ALBUM_LIST || viewMode === VIEW_MODES.TAG_LIST || viewMode === VIEW_MODES.FACE_LIST || viewMode === VIEW_MODES.HOME) {
             if (currentPhotoPath) {
                 logger.info('usePhotosListEffects', 'auto_close', 'Auto-closing photo display for list mode', { viewMode });
                 closePhotoDisplay();

@@ -83,6 +83,12 @@ export const usePhotosState = () => {
     const [trashPhotos, setTrashPhotos] = useState([]);
     const [selectedTags, setSelectedTags] = useState([]);
 
+    // Faces state
+    const [facesList, setFacesList] = useState([]);
+    const [faceSearchTerm, setFaceSearchTerm] = useState('');
+    const [currentPersonId, setCurrentPersonId] = useState(null);
+    const [currentPersonName, setCurrentPersonName] = useState('');
+
     // Filter popover state
     const [showFilterPopover, setShowFilterPopover] = useState(false);
     const [filterButtonRef, setFilterButtonRef] = useState(null);
@@ -212,6 +218,16 @@ export const usePhotosState = () => {
         setTrashPhotos,
         selectedTags,
         setSelectedTags,
+
+        // Faces
+        facesList,
+        setFacesList,
+        faceSearchTerm,
+        setFaceSearchTerm,
+        currentPersonId,
+        setCurrentPersonId,
+        currentPersonName,
+        setCurrentPersonName,
 
         // Filter popover
         showFilterPopover,

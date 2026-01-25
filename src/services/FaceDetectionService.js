@@ -149,6 +149,22 @@ export async function getAllPersons() {
 }
 
 /**
+ * Get all persons with face counts and thumbnails for list display
+ * Sorted by face count (most detected first)
+ * @returns {Promise<Array>} Array of person list items
+ * Each record contains: person_id, person_name, face_count, photo_count, photo_path, bbox_x, bbox_y, bbox_width, bbox_height
+ */
+export async function getAllPersonsForList() {
+    try {
+        const result = await invoke('get_all_persons_for_list');
+        return JSON.parse(result);
+    } catch (error) {
+        logger.error(CONTEXT, 'get_persons_for_list_failed', 'Failed to get persons for list', { error: error.toString() });
+        throw error;
+    }
+}
+
+/**
  * Get all named persons with face thumbnails, sorted by similarity to target face
  * @param {number|null} faceId - Optional face ID to calculate similarity against
  * @returns {Promise<Array>} Array of person records with face thumbnail info
@@ -286,6 +302,7 @@ export default {
     hasDetectedFaces,
     getStats,
     getAllPersons,
+    getAllPersonsForList,
     getPersonsWithFaces,
     createPerson,
     updatePersonName,

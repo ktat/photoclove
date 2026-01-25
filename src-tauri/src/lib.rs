@@ -311,6 +311,7 @@ pub fn run() {
             has_photo_faces,
             get_face_detection_stats,
             get_all_persons,
+            get_all_persons_for_list,
             get_persons_with_faces,
             create_person,
             update_person_name,

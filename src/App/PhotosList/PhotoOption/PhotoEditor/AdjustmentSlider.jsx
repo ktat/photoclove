@@ -57,7 +57,7 @@ function AdjustmentSlider({
                     <button
                         className={styles['reset-btn']}
                         onClick={onReset}
-                        title={`Reset ${label.toLowerCase()}`}
+                        title={`Reset ${typeof label === 'string' ? label.toLowerCase() : 'value'}`}
                     >
                         ↻
                     </button>

@@ -616,6 +616,13 @@ impl SQLite {
         face_detection::get_all_persons(self)
     }
 
+    /// Get all persons with face count and thumbnail for list display
+    pub fn get_all_persons_for_list(
+        &self,
+    ) -> Result<Vec<face_detection::PersonListItem>, String> {
+        face_detection::get_all_persons_for_list(self)
+    }
+
     /// Get all named persons with face thumbnail info, sorted by similarity to target embedding
     pub fn get_persons_with_faces(
         &self,
