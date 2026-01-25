@@ -215,6 +215,31 @@ impl Default for AiTaggingConfig {
     }
 }
 
+/// Face Detection configuration
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FaceDetectionConfig {
+    /// Confidence threshold for face detection (0.0 to 1.0)
+    pub confidence_threshold: f32,
+    /// Maximum number of faces to detect per image
+    pub max_faces: u32,
+    /// Whether to generate face embeddings for recognition
+    pub generate_embeddings: bool,
+}
+
+impl Default for FaceDetectionConfig {
+    fn default() -> Self {
+        Self {
+            confidence_threshold: 0.7,
+            max_faces: 50,
+            generate_embeddings: true,
+        }
+    }
+}
+
+fn default_face_detection() -> FaceDetectionConfig {
+    FaceDetectionConfig::default()
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StartupImageConfig {
     pub mode: String,  // "default" or "custom"
@@ -268,6 +293,8 @@ pub struct Config {
     pub grouping: GroupingConfig,
     #[serde(default = "default_ai_tagging")]
     pub ai_tagging: AiTaggingConfig,
+    #[serde(default = "default_face_detection")]
+    pub face_detection: FaceDetectionConfig,
     #[serde(default = "default_s3")]
     pub s3: Option<S3Config>,
 }
@@ -307,6 +334,7 @@ impl Config {
         self.startup_images = config.startup_images;
         self.grouping = config.grouping;
         self.ai_tagging = config.ai_tagging;
+        self.face_detection = config.face_detection;
         self.s3 = config.s3;
     }
 
@@ -409,6 +437,7 @@ impl Config {
             startup_images: default_startup_images(),
             grouping: default_grouping(),
             ai_tagging: default_ai_tagging(),
+            face_detection: default_face_detection(),
             s3: default_s3(),
         }
     }

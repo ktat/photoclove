@@ -69,6 +69,8 @@ pub enum JobType {
     AiTagging,
     #[serde(rename = "s3_sync")]
     S3Sync,
+    #[serde(rename = "face_detection")]
+    FaceDetection,
 }
 
 impl ToString for JobType {
@@ -81,6 +83,7 @@ impl ToString for JobType {
             JobType::RecalculateGrouping => "recalculate_grouping".to_string(),
             JobType::AiTagging => "ai_tagging".to_string(),
             JobType::S3Sync => "s3_sync".to_string(),
+            JobType::FaceDetection => "face_detection".to_string(),
         }
     }
 }

@@ -1,9 +1,11 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useLayoutEffect, useState, useRef } from "react";
 import { openUrl } from '@tauri-apps/plugin-opener';
 import fileUrl from "../../../PathUtil.jsx";
 import { logger } from "../../../services/LoggerService.js";
 import { getCombinedTransformStyle } from "../../../utils/orientationUtils.js";
+import FaceBoundingBoxOverlay from "./FaceBoundingBoxOverlay.jsx";
+import { useFaceDetection } from "../../../context/FaceDetectionContext.jsx";
 
 // Layout and timing constants
 const CONTAINER_READY_DELAY_MS = 50;
@@ -37,6 +39,12 @@ function PhotoDisplay(props) {
     const [isShowingThumbnail, setIsShowingThumbnail] = useState(false); // Track if currently showing thumbnail
     const fullImageLoadTimeoutRef = useRef(null);
     const fullImageRef = useRef(null); // Hidden img element for preloading
+
+    // Face detection context - shared with PhotoFaces
+    const { detectedFaces, showFaceBboxes, setShowFaceBboxes, isFaceTabActive, hoveredFaceId } = useFaceDetection();
+    const [imageNaturalSize, setImageNaturalSize] = useState({ width: 0, height: 0 });
+    const [displayedImageSize, setDisplayedImageSize] = useState({ width: 0, height: 0 });
+    const imgRef = useRef(null);
 
     // Function to parse CSS style string and convert to style object
     const parseCssStyle = (cssString) => {
@@ -86,6 +94,42 @@ function PhotoDisplay(props) {
         handleImgLoad(null, 0);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.photosListMiniClosed])
+
+    // Toggle face bbox visibility with 'f' key (only when Face tab is active)
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'f' && !e.ctrlKey && !e.metaKey && !e.altKey && isFaceTabActive) {
+                // Don't toggle if typing in an input
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                    return;
+                }
+                setShowFaceBboxes(prev => !prev);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isFaceTabActive, setShowFaceBboxes]);
+
+    // Update displayed image size when faces change or image style changes
+    // This ensures face bounding boxes are positioned correctly after detection
+    useLayoutEffect(() => {
+        const updateSize = () => {
+            if (imgRef.current) {
+                const { offsetWidth, offsetHeight } = imgRef.current;
+                if (offsetWidth > 0 && offsetHeight > 0) {
+                    setDisplayedImageSize({ width: offsetWidth, height: offsetHeight });
+                }
+            }
+        };
+
+        // Update immediately
+        updateSize();
+
+        // Also update on next frame to ensure DOM has updated
+        const rafId = requestAnimationFrame(updateSize);
+        return () => cancelAnimationFrame(rafId);
+    }, [detectedFaces, props.imgStyle]);
 
     useEffect((e) => {
         // Don't set opacity here - let handleImgLoad handle it when image is ready
@@ -268,11 +312,14 @@ function PhotoDisplay(props) {
         const yRatio = y / oldHeight;
 
         // Apply new size
-        props.SetImgStyle({ 
+        props.SetImgStyle({
             width: newWidth + 'px',
             height: newHeight + 'px',
-            opacity: '100%' 
+            opacity: '100%'
         });
+
+        // Update displayed image size for face bounding box overlay
+        setDisplayedImageSize({ width: newWidth, height: newHeight });
 
         // Calculate scroll to keep mouse point stable
         setTimeout(() => {
@@ -329,6 +376,8 @@ function PhotoDisplay(props) {
         if (e !== undefined && e !== null) {
             height = e.naturalHeight;
             width = e.naturalWidth;
+            // Store natural size for face bbox positioning
+            setImageNaturalSize({ width: e.naturalWidth, height: e.naturalHeight });
         }
 
         // Use the event target dimensions if available, otherwise use globals
@@ -395,6 +444,9 @@ function PhotoDisplay(props) {
                 wrapperDiv.style.width = fittedWidth + 'px';
                 wrapperDiv.style.height = fittedHeight + 'px';
                 wrapperDiv.style.overflow = 'hidden';
+
+                // Update displayed image size for face bounding box overlay
+                setDisplayedImageSize({ width: fittedWidth, height: fittedHeight });
 
                 logger.debug('PhotoDisplay', 'wrapper_size_calculated', 'Calculated wrapper size', {
                     fittedWidth,
@@ -474,8 +526,8 @@ function PhotoDisplay(props) {
                 Open with other software: <a href="#" onClick={(e) => openUrl(fileUrl(props.currentPhotoPath))}>{props.currentPhotoPath}</a>
             </div>
             {props.currentPhotoPath && !props.currentPhotoPath.match(/\.(mp4|webm)$/i) &&
-                <div id="imageWrapper" style={{ overflow: 'auto', alignItems: 'center', justifyContent: 'center', maxWidth: '100%', maxHeight: '100%' }}>
-                    <img id="photoImgTag" className={photoDisplayImgClass + (isLoadingFullImage ? " loading-thumbnail" : "")}
+                <div id="imageWrapper" style={{ overflow: 'auto', alignItems: 'center', justifyContent: 'center', maxWidth: '100%', maxHeight: '100%', position: 'relative' }}>
+                    <img ref={imgRef} id="photoImgTag" className={photoDisplayImgClass + (isLoadingFullImage ? " loading-thumbnail" : "")}
                         loading="eager"
                         onDoubleClick={(e) => props.togglePhotoSelected(props.burstRestrictionsActive)}
                         onError={(e) => {
@@ -509,6 +561,41 @@ function PhotoDisplay(props) {
                         onMouseUp={(e) => dragPhotoEnd(e)}
                         onWheel={(e) => photoScroll(e)}
                     />
+                    {/* Face bounding box overlay - only shown when Face tab is active */}
+                    {isFaceTabActive && showFaceBboxes && detectedFaces.length > 0 && (
+                        <FaceBoundingBoxOverlay
+                            faces={detectedFaces}
+                            imageWidth={displayedImageSize.width || imgRef.current?.offsetWidth || 0}
+                            imageHeight={displayedImageSize.height || imgRef.current?.offsetHeight || 0}
+                            hoveredFaceId={hoveredFaceId}
+                        />
+                    )}
+                    {/* Face count indicator - only shown when Face tab is active */}
+                    {isFaceTabActive && detectedFaces.length > 0 && (
+                        <div
+                            onClick={() => setShowFaceBboxes(!showFaceBboxes)}
+                            style={{
+                                position: 'absolute',
+                                bottom: '20px',
+                                left: '20px',
+                                backgroundColor: showFaceBboxes ? 'var(--color-primary)' : 'rgba(0, 0, 0, 0.6)',
+                                color: 'white',
+                                padding: '6px 12px',
+                                borderRadius: 'var(--radius-md)',
+                                fontSize: 'var(--font-size-sm)',
+                                cursor: 'pointer',
+                                zIndex: 100,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'background-color 0.2s'
+                            }}
+                            title="Click to toggle face boxes (or press 'f')"
+                        >
+                            👤 {detectedFaces.length} face{detectedFaces.length !== 1 ? 's' : ''}
+                            <span style={{ opacity: 0.7, fontSize: '10px' }}>[F]</span>
+                        </div>
+                    )}
                     {/* Burst badge - shows when viewing burst representative in burst mode (clickable to open group) */}
                     {props.burstModeEnabled && props.isBurstRepresentative && props.burstGroupId && !props.isInBurstGroupMode && (
                         <div

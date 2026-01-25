@@ -4,10 +4,12 @@ import { confirm } from "@tauri-apps/plugin-dialog";
 import PhotoInfo from "./PhotoOption/PhotoInfo.jsx";
 import PhotoEditor from "./PhotoOption/PhotoEditor.jsx";
 import PhotoTags from "./PhotoOption/PhotoTags.jsx";
+import PhotoFaces from "./PhotoOption/PhotoFaces.jsx";
 import AlbumTab from "./AlbumTab.jsx";
 import SelectionTab from "./DirectoryMenu/SelectionTab.jsx";
 import TutorialTooltip from "../../components/TutorialTooltip.jsx";
 import { useUI } from "../../context/UIContext.jsx";
+import { useFaceDetection } from "../../context/FaceDetectionContext.jsx";
 import { VIEW_MODES } from "../../constants/viewModes.js";
 import { useTutorial } from "../../hooks/useTutorial.js";
 import { getTutorialContent } from "./DirectoryMenu/tutorialContent.jsx";
@@ -18,6 +20,7 @@ import styles from './PhotoOption.module.css';
 function PhotoOption(props) {
     const [activeTab, setActiveTab] = useState("info");
     const { viewMode, currentAlbumId, burstModeEnabled } = useUI();
+    const { setIsFaceTabActive, clearFaceState } = useFaceDetection();
 
     // Get current tag ID from viewModeObj
     const currentTagId = props.viewModeObj?.getCurrentTagId();
@@ -34,6 +37,17 @@ function PhotoOption(props) {
     const currentPhoto = props.currentPhoto;
     const isBurstRepresentative = currentPhoto?.burst_group_id && currentPhoto?.burst_count > 1;
     const burstRestrictionsActive = burstModeEnabled && isBurstRepresentative && !isInBurstGroupMode;
+
+    // Track Face tab active state for showing face bounding boxes
+    useEffect(() => {
+        const isFaceTabActive = activeTab === "faces" && props.showSideMenu;
+        setIsFaceTabActive(isFaceTabActive);
+    }, [activeTab, props.showSideMenu, setIsFaceTabActive]);
+
+    // Clear face state when photo changes
+    useEffect(() => {
+        clearFaceState();
+    }, [props.currentPhotoPath, clearFaceState]);
 
     // Tutorial state (Feature #152/#153)
     const [showTutorial, setShowTutorial] = useState(false);
@@ -290,6 +304,18 @@ function PhotoOption(props) {
                         <span className={styles['vertical-text']}>Tags</span>
                     </button>
                 )}
+                {/* Hide Faces tab in import and trash modes */}
+                {!isImportMode && !isTrashMode && (
+                    <button
+                        className={classNames(styles['vertical-tab-button'], {
+                            [styles.active]: activeTab === "faces" && props.showSideMenu
+                        })}
+                        onClick={() => handleTabClick("faces")}
+                        title="Face Detection"
+                    >
+                        <span className={styles['vertical-text']}>Faces</span>
+                    </button>
+                )}
                 {isAlbumMode && (
                     <button
                         className={classNames(styles['vertical-tab-button'], { [styles.active]: activeTab === "album" && props.showSideMenu })}
@@ -361,6 +387,12 @@ function PhotoOption(props) {
                             showSideMenu={props.showSideMenu}
                             addFooterMessage={props.addFooterMessage}
                             onPhotosRefresh={props.onPhotosRefresh}
+                        />
+                    )}
+                    {activeTab === "faces" && (
+                        <PhotoFaces
+                            currentPhotoPath={props.currentPhotoPath}
+                            addFooterMessage={props.addFooterMessage}
                         />
                     )}
                     {activeTab === "album" && isAlbumMode && (

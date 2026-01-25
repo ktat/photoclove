@@ -10,6 +10,7 @@ import StartupTab from "./tabs/StartupTab.jsx";
 import ThumbnailTab from "./tabs/ThumbnailTab.jsx";
 import GroupingTab from "./tabs/GroupingTab.jsx";
 import AITaggingTab from "./tabs/AITaggingTab.jsx";
+import FaceDetectionTab from "./tabs/FaceDetectionTab.jsx";
 import PerformanceTab from "./tabs/PerformanceTab.jsx";
 import LoggingTab from "./tabs/LoggingTab.jsx";
 import S3BackupTab from "./tabs/S3BackupTab.jsx";
@@ -173,6 +174,7 @@ function Preferences(props) {
         { id: 'thumbnail', label: 'Thumbnail', icon: '🖼️' },
         { id: 'grouping', label: 'Grouping', icon: '📸' },
         { id: 'ai_tagging', label: 'AI Tagging', icon: '🤖' },
+        { id: 'face_detection', label: 'Face Detection', icon: '👤' },
         { id: 'performance', label: 'Performance', icon: '⚡' },
         { id: 'logging', label: 'Logging', icon: '📝' },
         { id: 's3_backup', label: 'S3 Backup', icon: '☁️' },
@@ -211,6 +213,14 @@ function Preferences(props) {
             case 'ai_tagging':
                 return (
                     <AITaggingTab
+                        config={config}
+                        setConfig={setConfig}
+                        addFooterMessage={props.addFooterMessage}
+                    />
+                );
+            case 'face_detection':
+                return (
+                    <FaceDetectionTab
                         config={config}
                         setConfig={setConfig}
                         addFooterMessage={props.addFooterMessage}
