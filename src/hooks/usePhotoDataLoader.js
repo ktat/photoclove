@@ -15,6 +15,7 @@ export function usePhotoDataLoader({
     setFilteredAlbums,
     updateAlbumPhotos,
     setPhotosList,
+    setAllPhotosForCurrentFetch,
     setTagsList,
     setFilteredTags,
     setTagPhotos,
@@ -209,6 +210,42 @@ export function usePhotoDataLoader({
         }
     }, [loadUnifiedData, setTagPhotos, setPhotosList, convertPhotosToEntities, startNewRequest, isRequestValid, burstModeEnabled]);
 
+    const loadPersonPhotos = useCallback(async (personId) => {
+        // Start new request, invalidating any previous pending requests
+        const requestId = startNewRequest();
+
+        try {
+            const data = await loadUnifiedData('person',
+                { query: personId.toString() },
+                { operation: 'person photos', personId, requestId });
+
+            // Check if this request was cancelled while waiting
+            if (!isRequestValid(requestId)) {
+                logger.debug('PhotosList', 'person_request_cancelled', 'Ignoring stale person photos response', {
+                    requestId,
+                    personId
+                });
+                return;
+            }
+
+            // Handle both array and object formats
+            const personPhotosData = data.photos || data;
+
+            // Wrapper signature: (photosData, isFromTrash, toJSON) - appConfig via closure
+            const photosAsJSON = convertPhotosToEntities(personPhotosData, false, true);
+
+            // Set photos for display (both photosList and allPhotosForCurrentFetch for filtering)
+            setPhotosList({ photos: photosAsJSON });
+            setAllPhotosForCurrentFetch(photosAsJSON);
+        } catch (error) {
+            // Ignore errors from cancelled requests
+            if (!isRequestValid(requestId)) {
+                return;
+            }
+            // Error already handled by loadUnifiedData
+        }
+    }, [loadUnifiedData, setPhotosList, setAllPhotosForCurrentFetch, convertPhotosToEntities, startNewRequest, isRequestValid]);
+
     // Load trash photos
     const loadTrashPhotos = useCallback(async () => {
         // Start new request, invalidating any previous pending requests
@@ -287,10 +324,13 @@ export function usePhotoDataLoader({
         loadAlbumPhotos,
         handleAlbumClick,
         
-        // Tag operations  
+        // Tag operations
         loadTags,
         loadTagPhotos,
-        
+
+        // Person operations
+        loadPersonPhotos,
+
         // Trash operations
         loadTrashPhotos,
         

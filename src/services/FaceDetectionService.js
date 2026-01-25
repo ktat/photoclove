@@ -165,6 +165,21 @@ export async function getAllPersonsForList() {
 }
 
 /**
+ * Get photo paths for a specific person
+ * @param {number} personId - The person ID
+ * @returns {Promise<Array<string>>} Array of photo paths
+ */
+export async function getPhotosForPerson(personId) {
+    try {
+        const result = await invoke('get_photos_for_person', { personId });
+        return JSON.parse(result);
+    } catch (error) {
+        logger.error(CONTEXT, 'get_photos_for_person_failed', 'Failed to get photos for person', { personId, error: error.toString() });
+        throw error;
+    }
+}
+
+/**
  * Get all named persons with face thumbnails, sorted by similarity to target face
  * @param {number|null} faceId - Optional face ID to calculate similarity against
  * @returns {Promise<Array>} Array of person records with face thumbnail info
@@ -223,21 +238,6 @@ export async function assignFaceToPerson(faceId, personId) {
         await invoke('assign_face_to_person', { faceId, personId });
     } catch (error) {
         logger.error(CONTEXT, 'assign_face_failed', 'Failed to assign face', { faceId, personId, error: error.toString() });
-        throw error;
-    }
-}
-
-/**
- * Get photos containing a person
- * @param {number} personId - Person ID
- * @returns {Promise<Array<string>>} Array of photo paths
- */
-export async function getPhotosForPerson(personId) {
-    try {
-        const result = await invoke('get_photos_for_person', { personId });
-        return JSON.parse(result);
-    } catch (error) {
-        logger.error(CONTEXT, 'get_person_photos_failed', 'Failed to get person photos', { personId, error: error.toString() });
         throw error;
     }
 }

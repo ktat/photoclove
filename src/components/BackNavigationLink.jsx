@@ -6,12 +6,13 @@ import { logger } from '../services/LoggerService.js';
  * Back navigation link component for empty states
  * Displays appropriate back link based on current view mode
  */
-function BackNavigationLink({ 
-    viewModeObj, 
-    clearSearch, 
-    toggleAlbumListMode, 
-    openTagsList, 
-    toggleHome 
+function BackNavigationLink({
+    viewModeObj,
+    clearSearch,
+    toggleAlbumListMode,
+    openTagsList,
+    openFacesList,
+    toggleHome
 }) {
     const backNavInfo = viewModeObj.getBackNavigationInfo();
     
@@ -31,6 +32,9 @@ function BackNavigationLink({
                 break;
             case 'openTagsList':
                 openTagsList();
+                break;
+            case 'openFacesList':
+                openFacesList();
                 break;
             case 'toggleHome':
                 toggleHome();

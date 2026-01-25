@@ -14,9 +14,11 @@ function StatusBar({
     currentDate,
     currentAlbumName,
     currentTagName,
+    currentPersonName,
     searchQuery,
     toggleAlbumListMode,
     openTagsList,
+    openFacesList,
     goBackFromBurstGroup,
     isLimitedByConfig,
     onRefresh
@@ -26,6 +28,7 @@ function StatusBar({
         date: currentDate,
         albumName: currentAlbumName,
         tagName: currentTagName,
+        personName: currentPersonName,
         searchQuery: searchQuery
     });
 
@@ -66,8 +69,8 @@ function StatusBar({
         if (viewMode === VIEW_MODES.ALBUM) {
             return (
                 <>
-                    <a className="back-to-home" href="#" onClick={(e) => { e.preventDefault(); toggleAlbumListMode(); }}>
-                        Back to Album List
+                    <a className="back-to-home no-home-icon" href="#" onClick={(e) => { e.preventDefault(); toggleAlbumListMode(); }}>
+                        ← Back to Album List
                     </a>
                     <span style={{ marginLeft: "10px" }}>{title}</span>
                     <ReloadButton />
@@ -76,8 +79,18 @@ function StatusBar({
         } else if (viewMode === VIEW_MODES.TAG) {
             return (
                 <>
-                    <a className="back-to-home" href="#" onClick={(e) => { e.preventDefault(); openTagsList(); }}>
-                        Back to Tag List
+                    <a className="back-to-home no-home-icon" href="#" onClick={(e) => { e.preventDefault(); openTagsList(); }}>
+                        ← Back to Tag List
+                    </a>
+                    <span style={{ marginLeft: "10px" }}>{title}</span>
+                    <ReloadButton />
+                </>
+            );
+        } else if (viewMode === VIEW_MODES.PERSON) {
+            return (
+                <>
+                    <a className="back-to-home no-home-icon" href="#" onClick={(e) => { e.preventDefault(); openFacesList(); }}>
+                        ← Back to Faces List
                     </a>
                     <span style={{ marginLeft: "10px" }}>{title}</span>
                     <ReloadButton />

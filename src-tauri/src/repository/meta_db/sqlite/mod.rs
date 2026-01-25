@@ -636,9 +636,19 @@ impl SQLite {
         face_detection::assign_face_to_person(self, face_id, person_id)
     }
 
-    /// Get photos containing a specific person
+    /// Get photos containing a specific person (paths only)
     pub fn get_photos_for_person(&self, person_id: i64) -> Result<Vec<String>, String> {
         face_detection::get_photos_for_person(self, person_id)
+    }
+
+    /// Get full photo objects for a specific person
+    pub fn get_photos_for_person_full(
+        &self,
+        person_id: i64,
+        sort_value: i32,
+        config: Option<config::Config>,
+    ) -> Result<Vec<photo::Photo>, String> {
+        face_detection::get_photos_for_person_full(self, person_id, sort_value, config)
     }
 
     /// Delete a person

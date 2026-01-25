@@ -85,6 +85,7 @@ function PhotoListContent({
     // Derive values from viewModeObj
     const currentAlbumName = viewModeObj.getCollectionName();
     const currentTagName = viewModeObj.getCollectionName();
+    const currentPersonName = viewModeObj.getCurrentPersonName();
     const recentPhotosMode = viewModeObj.isRecentMode();
     const isTagListMode = viewModeObj.isTagListMode();
     const isSearchMode = viewModeObj.isSearchMode();
@@ -311,6 +312,7 @@ function PhotoListContent({
                                 clearSearch={clearSearch}
                                 toggleAlbumListMode={toggleAlbumListMode}
                                 openTagsList={openTagsList}
+                                openFacesList={openFacesList}
                                 toggleHome={toggleHome}
                             />
                         )}
@@ -321,9 +323,11 @@ function PhotoListContent({
                                     currentDate={currentDate}
                                     currentAlbumName={currentAlbumName}
                                     currentTagName={currentTagName}
+                                    currentPersonName={currentPersonName}
                                     searchQuery={searchQuery}
                                     toggleAlbumListMode={toggleAlbumListMode}
                                     openTagsList={openTagsList}
+                                    openFacesList={openFacesList}
                                     goBackFromBurstGroup={goBackFromBurstGroup}
                                     isLimitedByConfig={isLimitedByConfig}
                                     onRefresh={refreshPhotosOnly}
