@@ -149,6 +149,74 @@ export function useDateOperations({
     }, [currentDate, config]);
 
     /**
+     * Run face detection for photos in the current date
+     */
+    const runFaceDetectionInDate = useCallback(async () => {
+        if (lockRef.current) {
+            message("Currently, this operation is locked. Please wait for a while", "This operation is locked");
+            return;
+        }
+
+        // Check if face detection models are available
+        try {
+            const statusJson = await invokeWithErrorHandling(
+                "get_face_detection_model_status",
+                {},
+                'dateOperations',
+                { parseJson: true }
+            );
+
+            if (!statusJson.is_ready) {
+                message(
+                    "Face detection models are not available.\n\n" +
+                    "To use this feature:\n" +
+                    "1. Go to Preferences (File menu → Preferences)\n" +
+                    "2. Select the 'Face Detection' tab\n" +
+                    "3. Download the required models\n" +
+                    "4. Try again",
+                    "Face Detection Not Ready"
+                );
+                return;
+            }
+        } catch (error) {
+            message("Failed to check face detection model status: " + error, "Error");
+            return;
+        }
+
+        const answer = await confirm(
+            "This will run face detection for photos in this date.\n" +
+            "Detected faces will be stored for person recognition.",
+            "Run Face Detection"
+        );
+        if (answer) {
+            lockRef.current = true;
+            try {
+                const result = await invokeWithErrorHandling(
+                    "run_face_detection_for_date",
+                    { date: currentDate },
+                    'dateOperations',
+                    { parseJson: true }
+                );
+                lockRef.current = false;
+
+                if (result.result === "no_photos" || result.result === "no_images") {
+                    message("No photos found for face detection in this date.", "Face Detection");
+                } else {
+                    logger.info('dateOperations', 'face_detection_started', 'Face detection job started for date', {
+                        date: currentDate,
+                        jobUnitId: result.job_unit_id,
+                        photoCount: result.photo_count
+                    });
+                    message(`Face detection started for ${result.photo_count} photos. Check progress in footer.`, "Face Detection Started");
+                }
+            } catch (error) {
+                lockRef.current = false;
+                throw error;
+            }
+        }
+    }, [currentDate]);
+
+    /**
      * Run AI tagging for photos in the current date
      */
     const runAiTaggingInDate = useCallback(async () => {
@@ -242,6 +310,7 @@ export function useDateOperations({
         createThumbnails,
         recalculateGroupsInDate,
         runAiTaggingInDate,
+        runFaceDetectionInDate,
         applyDateChanges
     };
 }

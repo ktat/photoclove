@@ -97,7 +97,7 @@ function DirectoryMenu(props) {
     });
 
     // Date operations hook
-    const { createDbInDate, movePhotosToExifDate, createThumbnails, recalculateGroupsInDate, runAiTaggingInDate, applyDateChanges } = useDateOperations({
+    const { createDbInDate, movePhotosToExifDate, createThumbnails, recalculateGroupsInDate, runAiTaggingInDate, runFaceDetectionInDate, applyDateChanges } = useDateOperations({
         currentDate: props.currentDate,
         setCurrentDateNum: props.setCurrentDateNum,
         dateNum: props.dateNum,
@@ -259,6 +259,7 @@ function DirectoryMenu(props) {
                         <li><a href="#" onClick={() => { createThumbnails() }}>Make thumbnails</a></li>
                         <li><a href="#" onClick={() => { recalculateGroupsInDate() }}>Recalculate Groups of the date</a></li>
                         <li><a href="#" onClick={() => { runAiTaggingInDate() }}>Run AI Tagging</a></li>
+                        <li><a href="#" onClick={() => { runFaceDetectionInDate() }}>Run Face Detection</a></li>
                     </ul>
                 </div>
             )}

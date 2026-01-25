@@ -127,3 +127,201 @@ pub fn get_default_clip_labels() -> Result<String, String> {
     let labels: Vec<&str> = DEFAULT_CLIP_LABELS.to_vec();
     serde_json::to_string(&labels).map_err(|e| format!("Serialization error: {}", e))
 }
+
+/// Run AI tagging for a single photo
+#[tauri::command]
+pub fn run_ai_tagging_for_photo(
+    photo_path: String,
+    state: tauri::State<'_, crate::AppState>,
+) -> Result<String, String> {
+    use crate::domain_service::ai_tagging::service::{get_service, AITaggingConfig};
+    use std::path::Path;
+
+    log::info!(
+        target: "ai_tagging",
+        "single_photo_tagging_request; photo_path={}",
+        photo_path
+    );
+
+    let config = &state.config;
+
+    // Check if AI tagging is enabled
+    if !config.ai_tagging.enabled {
+        return Err("AI tagging is disabled. Enable it in Preferences first.".to_string());
+    }
+
+    // Convert config categories
+    let enabled_categories = if config.ai_tagging.enabled_categories.is_empty() {
+        None
+    } else {
+        Some(
+            config
+                .ai_tagging
+                .enabled_categories
+                .iter()
+                .filter_map(|s| parse_category(s))
+                .collect(),
+        )
+    };
+
+    // Initialize the AI service with configuration
+    let service_config = AITaggingConfig {
+        enabled: config.ai_tagging.enabled,
+        auto_tag_on_import: config.ai_tagging.auto_tag_on_import,
+        confidence_threshold: config.ai_tagging.confidence_threshold,
+        max_tags_per_image: config.ai_tagging.max_tags_per_image as usize,
+        enabled_categories,
+        model_type: config.ai_tagging.model_type.clone(),
+        custom_labels: config.ai_tagging.custom_labels.clone(),
+    };
+
+    let service = get_service();
+    {
+        let mut svc = service.lock().unwrap_or_else(|poisoned| {
+            log::warn!(
+                target: "ai_tagging",
+                "recovering_poisoned_lock; status=recovered"
+            );
+            poisoned.into_inner()
+        });
+
+        svc.set_config(service_config);
+
+        if !svc.is_ready() {
+            log::info!(
+                target: "ai_tagging",
+                "service_init; status=initializing"
+            );
+            svc.initialize()?;
+        }
+    }
+
+    // Tag the photo
+    let result = {
+        let svc = service.lock().unwrap_or_else(|poisoned| {
+            log::warn!(
+                target: "ai_tagging",
+                "recovering_poisoned_lock_in_tag; status=recovered"
+            );
+            poisoned.into_inner()
+        });
+        svc.tag_photo(Path::new(&photo_path))
+    };
+
+    if result.success {
+        // Store tags in database
+        for tag in &result.tags {
+            // Get or create the collection for this AI tag
+            let collection_id = match state.meta_db.get_or_create_collection(&tag.tag_name, "tag") {
+                Ok(id) => id,
+                Err(e) => {
+                    log::error!(
+                        target: "ai_tagging",
+                        "collection_error; tag={}; error={}",
+                        tag.tag_name,
+                        e
+                    );
+                    continue;
+                }
+            };
+
+            // Add photo to collection with confidence metadata
+            let metadata = serde_json::json!({
+                "confidence": tag.confidence,
+                "model": tag.model,
+                "auto_generated": true
+            });
+
+            if let Err(e) = state.meta_db.add_photo_to_collection_with_metadata(
+                collection_id,
+                &photo_path,
+                Some(metadata.to_string()),
+            ) {
+                log::error!(
+                    target: "ai_tagging",
+                    "add_photo_error; photo={}; collection={}; error={}",
+                    photo_path,
+                    tag.tag_name,
+                    e
+                );
+            }
+        }
+
+        log::info!(
+            target: "ai_tagging",
+            "single_photo_tagged; path={}; tags={}",
+            photo_path,
+            result.tags.len()
+        );
+
+        // Return the tags
+        let response_tags: Vec<serde_json::Value> = result
+            .tags
+            .iter()
+            .map(|t| {
+                serde_json::json!({
+                    "tag_name": t.tag_name,
+                    "confidence": t.confidence,
+                    "model": t.model
+                })
+            })
+            .collect();
+
+        Ok(serde_json::json!({
+            "success": true,
+            "tags": response_tags,
+            "count": result.tags.len()
+        })
+        .to_string())
+    } else {
+        let error = result.error.unwrap_or_else(|| "Unknown error".to_string());
+        log::warn!(
+            target: "ai_tagging",
+            "single_photo_tagging_failed; path={}; error={}",
+            photo_path,
+            error
+        );
+        Err(error)
+    }
+}
+
+/// Parse a string to AutoTagCategory
+fn parse_category(s: &str) -> Option<crate::domain_service::ai_tagging::categories::AutoTagCategory> {
+    use crate::domain_service::ai_tagging::categories::AutoTagCategory;
+
+    match s.to_lowercase().as_str() {
+        "person" => Some(AutoTagCategory::Person),
+        "face" => Some(AutoTagCategory::Face),
+        "group" => Some(AutoTagCategory::Group),
+        "dog" => Some(AutoTagCategory::Dog),
+        "cat" => Some(AutoTagCategory::Cat),
+        "bird" => Some(AutoTagCategory::Bird),
+        "fish" => Some(AutoTagCategory::Fish),
+        "horse" => Some(AutoTagCategory::Horse),
+        "cow" => Some(AutoTagCategory::Cow),
+        "insect" => Some(AutoTagCategory::Insect),
+        "wildlife" => Some(AutoTagCategory::Wildlife),
+        "sea" => Some(AutoTagCategory::Sea),
+        "beach" => Some(AutoTagCategory::Beach),
+        "mountain" => Some(AutoTagCategory::Mountain),
+        "forest" => Some(AutoTagCategory::Forest),
+        "river" => Some(AutoTagCategory::River),
+        "lake" => Some(AutoTagCategory::Lake),
+        "sky" => Some(AutoTagCategory::Sky),
+        "sunset" => Some(AutoTagCategory::Sunset),
+        "flower" => Some(AutoTagCategory::Flower),
+        "tree" => Some(AutoTagCategory::Tree),
+        "plant" => Some(AutoTagCategory::Plant),
+        "garden" => Some(AutoTagCategory::Garden),
+        "food" => Some(AutoTagCategory::Food),
+        "building" => Some(AutoTagCategory::Building),
+        "street" => Some(AutoTagCategory::Street),
+        "indoor" => Some(AutoTagCategory::Indoor),
+        "outdoor" => Some(AutoTagCategory::Outdoor),
+        "night" => Some(AutoTagCategory::Night),
+        "wedding" => Some(AutoTagCategory::Wedding),
+        "birthday" => Some(AutoTagCategory::Birthday),
+        "travel" => Some(AutoTagCategory::Travel),
+        _ => None,
+    }
+}

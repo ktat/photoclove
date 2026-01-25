@@ -31,6 +31,8 @@ import { usePhotoListStateGroups } from "../hooks/usePhotoListStateGroups.js";
 import { useViewModeFactory } from "../hooks/useViewModeFactory.js";
 import { useFilteredPhotos } from "../hooks/useFilteredPhotos.js";
 import { usePhotosListHandlers } from "../hooks/usePhotosListHandlers.js";
+
+import { FaceDetectionProvider } from "../context/FaceDetectionContext.jsx";
 import {
     useViewModeChangeEffect,
     usePhotoSyncEffect,
@@ -483,7 +485,7 @@ function PhotosList({
 
     return (
         <ErrorBoundary name="PhotosList" level="component">
-            <>
+            <FaceDetectionProvider>
                 {photoLoading ? (
                     <div className="photoLoadingOnParent" style={{ display: photoLoading ? "block" : "none" }}>
                         <PhotoLoading viewModeObj={viewModeObj} />
@@ -571,7 +573,7 @@ function PhotosList({
                     setExtensionFilter={viewModeObj.isImportMode() ? setImportExtensionFilter : setExtensionFilter}
                     isImportMode={viewModeObj.isImportMode()}
                 />
-            </>
+            </FaceDetectionProvider>
         </ErrorBoundary>
     );
 }
