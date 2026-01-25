@@ -13,6 +13,8 @@ export const VIEW_MODES = {
   ALBUM: 'album',
   TAG_LIST: 'tag_list',
   TAG: 'tag',
+  FACE_LIST: 'face_list',
+  PERSON: 'person',
   TRASH: 'trash',
   IMPORT: 'import',
   PREFERENCES: 'preferences',
@@ -30,6 +32,7 @@ export const isPhotoViewingMode = (mode) => {
     VIEW_MODES.SEARCH,
     VIEW_MODES.ALBUM,
     VIEW_MODES.TAG,
+    VIEW_MODES.PERSON,
     VIEW_MODES.TRASH,
     VIEW_MODES.IN_BURST_GROUP
   ].includes(mode);
@@ -47,7 +50,8 @@ export const supportsBurstGrouping = (mode) => {
 export const isListMode = (mode) => {
   return [
     VIEW_MODES.ALBUM_LIST,
-    VIEW_MODES.TAG_LIST
+    VIEW_MODES.TAG_LIST,
+    VIEW_MODES.FACE_LIST
   ].includes(mode);
 };
 

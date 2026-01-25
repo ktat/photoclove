@@ -55,6 +55,7 @@ function App() {
     toggleHome,
     toggleAlbumListMode,
     openTagsList,
+    openFacesList,
     openTrash,
     addFooterMessage
   } = useUI();
@@ -438,6 +439,7 @@ function App() {
             toggleImporter={toggleImporter}
             toggleAlbumListMode={toggleAlbumListMode}
             openTagsList={openTagsList}
+            openFacesList={openFacesList}
             openTrash={openTrash}
             handleMouseEnter={handleMouseEnter}
             handleMouseLeave={handleMouseLeave}

@@ -33,6 +33,7 @@ import { useFilteredPhotos } from "../hooks/useFilteredPhotos.js";
 import { usePhotosListHandlers } from "../hooks/usePhotosListHandlers.js";
 
 import { FaceDetectionProvider } from "../context/FaceDetectionContext.jsx";
+import { getAllPersonsForList } from "../services/FaceDetectionService.js";
 import {
     useViewModeChangeEffect,
     usePhotoSyncEffect,
@@ -89,6 +90,7 @@ function PhotosList({
     const {
         toggleSearchPage, searchInitialQuery, currentAlbumId, currentTagId,
         viewMode, openAlbum, toggleAlbumListMode, openTag, openTagsList, toggleHome,
+        openPerson, openFacesList,
         openBurstGroup, goBackFromBurstGroup, currentBurstGroupId, burstModeEnabled,
         burstReturnMode, burstReturnModeData
     } = useUI();
@@ -133,7 +135,9 @@ function PhotosList({
         tagSearchTerm, setTagSearchTerm, currentTagName, setCurrentTagName,
         tagPhotos, setTagPhotos, trashPhotos, setTrashPhotos,
         selectedTags, setSelectedTags, showFilterPopover, setShowFilterPopover,
-        filterButtonRef
+        filterButtonRef,
+        facesList, setFacesList, faceSearchTerm, setFaceSearchTerm,
+        currentPersonId, setCurrentPersonId, currentPersonName, setCurrentPersonName
     } = usePhotosState();
 
     // State to track if PhotoEditor has unsaved changes
@@ -374,6 +378,28 @@ function PhotosList({
         openTag, openAlbum, logOperation, handleError
     });
 
+    // Face handlers
+    const reloadFaces = useCallback(async () => {
+        try {
+            logger.info('PhotosList', 'reload_faces_start', 'Loading faces list');
+            const persons = await getAllPersonsForList();
+            setFacesList(persons);
+            logger.info('PhotosList', 'reload_faces_complete', 'Faces loaded', { count: persons.length });
+        } catch (error) {
+            logger.error('PhotosList', 'reload_faces_error', 'Failed to load faces', { error: error.toString() });
+        }
+    }, [setFacesList]);
+
+    const handlePersonClick = useCallback((person) => {
+        logger.info('PhotosList', 'person_click', 'User clicked on person', {
+            personId: person.person_id,
+            personName: person.person_name
+        });
+        setCurrentPersonId(person.person_id);
+        setCurrentPersonName(person.person_name || 'Unknown');
+        openPerson(person.person_id);
+    }, [openPerson, setCurrentPersonId, setCurrentPersonName]);
+
     // Tab management
     const { tabClass, setTabClass, changeTab, clearAllTabs } = useTabManagement({ viewMode, viewModeObj });
 
@@ -442,6 +468,13 @@ function PhotosList({
         setShowSideMenu, setAllPhotosForCurrentFetch, setPhotosListMiniAllPhotos, setPhotosList
     });
 
+    // Load faces when switching to FACE_LIST mode
+    useEffect(() => {
+        if (viewMode === VIEW_MODES.FACE_LIST) {
+            reloadFaces();
+        }
+    }, [viewMode, reloadFaces]);
+
     // Alias for backward compatibility
     const moveToTrashCan = (photoPath) => moveToTrash(photoPath, parseInt(sortOfPhotos));
 
@@ -460,7 +493,8 @@ function PhotosList({
         imgCacheMap, setImgCacheMap, thumbnailStore, setThumbnailStore,
         shortCutNavigation, setShortCutNavigation,
         appConfig, importState, photos,
-        filteredAlbums, albumSearchTerm, filteredTags, tagSearchTerm
+        filteredAlbums, albumSearchTerm, filteredTags, tagSearchTerm,
+        facesList, faceSearchTerm
     });
 
     // Handlers object using extracted hook
@@ -473,6 +507,7 @@ function PhotosList({
         handleAlbumClick, handleAlbumSelection, handleNewAlbumClick, handleAlbumUpdate,
         handleAlbumDelete, clearAlbumSelection, deleteSelectedAlbums,
         handleTagClick, handleTagSelection, handleNewTagClick, clearTagSelection, deleteSelectedTags,
+        handlePersonClick, setFaceSearchTerm, openFacesList, reloadFaces,
         handleSearch, clearSearch, handleFiltersChange, handleSavedSearchSelect, clearAllFilters,
         setShowSideMenu, setIconSize, setSort, setImportSort, setCurrentPhotoPath, setCurrentPhotoIndex,
         setShowFilterPopover, setAlbumSearchTerm, setTagSearchTerm,

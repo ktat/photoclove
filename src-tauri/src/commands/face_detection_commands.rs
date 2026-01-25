@@ -272,6 +272,20 @@ pub fn get_all_persons(state: State<AppState>) -> Result<String, String> {
     serde_json::to_string(&persons).map_err(|e| format!("Serialization error: {}", e))
 }
 
+/// Get all persons with face counts and thumbnails for list display
+/// Sorted by face count (most detected first)
+#[tauri::command]
+pub fn get_all_persons_for_list(state: State<AppState>) -> Result<String, String> {
+    log::info!(target: "face_detection", "get_all_persons_for_list; request");
+    let persons = state.meta_db.get_all_persons_for_list()?;
+    log::info!(
+        target: "face_detection",
+        "get_all_persons_for_list; count={}",
+        persons.len()
+    );
+    serde_json::to_string(&persons).map_err(|e| format!("Serialization error: {}", e))
+}
+
 /// Get all named persons with face thumbnails, sorted by similarity to target face
 #[tauri::command]
 pub fn get_persons_with_faces(

@@ -88,7 +88,9 @@ export function usePhotoListStateGroups({
     filteredAlbums,
     albumSearchTerm,
     filteredTags,
-    tagSearchTerm
+    tagSearchTerm,
+    facesList,
+    faceSearchTerm
 }) {
     /** @type {import('../types/PageState.js').ViewState} */
     // ViewState - Simplified to only essential properties
@@ -199,8 +201,12 @@ export function usePhotoListStateGroups({
         tags: {
             filtered: filteredTags,
             searchTerm: tagSearchTerm
+        },
+        faces: {
+            list: facesList,
+            searchTerm: faceSearchTerm
         }
-    }), [filteredAlbums, albumSearchTerm, filteredTags, tagSearchTerm]);
+    }), [filteredAlbums, albumSearchTerm, filteredTags, tagSearchTerm, facesList, faceSearchTerm]);
 
     return {
         viewState,

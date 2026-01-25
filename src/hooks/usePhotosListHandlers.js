@@ -53,6 +53,11 @@ export function usePhotosListHandlers({
     handleNewTagClick,
     clearTagSelection,
     deleteSelectedTags,
+    // Face handlers
+    handlePersonClick,
+    setFaceSearchTerm,
+    openFacesList,
+    reloadFaces,
     // Search handlers
     handleSearch,
     clearSearch,
@@ -122,6 +127,11 @@ export function usePhotosListHandlers({
         handleNewTagClick,
         clearTagSelection,
         deleteSelectedTags,
+        // Face operations
+        handlePersonClick,
+        setFaceSearchTerm,
+        openFacesList,
+        reloadFaces,
         // Search operations
         handleSearch,
         clearSearch,
@@ -156,6 +166,7 @@ export function usePhotosListHandlers({
         setStarWithUpdate, updatePhotoComment, removePhotoFromList,
         handleAlbumClick, handleAlbumSelection, handleNewAlbumClick, handleAlbumUpdate, handleAlbumDelete, clearAlbumSelection, deleteSelectedAlbums,
         handleTagClick, handleTagSelection, handleNewTagClick, clearTagSelection, deleteSelectedTags,
+        handlePersonClick, setFaceSearchTerm, openFacesList, reloadFaces,
         handleSearch, clearSearch, handleFiltersChange, handleSavedSearchSelect,
         clearAllFilters,
         setShowSideMenu, setIconSize, setSort, setImportSort, setCurrentPhotoPath, setCurrentPhotoIndex, setShowFilterPopover, setAlbumSearchTerm, setTagSearchTerm,

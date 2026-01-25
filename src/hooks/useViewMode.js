@@ -337,6 +337,14 @@ export const useViewMode = (initialMode = VIEW_MODES.HOME) => {
     transitionTo(VIEW_MODES.TRASH);
   }, [transitionTo]);
 
+  const openPerson = useCallback((personId) => {
+    transitionTo(VIEW_MODES.PERSON, { personId });
+  }, [transitionTo]);
+
+  const openFacesList = useCallback(() => {
+    transitionTo(VIEW_MODES.FACE_LIST);
+  }, [transitionTo]);
+
   const openBurstGroup = useCallback((burstGroupId, returnMode, returnModeData) => {
     transitionTo(VIEW_MODES.IN_BURST_GROUP, {
       burstGroupId,
@@ -393,6 +401,8 @@ export const useViewMode = (initialMode = VIEW_MODES.HOME) => {
     openTag,
     openTagsList,
     openTrash,
+    openPerson,
+    openFacesList,
     openBurstGroup,
     goBackFromBurstGroup,
     showDatePhotos,

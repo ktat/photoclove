@@ -9,6 +9,7 @@ function NavigationIcons({
   toggleImporter,
   toggleAlbumListMode,
   openTagsList,
+  openFacesList,
   openTrash,
   handleMouseEnter,
   handleMouseLeave,
@@ -48,6 +49,13 @@ function NavigationIcons({
       }}
       onMouseEnter={(e) => handleMouseEnter("Tags", e)}
       onMouseLeave={handleMouseLeave}>🏷️</a>
+
+      <a href="#" onClick={() => {
+        resetPhotoState();
+        openFacesList();
+      }}
+      onMouseEnter={(e) => handleMouseEnter("Faces", e)}
+      onMouseLeave={handleMouseLeave}>👤</a>
 
       <a href="#" onClick={() => {
         resetPhotoState();
