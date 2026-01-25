@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { logger } from '../../../services/LoggerService.js';
+import { invokeWithErrorHandling } from '../../../services/TauriService.js';
 import TagSelector from '../../../components/TagSelector.jsx';
 import styles from './PhotoTags.module.css';
 
@@ -25,6 +26,7 @@ const parseConfidence = (metadata) => {
 function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
     const [photoTags, setPhotoTags] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isAiTagging, setIsAiTagging] = useState(false);
 
     useEffect(() => {
         if (currentPhotoPath) {
@@ -80,6 +82,40 @@ function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
         });
     };
 
+    const handleAiTagging = async () => {
+        if (!currentPhotoPath || isAiTagging) return;
+
+        setIsAiTagging(true);
+        logger.info('PhotoTags', 'ai_tagging_start', 'Starting AI tagging for photo', { photoPath: currentPhotoPath });
+
+        try {
+            const result = await invokeWithErrorHandling(
+                'run_ai_tagging_for_photo',
+                { photoPath: currentPhotoPath },
+                'PhotoTags',
+                { parseJson: true }
+            );
+
+            if (result.success) {
+                // Reload tags to show newly added AI tags
+                await loadPhotoTags();
+                addFooterMessage?.(`AI tagging added ${result.count} tag${result.count !== 1 ? 's' : ''}`);
+                logger.info('PhotoTags', 'ai_tagging_complete', 'AI tagging completed', {
+                    photoPath: currentPhotoPath,
+                    tagCount: result.count
+                });
+            }
+        } catch (error) {
+            logger.error('PhotoTags', 'ai_tagging_error', 'AI tagging failed', {
+                photoPath: currentPhotoPath,
+                error: error.toString()
+            });
+            addFooterMessage?.(`AI tagging failed: ${error}`);
+        } finally {
+            setIsAiTagging(false);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className={styles['photo-tags-container']}>
@@ -102,6 +138,29 @@ function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
             </div>
 
             <div className={styles['photo-tags-content']}>
+                {/* AI Tagging Button */}
+                <div className={styles['photo-tags-section']}>
+                    <button
+                        onClick={handleAiTagging}
+                        disabled={isAiTagging}
+                        style={{
+                            width: '100%',
+                            padding: '10px 16px',
+                            background: 'var(--color-primary)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 'var(--radius-md)',
+                            cursor: isAiTagging ? 'not-allowed' : 'pointer',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            opacity: isAiTagging ? 0.6 : 1,
+                            transition: 'background 0.2s'
+                        }}
+                    >
+                        {isAiTagging ? 'Running AI Tagging...' : 'Run AI Tagging'}
+                    </button>
+                </div>
+
                 <div className={styles['photo-tags-section']}>
                     <h4>Current Tags ({photoTags.length})</h4>
                     <TagSelector
