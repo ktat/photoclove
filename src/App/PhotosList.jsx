@@ -191,10 +191,12 @@ function PhotosList({
         loadAlbumPhotos: loadAlbumPhotosOriginal,
         handleAlbumClick: handleAlbumClickOriginal,
         loadTags, loadTagPhotos: loadTagPhotosOriginal,
+        loadPersonPhotos: loadPersonPhotosOriginal,
         loadTrashPhotos, loadFilterOptions, logOperation
     } = usePhotoDataLoader({
         handleError, convertPhotosToEntities: convertPhotosWithConfig,
         updateAlbumsList, setFilteredAlbums, updateAlbumPhotos, setPhotosList,
+        setAllPhotosForCurrentFetch,
         setTagsList, setFilteredTags, setTagPhotos, setTrashPhotos, setCurrentAlbumName,
         openAlbum, setFilterOptions, setIsFilterOptionsLoading,
         filterOptions, isFilterOptionsLoading, appConfig,
@@ -262,6 +264,12 @@ function PhotosList({
         try { await loadTagPhotosOriginal(tagId); }
         finally { setPhotoLoading(false); }
     }, [loadTagPhotosOriginal, setPhotoLoading]);
+
+    const loadPersonPhotos = useCallback(async (personId) => {
+        setPhotoLoading(true);
+        try { await loadPersonPhotosOriginal(personId); }
+        finally { setPhotoLoading(false); }
+    }, [loadPersonPhotosOriginal, setPhotoLoading]);
 
     // Photo sync effect
     usePhotoSyncEffect({
@@ -398,7 +406,8 @@ function PhotosList({
         setCurrentPersonId(person.person_id);
         setCurrentPersonName(person.person_name || 'Unknown');
         openPerson(person.person_id);
-    }, [openPerson, setCurrentPersonId, setCurrentPersonName]);
+        loadPersonPhotos(person.person_id);
+    }, [openPerson, setCurrentPersonId, setCurrentPersonName, loadPersonPhotos]);
 
     // Tab management
     const { tabClass, setTabClass, changeTab, clearAllTabs } = useTabManagement({ viewMode, viewModeObj });

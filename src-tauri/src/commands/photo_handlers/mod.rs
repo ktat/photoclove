@@ -8,6 +8,7 @@ pub mod burst;
 pub mod collections;
 pub mod date;
 pub mod navigation;
+pub mod person;
 pub mod recent;
 pub mod search;
 pub mod tag;
