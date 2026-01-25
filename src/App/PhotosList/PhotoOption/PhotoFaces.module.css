@@ -241,6 +241,34 @@
     flex-shrink: 0;
 }
 
+.person-option-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    text-align: left;
+}
+
+.person-option-btn:hover {
+    background: var(--color-bg-muted);
+    border-color: var(--color-primary);
+}
+
+.person-option-btn:active {
+    transform: scale(0.98);
+}
+
+.person-option-btn canvas {
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+
 .person-name {
     flex: 1;
     font-size: 13px;

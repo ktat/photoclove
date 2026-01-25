@@ -149,14 +149,18 @@ impl FaceDetector {
         let resized = image.resize(new_w, new_h, image::imageops::FilterType::Lanczos3);
         let rgb = resized.to_rgb8();
 
-        // Calculate padding to center the image
-        let pad_x = (INPUT_SIZE - new_w) / 2;
-        let pad_y = (INPUT_SIZE - new_h) / 2;
+        // Use actual dimensions of resized image (may differ slightly from requested)
+        let actual_w = rgb.width();
+        let actual_h = rgb.height();
+
+        // Calculate padding to center the image using actual dimensions
+        let pad_x = (INPUT_SIZE.saturating_sub(actual_w)) / 2;
+        let pad_y = (INPUT_SIZE.saturating_sub(actual_h)) / 2;
 
         log::debug!(
             target: "face_detection",
-            "preprocess; orig={}x{}; resized={}x{}; scale={}; pad=({},{})",
-            orig_w, orig_h, new_w, new_h, scale, pad_x, pad_y
+            "preprocess; orig={}x{}; requested={}x{}; actual={}x{}; scale={}; pad=({},{})",
+            orig_w, orig_h, new_w, new_h, actual_w, actual_h, scale, pad_x, pad_y
         );
 
         // Create tensor in NCHW format with padding (gray background)
@@ -166,8 +170,8 @@ impl FaceDetector {
         // Copy resized image to center with RGB normalization
         // SCRFD/InsightFace uses RGB format with mean subtraction and std division
         // Mean: [127.5, 127.5, 127.5], Std: [128.0, 128.0, 128.0]
-        for y in 0..new_h {
-            for x in 0..new_w {
+        for y in 0..actual_h {
+            for x in 0..actual_w {
                 let pixel = rgb.get_pixel(x, y);
                 let out_x = pad_x + x;
                 let out_y = pad_y + y;
