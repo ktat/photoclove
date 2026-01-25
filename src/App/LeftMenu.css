@@ -27,7 +27,7 @@
 }
 
 .leftMenu .navigation-icons a {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-lg);
   text-decoration: none;
   padding: 3px;
   border-radius: var(--radius-sm);
