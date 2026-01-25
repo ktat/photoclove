@@ -31,6 +31,18 @@ use commands::*;
 pub fn run() {
     use crate::entity::config;
     use crate::repository::*;
+
+    // Set ORT_DYLIB_PATH early, before any ONNX Runtime code could be triggered
+    // This is required for face detection and AI tagging to find the library
+    if std::env::var("ORT_DYLIB_PATH").is_err() {
+        if let Some(data_dir) = dirs::data_local_dir() {
+            let lib_path = data_dir.join("photoclove").join("lib").join("libonnxruntime.so");
+            if lib_path.exists() {
+                std::env::set_var("ORT_DYLIB_PATH", &lib_path);
+            }
+        }
+    }
+
     let c = config::Config::new();
     // if c.repository.store == "memory".to_string() {
     //     db = repository::RepoDB::new();
@@ -197,6 +209,7 @@ pub fn run() {
             cleanup_completed_jobs,
             run_ai_tagging_for_date,
             run_ai_tagging_for_all,
+            run_ai_tagging_for_photo,
             get_ai_models,
             get_ai_model_info,
             is_ai_model_downloaded,
@@ -288,6 +301,25 @@ pub fn run() {
             enqueue_s3_incremental_sync,
             enqueue_s3_full_sync,
             enqueue_s3_sync_by_date,
+            // Face Detection commands
+            get_face_detection_model_status,
+            get_face_detection_model_info,
+            download_face_detection_model,
+            delete_face_detection_model,
+            detect_faces_in_photo,
+            get_detected_faces_for_photo,
+            has_photo_faces,
+            get_face_detection_stats,
+            get_all_persons,
+            get_persons_with_faces,
+            create_person,
+            update_person_name,
+            assign_face_to_person,
+            get_photos_for_person,
+            delete_person,
+            delete_detected_face,
+            set_face_person_name,
+            run_face_detection_for_date,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

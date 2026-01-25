@@ -40,6 +40,7 @@ mod collections;
 mod job_queue;
 mod recovery_queue;
 mod burst_groups;
+pub mod face_detection;
 
 #[derive(Clone)]
 pub struct SQLite {
@@ -559,5 +560,92 @@ impl SQLite {
         photo_path: &str,
     ) -> Result<Vec<(i32, String, Option<String>, Option<String>)>, String> {
         tags::get_tags_for_photo_with_metadata(self, photo_path)
+    }
+
+    // ==================== Face Detection Operations ====================
+
+    /// Save detected faces for a photo
+    pub fn save_detected_faces(
+        &self,
+        photo_path: &str,
+        faces: &[face_detection::DetectedFaceInput],
+    ) -> Result<Vec<i64>, String> {
+        face_detection::save_detected_faces(self, photo_path, faces)
+    }
+
+    /// Get detected faces for a photo
+    pub fn get_detected_faces(
+        &self,
+        photo_path: &str,
+    ) -> Result<Vec<face_detection::DetectedFaceRecord>, String> {
+        face_detection::get_detected_faces(self, photo_path)
+    }
+
+    /// Check if a photo has been processed for face detection
+    pub fn has_detected_faces(&self, photo_path: &str) -> Result<bool, String> {
+        face_detection::has_detected_faces(self, photo_path)
+    }
+
+    /// Get a single detected face by ID
+    pub fn get_detected_face(
+        &self,
+        face_id: i64,
+    ) -> Result<face_detection::DetectedFaceRecord, String> {
+        face_detection::get_detected_face(self, face_id)
+    }
+
+    /// Get all named face embeddings for matching
+    pub fn get_named_face_embeddings(
+        &self,
+    ) -> Result<Vec<face_detection::NamedFaceEmbedding>, String> {
+        face_detection::get_named_face_embeddings(self)
+    }
+
+    /// Create a new person
+    pub fn create_person(&self, name: Option<&str>) -> Result<i64, String> {
+        face_detection::create_person(self, name)
+    }
+
+    /// Update person name
+    pub fn update_person_name(&self, person_id: i64, name: &str) -> Result<(), String> {
+        face_detection::update_person_name(self, person_id, name)
+    }
+
+    /// Get all persons
+    pub fn get_all_persons(&self) -> Result<Vec<face_detection::PersonRecord>, String> {
+        face_detection::get_all_persons(self)
+    }
+
+    /// Get all named persons with face thumbnail info, sorted by similarity to target embedding
+    pub fn get_persons_with_faces(
+        &self,
+        target_embedding: Option<&[f32]>,
+    ) -> Result<Vec<face_detection::PersonWithFace>, String> {
+        face_detection::get_persons_with_faces(self, target_embedding)
+    }
+
+    /// Assign a face to a person
+    pub fn assign_face_to_person(&self, face_id: i64, person_id: i64) -> Result<(), String> {
+        face_detection::assign_face_to_person(self, face_id, person_id)
+    }
+
+    /// Get photos containing a specific person
+    pub fn get_photos_for_person(&self, person_id: i64) -> Result<Vec<String>, String> {
+        face_detection::get_photos_for_person(self, person_id)
+    }
+
+    /// Delete a person
+    pub fn delete_person(&self, person_id: i64) -> Result<(), String> {
+        face_detection::delete_person(self, person_id)
+    }
+
+    /// Get face detection statistics
+    pub fn get_face_detection_stats(&self) -> Result<face_detection::FaceDetectionStats, String> {
+        face_detection::get_face_detection_stats(self)
+    }
+
+    /// Delete a detected face by ID
+    pub fn delete_detected_face(&self, face_id: i64) -> Result<(), String> {
+        face_detection::delete_detected_face(self, face_id)
     }
 }

@@ -345,6 +345,10 @@ fn process_job(db: Arc<SQLite>, job: job_queue::QueuedJob, app_handle: tauri::Ap
                 handlers::process_s3_sync_job(&job, &app_handle, &db),
             )
         }
+        job_queue::JobType::FaceDetection => {
+            log::info!(target: "job_queue", "face_detection_job; job_id={}; status=calling_process", job_id);
+            handlers::process_face_detection_job(&job, &app_handle, &db)
+        }
     };
 
     log::info!(target: "job_queue", "job_execution; job_id={}; status=completed; success={}", job_id, result.is_ok());

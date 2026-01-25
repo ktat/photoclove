@@ -45,6 +45,21 @@ const MIGRATIONS: &[Migration] = &[
         name: "add_storage_sync",
         sql: include_str!("007_add_storage_sync.sql"),
     },
+    Migration {
+        version: 8,
+        name: "create_face_detection",
+        sql: include_str!("008_create_face_detection.sql"),
+    },
+    Migration {
+        version: 9,
+        name: "fix_face_detection_fk",
+        sql: include_str!("009_fix_face_detection_fk.sql"),
+    },
+    Migration {
+        version: 10,
+        name: "add_photo_id_and_face_mapping",
+        sql: include_str!("010_add_photo_id_and_face_mapping.sql"),
+    },
 ];
 
 /// Initialize the migrations table
