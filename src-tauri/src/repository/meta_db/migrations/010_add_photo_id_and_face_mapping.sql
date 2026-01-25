@@ -32,7 +32,9 @@ CREATE TABLE IF NOT EXISTS photo_metadata_new (
     exif_white_balance_mode TEXT,
     exif_orientation TEXT,
     css_style TEXT,
-    delete_flg INTEGER NOT NULL DEFAULT 0
+    delete_flg INTEGER NOT NULL DEFAULT 0,
+    burst_group_id TEXT,
+    storage_sync TEXT
 );
 
 -- Step 2: Copy data from old table
@@ -44,7 +46,7 @@ INSERT INTO photo_metadata_new (
     exif_copyright, exif_exposure_time, exif_shutter_speed_value,
     exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio,
     exif_exposure_mode, exif_white_balance_mode, exif_orientation,
-    css_style, delete_flg
+    css_style, delete_flg, burst_group_id, storage_sync
 )
 SELECT
     path, photo_date, star, comment, created_at, updated_at,
@@ -54,7 +56,7 @@ SELECT
     exif_copyright, exif_exposure_time, exif_shutter_speed_value,
     exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio,
     exif_exposure_mode, exif_white_balance_mode, exif_orientation,
-    css_style, delete_flg
+    css_style, delete_flg, burst_group_id, storage_sync
 FROM photo_metadata;
 
 -- Step 3: Drop old table and rename new one
@@ -69,6 +71,8 @@ CREATE INDEX IF NOT EXISTS idx_star ON photo_metadata(star);
 CREATE INDEX IF NOT EXISTS idx_search_composite ON photo_metadata(exif_date_time_original, star, photo_date);
 CREATE INDEX IF NOT EXISTS idx_photo_date_delete_flg ON photo_metadata(photo_date, delete_flg);
 CREATE INDEX IF NOT EXISTS idx_photo_metadata_delete_flg ON photo_metadata(delete_flg);
+CREATE INDEX IF NOT EXISTS idx_burst_group_id ON photo_metadata(burst_group_id);
+CREATE INDEX IF NOT EXISTS idx_storage_sync ON photo_metadata(storage_sync);
 
 -- Step 5: Create photo_detected_faces mapping table
 CREATE TABLE IF NOT EXISTS photo_detected_faces (

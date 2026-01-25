@@ -180,7 +180,8 @@ impl RepositoryDB for Directory {
                 let photo_meta = meta_data.get(f).unwrap();
                 meta.date_time = photo_meta.photo_time();
                 // Set orientation from photo_meta
-                meta.orientation = photo_meta.photo().meta_data.orientation.clone();
+                let orientation = photo_meta.photo().meta_data.orientation.clone();
+                meta.orientation = orientation;
                 p.embed_exif(meta);
                 // Set CSS style from metadata
                 p.set_css_style(photo_meta.photo().css_style.clone());

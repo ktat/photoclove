@@ -355,7 +355,6 @@ export class Photo {
             }));
         }
 
-
         const data = {
             file: backendData.file || { path: photoPath, name: photoPath.split('/').pop() },
             path: photoPath,
