@@ -84,7 +84,6 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
     const [editingFaceId, setEditingFaceId] = useState(null);
     const [editingName, setEditingName] = useState('');
     const [existingPersons, setExistingPersons] = useState([]);
-    const [selectedPersonId, setSelectedPersonId] = useState(null);
     const [isLoadingPersons, setIsLoadingPersons] = useState(false);
     const inputRef = useRef(null);
 
@@ -193,7 +192,6 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
         if (!face.id) return;
         setEditingFaceId(face.id);
         setEditingName(face.person_name || '');
-        setSelectedPersonId(null);
         setIsLoadingPersons(true);
 
         try {
@@ -220,13 +218,7 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
             return;
         }
 
-        // If a person is selected, assign to that person instead
-        if (selectedPersonId) {
-            await handleAssignToPerson(face, selectedPersonId);
-            return;
-        }
-
-        // Otherwise create new person with entered name
+        // Create new person with entered name
         if (!editingName.trim()) {
             setEditingFaceId(null);
             return;
@@ -261,7 +253,6 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
             }
         } finally {
             setEditingFaceId(null);
-            setSelectedPersonId(null);
             setExistingPersons([]);
         }
     };
@@ -303,7 +294,6 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
             }
         } finally {
             setEditingFaceId(null);
-            setSelectedPersonId(null);
             setExistingPersons([]);
         }
     };
@@ -314,7 +304,6 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
             handleSavePersonName(face);
         } else if (e.key === 'Escape') {
             setEditingFaceId(null);
-            setSelectedPersonId(null);
             setExistingPersons([]);
         }
     };
@@ -407,10 +396,7 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
                                                         type="text"
                                                         className={styles['face-name-input']}
                                                         value={editingName}
-                                                        onChange={(e) => {
-                                                            setEditingName(e.target.value);
-                                                            setSelectedPersonId(null);
-                                                        }}
+                                                        onChange={(e) => setEditingName(e.target.value)}
                                                         onKeyDown={(e) => handleKeyDown(e, face)}
                                                         placeholder="Enter name or select below..."
                                                     />
@@ -420,16 +406,13 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
                                                     ) : filteredPersons.length > 0 ? (
                                                         <div className={styles['persons-list']}>
                                                             {filteredPersons.map((person) => (
-                                                                <label
+                                                                <button
                                                                     key={person.person_id}
-                                                                    className={`${styles['person-option']} ${selectedPersonId === person.person_id ? styles['person-option-selected'] : ''}`}
+                                                                    type="button"
+                                                                    className={styles['person-option-btn']}
+                                                                    onClick={() => handleAssignToPerson(face, person.person_id)}
+                                                                    title={`Assign to ${person.person_name}`}
                                                                 >
-                                                                    <input
-                                                                        type="radio"
-                                                                        name={`person-select-${face.id}`}
-                                                                        checked={selectedPersonId === person.person_id}
-                                                                        onChange={() => setSelectedPersonId(person.person_id)}
-                                                                    />
                                                                     <FaceThumbnail
                                                                         photoPath={person.photo_path}
                                                                         bbox={person}
@@ -443,12 +426,12 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
                                                                             {Math.round(person.similarity * 100)}%
                                                                         </span>
                                                                     )}
-                                                                </label>
+                                                                </button>
                                                             ))}
                                                         </div>
                                                     ) : null}
                                                     <div className={styles['face-editing-hint']}>
-                                                        {selectedPersonId ? 'Press Enter to assign' : editingName.trim() ? 'Press Enter to create new person' : 'Select or type a name'}
+                                                        {editingName.trim() ? 'Press Enter to create new person' : 'Click a person or type a new name'}
                                                     </div>
                                                 </div>
                                             ) : (
