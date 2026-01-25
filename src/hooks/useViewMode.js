@@ -296,7 +296,7 @@ export const useViewMode = (initialMode = VIEW_MODES.HOME) => {
   // Screen visibility state computed from current mode
   const screenVisibility = useMemo(() => ({
     showImporter: currentMode === VIEW_MODES.IMPORT,
-    showPhotosList: [VIEW_MODES.DATE, VIEW_MODES.RECENT, VIEW_MODES.ALBUM, VIEW_MODES.ALBUM_LIST, VIEW_MODES.TAG, VIEW_MODES.TAG_LIST, VIEW_MODES.TRASH, VIEW_MODES.IN_BURST_GROUP].includes(currentMode),
+    showPhotosList: [VIEW_MODES.DATE, VIEW_MODES.RECENT, VIEW_MODES.ALBUM, VIEW_MODES.ALBUM_LIST, VIEW_MODES.TAG, VIEW_MODES.TAG_LIST, VIEW_MODES.FACE_LIST, VIEW_MODES.PERSON, VIEW_MODES.TRASH, VIEW_MODES.IN_BURST_GROUP].includes(currentMode),
     showSearchPage: currentMode === VIEW_MODES.SEARCH,
     showAlbumsList: currentMode === VIEW_MODES.ALBUM_LIST,
     showTagsList: currentMode === VIEW_MODES.TAG_LIST,
