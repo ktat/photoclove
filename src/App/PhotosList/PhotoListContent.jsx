@@ -10,12 +10,13 @@
  * @see src/types/PageState.js for type definitions
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { VIEW_MODES } from "../../constants/viewModes.js";
 import { useUI } from "../../context/UIContext.jsx";
 import ListViewHeader from "./ListViewHeader.jsx";
 import GenericListView from "./GenericListView.jsx";
 import TagCloudView from "./TagCloudView.jsx";
+import FacesList from "./FacesList.jsx";
 import BackNavigationLink from "../../components/BackNavigationLink.jsx";
 import StatusBar from "./StatusBar.jsx";
 import PhotosToolbar from "./PhotosToolbar.jsx";
@@ -69,22 +70,17 @@ function PhotoListContent({
     const { viewModeObj, mode: viewMode, currentDate } = viewState;
 
     // Destructure from list state
-    const { albums, tags } = listState;
+    const { albums, tags, faces } = listState;
     const filteredAlbums = albums.filtered;
     const albumSearchTerm = albums.searchTerm;
     const filteredTags = tags.filtered;
     const tagSearchTerm = tags.searchTerm;
+    const facesList = faces?.list || [];
+    const faceSearchTerm = faces?.searchTerm || '';
 
     // Destructure from config state
     const { import: importState, app: appConfig } = configState;
     const thumbnailOrientationCorrection = appConfig?.thumbnail_orientation_correction || false;
-
-    // Debug log for orientation correction setting
-    logger.info('PhotoListContent', 'config_check', 'Checking orientation correction setting', {
-        thumbnailOrientationCorrection,
-        hasAppConfig: !!appConfig,
-        appConfigKeys: appConfig ? Object.keys(appConfig) : []
-    });
 
     // Derive values from viewModeObj
     const currentAlbumName = viewModeObj.getCollectionName();
@@ -139,6 +135,7 @@ function PhotoListContent({
         handleTagClick,
         handleNewAlbumClick,
         handleNewTagClick,
+        handlePersonClick,
         clearSearch,
         clearAllFilters,
         setShowSideMenu,
@@ -148,12 +145,15 @@ function PhotoListContent({
         setShowFilterPopover,
         setAlbumSearchTerm,
         setTagSearchTerm,
+        setFaceSearchTerm,
         toggleAlbumListMode,
         openTagsList,
+        openFacesList,
         toggleHome,
         refreshPhotosOnly,
         reloadAlbums,
-        reloadTags
+        reloadTags,
+        reloadFaces
     } = handlers;
 
     // Wrapper for openBurstGroup to include current view mode data
@@ -279,8 +279,31 @@ function PhotoListContent({
                     );
                 })()}
 
+                {/* Face List Mode */}
+                {viewMode === VIEW_MODES.FACE_LIST && (
+                    <>
+                        <ListViewHeader
+                            title="Faces"
+                            count={facesList.length}
+                            itemType="faces"
+                            iconSize={iconSize}
+                            onIconSizeChange={setIconSize}
+                            showViewModeToggle={false}
+                            onRefresh={reloadFaces}
+                        />
+                        <FacesList
+                            persons={facesList}
+                            iconSize={iconSize}
+                            onPersonClick={handlePersonClick}
+                            searchTerm={faceSearchTerm}
+                            onSearchChange={setFaceSearchTerm}
+                            onRefresh={reloadFaces}
+                        />
+                    </>
+                )}
+
                 {/* Regular Photo Display Mode */}
-                {viewMode !== VIEW_MODES.ALBUM_LIST && viewMode !== VIEW_MODES.TAG_LIST && (
+                {viewMode !== VIEW_MODES.ALBUM_LIST && viewMode !== VIEW_MODES.TAG_LIST && viewMode !== VIEW_MODES.FACE_LIST && (
                     <>
                         {displayedPhotos.length === 0 && (
                             <BackNavigationLink

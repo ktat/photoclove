@@ -43,7 +43,10 @@ pub async fn handle(ctx: &HandlerContext<'_>, params: &SearchParams) -> Result<S
     // Get metadata first
     let metadata = match ctx.meta_db.get_photo_meta_data_in_date(date) {
         Ok(data) => data,
-        Err(_e) => photo_meta::PhotoMetas::new(),
+        Err(e) => {
+            log::error!(target: "get_photos", "metadata_load_error; date={}; error={}", date_str, e);
+            photo_meta::PhotoMetas::new()
+        },
     };
 
     let photos = ctx

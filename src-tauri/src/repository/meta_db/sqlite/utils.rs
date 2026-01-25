@@ -143,12 +143,6 @@ pub(super) fn photo_info_from_row_with_tags(
         storage_sync,
     };
 
-    log::info!(target: "database", "photo_info_created; path={}; tags_count={}; tags_data={:?}",
-        path,
-        tags.as_ref().map_or(0, |t| t.len()),
-        tags
-    );
-
     photo_info
 }
 

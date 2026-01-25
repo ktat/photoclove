@@ -336,38 +336,14 @@ function PhotoCard({
         // Get orientation from photo's EXIF data (meta_data.orientation)
         const orientation = photo.meta_data?.orientation;
 
-        // Debug log - log for all photos when orientation correction is enabled (to debug scroll issue)
-        if (thumbnailOrientationCorrection && (index < 5 || (index >= 48 && index <= 55))) {
-            logger.info('PhotoCard', 'orientation_debug', 'Photo orientation check', {
-                index,
-                orientation: orientation || 'NONE',
-                hasMeta: !!photo.meta_data,
-                metaKeys: photo.meta_data ? Object.keys(photo.meta_data).length : 0,
-                photoPath: photo.originalPath?.slice(-40)
-            });
-        }
-
         if (thumbnailOrientationCorrection) {
             const combinedStyle = getCombinedTransformStyle(orientation, photo.cssStyle);
-
-            // Debug: log the resulting style for photos needing rotation
-            if (orientation && orientation !== 'Straight') {
-                logger.info('PhotoCard', 'orientation_style_result', 'Combined style for rotated photo', {
-                    index,
-                    inputOrientation: orientation,
-                    inputCssStyle: photo.cssStyle || 'NONE',
-                    resultStyle: combinedStyle,
-                    hasTransform: !!combinedStyle.transform,
-                    photoPath: photo.originalPath?.slice(-40)
-                });
-            }
-
             return { ...baseStyle, ...combinedStyle };
         } else {
             // Use only PhotoEditor CSS style (existing behavior)
             return { ...baseStyle, ...parseCssStyle(photo.cssStyle) };
         }
-    }, [thumbnailOrientationCorrection, photo.meta_data?.orientation, photo.cssStyle, parseCssStyle, index, photo.originalPath]);
+    }, [thumbnailOrientationCorrection, photo.meta_data?.orientation, photo.cssStyle, parseCssStyle]);
 
     return (
         <div

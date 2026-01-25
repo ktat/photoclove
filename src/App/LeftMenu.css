@@ -20,23 +20,23 @@
 .leftMenu .navigation-icons {
   display: flex;
   justify-content: center;
-  gap: var(--space-2);
-  padding: 6px 0;
+  gap: var(--space-1);
+  padding: 4px 0;
   border-bottom: 1px solid var(--color-border-default);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-1);
 }
 
 .leftMenu .navigation-icons a {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-base);
   text-decoration: none;
-  padding: 5px;
+  padding: 3px;
   border-radius: var(--radius-sm);
   transition: background-color 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 28px;
-  min-height: 28px;
+  min-width: 24px;
+  min-height: 24px;
 }
 
 .leftMenu .navigation-icons a:hover {
