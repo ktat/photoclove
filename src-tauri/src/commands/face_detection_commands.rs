@@ -120,12 +120,16 @@ pub fn detect_faces_in_photo(
     state: State<AppState>,
     photo_path: String,
     save_to_db: bool,
+    use_full_image: Option<bool>,
 ) -> Result<String, String> {
+    let use_full = use_full_image.unwrap_or(false);
+
     log::info!(
         target: "face_detection",
-        "detect_faces_request; photo_path={}; save_to_db={}",
+        "detect_faces_request; photo_path={}; save_to_db={}; use_full_image={}",
         photo_path,
-        save_to_db
+        save_to_db,
+        use_full
     );
 
     let models_dir = get_models_dir(&state);
@@ -146,17 +150,22 @@ pub fn detect_faces_in_photo(
 
     log::info!(
         target: "face_detection",
-        "detection_config; threshold={}; max_faces={}",
+        "detection_config; threshold={}; max_faces={}; min_thumbnail_size={}",
         service_config.confidence_threshold,
-        service_config.max_faces
+        service_config.max_faces,
+        face_config.min_thumbnail_size
     );
 
     // Create and initialize service with config
     let mut service = FaceDetectionService::with_config(models_dir, service_config);
     service.init()?;
 
-    // Detect faces
-    let faces = service.detect_faces_in_file(&photo_path)?;
+    // Detect faces with options
+    let faces = service.detect_faces_in_file_with_options(
+        &photo_path,
+        use_full,
+        face_config.min_thumbnail_size,
+    )?;
 
     // Save to database if requested
     if save_to_db && !faces.is_empty() {

@@ -15,6 +15,7 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
     const [editingName, setEditingName] = useState('');
     const [existingPersons, setExistingPersons] = useState([]);
     const [isLoadingPersons, setIsLoadingPersons] = useState(false);
+    const [useFullImage, setUseFullImage] = useState(false);
     const inputRef = useRef(null);
 
     // Get face detection context for sharing state with PhotoDisplay
@@ -53,7 +54,7 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
         try {
             logger.info('PhotoFaces', 'detect_faces_start', 'Starting face detection', { photoPath: currentPhotoPath });
 
-            const detectedFaces = await FaceDetectionService.detectFaces(currentPhotoPath, true);
+            const detectedFaces = await FaceDetectionService.detectFaces(currentPhotoPath, true, useFullImage);
             setFaces(detectedFaces);
             // Update context for PhotoDisplay to show bounding boxes
             updateFaces(detectedFaces);
@@ -287,6 +288,20 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
                     >
                         {isDetecting ? '⏳ Detecting...' : 'Detect Faces'}
                     </button>
+                    {/* Use Full Image option */}
+                    <label
+                        className={styles['use-full-image-option']}
+                        title="Use full resolution image for detection. More accurate for small faces but takes longer."
+                    >
+                        <input
+                            type="checkbox"
+                            className={styles['use-full-image-checkbox']}
+                            checked={useFullImage}
+                            onChange={(e) => setUseFullImage(e.target.checked)}
+                            disabled={isDetecting}
+                        />
+                        <span>High Accuracy (Slow)</span>
+                    </label>
                 </div>
 
                 {/* Status message */}

@@ -76,12 +76,13 @@ export async function deleteModel(modelType) {
  * Detect faces in a photo
  * @param {string} photoPath - Path to the photo
  * @param {boolean} saveToDb - Whether to save results to database
+ * @param {boolean} useFullImage - Whether to use full resolution image (skip thumbnail optimization)
  * @returns {Promise<Array>} Array of detected faces
  */
-export async function detectFaces(photoPath, saveToDb = true) {
-    logger.info(CONTEXT, 'detect_faces_start', 'Starting face detection', { photoPath, saveToDb });
+export async function detectFaces(photoPath, saveToDb = true, useFullImage = false) {
+    logger.info(CONTEXT, 'detect_faces_start', 'Starting face detection', { photoPath, saveToDb, useFullImage });
     try {
-        const result = await invoke('detect_faces_in_photo', { photoPath, saveToDb });
+        const result = await invoke('detect_faces_in_photo', { photoPath, saveToDb, useFullImage });
         const faces = JSON.parse(result);
         logger.info(CONTEXT, 'detect_faces_complete', `Detected ${faces.length} faces`, { photoPath, faceCount: faces.length });
         return faces;

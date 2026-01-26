@@ -244,7 +244,7 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
                 </div>
 
                 {/* Generate Embeddings */}
-                <div style={{ marginBottom: 'var(--space-2)' }}>
+                <div style={{ marginBottom: 'var(--space-4)' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer' }}>
                         <input
                             type="checkbox"
@@ -265,6 +265,39 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
                     <p style={{ ...descriptionStyle, marginLeft: 'var(--space-6)' }}>
                         Enables face recognition and grouping. Disable to save processing time if you only need face detection.
                     </p>
+                </div>
+
+                {/* Minimum Thumbnail Size */}
+                <div style={{ marginBottom: 'var(--space-2)' }}>
+                    <label style={labelStyle}>
+                        Minimum Thumbnail Size: {config?.face_detection?.min_thumbnail_size || 160}px
+                    </label>
+                    <p style={descriptionStyle}>
+                        Use EXIF thumbnail for faster detection when thumbnail is larger than this size.
+                        Set to 0 to always use full image (slower but more accurate).
+                    </p>
+                    <input
+                        type="range"
+                        min="0"
+                        max="400"
+                        step="20"
+                        value={config?.face_detection?.min_thumbnail_size ?? 160}
+                        onChange={(e) => {
+                            const newValue = parseInt(e.target.value);
+                            setConfig({
+                                ...config,
+                                face_detection: {
+                                    ...config?.face_detection,
+                                    min_thumbnail_size: newValue
+                                }
+                            });
+                        }}
+                        style={sliderStyle}
+                    />
+                    <div style={sliderLabelsStyle}>
+                        <span>0 (Always full image)</span>
+                        <span>400px</span>
+                    </div>
                 </div>
             </div>
 

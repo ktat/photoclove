@@ -40,7 +40,8 @@
 
 .photo-faces-actions {
     display: flex;
-    gap: 10px;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .detect-button {
@@ -68,6 +69,42 @@
 .detect-button.detecting,
 .detect-button.detecting:disabled {
     cursor: wait;
+}
+
+.use-full-image-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+}
+
+.use-full-image-checkbox {
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px;
+    min-height: 16px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+    appearance: checkbox !important;
+    -webkit-appearance: checkbox !important;
+    flex-shrink: 0;
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin: 0;
+    padding: 0;
+}
+
+.use-full-image-checkbox:disabled {
+    cursor: not-allowed;
+    opacity: 0.5 !important;
+}
+
+.use-full-image-option span {
+    user-select: none;
 }
 
 .photo-faces-section h4 {
