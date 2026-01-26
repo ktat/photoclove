@@ -38,6 +38,33 @@
     gap: 24px;
 }
 
+.ai-tagging-button {
+    width: 100%;
+    padding: 10px 16px;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.ai-tagging-button:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+}
+
+.ai-tagging-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.ai-tagging-button.running,
+.ai-tagging-button.running:disabled {
+    cursor: wait;
+}
+
 .photo-tags-section h4 {
     margin: 0 0 12px 0;
     font-size: 14px;
