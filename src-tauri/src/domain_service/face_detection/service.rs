@@ -25,14 +25,16 @@ fn apply_exif_orientation(image: DynamicImage, orientation: &str) -> DynamicImag
         "Mirror horizontal and rotate 270 CW" | "Rotate 90 CCW and flip horizontal" => {
             image.rotate270().fliph()
         }
-        // 6 = Rotate 90 CW
-        "Rotate 90 CW" | "Rotate 90°" | "Rotate 90° CW" => image.rotate90(),
+        // 6 = Rotate 90 CW (camera rotated CCW)
+        // "Rotated to left" means the image appears rotated to the left, fix by rotating 90 CW
+        "Rotate 90 CW" | "Rotate 90°" | "Rotate 90° CW" | "Rotated to left" => image.rotate90(),
         // 7 = Rotate 90 CW + horizontal flip
         "Mirror horizontal and rotate 90 CW" | "Rotate 90 CW and flip horizontal" => {
             image.rotate90().fliph()
         }
-        // 8 = Rotate 90 CCW (or 270 CW)
-        "Rotate 270 CW" | "Rotate 90 CCW" | "Rotate 270° CW" => image.rotate270(),
+        // 8 = Rotate 90 CCW (or 270 CW, camera rotated CW)
+        // "Rotated to right" means the image appears rotated to the right, fix by rotating 90 CCW
+        "Rotate 270 CW" | "Rotate 90 CCW" | "Rotate 270° CW" | "Rotated to right" => image.rotate270(),
         // Unknown or empty - no rotation
         _ => {
             log::debug!(
