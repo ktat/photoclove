@@ -88,6 +88,9 @@ function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
         setIsAiTagging(true);
         logger.info('PhotoTags', 'ai_tagging_start', 'Starting AI tagging for photo', { photoPath: currentPhotoPath });
 
+        // Wait for UI to update before starting heavy processing
+        await new Promise(resolve => setTimeout(resolve, 50));
+
         try {
             const result = await invokeWithErrorHandling(
                 'run_ai_tagging_for_photo',
@@ -141,23 +144,11 @@ function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
                 {/* AI Tagging Button */}
                 <div className={styles['photo-tags-section']}>
                     <button
+                        className={`${styles['ai-tagging-button']} ${isAiTagging ? styles['running'] : ''}`}
                         onClick={handleAiTagging}
                         disabled={isAiTagging}
-                        style={{
-                            width: '100%',
-                            padding: '10px 16px',
-                            background: 'var(--color-primary)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: 'var(--radius-md)',
-                            cursor: isAiTagging ? 'not-allowed' : 'pointer',
-                            fontSize: '14px',
-                            fontWeight: 500,
-                            opacity: isAiTagging ? 0.6 : 1,
-                            transition: 'background 0.2s'
-                        }}
                     >
-                        {isAiTagging ? 'Running AI Tagging...' : 'Run AI Tagging'}
+                        {isAiTagging ? '⏳ Running AI Tagging...' : 'Run AI Tagging'}
                     </button>
                 </div>
 
