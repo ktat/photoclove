@@ -224,6 +224,13 @@ pub struct FaceDetectionConfig {
     pub max_faces: u32,
     /// Whether to generate face embeddings for recognition
     pub generate_embeddings: bool,
+    /// Minimum EXIF thumbnail size (px) for fast detection. 0 = always use full image
+    #[serde(default = "default_min_thumbnail_size")]
+    pub min_thumbnail_size: u32,
+}
+
+fn default_min_thumbnail_size() -> u32 {
+    160
 }
 
 impl Default for FaceDetectionConfig {
@@ -232,6 +239,7 @@ impl Default for FaceDetectionConfig {
             confidence_threshold: 0.7,
             max_faces: 50,
             generate_embeddings: true,
+            min_thumbnail_size: default_min_thumbnail_size(),
         }
     }
 }
