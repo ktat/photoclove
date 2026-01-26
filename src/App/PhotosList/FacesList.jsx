@@ -6,7 +6,7 @@ import { useOverlayMargin } from "../../hooks/useOverlayMargin.js";
 
 /**
  * FaceThumbnail - Crops and displays a face from an image
- * Reusable component for rendering face thumbnails
+ * Uses createImageBitmap to respect EXIF orientation
  */
 function FaceThumbnail({ photoPath, bbox, size = 100 }) {
     const canvasRef = useRef(null);
@@ -15,48 +15,91 @@ function FaceThumbnail({ photoPath, bbox, size = 100 }) {
     useEffect(() => {
         if (!photoPath || !bbox) return;
 
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
+        let cancelled = false;
 
-        img.onload = () => {
-            const canvas = canvasRef.current;
-            if (!canvas) return;
+        const loadAndDraw = async () => {
+            try {
+                // Fetch the image as blob to use createImageBitmap with EXIF orientation
+                const response = await fetch(convertFileSrc(photoPath));
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch: ${response.status}`);
+                }
+                const blob = await response.blob();
 
-            const ctx = canvas.getContext('2d');
+                // createImageBitmap with imageOrientation respects EXIF rotation
+                const bitmap = await createImageBitmap(blob, {
+                    imageOrientation: 'from-image'
+                });
 
-            // bbox is in normalized coordinates (0-1)
-            const x = bbox.bbox_x * img.naturalWidth;
-            const y = bbox.bbox_y * img.naturalHeight;
-            const width = bbox.bbox_width * img.naturalWidth;
-            const height = bbox.bbox_height * img.naturalHeight;
+                if (cancelled) {
+                    bitmap.close();
+                    return;
+                }
 
-            // Add some padding around the face (20%)
-            const padding = 0.2;
-            const paddedX = Math.max(0, x - width * padding);
-            const paddedY = Math.max(0, y - height * padding);
-            const paddedWidth = Math.min(img.naturalWidth - paddedX, width * (1 + 2 * padding));
-            const paddedHeight = Math.min(img.naturalHeight - paddedY, height * (1 + 2 * padding));
+                const canvas = canvasRef.current;
+                if (!canvas) {
+                    bitmap.close();
+                    return;
+                }
 
-            // Draw cropped face onto canvas
-            canvas.width = size;
-            canvas.height = size;
-            ctx.drawImage(
-                img,
-                paddedX, paddedY, paddedWidth, paddedHeight,
-                0, 0, size, size
-            );
-            setLoaded(true);
+                const ctx = canvas.getContext('2d');
+
+                // bbox is in normalized coordinates (0-1)
+                const x = bbox.bbox_x * bitmap.width;
+                const y = bbox.bbox_y * bitmap.height;
+                const width = bbox.bbox_width * bitmap.width;
+                const height = bbox.bbox_height * bitmap.height;
+
+                // Add some padding around the face (20%)
+                const padding = 0.2;
+                let cropX = Math.max(0, x - width * padding);
+                let cropY = Math.max(0, y - height * padding);
+                let cropWidth = Math.min(bitmap.width - cropX, width * (1 + 2 * padding));
+                let cropHeight = Math.min(bitmap.height - cropY, height * (1 + 2 * padding));
+
+                // Make it square by extending the shorter side
+                if (cropWidth > cropHeight) {
+                    const diff = (cropWidth - cropHeight) / 2;
+                    cropY = Math.max(0, cropY - diff);
+                    cropHeight = cropWidth;
+                    if (cropY + cropHeight > bitmap.height) {
+                        cropY = Math.max(0, bitmap.height - cropHeight);
+                    }
+                } else if (cropHeight > cropWidth) {
+                    const diff = (cropHeight - cropWidth) / 2;
+                    cropX = Math.max(0, cropX - diff);
+                    cropWidth = cropHeight;
+                    if (cropX + cropWidth > bitmap.width) {
+                        cropX = Math.max(0, bitmap.width - cropWidth);
+                    }
+                }
+
+                // Draw cropped face onto canvas
+                canvas.width = size;
+                canvas.height = size;
+                ctx.drawImage(
+                    bitmap,
+                    cropX, cropY, cropWidth, cropHeight,
+                    0, 0, size, size
+                );
+
+                bitmap.close();
+                setLoaded(true);
+            } catch (error) {
+                if (!cancelled) {
+                    logger.warn('FaceThumbnail', 'load_error', 'Failed to load face thumbnail', {
+                        photoPath,
+                        error: error.toString()
+                    });
+                    setLoaded(false);
+                }
+            }
         };
 
-        img.onerror = () => {
-            setLoaded(false);
-        };
-
-        img.src = convertFileSrc(photoPath);
+        loadAndDraw();
 
         return () => {
-            img.onload = null;
-            img.onerror = null;
+            cancelled = true;
         };
     }, [photoPath, bbox, size]);
 
