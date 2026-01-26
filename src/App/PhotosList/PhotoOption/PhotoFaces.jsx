@@ -47,6 +47,9 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
         setIsDetecting(true);
         setStatus(null);
 
+        // Wait for UI to update before starting heavy processing
+        await new Promise(resolve => setTimeout(resolve, 50));
+
         try {
             logger.info('PhotoFaces', 'detect_faces_start', 'Starting face detection', { photoPath: currentPhotoPath });
 
@@ -278,11 +281,11 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
                 {/* Detect button */}
                 <div className={styles['photo-faces-actions']}>
                     <button
-                        className={styles['detect-button']}
+                        className={`${styles['detect-button']} ${isDetecting ? styles['detecting'] : ''}`}
                         onClick={handleDetectFaces}
                         disabled={!modelsReady || isDetecting}
                     >
-                        {isDetecting ? 'Detecting...' : 'Detect Faces'}
+                        {isDetecting ? '⏳ Detecting...' : 'Detect Faces'}
                     </button>
                 </div>
 
