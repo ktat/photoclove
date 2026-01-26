@@ -54,17 +54,38 @@ function FaceThumbnail({ photoPath, bbox, maxSize = 50 }) {
 
                 // Add some padding around the face (20%)
                 const padding = 0.2;
-                const paddedX = Math.max(0, x - width * padding);
-                const paddedY = Math.max(0, y - height * padding);
-                const paddedWidth = Math.min(bitmap.width - paddedX, width * (1 + 2 * padding));
-                const paddedHeight = Math.min(bitmap.height - paddedY, height * (1 + 2 * padding));
+                let cropX = Math.max(0, x - width * padding);
+                let cropY = Math.max(0, y - height * padding);
+                let cropWidth = Math.min(bitmap.width - cropX, width * (1 + 2 * padding));
+                let cropHeight = Math.min(bitmap.height - cropY, height * (1 + 2 * padding));
+
+                // Make it square by extending the shorter side
+                if (cropWidth > cropHeight) {
+                    // Wider than tall - extend height
+                    const diff = (cropWidth - cropHeight) / 2;
+                    cropY = Math.max(0, cropY - diff);
+                    cropHeight = cropWidth;
+                    // Clamp to image bounds
+                    if (cropY + cropHeight > bitmap.height) {
+                        cropY = Math.max(0, bitmap.height - cropHeight);
+                    }
+                } else if (cropHeight > cropWidth) {
+                    // Taller than wide - extend width
+                    const diff = (cropHeight - cropWidth) / 2;
+                    cropX = Math.max(0, cropX - diff);
+                    cropWidth = cropHeight;
+                    // Clamp to image bounds
+                    if (cropX + cropWidth > bitmap.width) {
+                        cropX = Math.max(0, bitmap.width - cropWidth);
+                    }
+                }
 
                 // Draw cropped face onto canvas (square)
                 canvas.width = maxSize;
                 canvas.height = maxSize;
                 ctx.drawImage(
                     bitmap,
-                    paddedX, paddedY, paddedWidth, paddedHeight,
+                    cropX, cropY, cropWidth, cropHeight,
                     0, 0, maxSize, maxSize
                 );
 
