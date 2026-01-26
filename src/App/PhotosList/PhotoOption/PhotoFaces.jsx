@@ -7,67 +7,95 @@ import styles from './PhotoFaces.module.css';
 
 /**
  * FaceThumbnail - Crops and displays a face from an image
+ * Uses createImageBitmap to respect EXIF orientation
  */
-function FaceThumbnail({ photoPath, bbox, size = 50 }) {
+function FaceThumbnail({ photoPath, bbox, maxSize = 50 }) {
     const canvasRef = useRef(null);
     const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
         if (!photoPath || !bbox) return;
 
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
+        let cancelled = false;
 
-        img.onload = () => {
-            const canvas = canvasRef.current;
-            if (!canvas) return;
+        const loadAndDraw = async () => {
+            try {
+                // Fetch the image as blob to use createImageBitmap with EXIF orientation
+                const response = await fetch(convertFileSrc(photoPath));
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch: ${response.status}`);
+                }
+                const blob = await response.blob();
 
-            const ctx = canvas.getContext('2d');
+                // createImageBitmap with imageOrientation respects EXIF rotation
+                const bitmap = await createImageBitmap(blob, {
+                    imageOrientation: 'from-image'
+                });
 
-            // bbox is in normalized coordinates (0-1)
-            const x = bbox.bbox_x * img.naturalWidth;
-            const y = bbox.bbox_y * img.naturalHeight;
-            const width = bbox.bbox_width * img.naturalWidth;
-            const height = bbox.bbox_height * img.naturalHeight;
+                if (cancelled) {
+                    bitmap.close();
+                    return;
+                }
 
-            // Add some padding around the face (20%)
-            const padding = 0.2;
-            const paddedX = Math.max(0, x - width * padding);
-            const paddedY = Math.max(0, y - height * padding);
-            const paddedWidth = Math.min(img.naturalWidth - paddedX, width * (1 + 2 * padding));
-            const paddedHeight = Math.min(img.naturalHeight - paddedY, height * (1 + 2 * padding));
+                const canvas = canvasRef.current;
+                if (!canvas) {
+                    bitmap.close();
+                    return;
+                }
 
-            // Draw cropped face onto canvas
-            canvas.width = size;
-            canvas.height = size;
-            ctx.drawImage(
-                img,
-                paddedX, paddedY, paddedWidth, paddedHeight,
-                0, 0, size, size
-            );
-            setLoaded(true);
+                const ctx = canvas.getContext('2d');
+
+                // bbox is in normalized coordinates (0-1)
+                // bitmap.width/height are the dimensions after EXIF rotation
+                const x = bbox.bbox_x * bitmap.width;
+                const y = bbox.bbox_y * bitmap.height;
+                const width = bbox.bbox_width * bitmap.width;
+                const height = bbox.bbox_height * bitmap.height;
+
+                // Add some padding around the face (20%)
+                const padding = 0.2;
+                const paddedX = Math.max(0, x - width * padding);
+                const paddedY = Math.max(0, y - height * padding);
+                const paddedWidth = Math.min(bitmap.width - paddedX, width * (1 + 2 * padding));
+                const paddedHeight = Math.min(bitmap.height - paddedY, height * (1 + 2 * padding));
+
+                // Draw cropped face onto canvas (square)
+                canvas.width = maxSize;
+                canvas.height = maxSize;
+                ctx.drawImage(
+                    bitmap,
+                    paddedX, paddedY, paddedWidth, paddedHeight,
+                    0, 0, maxSize, maxSize
+                );
+
+                bitmap.close();
+                setLoaded(true);
+            } catch (error) {
+                if (!cancelled) {
+                    logger.warn('FaceThumbnail', 'load_error', 'Failed to load face thumbnail', {
+                        photoPath,
+                        error: error.toString()
+                    });
+                    setLoaded(false);
+                }
+            }
         };
 
-        img.onerror = () => {
-            setLoaded(false);
-        };
-
-        img.src = convertFileSrc(photoPath);
+        loadAndDraw();
 
         return () => {
-            img.onload = null;
-            img.onerror = null;
+            cancelled = true;
         };
-    }, [photoPath, bbox, size]);
+    }, [photoPath, bbox, maxSize]);
 
     return (
         <canvas
             ref={canvasRef}
-            width={size}
-            height={size}
+            width={maxSize}
+            height={maxSize}
             style={{
-                width: size,
-                height: size,
+                width: maxSize,
+                height: maxSize,
                 borderRadius: 'var(--radius-sm)',
                 display: loaded ? 'block' : 'none'
             }}
@@ -380,7 +408,7 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
                                         <FaceThumbnail
                                             photoPath={currentPhotoPath}
                                             bbox={face}
-                                            size={50}
+                                            maxSize={50}
                                         />
                                         {/* Fallback icon if thumbnail fails to load */}
                                         <div className={styles['face-preview-fallback']}>
@@ -416,7 +444,7 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
                                                                     <FaceThumbnail
                                                                         photoPath={person.photo_path}
                                                                         bbox={person}
-                                                                        size={32}
+                                                                        maxSize={32}
                                                                     />
                                                                     <span className={styles['person-name']}>
                                                                         {person.person_name}

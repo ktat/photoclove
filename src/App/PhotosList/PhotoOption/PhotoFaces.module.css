@@ -129,10 +129,6 @@
     color: var(--color-text-muted);
 }
 
-.face-preview canvas + .face-preview-fallback {
-    /* Hide fallback when canvas is visible */
-}
-
 .face-info {
     flex: 1;
     min-width: 0;
