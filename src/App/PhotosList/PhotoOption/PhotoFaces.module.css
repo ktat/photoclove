@@ -65,6 +65,11 @@
     cursor: not-allowed;
 }
 
+.detect-button.detecting,
+.detect-button.detecting:disabled {
+    cursor: wait;
+}
+
 .photo-faces-section h4 {
     margin: 0 0 12px 0;
     font-size: 14px;
