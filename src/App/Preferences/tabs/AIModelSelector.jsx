@@ -35,7 +35,9 @@ export const AI_MODELS = [
     },
 ];
 
-function AIModelSelector({ selectedModelId, modelStatuses, isDownloading, onModelSelect, onDownloadModel }) {
+function AIModelSelector({ selectedModelId, modelStatuses, downloadingModelId, onModelSelect, onDownloadModel }) {
+    const isAnyDownloading = downloadingModelId !== null;
+
     return (
         <div style={{ marginTop: 'var(--space-4)' }}>
             <h3 style={{ marginBottom: 'var(--space-3)' }}>AI Model</h3>
@@ -44,18 +46,20 @@ function AIModelSelector({ selectedModelId, modelStatuses, isDownloading, onMode
                     const isSelected = selectedModelId === model.id;
                     const status = modelStatuses[model.id] || {};
                     const isDownloaded = status.downloaded || model.id === 'mobilenet';
+                    const isDownloadingThis = downloadingModelId === model.id;
 
                     return (
                         <div
                             key={model.id}
-                            onClick={() => onModelSelect(model.id)}
+                            onClick={() => !isAnyDownloading && onModelSelect(model.id)}
                             style={{
                                 padding: 'var(--space-3)',
                                 background: isSelected ? 'var(--color-primary-selected)' : 'var(--color-bg-surface)',
                                 border: isSelected ? '2px solid var(--color-primary)' : '1px solid var(--color-border-default)',
                                 borderRadius: 'var(--radius-md)',
-                                cursor: 'pointer',
+                                cursor: isAnyDownloading ? 'wait' : 'pointer',
                                 position: 'relative',
+                                opacity: isAnyDownloading && !isDownloadingThis ? 0.6 : 1,
                             }}
                         >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
@@ -112,23 +116,25 @@ function AIModelSelector({ selectedModelId, modelStatuses, isDownloading, onMode
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        onDownloadModel(model.id);
+                                        if (!isAnyDownloading) {
+                                            onDownloadModel(model.id);
+                                        }
                                     }}
-                                    disabled={isDownloading}
+                                    disabled={isAnyDownloading}
                                     style={{
                                         marginTop: 'var(--space-2)',
                                         marginLeft: 'var(--space-5)',
                                         padding: 'var(--space-1) var(--space-3)',
-                                        background: 'var(--color-primary)',
+                                        background: isAnyDownloading ? 'var(--color-bg-muted)' : 'var(--color-primary)',
                                         color: 'var(--color-bg-base)',
                                         border: 'none',
                                         borderRadius: 'var(--radius-sm)',
-                                        cursor: isDownloading ? 'not-allowed' : 'pointer',
-                                        opacity: isDownloading ? 0.6 : 1,
+                                        cursor: isAnyDownloading ? 'wait' : 'pointer',
+                                        opacity: isAnyDownloading && !isDownloadingThis ? 0.5 : 1,
                                         fontSize: 'var(--font-size-sm)',
                                     }}
                                 >
-                                    {isDownloading ? 'Downloading...' : 'Download Model'}
+                                    {isDownloadingThis ? 'Downloading...' : 'Download Model'}
                                 </button>
                             )}
                         </div>

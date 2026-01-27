@@ -57,7 +57,7 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState({ message: '', progress: 0 });
     const [modelStatuses, setModelStatuses] = useState({});
-    const [isDownloading, setIsDownloading] = useState(false);
+    const [downloadingModelId, setDownloadingModelId] = useState(null);
     const prevModelTypeRef = React.useRef(null);
 
     // Fetch model statuses on mount
@@ -164,7 +164,7 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
     const selectedModel = AI_MODELS.find(m => m.id === aiConfig.model_type) || AI_MODELS[0];
 
     const handleDownloadModel = async (modelId) => {
-        setIsDownloading(true);
+        setDownloadingModelId(modelId);
         try {
             if (addFooterMessage) addFooterMessage("ai_model_download", `Downloading ${modelId} model...`);
             await invoke("download_ai_model", { modelId });
@@ -174,7 +174,7 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
             logger.error('AITaggingTab', 'model_download_error', 'Failed to download model', { modelId, error });
             if (addFooterMessage) addFooterMessage("ai_model_download_error", `Failed to download ${modelId}: ${error}`);
         } finally {
-            setIsDownloading(false);
+            setDownloadingModelId(null);
         }
     };
 
@@ -236,7 +236,10 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
     const totalCategories = Object.values(CATEGORY_GROUPS).flatMap(g => g.categories).length;
 
     return (
-        <div className={styles['preferences-section']}>
+        <div
+            className={styles['preferences-section']}
+            style={{ cursor: downloadingModelId ? 'wait' : 'default' }}
+        >
             <h2 className={styles['section-title']}>AI Auto-Tagging</h2>
             <p className={styles['setting-description']} style={{ marginBottom: 'var(--space-4)' }}>
                 Automatically classify and tag photos using AI. Tags are prefixed with <code>ai:</code>.
@@ -327,7 +330,7 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                     <AIModelSelector
                         selectedModelId={aiConfig.model_type}
                         modelStatuses={modelStatuses}
-                        isDownloading={isDownloading}
+                        downloadingModelId={downloadingModelId}
                         onModelSelect={(id) => updateAIConfig({ model_type: id })}
                         onDownloadModel={handleDownloadModel}
                     />
