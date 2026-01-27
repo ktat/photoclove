@@ -78,14 +78,14 @@ impl OpenClipClassifier {
     }
 
     /// Encode image to embedding vector
-    fn encode_image(&mut self, image_path: &Path) -> Result<Vec<f32>, String> {
+    fn encode_image(&mut self, image_path: &Path, use_exif_thumbnail: bool) -> Result<Vec<f32>, String> {
         let session = self
             .visual_session
             .as_mut()
             .ok_or("Visual encoder not initialized")?;
 
         // Preprocess image
-        let input_data = preprocess_clip_image(image_path, OPENCLIP_INPUT_SIZE)?;
+        let input_data = preprocess_clip_image(image_path, OPENCLIP_INPUT_SIZE, use_exif_thumbnail)?;
 
         // Create input tensor [1, 3, 224, 224]
         let input_tensor = Tensor::from_array((
@@ -344,12 +344,13 @@ impl AIClassifierBackend for OpenClipClassifier {
 
         log::debug!(
             target: "ai_tagging",
-            "classifying; backend=openclip; image={}",
-            image_path.display()
+            "classifying; backend=openclip; image={}; use_exif={}",
+            image_path.display(),
+            config.use_exif_thumbnail
         );
 
         // Encode the image
-        let image_embedding = self.encode_image(image_path)?;
+        let image_embedding = self.encode_image(image_path, config.use_exif_thumbnail)?;
 
         // If we have text embeddings, compute similarities
         if !self.text_embeddings.is_empty() {

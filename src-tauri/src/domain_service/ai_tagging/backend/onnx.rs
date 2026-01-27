@@ -138,12 +138,76 @@ impl OnnxClassifier {
 
     /// Preprocess image for model input
     /// Returns tensor in NCHW format (batch=1, channels=3, height, width)
-    fn preprocess_image(&self, image_path: &Path) -> Result<Vec<f32>, String> {
-        let (width, height) = self.model_preset.input_size();
+    fn preprocess_image(&self, image_path: &Path, use_exif_thumbnail: bool) -> Result<Vec<f32>, String> {
+        use image::DynamicImage;
+        use std::fs::File;
+        use std::io::BufReader;
+        use kexif::Reader as ExifReader;
+        use kexif::{In, Tag};
 
-        // Load image
-        let img = image::open(image_path)
-            .map_err(|e| format!("Failed to load image {}: {}", image_path.display(), e))?;
+        let (width, height) = self.model_preset.input_size();
+        let mut img: Option<DynamicImage> = None;
+
+        // Try to extract EXIF thumbnail if enabled
+        if use_exif_thumbnail {
+            if let Ok(file) = File::open(image_path) {
+                let mut bufreader = BufReader::new(&file);
+
+                if let Ok(exif_reader) = ExifReader::new().read_from_container(&mut bufreader) {
+                    // Try to get the thumbnail
+                    if let Some(thumbnail_field) = exif_reader.get_field(Tag::JPEGInterchangeFormat, In::THUMBNAIL) {
+                        if let Some(length_field) = exif_reader.get_field(Tag::JPEGInterchangeFormatLength, In::THUMBNAIL) {
+                            if let (kexif::Value::Long(ref offset_vec), kexif::Value::Long(ref length_vec)) =
+                                (&thumbnail_field.value, &length_field.value) {
+                                if !offset_vec.is_empty() && !length_vec.is_empty() {
+                                    let offset = offset_vec[0] as usize;
+                                    let length = length_vec[0] as usize;
+
+                                    // Re-open file to read thumbnail data
+                                    if let Ok(mut file) = File::open(image_path) {
+                                        use std::io::{Seek, SeekFrom, Read};
+
+                                        if file.seek(SeekFrom::Start(offset as u64)).is_ok() {
+                                            let mut thumbnail_data = vec![0u8; length];
+                                            if file.read_exact(&mut thumbnail_data).is_ok() {
+                                                if let Ok(thumbnail_img) = image::load_from_memory(&thumbnail_data) {
+                                                    log::debug!(
+                                                        target: "ai_tagging",
+                                                        "exif_thumbnail_loaded; path={}; size={}x{}",
+                                                        image_path.display(),
+                                                        thumbnail_img.width(),
+                                                        thumbnail_img.height()
+                                                    );
+                                                    img = Some(thumbnail_img);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Fallback: Load full image if EXIF thumbnail not found or disabled
+        if img.is_none() {
+            img = Some(
+                image::open(image_path)
+                    .map_err(|e| format!("Failed to load image {}: {}", image_path.display(), e))?
+            );
+
+            if use_exif_thumbnail {
+                log::debug!(
+                    target: "ai_tagging",
+                    "no_exif_thumbnail; fallback_to_full_image; path={}",
+                    image_path.display()
+                );
+            }
+        }
+
+        let img = img.unwrap();
 
         // Resize to model input size
         let resized = img.resize_exact(width, height, image::imageops::FilterType::Triangle);
@@ -322,12 +386,13 @@ impl AIClassifierBackend for OnnxClassifier {
 
         log::debug!(
             target: "ai_tagging",
-            "classifying; backend=onnx; image={}",
-            image_path.display()
+            "classifying; backend=onnx; image={}; use_exif={}",
+            image_path.display(),
+            config.use_exif_thumbnail
         );
 
         // Preprocess image (before mutable session borrow)
-        let input_data = self.preprocess_image(image_path)?;
+        let input_data = self.preprocess_image(image_path, config.use_exif_thumbnail)?;
         let (width, height) = self.model_preset.input_size();
 
         // Create input tensor with shape [1, 3, height, width] (NCHW format)

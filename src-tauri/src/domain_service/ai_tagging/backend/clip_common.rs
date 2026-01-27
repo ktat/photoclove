@@ -278,10 +278,76 @@ pub const CLIP_STD: [f32; 3] = [0.26862954, 0.26130258, 0.27577711];
 pub fn preprocess_clip_image(
     image_path: &std::path::Path,
     target_size: u32,
+    use_exif_thumbnail: bool,
 ) -> Result<Vec<f32>, String> {
-    // Load image
-    let img = image::open(image_path)
-        .map_err(|e| format!("Failed to load image {}: {}", image_path.display(), e))?;
+    use image::DynamicImage;
+    use std::fs::File;
+    use std::io::BufReader;
+    use kexif::Reader as ExifReader;
+    use kexif::{In, Tag};
+
+    let mut img: Option<DynamicImage> = None;
+
+    // Try to extract EXIF thumbnail if enabled
+    if use_exif_thumbnail {
+        if let Ok(file) = File::open(image_path) {
+            let mut bufreader = BufReader::new(&file);
+
+            if let Ok(exif_reader) = ExifReader::new().read_from_container(&mut bufreader) {
+                // Try to get the thumbnail
+                if let Some(thumbnail_field) = exif_reader.get_field(Tag::JPEGInterchangeFormat, In::THUMBNAIL) {
+                    if let Some(length_field) = exif_reader.get_field(Tag::JPEGInterchangeFormatLength, In::THUMBNAIL) {
+                        if let (kexif::Value::Long(ref offset_vec), kexif::Value::Long(ref length_vec)) =
+                            (&thumbnail_field.value, &length_field.value) {
+                            if !offset_vec.is_empty() && !length_vec.is_empty() {
+                                let offset = offset_vec[0] as usize;
+                                let length = length_vec[0] as usize;
+
+                                // Re-open file to read thumbnail data
+                                if let Ok(mut file) = File::open(image_path) {
+                                    use std::io::{Seek, SeekFrom, Read};
+
+                                    if file.seek(SeekFrom::Start(offset as u64)).is_ok() {
+                                        let mut thumbnail_data = vec![0u8; length];
+                                        if file.read_exact(&mut thumbnail_data).is_ok() {
+                                            if let Ok(thumbnail_img) = image::load_from_memory(&thumbnail_data) {
+                                                log::debug!(
+                                                    target: "ai_tagging",
+                                                    "exif_thumbnail_loaded; path={}; size={}x{}",
+                                                    image_path.display(),
+                                                    thumbnail_img.width(),
+                                                    thumbnail_img.height()
+                                                );
+                                                img = Some(thumbnail_img);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Fallback: Load full image if EXIF thumbnail not found or disabled
+    if img.is_none() {
+        img = Some(
+            image::open(image_path)
+                .map_err(|e| format!("Failed to load image {}: {}", image_path.display(), e))?
+        );
+
+        if use_exif_thumbnail {
+            log::debug!(
+                target: "ai_tagging",
+                "no_exif_thumbnail; fallback_to_full_image; path={}",
+                image_path.display()
+            );
+        }
+    }
+
+    let img = img.unwrap();
 
     // Resize to target size (center crop + resize)
     let (width, height) = (img.width(), img.height());
