@@ -6,6 +6,25 @@ import styles from '../Preferences.module.css';
 import AIModelSelector, { AI_MODELS } from './AIModelSelector.jsx';
 import AICustomLabels from './AICustomLabels.jsx';
 
+// Model-specific confidence threshold ranges
+const MODEL_THRESHOLD_RANGES = {
+    mobilenet: { min: 0.5, max: 0.95 },
+    openclip: { min: 0.15, max: 0.35 },
+    siglip: { min: 0.15, max: 0.35 }
+};
+
+// Convert actual threshold to normalized 0-100 scale
+const toNormalizedThreshold = (actual, modelType) => {
+    const range = MODEL_THRESHOLD_RANGES[modelType] || MODEL_THRESHOLD_RANGES.mobilenet;
+    return Math.round(((actual - range.min) / (range.max - range.min)) * 100);
+};
+
+// Convert normalized 0-100 scale to actual threshold
+const toActualThreshold = (normalized, modelType) => {
+    const range = MODEL_THRESHOLD_RANGES[modelType] || MODEL_THRESHOLD_RANGES.mobilenet;
+    return (normalized / 100) * (range.max - range.min) + range.min;
+};
+
 // AI Tagging category groups
 const CATEGORY_GROUPS = {
     people: {
@@ -39,6 +58,7 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
     const [progress, setProgress] = useState({ message: '', progress: 0 });
     const [modelStatuses, setModelStatuses] = useState({});
     const [isDownloading, setIsDownloading] = useState(false);
+    const prevModelTypeRef = React.useRef(null);
 
     // Fetch model statuses on mount
     useEffect(() => {
@@ -110,6 +130,36 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
             ai_tagging: { ...aiConfig, ...updates }
         }));
     };
+
+    // Adjust confidence threshold when model type changes
+    useEffect(() => {
+        if (prevModelTypeRef.current && prevModelTypeRef.current !== aiConfig.model_type) {
+            // Model type changed - convert threshold to maintain same "strictness"
+            const prevModelType = prevModelTypeRef.current;
+            const currentModelType = aiConfig.model_type;
+            const currentThreshold = aiConfig.confidence_threshold;
+
+            // Convert from old model range to normalized 0-100
+            const normalized = toNormalizedThreshold(currentThreshold, prevModelType);
+            // Convert from normalized to new model range
+            const newThreshold = toActualThreshold(normalized, currentModelType);
+
+            logger.info('AITaggingTab', 'model_type_changed', 'Adjusting confidence threshold for new model', {
+                prevModelType,
+                currentModelType,
+                oldThreshold: currentThreshold,
+                normalized,
+                newThreshold
+            });
+
+            setConfig(prev => ({
+                ...prev,
+                ai_tagging: { ...prev.ai_tagging, confidence_threshold: newThreshold }
+            }));
+        }
+        prevModelTypeRef.current = aiConfig.model_type;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [aiConfig.model_type]);
 
     const selectedModel = AI_MODELS.find(m => m.id === aiConfig.model_type) || AI_MODELS[0];
 
@@ -232,17 +282,30 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                     {/* Confidence Threshold */}
                     <div className={styles['setting-group']}>
                         <div className={styles['setting-row']}>
-                            <label>Confidence Threshold: {(aiConfig.confidence_threshold * 100).toFixed(0)}%</label>
+                            <label>Confidence Threshold: {toNormalizedThreshold(aiConfig.confidence_threshold, aiConfig.model_type)}%</label>
                             <input
                                 type="range"
-                                min="0.5"
-                                max="0.95"
-                                step="0.05"
-                                value={aiConfig.confidence_threshold}
-                                onChange={(e) => updateAIConfig({ confidence_threshold: parseFloat(e.target.value) })}
+                                min="0"
+                                max="100"
+                                step="5"
+                                value={toNormalizedThreshold(aiConfig.confidence_threshold, aiConfig.model_type)}
+                                onChange={(e) => {
+                                    const normalized = parseInt(e.target.value);
+                                    const actual = toActualThreshold(normalized, aiConfig.model_type);
+                                    updateAIConfig({ confidence_threshold: actual });
+                                }}
                                 style={{ width: '200px' }}
                             />
                         </div>
+                        <p style={{
+                            fontSize: 'var(--font-size-xs)',
+                            color: 'var(--color-text-muted)',
+                            marginTop: 'var(--space-2)',
+                            marginLeft: 'var(--space-6)',
+                            marginBottom: 0
+                        }}>
+                            Lower values = more tags (less strict), Higher values = fewer tags (more strict)
+                        </p>
                     </div>
 
                     {/* Max Tags per Image */}
