@@ -164,13 +164,24 @@ impl OnnxClassifier {
                                     let length = length_vec[0] as usize;
 
                                     // Re-open file to read thumbnail data
+                                    drop(bufreader);
                                     if let Ok(mut file) = File::open(image_path) {
                                         use std::io::{Seek, SeekFrom, Read};
 
                                         if file.seek(SeekFrom::Start(offset as u64)).is_ok() {
                                             let mut thumbnail_data = vec![0u8; length];
                                             if file.read_exact(&mut thumbnail_data).is_ok() {
-                                                if let Ok(thumbnail_img) = image::load_from_memory(&thumbnail_data) {
+                                                // Find JPEG start marker (FFD8) and trim any leading data
+                                                let jpeg_start = thumbnail_data
+                                                    .windows(2)
+                                                    .position(|w| w[0] == 0xFF && w[1] == 0xD8);
+                                                let jpeg_data_slice = if let Some(start_pos) = jpeg_start {
+                                                    &thumbnail_data[start_pos..]
+                                                } else {
+                                                    &thumbnail_data[..]
+                                                };
+
+                                                if let Ok(thumbnail_img) = image::load_from_memory(jpeg_data_slice) {
                                                     log::debug!(
                                                         target: "ai_tagging",
                                                         "exif_thumbnail_loaded; path={}; size={}x{}",
