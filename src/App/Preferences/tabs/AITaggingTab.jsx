@@ -203,6 +203,15 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                     />
                     <label htmlFor="ai-tagging-enabled">Enable AI Auto-Tagging</label>
                 </div>
+                <p style={{
+                    fontSize: 'var(--font-size-xs)',
+                    color: 'var(--color-warning)',
+                    marginTop: 'var(--space-2)',
+                    marginLeft: 'var(--space-6)',
+                    marginBottom: 0
+                }}>
+                    ⚠️ Restart the application after enabling/disabling for changes to take effect.
+                </p>
             </div>
 
             {aiConfig.enabled && (

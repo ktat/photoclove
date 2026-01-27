@@ -239,6 +239,17 @@ impl AITaggingService {
 
     /// Update the configuration
     pub fn set_config(&mut self, config: AITaggingConfig) {
+        // Check if model type has changed and switch backend if needed
+        if self.config.model_type != config.model_type {
+            log::info!(
+                target: "ai_tagging",
+                "switching_backend; from={}; to={}",
+                self.config.model_type,
+                config.model_type
+            );
+            self.switch_backend(&config.model_type);
+        }
+        // Always update the full config
         self.config = config;
     }
 
