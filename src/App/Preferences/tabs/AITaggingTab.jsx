@@ -121,7 +121,8 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
         model_type: "mobilenet",
         model_preset: "standard",
         enabled_categories: [],
-        custom_labels: []
+        custom_labels: [],
+        use_exif_thumbnail: true
     };
 
     const updateAIConfig = (updates) => {
@@ -280,6 +281,28 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                             />
                             <label htmlFor="ai-auto-tag-import">Auto-tag photos on import</label>
                         </div>
+                    </div>
+
+                    {/* Use EXIF Thumbnail */}
+                    <div className={styles['setting-group']}>
+                        <div className={styles['setting-item']}>
+                            <input
+                                type="checkbox"
+                                id="ai-use-exif-thumbnail"
+                                checked={aiConfig.use_exif_thumbnail ?? true}
+                                onChange={(e) => updateAIConfig({ use_exif_thumbnail: e.target.checked })}
+                            />
+                            <label htmlFor="ai-use-exif-thumbnail">Use EXIF thumbnail for faster tagging</label>
+                        </div>
+                        <p style={{
+                            fontSize: 'var(--font-size-xs)',
+                            color: 'var(--color-text-muted)',
+                            marginTop: 'var(--space-2)',
+                            marginLeft: 'var(--space-6)',
+                            marginBottom: 0
+                        }}>
+                            When enabled, uses embedded EXIF thumbnails for much faster processing. May reduce accuracy for small details (e.g., distant objects, fine text).
+                        </p>
                     </div>
 
                     {/* Confidence Threshold */}

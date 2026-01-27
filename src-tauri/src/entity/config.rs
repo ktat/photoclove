@@ -194,10 +194,17 @@ pub struct AiTaggingConfig {
     /// Custom labels for OpenCLIP/SigLIP models
     #[serde(default)]
     pub custom_labels: Vec<String>,
+    /// Use EXIF thumbnail for faster tagging (may reduce accuracy for small details)
+    #[serde(default = "default_ai_tagging_use_exif_thumbnail")]
+    pub use_exif_thumbnail: bool,
 }
 
 fn default_model_type() -> String {
     "mobilenet".to_string()
+}
+
+fn default_ai_tagging_use_exif_thumbnail() -> bool {
+    true
 }
 
 impl Default for AiTaggingConfig {
@@ -211,6 +218,7 @@ impl Default for AiTaggingConfig {
             model_preset: "standard".to_string(),
             enabled_categories: Vec::new(), // empty = all enabled
             custom_labels: Vec::new(),
+            use_exif_thumbnail: true,
         }
     }
 }

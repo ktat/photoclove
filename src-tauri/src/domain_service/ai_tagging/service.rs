@@ -53,6 +53,8 @@ pub struct AITaggingConfig {
     pub model_type: String,
     /// Custom labels for CLIP-based models
     pub custom_labels: Vec<String>,
+    /// Use EXIF thumbnail for faster tagging (may reduce accuracy for small details)
+    pub use_exif_thumbnail: bool,
 }
 
 impl Default for AITaggingConfig {
@@ -65,6 +67,7 @@ impl Default for AITaggingConfig {
             enabled_categories: None,
             model_type: "mobilenet".to_string(),
             custom_labels: Vec::new(),
+            use_exif_thumbnail: true,
         }
     }
 }
@@ -162,6 +165,7 @@ impl AITaggingService {
             } else {
                 Some(self.config.custom_labels.clone())
             },
+            use_exif_thumbnail: self.config.use_exif_thumbnail,
         };
 
         backend.classify(photo_path, &classifier_config)

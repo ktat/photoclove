@@ -32,6 +32,8 @@ pub struct ClassifierConfig {
     pub enabled_categories: Option<Vec<AutoTagCategory>>,
     /// Custom labels for CLIP-based models
     pub custom_labels: Option<Vec<String>>,
+    /// Use EXIF thumbnail for faster tagging (may reduce accuracy for small details)
+    pub use_exif_thumbnail: bool,
 }
 
 impl Default for ClassifierConfig {
@@ -41,6 +43,7 @@ impl Default for ClassifierConfig {
             max_tags_per_image: 5,
             enabled_categories: None,
             custom_labels: None,
+            use_exif_thumbnail: true,
         }
     }
 }
