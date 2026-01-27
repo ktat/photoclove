@@ -54,6 +54,17 @@ pub const DEFAULT_CLIP_LABELS: &[&str] = &[
 pub fn label_to_category(label: &str) -> Option<AutoTagCategory> {
     let lower = label.to_lowercase();
 
+    // Events (check first - more specific patterns)
+    if lower.contains("wedding") {
+        return Some(AutoTagCategory::Wedding);
+    }
+    if lower.contains("birthday") {
+        return Some(AutoTagCategory::Birthday);
+    }
+    if lower.contains("travel") || lower.contains("vacation") {
+        return Some(AutoTagCategory::Travel);
+    }
+
     // People
     if lower.contains("person") || lower.contains("selfie") {
         return Some(AutoTagCategory::Person);
@@ -151,17 +162,6 @@ pub fn label_to_category(label: &str) -> Option<AutoTagCategory> {
         return Some(AutoTagCategory::Night);
     }
 
-    // Events
-    if lower.contains("wedding") {
-        return Some(AutoTagCategory::Wedding);
-    }
-    if lower.contains("birthday") {
-        return Some(AutoTagCategory::Birthday);
-    }
-    if lower.contains("travel") || lower.contains("vacation") {
-        return Some(AutoTagCategory::Travel);
-    }
-
     None
 }
 
@@ -203,21 +203,36 @@ pub fn similarities_to_results(
     similarities: &[f32],
     config: &ClassifierConfig,
 ) -> Vec<ClassificationResult> {
-    // Convert to probabilities using softmax
-    let probabilities = softmax(similarities);
+    // Use cosine similarities directly (no softmax needed for CLIP models)
+    // Cosine similarities are already in [-1, 1] range, normalized embeddings give [0, 1]
 
-    // Create (label, probability) pairs and sort by probability
-    let mut label_probs: Vec<(&String, f32)> = labels.iter().zip(probabilities.iter().cloned()).collect();
-    label_probs.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    // Create (label, similarity) pairs and sort by similarity
+    let mut label_sims: Vec<(&String, f32)> = labels.iter().zip(similarities.iter().cloned()).collect();
+    label_sims.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+    // Log top 5 similarities for debugging
+    log::debug!(
+        target: "ai_tagging",
+        "top_similarities; top5={:?}",
+        label_sims.iter().take(5).map(|(l, s)| (l.as_str(), s)).collect::<Vec<_>>()
+    );
 
     // Convert to ClassificationResult, filtering by threshold
     let mut results = Vec::new();
     let mut seen_categories = std::collections::HashSet::new();
 
-    for (label, prob) in label_probs {
-        if prob < config.confidence_threshold {
+    for (label, similarity) in label_sims {
+        if similarity < config.confidence_threshold {
             continue;
         }
+
+        // Log labels that pass threshold
+        log::debug!(
+            target: "ai_tagging",
+            "above_threshold; label={}; similarity={}",
+            label,
+            similarity
+        );
 
         if let Some(category) = label_to_category(label) {
             // Skip if we've already seen this category
@@ -235,8 +250,15 @@ pub fn similarities_to_results(
             seen_categories.insert(category);
             results.push(ClassificationResult {
                 category,
-                confidence: prob,
+                confidence: similarity,
             });
+
+            log::debug!(
+                target: "ai_tagging",
+                "tag_added; category={:?}; confidence={}",
+                category,
+                similarity
+            );
 
             if results.len() >= config.max_tags_per_image {
                 break;

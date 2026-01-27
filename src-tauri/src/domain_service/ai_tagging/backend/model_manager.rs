@@ -94,7 +94,7 @@ impl ModelManager {
                 id: "openclip".to_string(),
                 name: "OpenCLIP (ViT-B/32)".to_string(),
                 license: "MIT".to_string(),
-                size_mb: 350,
+                size_mb: 606,
                 description: "Flexible tagging with custom labels. Can detect people, scenes, events, and any custom concept you define.".to_string(),
                 supports_custom_labels: true,
                 speed_rating: 3,
@@ -102,13 +102,13 @@ impl ModelManager {
                 files: vec![
                     ModelFile {
                         filename: "openclip-vit-b-32-visual.onnx".to_string(),
-                        url: "https://huggingface.co/laion/CLIP-ViT-B-32-laion2B-s34B-b79K/resolve/main/open_clip_model.safetensors".to_string(),
-                        size_bytes: 340_000_000,
+                        url: "https://huggingface.co/immich-app/ViT-B-32__laion2b-s34b-b79k/resolve/main/visual/model.onnx".to_string(),
+                        size_bytes: 351_613_724,
                     },
                     ModelFile {
                         filename: "openclip-vit-b-32-text.onnx".to_string(),
-                        url: "https://huggingface.co/laion/CLIP-ViT-B-32-laion2B-s34B-b79K/resolve/main/open_clip_model.safetensors".to_string(),
-                        size_bytes: 63_000_000,
+                        url: "https://huggingface.co/immich-app/ViT-B-32__laion2b-s34b-b79k/resolve/main/textual/model.onnx".to_string(),
+                        size_bytes: 254_200_000,
                     },
                 ],
             },
@@ -116,7 +116,7 @@ impl ModelManager {
                 id: "siglip".to_string(),
                 name: "SigLIP (Base)".to_string(),
                 license: "Apache 2.0".to_string(),
-                size_mb: 400,
+                size_mb: 813,
                 description: "Improved CLIP variant with better accuracy. Supports custom labels and multilingual text.".to_string(),
                 supports_custom_labels: true,
                 speed_rating: 3,
@@ -124,13 +124,13 @@ impl ModelManager {
                 files: vec![
                     ModelFile {
                         filename: "siglip-base-visual.onnx".to_string(),
-                        url: "https://huggingface.co/google/siglip-base-patch16-224/resolve/main/model.safetensors".to_string(),
-                        size_bytes: 380_000_000,
+                        url: "https://huggingface.co/Xenova/siglip-base-patch16-224/resolve/main/onnx/vision_model.onnx".to_string(),
+                        size_bytes: 371_820_000,
                     },
                     ModelFile {
                         filename: "siglip-base-text.onnx".to_string(),
-                        url: "https://huggingface.co/google/siglip-base-patch16-224/resolve/main/model.safetensors".to_string(),
-                        size_bytes: 63_000_000,
+                        url: "https://huggingface.co/Xenova/siglip-base-patch16-224/resolve/main/onnx/text_model.onnx".to_string(),
+                        size_bytes: 441_330_000,
                     },
                 ],
             },

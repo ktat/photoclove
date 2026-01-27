@@ -203,6 +203,13 @@ impl OnnxClassifier {
         // Sort by score descending
         predictions.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
+        // Log top 5 predictions for debugging
+        log::debug!(
+            target: "ai_tagging",
+            "top_predictions; top5={:?}",
+            predictions.iter().take(5).collect::<Vec<_>>()
+        );
+
         // Map to categories and filter
         let mut results = Vec::new();
 

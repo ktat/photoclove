@@ -109,11 +109,22 @@ function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
                 });
             }
         } catch (error) {
+            const errorMsg = error.toString();
             logger.error('PhotoTags', 'ai_tagging_error', 'AI tagging failed', {
                 photoPath: currentPhotoPath,
-                error: error.toString()
+                error: errorMsg
             });
-            addFooterMessage?.(`AI tagging failed: ${error}`);
+
+            // Check if AI tagging is disabled
+            if (errorMsg.includes('AI tagging is disabled')) {
+                window.alert(
+                    'AI Tagging is Disabled\n\n' +
+                    'Please enable AI Tagging in Preferences → AI Tagging.\n\n' +
+                    'Note: You need to restart the application after enabling it.'
+                );
+            } else {
+                addFooterMessage?.(`AI tagging failed: ${error}`);
+            }
         } finally {
             setIsAiTagging(false);
         }
