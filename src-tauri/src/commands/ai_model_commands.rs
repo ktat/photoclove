@@ -173,6 +173,7 @@ pub fn run_ai_tagging_for_photo(
         enabled_categories,
         model_type: config.ai_tagging.model_type.clone(),
         custom_labels: config.ai_tagging.custom_labels.clone(),
+        use_exif_thumbnail: config.ai_tagging.use_exif_thumbnail,
     };
 
     let service = get_service();

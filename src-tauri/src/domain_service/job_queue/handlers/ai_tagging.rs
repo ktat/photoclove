@@ -69,6 +69,7 @@ pub(crate) fn process_ai_tagging_job(
         enabled_categories,
         model_type: config.ai_tagging.model_type.clone(),
         custom_labels: config.ai_tagging.custom_labels.clone(),
+        use_exif_thumbnail: config.ai_tagging.use_exif_thumbnail,
     };
 
     // Get the global service and initialize if needed
