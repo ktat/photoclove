@@ -197,6 +197,9 @@ pub struct AiTaggingConfig {
     /// Use EXIF thumbnail for faster tagging (may reduce accuracy for small details)
     #[serde(default = "default_ai_tagging_use_exif_thumbnail")]
     pub use_exif_thumbnail: bool,
+    /// Minimum EXIF thumbnail size (px) for AI tagging. 0 = always use full image
+    #[serde(default = "default_ai_tagging_min_thumbnail_size")]
+    pub min_thumbnail_size: u32,
 }
 
 fn default_model_type() -> String {
@@ -205,6 +208,10 @@ fn default_model_type() -> String {
 
 fn default_ai_tagging_use_exif_thumbnail() -> bool {
     true
+}
+
+fn default_ai_tagging_min_thumbnail_size() -> u32 {
+    160
 }
 
 impl Default for AiTaggingConfig {
@@ -219,6 +226,7 @@ impl Default for AiTaggingConfig {
             enabled_categories: Vec::new(), // empty = all enabled
             custom_labels: Vec::new(),
             use_exif_thumbnail: true,
+            min_thumbnail_size: default_ai_tagging_min_thumbnail_size(),
         }
     }
 }

@@ -122,7 +122,8 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
         model_preset: "standard",
         enabled_categories: [],
         custom_labels: [],
-        use_exif_thumbnail: true
+        use_exif_thumbnail: true,
+        min_thumbnail_size: 160
     };
 
     const updateAIConfig = (updates) => {
@@ -283,26 +284,49 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                         </div>
                     </div>
 
-                    {/* Use EXIF Thumbnail */}
-                    <div className={styles['setting-group']}>
-                        <div className={styles['setting-item']}>
-                            <input
-                                type="checkbox"
-                                id="ai-use-exif-thumbnail"
-                                checked={aiConfig.use_exif_thumbnail ?? true}
-                                onChange={(e) => updateAIConfig({ use_exif_thumbnail: e.target.checked })}
-                            />
-                            <label htmlFor="ai-use-exif-thumbnail">Use EXIF thumbnail for faster tagging</label>
-                        </div>
+                    {/* Minimum Thumbnail Size */}
+                    <div style={{ marginBottom: 'var(--space-2)' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: 'var(--space-2)',
+                            fontSize: 'var(--font-size-sm)',
+                            fontWeight: '500'
+                        }}>
+                            Minimum Thumbnail Size: {aiConfig.min_thumbnail_size ?? 160}px
+                        </label>
                         <p style={{
                             fontSize: 'var(--font-size-xs)',
                             color: 'var(--color-text-muted)',
-                            marginTop: 'var(--space-2)',
-                            marginLeft: 'var(--space-6)',
-                            marginBottom: 0
+                            marginTop: 0,
+                            marginBottom: 'var(--space-3)'
                         }}>
-                            When enabled, uses embedded EXIF thumbnails for much faster processing. May reduce accuracy for small details (e.g., distant objects, fine text).
+                            Use EXIF thumbnail for faster tagging when thumbnail is larger than this size.
+                            Set to 0 to always use full image (slower but more accurate).
                         </p>
+                        <input
+                            type="range"
+                            min="0"
+                            max="400"
+                            step="20"
+                            value={aiConfig.min_thumbnail_size ?? 160}
+                            onChange={(e) => {
+                                const newValue = parseInt(e.target.value);
+                                updateAIConfig({ min_thumbnail_size: newValue });
+                            }}
+                            style={{
+                                width: '100%',
+                                marginBottom: 'var(--space-2)'
+                            }}
+                        />
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            fontSize: 'var(--font-size-xs)',
+                            color: 'var(--color-text-muted)'
+                        }}>
+                            <span>0 (Always full image)</span>
+                            <span>400px</span>
+                        </div>
                     </div>
 
                     {/* Confidence Threshold */}

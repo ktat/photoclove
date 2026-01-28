@@ -78,14 +78,14 @@ impl SigLipClassifier {
     }
 
     /// Encode image to embedding vector
-    fn encode_image(&mut self, image_path: &Path, use_exif_thumbnail: bool) -> Result<Vec<f32>, String> {
+    fn encode_image(&mut self, image_path: &Path, use_exif_thumbnail: bool, min_thumbnail_size: u32) -> Result<Vec<f32>, String> {
         let session = self
             .visual_session
             .as_mut()
             .ok_or("Visual encoder not initialized")?;
 
         // Preprocess image
-        let input_data = preprocess_clip_image(image_path, SIGLIP_INPUT_SIZE, use_exif_thumbnail)?;
+        let input_data = preprocess_clip_image(image_path, SIGLIP_INPUT_SIZE, use_exif_thumbnail, min_thumbnail_size)?;
 
         // Create input tensor [1, 3, 224, 224]
         let input_tensor = Tensor::from_array((
@@ -99,10 +99,31 @@ impl SigLipClassifier {
             .run(ort::inputs![input_tensor])
             .map_err(|e| format!("Visual encoding failed: {}", e))?;
 
-        // Get output embedding
+        // Debug: log all output shapes
+        log::debug!(
+            target: "ai_tagging",
+            "siglip_outputs_count; count={}",
+            outputs.len()
+        );
+        for (idx, (name, value)) in outputs.iter().enumerate() {
+            if let Ok((shape, _)) = value.try_extract_tensor::<f32>() {
+                log::debug!(
+                    target: "ai_tagging",
+                    "siglip_output; idx={}; name={:?}; shape={:?}",
+                    idx,
+                    name,
+                    shape
+                );
+            }
+        }
+
+        // Get output embedding (use pooler_output, not last_hidden_state)
+        // SigLIP returns two outputs: last_hidden_state [1,196,768] and pooler_output [1,768]
+        // We need the pooler_output (second output)
         let (_, output_value) = outputs
             .iter()
-            .next()
+            .nth(1) // Get second output (pooler_output)
+            .or_else(|| outputs.iter().next()) // Fallback to first if only one output
             .ok_or("No output from visual encoder")?;
 
         let (_, output_data) = output_value
@@ -111,7 +132,22 @@ impl SigLipClassifier {
 
         // Normalize embedding
         let embedding: Vec<f32> = output_data.to_vec();
-        Ok(Self::normalize_embedding(&embedding))
+        let normalized = Self::normalize_embedding(&embedding);
+
+        // Debug: log embedding statistics
+        let sum: f32 = normalized.iter().sum();
+        let max = normalized.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+        let min = normalized.iter().cloned().fold(f32::INFINITY, f32::min);
+        log::debug!(
+            target: "ai_tagging",
+            "image_embedding_stats; dim={}; sum={}; min={}; max={}",
+            normalized.len(),
+            sum,
+            min,
+            max
+        );
+
+        Ok(normalized)
     }
 
     /// Encode text to embedding vector
@@ -342,7 +378,7 @@ impl AIClassifierBackend for SigLipClassifier {
         );
 
         // Encode the image
-        let image_embedding = self.encode_image(image_path, config.use_exif_thumbnail)?;
+        let image_embedding = self.encode_image(image_path, config.use_exif_thumbnail, config.min_thumbnail_size)?;
 
         // If we have text embeddings, compute similarities
         if !self.text_embeddings.is_empty() {

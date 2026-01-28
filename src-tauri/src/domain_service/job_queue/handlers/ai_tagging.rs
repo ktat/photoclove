@@ -70,6 +70,7 @@ pub(crate) fn process_ai_tagging_job(
         model_type: config.ai_tagging.model_type.clone(),
         custom_labels: config.ai_tagging.custom_labels.clone(),
         use_exif_thumbnail: config.ai_tagging.use_exif_thumbnail,
+        min_thumbnail_size: config.ai_tagging.min_thumbnail_size,
     };
 
     // Get the global service and initialize if needed

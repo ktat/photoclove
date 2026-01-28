@@ -10,6 +10,7 @@ use std::sync::Mutex;
 use super::detector::FaceDetector;
 use super::embedder::FaceEmbedder;
 use super::{DetectedFace, FaceDetectionConfig};
+use crate::utils::exif_thumbnail;
 
 /// Default minimum thumbnail size for face detection (used if not configured)
 const DEFAULT_MIN_THUMBNAIL_SIZE: u32 = 160;
@@ -68,119 +69,6 @@ fn read_exif_orientation(path: &str) -> Option<String> {
         }
     }
     None
-}
-
-/// Extract EXIF thumbnail from a file
-/// Returns the thumbnail as DynamicImage along with its dimensions
-fn extract_exif_thumbnail(path: &str) -> Option<(DynamicImage, u32, u32)> {
-    // Read file to find EXIF APP1 segment and extract thumbnail
-    let mut file = std::fs::File::open(path).ok()?;
-
-    // Read enough to find EXIF segment (typically within first 64KB)
-    let mut buffer = vec![0u8; 65536];
-    let bytes_read = file.read(&mut buffer).ok()?;
-    buffer.truncate(bytes_read);
-
-    // Find APP1 (EXIF) marker: FF E1
-    let mut app1_start: Option<usize> = None;
-    for i in 0..buffer.len().saturating_sub(1) {
-        if buffer[i] == 0xFF && buffer[i + 1] == 0xE1 {
-            app1_start = Some(i);
-            break;
-        }
-    }
-    let app1_pos = app1_start?;
-
-    // APP1 structure: FF E1 [length: 2 bytes] "Exif\0\0" [TIFF header...]
-    // TIFF header starts at app1_pos + 2 (marker) + 2 (length) + 6 (Exif\0\0) = app1_pos + 10
-    let tiff_header_pos = app1_pos + 10;
-
-    if tiff_header_pos >= buffer.len() {
-        return None;
-    }
-
-    // Now parse EXIF using kamadak-exif to get thumbnail offset/length
-    let file = std::fs::File::open(path).ok()?;
-    let mut reader = BufReader::new(file);
-
-    let exif_reader = kexif::Reader::new();
-    let exif = exif_reader.read_from_container(&mut reader).ok()?;
-
-    // Get thumbnail offset and length from EXIF
-    let mut thumb_offset: Option<u32> = None;
-    let mut thumb_length: Option<u32> = None;
-
-    for field in exif.fields() {
-        if field.ifd_num == kexif::In::THUMBNAIL {
-            match field.tag {
-                kexif::Tag::JPEGInterchangeFormat => {
-                    if let kexif::Value::Long(ref v) = field.value {
-                        thumb_offset = v.first().copied();
-                    }
-                }
-                kexif::Tag::JPEGInterchangeFormatLength => {
-                    if let kexif::Value::Long(ref v) = field.value {
-                        thumb_length = v.first().copied();
-                    }
-                }
-                _ => {}
-            }
-        }
-    }
-
-    let relative_offset = thumb_offset?;
-    let length = thumb_length?;
-
-    if length == 0 || length > 1_000_000 {
-        return None;
-    }
-
-    // Calculate absolute file offset:
-    // JPEGInterchangeFormat offset is relative to TIFF header
-    let absolute_offset = tiff_header_pos as u64 + relative_offset as u64;
-
-    log::debug!(
-        target: "face_detection",
-        "exif_thumbnail_found; path={}; tiff_header_pos={}; relative_offset={}; absolute_offset={}; length={}",
-        path,
-        tiff_header_pos,
-        relative_offset,
-        absolute_offset,
-        length
-    );
-
-    // Read thumbnail data at absolute position
-    let mut file = std::fs::File::open(path).ok()?;
-    file.seek(std::io::SeekFrom::Start(absolute_offset)).ok()?;
-
-    let mut thumb_data = vec![0u8; length as usize];
-    file.read_exact(&mut thumb_data).ok()?;
-
-    // Verify JPEG magic bytes
-    if thumb_data.len() < 2 || thumb_data[0] != 0xFF || thumb_data[1] != 0xD8 {
-        log::debug!(
-            target: "face_detection",
-            "exif_thumbnail_invalid_jpeg; path={}; first_bytes={:02X}{:02X}",
-            path,
-            thumb_data.get(0).unwrap_or(&0),
-            thumb_data.get(1).unwrap_or(&0)
-        );
-        return None;
-    }
-
-    // Parse thumbnail as JPEG
-    let thumb_image = image::load_from_memory_with_format(&thumb_data, image::ImageFormat::Jpeg).ok()?;
-    let (width, height) = (thumb_image.width(), thumb_image.height());
-
-    log::info!(
-        target: "face_detection",
-        "exif_thumbnail_extracted; path={}; size={}x{}",
-        path,
-        width,
-        height
-    );
-
-    Some((thumb_image, width, height))
 }
 
 /// Face Detection Service
@@ -286,11 +174,12 @@ impl FaceDetectionService {
 
         // Try to use EXIF thumbnail for faster detection (unless use_full_image is true)
         if !use_full_image {
-            if let Some((mut thumb_image, thumb_width, thumb_height)) = extract_exif_thumbnail(path)
+            if let Some((mut thumb_image, thumb_width, thumb_height)) =
+                exif_thumbnail::extract_exif_thumbnail_with_min_size(
+                    std::path::Path::new(path),
+                    effective_min_size
+                )
             {
-                // Check if thumbnail is large enough for reliable detection
-                let longest_side = thumb_width.max(thumb_height);
-                if longest_side >= effective_min_size {
                     log::info!(
                         target: "face_detection",
                         "using_exif_thumbnail; path={}; thumb_size={}x{}",
@@ -327,16 +216,6 @@ impl FaceDetectionService {
                         "no_faces_in_thumbnail_fallback_to_full; path={}",
                         path
                     );
-                } else {
-                    log::debug!(
-                        target: "face_detection",
-                        "thumbnail_too_small; path={}; size={}x{}; min={}",
-                        path,
-                        thumb_width,
-                        thumb_height,
-                        effective_min_size
-                    );
-                }
             }
         }
 
