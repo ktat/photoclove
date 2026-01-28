@@ -27,6 +27,7 @@ function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
     const [photoTags, setPhotoTags] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAiTagging, setIsAiTagging] = useState(false);
+    const [useFullImage, setUseFullImage] = useState(false);
 
     useEffect(() => {
         if (currentPhotoPath) {
@@ -94,7 +95,7 @@ function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
         try {
             const result = await invokeWithErrorHandling(
                 'run_ai_tagging_for_photo',
-                { photoPath: currentPhotoPath },
+                { photoPath: currentPhotoPath, useFullImage },
                 'PhotoTags',
                 { parseJson: true }
             );
@@ -154,13 +155,29 @@ function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
             <div className={styles['photo-tags-content']}>
                 {/* AI Tagging Button */}
                 <div className={styles['photo-tags-section']}>
-                    <button
-                        className={`${styles['ai-tagging-button']} ${isAiTagging ? styles['running'] : ''}`}
-                        onClick={handleAiTagging}
-                        disabled={isAiTagging}
-                    >
-                        {isAiTagging ? '⏳ Running AI Tagging...' : 'Run AI Tagging'}
-                    </button>
+                    <div className={styles['ai-tagging-actions']}>
+                        <button
+                            className={`${styles['ai-tagging-button']} ${isAiTagging ? styles['running'] : ''}`}
+                            onClick={handleAiTagging}
+                            disabled={isAiTagging}
+                        >
+                            {isAiTagging ? '⏳ Running AI Tagging...' : 'Run AI Tagging'}
+                        </button>
+                        {/* Use Full Image option */}
+                        <label
+                            className={styles['use-full-image-option']}
+                            title="Use full resolution image for tagging. More accurate for small details but takes longer."
+                        >
+                            <input
+                                type="checkbox"
+                                className={styles['use-full-image-checkbox']}
+                                checked={useFullImage}
+                                onChange={(e) => setUseFullImage(e.target.checked)}
+                                disabled={isAiTagging}
+                            />
+                            <span>High Accuracy (Slow)</span>
+                        </label>
+                    </div>
                 </div>
 
                 <div className={styles['photo-tags-section']}>
