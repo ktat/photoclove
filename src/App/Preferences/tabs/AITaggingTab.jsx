@@ -7,9 +7,10 @@ import AIModelSelector, { AI_MODELS } from './AIModelSelector.jsx';
 import AICustomLabels from './AICustomLabels.jsx';
 
 // Model-specific confidence threshold ranges
+// Based on actual model output distributions from testing
 const MODEL_THRESHOLD_RANGES = {
-    mobilenet: { min: 0.5, max: 0.95 },
-    openclip: { min: 0.15, max: 0.35 },
+    mobilenet: { min: 0.05, max: 0.35 },  // Actual range: 0.020-0.983, median: 0.130 from 123 samples
+    openclip: { min: 0.17, max: 0.30 },  // Actual range: 0.174-0.302 from 233 samples
     siglip: { min: 0.15, max: 0.35 }
 };
 
