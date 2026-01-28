@@ -132,15 +132,18 @@ pub fn get_default_clip_labels() -> Result<String, String> {
 #[tauri::command]
 pub fn run_ai_tagging_for_photo(
     photo_path: String,
+    use_full_image: Option<bool>,
     state: tauri::State<'_, crate::AppState>,
 ) -> Result<String, String> {
+    let use_full = use_full_image.unwrap_or(false);
     use crate::domain_service::ai_tagging::service::{get_service, AITaggingConfig};
     use std::path::Path;
 
     log::info!(
         target: "ai_tagging",
-        "single_photo_tagging_request; photo_path={}",
-        photo_path
+        "single_photo_tagging_request; photo_path={}; use_full_image={}",
+        photo_path,
+        use_full
     );
 
     let config = &state.config;
@@ -165,6 +168,13 @@ pub fn run_ai_tagging_for_photo(
     };
 
     // Initialize the AI service with configuration
+    // When use_full_image is true, disable EXIF thumbnail completely
+    let (use_exif_thumbnail, min_thumbnail_size) = if use_full {
+        (false, 0)
+    } else {
+        (config.ai_tagging.use_exif_thumbnail, config.ai_tagging.min_thumbnail_size)
+    };
+
     let service_config = AITaggingConfig {
         enabled: config.ai_tagging.enabled,
         auto_tag_on_import: config.ai_tagging.auto_tag_on_import,
@@ -173,8 +183,8 @@ pub fn run_ai_tagging_for_photo(
         enabled_categories,
         model_type: config.ai_tagging.model_type.clone(),
         custom_labels: config.ai_tagging.custom_labels.clone(),
-        use_exif_thumbnail: config.ai_tagging.use_exif_thumbnail,
-        min_thumbnail_size: config.ai_tagging.min_thumbnail_size,
+        use_exif_thumbnail,
+        min_thumbnail_size,
     };
 
     let service = get_service();
