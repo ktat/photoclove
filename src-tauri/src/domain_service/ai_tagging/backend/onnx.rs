@@ -138,67 +138,28 @@ impl OnnxClassifier {
 
     /// Preprocess image for model input
     /// Returns tensor in NCHW format (batch=1, channels=3, height, width)
-    fn preprocess_image(&self, image_path: &Path, use_exif_thumbnail: bool) -> Result<Vec<f32>, String> {
+    fn preprocess_image(&self, image_path: &Path, use_exif_thumbnail: bool, min_thumbnail_size: u32) -> Result<Vec<f32>, String> {
         use image::DynamicImage;
-        use std::fs::File;
-        use std::io::BufReader;
-        use kexif::Reader as ExifReader;
-        use kexif::{In, Tag};
 
         let (width, height) = self.model_preset.input_size();
         let mut img: Option<DynamicImage> = None;
 
         // Try to extract EXIF thumbnail if enabled
         if use_exif_thumbnail {
-            if let Ok(file) = File::open(image_path) {
-                let mut bufreader = BufReader::new(&file);
-
-                if let Ok(exif_reader) = ExifReader::new().read_from_container(&mut bufreader) {
-                    // Try to get the thumbnail
-                    if let Some(thumbnail_field) = exif_reader.get_field(Tag::JPEGInterchangeFormat, In::THUMBNAIL) {
-                        if let Some(length_field) = exif_reader.get_field(Tag::JPEGInterchangeFormatLength, In::THUMBNAIL) {
-                            if let (kexif::Value::Long(ref offset_vec), kexif::Value::Long(ref length_vec)) =
-                                (&thumbnail_field.value, &length_field.value) {
-                                if !offset_vec.is_empty() && !length_vec.is_empty() {
-                                    let offset = offset_vec[0] as usize;
-                                    let length = length_vec[0] as usize;
-
-                                    // Re-open file to read thumbnail data
-                                    drop(bufreader);
-                                    if let Ok(mut file) = File::open(image_path) {
-                                        use std::io::{Seek, SeekFrom, Read};
-
-                                        if file.seek(SeekFrom::Start(offset as u64)).is_ok() {
-                                            let mut thumbnail_data = vec![0u8; length];
-                                            if file.read_exact(&mut thumbnail_data).is_ok() {
-                                                // Find JPEG start marker (FFD8) and trim any leading data
-                                                let jpeg_start = thumbnail_data
-                                                    .windows(2)
-                                                    .position(|w| w[0] == 0xFF && w[1] == 0xD8);
-                                                let jpeg_data_slice = if let Some(start_pos) = jpeg_start {
-                                                    &thumbnail_data[start_pos..]
-                                                } else {
-                                                    &thumbnail_data[..]
-                                                };
-
-                                                if let Ok(thumbnail_img) = image::load_from_memory(jpeg_data_slice) {
-                                                    log::debug!(
-                                                        target: "ai_tagging",
-                                                        "exif_thumbnail_loaded; path={}; size={}x{}",
-                                                        image_path.display(),
-                                                        thumbnail_img.width(),
-                                                        thumbnail_img.height()
-                                                    );
-                                                    img = Some(thumbnail_img);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            if let Some((thumbnail_img, thumb_width, thumb_height)) =
+                crate::utils::exif_thumbnail::extract_exif_thumbnail_with_min_size(
+                    image_path,
+                    min_thumbnail_size
+                )
+            {
+                log::debug!(
+                    target: "ai_tagging",
+                    "exif_thumbnail_loaded; path={}; size={}x{}",
+                    image_path.display(),
+                    thumb_width,
+                    thumb_height
+                );
+                img = Some(thumbnail_img);
             }
         }
 
@@ -403,7 +364,7 @@ impl AIClassifierBackend for OnnxClassifier {
         );
 
         // Preprocess image (before mutable session borrow)
-        let input_data = self.preprocess_image(image_path, config.use_exif_thumbnail)?;
+        let input_data = self.preprocess_image(image_path, config.use_exif_thumbnail, config.min_thumbnail_size)?;
         let (width, height) = self.model_preset.input_size();
 
         // Create input tensor with shape [1, 3, height, width] (NCHW format)

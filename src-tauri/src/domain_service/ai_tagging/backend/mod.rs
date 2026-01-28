@@ -34,6 +34,8 @@ pub struct ClassifierConfig {
     pub custom_labels: Option<Vec<String>>,
     /// Use EXIF thumbnail for faster tagging (may reduce accuracy for small details)
     pub use_exif_thumbnail: bool,
+    /// Minimum EXIF thumbnail size (px) for AI tagging
+    pub min_thumbnail_size: u32,
 }
 
 impl Default for ClassifierConfig {
@@ -44,6 +46,7 @@ impl Default for ClassifierConfig {
             enabled_categories: None,
             custom_labels: None,
             use_exif_thumbnail: true,
+            min_thumbnail_size: 160,
         }
     }
 }

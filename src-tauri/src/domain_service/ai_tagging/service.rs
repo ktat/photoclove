@@ -55,6 +55,8 @@ pub struct AITaggingConfig {
     pub custom_labels: Vec<String>,
     /// Use EXIF thumbnail for faster tagging (may reduce accuracy for small details)
     pub use_exif_thumbnail: bool,
+    /// Minimum EXIF thumbnail size (px) for AI tagging
+    pub min_thumbnail_size: u32,
 }
 
 impl Default for AITaggingConfig {
@@ -68,6 +70,7 @@ impl Default for AITaggingConfig {
             model_type: "mobilenet".to_string(),
             custom_labels: Vec::new(),
             use_exif_thumbnail: true,
+            min_thumbnail_size: 160,
         }
     }
 }
@@ -166,6 +169,7 @@ impl AITaggingService {
                 Some(self.config.custom_labels.clone())
             },
             use_exif_thumbnail: self.config.use_exif_thumbnail,
+            min_thumbnail_size: self.config.min_thumbnail_size,
         };
 
         backend.classify(photo_path, &classifier_config)

@@ -141,7 +141,9 @@ function Preferences(props) {
                 model_type: config.ai_tagging?.model_type || 'mobilenet',
                 model_preset: config.ai_tagging?.model_preset || 'standard',
                 enabled_categories: config.ai_tagging?.enabled_categories || [],
-                custom_labels: config.ai_tagging?.custom_labels || []
+                custom_labels: config.ai_tagging?.custom_labels || [],
+                use_exif_thumbnail: config.ai_tagging?.use_exif_thumbnail ?? true,
+                min_thumbnail_size: parseInt(config.ai_tagging?.min_thumbnail_size) || 160
             }
         };
 
