@@ -11,13 +11,40 @@
  * - Check if photo is selected
  * - Track selection state with both array and dictionary for performance
  * - Separate selection state for import mode vs library mode
+ * - Per-ViewMode selection persistence using SessionStorage
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { logger } from '../services/LoggerService.js';
 import { VIEW_MODES } from '../constants/viewModes.js';
 
-export function usePhotoSelection(viewMode) {
+const STORAGE_KEY_PREFIX = 'photoSelection:';
+
+/**
+ * Save selection to SessionStorage
+ */
+function saveSelectionToStorage(key, selection) {
+    try {
+        sessionStorage.setItem(STORAGE_KEY_PREFIX + key, JSON.stringify(selection));
+    } catch (error) {
+        logger.error('usePhotoSelection', 'storage_save_error', 'Failed to save selection to storage', { error });
+    }
+}
+
+/**
+ * Load selection from SessionStorage
+ */
+function loadSelectionFromStorage(key) {
+    try {
+        const stored = sessionStorage.getItem(STORAGE_KEY_PREFIX + key);
+        return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+        logger.error('usePhotoSelection', 'storage_load_error', 'Failed to load selection from storage', { error });
+        return [];
+    }
+}
+
+export function usePhotoSelection(viewMode, viewModeObj) {
     // Separate selection state for different mode types
     // Import mode: photos from external sources (not yet in library)
     // Trash mode: photos in trash (different operations available)
@@ -32,6 +59,31 @@ export function usePhotoSelection(viewMode) {
     // Determine current mode category
     const isImportMode = viewMode === VIEW_MODES.IMPORT;
     const isTrashMode = viewMode === VIEW_MODES.TRASH;
+
+    // Library mode: ViewMode 変更時に選択状態をStorageから復元
+    useEffect(() => {
+        if (isImportMode || isTrashMode || !viewModeObj) return;
+
+        const currentKey = viewModeObj.getSelectionKey();
+        const restoredSelection = loadSelectionFromStorage(currentKey);
+
+        if (restoredSelection.length > 0) {
+            setLibrarySelection(restoredSelection);
+            const dict = {};
+            restoredSelection.forEach(path => dict[path] = true);
+            setLibrarySelectionDict(dict);
+            logger.info('usePhotoSelection', 'restore_selection', 'Restored library photo selection for ViewMode', {
+                viewModeKey: currentKey,
+                count: restoredSelection.length
+            });
+        } else {
+            setLibrarySelection([]);
+            setLibrarySelectionDict({});
+            logger.debug('usePhotoSelection', 'clear_selection', 'No stored selection for ViewMode', {
+                viewModeKey: currentKey
+            });
+        }
+    }, [viewModeObj, isImportMode, isTrashMode]);
 
     // Get current selection based on mode
     let photoSelection, photoSelectionDict, setPhotoSelection, setPhotoSelectionDict;
@@ -84,7 +136,12 @@ export function usePhotoSelection(viewMode) {
 
         setPhotoSelectionDict(selectionDict);
         setPhotoSelection(selection);
-    }, [photoSelection, photoSelectionDict]);
+
+        // Save to storage for library mode
+        if (!isImportMode && !isTrashMode && viewModeObj) {
+            saveSelectionToStorage(viewModeObj.getSelectionKey(), selection);
+        }
+    }, [photoSelection, photoSelectionDict, isImportMode, isTrashMode, viewModeObj]);
 
     /**
      * Check if a photo is selected
@@ -122,6 +179,10 @@ export function usePhotoSelection(viewMode) {
             });
             setLibrarySelectionDict({});
             setLibrarySelection([]);
+            // Clear from storage as well
+            if (viewModeObj) {
+                saveSelectionToStorage(viewModeObj.getSelectionKey(), []);
+            }
         }
 
         if (mode === 'current') {
@@ -132,8 +193,12 @@ export function usePhotoSelection(viewMode) {
             });
             setPhotoSelectionDict({});
             setPhotoSelection([]);
+            // Clear from storage for library mode
+            if (!isImportMode && !isTrashMode && viewModeObj) {
+                saveSelectionToStorage(viewModeObj.getSelectionKey(), []);
+            }
         }
-    }, [photoSelection.length, importSelection.length, trashSelection.length, librarySelection.length, isImportMode, isTrashMode]);
+    }, [photoSelection.length, importSelection.length, trashSelection.length, librarySelection.length, isImportMode, isTrashMode, viewModeObj]);
 
     /**
      * Select all photos from a given list
@@ -161,7 +226,12 @@ export function usePhotoSelection(viewMode) {
 
         setPhotoSelectionDict(newSelectionDict);
         setPhotoSelection(selection);
-    }, [photoSelection, photoSelectionDict]);
+
+        // Save to storage for library mode
+        if (!isImportMode && !isTrashMode && viewModeObj) {
+            saveSelectionToStorage(viewModeObj.getSelectionKey(), selection);
+        }
+    }, [photoSelection, photoSelectionDict, isImportMode, isTrashMode, viewModeObj]);
 
     /**
      * Set selection to specific photos (replaces current selection)
@@ -179,7 +249,12 @@ export function usePhotoSelection(viewMode) {
 
         setPhotoSelection(photoPaths);
         setPhotoSelectionDict(newSelectionDict);
-    }, []);
+
+        // Save to storage for library mode
+        if (!isImportMode && !isTrashMode && viewModeObj) {
+            saveSelectionToStorage(viewModeObj.getSelectionKey(), photoPaths);
+        }
+    }, [isImportMode, isTrashMode, viewModeObj]);
 
     /**
      * Get selection statistics
