@@ -129,6 +129,7 @@ function PhotoInfo(props) {
             { key: 'minio', name: 'MinIO', icon: '☁️' },
             { key: 'cloudflare_r2', name: 'Cloudflare R2', icon: '☁️' },
             { key: 'digitalocean', name: 'DO Spaces', icon: '☁️' },
+            { key: 'idrive_e2', name: 'iDrive e2', icon: '☁️' },
             { key: 'custom', name: 'S3 Storage', icon: '☁️' },
         ];
 

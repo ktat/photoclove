@@ -89,7 +89,7 @@ const GroupingTab = ({
                 </p>
             </div>
 
-            <h2 className={styles['section-title']}>Recalculate Groups</h2>
+            <h2 className={styles['section-title']}>🔄 Recalculate Groups</h2>
             <div className={styles['setting-group']}>
                 <p className={styles['setting-description']} style={{ marginBottom: 'var(--space-3)' }}>
                     After changing threshold settings, recalculate groups to apply new values. Manual groups will be preserved.
@@ -99,7 +99,7 @@ const GroupingTab = ({
                     disabled={isRecalculatingGroups}
                     onClick={handleRecalculate}
                 >
-                    {isRecalculatingGroups ? 'Recalculating...' : 'Recalculate Groups'}
+                    {isRecalculatingGroups ? '⏳ Recalculating...' : '🔄 Recalculate Groups'}
                 </button>
                 {isRecalculatingGroups && groupingProgress.message && (
                     <div className={styles['progress-container']} style={{ marginTop: 'var(--space-3)' }}>

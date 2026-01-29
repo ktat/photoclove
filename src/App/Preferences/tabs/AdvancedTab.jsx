@@ -5,7 +5,7 @@ import styles from '../Preferences.module.css';
 const AdvancedTab = ({ config, setConfig, useCount }) => {
     return (
         <div className={styles['preferences-section']}>
-            <h2 className={styles['section-title']}>Google Photos</h2>
+            <h2 className={styles['section-title']}>📤 Google Photos</h2>
             <div className={styles['setting-group']}>
                 <div className={styles['setting-item']}>
                     <input
@@ -15,12 +15,12 @@ const AdvancedTab = ({ config, setConfig, useCount }) => {
                         onChange={(e) => setConfig(prev => ({ ...prev, google_auth_auto_reauth: e.target.checked }))}
                     />
                     <label htmlFor="google-auth-auto-reauth-check">
-                        Automatically prompt for Google Photos re-authentication on startup
+                        🔄 Automatically prompt for Google Photos re-authentication on startup
                     </label>
                 </div>
             </div>
 
-            <h2 className={styles['section-title']}>Tutorial</h2>
+            <h2 className={styles['section-title']}>📚 Tutorial</h2>
             <div className={styles['setting-group']}>
                 <div className={styles['setting-item']}>
                     <input
@@ -30,11 +30,11 @@ const AdvancedTab = ({ config, setConfig, useCount }) => {
                         onChange={(e) => setConfig(prev => ({ ...prev, use_count: e.target.checked ? 0 : useCount }))}
                     />
                     <label htmlFor="preference-check">
-                        Show Welcome tutorial again
+                        👋 Show Welcome tutorial again
                     </label>
                 </div>
                 <div className={styles['setting-row']}>
-                    <label>Tab Instruction Tooltips:</label>
+                    <label>💡 Tab Instruction Tooltips:</label>
                     <button
                         className={styles['btn-secondary']}
                         onClick={() => {
@@ -42,7 +42,7 @@ const AdvancedTab = ({ config, setConfig, useCount }) => {
                             message("Tab instruction tooltips will be shown again.");
                         }}
                     >
-                        Reset Tooltips
+                        🔄 Reset Tooltips
                     </button>
                 </div>
             </div>

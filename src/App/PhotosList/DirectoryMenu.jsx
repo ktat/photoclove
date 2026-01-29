@@ -97,7 +97,7 @@ function DirectoryMenu(props) {
     });
 
     // Date operations hook
-    const { createDbInDate, movePhotosToExifDate, createThumbnails, recalculateGroupsInDate, runAiTaggingInDate, runFaceDetectionInDate, applyDateChanges } = useDateOperations({
+    const { createDbInDate, movePhotosToExifDate, createThumbnails, recalculateGroupsInDate, runAiTaggingInDate, runFaceDetectionInDate, syncToS3InDate, applyDateChanges } = useDateOperations({
         currentDate: props.currentDate,
         setCurrentDateNum: props.setCurrentDateNum,
         dateNum: props.dateNum,
@@ -253,13 +253,14 @@ function DirectoryMenu(props) {
             {/* Maintenance tab - only shown in date mode */}
             {props.viewModeObj?.shouldShowMaintenanceTab() && (
                 <div id="tab-maintenance" className={props.tabClass['maintenance'] ? "tab-active" : "tab"}>
-                    <ul>
-                        <li><a href="#" onClick={() => { createDbInDate() }}>(re)Create database of the date</a></li>
-                        <li><a href="#" onClick={() => { movePhotosToExifDate() }}>Move files according to Exif date</a></li>
-                        <li><a href="#" onClick={() => { createThumbnails() }}>Make thumbnails</a></li>
-                        <li><a href="#" onClick={() => { recalculateGroupsInDate() }}>Recalculate Groups of the date</a></li>
-                        <li><a href="#" onClick={() => { runAiTaggingInDate() }}>Run AI Tagging</a></li>
-                        <li><a href="#" onClick={() => { runFaceDetectionInDate() }}>Run Face Detection</a></li>
+                    <ul style={{ listStyle: 'none', paddingLeft: '20px', paddingTop: '8px', paddingBottom: '8px', paddingRight: '8px' }}>
+                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { createDbInDate() }}>🗄️ (re)Create database of the date</a></li>
+                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { movePhotosToExifDate() }}>📅 Move files according to Exif date</a></li>
+                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { createThumbnails() }}>🖼️ Make thumbnails</a></li>
+                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { recalculateGroupsInDate() }}>🔄 Recalculate Groups of the date</a></li>
+                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { runAiTaggingInDate() }}>🤖 Run AI Tagging</a></li>
+                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { runFaceDetectionInDate() }}>👤 Run Face Detection</a></li>
+                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { syncToS3InDate() }}>☁️ Sync to S3</a></li>
                     </ul>
                 </div>
             )}

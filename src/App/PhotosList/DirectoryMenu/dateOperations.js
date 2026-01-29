@@ -273,6 +273,62 @@ export function useDateOperations({
     }, [currentDate, config]);
 
     /**
+     * Sync photos in the current date to S3
+     */
+    const syncToS3InDate = useCallback(async () => {
+        if (lockRef.current) {
+            message("Currently, this operation is locked. Please wait for a while", "This operation is locked");
+            return;
+        }
+
+        // Check if S3 backup is enabled
+        if (!config?.s3?.enabled) {
+            message(
+                "S3 Backup is not enabled.\n\n" +
+                "To use this feature:\n" +
+                "1. Go to Preferences (File menu → Preferences)\n" +
+                "2. Select the 'S3 Backup' tab\n" +
+                "3. Enable and configure S3 backup\n" +
+                "4. Save your settings",
+                "S3 Backup Not Enabled"
+            );
+            return;
+        }
+
+        const answer = await confirm(
+            "This will sync all photos in this date to S3.\n" +
+            "Photos will be uploaded to your configured S3 bucket.",
+            "Sync to S3"
+        );
+        if (answer) {
+            lockRef.current = true;
+            try {
+                const result = await invokeWithErrorHandling(
+                    "enqueue_s3_sync_by_date",
+                    { date: currentDate },
+                    'dateOperations',
+                    { parseJson: true }
+                );
+                lockRef.current = false;
+
+                if (result.result === "no_photos_to_sync") {
+                    message("No photos to sync in this date (all photos are already synced).", "S3 Sync");
+                } else if (result.result === "started") {
+                    logger.info('dateOperations', 's3_sync_started', 'S3 sync job started for date', {
+                        date: currentDate,
+                        jobUnitId: result.job_unit_id,
+                        toSync: result.to_sync
+                    });
+                    message(`S3 sync started for ${result.to_sync} photos. Check progress in footer.`, "S3 Sync Started");
+                }
+            } catch (error) {
+                lockRef.current = false;
+                throw error;
+            }
+        }
+    }, [currentDate, config]);
+
+    /**
      * Apply date count changes from batch operation result to local state
      * @param {Object} dateChanges - Map of date -> count delta from backend
      */
@@ -311,6 +367,7 @@ export function useDateOperations({
         recalculateGroupsInDate,
         runAiTaggingInDate,
         runFaceDetectionInDate,
+        syncToS3InDate,
         applyDateChanges
     };
 }
