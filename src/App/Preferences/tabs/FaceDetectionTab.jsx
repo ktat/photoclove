@@ -268,11 +268,12 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
                 </div>
 
                 {/* Minimum Thumbnail Size */}
-                <div style={{ marginBottom: 'var(--space-2)' }}>
-                    <label style={labelStyle}>
-                        Minimum Thumbnail Size: {config?.face_detection?.min_thumbnail_size || 160}px
-                    </label>
-                    <p style={descriptionStyle}>
+                <div className={styles['slider-container']}>
+                    <div className={styles['slider-label']}>
+                        <span className={styles['slider-label-text']}>Minimum Thumbnail Size</span>
+                        <span className={styles['slider-value']}>{config?.face_detection?.min_thumbnail_size || 160}px</span>
+                    </div>
+                    <p className={styles['slider-description']}>
                         Use EXIF thumbnail for faster detection when thumbnail is larger than this size.
                         Set to 0 to always use full image (slower but more accurate).
                     </p>
@@ -292,9 +293,9 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
                                 }
                             });
                         }}
-                        style={sliderStyle}
+                        className={styles['slider-range']}
                     />
-                    <div style={sliderLabelsStyle}>
+                    <div className={styles['slider-range-labels']}>
                         <span>0 (Always full image)</span>
                         <span>400px</span>
                     </div>

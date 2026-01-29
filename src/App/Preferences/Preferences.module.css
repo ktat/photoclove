@@ -112,6 +112,8 @@
 
 .preferences-section {
   width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
   animation: fadeIn 0.3s ease-out;
 }
 
@@ -133,7 +135,7 @@
   font-weight: 600;
   color: var(--color-text-primary);
   padding-bottom: var(--space-2);
-  border-bottom: 1px solid var(--color-border-default);
+  border-bottom: 2px solid var(--color-border-default);
 }
 
 .section-title:not(:first-child) {
@@ -268,7 +270,8 @@
 /* Setting description text */
 .setting-description {
   font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
   margin-top: var(--space-2);
 }
 
@@ -330,7 +333,8 @@
 
 /* Buttons */
 .btn-primary,
-.btn-secondary {
+.btn-secondary,
+.btn-warning {
   padding: var(--space-3) var(--space-5);
   border: none;
   border-radius: var(--radius-md);
@@ -364,6 +368,25 @@
 .btn-secondary:hover {
   background-color: var(--color-bg-surface);
   border-color: var(--color-primary);
+}
+
+.btn-warning {
+  background: var(--color-warning);
+  color: var(--color-bg-base);
+}
+
+.btn-warning:hover {
+  background: var(--color-warning-dark);
+  transform: translateY(-1px);
+}
+
+.btn-warning:active {
+  transform: translateY(0);
+}
+
+.btn-warning:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Footer */
@@ -453,4 +476,51 @@
   margin-top: var(--space-2);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+}
+
+/* ========== Slider Styles ========== */
+.slider-container {
+  width: 100%;
+  margin-bottom: var(--space-4);
+}
+
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--space-2);
+}
+
+.slider-label-text {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.slider-value {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.slider-range {
+  width: 100%;
+  height: 8px;
+  cursor: pointer;
+  margin-bottom: var(--space-2);
+}
+
+.slider-description {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: 1.4;
+  margin-top: 0;
+  margin-bottom: var(--space-3);
+}
+
+.slider-range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
