@@ -117,7 +117,7 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
     const aiConfig = config.ai_tagging || {
         enabled: false,
         auto_tag_on_import: false,
-        confidence_threshold: 0.7,
+        confidence_threshold: 0.2,  // Default to middle of mobilenet range (0.05-0.35)
         max_tags_per_image: 5,
         model_type: "mobilenet",
         model_preset: "standard",
@@ -133,6 +133,33 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
             ai_tagging: { ...aiConfig, ...updates }
         }));
     };
+
+    // Normalize legacy threshold values on mount
+    useEffect(() => {
+        const modelType = aiConfig.model_type || 'mobilenet';
+        const currentThreshold = aiConfig.confidence_threshold;
+        const range = MODEL_THRESHOLD_RANGES[modelType] || MODEL_THRESHOLD_RANGES.mobilenet;
+
+        // If threshold is outside the model's range, it's likely a legacy value (0.5-0.95 range)
+        if (currentThreshold > range.max) {
+            // Legacy threshold was in 0.5-0.95 range, normalize to 0-100 then convert to model range
+            const legacyNormalized = ((currentThreshold - 0.5) / (0.95 - 0.5)) * 100;
+            const newThreshold = toActualThreshold(Math.min(100, Math.max(0, legacyNormalized)), modelType);
+
+            logger.info('AITaggingTab', 'threshold_migration', 'Migrating legacy threshold value', {
+                oldThreshold: currentThreshold,
+                legacyNormalized,
+                newThreshold,
+                modelType
+            });
+
+            setConfig(prev => ({
+                ...prev,
+                ai_tagging: { ...aiConfig, confidence_threshold: newThreshold }
+            }));
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Adjust confidence threshold when model type changes
     useEffect(() => {
@@ -286,21 +313,12 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                     </div>
 
                     {/* Minimum Thumbnail Size */}
-                    <div style={{ marginBottom: 'var(--space-2)' }}>
-                        <label style={{
-                            display: 'block',
-                            marginBottom: 'var(--space-2)',
-                            fontSize: 'var(--font-size-sm)',
-                            fontWeight: '500'
-                        }}>
-                            Minimum Thumbnail Size: {aiConfig.min_thumbnail_size ?? 160}px
-                        </label>
-                        <p style={{
-                            fontSize: 'var(--font-size-xs)',
-                            color: 'var(--color-text-muted)',
-                            marginTop: 0,
-                            marginBottom: 'var(--space-3)'
-                        }}>
+                    <div className={styles['slider-container']}>
+                        <div className={styles['slider-label']}>
+                            <span className={styles['slider-label-text']}>Minimum Thumbnail Size</span>
+                            <span className={styles['slider-value']}>{aiConfig.min_thumbnail_size ?? 160}px</span>
+                        </div>
+                        <p className={styles['slider-description']}>
                             Use EXIF thumbnail for faster tagging when thumbnail is larger than this size.
                             Set to 0 to always use full image (slower but more accurate).
                         </p>
@@ -314,49 +332,40 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                                 const newValue = parseInt(e.target.value);
                                 updateAIConfig({ min_thumbnail_size: newValue });
                             }}
-                            style={{
-                                width: '100%',
-                                marginBottom: 'var(--space-2)'
-                            }}
+                            className={styles['slider-range']}
                         />
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            fontSize: 'var(--font-size-xs)',
-                            color: 'var(--color-text-muted)'
-                        }}>
+                        <div className={styles['slider-range-labels']}>
                             <span>0 (Always full image)</span>
                             <span>400px</span>
                         </div>
                     </div>
 
                     {/* Confidence Threshold */}
-                    <div className={styles['setting-group']}>
-                        <div className={styles['setting-row']}>
-                            <label>Confidence Threshold: {toNormalizedThreshold(aiConfig.confidence_threshold, aiConfig.model_type)}%</label>
-                            <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                step="5"
-                                value={toNormalizedThreshold(aiConfig.confidence_threshold, aiConfig.model_type)}
-                                onChange={(e) => {
-                                    const normalized = parseInt(e.target.value);
-                                    const actual = toActualThreshold(normalized, aiConfig.model_type);
-                                    updateAIConfig({ confidence_threshold: actual });
-                                }}
-                                style={{ width: '200px' }}
-                            />
+                    <div className={styles['slider-container']}>
+                        <div className={styles['slider-label']}>
+                            <span className={styles['slider-label-text']}>Confidence Threshold</span>
+                            <span className={styles['slider-value']}>{toNormalizedThreshold(aiConfig.confidence_threshold, aiConfig.model_type)}%</span>
                         </div>
-                        <p style={{
-                            fontSize: 'var(--font-size-xs)',
-                            color: 'var(--color-text-muted)',
-                            marginTop: 'var(--space-2)',
-                            marginLeft: 'var(--space-6)',
-                            marginBottom: 0
-                        }}>
+                        <p className={styles['slider-description']}>
                             Lower values = more tags (less strict), Higher values = fewer tags (more strict)
                         </p>
+                        <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="5"
+                            value={toNormalizedThreshold(aiConfig.confidence_threshold, aiConfig.model_type)}
+                            onChange={(e) => {
+                                const normalized = parseInt(e.target.value);
+                                const actual = toActualThreshold(normalized, aiConfig.model_type);
+                                updateAIConfig({ confidence_threshold: actual });
+                            }}
+                            className={styles['slider-range']}
+                        />
+                        <div className={styles['slider-range-labels']}>
+                            <span>0% (Less strict)</span>
+                            <span>100% (More strict)</span>
+                        </div>
                     </div>
 
                     {/* Max Tags per Image */}
@@ -459,7 +468,11 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                         <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--space-3)' }}>
                             Apply AI tags to all photos in your library.
                         </p>
-                        <button onClick={handleRunForAll} disabled={isProcessing} style={runButtonStyle(isProcessing)}>
+                        <button
+                            onClick={handleRunForAll}
+                            disabled={isProcessing}
+                            className={styles['btn-warning']}
+                        >
                             {isProcessing ? 'Processing...' : 'Apply to All Photos'}
                         </button>
 
@@ -508,15 +521,5 @@ const categoryLabelStyle = (isSelected) => ({
     fontSize: 'var(--font-size-sm)'
 });
 
-const runButtonStyle = (isProcessing) => ({
-    padding: 'var(--space-2) var(--space-4)',
-    background: isProcessing ? 'var(--color-bg-muted)' : 'var(--color-warning)',
-    color: 'var(--color-bg-base)',
-    border: 'none',
-    borderRadius: 'var(--radius-sm)',
-    cursor: isProcessing ? 'not-allowed' : 'pointer',
-    opacity: isProcessing ? 0.6 : 1,
-    fontWeight: 500
-});
 
 export default AITaggingTab;

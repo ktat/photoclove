@@ -53,13 +53,14 @@ function AIModelSelector({ selectedModelId, modelStatuses, downloadingModelId, o
                             key={model.id}
                             onClick={() => !isAnyDownloading && onModelSelect(model.id)}
                             style={{
-                                padding: 'var(--space-3)',
+                                padding: 'var(--space-4)',
                                 background: isSelected ? 'var(--color-primary-selected)' : 'var(--color-bg-surface)',
-                                border: isSelected ? '2px solid var(--color-primary)' : '1px solid var(--color-border-default)',
-                                borderRadius: 'var(--radius-md)',
+                                border: isSelected ? '2px solid var(--color-primary)' : '2px solid var(--color-border-default)',
+                                borderRadius: 'var(--radius-lg)',
                                 cursor: isAnyDownloading ? 'wait' : 'pointer',
                                 position: 'relative',
                                 opacity: isAnyDownloading && !isDownloadingThis ? 0.6 : 1,
+                                transition: 'all 0.2s ease-out',
                             }}
                         >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
@@ -69,25 +70,27 @@ function AIModelSelector({ selectedModelId, modelStatuses, downloadingModelId, o
                                     onChange={() => onModelSelect(model.id)}
                                     style={{ marginRight: 'var(--space-1)' }}
                                 />
-                                <strong>{model.name}</strong>
+                                <strong style={{ fontSize: 'var(--font-size-base)' }}>{model.name}</strong>
                                 {model.recommended && (
                                     <span style={{
-                                        fontSize: 'var(--font-size-2xs)',
+                                        fontSize: 'var(--font-size-xs)',
                                         background: 'var(--color-primary)',
-                                        color: 'var(--color-bg-base)',
-                                        padding: '2px 6px',
+                                        color: 'white',
+                                        padding: 'var(--space-1) var(--space-2)',
                                         borderRadius: 'var(--radius-sm)',
+                                        fontWeight: '600',
                                     }}>
                                         Recommended
                                     </span>
                                 )}
                                 {!isDownloaded && (
                                     <span style={{
-                                        fontSize: 'var(--font-size-2xs)',
+                                        fontSize: 'var(--font-size-xs)',
                                         background: 'var(--color-warning)',
                                         color: 'var(--color-bg-base)',
-                                        padding: '2px 6px',
+                                        padding: 'var(--space-1) var(--space-2)',
                                         borderRadius: 'var(--radius-sm)',
+                                        fontWeight: '600',
                                     }}>
                                         Not Downloaded
                                     </span>
