@@ -18,7 +18,8 @@ function VerticalTabBar({
     clearAllTabs,
     photoSelectionCount = 0,
     selectedAlbumsCount = 0,
-    selectedTagsCount = 0
+    selectedTagsCount = 0,
+    selectedPersonsCount = 0
 }) {
     // Define tab configurations based on view mode
     const getAvailableTabs = () => {
@@ -72,6 +73,25 @@ function VerticalTabBar({
 
     const availableTabs = getAvailableTabs();
 
+    // Determine which selection counts to use based on current ViewMode
+    const getRelevantSelectionCounts = () => {
+        if (viewModeObj?.isAlbumListMode()) {
+            // Album List mode - only album selections matter
+            return { photos: 0, albums: selectedAlbumsCount, tags: 0, persons: 0 };
+        } else if (viewModeObj?.isTagListMode()) {
+            // Tag List mode - only tag selections matter
+            return { photos: 0, albums: 0, tags: selectedTagsCount, persons: 0 };
+        } else if (viewModeObj?.isFaceListMode()) {
+            // Face List mode - only person selections matter
+            return { photos: 0, albums: 0, tags: 0, persons: selectedPersonsCount };
+        } else {
+            // All other modes (DATE, ALBUM, TAG, PERSON, etc.) - only photo selections matter
+            return { photos: photoSelectionCount, albums: 0, tags: 0, persons: 0 };
+        }
+    };
+
+    const relevantCounts = getRelevantSelectionCounts();
+
     return (
         <div className={`directory-vertical-tabs ${showSideMenu ? 'menu-open' : 'menu-closed'}`}>
             {availableTabs.map(tab => {
@@ -79,9 +99,10 @@ function VerticalTabBar({
                 const className = tab.id === 'selection'
                     ? getSelectionTabClassName(
                         tabClass[tab.id],
-                        photoSelectionCount,
-                        selectedAlbumsCount,
-                        selectedTagsCount,
+                        relevantCounts.photos,
+                        relevantCounts.albums,
+                        relevantCounts.tags,
+                        relevantCounts.persons,
                         'directory-vertical-tab-button'
                     )
                     : tabClass[tab.id]

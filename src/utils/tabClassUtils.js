@@ -10,6 +10,7 @@
  * @param {number} photoSelectionCount - Number of selected photos
  * @param {number} selectedAlbumsCount - Number of selected albums
  * @param {number} selectedTagsCount - Number of selected tags
+ * @param {number} selectedPersonsCount - Number of selected persons
  * @param {string} baseClass - Base CSS class name (default: 'vertical-tab-button')
  * @returns {string} Complete className string
  *
@@ -24,9 +25,10 @@ export function getSelectionTabClassName(
     photoSelectionCount = 0,
     selectedAlbumsCount = 0,
     selectedTagsCount = 0,
+    selectedPersonsCount = 0,
     baseClass = 'vertical-tab-button'
 ) {
-    const hasSelection = photoSelectionCount + selectedAlbumsCount + selectedTagsCount > 0;
+    const hasSelection = photoSelectionCount + selectedAlbumsCount + selectedTagsCount + selectedPersonsCount > 0;
 
     let className = baseClass;
     className += ' selection-tab'; // Mark as Selection tab
@@ -42,12 +44,14 @@ export function getSelectionTabClassName(
  * @param {number} photoSelectionCount - Number of selected photos
  * @param {number} selectedAlbumsCount - Number of selected albums
  * @param {number} selectedTagsCount - Number of selected tags
+ * @param {number} selectedPersonsCount - Number of selected persons
  * @returns {boolean} True if any items are selected
  */
 export function hasAnySelection(
     photoSelectionCount = 0,
     selectedAlbumsCount = 0,
-    selectedTagsCount = 0
+    selectedTagsCount = 0,
+    selectedPersonsCount = 0
 ) {
-    return photoSelectionCount + selectedAlbumsCount + selectedTagsCount > 0;
+    return photoSelectionCount + selectedAlbumsCount + selectedTagsCount + selectedPersonsCount > 0;
 }

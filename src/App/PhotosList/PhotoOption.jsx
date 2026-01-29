@@ -64,26 +64,22 @@ function PhotoOption(props) {
     // Auto-open Selection tab when items are selected (Feature #152)
     const prevSelectionCount = useRef(0);
     useEffect(() => {
+        // PhotoOption is only used when viewing photos, so only photo selections are relevant
         const photoCount = props.photoSelection?.length || 0;
-        const albumCount = props.selectedAlbums?.length || 0;
-        const tagCount = props.selectedTags?.length || 0;
-        const totalSelectionCount = photoCount + albumCount + tagCount;
 
         // Auto-open Selection tab when selection goes from 0 to 1+
-        if (prevSelectionCount.current === 0 && totalSelectionCount > 0) {
+        if (prevSelectionCount.current === 0 && photoCount > 0) {
             setActiveTab("selection");
             if (!props.showSideMenu) {
                 props.setShowSideMenu(true);
             }
             logger.info('PhotoOption', 'auto_open_selection_tab', 'Auto-opening Selection tab in photo viewer', {
-                photoCount,
-                albumCount,
-                tagCount
+                photoCount
             });
         }
 
-        prevSelectionCount.current = totalSelectionCount;
-    }, [props.photoSelection?.length, props.selectedAlbums?.length, props.selectedTags?.length, props.showSideMenu, props.setShowSideMenu]);
+        prevSelectionCount.current = photoCount;
+    }, [props.photoSelection?.length, props.showSideMenu, props.setShowSideMenu]);
 
     // Tutorial trigger effect (Feature #152/#153)
     useEffect(() => {
@@ -248,9 +244,8 @@ function PhotoOption(props) {
     // Helper function for selection tab class (replaces getSelectionTabClassName)
     const getSelectionTabClass = () => {
         const isActive = activeTab === "selection" && props.showSideMenu;
-        const hasSelection = (props.photoSelection?.length || 0) +
-                           (props.selectedAlbums?.length || 0) +
-                           (props.selectedTags?.length || 0) > 0;
+        // PhotoOption is only used when viewing photos, so only photo selections are relevant
+        const hasSelection = (props.photoSelection?.length || 0) > 0;
 
         return classNames(styles['vertical-tab-button'], {
             [styles.active]: isActive,
@@ -409,7 +404,8 @@ function PhotoOption(props) {
                             selectionState={{
                                 photoSelection: props.photoSelection || [],
                                 selectedAlbums: props.selectedAlbums || [],
-                                selectedTags: props.selectedTags || []
+                                selectedTags: props.selectedTags || [],
+                                persons: props.selectedPersons || []
                             }}
                             handlers={{
                                 doOperation: doOperation,
@@ -418,11 +414,14 @@ function PhotoOption(props) {
                                 deleteSelectedAlbums: props.deleteSelectedAlbums,
                                 clearAlbumSelection: props.clearAlbumSelection,
                                 deleteSelectedTags: props.deleteSelectedTags,
-                                clearTagSelection: props.clearTagSelection
+                                clearTagSelection: props.clearTagSelection,
+                                deleteSelectedPersons: props.deleteSelectedPersons,
+                                clearPersonSelection: props.clearPersonSelection
                             }}
                             importState={props.importState}
                             albumsList={props.albumsList || []}
                             tagsList={props.tagsList || []}
+                            facesList={props.facesList || []}
                             dropdownRef={dropdownRef}
                             tabClass={{ selection: true }}
                         />

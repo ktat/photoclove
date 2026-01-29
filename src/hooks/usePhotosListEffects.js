@@ -54,26 +54,42 @@ export function useSelectionTabEffect({
     photoSelection,
     selectedAlbums,
     selectedTags,
+    selectedPersons,
     changeTab,
-    setShowSideMenu
+    setShowSideMenu,
+    viewModeObj
 }) {
     const prevSelectionCount = useRef(0);
 
     useEffect(() => {
-        const totalSelectionCount = photoSelection.length + selectedAlbums.length + selectedTags.length;
+        // Calculate relevant selection count based on current ViewMode
+        let relevantSelectionCount = 0;
+        if (viewModeObj?.isAlbumListMode()) {
+            relevantSelectionCount = selectedAlbums.length;
+        } else if (viewModeObj?.isTagListMode()) {
+            relevantSelectionCount = selectedTags.length;
+        } else if (viewModeObj?.isFaceListMode()) {
+            relevantSelectionCount = selectedPersons.length;
+        } else {
+            // All other modes - only photo selections
+            relevantSelectionCount = photoSelection.length;
+        }
 
         // Auto-open Selection tab when selection goes from 0 to 1+
-        if (prevSelectionCount.current === 0 && totalSelectionCount > 0) {
+        if (prevSelectionCount.current === 0 && relevantSelectionCount > 0) {
             changeTab(undefined, "#tab-selection");
             setShowSideMenu(true);
             logger.info('usePhotosListEffects', 'auto_open_selection', 'Auto-opening Selection tab', {
+                viewMode: viewModeObj?.mode,
                 photoCount: photoSelection.length,
                 albumCount: selectedAlbums.length,
-                tagCount: selectedTags.length
+                tagCount: selectedTags.length,
+                personCount: selectedPersons.length,
+                relevantCount: relevantSelectionCount
             });
         }
-        prevSelectionCount.current = totalSelectionCount;
-    }, [photoSelection.length, selectedAlbums.length, selectedTags.length, changeTab, setShowSideMenu]);
+        prevSelectionCount.current = relevantSelectionCount;
+    }, [photoSelection.length, selectedAlbums.length, selectedTags.length, selectedPersons.length, viewModeObj, changeTab, setShowSideMenu]);
 }
 
 /**

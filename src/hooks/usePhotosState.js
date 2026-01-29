@@ -88,6 +88,7 @@ export const usePhotosState = () => {
     const [faceSearchTerm, setFaceSearchTerm] = useState('');
     const [currentPersonId, setCurrentPersonId] = useState(null);
     const [currentPersonName, setCurrentPersonName] = useState('');
+    const [selectedPersons, setSelectedPersons] = useState([]);
 
     // Filter popover state
     const [showFilterPopover, setShowFilterPopover] = useState(false);
@@ -228,6 +229,8 @@ export const usePhotosState = () => {
         setCurrentPersonId,
         currentPersonName,
         setCurrentPersonName,
+        selectedPersons,
+        setSelectedPersons,
 
         // Filter popover
         showFilterPopover,

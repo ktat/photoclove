@@ -17,6 +17,7 @@ import ListViewHeader from "./ListViewHeader.jsx";
 import GenericListView from "./GenericListView.jsx";
 import TagCloudView from "./TagCloudView.jsx";
 import FacesList from "./FacesList.jsx";
+import FaceThumbnail from "../../components/FaceThumbnail.jsx";
 import BackNavigationLink from "../../components/BackNavigationLink.jsx";
 import StatusBar from "./StatusBar.jsx";
 import PhotosToolbar from "./PhotosToolbar.jsx";
@@ -106,7 +107,8 @@ function PhotoListContent({
     const {
         photos: photoSelectionDict,
         albums: selectedAlbums,
-        tags: selectedTags
+        tags: selectedTags,
+        persons: selectedPersons
     } = selectionState;
 
     const {
@@ -132,6 +134,7 @@ function PhotoListContent({
         loadMorePhotos: handleInfiniteScroll,
         handleAlbumSelection,
         handleTagSelection,
+        handlePersonSelection,
         handleAlbumClick,
         handleTagClick,
         handleNewAlbumClick,
@@ -292,13 +295,40 @@ function PhotoListContent({
                             showViewModeToggle={false}
                             onRefresh={reloadFaces}
                         />
-                        <FacesList
-                            persons={facesList}
+                        <GenericListView
+                            items={facesList}
+                            itemType="person"
                             iconSize={iconSize}
-                            onPersonClick={handlePersonClick}
+                            selectedItems={selectedPersons}
+                            onItemSelection={handlePersonSelection}
+                            onItemClick={handlePersonClick}
+                            onNewItemClick={() => {}} // No-op for faces (auto-detected)
                             searchTerm={faceSearchTerm}
                             onSearchChange={setFaceSearchTerm}
-                            onRefresh={reloadFaces}
+                            showNewItemTile={false}
+                            renderCover={(person, size) => {
+                                const hasThumbnail = person.photo_path && person.bbox_x !== null;
+                                return hasThumbnail ? (
+                                    <FaceThumbnail
+                                        photoPath={person.photo_path}
+                                        bbox={{
+                                            bbox_x: person.bbox_x,
+                                            bbox_y: person.bbox_y,
+                                            bbox_width: person.bbox_width,
+                                            bbox_height: person.bbox_height
+                                        }}
+                                        size={size}
+                                        borderRadius="var(--radius-md)"
+                                    />
+                                ) : (
+                                    <div style={{
+                                        fontSize: `${size * 0.3}px`,
+                                        color: 'var(--color-text-muted)'
+                                    }}>
+                                        👤
+                                    </div>
+                                );
+                            }}
                         />
                     </>
                 )}

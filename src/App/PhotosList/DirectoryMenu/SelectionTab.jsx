@@ -4,7 +4,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 /**
  * SelectionTab Component
  *
- * Handles photo, album, and tag selection operations
+ * Handles photo, album, tag, and person selection operations
  * Extracted from DirectoryMenu.jsx to reduce file size
  *
  * @param {Object} props
@@ -13,6 +13,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
  * @param {Array} props.selectionState.photoSelection - Selected photo paths
  * @param {Array} props.selectionState.selectedAlbums - Selected album IDs
  * @param {Array} props.selectionState.selectedTags - Selected tag IDs
+ * @param {Array} props.selectionState.selectedPersons - Selected person IDs
  * @param {Object} props.handlers - Handler functions group
  * @param {Function} props.handlers.doOperation - Operation dispatcher
  * @param {Function} props.handlers.selectAllPhotoToSelection - Select all photos handler
@@ -21,9 +22,12 @@ import { convertFileSrc } from "@tauri-apps/api/core";
  * @param {Function} props.handlers.clearAlbumSelection - Clear album selection
  * @param {Function} props.handlers.deleteSelectedTags - Delete selected tags
  * @param {Function} props.handlers.clearTagSelection - Clear tag selection
+ * @param {Function} props.handlers.deleteSelectedPersons - Delete selected persons
+ * @param {Function} props.handlers.clearPersonSelection - Clear person selection
  * @param {Object} props.importState - Import state with progress tracking
  * @param {Array} props.albumsList - List of all albums
  * @param {Array} props.tagsList - List of all tags
+ * @param {Array} props.facesList - List of all persons/faces
  * @param {Object} props.dropdownRef - Ref for operations dropdown (tutorial positioning)
  * @param {Object} props.tabClass - Tab CSS classes
  */
@@ -34,6 +38,7 @@ function SelectionTab({
     importState,
     albumsList,
     tagsList,
+    facesList = [],
     dropdownRef,
     tabClass
 }) {
@@ -42,7 +47,7 @@ function SelectionTab({
     const [showBigPhoto, setShowBigPhoto] = useState(false);
 
     // Destructure from state groups
-    const { photoSelection, selectedAlbums, selectedTags } = selectionState;
+    const { photoSelection, selectedAlbums, selectedTags, persons: selectedPersons = [] } = selectionState;
     const {
         doOperation,
         selectAllPhotoToSelection,
@@ -50,7 +55,9 @@ function SelectionTab({
         deleteSelectedAlbums,
         clearAlbumSelection,
         deleteSelectedTags,
-        clearTagSelection
+        clearTagSelection,
+        deleteSelectedPersons = () => {},
+        clearPersonSelection = () => {}
     } = handlers;
 
     return (
@@ -272,6 +279,60 @@ function SelectionTab({
                                                     marginRight: 'var(--space-2)'
                                                 }}></span>
                                                 <span>{tag.name} ({tag.photoCount} photos)</span>
+                                            </li>
+                                        ) : null;
+                                    })}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Person Selection (face list mode) */}
+                {viewModeObj?.shouldShowPersonSelection() && (
+                    <div>
+                        <div style={{ marginBottom: 'var(--space-4)' }}>
+                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>Selected Persons</h3>
+                        </div>
+                        {selectedPersons.length === 0 ? (
+                            <div><br />No persons selected.</div>
+                        ) : (
+                            <div>
+                                <div className="operation" style={{ marginBottom: 'var(--space-4)' }}>
+                                    <button
+                                        onClick={deleteSelectedPersons}
+                                        style={{
+                                            padding: 'var(--space-2) var(--space-3)',
+                                            backgroundColor: 'var(--color-danger)',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: 'var(--radius-sm)',
+                                            cursor: 'pointer',
+                                            marginRight: 'var(--space-3)'
+                                        }}
+                                    >
+                                        Delete Selected Persons
+                                    </button>
+                                    <button
+                                        onClick={() => clearPersonSelection()}
+                                        style={{
+                                            padding: 'var(--space-2) var(--space-3)',
+                                            backgroundColor: 'var(--color-bg-elevated)',
+                                            color: 'var(--color-text-primary)',
+                                            border: '1px solid var(--color-border-default)',
+                                            borderRadius: 'var(--radius-sm)',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        Clear Selection
+                                    </button>
+                                </div>
+                                <ul className="list-of-selected">
+                                    {selectedPersons.map((personId) => {
+                                        const person = facesList.find(p => p.person_id === personId);
+                                        return person ? (
+                                            <li key={personId}>
+                                                <span>{person.person_name || 'Unknown'} ({person.face_count || 0} faces)</span>
                                             </li>
                                         ) : null;
                                     })}
