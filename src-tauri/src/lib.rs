@@ -301,6 +301,10 @@ pub fn run() {
             enqueue_s3_incremental_sync,
             enqueue_s3_full_sync,
             enqueue_s3_sync_by_date,
+            store_s3_credentials,
+            has_s3_credentials,
+            delete_s3_credentials,
+            get_s3_credentials_preview,
             // Face Detection commands
             get_face_detection_model_status,
             get_face_detection_model_info,

@@ -7,6 +7,7 @@ use serde_json::json;
 use tauri::State;
 
 use crate::domain_service::s3_service;
+use crate::domain_service::token_storage_service::TokenStorageService;
 use crate::entity::config::{S3AuthMethod, S3Config, S3StorageType};
 use crate::AppState;
 
@@ -77,6 +78,7 @@ pub fn save_s3_config(
         "wasabi" => S3StorageType::Wasabi,
         "cloudflare_r2" => S3StorageType::CloudflareR2,
         "digitalocean" => S3StorageType::DigitalOcean,
+        "idrive_e2" => S3StorageType::IDriveE2,
         "custom" => S3StorageType::Custom,
         _ => S3StorageType::AwsS3,
     };
@@ -131,6 +133,7 @@ pub fn get_s3_config(state: State<'_, AppState>) -> Result<String, String> {
                 S3StorageType::Wasabi => "wasabi",
                 S3StorageType::CloudflareR2 => "cloudflare_r2",
                 S3StorageType::DigitalOcean => "digitalocean",
+                S3StorageType::IDriveE2 => "idrive_e2",
                 S3StorageType::Custom => "custom",
             },
             "bucket_uri": s3.bucket_uri,
@@ -187,6 +190,7 @@ pub fn get_s3_sync_stats(state: State<'_, AppState>) -> Result<String, String> {
         S3StorageType::MinIO => "minio",
         S3StorageType::CloudflareR2 => "cloudflare_r2",
         S3StorageType::DigitalOcean => "digitalocean",
+        S3StorageType::IDriveE2 => "idrive_e2",
         S3StorageType::Custom => "custom",
     };
 
@@ -315,10 +319,13 @@ pub fn enqueue_s3_sync_by_date(
     window: tauri::Window,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
+    log::info!(target: "s3_commands", "enqueue_s3_sync_by_date; date={}", date);
+
     let s3_config = state.config.s3.clone()
         .ok_or("S3 backup is not configured")?;
 
     if !s3_config.enabled {
+        log::warn!(target: "s3_commands", "enqueue_s3_sync_by_date; s3_not_enabled");
         return Err("S3 backup is not enabled".to_string());
     }
 
@@ -328,23 +335,41 @@ pub fn enqueue_s3_sync_by_date(
     let conn = state.meta_db.get_connection()
         .map_err(|e| format!("Database error: {}", e))?;
 
-    // Support both YYYY-MM-DD and YYYY/MM/DD formats
-    let date_pattern = date.replace('/', "-");
+    // Parse date using Date value object (supports both YYYY-MM-DD and YYYY/MM/DD formats)
+    use crate::value::date::Date;
+    let date_obj = Date::try_from_string(&date.to_string(), Some("/"))
+        .or_else(|_| Date::try_from_string(&date.to_string(), Some("-")))
+        .map_err(|e| format!("Invalid date format: {}", e))?;
+
+    // Use range query for photo_date (format: "YYYY-MM-DD HH:MM:SS")
+    // Range: "YYYY-MM-DD 00:00:00" <= photo_date < "YYYY-MM-DD+1 00:00:00"
+    let date_str = date_obj.to_string();
+    let next_date = format!(
+        "{} 00:00:00",
+        chrono::NaiveDate::parse_from_str(&date_str, "%Y-%m-%d")
+            .map(|d| d.succ_opt().unwrap_or(d))
+            .unwrap_or_else(|_| chrono::NaiveDate::from_ymd_opt(2099, 12, 31).unwrap())
+            .format("%Y-%m-%d")
+    );
+    let date_start = format!("{} 00:00:00", date_str);
 
     let mut stmt = conn.prepare(&format!(
-        "SELECT file_path FROM photo_metadata
+        "SELECT path FROM photo_metadata
          WHERE (delete_flg = 0 OR delete_flg IS NULL)
-           AND date = ?1
+           AND photo_date >= ?1 AND photo_date < ?2
            AND (storage_sync IS NULL OR storage_sync NOT LIKE '%\"{}\":%')",
         provider
     )).map_err(|e| format!("Query error: {}", e))?;
 
-    let photo_paths: Vec<String> = stmt.query_map([&date_pattern], |row| row.get(0))
+    let photo_paths: Vec<String> = stmt.query_map([&date_start, &next_date], |row| row.get(0))
         .map_err(|e| format!("Query error: {}", e))?
         .filter_map(|r| r.ok())
         .collect();
 
+    log::info!(target: "s3_commands", "enqueue_s3_sync_by_date; photos_found={}; provider={}", photo_paths.len(), provider);
+
     if photo_paths.is_empty() {
+        log::info!(target: "s3_commands", "enqueue_s3_sync_by_date; no_photos_to_sync");
         return Ok(r#"{"result": "no_photos_to_sync", "count": 0}"#.to_string());
     }
 
@@ -359,6 +384,7 @@ fn get_provider_name(storage_type: &S3StorageType) -> &'static str {
         S3StorageType::Wasabi => "wasabi",
         S3StorageType::CloudflareR2 => "cloudflare_r2",
         S3StorageType::DigitalOcean => "digitalocean",
+        S3StorageType::IDriveE2 => "idrive_e2",
         S3StorageType::Custom => "custom",
     }
 }
@@ -410,4 +436,60 @@ fn create_s3_sync_job(
         r#"{{"result": "started", "job_unit_id": "{}", "job_id": {}, "to_sync": {}}}"#,
         job_unit_id, job_id, photo_count
     ))
+}
+
+// ========== S3 Credentials Management (Provider-specific) ==========
+
+/// Store S3 Access Key ID and Secret Access Key securely in system keyring for a specific provider
+#[tauri::command]
+pub fn store_s3_credentials(
+    provider: String,
+    access_key_id: String,
+    secret_access_key: String,
+) -> Result<String, String> {
+    TokenStorageService::store_s3_credentials(&provider, &access_key_id, &secret_access_key)?;
+    log::info!(target: "s3_commands", "s3_credentials_stored; provider={}", provider);
+    Ok(r#"{"result": "success"}"#.to_string())
+}
+
+/// Check if S3 credentials are stored in keyring for a specific provider
+#[tauri::command]
+pub fn has_s3_credentials(provider: String) -> Result<String, String> {
+    let has_credentials = TokenStorageService::has_s3_credentials(&provider);
+    Ok(json!({ "has_credentials": has_credentials }).to_string())
+}
+
+/// Delete stored S3 credentials from keyring for a specific provider
+#[tauri::command]
+pub fn delete_s3_credentials(provider: String) -> Result<String, String> {
+    TokenStorageService::delete_s3_credentials(&provider)?;
+    log::info!(target: "s3_commands", "s3_credentials_deleted; provider={}", provider);
+    Ok(r#"{"result": "success"}"#.to_string())
+}
+
+/// Get masked preview of stored credentials for a specific provider (for UI display only)
+#[tauri::command]
+pub fn get_s3_credentials_preview(provider: String) -> Result<String, String> {
+    match TokenStorageService::get_s3_credentials(&provider) {
+        Ok((access_key_id, _secret_access_key)) => {
+            // Only show preview of Access Key ID (not the secret)
+            let preview = if access_key_id.len() > 8 {
+                format!("{}...{}",
+                    &access_key_id[..4],
+                    &access_key_id[access_key_id.len()-4..])
+            } else {
+                "****".to_string()
+            };
+            Ok(json!({
+                "has_credentials": true,
+                "access_key_preview": preview
+            }).to_string())
+        }
+        Err(_) => {
+            Ok(json!({
+                "has_credentials": false,
+                "access_key_preview": null
+            }).to_string())
+        }
+    }
 }

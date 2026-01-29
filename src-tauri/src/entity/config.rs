@@ -138,6 +138,8 @@ pub enum S3StorageType {
     CloudflareR2,
     #[serde(rename = "digitalocean")]
     DigitalOcean,
+    #[serde(rename = "idrive_e2")]
+    IDriveE2,
     #[serde(rename = "custom")]
     Custom,
 }

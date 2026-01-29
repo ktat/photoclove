@@ -32,6 +32,7 @@ pub(crate) async fn process_s3_sync_job(
         crate::entity::config::S3StorageType::MinIO => "minio",
         crate::entity::config::S3StorageType::CloudflareR2 => "cloudflare_r2",
         crate::entity::config::S3StorageType::DigitalOcean => "digitalocean",
+        crate::entity::config::S3StorageType::IDriveE2 => "idrive_e2",
         crate::entity::config::S3StorageType::Custom => "custom",
     };
 
@@ -138,7 +139,7 @@ fn update_storage_sync(
     // Get existing storage_sync value
     let existing_sync: Option<String> = conn
         .query_row(
-            "SELECT storage_sync FROM photo_metadata WHERE file_path = ?1",
+            "SELECT storage_sync FROM photo_metadata WHERE path = ?1",
             [photo_path],
             |row| row.get(0),
         )
@@ -161,7 +162,7 @@ fn update_storage_sync(
         .map_err(|e| format!("Failed to serialize storage_sync: {}", e))?;
 
     conn.execute(
-        "UPDATE photo_metadata SET storage_sync = ?1 WHERE file_path = ?2",
+        "UPDATE photo_metadata SET storage_sync = ?1 WHERE path = ?2",
         rusqlite::params![sync_json, photo_path],
     ).map_err(|e| format!("Failed to update storage_sync: {}", e))?;
 

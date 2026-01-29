@@ -232,7 +232,7 @@ pub(super) fn get_jobs_for_unit(
     with_connection(sqlite, |conn| {
         let mut stmt = conn
             .prepare(
-                "SELECT id, job_unit_id, job_type, target, status, error_message, created_at
+                "SELECT id, job_unit_id, job, status, error_message, created_at
                  FROM job_queue WHERE job_unit_id = ?1",
             )
             .map_err(|e| format!("Failed to prepare statement: {}", e))?;
@@ -241,31 +241,16 @@ pub(super) fn get_jobs_for_unit(
             .query_map([job_unit_id], |row| {
                 let job_id: i64 = row.get(0)?;
                 let job_unit_id: String = row.get(1)?;
-                let job_type_str: String = row.get(2)?;
-                let target_json: String = row.get(3)?;
-                let status_str: String = row.get(4)?;
-                let error_message: Option<String> = row.get(5)?;
-                let _created_at: String = row.get(6)?;
+                let job_json: String = row.get(2)?;
+                let status_str: String = row.get(3)?;
+                let error_message: Option<String> = row.get(4)?;
+                let _created_at: String = row.get(5)?;
 
-                // Parse job type
-                let job_type = match job_type_str.as_str() {
-                    "import" => JobType::Import,
-                    "thumbnail" => JobType::Thumbnail,
-                    "create_db" => JobType::CreateDb,
-                    _ => {
-                        return Err(rusqlite::Error::InvalidColumnType(
-                            2,
-                            "job_type".to_string(),
-                            rusqlite::types::Type::Text,
-                        ))
-                    }
-                };
-
-                // Parse target files
-                let target: Vec<String> = serde_json::from_str(&target_json).map_err(|_| {
+                // Parse job JSON
+                let job: Job = serde_json::from_str(&job_json).map_err(|_| {
                     rusqlite::Error::InvalidColumnType(
-                        3,
-                        "target".to_string(),
+                        2,
+                        "job".to_string(),
                         rusqlite::types::Type::Text,
                     )
                 })?;
@@ -278,15 +263,14 @@ pub(super) fn get_jobs_for_unit(
                     "failed" => JobStatus::Failed,
                     _ => {
                         return Err(rusqlite::Error::InvalidColumnType(
-                            4,
+                            3,
                             "status".to_string(),
                             rusqlite::types::Type::Text,
                         ))
                     }
                 };
 
-                // Create job
-                let job = Job::new(job_unit_id.clone(), job_type, target);
+                // Create queued job
                 let mut queued_job = QueuedJob::new(job_unit_id, job);
                 queued_job.id = Some(job_id);
                 queued_job.status = status;
