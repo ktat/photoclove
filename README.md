@@ -21,7 +21,7 @@ PhotoClove is a desktop photo manager designed for speed and simplicity. Built w
 - **📊 Debug Logging**: Real-time log viewer with frontend/backend correlation for troubleshooting (Ctrl+Shift+L)
 - **🎬 Video Support**: View and manage MP4/WebM videos with thumbnail generation
 - **☁️ Google Photos Integration**: Secure OAuth authentication with automatic token refresh and seamless photo uploads
-- **☁️ S3 Cloud Backup**: Backup photos to Amazon S3 or S3-compatible storage (Wasabi, MinIO, Cloudflare R2, DigitalOcean Spaces) with auto-sync on import
+- **☁️ S3 Cloud Backup**: Backup photos to Amazon S3 or S3-compatible storage (Wasabi, MinIO, Cloudflare R2, DigitalOcean Spaces, iDrive e2) with auto-sync on import, custom region support, and provider-specific credentials
 - **🤖 AI Auto-Tagging**: Automatic photo classification using MobileNet (fast, 32 categories), OpenCLIP, or SigLIP models with customizable labels
 - **🔄 Background Processing**: Advanced job queue with immediate retry, progress tracking, and comprehensive logging
 - **🔐 Secure Authentication**: Platform-native keyring storage for OAuth tokens with external service integration
@@ -235,12 +235,13 @@ Configure AI tagging in Preferences → AI Auto-Tagging. Models are downloaded o
 PhotoClove supports backing up photos to S3-compatible cloud storage:
 
 ### Supported Providers
-- **Amazon S3**: Full AWS integration with credential profiles
-- **Wasabi**: Hot Cloud Storage with S3 compatibility
+- **Amazon S3**: Full AWS integration with credential profiles (13 regions)
+- **Wasabi**: Hot Cloud Storage with S3 compatibility (15 regions as of 2026)
 - **MinIO**: Self-hosted S3-compatible storage
 - **Cloudflare R2**: S3-compatible object storage
-- **DigitalOcean Spaces**: S3-compatible object storage
-- **Custom Endpoints**: Any S3-compatible storage
+- **DigitalOcean Spaces**: S3-compatible object storage (13 regions as of 2026)
+- **iDrive e2**: S3-compatible cloud storage (16 regions across US, Canada, Europe, Asia)
+- **Custom Endpoints**: Any S3-compatible storage with custom region support
 
 ### Features
 - **Auto-sync on Import**: Automatically upload photos after import
@@ -249,6 +250,9 @@ PhotoClove supports backing up photos to S3-compatible cloud storage:
 - **Date-based Sync**: Sync photos from specific dates
 - **Sync Status Tracking**: Per-photo sync status with provider information
 - **Database Backup**: Option to backup SQLite database to S3
+- **Custom Region Support**: Manual region code input for new or unlisted regions
+- **Provider-Specific Credentials**: Secure keyring storage per provider
+- **Enhanced UI**: Emoji icons for better visual organization and maintenance operations
 
 ### Authentication
 - **AWS Credentials**: Use profiles from ~/.aws/credentials
@@ -386,6 +390,7 @@ PhotoClove uses a structured development workflow with the `improvement/` direct
 - [x] **Database Migrations**: Automatic schema updates on app startup with versioned migration system
 - [x] **AI Auto-Tagging**: Multi-model support (MobileNet, OpenCLIP, SigLIP) with customizable labels and auto-tag on import
 - [x] **S3 Cloud Backup**: Amazon S3 and S3-compatible storage backup with auto-sync, incremental sync, and per-photo tracking
+- [x] **S3 Enhanced Support**: iDrive e2 integration, updated region lists (Wasabi 15, DigitalOcean 13, iDrive e2 16), custom region input, provider-specific credentials, and emoji-enhanced UI
 
 ### Current Focus 🎯
 - [ ] **CSS Modules Migration Completion**: Migrate remaining components (search/, modals, utilities) to CSS Modules

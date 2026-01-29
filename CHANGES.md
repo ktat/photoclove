@@ -2,6 +2,54 @@
 
 This document tracks all notable changes to PhotoClove across versions.
 
+## Version 2.10 - S3 Enhanced Support & UI Improvements
+
+### ☁️ S3 Cloud Backup Enhancements
+- **iDrive e2 Integration**: Added full support for iDrive e2 S3-compatible storage (16 regions across US, Canada, Europe, Asia)
+- **Updated Region Lists**: Refreshed region data for all providers with official documentation sources
+  - Wasabi: 15 regions (added San Jose, Milan, London-2)
+  - DigitalOcean Spaces: 13 regions (added NYC1, NYC2, SFO2, LON1, TOR1, BLR1, ATL1)
+  - iDrive e2: 16 regions (complete list with proper endpoint URLs)
+  - AWS S3: 13 regions maintained
+- **Custom Region Input**: Manual region code input field for new or unlisted regions
+  - Automatic detection of unlisted regions from existing configurations
+  - Flexible fallback for provider updates without code changes
+- **Provider-Specific Credentials**: Separate keyring storage for each S3 provider
+  - Credentials stored as `s3_credentials_{provider}` in system keyring
+  - Independent credential management per provider (AWS S3, Wasabi, MinIO, etc.)
+  - Preview display showing masked Access Key ID per provider
+
+### 🎨 S3 Backup UI Improvements
+- **Bucket Configuration Split**: Separated Bucket URI into "Bucket Name" and "Prefix (optional)" fields for better usability
+- **Enhanced Placeholders**: Clearer placeholder text with example values shown as helper text below inputs
+- **Max File Size Layout**: Improved description positioning below dropdown with better readability
+- **Region Selection**: Provider-specific region dropdowns with custom region input option
+- **Documentation Links**: Added official source URLs as comments in region lists for future maintenance
+
+### 🎭 Visual Enhancements
+- **Maintenance Tab Icons**: Added emoji icons to all maintenance operations for better visual clarity
+  - 🗄️ (re)Create database of the date
+  - 📅 Move files according to Exif date
+  - 🖼️ Make thumbnails
+  - 🔄 Recalculate Groups of the date
+  - 🤖 Run AI Tagging
+  - 👤 Run Face Detection
+  - ☁️ Sync to S3
+- **Advanced Tab Icons**: Enhanced Advanced preferences with emoji icons
+  - 📤 Google Photos section
+  - 🔄 Re-authentication option
+  - 📚 Tutorial section
+  - 👋 Welcome tutorial
+  - 💡 Tab instruction tooltips
+- **Grouping Tab Icons**: Added icons to recalculate groups section (🔄/⏳)
+- **List Styling**: Removed bullet points from maintenance operations, added proper padding for emoji visibility
+
+### 🔧 Technical Improvements
+- **Endpoint Configuration**: Fixed `hasEndpoint` flags for Wasabi and DigitalOcean (both use default endpoint patterns)
+- **Region Validation**: Automatic region existence check with custom region fallback
+- **CSS Design System**: Consistent use of CSS variables for spacing and typography
+- **Code Documentation**: Added source URLs for all provider region lists for easier future updates
+
 ## Version 2.9 - Search Functionality & Display Window Algorithm
 
 ### 🔍 Advanced Search Interface

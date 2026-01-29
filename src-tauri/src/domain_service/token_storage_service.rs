@@ -179,6 +179,79 @@ impl TokenStorageService {
             "time_until_expiry": (token_data.expires_at - Utc::now()).num_seconds(),
         }))
     }
+
+    // ========== S3 Access Key Storage (Provider-specific) ==========
+
+    /// Store S3 Access Key ID and Secret Access Key securely for a specific provider
+    pub fn store_s3_credentials(
+        provider: &str,
+        access_key_id: &str,
+        secret_access_key: &str,
+    ) -> Result<(), String> {
+        let credentials = serde_json::json!({
+            "access_key_id": access_key_id,
+            "secret_access_key": secret_access_key,
+        });
+
+        let json_data = serde_json::to_string(&credentials)
+            .map_err(|e| format!("Failed to serialize S3 credentials: {}", e))?;
+
+        let key_name = format!("s3_credentials_{}", provider);
+        let entry = Entry::new("photoclove", &key_name)
+            .map_err(|e| format!("Failed to create S3 credentials entry: {}", e))?;
+        entry
+            .set_password(&json_data)
+            .map_err(|e| format!("Failed to store S3 credentials: {}", e))?;
+
+        log::info!(target: "token_storage", "s3_credentials_stored; provider={}", provider);
+        Ok(())
+    }
+
+    /// Get stored S3 credentials for a specific provider
+    pub fn get_s3_credentials(provider: &str) -> Result<(String, String), String> {
+        let key_name = format!("s3_credentials_{}", provider);
+        let entry = Entry::new("photoclove", &key_name)
+            .map_err(|e| format!("Failed to create S3 credentials entry: {}", e))?;
+
+        let json_data = entry
+            .get_password()
+            .map_err(|e| format!("No stored S3 credentials found for provider {}: {}", provider, e))?;
+
+        let credentials: serde_json::Value = serde_json::from_str(&json_data)
+            .map_err(|e| format!("Failed to parse S3 credentials: {}", e))?;
+
+        let access_key_id = credentials["access_key_id"]
+            .as_str()
+            .ok_or("Missing access_key_id in stored credentials")?
+            .to_string();
+
+        let secret_access_key = credentials["secret_access_key"]
+            .as_str()
+            .ok_or("Missing secret_access_key in stored credentials")?
+            .to_string();
+
+        Ok((access_key_id, secret_access_key))
+    }
+
+    /// Delete stored S3 credentials for a specific provider
+    pub fn delete_s3_credentials(provider: &str) -> Result<(), String> {
+        let key_name = format!("s3_credentials_{}", provider);
+        let entry = Entry::new("photoclove", &key_name)
+            .map_err(|e| format!("Failed to create S3 credentials entry: {}", e))?;
+        let _ = entry.delete_password(); // Ignore error if not exists
+        log::info!(target: "token_storage", "s3_credentials_deleted; provider={}", provider);
+        Ok(())
+    }
+
+    /// Check if S3 credentials are stored for a specific provider
+    pub fn has_s3_credentials(provider: &str) -> bool {
+        let key_name = format!("s3_credentials_{}", provider);
+        if let Ok(entry) = Entry::new("photoclove", &key_name) {
+            entry.get_password().is_ok()
+        } else {
+            false
+        }
+    }
 }
 
 #[cfg(test)]

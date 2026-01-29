@@ -4,11 +4,13 @@
 //! to Amazon S3 or S3-compatible storage services.
 
 use aws_config::BehaviorVersion;
+use aws_credential_types::Credentials;
 use aws_sdk_s3::{config::Region, Client as S3Client};
 use std::path::Path;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
+use crate::domain_service::token_storage_service::TokenStorageService;
 use crate::entity::config::{S3AuthMethod, S3Config, S3StorageType};
 
 /// S3 Service for managing S3 operations
@@ -55,10 +57,22 @@ impl S3Service {
                     .await
             }
             S3AuthMethod::AccessKey => {
-                // Access key auth is handled via keyring - credentials loaded separately
-                // For now, try default credential chain
+                // Load Access Key from keyring for this provider
+                let provider = self.get_provider_name();
+                let (access_key_id, secret_access_key) = TokenStorageService::get_s3_credentials(provider)
+                    .map_err(|e| format!("Failed to get S3 credentials from keyring: {}. Please enter your Access Key ID and Secret Access Key in Settings.", e))?;
+
+                let credentials = Credentials::new(
+                    access_key_id,
+                    secret_access_key,
+                    None, // session token
+                    None, // expiration
+                    "photoclove-keyring",
+                );
+
                 aws_config::defaults(BehaviorVersion::latest())
                     .region(region)
+                    .credentials_provider(credentials)
                     .load()
                     .await
             }
@@ -99,6 +113,10 @@ impl S3Service {
             S3StorageType::CloudflareR2 => None, // R2 requires custom endpoint with account ID
             S3StorageType::DigitalOcean => {
                 Some(format!("https://{}.digitaloceanspaces.com", self.config.region))
+            }
+            S3StorageType::IDriveE2 => {
+                // iDrive e2 uses AWS-compatible region names (e.g., ap-southeast-1)
+                Some(format!("https://s3.{}.idrivee2.com", self.config.region))
             }
             S3StorageType::Custom | S3StorageType::AwsS3 => None,
         }
@@ -350,6 +368,7 @@ impl S3Service {
             S3StorageType::MinIO => "minio",
             S3StorageType::CloudflareR2 => "cloudflare_r2",
             S3StorageType::DigitalOcean => "digitalocean",
+            S3StorageType::IDriveE2 => "idrive_e2",
             S3StorageType::Custom => "custom",
         }
     }
