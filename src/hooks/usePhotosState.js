@@ -1,4 +1,22 @@
 import { useState, useRef } from 'react';
+import { logger } from '../services/LoggerService.js';
+
+const STORAGE_KEY_ALBUMS = 'selectedAlbums';
+const STORAGE_KEY_TAGS = 'selectedTags';
+const STORAGE_KEY_PERSONS = 'selectedPersons';
+
+/**
+ * Load selection from SessionStorage
+ */
+function loadSelectionFromStorage(key) {
+    try {
+        const stored = sessionStorage.getItem(key);
+        return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+        logger.error('usePhotosState', 'storage_load_error', 'Failed to load selection from storage', { key, error });
+        return [];
+    }
+}
 
 /**
  * PhotosList component state management hook
@@ -72,7 +90,7 @@ export const usePhotosState = () => {
     const [albumSearchTerm, setAlbumSearchTerm] = useState('');
     const [currentAlbumName, setCurrentAlbumName] = useState('');
     const [showAlbumCreationModal, setShowAlbumCreationModal] = useState(false);
-    const [selectedAlbums, setSelectedAlbums] = useState([]);
+    const [selectedAlbums, setSelectedAlbums] = useState(() => loadSelectionFromStorage(STORAGE_KEY_ALBUMS));
 
     // Tag state
     const [tagsList, setTagsList] = useState([]);
@@ -81,14 +99,14 @@ export const usePhotosState = () => {
     const [currentTagName, setCurrentTagName] = useState('');
     const [tagPhotos, setTagPhotos] = useState([]);
     const [trashPhotos, setTrashPhotos] = useState([]);
-    const [selectedTags, setSelectedTags] = useState([]);
+    const [selectedTags, setSelectedTags] = useState(() => loadSelectionFromStorage(STORAGE_KEY_TAGS));
 
     // Faces state
     const [facesList, setFacesList] = useState([]);
     const [faceSearchTerm, setFaceSearchTerm] = useState('');
     const [currentPersonId, setCurrentPersonId] = useState(null);
     const [currentPersonName, setCurrentPersonName] = useState('');
-    const [selectedPersons, setSelectedPersons] = useState([]);
+    const [selectedPersons, setSelectedPersons] = useState(() => loadSelectionFromStorage(STORAGE_KEY_PERSONS));
 
     // Filter popover state
     const [showFilterPopover, setShowFilterPopover] = useState(false);

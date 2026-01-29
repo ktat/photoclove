@@ -4,6 +4,21 @@ import { confirm } from '@tauri-apps/plugin-dialog';
 import { logger } from '../services/LoggerService.js';
 import { unifiedCollectionService } from '../services/UnifiedCollectionService.js';
 
+const STORAGE_KEY_ALBUMS = 'selectedAlbums';
+const STORAGE_KEY_TAGS = 'selectedTags';
+const STORAGE_KEY_PERSONS = 'selectedPersons';
+
+/**
+ * Save selection to SessionStorage
+ */
+function saveSelectionToStorage(key, selection) {
+    try {
+        sessionStorage.setItem(key, JSON.stringify(selection));
+    } catch (error) {
+        logger.error('usePhotoOperations', 'storage_save_error', 'Failed to save selection to storage', { key, error });
+    }
+}
+
 /**
  * Helper to get photo path from different photo object formats
  */
@@ -112,41 +127,44 @@ export function usePhotoOperations({
 
     // Album selection handlers
     const handleAlbumSelection = useCallback((albumId, isSelected) => {
-        if (isSelected) {
-            setSelectedAlbums(prev => [...prev, albumId]);
-        } else {
-            setSelectedAlbums(prev => prev.filter(id => id !== albumId));
-        }
-    }, [setSelectedAlbums]);
+        const newSelection = isSelected
+            ? [...selectedAlbums, albumId]
+            : selectedAlbums.filter(id => id !== albumId);
+        setSelectedAlbums(newSelection);
+        saveSelectionToStorage(STORAGE_KEY_ALBUMS, newSelection);
+    }, [selectedAlbums, setSelectedAlbums]);
 
     const clearAlbumSelection = useCallback(() => {
         setSelectedAlbums([]);
+        saveSelectionToStorage(STORAGE_KEY_ALBUMS, []);
     }, [setSelectedAlbums]);
 
     // Tag selection handlers
     const handleTagSelection = useCallback((tagId, isSelected) => {
-        if (isSelected) {
-            setSelectedTags(prev => [...prev, tagId]);
-        } else {
-            setSelectedTags(prev => prev.filter(id => id !== tagId));
-        }
-    }, [setSelectedTags]);
+        const newSelection = isSelected
+            ? [...selectedTags, tagId]
+            : selectedTags.filter(id => id !== tagId);
+        setSelectedTags(newSelection);
+        saveSelectionToStorage(STORAGE_KEY_TAGS, newSelection);
+    }, [selectedTags, setSelectedTags]);
 
     const clearTagSelection = useCallback(() => {
         setSelectedTags([]);
+        saveSelectionToStorage(STORAGE_KEY_TAGS, []);
     }, [setSelectedTags]);
 
     // Person selection handlers
     const handlePersonSelection = useCallback((personId, isSelected) => {
-        if (isSelected) {
-            setSelectedPersons(prev => [...prev, personId]);
-        } else {
-            setSelectedPersons(prev => prev.filter(id => id !== personId));
-        }
-    }, [setSelectedPersons]);
+        const newSelection = isSelected
+            ? [...selectedPersons, personId]
+            : selectedPersons.filter(id => id !== personId);
+        setSelectedPersons(newSelection);
+        saveSelectionToStorage(STORAGE_KEY_PERSONS, newSelection);
+    }, [selectedPersons, setSelectedPersons]);
 
     const clearPersonSelection = useCallback(() => {
         setSelectedPersons([]);
+        saveSelectionToStorage(STORAGE_KEY_PERSONS, []);
     }, [setSelectedPersons]);
 
     // Delete selected albums
