@@ -320,7 +320,7 @@ div.tab-active {
   color: white;
   text-decoration: none;
   border-radius: var(--radius-full);
-  font-size: var(--font-size-2xs);
+  font-size: var(--font-size-xs);
   font-weight: 500;
   transition: all 0.3s ease-out;
   border: none;
@@ -342,7 +342,7 @@ div.tab-active {
 
 .back-to-home::before {
   content: "🏠";
-  font-size: var(--font-size-2xs);
+  font-size: var(--font-size-xs);
 }
 
 .back-to-home.no-home-icon::before {

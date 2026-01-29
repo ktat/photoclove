@@ -196,7 +196,7 @@
 .size50 .tagsIndicator {
     bottom: 1px;
     padding: 0 2px;
-    font-size: 8px; /* Fixed: smaller than --font-size-2xs for tiny thumbnails */
+    font-size: 8px; /* Fixed: smaller than --font-size-xs for tiny thumbnails */
     gap: 1px;
 }
 
@@ -204,7 +204,7 @@
 .size100 .tagsIndicator {
     bottom: 2px;
     padding: 1px var(--space-1);
-    font-size: var(--font-size-2xs);
+    font-size: var(--font-size-xs);
 }
 
 /* size200 uses default values (--font-size-xs) */
@@ -425,7 +425,7 @@
     color: white;
     padding: 2px var(--space-1);
     border-radius: var(--radius-sm);
-    font-size: var(--font-size-2xs);
+    font-size: var(--font-size-xs);
     font-weight: bold;
     z-index: 4;
     min-width: 20px;
@@ -445,7 +445,7 @@
     top: 2px;
     right: 2px;
     padding: 1px var(--space-1);
-    font-size: var(--font-size-2xs);
+    font-size: var(--font-size-xs);
     min-width: 16px;
 }
 

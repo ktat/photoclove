@@ -191,7 +191,7 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
                             <span>{displayName}</span>
                             {isAI && tag.confidence && (
                                 <span style={{
-                                    fontSize: 'var(--font-size-2xs)',
+                                    fontSize: 'var(--font-size-xs)',
                                     padding: '1px 4px',
                                     backgroundColor: 'var(--color-bg-muted)',
                                     borderRadius: '8px',

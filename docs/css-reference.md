@@ -52,7 +52,7 @@ PhotoClove uses CSS custom properties (variables) for consistent styling. All va
 ### Font Sizes
 | Variable | Size | Usage |
 |----------|------|-------|
-| `--font-size-2xs` | 9px | Very small indicators |
+| `--font-size-xs` | 9px | Very small indicators |
 | `--font-size-xs` | 11px | Small labels, metadata |
 | `--font-size-sm` | 13px | Secondary text |
 | `--font-size-base` | 14px | Body text (default) |
