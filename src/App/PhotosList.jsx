@@ -104,13 +104,7 @@ function PhotosList({
         clearSearch: clearSearchHook, clearAllSearchFilters, updateSearchParams, executeSearch
     } = useSearchAndFilters();
 
-    // Photo selection
-    const {
-        photoSelection, photoSelectionDict, togglePhotoSelection, isPhotoSelected,
-        clearSelection: clearPhotoSelection, selectAllPhotos, setSelection, getSelectionStats
-    } = usePhotoSelection(viewMode);
-
-    // Photos state
+    // Photos state (must be before useViewModeFactory which needs currentAlbumName, currentTagName)
     const {
         photos, setPhotosList, photoCollection, setPhotoCollection,
         allPhotosForCurrentFetch, setAllPhotosForCurrentFetch,
@@ -141,6 +135,18 @@ function PhotosList({
         selectedPersons, setSelectedPersons
     } = usePhotosState();
 
+    // Create ViewMode object using factory hook (must be after usePhotosState, before usePhotoSelection)
+    const { viewModeObj } = useViewModeFactory({
+        viewMode, currentAlbumId, currentAlbumName, currentTagId, currentTagName, currentBurstGroupId, searchInitialQuery, currentDate,
+        burstReturnMode, burstReturnModeData
+    });
+
+    // Photo selection (depends on viewModeObj)
+    const {
+        photoSelection, photoSelectionDict, togglePhotoSelection, isPhotoSelected,
+        clearSelection: clearPhotoSelection, selectAllPhotos, setSelection, getSelectionStats
+    } = usePhotoSelection(viewMode, viewModeObj);
+
     // State to track if PhotoEditor has unsaved changes
     const [editorHasUnsavedChanges, setEditorHasUnsavedChanges] = useState(false);
 
@@ -153,12 +159,6 @@ function PhotosList({
     }, [editorHasUnsavedChanges]);
 
     const { savePageState, loadPageState } = usePageState();
-
-    // Create ViewMode object using factory hook
-    const { viewModeObj } = useViewModeFactory({
-        viewMode, currentAlbumId, currentAlbumName, currentTagId, currentTagName, currentBurstGroupId, searchInitialQuery, currentDate,
-        burstReturnMode, burstReturnModeData
-    });
 
     // View mode change effect
     useViewModeChangeEffect({ viewMode, setShowFilterPopover });

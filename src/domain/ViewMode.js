@@ -316,6 +316,35 @@ export class ViewMode {
         return this._mode === other._mode && JSON.stringify(this._data) === JSON.stringify(other._data);
     }
 
+    /**
+     * Get a unique key for this ViewMode to store/restore photo selection state
+     * @returns {string} Unique key for this ViewMode
+     */
+    getSelectionKey() {
+        switch (this._mode) {
+            case VIEW_MODES.DATE:
+                return `DATE:${this._data.date || 'unknown'}`;
+            case VIEW_MODES.RECENT:
+                return 'RECENT';
+            case VIEW_MODES.ALBUM:
+                return `ALBUM:${this._data.albumId || 'unknown'}`;
+            case VIEW_MODES.TAG:
+                return `TAG:${this._data.tagId || 'unknown'}`;
+            case VIEW_MODES.PERSON:
+                return `PERSON:${this._data.personId || 'unknown'}`;
+            case VIEW_MODES.TRASH:
+                return 'TRASH';
+            case VIEW_MODES.IN_BURST_GROUP:
+                return `BURST:${this._data.burstGroupId || 'unknown'}`;
+            case VIEW_MODES.SEARCH:
+                return 'SEARCH';
+            case VIEW_MODES.IMPORT:
+                return 'IMPORT';
+            default:
+                return this._mode;
+        }
+    }
+
     toString() {
         const dataStr = Object.keys(this._data).length > 0
             ? ` (${Object.entries(this._data).map(([k, v]) => `${k}=${v}`).join(', ')})`
