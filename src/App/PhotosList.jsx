@@ -137,7 +137,8 @@ function PhotosList({
         selectedTags, setSelectedTags, showFilterPopover, setShowFilterPopover,
         filterButtonRef,
         facesList, setFacesList, faceSearchTerm, setFaceSearchTerm,
-        currentPersonId, setCurrentPersonId, currentPersonName, setCurrentPersonName
+        currentPersonId, setCurrentPersonId, currentPersonName, setCurrentPersonName,
+        selectedPersons, setSelectedPersons
     } = usePhotosState();
 
     // State to track if PhotoEditor has unsaved changes
@@ -335,17 +336,31 @@ function PhotosList({
         handleError, refreshPhotos: refreshPhotosOnly, photosListMiniReread
     });
 
+    // Face handlers (defined before usePhotoOperations to avoid initialization error)
+    const reloadFaces = useCallback(async () => {
+        try {
+            logger.info('PhotosList', 'reload_faces_start', 'Loading faces list');
+            const persons = await getAllPersonsForList();
+            setFacesList(persons);
+            logger.info('PhotosList', 'reload_faces_complete', 'Faces loaded', { count: persons.length });
+        } catch (error) {
+            logger.error('PhotosList', 'reload_faces_error', 'Failed to load faces', { error: error.toString() });
+        }
+    }, [setFacesList]);
+
     // Photo operations hook
     const {
         handleAddToAlbum, removePhotoFromAlbum, deletePhoto, restorePhoto,
         permanentlyDeletePhoto, moveToTrash, handleAlbumSelection, clearAlbumSelection,
         deleteSelectedAlbums, handleAlbumDelete, handleTagSelection, clearTagSelection,
-        deleteSelectedTags, removePhotoFromList
+        deleteSelectedTags, handlePersonSelection, clearPersonSelection,
+        deleteSelectedPersons, removePhotoFromList
     } = usePhotoOperations({
         selectedAlbums, setSelectedAlbums, selectedTags, setSelectedTags,
+        selectedPersons, setSelectedPersons,
         tagsList, albumsList, appConfig, currentViewMode: viewMode,
         currentDate, currentAlbumName, currentTagName, searchQuery, handleError,
-        addFooterMessage, loadAlbums, loadTags, currentAlbumId, toggleAlbumListMode,
+        addFooterMessage, loadAlbums, loadTags, loadFaces: reloadFaces, currentAlbumId, toggleAlbumListMode,
         viewModeObj, photosListMiniAllPhotos, setPhotosListMiniAllPhotos,
         allPhotosForCurrentFetch, setAllPhotosForCurrentFetch,
         photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex,
@@ -386,18 +401,6 @@ function PhotosList({
         openTag, openAlbum, logOperation, handleError
     });
 
-    // Face handlers
-    const reloadFaces = useCallback(async () => {
-        try {
-            logger.info('PhotosList', 'reload_faces_start', 'Loading faces list');
-            const persons = await getAllPersonsForList();
-            setFacesList(persons);
-            logger.info('PhotosList', 'reload_faces_complete', 'Faces loaded', { count: persons.length });
-        } catch (error) {
-            logger.error('PhotosList', 'reload_faces_error', 'Failed to load faces', { error: error.toString() });
-        }
-    }, [setFacesList]);
-
     const handlePersonClick = useCallback((person) => {
         logger.info('PhotosList', 'person_click', 'User clicked on person', {
             personId: person.person_id,
@@ -414,7 +417,7 @@ function PhotosList({
 
     // Selection tab auto-open effect
     useSelectionTabEffect({
-        photoSelection, selectedAlbums, selectedTags, changeTab, setShowSideMenu
+        photoSelection, selectedAlbums, selectedTags, selectedPersons, changeTab, setShowSideMenu, viewModeObj
     });
 
     // Data synchronization
@@ -494,7 +497,7 @@ function PhotosList({
     } = usePhotoListStateGroups({
         viewMode, currentDate, viewModeObj,
         starFilter, hasCommentFilter, hasTagFilter, extensionFilter, importExtensionFilter, showFilterPopover, hasActiveFiltersState,
-        photoSelectionDict, photoSelection, selectedAlbums, selectedTags,
+        photoSelectionDict, photoSelection, selectedAlbums, selectedTags, selectedPersons,
         currentPhotoPath, currentPhotoIndex, showSideMenu, iconSize, sortOfPhotos, importSortOfPhotos, datePage, numOfPhoto,
         searchQuery, searchInitialQuery, searchFilters, searchResults, currentSearchParams,
         displayedPhotos, filteredPhotos, displayedPhotoCount, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch,
@@ -516,7 +519,8 @@ function PhotosList({
         handleAlbumClick, handleAlbumSelection, handleNewAlbumClick, handleAlbumUpdate,
         handleAlbumDelete, clearAlbumSelection, deleteSelectedAlbums,
         handleTagClick, handleTagSelection, handleNewTagClick, clearTagSelection, deleteSelectedTags,
-        handlePersonClick, setFaceSearchTerm, openFacesList, reloadFaces,
+        handlePersonClick, handlePersonSelection, clearPersonSelection, deleteSelectedPersons,
+        setFaceSearchTerm, openFacesList, reloadFaces,
         handleSearch, clearSearch, handleFiltersChange, handleSavedSearchSelect, clearAllFilters,
         setShowSideMenu, setIconSize, setSort, setImportSort, setCurrentPhotoPath, setCurrentPhotoIndex,
         setShowFilterPopover, setAlbumSearchTerm, setTagSearchTerm,
@@ -562,6 +566,7 @@ function PhotosList({
                         closeRightColumn={closeRightColumn} clearAllTabs={clearAllTabs}
                         photoSelectionCount={photoSelection.length}
                         selectedAlbumsCount={selectedAlbums.length} selectedTagsCount={selectedTags.length}
+                        selectedPersonsCount={selectedPersons.length}
                     />
                 )}
 
@@ -577,12 +582,13 @@ function PhotosList({
                         onPhotosRefresh={refreshPhotosOnly} onCommentUpdate={updatePhotoComment}
                         onAlbumUpdate={handleAlbumUpdate} onAlbumDelete={handleAlbumDelete}
                         photoSelection={photoSelection}
-                        selectedAlbums={selectedAlbums} selectedTags={selectedTags}
+                        selectedAlbums={selectedAlbums} selectedTags={selectedTags} selectedPersons={selectedPersons}
                         selectAllPhotoToSelection={selectAllPhotoToSelection}
                         clearPhotoSelection={clearPhotoSelection} deleteSelectedAlbums={deleteSelectedAlbums}
                         clearAlbumSelection={clearAlbumSelection} deleteSelectedTags={deleteSelectedTags}
-                        clearTagSelection={clearTagSelection} importState={importState}
-                        albumsList={albumsList} tagsList={tagsList}
+                        clearTagSelection={clearTagSelection} deleteSelectedPersons={deleteSelectedPersons}
+                        clearPersonSelection={clearPersonSelection} importState={importState}
+                        albumsList={albumsList} tagsList={tagsList} facesList={facesList}
                         setEditorHasUnsavedChanges={setEditorHasUnsavedChanges}
                         removePhotoFromList={removePhotoFromList}
                         totalPhotosCount={photosListMiniAllPhotos.length}
@@ -592,6 +598,7 @@ function PhotosList({
                 <SideMenuWrapper
                     viewState={viewState} filterState={filterState} selectionState={selectionState}
                     displayState={displayState} searchState={searchState} photoDataState={photoDataState}
+                    listState={listState}
                     handlers={handlers} tabClass={tabClass} setTabClass={setTabClass}
                     dateNum={dateNum || {}} updateDateNum={updateDateNum}
                     dateList={dateList || []} updateDateList={updateDateList}

@@ -6,19 +6,21 @@ import { getTagColor } from "../../utils/tagColorUtils.js";
 import { useOverlayMargin } from "../../hooks/useOverlayMargin.js";
 
 /**
- * Unified list view component for albums and tags
+ * Unified list view component for albums, tags, and persons
  * Supports grid display with search, selection, and creation
  */
 function GenericListView({
     items,
-    itemType, // 'album' or 'tag'
+    itemType, // 'album', 'tag', or 'person'
     iconSize,
     selectedItems,
     onItemSelection,
     onItemClick,
     onNewItemClick,
     searchTerm,
-    onSearchChange
+    onSearchChange,
+    renderCover, // Optional custom cover renderer function(item, iconSize, config)
+    showNewItemTile = true // Whether to show "+ New" tile
 }) {
     const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm || '');
     const overlayMargin = useOverlayMargin();
@@ -32,10 +34,15 @@ function GenericListView({
         if (!effectiveSearchTerm.trim()) {
             return items;
         }
-        return items.filter(item =>
-            item.name.toLowerCase().includes(effectiveSearchTerm.toLowerCase())
-        );
-    }, [items, effectiveSearchTerm]);
+        const term = effectiveSearchTerm.toLowerCase();
+        return items.filter(item => {
+            if (itemType === 'person') {
+                const name = item.person_name || 'Unknown';
+                return name.toLowerCase().includes(term);
+            }
+            return item.name.toLowerCase().includes(term);
+        });
+    }, [items, effectiveSearchTerm, itemType]);
 
     // Configure display based on item type
     const config = useMemo(() => ({
@@ -76,6 +83,25 @@ function GenericListView({
             defaultIcon: '🏷️',
             showCoverImage: false,
             backgroundColor: null // Uses item.color for tags
+        },
+        person: {
+            className: 'faces',
+            tileClass: 'face-list-tile',
+            newTileClass: 'new-face-tile',
+            coverClass: 'face-list-cover',
+            infoClass: 'face-list-info',
+            nameClass: 'face-list-name',
+            countClass: 'face-list-count',
+            searchPlaceholder: 'Search faces...',
+            searchInputClass: 'face-list-search-input',
+            newItemText: '+ Add Person',
+            createItemText: 'Add New Person',
+            emptyMessage: 'No faces detected yet. Use face detection on photos to find faces.',
+            searchEmptyMessage: 'No faces found matching your search.',
+            countSuffix: null, // Custom count rendering for faces
+            defaultIcon: '👤',
+            showCoverImage: true, // Will use renderCover for FaceThumbnail
+            backgroundColor: 'var(--color-bg-muted)'
         }
     }), []);
 
@@ -112,6 +138,7 @@ function GenericListView({
         return (
             <Scrollable className={currentConfig.className}>
                 {/* Add New Item Tile */}
+                {showNewItemTile && (
                 <div
                     key={`new-${itemType}`}
                     className={`${currentConfig.tileClass} ${currentConfig.newTileClass}`}
@@ -162,6 +189,7 @@ function GenericListView({
                         </div>
                     </div>
                 </div>
+                )}
 
                 {/* Existing Items */}
                 {filteredItems.length === 0 ? (
@@ -170,33 +198,37 @@ function GenericListView({
                     </div>
                 ) : (
                     filteredItems.map((item) => {
+                        // Get item ID based on type
+                        const itemId = itemType === 'person' ? item.person_id : item.id;
+                        const isSelected = selectedItems.includes(itemId);
+
                         // Calculate tag color for tags
                         const tagColorStyle = itemType === 'tag'
                             ? getTagColor(item.name, item.photoCount || 0, items)
                             : null;
 
                         logger.debug('GenericListView', 'render_item', 'Rendering item', {
-                            itemId: item.id,
-                            itemName: item.name,
+                            itemId,
+                            itemName: itemType === 'person' ? item.person_name : item.name,
                             itemType,
                             hasCoverPhoto: !!item.coverPhoto,
                             coverPhotoKeys: item.coverPhoto ? Object.keys(item.coverPhoto) : null
                         });
                         return (
                         <div
-                            key={item.id}
+                            key={itemId}
                             className={currentConfig.tileClass}
                             style={{
                                 width: `${iconSize + 50}px`,
                                 height: `${iconSize + 80}px`,
                                 cursor: 'pointer',
-                                border: selectedItems.includes(item.id) ? '2px solid var(--color-primary)' : '1px solid var(--color-border-default)',
+                                border: isSelected ? '2px solid var(--color-primary)' : '1px solid var(--color-border-default)',
                                 borderRadius: '8px',
                                 margin: '10px',
                                 padding: '10px',
                                 display: 'inline-block',
                                 verticalAlign: 'top',
-                                backgroundColor: selectedItems.includes(item.id) ? 'var(--color-primary-selected)' : 'var(--color-bg-elevated)',
+                                backgroundColor: isSelected ? 'var(--color-primary-selected)' : 'var(--color-bg-elevated)',
                                 transition: 'transform 0.2s ease-out, box-shadow 0.2s ease-out, border 0.2s ease-out, background-color 0.2s ease-out',
                                 position: 'relative'
                             }}
@@ -210,17 +242,17 @@ function GenericListView({
                             }}>
                                 <input
                                     type="checkbox"
-                                    id={`${itemType}-checkbox-${item.id}`}
-                                    checked={selectedItems.includes(item.id)}
+                                    id={`${itemType}-checkbox-${itemId}`}
+                                    checked={isSelected}
                                     onChange={(e) => {
                                         e.stopPropagation();
-                                        onItemSelection(item.id, e.target.checked);
+                                        onItemSelection(itemId, e.target.checked);
                                     }}
                                     style={{ display: 'none' }}
                                 />
                                 <label
                                     className="checkbox checkbox-normal"
-                                    htmlFor={`${itemType}-checkbox-${item.id}`}
+                                    htmlFor={`${itemType}-checkbox-${itemId}`}
                                     onClick={(e) => e.stopPropagation()}
                                     style={{
                                         margin: 0,
@@ -244,7 +276,10 @@ function GenericListView({
                                     overflow: 'hidden',
                                     border: '1px solid var(--color-border-default)'
                                 }}>
-                                    {currentConfig.showCoverImage && item.coverPhoto ? (
+                                    {renderCover ? (
+                                        // Use custom cover renderer if provided
+                                        renderCover(item, iconSize, currentConfig)
+                                    ) : currentConfig.showCoverImage && item.coverPhoto ? (
                                         (() => {
                                             const imagePath = item.coverPhoto.thumbnail_path || item.coverPhoto.file?.path || '';
                                             logger.debug('GenericListView', 'render_cover_photo', 'Rendering album cover', {
@@ -293,15 +328,29 @@ function GenericListView({
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis',
                                         whiteSpace: 'nowrap',
-                                        color: tagColorStyle ? tagColorStyle.color : 'inherit'
-                                    }} title={item.name}>
-                                        {item.name}
+                                        color: (itemType === 'person' && !item.person_name)
+                                            ? 'var(--color-text-muted)'
+                                            : (tagColorStyle ? tagColorStyle.color : 'inherit'),
+                                        fontStyle: (itemType === 'person' && !item.person_name) ? 'italic' : 'normal'
+                                    }} title={itemType === 'person' ? (item.person_name || 'Unknown') : item.name}>
+                                        {itemType === 'person' ? (item.person_name || 'Unknown') : item.name}
                                     </div>
                                     <div className={currentConfig.countClass} style={{
                                         color: 'var(--color-text-muted)',
                                         fontSize: 'var(--font-size-xs)'
                                     }}>
-                                        {item.photoCount} {currentConfig.countSuffix}
+                                        {itemType === 'person' ? (
+                                            // Special rendering for persons/faces
+                                            <>
+                                                {item.face_count || 0} {item.face_count === 1 ? 'face' : 'faces'}
+                                                {item.photo_count > 0 && (
+                                                    <span> in {item.photo_count} {item.photo_count === 1 ? 'photo' : 'photos'}</span>
+                                                )}
+                                            </>
+                                        ) : (
+                                            // Default rendering for albums and tags
+                                            <>{item.photoCount} {currentConfig.countSuffix}</>
+                                        )}
                                     </div>
                                 </div>
                             </div>

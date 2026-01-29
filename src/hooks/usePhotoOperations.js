@@ -20,10 +20,13 @@ export function usePhotoOperations({
     setSelectedAlbums,
     selectedTags,
     setSelectedTags,
+    selectedPersons,
+    setSelectedPersons,
     handleError,
     addFooterMessage,
     loadAlbums,
     loadTags,
+    loadFaces,
     currentAlbumId,
     toggleAlbumListMode,
     viewModeObj,
@@ -133,6 +136,19 @@ export function usePhotoOperations({
         setSelectedTags([]);
     }, [setSelectedTags]);
 
+    // Person selection handlers
+    const handlePersonSelection = useCallback((personId, isSelected) => {
+        if (isSelected) {
+            setSelectedPersons(prev => [...prev, personId]);
+        } else {
+            setSelectedPersons(prev => prev.filter(id => id !== personId));
+        }
+    }, [setSelectedPersons]);
+
+    const clearPersonSelection = useCallback(() => {
+        setSelectedPersons([]);
+    }, [setSelectedPersons]);
+
     // Delete selected albums
     const deleteSelectedAlbums = useCallback(async () => {
         if (selectedAlbums.length === 0) return;
@@ -176,6 +192,28 @@ export function usePhotoOperations({
             handleError(error, 'Delete tags', { tagIds: selectedTags });
         }
     }, [selectedTags, loadTags, clearTagSelection, addFooterMessage, handleError]);
+
+    // Delete selected persons (clear person names)
+    const deleteSelectedPersons = useCallback(async () => {
+        if (selectedPersons.length === 0) return;
+
+        try {
+            const count = selectedPersons.length;
+            const confirmMessage = `Are you sure you want to delete ${count} person${count > 1 ? 's' : ''}?\n\nThis will remove the name${count > 1 ? 's' : ''} but keep all face detections.`;
+            const confirmed = await confirm(confirmMessage, 'Delete Persons');
+            if (!confirmed) return;
+
+            for (const personId of selectedPersons) {
+                await invoke('delete_person', { personId });
+            }
+
+            loadFaces();
+            clearPersonSelection();
+            addFooterMessage(`${count} person${count > 1 ? 's' : ''} deleted`);
+        } catch (error) {
+            handleError(error, 'Delete persons', { personIds: selectedPersons });
+        }
+    }, [selectedPersons, loadFaces, clearPersonSelection, addFooterMessage, handleError]);
 
     // Handle album deletion (navigation logic)
     const handleAlbumDelete = useCallback((deletedAlbumId) => {
@@ -343,6 +381,11 @@ export function usePhotoOperations({
         handleTagSelection,
         clearTagSelection,
         deleteSelectedTags,
+
+        // Person operations
+        handlePersonSelection,
+        clearPersonSelection,
+        deleteSelectedPersons,
 
         // Photo list management
         removePhotoFromList,

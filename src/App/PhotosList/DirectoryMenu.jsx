@@ -379,7 +379,8 @@ function DirectoryMenu(props) {
                 selectionState={{
                     photoSelection: props.photoSelection,
                     selectedAlbums: props.selectedAlbums,
-                    selectedTags: props.selectedTags
+                    selectedTags: props.selectedTags,
+                    persons: props.selectedPersons
                 }}
                 handlers={{
                     doOperation,
@@ -388,11 +389,14 @@ function DirectoryMenu(props) {
                     deleteSelectedAlbums: props.deleteSelectedAlbums,
                     clearAlbumSelection: props.clearAlbumSelection,
                     deleteSelectedTags: props.deleteSelectedTags,
-                    clearTagSelection: props.clearTagSelection
+                    clearTagSelection: props.clearTagSelection,
+                    deleteSelectedPersons: props.deleteSelectedPersons,
+                    clearPersonSelection: props.clearPersonSelection
                 }}
                 importState={props.importState}
                 albumsList={props.albumsList}
                 tagsList={props.tagsList}
+                facesList={props.facesList}
                 dropdownRef={dropdownRef}
                 tabClass={props.tabClass}
             />

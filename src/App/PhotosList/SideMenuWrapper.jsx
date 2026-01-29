@@ -42,6 +42,7 @@ function SideMenuWrapper({
     displayState,
     searchState,
     photoDataState,
+    listState,
     handlers,
     tabClass,
     setTabClass,
@@ -64,7 +65,7 @@ function SideMenuWrapper({
     const isSearchMode = viewModeObj.isSearchMode();
     const { star: starFilter, extension: extensionFilter } = filterState;
     const { allForCurrentFetch: allPhotosForCurrentFetch, setAllForCurrentFetch: setAllPhotosForCurrentFetch } = photoDataState;
-    const { photoList: photoSelection, albums: selectedAlbums, tags: selectedTags } = selectionState;
+    const { photoList: photoSelection, albums: selectedAlbums, tags: selectedTags, persons: selectedPersons } = selectionState;
     const { currentPhotoPath, showSideMenu } = displayState;
     const { query: searchQuery, initialQuery: searchInitialQuery, filters: searchFilters, results: searchResults, currentParams: currentSearchParams } = searchState;
     const isAdvancedSearchMode = viewModeObj.isAdvancedSearchMode();
@@ -90,8 +91,10 @@ function SideMenuWrapper({
         handleSavedSearchSelect,
         clearAlbumSelection,
         clearTagSelection,
+        clearPersonSelection,
         deleteSelectedAlbums,
         deleteSelectedTags,
+        deleteSelectedPersons,
         changeTab,
         closeRightColumn,
         addFooterMessage
@@ -153,12 +156,16 @@ function SideMenuWrapper({
                     importState={importState}
                     selectedAlbums={selectedAlbums}
                     selectedTags={selectedTags}
+                    selectedPersons={selectedPersons}
                     albumsList={albumsList}
                     tagsList={tagsList}
+                    facesList={listState?.faces?.list || []}
                     clearAlbumSelection={clearAlbumSelection}
                     clearTagSelection={clearTagSelection}
+                    clearPersonSelection={clearPersonSelection}
                     deleteSelectedAlbums={deleteSelectedAlbums}
                     deleteSelectedTags={deleteSelectedTags}
+                    deleteSelectedPersons={deleteSelectedPersons}
                     config={config}
                     saveConfigWithStartupImages={saveConfigWithStartupImages}
                 />

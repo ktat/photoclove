@@ -36,6 +36,7 @@ export function usePhotoListStateGroups({
     photoSelection,
     selectedAlbums,
     selectedTags,
+    selectedPersons,
 
     // DisplayState params
     currentPhotoPath,
@@ -119,8 +120,9 @@ export function usePhotoListStateGroups({
         photos: photoSelectionDict,
         photoList: photoSelection,
         albums: selectedAlbums,
-        tags: selectedTags
-    }), [photoSelectionDict, photoSelection, selectedAlbums, selectedTags]);
+        tags: selectedTags,
+        persons: selectedPersons
+    }), [photoSelectionDict, photoSelection, selectedAlbums, selectedTags, selectedPersons]);
 
     /** @type {import('../types/PageState.js').DisplayState} */
     const displayState = useMemo(() => ({

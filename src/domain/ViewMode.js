@@ -354,7 +354,7 @@ export class ViewMode {
     shouldShowPhotoSelection() { return !this.isAlbumListMode() && !this.isTagListMode() && !this.isFaceListMode(); }
     shouldShowAlbumSelection() { return this.isAlbumListMode(); }
     shouldShowTagSelection() { return this.isTagListMode(); }
-    shouldShowFaceSelection() { return this.isFaceListMode(); }
+    shouldShowPersonSelection() { return this.isFaceListMode(); }
     shouldShowImportProgress() { return this.isImportMode(); }
 
     getEmptyStateMessage() {
