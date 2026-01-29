@@ -59,7 +59,7 @@ export function useSearchAndFilters() {
             <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-muted)", marginTop: "5px" }}>
                 {summary}
                 <button
-                    style={{ marginLeft: "10px", fontSize: "var(--font-size-2xs)", padding: "2px 6px", cursor: "pointer" }}
+                    style={{ marginLeft: "10px", fontSize: "var(--font-size-xs)", padding: "2px 6px", cursor: "pointer" }}
                     onClick={onClearFilters || clearAllSearchFilters}
                 >
                     Clear Filters

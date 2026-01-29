@@ -222,7 +222,7 @@ function ThumbnailItem({
                     color: "var(--color-text-primary)",
                     padding: "2px 4px",
                     borderRadius: "3px",
-                    fontSize: "var(--font-size-2xs)",
+                    fontSize: "var(--font-size-xs)",
                     display: "flex",
                     alignItems: "center",
                     gap: "2px",

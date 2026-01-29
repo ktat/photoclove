@@ -38,7 +38,7 @@ function AlbumModeIndicator({ isAlbumMode, isTagMode, isInBurstGroupMode, albumN
         }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                 <div>{displayName}</div>
-                <div style={{ fontSize: 'var(--font-size-2xs)', opacity: 0.8, marginTop: '2px' }}>
+                <div style={{ fontSize: 'var(--font-size-xs)', opacity: 0.8, marginTop: '2px' }}>
                     {helpText}
                 </div>
             </div>
