@@ -11,6 +11,8 @@ function FacesList({
     persons,
     iconSize,
     onPersonClick,
+    selectedPersons = [],
+    onPersonSelection,
     searchTerm,
     onSearchChange,
     onRefresh
@@ -89,9 +91,41 @@ function FacesList({
                                     display: 'inline-block',
                                     verticalAlign: 'top',
                                     backgroundColor: 'var(--color-bg-elevated)',
-                                    transition: 'transform 0.2s ease-out, box-shadow 0.2s ease-out, border 0.2s ease-out'
+                                    transition: 'transform 0.2s ease-out, box-shadow 0.2s ease-out, border 0.2s ease-out',
+                                    position: 'relative'
                                 }}
                             >
+                                {/* Selection Checkbox */}
+                                {onPersonSelection && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '8px',
+                                        right: '8px',
+                                        zIndex: 1
+                                    }}>
+                                        <input
+                                            type="checkbox"
+                                            id={`person-checkbox-${person.person_id}`}
+                                            checked={selectedPersons.includes(person.person_id)}
+                                            onChange={(e) => {
+                                                e.stopPropagation();
+                                                onPersonSelection(person.person_id, e.target.checked);
+                                            }}
+                                            style={{ display: 'none' }}
+                                        />
+                                        <label
+                                            className="checkbox checkbox-normal"
+                                            htmlFor={`person-checkbox-${person.person_id}`}
+                                            onClick={(e) => e.stopPropagation()}
+                                            style={{
+                                                margin: 0,
+                                                borderRadius: '3px',
+                                                padding: '2px'
+                                            }}
+                                        ></label>
+                                    </div>
+                                )}
+
                                 <div className="face-list-cover" style={{
                                     width: `${iconSize}px`,
                                     height: `${iconSize}px`,
