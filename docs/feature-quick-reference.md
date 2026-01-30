@@ -317,16 +317,47 @@ This document helps you quickly find the relevant documentation when working on 
 - **Purpose**: Automatic photo tagging using AI models for content recognition and classification
 - **Supported Models**:
   - MobileNet: Fast, lightweight classification
-  - OpenCLIP: Open-source CLIP model for zero-shot classification
-  - SigLIP: Google's improved vision-language model
+  - OpenCLIP: Open-source CLIP model for zero-shot classification with pre-computed text embeddings
+  - SigLIP: Google's improved vision-language model with pre-computed text embeddings
 - **UI Components**: AITaggingTab in Preferences for model selection and configuration
 - **Backend**: AI tagging service for model inference, `ai_model_commands.rs` for Tauri commands
-- **Key Operations**:
+- **Key Features**:
   - Auto-tag on import: Automatically tag newly imported photos
   - Batch tagging: Tag existing photos in bulk
+  - Single photo tagging: AI Tag button in PhotoViewer menu
   - Custom labels: Define custom tag categories for classification
-- **Configuration**: Model selection, confidence threshold, custom label definitions, auto-tag preferences
-- **Related Files**: `src/App/Preferences/AITaggingTab.jsx`, `src-tauri/src/domain_service/ai_tagging/`, `src-tauri/src/commands/ai_model_commands.rs`
+  - EXIF thumbnail optimization: Use embedded thumbnails for faster processing
+  - High accuracy mode: Use full-resolution images for better accuracy
+  - Pre-computed embeddings: Faster inference with OpenCLIP/SigLIP using cached text embeddings
+- **Configuration**: Model selection, confidence threshold (0-100%), EXIF thumbnail usage, high accuracy mode, custom label definitions, auto-tag preferences
+- **Related Files**: `src/App/Preferences/AITaggingTab.jsx`, `src/App/PhotoViewer/PhotoMenu.jsx`, `src-tauri/src/domain_service/ai_tagging/`, `src-tauri/src/commands/ai_model_commands.rs`
+
+### 👤 Face Detection & Recognition
+**When you need to understand**: Face detection in photos, person management, face browsing
+- **Purpose**: Detect faces in photos and organize them by person for easy browsing and searching
+- **UI Components**:
+  - Faces ViewMode (VIEW_MODES.FACE_LIST): Browse all detected persons with face thumbnails
+  - Person ViewMode (VIEW_MODES.PERSON): View all photos of a specific person
+  - Face detection menu: Single photo face detection from PhotoViewer
+  - Selection UI: Checkbox selection for bulk person operations (delete, rename)
+- **Key Features**:
+  - Automatic face detection using MTCNN model
+  - Person name assignment and management
+  - Face thumbnail display with proper cropping (square aspect ratio)
+  - EXIF thumbnail optimization for faster detection
+  - SessionStorage-based selection state persistence
+  - Face count and photo count statistics
+  - Person deletion (removes name but keeps face detections)
+- **Architecture**:
+  - Face detection backend service with MTCNN model
+  - Person database with face_count and photo_count
+  - FaceThumbnail shared component for consistent face display
+  - GenericListView for unified UI pattern (Albums/Tags/Faces)
+  - ViewMode-aware selection management
+- **Related Files**:
+  - Frontend: `src/App/PhotosList/PhotoListContent.jsx`, `src/App/PhotoViewer/PhotoMenu.jsx`, `src/components/FaceThumbnail.jsx`, `src/App/PhotosList/DirectoryMenu/SelectionTab.jsx`
+  - Backend: `src-tauri/src/domain_service/face_detection/`, `src-tauri/src/commands/face_commands.rs`
+  - Hooks: `src/hooks/usePhotoOperations.js`, `src/hooks/usePhotosState.js`
 
 ### 🎨 UI Theme & Dark Mode
 **When you need to understand**: Application theming, dark mode implementation, UI consistency, color management

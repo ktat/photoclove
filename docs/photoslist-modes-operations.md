@@ -12,7 +12,7 @@ Both components support multiple viewing modes with different available operatio
 
 ## 🔄 View Modes
 
-PhotoClove supports 11 distinct viewing modes, each with specific functionality and available operations:
+PhotoClove supports 13 distinct viewing modes, each with specific functionality and available operations:
 
 1. **HOME** (`home`) - Welcome screen and dashboard
 2. **DATE** (`date`) - Photos organized by date selection
@@ -23,8 +23,10 @@ PhotoClove supports 11 distinct viewing modes, each with specific functionality 
 7. **ALBUM** (`album`) - Photos within a specific album
 8. **TAG_LIST** (`tag_list`) - Grid of all available tags
 9. **TAG** (`tag`) - Photos with a specific tag
-10. **IMPORT** (`import`) - Browse and import external photos
-11. **TRASH** (`trash`) - Soft-deleted photos
+10. **FACE_LIST** (`face_list`) - Grid of all detected persons
+11. **PERSON** (`person`) - Photos of a specific person
+12. **IMPORT** (`import`) - Browse and import external photos
+13. **TRASH** (`trash`) - Soft-deleted photos
 
 ### 1. HOME Mode (`home`)
 **Description**: Initial application state showing welcome screen or home dashboard
@@ -426,7 +428,90 @@ PhotoClove supports 11 distinct viewing modes, each with specific functionality 
 
 ---
 
-### 10. IMPORT Mode (`import`)
+### 10. FACE_LIST Mode (`face_list`)
+**Description**: Display grid of all detected persons with face thumbnails
+
+**PhotosList State**:
+- ✅ Grid view with person tiles (not photos)
+- ✅ Face thumbnails with person names
+- ✅ Person selection supported (checkbox-based)
+- ✅ Face count and photo count displayed per person
+- ❌ Photo operations not available (list view, not photo grid)
+
+**PhotosListMini State**:
+- ❌ Not accessible (FACE_LIST is a list view mode)
+
+**Available Tabs in PhotosList (Grid View)**:
+- ✅ **Selection Tab** (right sidebar): Person selection and batch operations
+  - ✅ Delete Selected Persons
+  - ✅ Clear Selection
+  - ✅ Shows selected person names and face counts
+- ❌ **Info/Editor/Tags/Album Tabs**: Not available (no photos displayed)
+
+**Person Tile Operations**:
+- ✅ Click to view all photos of person (switches to PERSON mode)
+- ✅ Checkbox selection for bulk operations
+- ✅ Face thumbnail display (square cropping without distortion)
+
+**Navigation Operations**:
+- ✅ Click person to view photos
+- ✅ Selection tab auto-opens when persons selected
+- ✅ Left menu navigation to other modes
+
+---
+
+### 11. PERSON Mode (`person`)
+**Description**: Display all photos containing a specific person's face
+
+**PhotosList State**:
+- ✅ Grid view with photos of selected person
+- ✅ Infinite scroll enabled
+- ✅ Photo selection supported
+- ✅ All batch operations available
+- ✅ Person name displayed in header
+
+**PhotosListMini State**:
+- ✅ Single photo display
+- ✅ Navigation thumbnails
+- ✅ All tabs available
+
+**Available Tabs in PhotosList (Grid View)**:
+- ✅ **Selection Tab** (left sidebar): Photo selection and batch operations
+  - ✅ Select All Photos
+  - ✅ Create Album
+  - ✅ Add to Existing Album
+  - ✅ Upload to Google Photos
+  - ✅ Delete Files
+  - ✅ Clear Selection
+- ❌ **Info/Editor/Tags/Album Tabs**: Not available (no single photo selected)
+
+**Available Tabs in PhotosListMini (Full-Screen View)**:
+- ✅ **Info Tab** (right sidebar): Photo metadata and rating
+- ✅ **Editor Tab** (right sidebar): Full photo editing capabilities
+- ✅ **Tags Tab** (right sidebar): Tag assignment and management
+- ❌ **Album Tab**: Not available (not in album mode)
+- ❌ **Selection Tab**: Not available (single photo focus)
+
+**Navigation Operations**:
+- ✅ Previous/next photo (arrow keys)
+- ✅ Thumbnail navigation
+- ✅ ESC to close full-screen view
+- ✅ Back to FACE_LIST mode via left menu
+
+**Keyboard Controls (PhotosListMini)**:
+- ✅ **Arrow Keys**: Navigate between photos
+- ✅ **ESC**: Close full-screen view
+- ✅ **DEL**: Move to trash
+- ✅ **C**: Select/unselect current photo
+- ✅ **F**: Select photo and increase star rating
+
+**SessionStorage Persistence**:
+- ✅ Photo selection preserved per person (e.g., `photoSelection:PERSON:123`)
+- ✅ Selection state restored when returning to same person
+
+---
+
+### 12. IMPORT Mode (`import`)
 **Description**: Browse and import photos from external directories
 
 **PhotosList State**:
@@ -509,7 +594,7 @@ PhotoClove supports 11 distinct viewing modes, each with specific functionality 
 
 ---
 
-### 11. TRASH Mode (`trash`)
+### 13. TRASH Mode (`trash`)
 **Description**: Display photos in trash bin (soft deleted)
 
 **PhotosList State**:
