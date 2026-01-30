@@ -45,7 +45,7 @@ Claude automatically uses this skill when:
 - テキスト: `--color-text-primary`, `--color-text-secondary`, `--color-text-muted`
 - ボーダー: `--color-border-default`, `--color-border-subtle`
 - 状態: `--color-primary`, `--color-success`, `--color-warning`, `--color-danger`
-- フォント: `--font-size-2xs`(9px), `--font-size-xs`(11px), `--font-size-sm`(13px), `--font-size-base`(14px), `--font-size-lg`(16px), `--font-size-xl`(18px)
+- フォント: `--font-size-xs`(11px), `--font-size-sm`(13px), `--font-size-base`(14px), `--font-size-lg`(16px), `--font-size-xl`(18px)
 
 ### 2. セキュリティ
 
