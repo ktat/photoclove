@@ -2,8 +2,14 @@
 //!
 //! This module provides shared functionality for CLIP-style vision-language models.
 
-use super::{ClassificationResult, ClassifierConfig};
+use super::{AIClassifierBackend, ClassificationResult, ClassifierConfig};
 use crate::domain_service::ai_tagging::categories::AutoTagCategory;
+use ort::session::builder::GraphOptimizationLevel;
+use ort::session::Session;
+use ort::value::Tensor;
+use std::collections::HashMap;
+use std::marker::PhantomData;
+use std::path::{Path, PathBuf};
 
 /// Default labels for CLIP-based classification
 pub const DEFAULT_CLIP_LABELS: &[&str] = &[
@@ -355,4 +361,395 @@ pub fn preprocess_clip_image(
     }
 
     Ok(tensor)
+}
+
+// ============================================================================
+// Base CLIP Classifier - Shared implementation for OpenCLIP and SigLIP
+// ============================================================================
+
+/// Configuration trait for CLIP-based models
+pub trait ClipModelConfig: Default + Send + Sync {
+    /// Model input size (e.g., 224)
+    const INPUT_SIZE: u32;
+    /// Embedding dimension (e.g., 512 for OpenCLIP, 768 for SigLIP)
+    const EMBED_DIM: usize;
+    /// Output index for visual encoder (0 for OpenCLIP, 1 for SigLIP pooler_output)
+    const OUTPUT_INDEX: usize;
+    /// Backend name for logging
+    const BACKEND_NAME: &'static str;
+    /// Model info description
+    const MODEL_INFO: &'static str;
+
+    /// Visual model filename
+    fn visual_model_filename() -> &'static str;
+    /// Text model filename
+    fn text_model_filename() -> &'static str;
+    /// Text embeddings JSON filename
+    fn embeddings_filename() -> &'static str;
+}
+
+/// Base CLIP classifier with shared implementation
+pub struct BaseClipClassifier<C: ClipModelConfig> {
+    visual_session: Option<Session>,
+    text_session: Option<Session>,
+    text_embeddings: HashMap<String, Vec<f32>>,
+    current_labels: Vec<String>,
+    models_dir: PathBuf,
+    _phantom: PhantomData<C>,
+}
+
+impl<C: ClipModelConfig> BaseClipClassifier<C> {
+    /// Create a new classifier
+    pub fn new() -> Self {
+        Self {
+            visual_session: None,
+            text_session: None,
+            text_embeddings: HashMap::new(),
+            current_labels: Vec::new(),
+            models_dir: Self::default_models_dir(),
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Get the default models directory
+    fn default_models_dir() -> PathBuf {
+        dirs::data_local_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("photoclove")
+            .join("models")
+    }
+
+    /// Get path to visual encoder model
+    fn visual_model_path(&self) -> PathBuf {
+        self.models_dir.join(C::visual_model_filename())
+    }
+
+    /// Get path to text encoder model
+    fn text_model_path(&self) -> PathBuf {
+        self.models_dir.join(C::text_model_filename())
+    }
+
+    /// Check if models are available
+    pub fn models_available(&self) -> bool {
+        self.visual_model_path().exists() && self.text_model_path().exists()
+    }
+
+    /// Set custom labels for classification
+    pub fn set_labels(&mut self, labels: Vec<String>) {
+        self.current_labels = labels;
+        self.text_embeddings.clear();
+    }
+
+    /// Get default labels
+    pub fn default_labels() -> Vec<String> {
+        DEFAULT_CLIP_LABELS.iter().map(|s| s.to_string()).collect()
+    }
+
+    /// Encode image to embedding vector
+    fn encode_image(
+        &mut self,
+        image_path: &Path,
+        use_exif_thumbnail: bool,
+        min_thumbnail_size: u32,
+    ) -> Result<Vec<f32>, String> {
+        let session = self
+            .visual_session
+            .as_mut()
+            .ok_or("Visual encoder not initialized")?;
+
+        let input_data =
+            preprocess_clip_image(image_path, C::INPUT_SIZE, use_exif_thumbnail, min_thumbnail_size)?;
+
+        let input_tensor = Tensor::from_array((
+            [1_usize, 3, C::INPUT_SIZE as usize, C::INPUT_SIZE as usize],
+            input_data.into_boxed_slice(),
+        ))
+        .map_err(|e| format!("Failed to create input tensor: {}", e))?;
+
+        let outputs = session
+            .run(ort::inputs![input_tensor])
+            .map_err(|e| format!("Visual encoding failed: {}", e))?;
+
+        // Debug: log output shapes
+        log::debug!(
+            target: "ai_tagging",
+            "clip_outputs; backend={}; count={}",
+            C::BACKEND_NAME,
+            outputs.len()
+        );
+
+        // Get output at configured index
+        let (_, output_value) = outputs
+            .iter()
+            .nth(C::OUTPUT_INDEX)
+            .or_else(|| outputs.iter().next())
+            .ok_or("No output from visual encoder")?;
+
+        let (_, output_data) = output_value
+            .try_extract_tensor::<f32>()
+            .map_err(|e| format!("Failed to extract output: {}", e))?;
+
+        let embedding: Vec<f32> = output_data.to_vec();
+        let normalized = Self::normalize_embedding(&embedding);
+
+        // Debug: log embedding statistics
+        log::debug!(
+            target: "ai_tagging",
+            "image_embedding; backend={}; dim={}",
+            C::BACKEND_NAME,
+            normalized.len()
+        );
+
+        Ok(normalized)
+    }
+
+    /// Normalize an embedding vector to unit length
+    fn normalize_embedding(embedding: &[f32]) -> Vec<f32> {
+        let norm: f32 = embedding.iter().map(|x| x * x).sum::<f32>().sqrt();
+        if norm > 0.0 {
+            embedding.iter().map(|x| x / norm).collect()
+        } else {
+            embedding.to_vec()
+        }
+    }
+
+    /// Load pre-computed text embeddings from JSON file
+    fn load_precomputed_embeddings(&mut self) -> Result<bool, String> {
+        let embeddings_path = self.models_dir.join(C::embeddings_filename());
+
+        if !embeddings_path.exists() {
+            log::debug!(
+                target: "ai_tagging",
+                "precomputed_embeddings_not_found; backend={}; path={}",
+                C::BACKEND_NAME,
+                embeddings_path.display()
+            );
+            return Ok(false);
+        }
+
+        let data = std::fs::read_to_string(&embeddings_path)
+            .map_err(|e| format!("Failed to read embeddings file: {}", e))?;
+
+        let parsed: HashMap<String, Vec<f32>> = serde_json::from_str(&data)
+            .map_err(|e| format!("Failed to parse embeddings JSON: {}", e))?;
+
+        if let Some(first_emb) = parsed.values().next() {
+            if first_emb.len() != C::EMBED_DIM {
+                return Err(format!(
+                    "Embedding dimension mismatch: expected {}, got {}",
+                    C::EMBED_DIM,
+                    first_emb.len()
+                ));
+            }
+        }
+
+        self.text_embeddings = parsed;
+        self.current_labels = self.text_embeddings.keys().cloned().collect();
+
+        log::info!(
+            target: "ai_tagging",
+            "loaded_precomputed_embeddings; backend={}; count={}; dim={}",
+            C::BACKEND_NAME,
+            self.text_embeddings.len(),
+            C::EMBED_DIM
+        );
+
+        Ok(true)
+    }
+
+    /// Pre-compute text embeddings for all labels
+    fn precompute_text_embeddings(&mut self) -> Result<(), String> {
+        match self.load_precomputed_embeddings() {
+            Ok(true) => return Ok(()),
+            Ok(false) => {}
+            Err(e) => {
+                log::warn!(
+                    target: "ai_tagging",
+                    "precomputed_embeddings_load_error; backend={}; error={}",
+                    C::BACKEND_NAME,
+                    e
+                );
+            }
+        }
+
+        if self.text_session.is_none() {
+            log::warn!(
+                target: "ai_tagging",
+                "no_text_embeddings_available; backend={}; classification_disabled",
+                C::BACKEND_NAME
+            );
+        }
+
+        Ok(())
+    }
+}
+
+impl<C: ClipModelConfig> Default for BaseClipClassifier<C> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<C: ClipModelConfig> AIClassifierBackend for BaseClipClassifier<C> {
+    fn initialize(&mut self) -> Result<(), String> {
+        if self.visual_session.is_some() {
+            return Ok(());
+        }
+
+        // Set ORT_DYLIB_PATH if needed
+        if std::env::var("ORT_DYLIB_PATH").is_err() {
+            if let Some(data_dir) = dirs::data_local_dir() {
+                let lib_path = data_dir.join("photoclove").join("lib").join("libonnxruntime.so");
+                if lib_path.exists() {
+                    std::env::set_var("ORT_DYLIB_PATH", &lib_path);
+                }
+            }
+        }
+
+        let visual_path = self.visual_model_path();
+        let text_path = self.text_model_path();
+
+        log::info!(
+            target: "ai_tagging",
+            "initializing; backend={}; visual_path={}",
+            C::BACKEND_NAME,
+            visual_path.display()
+        );
+
+        if !visual_path.exists() {
+            return Err(format!(
+                "{} visual model not found: {}. Please download the model first.",
+                C::BACKEND_NAME,
+                visual_path.display()
+            ));
+        }
+
+        let visual_session = Session::builder()
+            .map_err(|e| format!("Failed to create session builder: {}", e))?
+            .with_optimization_level(GraphOptimizationLevel::Level3)
+            .map_err(|e| format!("Failed to set optimization level: {}", e))?
+            .with_intra_threads(4)
+            .map_err(|e| format!("Failed to set thread count: {}", e))?
+            .commit_from_file(&visual_path)
+            .map_err(|e| format!("Failed to load visual model: {}", e))?;
+
+        self.visual_session = Some(visual_session);
+
+        if text_path.exists() {
+            match Session::builder()
+                .map_err(|e| format!("Session builder error: {}", e))?
+                .with_optimization_level(GraphOptimizationLevel::Level3)
+                .map_err(|e| format!("Optimization level error: {}", e))?
+                .with_intra_threads(4)
+                .map_err(|e| format!("Thread count error: {}", e))?
+                .commit_from_file(&text_path)
+            {
+                Ok(session) => {
+                    self.text_session = Some(session);
+                    log::info!(
+                        target: "ai_tagging",
+                        "text_encoder_loaded; backend={}; path={}",
+                        C::BACKEND_NAME,
+                        text_path.display()
+                    );
+                }
+                Err(e) => {
+                    log::warn!(
+                        target: "ai_tagging",
+                        "text_encoder_load_failed; backend={}; error={}",
+                        C::BACKEND_NAME,
+                        e
+                    );
+                }
+            }
+        }
+
+        if self.current_labels.is_empty() {
+            self.current_labels = Self::default_labels();
+        }
+
+        if let Err(e) = self.precompute_text_embeddings() {
+            log::warn!(
+                target: "ai_tagging",
+                "precompute_embeddings_failed; backend={}; error={}",
+                C::BACKEND_NAME,
+                e
+            );
+        }
+
+        log::info!(
+            target: "ai_tagging",
+            "initialized; backend={}; labels={}",
+            C::BACKEND_NAME,
+            self.current_labels.len()
+        );
+
+        Ok(())
+    }
+
+    fn is_initialized(&self) -> bool {
+        self.visual_session.is_some()
+    }
+
+    fn classify(
+        &mut self,
+        image_path: &Path,
+        config: &ClassifierConfig,
+    ) -> Result<Vec<ClassificationResult>, String> {
+        if self.visual_session.is_none() {
+            return Err(format!(
+                "{} not initialized. Call initialize() first.",
+                C::BACKEND_NAME
+            ));
+        }
+
+        log::debug!(
+            target: "ai_tagging",
+            "classifying; backend={}; image={}; use_exif={}",
+            C::BACKEND_NAME,
+            image_path.display(),
+            config.use_exif_thumbnail
+        );
+
+        let image_embedding =
+            self.encode_image(image_path, config.use_exif_thumbnail, config.min_thumbnail_size)?;
+
+        if !self.text_embeddings.is_empty() {
+            let mut similarities = Vec::new();
+            let mut labels = Vec::new();
+
+            for (label, text_emb) in &self.text_embeddings {
+                let sim = cosine_similarity(&image_embedding, text_emb);
+                similarities.push(sim);
+                labels.push(label.clone());
+            }
+
+            let results = similarities_to_results(&labels, &similarities, config);
+
+            log::debug!(
+                target: "ai_tagging",
+                "classified; backend={}; image={}; results={}",
+                C::BACKEND_NAME,
+                image_path.display(),
+                results.len()
+            );
+
+            return Ok(results);
+        }
+
+        log::warn!(
+            target: "ai_tagging",
+            "no_text_embeddings; backend={}; returning_empty_results",
+            C::BACKEND_NAME
+        );
+        Ok(Vec::new())
+    }
+
+    fn backend_name(&self) -> &'static str {
+        C::BACKEND_NAME
+    }
+
+    fn model_info(&self) -> String {
+        format!("{} ({} labels)", C::MODEL_INFO, self.current_labels.len())
+    }
 }

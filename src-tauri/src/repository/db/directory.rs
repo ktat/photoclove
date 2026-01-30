@@ -9,6 +9,76 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fs;
 
+/// Parse extension filter string into a vector of lowercase extensions
+fn parse_extension_filter(extension: &str) -> Vec<String> {
+    if extension == "all" || extension.is_empty() {
+        vec![]
+    } else {
+        extension
+            .split(',')
+            .map(|s| s.trim().to_lowercase())
+            .filter(|s| !s.is_empty())
+            .collect()
+    }
+}
+
+/// Check if a file path matches the extension filter
+fn matches_extension_filter(path: &str, filters: &[String]) -> bool {
+    if filters.is_empty() {
+        return true;
+    }
+    let file_ext = path.split('.').last().unwrap_or("").to_lowercase();
+    filters.iter().any(|ext| ext == &file_ext)
+}
+
+/// Apply pagination to a photos collection
+fn apply_pagination(photos: &mut photo::Photos, num: u32, page: u32, offset: usize) {
+    let mut start_index = (num * (page - 1)) as usize + offset;
+    let mut end_index = start_index + (num as usize);
+
+    if !photos.photos.is_empty() {
+        photos.has_next = true;
+
+        if photos.photos.len() <= end_index {
+            end_index = photos.photos.len();
+            photos.has_next = false;
+        }
+        if start_index >= photos.photos.len() {
+            start_index = photos.photos.len() - 1;
+        }
+        photos.photos = photos.photos[start_index..end_index].to_vec();
+        if start_index > 0 {
+            photos.has_prev = true;
+        }
+    }
+}
+
+/// Create a Photo from file and metadata
+fn create_photo_from_metadata(
+    file: file::File,
+    photo_meta: &photo_meta::PhotoMeta,
+    conf: Option<&config::Config>,
+) -> photo::Photo {
+    let mut p = match conf {
+        Some(c) => {
+            let mut photo = photo::Photo::new(file, Some(c.clone()));
+            photo.set_has_thumbnail();
+            photo
+        }
+        None => photo::Photo::new(file, None),
+    };
+
+    let mut meta = exif::ExifData::empty();
+    meta.date_time = photo_meta.photo_time();
+    meta.orientation = photo_meta.photo().meta_data.orientation.clone();
+    p.embed_exif(meta);
+    p.set_css_style(photo_meta.photo().css_style.clone());
+    p.set_star(photo_meta.star.star());
+    p.set_comment(photo_meta.comment.comment());
+    p.set_tags_from_string(photo_meta.tags_string());
+    p
+}
+
 #[derive(Clone)]
 pub struct Directory {
     path: file::Dir,
@@ -92,28 +162,15 @@ impl RepositoryDB for Directory {
         let has_opt = opt_conf.is_some();
         let conf = opt_conf.unwrap_or_else(config::Config::template);
 
-        // Parse extension filter
-        let extension_filters: Vec<&str> = if extension == "all" || extension.is_empty() {
-            vec![]
-        } else {
-            extension
-                .split(',')
-                .map(|s| s.trim())
-                .filter(|s| !s.is_empty())
-                .collect()
-        };
+        // Parse extension filter using helper
+        let extension_filters = parse_extension_filter(extension);
+
         if meta_data.keys().len() == 0 {
             let files = dir_service::find_files(&dir);
             for f in files.files {
-                // Apply extension filter
-                if !extension_filters.is_empty() {
-                    let file_extension = f.path.split('.').last().unwrap_or("").to_lowercase();
-                    if !extension_filters
-                        .iter()
-                        .any(|&ext| ext.to_lowercase() == file_extension)
-                    {
-                        continue;
-                    }
+                // Apply extension filter using helper
+                if !matches_extension_filter(&f.path, &extension_filters) {
+                    continue;
                 }
 
                 let mut p: photo::Photo;
@@ -154,16 +211,11 @@ impl RepositoryDB for Directory {
                     continue;
                 }
 
-                // Apply extension filter
-                if !extension_filters.is_empty() {
-                    let file_extension = f.split('.').last().unwrap_or("").to_lowercase();
-                    if !extension_filters
-                        .iter()
-                        .any(|&ext| ext.to_lowercase() == file_extension)
-                    {
-                        continue;
-                    }
+                // Apply extension filter using helper
+                if !matches_extension_filter(f, &extension_filters) {
+                    continue;
                 }
+
                 let file_result = file::File::new_if_exists(f.to_string());
                 if file_result.is_none() {
                     continue;
@@ -294,25 +346,8 @@ impl RepositoryDB for Directory {
             }
         }
 
-        let mut start_index = (num * (page - 1)) as usize;
-        start_index = start_index + offset;
-        let mut end_index = start_index + (num as usize);
-
-        if photos.photos.len() > 0 {
-            photos.has_next = true;
-
-            if photos.photos.len() <= end_index {
-                end_index = photos.photos.len();
-                photos.has_next = false;
-            }
-            if start_index >= photos.photos.len() {
-                start_index = photos.photos.len() - 1;
-            }
-            photos.photos = photos.photos[start_index..end_index].to_vec();
-            if start_index > 0 {
-                photos.has_prev = true;
-            }
-        }
+        // Apply pagination using helper
+        apply_pagination(&mut photos, num, page, offset);
         photos
     }
 
@@ -329,19 +364,10 @@ impl RepositoryDB for Directory {
         opt_conf: Option<config::Config>,
     ) -> photo::Photos {
         let mut photos = photo::Photos::new();
-        let has_opt = opt_conf.is_some();
-        let conf = opt_conf.unwrap_or_else(config::Config::template);
+        let conf = opt_conf.as_ref();
 
-        // Parse extension filter
-        let extension_filters: Vec<&str> = if extension == "all" || extension.is_empty() {
-            vec![]
-        } else {
-            extension
-                .split(',')
-                .map(|s| s.trim())
-                .filter(|s| !s.is_empty())
-                .collect()
-        };
+        // Parse extension filter using helper
+        let extension_filters = parse_extension_filter(extension);
 
         // Use metadata to get all photos (recent photos are already sorted by DB query)
         for f in meta_data.keys() {
@@ -353,65 +379,28 @@ impl RepositoryDB for Directory {
                 continue;
             }
 
-            // Apply extension filter
-            if !extension_filters.is_empty() {
-                let file_extension = f.split('.').last().unwrap_or("").to_lowercase();
-                if !extension_filters
-                    .iter()
-                    .any(|&ext| ext.to_lowercase() == file_extension)
-                {
-                    continue;
-                }
+            // Apply extension filter using helper
+            if !matches_extension_filter(f, &extension_filters) {
+                continue;
             }
+
             let file_result = file::File::new_if_exists(f.to_string());
             if file_result.is_none() {
                 continue;
             }
             let file = file_result.unwrap();
-            let mut p: photo::Photo;
-            if has_opt {
-                p = photo::Photo::new(file, Option::Some(conf.clone()));
-                p.set_has_thumbnail();
-            } else {
-                p = photo::Photo::new(file, Option::None);
-            }
-            let mut meta = exif::ExifData::empty();
             let photo_meta = meta_data.get(f).unwrap();
-            meta.date_time = photo_meta.photo_time();
-            // Set orientation from photo_meta
-            meta.orientation = photo_meta.photo().meta_data.orientation.clone();
-            p.embed_exif(meta);
-            p.set_css_style(photo_meta.photo().css_style.clone());
-            p.set_star(photo_meta.star.star());
-            p.set_comment(photo_meta.comment.comment());
-            // Set tags from metadata
-            p.set_tags_from_string(photo_meta.tags_string());
+
+            // Create photo from metadata using helper
+            let p = create_photo_from_metadata(file, photo_meta, conf);
             photos.photos.push(p)
         }
 
         // Photos are already sorted by database query (created_at DESC)
         // No additional sorting needed
 
-        // Apply pagination
-        let mut start_index = (num * (page - 1)) as usize;
-        start_index = start_index + offset;
-        let mut end_index = start_index + (num as usize);
-
-        if photos.photos.len() > 0 {
-            photos.has_next = true;
-
-            if photos.photos.len() <= end_index {
-                end_index = photos.photos.len();
-                photos.has_next = false;
-            }
-            if start_index >= photos.photos.len() {
-                start_index = photos.photos.len() - 1;
-            }
-            photos.photos = photos.photos[start_index..end_index].to_vec();
-            if start_index > 0 {
-                photos.has_prev = true;
-            }
-        }
+        // Apply pagination using helper
+        apply_pagination(&mut photos, num, page, offset);
         photos
     }
 

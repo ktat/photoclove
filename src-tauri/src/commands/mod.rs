@@ -5,6 +5,9 @@
 
 // Re-export all command modules
 pub mod ai_model_commands;
+
+// Internal helpers (not re-exported)
+pub(crate) mod job_helpers;
 pub mod album_commands;
 pub mod burst_group_commands;
 pub mod collection_commands;

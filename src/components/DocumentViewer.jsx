@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { logger } from '../services/LoggerService.js';
+import BaseModal, { ModalLoading, ModalError } from './BaseModal.jsx';
 import styles from './DocumentViewer.module.css';
 
 const DocumentViewer = ({ title, fileName, onClose }) => {
@@ -76,68 +77,19 @@ const DocumentViewer = ({ title, fileName, onClose }) => {
       .replace(/(<\/[h|u]>)<\/p>/g, '$1');
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Escape') {
-      onClose();
-    }
-  };
-
   return (
-    <div
-      className={styles.overlay}
-      onClick={onClose}
-      onKeyDown={handleKeyDown}
-      tabIndex={-1}
-    >
-      <div
-        className={styles.modal}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className={styles.header}>
-          <h2 className={styles.title}>{title}</h2>
-          <button
-            onClick={onClose}
-            className={styles.closeButton}
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
+    <BaseModal title={title} onClose={onClose}>
+      {isLoading && <ModalLoading message={`Loading ${title}...`} />}
 
-        {/* Content */}
-        <div className={styles.content}>
-          {isLoading && (
-            <div className={styles.loading}>
-              Loading {title}...
-            </div>
-          )}
+      {error && <ModalError message={error} />}
 
-          {error && (
-            <div className={styles.error}>
-              {error}
-            </div>
-          )}
-
-          {!isLoading && !error && content && (
-            <div
-              className={styles.prose}
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
-            />
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className={styles.footer}>
-          <button
-            onClick={onClose}
-            className={styles.footerButton}
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+      {!isLoading && !error && content && (
+        <div
+          className={styles.prose}
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
+        />
+      )}
+    </BaseModal>
   );
 };
 

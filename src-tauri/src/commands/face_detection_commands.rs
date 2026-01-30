@@ -3,8 +3,12 @@
 //! Tauri commands for face detection and person management.
 
 use crate::app_state::AppState;
+use crate::commands::job_helpers::{
+    create_and_start_job, filter_image_paths, normalize_date, NO_IMAGES_RESPONSE, NO_PHOTOS_RESPONSE,
+};
 use crate::domain_service::face_detection::embedder::cosine_similarity;
 use crate::domain_service::face_detection::service::FaceDetectionService;
+use crate::entity::job_queue::JobType;
 use crate::repository::meta_db::sqlite::face_detection::DetectedFaceInput;
 use serde::Serialize;
 use tauri::{Manager, State};
@@ -545,12 +549,6 @@ pub fn run_face_detection_for_date(
     window: tauri::Window,
     state: State<AppState>,
 ) -> Result<String, String> {
-    use crate::domain_service::job_queue::executor::process_new_jobs;
-    use crate::entity::config::Config;
-    use crate::entity::job_queue::{Job, JobType, JobUnit, QueuedJob};
-    use crate::repository::meta_db::sqlite::SQLite;
-    use std::sync::Arc;
-
     let logging_service = &state.logging_service;
     let correlation_id = logging_service.generate_correlation_id();
 
@@ -561,17 +559,15 @@ pub fn run_face_detection_for_date(
         date
     );
 
-    // Check if models are available
+    // Check if models are available (face detection specific check)
     let models_dir = get_models_dir(&state);
     let status = FaceDetectionService::check_models_available(&models_dir);
     if !status.is_ready() {
         return Err("Face detection models not available. Please download them first.".to_string());
     }
 
-    // Normalize date format (convert YYYY/MM/DD to YYYY-MM-DD if needed)
-    let normalized_date = date.replace('/', "-");
+    let normalized_date = normalize_date(&date);
 
-    // Get photos for the specified date using meta_db
     let photos = state
         .meta_db
         .get_photos_for_grouping_in_date(&normalized_date)
@@ -584,23 +580,10 @@ pub fn run_face_detection_for_date(
             correlation_id,
             normalized_date
         );
-        return Ok(r#"{"result": "no_photos", "count": 0}"#.to_string());
+        return Ok(NO_PHOTOS_RESPONSE.to_string());
     }
 
-    // Filter to only include image files
-    let image_paths: Vec<String> = photos
-        .iter()
-        .filter(|p| {
-            let lower = p.file.path.to_lowercase();
-            lower.ends_with(".jpg")
-                || lower.ends_with(".jpeg")
-                || lower.ends_with(".png")
-                || lower.ends_with(".webp")
-                || lower.ends_with(".heic")
-                || lower.ends_with(".heif")
-        })
-        .map(|p| p.file.path.clone())
-        .collect();
+    let image_paths = filter_image_paths(&photos);
 
     if image_paths.is_empty() {
         log::info!(
@@ -609,51 +592,19 @@ pub fn run_face_detection_for_date(
             correlation_id,
             normalized_date
         );
-        return Ok(r#"{"result": "no_images", "count": 0}"#.to_string());
+        return Ok(NO_IMAGES_RESPONSE.to_string());
     }
 
-    let photo_count = image_paths.len();
+    let result = create_and_start_job(
+        &state.meta_db,
+        JobType::FaceDetection,
+        image_paths,
+        window.app_handle().clone(),
+        &correlation_id,
+        "face_detection",
+    )?;
 
-    // Create job unit first (required for foreign key constraint)
-    let job_types = vec!["face_detection".to_string()];
-    let job_unit = JobUnit::new(job_types);
-    let job_unit_id = job_unit.id.clone();
-
-    // Save job unit first
-    state
-        .meta_db
-        .create_job_unit(&job_unit)
-        .map_err(|e| format!("Failed to create job unit: {}", e))?;
-
-    // Create face detection job
-    let job = Job::new(job_unit_id.clone(), JobType::FaceDetection, image_paths);
-    let queued_job = QueuedJob::new(job_unit_id.clone(), job);
-
-    // Add job to queue using meta_db
-    let job_id = state
-        .meta_db
-        .create_job(&queued_job)
-        .map_err(|e| format!("Failed to create job: {}", e))?;
-
-    log::info!(
-        target: "face_detection",
-        "date_detection_job_created; correlation_id={}; job_id={}; job_unit_id={}; photos={}",
-        correlation_id,
-        job_id,
-        job_unit_id,
-        photo_count
-    );
-
-    // Trigger job processing with a new SQLite instance wrapped in Arc
-    let config = Config::new();
-    let db = Arc::new(SQLite::new(config.import_to.clone()));
-    let app_handle = window.app_handle().clone();
-    process_new_jobs(db, 1, app_handle); // Use 1 concurrent job for face detection
-
-    Ok(format!(
-        r#"{{"result": "started", "job_unit_id": "{}", "job_id": {}, "photo_count": {}}}"#,
-        job_unit_id, job_id, photo_count
-    ))
+    Ok(result.to_json())
 }
 
 /// Helper to get models directory
