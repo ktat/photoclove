@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { logger } from '../services/LoggerService.js';
+import BaseModal, { ModalLoading, ModalError } from '../components/BaseModal.jsx';
 import styles from './LicensesView.module.css';
 
 // Compare semantic versions (e.g., "1.2.3" vs "1.2.4")
@@ -22,7 +23,6 @@ const LicensesView = ({ onClose }) => {
   const [rustLicenses, setRustLicenses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedLicense, setSelectedLicense] = useState(null);
   const [activeTab, setActiveTab] = useState('npm');
 
   useEffect(() => {
@@ -80,16 +80,6 @@ const LicensesView = ({ onClose }) => {
     loadLicenses();
   }, []);
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Escape') {
-      if (selectedLicense) {
-        setSelectedLicense(null);
-      } else {
-        onClose();
-      }
-    }
-  };
-
   const renderLicenseItem = (pkg, type) => (
     <div
       key={`${type}-${pkg.name}-${pkg.version}`}
@@ -108,83 +98,43 @@ const LicensesView = ({ onClose }) => {
 
   const currentLicenses = activeTab === 'npm' ? npmLicenses : rustLicenses;
 
-  return (
-    <div
-      className={styles.overlay}
-      onClick={onClose}
-      onKeyDown={handleKeyDown}
-      tabIndex={-1}
-    >
-      <div
-        className={styles.modal}
-        onClick={(e) => e.stopPropagation()}
+  const tabs = (
+    <div className={styles.tabs}>
+      <button
+        className={`${styles.tab} ${activeTab === 'npm' ? styles.tabActive : ''}`}
+        onClick={() => setActiveTab('npm')}
       >
-        {/* Header */}
-        <div className={styles.header}>
-          <h2 className={styles.title}>Open Source Licenses</h2>
-          <button
-            onClick={onClose}
-            className={styles.closeButton}
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className={styles.tabs}>
-          <button
-            className={`${styles.tab} ${activeTab === 'npm' ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab('npm')}
-          >
-            JavaScript ({npmLicenses.length})
-          </button>
-          <button
-            className={`${styles.tab} ${activeTab === 'rust' ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab('rust')}
-          >
-            Rust ({rustLicenses.length})
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className={styles.content}>
-          {isLoading && (
-            <div className={styles.loading}>
-              Loading licenses...
-            </div>
-          )}
-
-          {error && (
-            <div className={styles.error}>
-              {error}
-            </div>
-          )}
-
-          {!isLoading && !error && (
-            <div className={styles.licenseList}>
-              {currentLicenses.map(pkg => renderLicenseItem(pkg, activeTab))}
-              {currentLicenses.length === 0 && (
-                <div className={styles.empty}>No licenses found.</div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className={styles.footer}>
-          <span className={styles.footerNote}>
-            Click on a package to view its repository
-          </span>
-          <button
-            onClick={onClose}
-            className={styles.footerButton}
-          >
-            Close
-          </button>
-        </div>
-      </div>
+        JavaScript ({npmLicenses.length})
+      </button>
+      <button
+        className={`${styles.tab} ${activeTab === 'rust' ? styles.tabActive : ''}`}
+        onClick={() => setActiveTab('rust')}
+      >
+        Rust ({rustLicenses.length})
+      </button>
     </div>
+  );
+
+  return (
+    <BaseModal
+      title="Open Source Licenses"
+      onClose={onClose}
+      tabs={tabs}
+      footerNote="Click on a package to view its repository"
+    >
+      {isLoading && <ModalLoading message="Loading licenses..." />}
+
+      {error && <ModalError message={error} />}
+
+      {!isLoading && !error && (
+        <div className={styles.licenseList}>
+          {currentLicenses.map(pkg => renderLicenseItem(pkg, activeTab))}
+          {currentLicenses.length === 0 && (
+            <div className={styles.empty}>No licenses found.</div>
+          )}
+        </div>
+      )}
+    </BaseModal>
   );
 };
 

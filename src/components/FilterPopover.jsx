@@ -1,5 +1,124 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { logger } from '../services/LoggerService.js';
+
+// Reusable toggle switch component
+const ToggleSwitch = ({ label, checked, onChange, filterType }) => (
+    <div style={{ marginBottom: 'var(--space-3)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-text-primary)' }}>{label}</span>
+            <label style={{
+                position: 'relative',
+                display: 'inline-block',
+                width: '44px',
+                height: '24px',
+                cursor: 'pointer'
+            }}>
+                <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(e) => {
+                        logger.debug('FilterPopover', 'filter_changed', `User changed ${filterType} filter`, {
+                            filterType,
+                            newValue: e.target.checked,
+                            previousValue: checked
+                        });
+                        onChange(e.target.checked);
+                    }}
+                    style={{ opacity: 0, width: 0, height: 0 }}
+                />
+                <span style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: checked ? 'var(--color-primary)' : 'var(--color-bg-muted)',
+                    borderRadius: '24px',
+                    transition: 'background-color 0.2s'
+                }}>
+                    <span style={{
+                        position: 'absolute',
+                        left: checked ? '22px' : '2px',
+                        top: '2px',
+                        width: '20px',
+                        height: '20px',
+                        backgroundColor: 'var(--color-bg-elevated)',
+                        borderRadius: '50%',
+                        transition: 'left 0.2s'
+                    }}></span>
+                </span>
+            </label>
+        </div>
+    </div>
+);
+
+// Extension filter configuration
+const EXTENSION_OPTIONS = [
+    { value: 'jpg', label: 'JPG', extensions: ['jpg', 'jpeg'] },
+    { value: 'png', label: 'PNG', extensions: ['png'] },
+    { value: 'gif', label: 'GIF', extensions: ['gif'] },
+    { value: 'bmp', label: 'BMP', extensions: ['bmp'] },
+    { value: 'tiff', label: 'TIFF', extensions: ['tiff'] },
+    { value: 'mp4', label: 'MP4', extensions: ['mp4'] },
+    { value: 'webm', label: 'WebM', extensions: ['webm'] }
+];
+
+// Extension filter component
+const ExtensionFilter = ({ extensionFilter, setExtensionFilter }) => {
+    // Helper to toggle extension filter
+    const toggleExtension = (extensions, forceAdd = null) => {
+        const currentFilters = extensionFilter === "all" ? [] : extensionFilter.split(',').filter(f => f.trim() !== '');
+        const isChecked = forceAdd !== null ? !forceAdd : extensions.some(ext => currentFilters.includes(ext));
+
+        const newFilters = isChecked
+            ? currentFilters.filter(f => !extensions.includes(f))
+            : [...currentFilters, ...extensions];
+
+        setExtensionFilter(newFilters.length === 0 ? "all" : [...new Set(newFilters)].join(','));
+    };
+
+    const isExtensionChecked = (extensions) =>
+        extensionFilter !== "all" && extensions.some(ext => extensionFilter.split(',').includes(ext));
+
+    return (
+        <div style={{ marginBottom: 'var(--space-3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                <span style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-text-primary)', minWidth: '70px' }}>Extensions</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', flex: 1 }}>
+                    {/* All Extensions */}
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <input
+                            type="checkbox"
+                            id="extension-filter-all"
+                            checked={extensionFilter === "all"}
+                            onChange={() => setExtensionFilter("all")}
+                            style={{ display: 'none' }}
+                        />
+                        <label className="checkbox checkbox-normal" htmlFor="extension-filter-all" style={{ marginRight: 'var(--space-2)' }}></label>
+                        <span style={{ fontSize: 'var(--font-size-base)', cursor: 'pointer' }} onClick={() => setExtensionFilter("all")}>All</span>
+                    </div>
+
+                    {/* Individual Extensions */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-2)' }}>
+                        {EXTENSION_OPTIONS.map((item) => (
+                            <div key={item.value} style={{ display: 'flex', alignItems: 'center' }}>
+                                <input
+                                    type="checkbox"
+                                    id={`extension-filter-${item.value}`}
+                                    onChange={(e) => toggleExtension(item.extensions, e.target.checked)}
+                                    checked={isExtensionChecked(item.extensions)}
+                                    style={{ display: 'none' }}
+                                />
+                                <label className="checkbox checkbox-normal" htmlFor={`extension-filter-${item.value}`} style={{ marginRight: 'var(--space-2)' }}></label>
+                                <span style={{ fontSize: 'var(--font-size-sm)', cursor: 'pointer' }} onClick={() => toggleExtension(item.extensions)}>{item.label}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const FilterPopover = ({
     isOpen,
@@ -109,192 +228,28 @@ const FilterPopover = ({
                 </div>
             )}
             
-            {/* Comment Filter - Switch Style - Hide in import mode */}
+            {/* Comment Filter - Hide in import mode */}
             {!isImportMode && (
-                <div style={{ marginBottom: 'var(--space-3)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-text-primary)' }}>Has Comment</span>
-                        <label style={{
-                            position: 'relative',
-                            display: 'inline-block',
-                            width: '44px',
-                            height: '24px',
-                            cursor: 'pointer'
-                        }}>
-                            <input
-                                type="checkbox"
-                                checked={hasCommentFilter}
-                                onChange={(e) => {
-                                    logger.debug('FilterPopover', 'filter_changed', 'User changed comment filter', {
-                                        filterType: 'hasCommentFilter',
-                                        newValue: e.target.checked,
-                                        previousValue: hasCommentFilter
-                                    });
-                                    setHasCommentFilter(e.target.checked);
-                                }}
-                                style={{ opacity: 0, width: 0, height: 0 }}
-                            />
-                            <span style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                right: 0,
-                                bottom: 0,
-                                backgroundColor: hasCommentFilter ? 'var(--color-primary)' : 'var(--color-bg-muted)',
-                                borderRadius: '24px',
-                                transition: 'background-color 0.2s'
-                            }}>
-                                <span style={{
-                                    position: 'absolute',
-                                    left: hasCommentFilter ? '22px' : '2px',
-                                    top: '2px',
-                                    width: '20px',
-                                    height: '20px',
-                                    backgroundColor: 'var(--color-bg-elevated)',
-                                    borderRadius: '50%',
-                                    transition: 'left 0.2s'
-                                }}></span>
-                            </span>
-                        </label>
-                    </div>
-                </div>
+                <ToggleSwitch
+                    label="Has Comment"
+                    checked={hasCommentFilter}
+                    onChange={setHasCommentFilter}
+                    filterType="hasCommentFilter"
+                />
             )}
-            
-            {/* Tag Filter - Switch Style - Hide in import mode */}
+
+            {/* Tag Filter - Hide in import mode */}
             {!isImportMode && (
-                <div style={{ marginBottom: 'var(--space-3)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-text-primary)' }}>Has Tag</span>
-                        <label style={{
-                            position: 'relative',
-                            display: 'inline-block',
-                            width: '44px',
-                            height: '24px',
-                            cursor: 'pointer'
-                        }}>
-                            <input
-                                type="checkbox"
-                                checked={hasTagFilter}
-                                onChange={(e) => {
-                                    logger.debug('FilterPopover', 'filter_changed', 'User changed tag filter', {
-                                        filterType: 'hasTagFilter',
-                                        newValue: e.target.checked,
-                                        previousValue: hasTagFilter
-                                    });
-                                    setHasTagFilter(e.target.checked);
-                                }}
-                                style={{ opacity: 0, width: 0, height: 0 }}
-                            />
-                            <span style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                right: 0,
-                                bottom: 0,
-                                backgroundColor: hasTagFilter ? 'var(--color-primary)' : 'var(--color-bg-muted)',
-                                borderRadius: '24px',
-                                transition: 'background-color 0.2s'
-                            }}>
-                                <span style={{
-                                    position: 'absolute',
-                                    left: hasTagFilter ? '22px' : '2px',
-                                    top: '2px',
-                                    width: '20px',
-                                    height: '20px',
-                                    backgroundColor: 'var(--color-bg-elevated)',
-                                    borderRadius: '50%',
-                                    transition: 'left 0.2s'
-                                }}></span>
-                            </span>
-                        </label>
-                    </div>
-                </div>
+                <ToggleSwitch
+                    label="Has Tag"
+                    checked={hasTagFilter}
+                    onChange={setHasTagFilter}
+                    filterType="hasTagFilter"
+                />
             )}
             
             {/* Extension Filter */}
-            <div style={{ marginBottom: 'var(--space-3)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                    <span style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-text-primary)', minWidth: '70px' }}>Extensions</span>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', flex: 1 }}>
-                        {/* All Extensions */}
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <input 
-                                type="checkbox"
-                                id="extension-filter-all"
-                                checked={extensionFilter === "all"}
-                                onChange={(e) => {
-                                    setExtensionFilter("all");
-                                }}
-                                style={{ display: 'none' }}
-                            />
-                            <label 
-                                className="checkbox checkbox-normal" 
-                                htmlFor="extension-filter-all"
-                                style={{ marginRight: 'var(--space-2)' }}
-                            ></label>
-                            <span style={{ fontSize: 'var(--font-size-base)', cursor: 'pointer' }} onClick={() => setExtensionFilter("all")}>All</span>
-                        </div>
-                        
-                        {/* Individual Extensions */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-2)' }}>
-                            {[
-                                { value: 'jpg', label: 'JPG', extensions: ['jpg', 'jpeg'] },
-                                { value: 'png', label: 'PNG', extensions: ['png'] },
-                                { value: 'gif', label: 'GIF', extensions: ['gif'] },
-                                { value: 'bmp', label: 'BMP', extensions: ['bmp'] },
-                                { value: 'tiff', label: 'TIFF', extensions: ['tiff'] },
-                                { value: 'mp4', label: 'MP4', extensions: ['mp4'] },
-                                { value: 'webm', label: 'WebM', extensions: ['webm'] }
-                            ].map((item, idx) => (
-                                <div key={item.value} style={{ display: 'flex', alignItems: 'center' }}>
-                                    <input 
-                                        type="checkbox"
-                                        id={`extension-filter-${item.value}`}
-                                        onChange={(e) => {
-                                            const checked = e.target.checked;
-                                            const currentFilters = extensionFilter === "all" ? [] : extensionFilter.split(',').filter(f => f.trim() !== '');
-                                            
-                                            let newFilters;
-                                            if (checked) {
-                                                newFilters = [...currentFilters, ...item.extensions];
-                                            } else {
-                                                newFilters = currentFilters.filter(f => !item.extensions.includes(f));
-                                            }
-                                            
-                                            const filterString = newFilters.length === 0 ? "all" : [...new Set(newFilters)].join(',');
-                                            setExtensionFilter(filterString);
-                                        }}
-                                        checked={extensionFilter !== "all" && item.extensions.some(ext => extensionFilter.split(',').includes(ext))}
-                                        style={{ display: 'none' }}
-                                    />
-                                    <label 
-                                        className="checkbox checkbox-normal" 
-                                        htmlFor={`extension-filter-${item.value}`}
-                                        style={{ marginRight: 'var(--space-2)' }}
-                                    ></label>
-                                    <span 
-                                        style={{ fontSize: 'var(--font-size-sm)', cursor: 'pointer' }} 
-                                        onClick={() => {
-                                            const currentFilters = extensionFilter === "all" ? [] : extensionFilter.split(',').filter(f => f.trim() !== '');
-                                            const isCurrentlyChecked = extensionFilter !== "all" && item.extensions.some(ext => extensionFilter.split(',').includes(ext));
-                                            
-                                            let newFilters;
-                                            if (!isCurrentlyChecked) {
-                                                newFilters = [...currentFilters, ...item.extensions];
-                                            } else {
-                                                newFilters = currentFilters.filter(f => !item.extensions.includes(f));
-                                            }
-                                            
-                                            const filterString = newFilters.length === 0 ? "all" : [...new Set(newFilters)].join(',');
-                                            setExtensionFilter(filterString);
-                                        }}
-                                    >{item.label}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <ExtensionFilter extensionFilter={extensionFilter} setExtensionFilter={setExtensionFilter} />
             
             {/* Clear Filters Button */}
             {((!isImportMode && (starFilter > 0 || hasCommentFilter || hasTagFilter)) || extensionFilter !== 'all') && (
