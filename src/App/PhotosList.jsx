@@ -132,7 +132,8 @@ function PhotosList({
         filterButtonRef,
         facesList, setFacesList, faceSearchTerm, setFaceSearchTerm,
         currentPersonId, setCurrentPersonId, currentPersonName, setCurrentPersonName,
-        selectedPersons, setSelectedPersons, unknownFacesCount, setUnknownFacesCount
+        selectedPersons, setSelectedPersons, selectedUnknownFaces, setSelectedUnknownFaces,
+        unknownFacesCount, setUnknownFacesCount, faceViewType, setFaceViewType
     } = usePhotosState();
 
     // Create ViewMode object using factory hook (must be after usePhotosState, before usePhotoSelection)
@@ -361,10 +362,11 @@ function PhotosList({
         permanentlyDeletePhoto, moveToTrash, handleAlbumSelection, clearAlbumSelection,
         deleteSelectedAlbums, handleAlbumDelete, handleTagSelection, clearTagSelection,
         deleteSelectedTags, handlePersonSelection, clearPersonSelection,
-        deleteSelectedPersons, removePhotoFromList
+        deleteSelectedPersons, handleUnknownFaceSelection, clearUnknownFaceSelection,
+        removePhotoFromList
     } = usePhotoOperations({
         selectedAlbums, setSelectedAlbums, selectedTags, setSelectedTags,
-        selectedPersons, setSelectedPersons,
+        selectedPersons, setSelectedPersons, selectedUnknownFaces, setSelectedUnknownFaces,
         tagsList, albumsList, appConfig, currentViewMode: viewMode,
         currentDate, currentAlbumName, currentTagName, searchQuery, handleError,
         addFooterMessage, loadAlbums, loadTags, loadFaces: reloadFaces, currentAlbumId, toggleAlbumListMode,
@@ -424,7 +426,7 @@ function PhotosList({
 
     // Selection tab auto-open effect
     useSelectionTabEffect({
-        photoSelection, selectedAlbums, selectedTags, selectedPersons, changeTab, setShowSideMenu, viewModeObj
+        photoSelection, selectedAlbums, selectedTags, selectedPersons, selectedUnknownFaces, faceViewType, changeTab, setShowSideMenu, viewModeObj
     });
 
     // Data synchronization
@@ -504,7 +506,7 @@ function PhotosList({
     } = usePhotoListStateGroups({
         viewMode, currentDate, viewModeObj,
         starFilter, hasCommentFilter, hasTagFilter, extensionFilter, importExtensionFilter, showFilterPopover, hasActiveFiltersState,
-        photoSelectionDict, photoSelection, selectedAlbums, selectedTags, selectedPersons,
+        photoSelectionDict, photoSelection, selectedAlbums, selectedTags, selectedPersons, selectedUnknownFaces,
         currentPhotoPath, currentPhotoIndex, showSideMenu, iconSize, sortOfPhotos, importSortOfPhotos, datePage, numOfPhoto,
         searchQuery, searchInitialQuery, searchFilters, searchResults, currentSearchParams,
         displayedPhotos, filteredPhotos, displayedPhotoCount, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch,
@@ -513,7 +515,7 @@ function PhotosList({
         shortCutNavigation, setShortCutNavigation,
         appConfig, importState, photos,
         filteredAlbums, albumSearchTerm, filteredTags, tagSearchTerm,
-        facesList, faceSearchTerm, unknownFacesCount
+        facesList, faceSearchTerm, unknownFacesCount, faceViewType
     });
 
     // Handlers object using extracted hook
@@ -527,7 +529,8 @@ function PhotosList({
         handleAlbumDelete, clearAlbumSelection, deleteSelectedAlbums,
         handleTagClick, handleTagSelection, handleNewTagClick, clearTagSelection, deleteSelectedTags,
         handlePersonClick, handlePersonSelection, clearPersonSelection, deleteSelectedPersons,
-        setFaceSearchTerm, openFacesList, reloadFaces,
+        handleUnknownFaceSelection, clearUnknownFaceSelection,
+        setFaceSearchTerm, setFaceViewType, openFacesList, reloadFaces,
         handleSearch, clearSearch, handleFiltersChange, handleSavedSearchSelect, clearAllFilters,
         setShowSideMenu, setIconSize, setSort, setImportSort, setCurrentPhotoPath, setCurrentPhotoIndex,
         setShowFilterPopover, setAlbumSearchTerm, setTagSearchTerm,
@@ -574,6 +577,8 @@ function PhotosList({
                         photoSelectionCount={photoSelection.length}
                         selectedAlbumsCount={selectedAlbums.length} selectedTagsCount={selectedTags.length}
                         selectedPersonsCount={selectedPersons.length}
+                        selectedUnknownFacesCount={selectedUnknownFaces.length}
+                        faceViewType={faceViewType}
                     />
                 )}
 

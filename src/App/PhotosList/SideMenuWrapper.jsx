@@ -65,7 +65,7 @@ function SideMenuWrapper({
     const isSearchMode = viewModeObj.isSearchMode();
     const { star: starFilter, extension: extensionFilter } = filterState;
     const { allForCurrentFetch: allPhotosForCurrentFetch, setAllForCurrentFetch: setAllPhotosForCurrentFetch } = photoDataState;
-    const { photoList: photoSelection, albums: selectedAlbums, tags: selectedTags, persons: selectedPersons } = selectionState;
+    const { photoList: photoSelection, albums: selectedAlbums, tags: selectedTags, persons: selectedPersons, unknownFaces: selectedUnknownFaces } = selectionState;
     const { currentPhotoPath, showSideMenu } = displayState;
     const { query: searchQuery, initialQuery: searchInitialQuery, filters: searchFilters, results: searchResults, currentParams: currentSearchParams } = searchState;
     const isAdvancedSearchMode = viewModeObj.isAdvancedSearchMode();
@@ -92,6 +92,7 @@ function SideMenuWrapper({
         clearAlbumSelection,
         clearTagSelection,
         clearPersonSelection,
+        clearUnknownFaceSelection,
         deleteSelectedAlbums,
         deleteSelectedTags,
         deleteSelectedPersons,
@@ -157,12 +158,15 @@ function SideMenuWrapper({
                     selectedAlbums={selectedAlbums}
                     selectedTags={selectedTags}
                     selectedPersons={selectedPersons}
+                    selectedUnknownFaces={selectedUnknownFaces}
                     albumsList={albumsList}
                     tagsList={tagsList}
                     facesList={listState?.faces?.list || []}
+                    faceViewType={listState?.faces?.viewType || 'persons'}
                     clearAlbumSelection={clearAlbumSelection}
                     clearTagSelection={clearTagSelection}
                     clearPersonSelection={clearPersonSelection}
+                    clearUnknownFaceSelection={clearUnknownFaceSelection}
                     deleteSelectedAlbums={deleteSelectedAlbums}
                     deleteSelectedTags={deleteSelectedTags}
                     deleteSelectedPersons={deleteSelectedPersons}

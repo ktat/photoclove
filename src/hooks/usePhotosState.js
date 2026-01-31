@@ -4,6 +4,7 @@ import { logger } from '../services/LoggerService.js';
 const STORAGE_KEY_ALBUMS = 'selectedAlbums';
 const STORAGE_KEY_TAGS = 'selectedTags';
 const STORAGE_KEY_PERSONS = 'selectedPersons';
+const STORAGE_KEY_UNKNOWN_FACES = 'selectedUnknownFaces';
 
 /**
  * Load selection from SessionStorage
@@ -107,7 +108,9 @@ export const usePhotosState = () => {
     const [currentPersonId, setCurrentPersonId] = useState(null);
     const [currentPersonName, setCurrentPersonName] = useState('');
     const [selectedPersons, setSelectedPersons] = useState(() => loadSelectionFromStorage(STORAGE_KEY_PERSONS));
+    const [selectedUnknownFaces, setSelectedUnknownFaces] = useState(() => loadSelectionFromStorage(STORAGE_KEY_UNKNOWN_FACES));
     const [unknownFacesCount, setUnknownFacesCount] = useState(0);
+    const [faceViewType, setFaceViewType] = useState('persons'); // 'persons' or 'unknown'
 
     // Filter popover state
     const [showFilterPopover, setShowFilterPopover] = useState(false);
@@ -250,8 +253,12 @@ export const usePhotosState = () => {
         setCurrentPersonName,
         selectedPersons,
         setSelectedPersons,
+        selectedUnknownFaces,
+        setSelectedUnknownFaces,
         unknownFacesCount,
         setUnknownFacesCount,
+        faceViewType,
+        setFaceViewType,
 
         // Filter popover
         showFilterPopover,

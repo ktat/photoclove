@@ -55,6 +55,8 @@ export function useSelectionTabEffect({
     selectedAlbums,
     selectedTags,
     selectedPersons,
+    selectedUnknownFaces,
+    faceViewType,
     changeTab,
     setShowSideMenu,
     viewModeObj
@@ -69,7 +71,12 @@ export function useSelectionTabEffect({
         } else if (viewModeObj?.isTagListMode()) {
             relevantSelectionCount = selectedTags.length;
         } else if (viewModeObj?.isFaceListMode()) {
-            relevantSelectionCount = selectedPersons.length;
+            // In face list mode, check which tab is active
+            if (faceViewType === 'unknown') {
+                relevantSelectionCount = selectedUnknownFaces.length;
+            } else {
+                relevantSelectionCount = selectedPersons.length;
+            }
         } else {
             // All other modes - only photo selections
             relevantSelectionCount = photoSelection.length;
@@ -81,15 +88,17 @@ export function useSelectionTabEffect({
             setShowSideMenu(true);
             logger.info('usePhotosListEffects', 'auto_open_selection', 'Auto-opening Selection tab', {
                 viewMode: viewModeObj?.mode,
+                faceViewType,
                 photoCount: photoSelection.length,
                 albumCount: selectedAlbums.length,
                 tagCount: selectedTags.length,
                 personCount: selectedPersons.length,
+                unknownFaceCount: selectedUnknownFaces.length,
                 relevantCount: relevantSelectionCount
             });
         }
         prevSelectionCount.current = relevantSelectionCount;
-    }, [photoSelection.length, selectedAlbums.length, selectedTags.length, selectedPersons.length, viewModeObj, changeTab, setShowSideMenu]);
+    }, [photoSelection.length, selectedAlbums.length, selectedTags.length, selectedPersons.length, selectedUnknownFaces.length, faceViewType, viewModeObj, changeTab, setShowSideMenu]);
 }
 
 /**

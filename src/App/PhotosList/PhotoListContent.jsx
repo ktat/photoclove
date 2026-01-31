@@ -109,7 +109,8 @@ function PhotoListContent({
         photos: photoSelectionDict,
         albums: selectedAlbums,
         tags: selectedTags,
-        persons: selectedPersons
+        persons: selectedPersons,
+        unknownFaces: selectedUnknownFaces
     } = selectionState;
 
     const {
@@ -136,6 +137,8 @@ function PhotoListContent({
         handleAlbumSelection,
         handleTagSelection,
         handlePersonSelection,
+        handleUnknownFaceSelection,
+        setFaceViewType,
         handleAlbumClick,
         handleTagClick,
         handleNewAlbumClick,
@@ -302,10 +305,13 @@ function PhotoListContent({
                             onPersonClick={handlePersonClick}
                             selectedPersons={selectedPersons}
                             onPersonSelection={handlePersonSelection}
+                            selectedUnknownFaces={selectedUnknownFaces}
+                            onUnknownFaceSelection={handleUnknownFaceSelection}
                             searchTerm={faceSearchTerm}
                             onSearchChange={setFaceSearchTerm}
                             onRefresh={reloadFaces}
                             unknownFacesCount={unknownFacesCount}
+                            onViewTypeChange={setFaceViewType}
                         />
                     </>
                 )}

@@ -19,7 +19,9 @@ function VerticalTabBar({
     photoSelectionCount = 0,
     selectedAlbumsCount = 0,
     selectedTagsCount = 0,
-    selectedPersonsCount = 0
+    selectedPersonsCount = 0,
+    selectedUnknownFacesCount = 0,
+    faceViewType = 'persons'
 }) {
     // Define tab configurations based on view mode
     const getAvailableTabs = () => {
@@ -77,16 +79,20 @@ function VerticalTabBar({
     const getRelevantSelectionCounts = () => {
         if (viewModeObj?.isAlbumListMode()) {
             // Album List mode - only album selections matter
-            return { photos: 0, albums: selectedAlbumsCount, tags: 0, persons: 0 };
+            return { photos: 0, albums: selectedAlbumsCount, tags: 0, persons: 0, unknownFaces: 0 };
         } else if (viewModeObj?.isTagListMode()) {
             // Tag List mode - only tag selections matter
-            return { photos: 0, albums: 0, tags: selectedTagsCount, persons: 0 };
+            return { photos: 0, albums: 0, tags: selectedTagsCount, persons: 0, unknownFaces: 0 };
         } else if (viewModeObj?.isFaceListMode()) {
-            // Face List mode - only person selections matter
-            return { photos: 0, albums: 0, tags: 0, persons: selectedPersonsCount };
+            // Face List mode - check which tab is active
+            if (faceViewType === 'unknown') {
+                return { photos: 0, albums: 0, tags: 0, persons: 0, unknownFaces: selectedUnknownFacesCount };
+            } else {
+                return { photos: 0, albums: 0, tags: 0, persons: selectedPersonsCount, unknownFaces: 0 };
+            }
         } else {
             // All other modes (DATE, ALBUM, TAG, PERSON, etc.) - only photo selections matter
-            return { photos: photoSelectionCount, albums: 0, tags: 0, persons: 0 };
+            return { photos: photoSelectionCount, albums: 0, tags: 0, persons: 0, unknownFaces: 0 };
         }
     };
 
@@ -103,7 +109,8 @@ function VerticalTabBar({
                         relevantCounts.albums,
                         relevantCounts.tags,
                         relevantCounts.persons,
-                        'directory-vertical-tab-button'
+                        'directory-vertical-tab-button',
+                        relevantCounts.unknownFaces
                     )
                     : tabClass[tab.id]
                         ? "directory-vertical-tab-button active"
