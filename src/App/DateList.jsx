@@ -292,7 +292,7 @@ function DateList(props) {
                             setFilterMonth('all');
                         }}
                     >
-                        <option value="all">Year</option>
+                        <option value="all">{t('dateList.year')}</option>
                         {availableYears.map(year => (
                             <option key={year} value={year}>{year}</option>
                         ))}
@@ -304,11 +304,11 @@ function DateList(props) {
                         value={filterMonth}
                         onChange={(e) => setFilterMonth(e.target.value)}
                     >
-                        <option value="all">Month</option>
+                        <option value="all">{t('dateList.month')}</option>
                         {availableMonths.map(month => {
-                            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                            const monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
                             return (
-                                <option key={month} value={month}>{monthNames[month - 1]}</option>
+                                <option key={month} value={month}>{t(`dateList.months.${monthKeys[month - 1]}`)}</option>
                             );
                         })}
                     </select>
@@ -319,13 +319,13 @@ function DateList(props) {
                         className={viewMode === 'flat' ? 'active' : ''}
                         onClick={() => setViewMode('flat')}
                     >
-                        List
+                        {t('dateList.list')}
                     </button>
                     <button
                         className={viewMode === 'hierarchical' ? 'active' : ''}
                         onClick={() => setViewMode('hierarchical')}
                     >
-                        Tree
+                        {t('dateList.tree')}
                     </button>
                 </div>
             </div>

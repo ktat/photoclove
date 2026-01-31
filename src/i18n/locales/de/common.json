@@ -148,5 +148,25 @@
     "burstGroup": "Serienfotos gruppieren",
     "slideshow": "Diashow",
     "filterPhotos": "Fotos filtern"
+  },
+  "dateList": {
+    "year": "Jahr",
+    "month": "Monat",
+    "list": "Liste",
+    "tree": "Baum",
+    "months": {
+      "jan": "Jan",
+      "feb": "Feb",
+      "mar": "Mär",
+      "apr": "Apr",
+      "may": "Mai",
+      "jun": "Jun",
+      "jul": "Jul",
+      "aug": "Aug",
+      "sep": "Sep",
+      "oct": "Okt",
+      "nov": "Nov",
+      "dec": "Dez"
+    }
   }
 }

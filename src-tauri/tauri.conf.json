@@ -72,7 +72,7 @@
         ],
         "enable": true
       },
-      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost; media-src 'self' asset: http://asset.localhost; connect-src ipc: http://ipc.localhost"
+      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost; media-src 'self' blob: asset: http://asset.localhost; connect-src ipc: http://ipc.localhost"
     }
   }
 }

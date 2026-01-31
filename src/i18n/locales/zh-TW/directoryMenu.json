@@ -1,0 +1,85 @@
+{
+  "maintenance": {
+    "createDb": "(重新)建立該日期的資料庫",
+    "moveToExifDate": "根據Exif日期移動檔案",
+    "makeThumbnails": "建立縮圖",
+    "recalculateGroups": "重新計算該日期的分組",
+    "runAiTagging": "執行AI標籤",
+    "runFaceDetection": "執行臉部偵測",
+    "syncToS3": "同步到S3"
+  },
+  "import": {
+    "importFrom": "從以下位置匯入照片",
+    "selectSource": "選擇匯入來源...",
+    "currentlyBrowsing": "目前瀏覽:",
+    "createdDateAfter": "建立日期: 之後",
+    "selectDate": "選擇日期"
+  },
+  "filter": {
+    "stars": "星級",
+    "hasComment": "有評論",
+    "extensions": "副檔名",
+    "image": "圖片",
+    "movie": "影片"
+  },
+  "selection": {
+    "selectAllInPage": "選取頁面中的所有照片",
+    "photosNotSelected": "未選取照片。",
+    "selectOperation": "選擇操作",
+    "clearSelection": "清除選取",
+    "importProgress": "匯入進度",
+    "progress": "進度",
+    "current": "目前",
+    "error": "錯誤"
+  },
+  "operations": {
+    "importSelected": "匯入選取的照片",
+    "selectAllInDirectory": "選取此目錄中的全部",
+    "unselectAll": "取消全選",
+    "removeFromAlbum": "從相簿中移除",
+    "removeFromTag": "從標籤中移除",
+    "restore": "還原",
+    "deletePermanently": "永久刪除",
+    "uploadToGooglePhotos": "上傳到Google相簿",
+    "deleteFiles": "刪除檔案",
+    "createAlbum": "建立相簿",
+    "addToAlbum": "新增到現有相簿",
+    "addTags": "新增標籤",
+    "createBurstGroup": "建立連拍群組",
+    "removeFromBurstGroup": "從連拍群組中移除",
+    "addToStartupImages": "新增到啟動圖片"
+  },
+  "album": {
+    "selectedAlbums": "選取的相簿",
+    "noAlbumsSelected": "未選取相簿。",
+    "deleteSelectedAlbums": "刪除選取的相簿",
+    "photoCount": "{{count}}張照片"
+  },
+  "tag": {
+    "selectedTags": "選取的標籤",
+    "noTagsSelected": "未選取標籤。",
+    "deleteSelectedTags": "刪除選取的標籤",
+    "photoCount": "{{count}}張照片"
+  },
+  "person": {
+    "selectedPersons": "選取的人物",
+    "noPersonsSelected": "未選取人物。",
+    "deleteSelectedPersons": "刪除選取的人物",
+    "unknown": "未知",
+    "faceCount": "{{count}}張臉孔"
+  },
+  "face": {
+    "selectedFaces": "選取的臉孔 ({{count}})",
+    "noFacesSelected": "未選取未知臉孔。",
+    "assignToNewPerson": "指派給新人物",
+    "assignToExistingPerson": "指派給現有人物",
+    "delete": "刪除",
+    "createNewPerson": "建立新人物",
+    "enterPersonName": "輸入人物名稱",
+    "createAndAssign": "建立並指派",
+    "cancel": "取消",
+    "selectPerson": "選擇人物",
+    "noNamedPersons": "找不到已命名的人物。使用\"指派給新人物\"來建立。",
+    "confirmDelete": "刪除選取的{{count}}張臉孔？"
+  }
+}

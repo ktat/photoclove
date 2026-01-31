@@ -69,6 +69,7 @@ class SlideshowMusicService {
     this.audio = null;
     this.currentTrack = null;
     this.currentMood = null;
+    this.currentBlobUrl = null; // Track blob URL for cleanup
     this.volume = 0.5;
     this.isMuted = false;
     this.isPlaying = false;
@@ -76,16 +77,32 @@ class SlideshowMusicService {
     this.onPlayStateChange = null;
     this.onError = null; // Callback for errors
     this.availableTracks = new Map(); // Cache of available tracks
-    this.musicBasePath = '/music/';
     this.musicAvailable = false; // Whether music files are available
     this.errorCount = 0;
     this.maxErrors = 3; // Stop trying after this many errors
   }
 
   /**
+   * Reset state for a new slideshow session
+   */
+  reset() {
+    this.errorCount = 0;
+    this.musicAvailable = true;
+    if (this.currentBlobUrl) {
+      URL.revokeObjectURL(this.currentBlobUrl);
+      this.currentBlobUrl = null;
+    }
+    logger.info('SlideshowMusic', 'reset', 'Music service reset for new session');
+  }
+
+  /**
    * Initialize the audio element
    */
   init() {
+    // Always reset error state on init
+    this.errorCount = 0;
+    this.musicAvailable = true;
+
     if (!this.audio) {
       this.audio = new Audio();
       this.audio.loop = false;
@@ -95,34 +112,37 @@ class SlideshowMusicService {
         this.playNextTrack();
       });
 
+      // Audio error handler - only for playback errors, not load errors
+      // Load errors are handled in loadTrack via fetch
       this.audio.addEventListener('error', (e) => {
-        this.errorCount++;
+        const audioError = this.audio.error;
+        const errorDetails = audioError ? {
+          code: audioError.code,
+          message: audioError.message || 'Unknown error'
+        } : { code: 0, message: 'No error details' };
+
         logger.warn('SlideshowMusic', 'audio_error', 'Audio playback error', {
-          error: e.message || 'File not found',
-          track: this.currentTrack?.title,
-          errorCount: this.errorCount
+          src: this.audio.src?.substring(0, 50),
+          errorCode: errorDetails.code,
+          errorMessage: errorDetails.message,
+          track: this.currentTrack?.title
         });
 
-        // Stop trying if too many errors (likely no music files)
-        if (this.errorCount >= this.maxErrors) {
-          logger.warn('SlideshowMusic', 'music_unavailable', 'Music files not available');
-          this.musicAvailable = false;
-          this.isPlaying = false;
-          if (this.onError) {
-            this.onError('Music files not found. Add MP3 files to public/music/ folder.');
-          }
-          if (this.onPlayStateChange) {
-            this.onPlayStateChange(false);
-          }
-          return;
-        }
-
-        // Try next track on error
+        // Try next track on playback error
         this.playNextTrack();
       });
 
       logger.info('SlideshowMusic', 'initialized', 'Music service initialized');
     }
+  }
+
+  /**
+   * Get a random mood
+   * @returns {string} A random mood key
+   */
+  getRandomMood() {
+    const moods = Object.keys(MOOD_CONFIG);
+    return moods[Math.floor(Math.random() * moods.length)];
   }
 
   /**
@@ -132,7 +152,7 @@ class SlideshowMusicService {
    */
   analyzeMood(photos) {
     if (!photos || photos.length === 0) {
-      return DEFAULT_MOOD;
+      return this.getRandomMood();
     }
 
     // Collect all tags from photos
@@ -175,7 +195,7 @@ class SlideshowMusicService {
     }
 
     // Find the mood with highest score
-    let bestMood = DEFAULT_MOOD;
+    let bestMood = null;
     let bestScore = 0;
 
     for (const [mood, score] of Object.entries(moodScores)) {
@@ -183,6 +203,16 @@ class SlideshowMusicService {
         bestScore = score;
         bestMood = mood;
       }
+    }
+
+    // If no tags matched (score is 0), use random mood
+    if (bestScore === 0 || !bestMood) {
+      bestMood = this.getRandomMood();
+      logger.info('SlideshowMusic', 'mood_random', 'No matching tags, using random mood', {
+        photoCount: photos.length,
+        mood: bestMood
+      });
+      return bestMood;
     }
 
     logger.info('SlideshowMusic', 'mood_analyzed', 'Mood determined from photos', {
@@ -244,17 +274,68 @@ class SlideshowMusicService {
     this.init();
     this.currentTrack = track;
 
-    // In Tauri, we use asset protocol or public folder
-    const trackPath = `${this.musicBasePath}${track.file}`;
-    this.audio.src = trackPath;
+    // Try multiple path formats for Tauri compatibility
+    const origin = window.location.origin;
+    const pathFormats = [
+      `/music/${track.file}`,                    // Absolute from root
+      `${origin}/music/${track.file}`,           // Full origin URL
+      `music/${track.file}`,                     // Relative
+      `./music/${track.file}`,                   // Explicit relative
+    ];
 
-    logger.info('SlideshowMusic', 'track_loaded', 'Track loaded', {
+    logger.info('SlideshowMusic', 'loading_track', 'Attempting to load track', {
       track: track.title,
-      mood: this.currentMood
+      file: track.file,
+      origin: window.location.origin,
+      href: window.location.href
     });
 
-    if (this.onTrackChange) {
-      this.onTrackChange(track);
+    // Test which path works using fetch and load as blob for reliability
+    for (const testPath of pathFormats) {
+      try {
+        const response = await fetch(testPath);
+        if (response.ok) {
+          // Load as blob to avoid CSP/path issues with Audio element
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+
+          // Clean up previous blob URL if exists
+          if (this.currentBlobUrl) {
+            URL.revokeObjectURL(this.currentBlobUrl);
+          }
+          this.currentBlobUrl = blobUrl;
+          this.audio.src = blobUrl;
+
+          logger.info('SlideshowMusic', 'track_loaded', 'Track loaded via blob', {
+            track: track.title,
+            path: testPath,
+            blobUrl: blobUrl.substring(0, 50)
+          });
+
+          if (this.onTrackChange) {
+            this.onTrackChange(track);
+          }
+          return;
+        }
+      } catch (e) {
+        logger.warn('SlideshowMusic', 'path_test_failed', 'Path test failed', {
+          path: testPath,
+          error: e.message,
+          errorType: e.name
+        });
+      }
+    }
+
+    // All paths failed
+    logger.warn('SlideshowMusic', 'track_load_failed', 'Failed to load track from any path', {
+      track: track.title,
+      testedPaths: pathFormats
+    });
+
+    // Trigger error handling
+    this.errorCount++;
+    if (this.errorCount >= this.maxErrors && this.onError) {
+      this.onError('Music files not found');
     }
   }
 
@@ -394,6 +475,10 @@ class SlideshowMusicService {
    */
   destroy() {
     this.stop();
+    if (this.currentBlobUrl) {
+      URL.revokeObjectURL(this.currentBlobUrl);
+      this.currentBlobUrl = null;
+    }
     if (this.audio) {
       this.audio.src = '';
       this.audio = null;

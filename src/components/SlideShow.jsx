@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useTranslation } from 'react-i18next';
@@ -6,9 +6,35 @@ import { logger } from '../services/LoggerService.js';
 import { slideshowMusic, MOOD_CONFIG } from '../services/SlideshowMusicService.js';
 import styles from './SlideShow.module.css';
 
+// Video extensions to skip in slideshow
+const VIDEO_EXTENSIONS = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v', '.wmv', '.flv'];
+
 const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
   const { t } = useTranslation(['common']);
-  const [currentIndex, setCurrentIndex] = useState(startIndex);
+
+  // Filter out video files - slideshow is for photos only
+  const filteredPhotos = useMemo(() => {
+    const result = photos.filter(photo => {
+      const name = (photo.name || photo.path || '').toLowerCase();
+      return !VIDEO_EXTENSIONS.some(ext => name.endsWith(ext));
+    });
+    logger.info('SlideShow', 'filtered_videos', 'Filtered videos from slideshow', {
+      original: photos.length,
+      filtered: result.length,
+      skipped: photos.length - result.length
+    });
+    return result;
+  }, [photos]);
+
+  // Adjust startIndex if it points to a video
+  const adjustedStartIndex = useMemo(() => {
+    if (startIndex >= filteredPhotos.length) {
+      return 0;
+    }
+    return startIndex;
+  }, [startIndex, filteredPhotos.length]);
+
+  const [currentIndex, setCurrentIndex] = useState(adjustedStartIndex);
   const [isPlaying, setIsPlaying] = useState(true);
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -27,17 +53,17 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
   const controlsTimeoutRef = useRef(null);
   const autoAdvanceRef = useRef(null);
 
-  const currentPhoto = photos[currentIndex];
+  const currentPhoto = filteredPhotos[currentIndex];
 
   // Navigate to next photo
   const goToNext = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % photos.length);
-  }, [photos.length]);
+    setCurrentIndex((prev) => (prev + 1) % filteredPhotos.length);
+  }, [filteredPhotos.length]);
 
   // Navigate to previous photo
   const goToPrevious = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + photos.length) % photos.length);
-  }, [photos.length]);
+    setCurrentIndex((prev) => (prev - 1 + filteredPhotos.length) % filteredPhotos.length);
+  }, [filteredPhotos.length]);
 
   // Toggle play/pause
   const togglePlay = useCallback(() => {
@@ -142,7 +168,7 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
 
   // Auto-advance timer
   useEffect(() => {
-    if (isPlaying && photos.length > 1) {
+    if (isPlaying && filteredPhotos.length > 1) {
       autoAdvanceRef.current = setTimeout(() => {
         goToNext();
       }, slideInterval);
@@ -153,7 +179,7 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
         clearTimeout(autoAdvanceRef.current);
       }
     };
-  }, [isPlaying, currentIndex, slideInterval, goToNext, photos.length]);
+  }, [isPlaying, currentIndex, slideInterval, goToNext, filteredPhotos.length]);
 
   // Show/hide controls on mouse movement
   const handleMouseMove = useCallback(() => {
@@ -190,7 +216,8 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
   useEffect(() => {
     enterFullscreen();
     logger.info('SlideShow', 'started', 'Slideshow started', {
-      photoCount: photos.length,
+      totalItems: photos.length,
+      photosOnly: filteredPhotos.length,
       startIndex
     });
 
@@ -204,6 +231,9 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
   useEffect(() => {
     if (!musicEnabled) return;
 
+    // Reset music service state for clean start
+    slideshowMusic.reset();
+
     // Set up callbacks
     slideshowMusic.onTrackChange = (track) => {
       setCurrentTrack(track);
@@ -213,19 +243,18 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
     };
     slideshowMusic.onError = (error) => {
       setMusicError(error);
-      setMusicEnabled(false);
       logger.warn('SlideShow', 'music_error', 'Music playback error', { error });
     };
 
     // Analyze mood from photos and start playing
-    const detectedMood = slideshowMusic.analyzeMood(photos);
+    const detectedMood = slideshowMusic.analyzeMood(filteredPhotos);
     setCurrentMood(detectedMood);
     slideshowMusic.setVolume(volume);
     slideshowMusic.setMood(detectedMood, true);
 
     logger.info('SlideShow', 'music_initialized', 'Music initialized', {
       detectedMood,
-      photoCount: photos.length
+      photoCount: filteredPhotos.length
     });
 
     return () => {
@@ -233,7 +262,15 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
     };
   }, [musicEnabled]);
 
-  if (!currentPhoto) {
+  // Close slideshow if no photos (all items were videos)
+  useEffect(() => {
+    if (filteredPhotos.length === 0) {
+      logger.info('SlideShow', 'no_photos', 'No photos to display, closing slideshow');
+      onClose();
+    }
+  }, [filteredPhotos.length, onClose]);
+
+  if (!currentPhoto || filteredPhotos.length === 0) {
     return null;
   }
 
@@ -262,7 +299,7 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
         {/* Top Bar */}
         <div className={styles.topBar}>
           <div className={styles.counter}>
-            {currentIndex + 1} / {photos.length}
+            {currentIndex + 1} / {filteredPhotos.length}
           </div>
           <div className={styles.topActions}>
             <button
@@ -368,7 +405,7 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
         <div className={styles.progressBar}>
           <div
             className={styles.progress}
-            style={{ width: `${((currentIndex + 1) / photos.length) * 100}%` }}
+            style={{ width: `${((currentIndex + 1) / filteredPhotos.length) * 100}%` }}
           />
         </div>
       </div>

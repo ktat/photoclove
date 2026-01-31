@@ -1,0 +1,85 @@
+{
+  "maintenance": {
+    "createDb": "(re)Create database of the date",
+    "moveToExifDate": "Move files according to Exif date",
+    "makeThumbnails": "Make thumbnails",
+    "recalculateGroups": "Recalculate Groups of the date",
+    "runAiTagging": "Run AI Tagging",
+    "runFaceDetection": "Run Face Detection",
+    "syncToS3": "Sync to S3"
+  },
+  "import": {
+    "importFrom": "Import Photos From",
+    "selectSource": "Select import source...",
+    "currentlyBrowsing": "Currently browsing:",
+    "createdDateAfter": "Created Date: after",
+    "selectDate": "Select date"
+  },
+  "filter": {
+    "stars": "Stars",
+    "hasComment": "Has comment",
+    "extensions": "Extensions",
+    "image": "Image",
+    "movie": "Movie"
+  },
+  "selection": {
+    "selectAllInPage": "Select all photos in page",
+    "photosNotSelected": "Photos are not selected.",
+    "selectOperation": "Select an Operation",
+    "clearSelection": "Clear Selection",
+    "importProgress": "Import Progress",
+    "progress": "Progress",
+    "current": "Current",
+    "error": "Error"
+  },
+  "operations": {
+    "importSelected": "Import Selected Photos",
+    "selectAllInDirectory": "Select All in This Directory",
+    "unselectAll": "Unselect All",
+    "removeFromAlbum": "Remove from Album",
+    "removeFromTag": "Remove from Tag",
+    "restore": "Restore",
+    "deletePermanently": "Delete Permanently",
+    "uploadToGooglePhotos": "Upload to Google Photos",
+    "deleteFiles": "Delete files",
+    "createAlbum": "Create Album",
+    "addToAlbum": "Add to Existing Album",
+    "addTags": "Add Tags",
+    "createBurstGroup": "Create Burst Group",
+    "removeFromBurstGroup": "Remove from Burst Group",
+    "addToStartupImages": "Add to Startup Images"
+  },
+  "album": {
+    "selectedAlbums": "Selected Albums",
+    "noAlbumsSelected": "No albums selected.",
+    "deleteSelectedAlbums": "Delete Selected Albums",
+    "photoCount": "{{count}} photos"
+  },
+  "tag": {
+    "selectedTags": "Selected Tags",
+    "noTagsSelected": "No tags selected.",
+    "deleteSelectedTags": "Delete Selected Tags",
+    "photoCount": "{{count}} photos"
+  },
+  "person": {
+    "selectedPersons": "Selected Persons",
+    "noPersonsSelected": "No persons selected.",
+    "deleteSelectedPersons": "Delete Selected Persons",
+    "unknown": "Unknown",
+    "faceCount": "{{count}} faces"
+  },
+  "face": {
+    "selectedFaces": "Selected Faces ({{count}})",
+    "noFacesSelected": "No unknown faces selected.",
+    "assignToNewPerson": "Assign to New Person",
+    "assignToExistingPerson": "Assign to Existing Person",
+    "delete": "Delete",
+    "createNewPerson": "Create New Person",
+    "enterPersonName": "Enter person name",
+    "createAndAssign": "Create & Assign",
+    "cancel": "Cancel",
+    "selectPerson": "Select Person",
+    "noNamedPersons": "No named persons found. Use \"Assign to New Person\" to create one.",
+    "confirmDelete": "Delete {{count}} selected faces?"
+  }
+}

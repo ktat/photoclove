@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useTranslation } from 'react-i18next';
 
 function AICustomLabels({ customLabels = [], onAddLabel, onRemoveLabel }) {
+    const { t } = useTranslation(['preferences', 'common']);
     const [inputValue, setInputValue] = useState('');
 
     const handleAdd = () => {
@@ -13,14 +15,13 @@ function AICustomLabels({ customLabels = [], onAddLabel, onRemoveLabel }) {
 
     return (
         <div style={{ marginTop: 'var(--space-4)' }}>
-            <h3 style={{ marginBottom: 'var(--space-2)' }}>Custom Labels</h3>
+            <h3 style={{ marginBottom: 'var(--space-2)' }}>{t('preferences:aiTagging.customLabels')}</h3>
             <p style={{
                 fontSize: 'var(--font-size-sm)',
                 color: 'var(--color-text-secondary)',
                 marginBottom: 'var(--space-3)',
             }}>
-                Add custom labels for detection (e.g., "a photo of a birthday party", "my cat").
-                Leave empty to use default labels.
+                {t('preferences:aiTagging.customLabelsHelp')}
             </p>
             <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
                 <input
@@ -28,7 +29,7 @@ function AICustomLabels({ customLabels = [], onAddLabel, onRemoveLabel }) {
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-                    placeholder="Enter a custom label..."
+                    placeholder={t('preferences:aiTagging.customLabelPlaceholder')}
                     style={{
                         flex: 1,
                         padding: 'var(--space-2)',
@@ -49,7 +50,7 @@ function AICustomLabels({ customLabels = [], onAddLabel, onRemoveLabel }) {
                         cursor: 'pointer',
                     }}
                 >
-                    Add
+                    {t('common:button.add')}
                 </button>
             </div>
             {customLabels.length > 0 && (

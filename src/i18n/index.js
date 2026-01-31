@@ -9,6 +9,7 @@ import enMessages from './locales/en/messages.json';
 import enErrors from './locales/en/errors.json';
 import enPreferences from './locales/en/preferences.json';
 import enInsights from './locales/en/insights.json';
+import enDirectoryMenu from './locales/en/directoryMenu.json';
 
 // Import Japanese translations
 import jaCommon from './locales/ja/common.json';
@@ -17,6 +18,7 @@ import jaMessages from './locales/ja/messages.json';
 import jaErrors from './locales/ja/errors.json';
 import jaPreferences from './locales/ja/preferences.json';
 import jaInsights from './locales/ja/insights.json';
+import jaDirectoryMenu from './locales/ja/directoryMenu.json';
 
 // Import French translations
 import frCommon from './locales/fr/common.json';
@@ -25,6 +27,7 @@ import frMessages from './locales/fr/messages.json';
 import frErrors from './locales/fr/errors.json';
 import frPreferences from './locales/fr/preferences.json';
 import frInsights from './locales/fr/insights.json';
+import frDirectoryMenu from './locales/fr/directoryMenu.json';
 
 // Import German translations
 import deCommon from './locales/de/common.json';
@@ -33,6 +36,7 @@ import deMessages from './locales/de/messages.json';
 import deErrors from './locales/de/errors.json';
 import dePreferences from './locales/de/preferences.json';
 import deInsights from './locales/de/insights.json';
+import deDirectoryMenu from './locales/de/directoryMenu.json';
 
 // Import Chinese Simplified translations
 import zhCNCommon from './locales/zh-CN/common.json';
@@ -41,6 +45,7 @@ import zhCNMessages from './locales/zh-CN/messages.json';
 import zhCNErrors from './locales/zh-CN/errors.json';
 import zhCNPreferences from './locales/zh-CN/preferences.json';
 import zhCNInsights from './locales/zh-CN/insights.json';
+import zhCNDirectoryMenu from './locales/zh-CN/directoryMenu.json';
 
 // Import Chinese Traditional translations
 import zhTWCommon from './locales/zh-TW/common.json';
@@ -49,6 +54,7 @@ import zhTWMessages from './locales/zh-TW/messages.json';
 import zhTWErrors from './locales/zh-TW/errors.json';
 import zhTWPreferences from './locales/zh-TW/preferences.json';
 import zhTWInsights from './locales/zh-TW/insights.json';
+import zhTWDirectoryMenu from './locales/zh-TW/directoryMenu.json';
 
 // Import Spanish translations
 import esCommon from './locales/es/common.json';
@@ -57,6 +63,7 @@ import esMessages from './locales/es/messages.json';
 import esErrors from './locales/es/errors.json';
 import esPreferences from './locales/es/preferences.json';
 import esInsights from './locales/es/insights.json';
+import esDirectoryMenu from './locales/es/directoryMenu.json';
 
 const resources = {
   en: {
@@ -66,6 +73,7 @@ const resources = {
     errors: enErrors,
     preferences: enPreferences,
     insights: enInsights,
+    directoryMenu: enDirectoryMenu,
   },
   ja: {
     common: jaCommon,
@@ -74,6 +82,7 @@ const resources = {
     errors: jaErrors,
     preferences: jaPreferences,
     insights: jaInsights,
+    directoryMenu: jaDirectoryMenu,
   },
   fr: {
     common: frCommon,
@@ -82,6 +91,7 @@ const resources = {
     errors: frErrors,
     preferences: frPreferences,
     insights: frInsights,
+    directoryMenu: frDirectoryMenu,
   },
   de: {
     common: deCommon,
@@ -90,6 +100,7 @@ const resources = {
     errors: deErrors,
     preferences: dePreferences,
     insights: deInsights,
+    directoryMenu: deDirectoryMenu,
   },
   'zh-CN': {
     common: zhCNCommon,
@@ -98,6 +109,7 @@ const resources = {
     errors: zhCNErrors,
     preferences: zhCNPreferences,
     insights: zhCNInsights,
+    directoryMenu: zhCNDirectoryMenu,
   },
   'zh-TW': {
     common: zhTWCommon,
@@ -106,6 +118,7 @@ const resources = {
     errors: zhTWErrors,
     preferences: zhTWPreferences,
     insights: zhTWInsights,
+    directoryMenu: zhTWDirectoryMenu,
   },
   es: {
     common: esCommon,
@@ -114,6 +127,7 @@ const resources = {
     errors: esErrors,
     preferences: esPreferences,
     insights: esInsights,
+    directoryMenu: esDirectoryMenu,
   },
 };
 
@@ -135,7 +149,7 @@ i18n
     resources,
     fallbackLng: 'en',
     defaultNS: 'common',
-    ns: ['common', 'modals', 'messages', 'errors', 'preferences', 'insights'],
+    ns: ['common', 'modals', 'messages', 'errors', 'preferences', 'insights', 'directoryMenu'],
 
     detection: {
       order: ['localStorage', 'navigator'],

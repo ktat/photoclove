@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from 'react-i18next';
 import { logger } from "../../../services/LoggerService.js";
 
 /**
@@ -21,6 +22,7 @@ import { logger } from "../../../services/LoggerService.js";
  * @param {Object} props.tabClass - Tab CSS classes
  */
 function FilterTab({ viewModeObj, filterState, tabClass }) {
+    const { t } = useTranslation(['directoryMenu']);
     const {
         starFilter,
         setStarFilter,
@@ -36,7 +38,7 @@ function FilterTab({ viewModeObj, filterState, tabClass }) {
         <div id="tab-filter" className={tabClass['filter'] ? "tab-active" : "tab"}>
             <ul>
                 <li>
-                    Stars:
+                    {t('directoryMenu:filter.stars')}:
                     {[0, 1, 2, 3, 4, 5].map((v, i) => {
                         return <span key={i} onClick={() => {
                             logger.debug('DirectoryMenu', 'filter_changed', 'User changed star filter', {
@@ -59,10 +61,10 @@ function FilterTab({ viewModeObj, filterState, tabClass }) {
                             setHasCommentFilter(e.target.checked);
                         }}
                     />
-                    <label className="checkbox checkbox-normal" htmlFor="filter-has-comment-check">Has comment</label>
+                    <label className="checkbox checkbox-normal" htmlFor="filter-has-comment-check">{t('directoryMenu:filter.hasComment')}</label>
                 </li>
                 <li>
-                    Extensions:
+                    {t('directoryMenu:filter.extensions')}:
                     <div style={{ marginTop: '5px' }}>
                         {/* Image Extensions Group */}
                         <div style={{ marginBottom: '10px' }}>
@@ -89,7 +91,7 @@ function FilterTab({ viewModeObj, filterState, tabClass }) {
                                     }}
                                     checked={extensionFilter !== "all" && ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'].some(ext => extensionFilter.split(',').includes(ext))}
                                 />
-                                <label className="checkbox checkbox-normal" htmlFor="filter-extension-image-group-check"><strong>Image</strong></label>
+                                <label className="checkbox checkbox-normal" htmlFor="filter-extension-image-group-check"><strong>{t('directoryMenu:filter.image')}</strong></label>
                             </div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '5px', marginLeft: '20px' }}>
                                 {[
@@ -153,7 +155,7 @@ function FilterTab({ viewModeObj, filterState, tabClass }) {
                                     }}
                                     checked={extensionFilter !== "all" && ['mp4', 'webm'].some(ext => extensionFilter.split(',').includes(ext))}
                                 />
-                                <label className="checkbox checkbox-normal" htmlFor="filter-extension-movie-group-check"><strong>Movie</strong></label>
+                                <label className="checkbox checkbox-normal" htmlFor="filter-extension-movie-group-check"><strong>{t('directoryMenu:filter.movie')}</strong></label>
                             </div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '5px', marginLeft: '20px' }}>
                                 {[

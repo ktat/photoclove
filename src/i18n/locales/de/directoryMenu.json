@@ -1,0 +1,85 @@
+{
+  "maintenance": {
+    "createDb": "Datenbank des Datums (neu) erstellen",
+    "moveToExifDate": "Dateien nach Exif-Datum verschieben",
+    "makeThumbnails": "Miniaturbilder erstellen",
+    "recalculateGroups": "Gruppen des Datums neu berechnen",
+    "runAiTagging": "KI-Tagging ausführen",
+    "runFaceDetection": "Gesichtserkennung ausführen",
+    "syncToS3": "Mit S3 synchronisieren"
+  },
+  "import": {
+    "importFrom": "Fotos importieren von",
+    "selectSource": "Importquelle auswählen...",
+    "currentlyBrowsing": "Aktueller Ordner:",
+    "createdDateAfter": "Erstellungsdatum: nach",
+    "selectDate": "Datum auswählen"
+  },
+  "filter": {
+    "stars": "Sterne",
+    "hasComment": "Mit Kommentar",
+    "extensions": "Erweiterungen",
+    "image": "Bild",
+    "movie": "Video"
+  },
+  "selection": {
+    "selectAllInPage": "Alle Fotos auf der Seite auswählen",
+    "photosNotSelected": "Keine Fotos ausgewählt.",
+    "selectOperation": "Operation auswählen",
+    "clearSelection": "Auswahl löschen",
+    "importProgress": "Importfortschritt",
+    "progress": "Fortschritt",
+    "current": "Aktuell",
+    "error": "Fehler"
+  },
+  "operations": {
+    "importSelected": "Ausgewählte Fotos importieren",
+    "selectAllInDirectory": "Alles in diesem Verzeichnis auswählen",
+    "unselectAll": "Alle abwählen",
+    "removeFromAlbum": "Aus Album entfernen",
+    "removeFromTag": "Aus Tag entfernen",
+    "restore": "Wiederherstellen",
+    "deletePermanently": "Dauerhaft löschen",
+    "uploadToGooglePhotos": "Zu Google Photos hochladen",
+    "deleteFiles": "Dateien löschen",
+    "createAlbum": "Album erstellen",
+    "addToAlbum": "Zu bestehendem Album hinzufügen",
+    "addTags": "Tags hinzufügen",
+    "createBurstGroup": "Seriengruppe erstellen",
+    "removeFromBurstGroup": "Aus Seriengruppe entfernen",
+    "addToStartupImages": "Zu Startbildern hinzufügen"
+  },
+  "album": {
+    "selectedAlbums": "Ausgewählte Alben",
+    "noAlbumsSelected": "Keine Alben ausgewählt.",
+    "deleteSelectedAlbums": "Ausgewählte Alben löschen",
+    "photoCount": "{{count}} Fotos"
+  },
+  "tag": {
+    "selectedTags": "Ausgewählte Tags",
+    "noTagsSelected": "Keine Tags ausgewählt.",
+    "deleteSelectedTags": "Ausgewählte Tags löschen",
+    "photoCount": "{{count}} Fotos"
+  },
+  "person": {
+    "selectedPersons": "Ausgewählte Personen",
+    "noPersonsSelected": "Keine Personen ausgewählt.",
+    "deleteSelectedPersons": "Ausgewählte Personen löschen",
+    "unknown": "Unbekannt",
+    "faceCount": "{{count}} Gesichter"
+  },
+  "face": {
+    "selectedFaces": "Ausgewählte Gesichter ({{count}})",
+    "noFacesSelected": "Keine unbekannten Gesichter ausgewählt.",
+    "assignToNewPerson": "Neuer Person zuweisen",
+    "assignToExistingPerson": "Bestehender Person zuweisen",
+    "delete": "Löschen",
+    "createNewPerson": "Neue Person erstellen",
+    "enterPersonName": "Name der Person eingeben",
+    "createAndAssign": "Erstellen und zuweisen",
+    "cancel": "Abbrechen",
+    "selectPerson": "Person auswählen",
+    "noNamedPersons": "Keine benannten Personen gefunden. Verwenden Sie \"Neuer Person zuweisen\" um eine zu erstellen.",
+    "confirmDelete": "{{count}} ausgewählte Gesichter löschen?"
+  }
+}

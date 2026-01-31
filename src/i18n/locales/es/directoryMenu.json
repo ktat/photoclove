@@ -1,0 +1,85 @@
+{
+  "maintenance": {
+    "createDb": "(Re)crear base de datos de la fecha",
+    "moveToExifDate": "Mover archivos según fecha Exif",
+    "makeThumbnails": "Crear miniaturas",
+    "recalculateGroups": "Recalcular grupos de la fecha",
+    "runAiTagging": "Ejecutar etiquetado IA",
+    "runFaceDetection": "Ejecutar detección de rostros",
+    "syncToS3": "Sincronizar con S3"
+  },
+  "import": {
+    "importFrom": "Importar fotos desde",
+    "selectSource": "Seleccionar origen de importación...",
+    "currentlyBrowsing": "Navegando actualmente:",
+    "createdDateAfter": "Fecha de creación: después de",
+    "selectDate": "Seleccionar fecha"
+  },
+  "filter": {
+    "stars": "Estrellas",
+    "hasComment": "Con comentario",
+    "extensions": "Extensiones",
+    "image": "Imagen",
+    "movie": "Video"
+  },
+  "selection": {
+    "selectAllInPage": "Seleccionar todas las fotos de la página",
+    "photosNotSelected": "No hay fotos seleccionadas.",
+    "selectOperation": "Seleccionar operación",
+    "clearSelection": "Limpiar selección",
+    "importProgress": "Progreso de importación",
+    "progress": "Progreso",
+    "current": "Actual",
+    "error": "Error"
+  },
+  "operations": {
+    "importSelected": "Importar fotos seleccionadas",
+    "selectAllInDirectory": "Seleccionar todo en este directorio",
+    "unselectAll": "Deseleccionar todo",
+    "removeFromAlbum": "Quitar del álbum",
+    "removeFromTag": "Quitar de la etiqueta",
+    "restore": "Restaurar",
+    "deletePermanently": "Eliminar permanentemente",
+    "uploadToGooglePhotos": "Subir a Google Photos",
+    "deleteFiles": "Eliminar archivos",
+    "createAlbum": "Crear álbum",
+    "addToAlbum": "Agregar a álbum existente",
+    "addTags": "Agregar etiquetas",
+    "createBurstGroup": "Crear grupo de ráfaga",
+    "removeFromBurstGroup": "Quitar del grupo de ráfaga",
+    "addToStartupImages": "Agregar a imágenes de inicio"
+  },
+  "album": {
+    "selectedAlbums": "Álbumes seleccionados",
+    "noAlbumsSelected": "No hay álbumes seleccionados.",
+    "deleteSelectedAlbums": "Eliminar álbumes seleccionados",
+    "photoCount": "{{count}} fotos"
+  },
+  "tag": {
+    "selectedTags": "Etiquetas seleccionadas",
+    "noTagsSelected": "No hay etiquetas seleccionadas.",
+    "deleteSelectedTags": "Eliminar etiquetas seleccionadas",
+    "photoCount": "{{count}} fotos"
+  },
+  "person": {
+    "selectedPersons": "Personas seleccionadas",
+    "noPersonsSelected": "No hay personas seleccionadas.",
+    "deleteSelectedPersons": "Eliminar personas seleccionadas",
+    "unknown": "Desconocido",
+    "faceCount": "{{count}} rostros"
+  },
+  "face": {
+    "selectedFaces": "Rostros seleccionados ({{count}})",
+    "noFacesSelected": "No hay rostros desconocidos seleccionados.",
+    "assignToNewPerson": "Asignar a nueva persona",
+    "assignToExistingPerson": "Asignar a persona existente",
+    "delete": "Eliminar",
+    "createNewPerson": "Crear nueva persona",
+    "enterPersonName": "Ingrese nombre de persona",
+    "createAndAssign": "Crear y asignar",
+    "cancel": "Cancelar",
+    "selectPerson": "Seleccionar persona",
+    "noNamedPersons": "No se encontraron personas con nombre. Use \"Asignar a nueva persona\" para crear una.",
+    "confirmDelete": "¿Eliminar {{count}} rostros seleccionados?"
+  }
+}
