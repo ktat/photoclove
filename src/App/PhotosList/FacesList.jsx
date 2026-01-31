@@ -76,7 +76,7 @@ function FacesList({
                 style={{
                     padding: 'var(--space-2) var(--space-4)',
                     backgroundColor: viewType === VIEW_TYPE.PERSONS ? 'var(--color-primary)' : 'var(--color-bg-elevated)',
-                    color: 'var(--color-text-primary)',
+                    color: viewType === VIEW_TYPE.PERSONS ? 'white' : 'var(--color-text-primary)',
                     border: '1px solid var(--color-border-default)',
                     borderRadius: 'var(--radius-sm)',
                     cursor: 'pointer',
@@ -99,7 +99,7 @@ function FacesList({
                 style={{
                     padding: 'var(--space-2) var(--space-4)',
                     backgroundColor: viewType === VIEW_TYPE.UNKNOWN ? 'var(--color-primary)' : 'var(--color-bg-elevated)',
-                    color: 'var(--color-text-primary)',
+                    color: viewType === VIEW_TYPE.UNKNOWN ? 'white' : 'var(--color-text-primary)',
                     border: '1px solid var(--color-border-default)',
                     borderRadius: 'var(--radius-sm)',
                     cursor: 'pointer',
@@ -115,7 +115,7 @@ function FacesList({
                 {unknownFacesCount > 0 && (
                     <span style={{
                         backgroundColor: 'var(--color-danger)',
-                        color: 'var(--color-text-primary)',
+                        color: 'white',
                         borderRadius: '10px',
                         padding: '2px 8px',
                         fontSize: 'var(--font-size-xs)',
