@@ -20,7 +20,9 @@ function PhotosToolbar({
     hasCommentFilter,
     hasTagFilter,
     extensionFilter,
-    hasActiveFilters
+    hasActiveFilters,
+    onStartSlideshow,
+    photosCount = 0
 }) {
     // Determine mode from viewMode
     const { viewMode, burstModeEnabled, toggleBurstMode } = useUI();
@@ -83,6 +85,17 @@ function PhotosToolbar({
                     </span>
                 )}
             </button>
+
+            {!isImportMode && photosCount > 0 && onStartSlideshow && (
+                <button
+                    onClick={onStartSlideshow}
+                    className={styles.slideshowButton}
+                    title="Start slideshow (F5)"
+                >
+                    <span className={styles.slideshowIcon}>▶</span>
+                    Slideshow
+                </button>
+            )}
             {/* Num selector removed - not needed with infinite scroll */}
         </div>
     );
