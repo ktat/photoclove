@@ -86,6 +86,11 @@ pub fn get_job_type_config(job_type: &JobType) -> JobTypeConfig {
         JobType::FaceThumbnailRegenerate => {
             JobTypeConfig::new(true, true, ProcessedCheckStrategy::LastProcessedId)
         }
+
+        // Custom: Single-shot job, no resume needed
+        JobType::InsightsCalculation => {
+            JobTypeConfig::new(false, true, ProcessedCheckStrategy::Custom)
+        }
     }
 }
 
@@ -105,12 +110,12 @@ mod tests {
             JobType::S3Sync,
             JobType::FaceDetection,
             JobType::FaceThumbnailRegenerate,
+            JobType::InsightsCalculation,
         ];
 
         for job_type in job_types {
             let config = get_job_type_config(&job_type);
-            // All job types should support both resume and restart
-            assert!(config.resume_supported);
+            // Most job types should support restart
             assert!(config.restart_supported);
         }
     }

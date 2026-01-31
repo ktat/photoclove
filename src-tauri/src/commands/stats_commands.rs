@@ -1,27 +1,124 @@
 //! Statistics-related Tauri commands.
 //!
 //! Provides commands for retrieving photography insights and statistics.
+//! Uses job queue for background calculation and caching for fast access.
 
 use crate::app_state::AppState;
-use crate::repository::meta_db::sqlite::stats;
+use crate::domain_service::job_queue::handlers::insights;
+use crate::entity::job_queue::{Job, JobType, JobUnit, QueuedJob};
+use crate::repository::meta_db::sqlite::SQLite;
+use serde::Serialize;
+use std::sync::Arc;
+use tauri::Manager;
 
-/// Get photography insights statistics.
+/// Cache status response
+#[derive(Debug, Serialize)]
+pub struct InsightsCacheStatus {
+    pub available: bool,
+    pub age_secs: Option<u64>,
+    pub path: Option<String>,
+}
+
+/// Get cached photography insights (fast, from cache file).
 ///
-/// Returns aggregated statistics about the photo library including:
-/// - Shooting time patterns
-/// - Camera settings distribution
-/// - Equipment usage
-/// - Organization metrics
-/// - Storage usage
+/// Returns cached insights if available, null otherwise.
+/// Use queue_insights_refresh to trigger recalculation.
+#[tauri::command]
+pub async fn get_cached_insights(
+    state: tauri::State<'_, AppState>,
+) -> Result<Option<String>, String> {
+    log::info!(target: "stats", "get_cached_insights; status=checking");
+
+    match insights::read_cached_insights(&state.config) {
+        Some(cached) => {
+            log::info!(target: "stats", "get_cached_insights; status=found");
+            let json = serde_json::to_string(&cached)
+                .map_err(|e| format!("Serialization error: {}", e))?;
+            Ok(Some(json))
+        }
+        None => {
+            log::info!(target: "stats", "get_cached_insights; status=not_found");
+            Ok(None)
+        }
+    }
+}
+
+/// Get cache status (whether cache exists and how old it is).
+#[tauri::command]
+pub async fn get_insights_cache_status(
+    state: tauri::State<'_, AppState>,
+) -> Result<InsightsCacheStatus, String> {
+    log::info!(target: "stats", "get_insights_cache_status; status=checking");
+
+    match insights::get_cache_metadata(&state.config) {
+        Some(metadata) => {
+            log::info!(target: "stats", "get_insights_cache_status; available=true; age_secs={}", metadata.age_secs);
+            Ok(InsightsCacheStatus {
+                available: true,
+                age_secs: Some(metadata.age_secs),
+                path: Some(metadata.path),
+            })
+        }
+        None => {
+            log::info!(target: "stats", "get_insights_cache_status; available=false");
+            Ok(InsightsCacheStatus {
+                available: false,
+                age_secs: None,
+                path: None,
+            })
+        }
+    }
+}
+
+/// Queue insights calculation job.
+///
+/// Returns the job unit ID for tracking progress.
+#[tauri::command]
+pub async fn queue_insights_refresh(
+    state: tauri::State<'_, AppState>,
+    app_handle: tauri::AppHandle,
+) -> Result<String, String> {
+    log::info!(target: "stats", "queue_insights_refresh; status=queueing");
+
+    let sqlite = SQLite::new(state.config.import_to.clone());
+
+    // Create job unit
+    let job_types = vec!["insights_calculation".to_string()];
+    let job_unit = JobUnit::new(job_types);
+    let job_unit_id = job_unit.id.clone();
+
+    // Save job unit
+    sqlite.create_job_unit(&job_unit)?;
+
+    // Create the job (empty target - insights doesn't need file list)
+    let job = Job::new(job_unit_id.clone(), JobType::InsightsCalculation, vec![]);
+    let queued_job = QueuedJob::new(job_unit_id.clone(), job);
+
+    // Save job to queue
+    sqlite.create_job(&queued_job)?;
+
+    log::info!(target: "stats", "queue_insights_refresh; status=queued; job_unit_id={}", job_unit_id);
+
+    // Trigger job processing
+    let db_arc = Arc::new(sqlite);
+    crate::domain_service::job_queue::executor::process_new_jobs(db_arc, 1, app_handle);
+
+    Ok(job_unit_id)
+}
+
+/// Get photography insights directly (synchronous, may be slow).
+///
+/// This is a fallback for when cache is not available.
+/// Prefer using get_cached_insights + queue_insights_refresh.
 #[tauri::command]
 pub async fn get_photography_insights(
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
     log::info!(target: "stats", "get_photography_insights; status=starting");
 
-    let sqlite = crate::repository::meta_db::sqlite::SQLite::new(state.config.import_to.clone());
+    let sqlite = SQLite::new(state.config.import_to.clone());
 
-    let insights = stats::get_all_insights(&sqlite, &state.config)?;
+    let insights = crate::repository::meta_db::sqlite::stats::get_all_insights(&sqlite, &state.config)?;
 
     log::info!(target: "stats", "get_photography_insights; status=complete");
 

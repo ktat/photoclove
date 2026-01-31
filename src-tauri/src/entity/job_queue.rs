@@ -73,6 +73,8 @@ pub enum JobType {
     FaceDetection,
     #[serde(rename = "face_thumbnail_regenerate")]
     FaceThumbnailRegenerate,
+    #[serde(rename = "insights_calculation")]
+    InsightsCalculation,
 }
 
 impl ToString for JobType {
@@ -87,6 +89,7 @@ impl ToString for JobType {
             JobType::S3Sync => "s3_sync".to_string(),
             JobType::FaceDetection => "face_detection".to_string(),
             JobType::FaceThumbnailRegenerate => "face_thumbnail_regenerate".to_string(),
+            JobType::InsightsCalculation => "insights_calculation".to_string(),
         }
     }
 }
