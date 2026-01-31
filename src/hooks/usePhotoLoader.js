@@ -165,7 +165,7 @@ export function usePhotoLoader({
 
         // Some view modes require specific data
         if (!viewMode.isSearchMode() && !viewMode.isRecentMode() && !viewMode.isTrashMode() &&
-            !viewMode.isInBurstGroupMode() && !viewMode.isImportMode() &&
+            !viewMode.isInBurstGroupMode() && !viewMode.isImportMode() && !viewMode.isUnknownFacesMode() &&
             !viewMode.getCurrentDate() && !viewMode.getCurrentAlbumId() && !viewMode.getCurrentTagId()) {
             return;
         }

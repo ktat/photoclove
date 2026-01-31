@@ -45,8 +45,9 @@ const TRANSITIONS = {
   [VIEW_MODES.TRASH]: createTransitions({}, ['TO_TRASH']),
   [VIEW_MODES.LOGIN]: { TO_HOME: VIEW_MODES.HOME, TO_DATE: VIEW_MODES.DATE, TO_RECENT: VIEW_MODES.RECENT },
   [VIEW_MODES.IN_BURST_GROUP]: createTransitions({ TO_ALBUM: VIEW_MODES.ALBUM, TO_TAG: VIEW_MODES.TAG }, ['TO_IN_BURST_GROUP']),
-  [VIEW_MODES.FACE_LIST]: createTransitions({ TO_PERSON: VIEW_MODES.PERSON }, ['TO_FACE_LIST']),
-  [VIEW_MODES.PERSON]: createTransitions({}, ['TO_PERSON'])
+  [VIEW_MODES.FACE_LIST]: createTransitions({ TO_PERSON: VIEW_MODES.PERSON, TO_UNKNOWN_FACES: VIEW_MODES.UNKNOWN_FACES }, ['TO_FACE_LIST']),
+  [VIEW_MODES.PERSON]: createTransitions({}, ['TO_PERSON']),
+  [VIEW_MODES.UNKNOWN_FACES]: createTransitions({}, ['TO_UNKNOWN_FACES'])
 };
 
 export const useViewMode = (initialMode = VIEW_MODES.HOME) => {
@@ -136,7 +137,7 @@ export const useViewMode = (initialMode = VIEW_MODES.HOME) => {
   // Screen visibility state computed from current mode
   const screenVisibility = useMemo(() => ({
     showImporter: currentMode === VIEW_MODES.IMPORT,
-    showPhotosList: [VIEW_MODES.DATE, VIEW_MODES.RECENT, VIEW_MODES.ALBUM, VIEW_MODES.ALBUM_LIST, VIEW_MODES.TAG, VIEW_MODES.TAG_LIST, VIEW_MODES.FACE_LIST, VIEW_MODES.PERSON, VIEW_MODES.TRASH, VIEW_MODES.IN_BURST_GROUP].includes(currentMode),
+    showPhotosList: [VIEW_MODES.DATE, VIEW_MODES.RECENT, VIEW_MODES.ALBUM, VIEW_MODES.ALBUM_LIST, VIEW_MODES.TAG, VIEW_MODES.TAG_LIST, VIEW_MODES.FACE_LIST, VIEW_MODES.PERSON, VIEW_MODES.UNKNOWN_FACES, VIEW_MODES.TRASH, VIEW_MODES.IN_BURST_GROUP].includes(currentMode),
     showSearchPage: currentMode === VIEW_MODES.SEARCH,
     showAlbumsList: currentMode === VIEW_MODES.ALBUM_LIST,
     showTagsList: currentMode === VIEW_MODES.TAG_LIST,
@@ -198,6 +199,10 @@ export const useViewMode = (initialMode = VIEW_MODES.HOME) => {
     transitionTo(VIEW_MODES.FACE_LIST);
   }, [transitionTo]);
 
+  const openUnknownFaces = useCallback(() => {
+    transitionTo(VIEW_MODES.UNKNOWN_FACES);
+  }, [transitionTo]);
+
   const openBurstGroup = useCallback((burstGroupId, returnMode, returnModeData) => {
     transitionTo(VIEW_MODES.IN_BURST_GROUP, {
       burstGroupId,
@@ -256,6 +261,7 @@ export const useViewMode = (initialMode = VIEW_MODES.HOME) => {
     openTrash,
     openPerson,
     openFacesList,
+    openUnknownFaces,
     openBurstGroup,
     goBackFromBurstGroup,
     showDatePhotos,

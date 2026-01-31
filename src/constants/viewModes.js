@@ -15,6 +15,7 @@ export const VIEW_MODES = {
   TAG: 'tag',
   FACE_LIST: 'face_list',
   PERSON: 'person',
+  UNKNOWN_FACES: 'unknown_faces',
   TRASH: 'trash',
   IMPORT: 'import',
   PREFERENCES: 'preferences',
@@ -33,6 +34,7 @@ export const isPhotoViewingMode = (mode) => {
     VIEW_MODES.ALBUM,
     VIEW_MODES.TAG,
     VIEW_MODES.PERSON,
+    VIEW_MODES.UNKNOWN_FACES,
     VIEW_MODES.TRASH,
     VIEW_MODES.IN_BURST_GROUP
   ].includes(mode);

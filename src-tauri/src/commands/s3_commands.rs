@@ -70,6 +70,7 @@ pub fn save_s3_config(
     custom_endpoint: Option<String>,
     auto_sync: bool,
     backup_db: bool,
+    backup_thumbnails: bool,
     max_file_size_mb: Option<u32>,
 ) -> Result<String, String> {
     let storage_type_enum = match storage_type.as_str() {
@@ -103,6 +104,7 @@ pub fn save_s3_config(
         custom_endpoint,
         auto_sync,
         backup_db,
+        backup_thumbnails,
         max_file_size_mb,
         last_sync_at,
     };
@@ -147,6 +149,7 @@ pub fn get_s3_config(state: State<'_, AppState>) -> Result<String, String> {
             "custom_endpoint": s3.custom_endpoint,
             "auto_sync": s3.auto_sync,
             "backup_db": s3.backup_db,
+            "backup_thumbnails": s3.backup_thumbnails,
             "max_file_size_mb": s3.max_file_size_mb,
             "last_sync_at": s3.last_sync_at,
         }),
@@ -160,6 +163,7 @@ pub fn get_s3_config(state: State<'_, AppState>) -> Result<String, String> {
             "custom_endpoint": null,
             "auto_sync": false,
             "backup_db": true,
+            "backup_thumbnails": true,
             "max_file_size_mb": null,
             "last_sync_at": null,
         }),

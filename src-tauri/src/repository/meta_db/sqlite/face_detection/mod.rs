@@ -25,4 +25,4 @@ pub use persons::{
 
 pub use stats::get_face_detection_stats;
 
-pub use unknown::{get_unknown_faces, get_unknown_faces_count};
+pub use unknown::{get_unknown_faces, get_unknown_faces_count, get_photos_for_unknown_faces_full};

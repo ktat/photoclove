@@ -90,7 +90,7 @@ function PhotosList({
     const {
         toggleSearchPage, searchInitialQuery, currentAlbumId, currentTagId,
         viewMode, openAlbum, toggleAlbumListMode, openTag, openTagsList, toggleHome,
-        openPerson, openFacesList,
+        openPerson, openFacesList, openUnknownFaces,
         openBurstGroup, goBackFromBurstGroup, currentBurstGroupId, burstModeEnabled,
         burstReturnMode, burstReturnModeData
     } = useUI();
@@ -194,6 +194,7 @@ function PhotosList({
         handleAlbumClick: handleAlbumClickOriginal,
         loadTags, loadTagPhotos: loadTagPhotosOriginal,
         loadPersonPhotos: loadPersonPhotosOriginal,
+        loadUnknownFacesPhotos: loadUnknownFacesPhotosOriginal,
         loadTrashPhotos, loadFilterOptions, logOperation
     } = usePhotoDataLoader({
         handleError, convertPhotosToEntities: convertPhotosWithConfig,
@@ -272,6 +273,12 @@ function PhotosList({
         try { await loadPersonPhotosOriginal(personId); }
         finally { setPhotoLoading(false); }
     }, [loadPersonPhotosOriginal, setPhotoLoading]);
+
+    const loadUnknownFacesPhotos = useCallback(async () => {
+        setPhotoLoading(true);
+        try { await loadUnknownFacesPhotosOriginal(); }
+        finally { setPhotoLoading(false); }
+    }, [loadUnknownFacesPhotosOriginal, setPhotoLoading]);
 
     // Photo sync effect
     usePhotoSyncEffect({
@@ -421,6 +428,15 @@ function PhotosList({
         loadPersonPhotos(person.person_id);
     }, [openPerson, setCurrentPersonId, setCurrentPersonName, loadPersonPhotos]);
 
+    const handleUnknownFaceClick = useCallback((face) => {
+        logger.info('PhotosList', 'unknown_face_click', 'User clicked on unknown face to view photos', {
+            faceId: face?.id,
+            photoPath: face?.photo_path
+        });
+        openUnknownFaces();
+        loadUnknownFacesPhotos();
+    }, [openUnknownFaces, loadUnknownFacesPhotos]);
+
     // Tab management
     const { tabClass, setTabClass, changeTab, clearAllTabs } = useTabManagement({ viewMode, viewModeObj });
 
@@ -529,7 +545,7 @@ function PhotosList({
         handleAlbumDelete, clearAlbumSelection, deleteSelectedAlbums,
         handleTagClick, handleTagSelection, handleNewTagClick, clearTagSelection, deleteSelectedTags,
         handlePersonClick, handlePersonSelection, clearPersonSelection, deleteSelectedPersons,
-        handleUnknownFaceSelection, clearUnknownFaceSelection,
+        handleUnknownFaceClick, handleUnknownFaceSelection, clearUnknownFaceSelection,
         setFaceSearchTerm, setFaceViewType, openFacesList, reloadFaces,
         handleSearch, clearSearch, handleFiltersChange, handleSavedSearchSelect, clearAllFilters,
         setShowSideMenu, setIconSize, setSort, setImportSort, setCurrentPhotoPath, setCurrentPhotoIndex,

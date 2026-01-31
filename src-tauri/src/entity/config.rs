@@ -99,12 +99,19 @@ pub struct S3Config {
     /// Backup SQLite database
     #[serde(default)]
     pub backup_db: bool,
+    /// Backup thumbnail directory
+    #[serde(default = "default_backup_thumbnails")]
+    pub backup_thumbnails: bool,
     /// Maximum file size in MB (None = no limit)
     #[serde(default)]
     pub max_file_size_mb: Option<u32>,
     /// Last sync timestamp
     #[serde(default)]
     pub last_sync_at: Option<String>,
+}
+
+fn default_backup_thumbnails() -> bool {
+    true
 }
 
 impl Default for S3Config {
@@ -119,6 +126,7 @@ impl Default for S3Config {
             custom_endpoint: None,
             auto_sync: false,
             backup_db: true,
+            backup_thumbnails: true,
             max_file_size_mb: None,
             last_sync_at: None,
         }

@@ -39,11 +39,12 @@ export class ViewMode {
     isInBurstGroupMode() { return this._mode === VIEW_MODES.IN_BURST_GROUP; }
     isFaceListMode() { return this._mode === VIEW_MODES.FACE_LIST; }
     isPersonMode() { return this._mode === VIEW_MODES.PERSON; }
+    isUnknownFacesMode() { return this._mode === VIEW_MODES.UNKNOWN_FACES; }
 
     // Complex mode categories
     isPhotoViewingMode() {
         return [VIEW_MODES.DATE, VIEW_MODES.RECENT, VIEW_MODES.SEARCH, VIEW_MODES.ALBUM,
-                VIEW_MODES.TAG, VIEW_MODES.PERSON, VIEW_MODES.TRASH, VIEW_MODES.IN_BURST_GROUP].includes(this._mode);
+                VIEW_MODES.TAG, VIEW_MODES.PERSON, VIEW_MODES.UNKNOWN_FACES, VIEW_MODES.TRASH, VIEW_MODES.IN_BURST_GROUP].includes(this._mode);
     }
 
     isListMode() {
@@ -55,7 +56,7 @@ export class ViewMode {
     showsPhotosList() {
         return [VIEW_MODES.DATE, VIEW_MODES.RECENT, VIEW_MODES.ALBUM, VIEW_MODES.ALBUM_LIST,
                 VIEW_MODES.TAG, VIEW_MODES.TAG_LIST, VIEW_MODES.FACE_LIST, VIEW_MODES.PERSON,
-                VIEW_MODES.TRASH, VIEW_MODES.IN_BURST_GROUP].includes(this._mode);
+                VIEW_MODES.UNKNOWN_FACES, VIEW_MODES.TRASH, VIEW_MODES.IN_BURST_GROUP].includes(this._mode);
     }
 
     // Data attribute generation for component identification
@@ -68,6 +69,7 @@ export class ViewMode {
             case VIEW_MODES.TAG: return this._data.tagId ? `tag_${this._data.tagId}` : "tag";
             case VIEW_MODES.FACE_LIST: return "faces";
             case VIEW_MODES.PERSON: return this._data.personId ? `person_${this._data.personId}` : "person";
+            case VIEW_MODES.UNKNOWN_FACES: return "unknown_faces";
             case VIEW_MODES.TRASH: return "trash";
             case VIEW_MODES.DATE: return this._data.date || "date";
             case VIEW_MODES.RECENT: return "recent";
@@ -217,7 +219,9 @@ export class ViewMode {
             case VIEW_MODES.FACE_LIST:
                 return { ...baseParams, search_type: "all_persons" };
             case VIEW_MODES.PERSON:
-                return { ...baseParams, search_type: "person_photos", params: { person_id: this._data.personId } };
+                return { ...baseParams, search_type: "person", query: this._data.personId?.toString() };
+            case VIEW_MODES.UNKNOWN_FACES:
+                return { ...baseParams, search_type: "unknown_faces" };
             case VIEW_MODES.SEARCH:
                 return { ...baseParams, search_type: "search", query: this._data.searchQuery, params: this._data.searchParams };
             case VIEW_MODES.TRASH:
@@ -236,6 +240,7 @@ export class ViewMode {
             case VIEW_MODES.ALBUM_LIST: return 'Albums';
             case VIEW_MODES.TAG_LIST: return 'Tags';
             case VIEW_MODES.FACE_LIST: return 'Faces';
+            case VIEW_MODES.UNKNOWN_FACES: return 'Unknown Faces';
             case VIEW_MODES.PERSON: return this._data.personName || 'Person';
             case VIEW_MODES.TRASH: return 'Trash';
             case VIEW_MODES.SEARCH: return 'Search';
@@ -332,6 +337,8 @@ export class ViewMode {
                 return `TAG:${this._data.tagId || 'unknown'}`;
             case VIEW_MODES.PERSON:
                 return `PERSON:${this._data.personId || 'unknown'}`;
+            case VIEW_MODES.UNKNOWN_FACES:
+                return 'UNKNOWN_FACES';
             case VIEW_MODES.TRASH:
                 return 'TRASH';
             case VIEW_MODES.IN_BURST_GROUP:
@@ -370,6 +377,7 @@ export class ViewMode {
     static tagList() { return new ViewMode(VIEW_MODES.TAG_LIST); }
     static faceList() { return new ViewMode(VIEW_MODES.FACE_LIST); }
     static person(personId, personName = null) { return new ViewMode(VIEW_MODES.PERSON, { personId, personName }); }
+    static unknownFaces() { return new ViewMode(VIEW_MODES.UNKNOWN_FACES); }
     static trash() { return new ViewMode(VIEW_MODES.TRASH); }
 
     // DirectoryMenu UI display conditions
@@ -394,6 +402,7 @@ export class ViewMode {
             case VIEW_MODES.TAG:
                 return `No photos with tag: ${this._data.tagName || 'Unknown Tag'}`;
             case VIEW_MODES.FACE_LIST: return "No faces detected yet";
+            case VIEW_MODES.UNKNOWN_FACES: return "No photos with unknown faces";
             case VIEW_MODES.PERSON:
                 return `No photos for person: ${this._data.personName || 'Unknown Person'}`;
             case VIEW_MODES.TRASH: return "Trash is empty";
@@ -409,6 +418,7 @@ export class ViewMode {
             case VIEW_MODES.ALBUM: return { label: "Back to Album List", action: "toggleAlbumListMode" };
             case VIEW_MODES.TAG: return { label: "Back to Tag List", action: "openTagsList" };
             case VIEW_MODES.PERSON: return { label: "Back to Faces List", action: "openFacesList" };
+            case VIEW_MODES.UNKNOWN_FACES: return { label: "Back to Faces List", action: "openFacesList" };
             case VIEW_MODES.TRASH: return { label: "Back to HOME", action: "toggleHome" };
             default: return null;
         }

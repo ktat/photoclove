@@ -147,6 +147,7 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
         custom_endpoint: null,
         auto_sync: false,
         backup_db: true,
+        backup_thumbnails: true,
         max_file_size_mb: null,
         last_sync_at: null
     };
@@ -274,6 +275,7 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                 customEndpoint: s3Config.custom_endpoint,
                 autoSync: s3Config.auto_sync,
                 backupDb: s3Config.backup_db,
+                backupThumbnails: s3Config.backup_thumbnails,
                 maxFileSizeMb: s3Config.max_file_size_mb
             });
 
@@ -680,6 +682,16 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                                 onChange={(e) => updateS3Config({ backup_db: e.target.checked })}
                             />
                             <label htmlFor="s3-backup-db">Backup database (metadata, tags, edits)</label>
+                        </div>
+
+                        <div className={styles['setting-item']}>
+                            <input
+                                type="checkbox"
+                                id="s3-backup-thumbnails"
+                                checked={s3Config.backup_thumbnails}
+                                onChange={(e) => updateS3Config({ backup_thumbnails: e.target.checked })}
+                            />
+                            <label htmlFor="s3-backup-thumbnails">Backup thumbnails (faster restore)</label>
                         </div>
 
                         <div className={styles['setting-row']} style={{ marginTop: 'var(--space-3)' }}>

@@ -79,6 +79,7 @@ function PhotoListContent({
     const facesList = faces?.list || [];
     const faceSearchTerm = faces?.searchTerm || '';
     const unknownFacesCount = faces?.unknownCount || 0;
+    const faceViewType = faces?.viewType || 'persons';
 
     // Destructure from config state
     const { import: importState, app: appConfig } = configState;
@@ -137,6 +138,7 @@ function PhotoListContent({
         handleAlbumSelection,
         handleTagSelection,
         handlePersonSelection,
+        handleUnknownFaceClick,
         handleUnknownFaceSelection,
         setFaceViewType,
         handleAlbumClick,
@@ -206,6 +208,12 @@ function PhotoListContent({
 
         openBurstGroup(burstGroupId, returnMode, returnModeData);
     }, [viewModeObj, openBurstGroup, currentPhotoIndex]);
+
+    // Handler for back navigation from Unknown Faces photo list
+    const handleBackToUnknownFaces = useCallback(() => {
+        setFaceViewType('unknown');
+        openFacesList();
+    }, [setFaceViewType, openFacesList]);
 
     // Tag list view mode (list or cloud) with localStorage persistence
     const TAG_VIEW_MODE_KEY = 'photoclove-tag-list-view-mode';
@@ -303,6 +311,7 @@ function PhotoListContent({
                             persons={facesList}
                             iconSize={iconSize}
                             onPersonClick={handlePersonClick}
+                            onFaceClick={handleUnknownFaceClick}
                             selectedPersons={selectedPersons}
                             onPersonSelection={handlePersonSelection}
                             selectedUnknownFaces={selectedUnknownFaces}
@@ -311,6 +320,7 @@ function PhotoListContent({
                             onSearchChange={setFaceSearchTerm}
                             onRefresh={reloadFaces}
                             unknownFacesCount={unknownFacesCount}
+                            viewType={faceViewType}
                             onViewTypeChange={setFaceViewType}
                         />
                     </>
@@ -341,6 +351,7 @@ function PhotoListContent({
                                     toggleAlbumListMode={toggleAlbumListMode}
                                     openTagsList={openTagsList}
                                     openFacesList={openFacesList}
+                                    onBackToUnknownFaces={handleBackToUnknownFaces}
                                     goBackFromBurstGroup={goBackFromBurstGroup}
                                     isLimitedByConfig={isLimitedByConfig}
                                     onRefresh={refreshPhotosOnly}
