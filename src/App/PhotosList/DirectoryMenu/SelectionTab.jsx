@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { confirm } from "@tauri-apps/plugin-dialog";
 import FaceThumbnail from "../../../components/FaceThumbnail.jsx";
 
 /**
@@ -70,10 +71,13 @@ function SelectionTab({
     } = handlers;
 
     // Handle unknown faces operation selection
-    const handleUnknownFacesOperation = (e) => {
+    const handleUnknownFacesOperation = async (e) => {
         const operation = e.target.value;
+        e.target.value = 'select'; // Reset dropdown first
+
         if (operation === 'delete') {
-            if (window.confirm(`Delete ${selectedUnknownFaces.length} selected faces?`)) {
+            const confirmed = await confirm(`Delete ${selectedUnknownFaces.length} selected faces?`, { title: 'Delete Faces' });
+            if (confirmed) {
                 deleteUnknownFacesBatch(selectedUnknownFaces);
             }
         } else if (operation === 'assignNew') {
@@ -83,7 +87,6 @@ function SelectionTab({
             setShowPersonSelector(true);
             setShowNewPersonInput(false);
         }
-        e.target.value = 'select'; // Reset dropdown
     };
 
     // Handle new person creation and assignment
