@@ -26,10 +26,10 @@ const AppearanceTab = ({ config, setConfig }) => {
                 </div>
             </div>
 
-            <h2 className={styles['section-title']}>{t('appearance.gridSize')}</h2>
+            <h2 className={styles['section-title']}>{t('appearance.gridTheme')}</h2>
             <div className={styles['setting-group']}>
                 <div className={styles['setting-row']}>
-                    <label>{t('appearance.gridSize')}:</label>
+                    <label>{t('appearance.gridTheme')}:</label>
                     <select
                         value={config.photo_grid_theme || 'default'}
                         onChange={(e) => {
@@ -37,17 +37,17 @@ const AppearanceTab = ({ config, setConfig }) => {
                             document.documentElement.setAttribute('data-grid-theme', e.target.value);
                         }}
                     >
-                        <option value="default">Default</option>
-                        <option value="filmstrip">Film Strip (Negative)</option>
-                        <option value="slide-mount">Slide Mount</option>
-                        <option value="lightbox">Light Box</option>
-                        <option value="slide-35mm">35mm Slide</option>
+                        <option value="default">{t('appearance.gridDefault')}</option>
+                        <option value="filmstrip">{t('appearance.gridFilmstrip')}</option>
+                        <option value="slide-mount">{t('appearance.gridSlideMount')}</option>
+                        <option value="lightbox">{t('appearance.gridLightbox')}</option>
+                        <option value="slide-35mm">{t('appearance.gridSlide35mm')}</option>
                     </select>
                 </div>
             </div>
 
             {/* Theme Preview Section */}
-            <h2 className={styles['section-title']}>Preview</h2>
+            <h2 className={styles['section-title']}>{t('appearance.preview')}</h2>
             <div className={styles['setting-group']}>
                 <div
                     className={previewStyles['theme-preview-container']}

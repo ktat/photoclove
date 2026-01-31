@@ -1,129 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from 'react-i18next';
 import { logger } from "../../../services/LoggerService.js";
 import styles from '../Preferences.module.css';
-
-// Storage provider options
-const STORAGE_PROVIDERS = [
-    { id: 'aws_s3', label: 'Amazon S3', hasEndpoint: false },
-    { id: 'wasabi', label: 'Wasabi', hasEndpoint: false },
-    { id: 'minio', label: 'MinIO', hasEndpoint: true },
-    { id: 'cloudflare_r2', label: 'Cloudflare R2', hasEndpoint: true },
-    { id: 'digitalocean', label: 'DigitalOcean Spaces', hasEndpoint: false },
-    { id: 'idrive_e2', label: 'iDrive e2', hasEndpoint: false },
-    { id: 'custom', label: 'Other (Custom Endpoint)', hasEndpoint: true }
-];
-
-// Common AWS regions
-// Source: https://docs.aws.amazon.com/general/latest/gr/s3.html
-const AWS_REGIONS = [
-    { id: 'us-east-1', label: 'US East (N. Virginia)' },
-    { id: 'us-east-2', label: 'US East (Ohio)' },
-    { id: 'us-west-1', label: 'US West (N. California)' },
-    { id: 'us-west-2', label: 'US West (Oregon)' },
-    { id: 'eu-west-1', label: 'EU (Ireland)' },
-    { id: 'eu-west-2', label: 'EU (London)' },
-    { id: 'eu-central-1', label: 'EU (Frankfurt)' },
-    { id: 'ap-northeast-1', label: 'Asia Pacific (Tokyo)' },
-    { id: 'ap-northeast-2', label: 'Asia Pacific (Seoul)' },
-    { id: 'ap-southeast-1', label: 'Asia Pacific (Singapore)' },
-    { id: 'ap-southeast-2', label: 'Asia Pacific (Sydney)' },
-    { id: 'ap-south-1', label: 'Asia Pacific (Mumbai)' },
-    { id: 'sa-east-1', label: 'South America (São Paulo)' }
-];
-
-// Wasabi regions (15 regions as of 2026)
-// Source: https://docs.wasabi.com/docs/service-urls-for-wasabis-storage-regions
-// Source: https://wasabi.com/company/storage-regions
-const WASABI_REGIONS = [
-    { id: 'us-east-1', label: 'US East (N. Virginia)' },
-    { id: 'us-east-2', label: 'US East (N. Virginia-2)' },
-    { id: 'us-central-1', label: 'US Central (Texas)' },
-    { id: 'us-west-2', label: 'US West (San Jose)' },
-    { id: 'ca-central-1', label: 'Canada (Toronto)' },
-    { id: 'eu-central-1', label: 'EU Central (Amsterdam)' },
-    { id: 'eu-central-2', label: 'EU Central (Frankfurt)' },
-    { id: 'eu-west-1', label: 'EU West (London)' },
-    { id: 'eu-west-2', label: 'EU West (Paris)' },
-    { id: 'eu-west-3', label: 'EU West (London-2)' },
-    { id: 'eu-south-1', label: 'EU South (Milan)' },
-    { id: 'ap-northeast-1', label: 'Asia Pacific (Tokyo)' },
-    { id: 'ap-northeast-2', label: 'Asia Pacific (Osaka)' },
-    { id: 'ap-southeast-1', label: 'Asia Pacific (Singapore)' },
-    { id: 'ap-southeast-2', label: 'Asia Pacific (Sydney)' }
-];
-
-// DigitalOcean Spaces regions (13 regions as of 2026)
-// Source: https://docs.digitalocean.com/products/spaces/details/availability/
-const DIGITALOCEAN_REGIONS = [
-    { id: 'nyc1', label: 'New York 1' },
-    { id: 'nyc2', label: 'New York 2' },
-    { id: 'nyc3', label: 'New York 3' },
-    { id: 'sfo2', label: 'San Francisco 2' },
-    { id: 'sfo3', label: 'San Francisco 3' },
-    { id: 'ams3', label: 'Amsterdam 3' },
-    { id: 'sgp1', label: 'Singapore 1' },
-    { id: 'lon1', label: 'London 1' },
-    { id: 'fra1', label: 'Frankfurt 1' },
-    { id: 'tor1', label: 'Toronto 1' },
-    { id: 'blr1', label: 'Bangalore 1' },
-    { id: 'syd1', label: 'Sydney 1' },
-    { id: 'atl1', label: 'Atlanta 1' }
-];
-
-// iDrive e2 regions (16 regions as of 2026)
-// Source: https://www.idrive.com/s3-storage-e2/e2-endpoint-urls
-// Source: https://www.idrive.com/s3-storage-e2/locations
-const IDRIVE_E2_REGIONS = [
-    { id: 'us-east-1', label: 'US East (Virginia)' },
-    { id: 'us-southeast-1', label: 'US Southeast (Miami)' },
-    { id: 'us-central-1', label: 'US Central (Dallas)' },
-    { id: 'us-midwest-1', label: 'US Midwest (Chicago)' },
-    { id: 'us-southwest-1', label: 'US Southwest (Phoenix)' },
-    { id: 'us-west-1', label: 'US West (Oregon)' },
-    { id: 'us-west-2', label: 'US West (Los Angeles)' },
-    { id: 'us-west-3', label: 'US West (San Jose)' },
-    { id: 'ca-east-1', label: 'Canada (Montreal)' },
-    { id: 'eu-west-1', label: 'EU West (Ireland)' },
-    { id: 'eu-west-2', label: 'EU West (London)' },
-    { id: 'eu-west-3', label: 'EU West (London-2)' },
-    { id: 'eu-west-4', label: 'EU West (Paris)' },
-    { id: 'eu-central-1', label: 'EU Central (Frankfurt-2)' },
-    { id: 'eu-central-2', label: 'EU Central (Frankfurt)' },
-    { id: 'ap-southeast-1', label: 'Asia Pacific (Singapore)' }
-];
-
-// Max file size options
-const MAX_FILE_SIZE_OPTIONS = [
-    { value: null, label: 'No limit' },
-    { value: 50, label: '50 MB' },
-    { value: 100, label: '100 MB' },
-    { value: 200, label: '200 MB' },
-    { value: 500, label: '500 MB' }
-];
-
-// Helper functions to parse and build bucket URI
-function parseBucketUri(bucketUri) {
-    if (!bucketUri || !bucketUri.startsWith('s3://')) {
-        return { bucketName: '', prefix: '' };
-    }
-
-    const path = bucketUri.replace('s3://', '');
-    const parts = path.split('/');
-    const bucketName = parts[0] || '';
-    const prefix = parts.slice(1).filter(p => p).join('/');
-
-    return { bucketName, prefix };
-}
-
-function buildBucketUri(bucketName, prefix) {
-    if (!bucketName) return '';
-
-    const cleanPrefix = prefix ? prefix.replace(/^\/+|\/+$/g, '') : '';
-    return cleanPrefix ? `s3://${bucketName}/${cleanPrefix}/` : `s3://${bucketName}/`;
-}
+import {
+    STORAGE_PROVIDERS,
+    MAX_FILE_SIZE_OPTIONS,
+    getRegionsForStorageType,
+    parseBucketUri,
+    buildBucketUri
+} from './S3Constants.js';
 
 function S3BackupTab({ config, setConfig, addFooterMessage }) {
+    const { t } = useTranslation('preferences');
     const [awsProfiles, setAwsProfiles] = useState(['default']);
     const [isTesting, setIsTesting] = useState(false);
     const [testResult, setTestResult] = useState(null);
@@ -157,27 +46,9 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
 
     // Check if current region is in the predefined list, if not, set as custom region
     useEffect(() => {
-        let regions;
-        switch (s3Config.storage_type) {
-            case 'aws_s3':
-                regions = AWS_REGIONS;
-                break;
-            case 'wasabi':
-                regions = WASABI_REGIONS;
-                break;
-            case 'digitalocean':
-                regions = DIGITALOCEAN_REGIONS;
-                break;
-            case 'idrive_e2':
-                regions = IDRIVE_E2_REGIONS;
-                break;
-            default:
-                regions = AWS_REGIONS;
-        }
-
+        const regions = getRegionsForStorageType(s3Config.storage_type);
         const regionExists = regions.some(r => r.id === s3Config.region);
         if (!regionExists && s3Config.region) {
-            // If region is not in the list, set it as custom region
             setCustomRegion(s3Config.region);
         } else {
             setCustomRegion('');
@@ -212,7 +83,7 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
             }
         };
         checkCredentials();
-    }, [s3Config.storage_type]); // Re-check when provider changes
+    }, [s3Config.storage_type]);
 
     // Load sync stats when enabled
     useEffect(() => {
@@ -235,10 +106,8 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
         // Auto-set auth_method when storage_type changes
         if (updates.storage_type) {
             if (updates.storage_type === 'aws_s3') {
-                // AWS S3: default to AWS credentials
                 updates = { ...updates, auth_method: updates.auth_method || 'aws_credentials' };
             } else {
-                // S3-compatible (iDrive e2, etc.): use access key
                 updates = { ...updates, auth_method: 'access_key' };
             }
         }
@@ -264,7 +133,6 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
         setTestResult(null);
 
         try {
-            // Save config first
             await invoke("save_s3_config", {
                 enabled: s3Config.enabled,
                 storageType: s3Config.storage_type,
@@ -284,16 +152,16 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
             setTestResult({ success: data.success, message: data.message });
 
             if (data.success) {
-                setStatusMessage({ type: 'success', text: 'S3 connection successful' });
-                addFooterMessage?.("s3_test", "S3 connection successful");
+                setStatusMessage({ type: 'success', text: t('s3Backup.connectionSuccess') });
+                addFooterMessage?.("s3_test", t('s3Backup.connectionSuccess'));
             } else {
-                setStatusMessage({ type: 'error', text: `Connection failed: ${data.message}` });
-                addFooterMessage?.("s3_test_error", `S3 connection failed: ${data.message}`);
+                setStatusMessage({ type: 'error', text: `${t('s3Backup.connectionFailed')}: ${data.message}` });
+                addFooterMessage?.("s3_test_error", `${t('s3Backup.connectionFailed')}: ${data.message}`);
             }
         } catch (error) {
             setTestResult({ success: false, message: error.toString() });
-            setStatusMessage({ type: 'error', text: `Connection failed: ${error}` });
-            addFooterMessage?.("s3_test_error", `S3 connection failed: ${error}`);
+            setStatusMessage({ type: 'error', text: `${t('s3Backup.connectionFailed')}: ${error}` });
+            addFooterMessage?.("s3_test_error", `${t('s3Backup.connectionFailed')}: ${error}`);
             logger.error('S3BackupTab', 'test_connection_error', 'Connection test failed', { error });
         } finally {
             setIsTesting(false);
@@ -301,7 +169,7 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
     };
 
     const handleFullSync = async () => {
-        if (!window.confirm("This will sync all unsynced photos to S3. Continue?")) {
+        if (!window.confirm(t('s3Backup.fullSyncConfirm'))) {
             return;
         }
 
@@ -309,11 +177,11 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
         try {
             const result = await invoke("enqueue_s3_full_sync");
             const data = JSON.parse(result);
-            setStatusMessage({ type: 'success', text: `Sync started: ${data.to_sync} photos to upload` });
-            addFooterMessage?.("s3_sync", `Sync started: ${data.to_sync} photos to upload`);
+            setStatusMessage({ type: 'success', text: t('s3Backup.syncStarted', { count: data.to_sync }) });
+            addFooterMessage?.("s3_sync", t('s3Backup.syncStarted', { count: data.to_sync }));
         } catch (error) {
-            setStatusMessage({ type: 'error', text: `Failed to start sync: ${error}` });
-            addFooterMessage?.("s3_sync_error", `Failed to start sync: ${error}`);
+            setStatusMessage({ type: 'error', text: `${t('s3Backup.syncFailed')}: ${error}` });
+            addFooterMessage?.("s3_sync_error", `${t('s3Backup.syncFailed')}: ${error}`);
             logger.error('S3BackupTab', 'full_sync_error', 'Failed to start full sync', { error });
         } finally {
             setIsSyncing(false);
@@ -322,8 +190,8 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
 
     const handleSaveCredentials = async () => {
         if (!accessKeyId || !secretAccessKey) {
-            setStatusMessage({ type: 'error', text: 'Please enter both Access Key ID and Secret Access Key' });
-            addFooterMessage?.("s3_credentials_error", "Please enter both Access Key ID and Secret Access Key");
+            setStatusMessage({ type: 'error', text: t('s3Backup.credentialsRequired') });
+            addFooterMessage?.("s3_credentials_error", t('s3Backup.credentialsRequired'));
             return;
         }
 
@@ -337,23 +205,22 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
             setAccessKeyId('');
             setSecretAccessKey('');
 
-            // Refresh preview for current provider
             const result = await invoke("get_s3_credentials_preview", { provider: s3Config.storage_type });
             const data = JSON.parse(result);
             setCredentialsPreview(data.access_key_preview);
 
-            setStatusMessage({ type: 'success', text: `Credentials saved securely for ${selectedProvider.label}` });
-            addFooterMessage?.("s3_credentials", `Credentials saved for ${selectedProvider.label}`);
+            setStatusMessage({ type: 'success', text: t('s3Backup.credentialsSaved', { provider: selectedProvider.label }) });
+            addFooterMessage?.("s3_credentials", t('s3Backup.credentialsSaved', { provider: selectedProvider.label }));
             logger.info('S3BackupTab', 'credentials_saved', 'S3 credentials saved to keyring', { provider: s3Config.storage_type });
         } catch (error) {
-            setStatusMessage({ type: 'error', text: `Failed to save credentials: ${error}` });
-            addFooterMessage?.("s3_credentials_error", `Failed to save credentials: ${error}`);
+            setStatusMessage({ type: 'error', text: `${t('s3Backup.credentialsSaveFailed')}: ${error}` });
+            addFooterMessage?.("s3_credentials_error", `${t('s3Backup.credentialsSaveFailed')}: ${error}`);
             logger.error('S3BackupTab', 'credentials_save_error', 'Failed to save credentials', { error });
         }
     };
 
     const handleDeleteCredentials = async () => {
-        if (!window.confirm(`Delete stored credentials for ${selectedProvider.label}? You'll need to re-enter them.`)) {
+        if (!window.confirm(t('s3Backup.deleteCredentialsConfirm', { provider: selectedProvider.label }))) {
             return;
         }
 
@@ -361,12 +228,12 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
             await invoke("delete_s3_credentials", { provider: s3Config.storage_type });
             setHasStoredCredentials(false);
             setCredentialsPreview(null);
-            setStatusMessage({ type: 'success', text: `Credentials deleted for ${selectedProvider.label}` });
-            addFooterMessage?.("s3_credentials", `Credentials deleted for ${selectedProvider.label}`);
+            setStatusMessage({ type: 'success', text: t('s3Backup.credentialsDeleted', { provider: selectedProvider.label }) });
+            addFooterMessage?.("s3_credentials", t('s3Backup.credentialsDeleted', { provider: selectedProvider.label }));
             logger.info('S3BackupTab', 'credentials_deleted', 'S3 credentials deleted from keyring', { provider: s3Config.storage_type });
         } catch (error) {
-            setStatusMessage({ type: 'error', text: `Failed to delete credentials: ${error}` });
-            addFooterMessage?.("s3_credentials_error", `Failed to delete credentials: ${error}`);
+            setStatusMessage({ type: 'error', text: `${t('s3Backup.credentialsDeleteFailed')}: ${error}` });
+            addFooterMessage?.("s3_credentials_error", `${t('s3Backup.credentialsDeleteFailed')}: ${error}`);
             logger.error('S3BackupTab', 'credentials_delete_error', 'Failed to delete credentials', { error });
         }
     };
@@ -375,12 +242,13 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
     const showEndpointField = selectedProvider.hasEndpoint || s3Config.storage_type === 'custom';
     const showProfileSelector = s3Config.storage_type === 'aws_s3' && s3Config.auth_method === 'aws_credentials';
     const needsAccessKey = s3Config.storage_type !== 'aws_s3' || s3Config.auth_method === 'access_key';
+    const regions = getRegionsForStorageType(s3Config.storage_type);
 
     return (
         <div className={styles['preferences-section']}>
-            <h2 className={styles['section-title']}>S3 Backup</h2>
+            <h2 className={styles['section-title']}>{t('s3Backup.title')}</h2>
             <p className={styles['setting-description']} style={{ marginBottom: 'var(--space-4)' }}>
-                Backup photos to Amazon S3 or S3-compatible storage services.
+                {t('s3Backup.description')}
             </p>
 
             {/* Main Toggle */}
@@ -392,7 +260,7 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                         checked={s3Config.enabled}
                         onChange={(e) => updateS3Config({ enabled: e.target.checked })}
                     />
-                    <label htmlFor="s3-enabled">Enable S3 Backup</label>
+                    <label htmlFor="s3-enabled">{t('s3Backup.enable')}</label>
                 </div>
             </div>
 
@@ -400,9 +268,9 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                 <>
                     {/* Storage Provider */}
                     <div className={styles['setting-group']} style={{ marginTop: 'var(--space-4)' }}>
-                        <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-base)' }}>Storage Provider</h3>
+                        <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-base)' }}>{t('s3Backup.storageProvider')}</h3>
                         <div className={styles['setting-row']}>
-                            <label>Provider</label>
+                            <label>{t('s3Backup.provider')}</label>
                             <select
                                 value={s3Config.storage_type}
                                 onChange={(e) => updateS3Config({ storage_type: e.target.value })}
@@ -417,11 +285,11 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
 
                     {/* Storage Settings */}
                     <div className={styles['setting-group']} style={{ marginTop: 'var(--space-4)' }}>
-                        <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-base)' }}>Storage Settings</h3>
+                        <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-base)' }}>{t('s3Backup.storageSettings')}</h3>
 
                         {showEndpointField && (
                             <div className={styles['setting-row']} style={{ marginBottom: 'var(--space-3)' }}>
-                                <label>Endpoint URL</label>
+                                <label>{t('s3Backup.endpointUrl')}</label>
                                 <input
                                     type="text"
                                     value={s3Config.custom_endpoint || ''}
@@ -433,7 +301,7 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                         )}
 
                         <div className={styles['setting-row']} style={{ marginBottom: 'var(--space-3)' }}>
-                            <label>Bucket Name</label>
+                            <label>{t('s3Backup.bucketName')}</label>
                             <input
                                 type="text"
                                 value={bucketName}
@@ -444,7 +312,7 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                         </div>
 
                         <div className={styles['setting-row']} style={{ marginBottom: 'var(--space-3)' }}>
-                            <label>Prefix (optional)</label>
+                            <label>{t('s3Backup.prefix')}</label>
                             <div style={{ width: '300px' }}>
                                 <input
                                     type="text"
@@ -454,13 +322,13 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                                     style={{ width: '100%' }}
                                 />
                                 <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: 'var(--space-1)' }}>
-                                    Optional path prefix. Leave empty to use bucket root.
+                                    {t('s3Backup.prefixDescription')}
                                 </div>
                             </div>
                         </div>
 
                         <div className={styles['setting-row']}>
-                            <label>Region</label>
+                            <label>{t('s3Backup.region')}</label>
                             <div style={{ width: '300px' }}>
                                 <select
                                     value={customRegion ? '' : s3Config.region}
@@ -471,32 +339,12 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                                     disabled={customRegion !== ''}
                                     style={{ width: '100%', opacity: customRegion ? 0.6 : 1 }}
                                 >
-                                    {(() => {
-                                        let regions;
-                                        switch (s3Config.storage_type) {
-                                            case 'aws_s3':
-                                                regions = AWS_REGIONS;
-                                                break;
-                                            case 'wasabi':
-                                                regions = WASABI_REGIONS;
-                                                break;
-                                            case 'digitalocean':
-                                                regions = DIGITALOCEAN_REGIONS;
-                                                break;
-                                            case 'idrive_e2':
-                                                regions = IDRIVE_E2_REGIONS;
-                                                break;
-                                            default:
-                                                // MinIO, Cloudflare R2, Custom use AWS region codes
-                                                regions = AWS_REGIONS;
-                                        }
-                                        return regions.map(region => (
-                                            <option key={region.id} value={region.id}>{region.label}</option>
-                                        ));
-                                    })()}
+                                    {regions.map(region => (
+                                        <option key={region.id} value={region.id}>{region.label}</option>
+                                    ))}
                                 </select>
                                 <div style={{ marginTop: 'var(--space-2)', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
-                                    Or enter custom region code:
+                                    {t('s3Backup.customRegionHint')}
                                 </div>
                                 <input
                                     type="text"
@@ -512,7 +360,7 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                                     style={{ width: '100%', marginTop: 'var(--space-1)' }}
                                 />
                                 <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: 'var(--space-1)' }}>
-                                    Use this if your region is not listed above
+                                    {t('s3Backup.customRegionDescription')}
                                 </div>
                             </div>
                         </div>
@@ -520,7 +368,7 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
 
                     {/* Authentication */}
                     <div className={styles['setting-group']} style={{ marginTop: 'var(--space-4)' }}>
-                        <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-base)' }}>Authentication</h3>
+                        <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-base)' }}>{t('s3Backup.authentication')}</h3>
 
                         {s3Config.storage_type === 'aws_s3' && (
                             <div style={{ marginBottom: 'var(--space-3)' }}>
@@ -532,7 +380,7 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                                         checked={s3Config.auth_method === 'aws_credentials'}
                                         onChange={() => updateS3Config({ auth_method: 'aws_credentials' })}
                                     />
-                                    <label htmlFor="auth-aws-credentials">Use AWS CLI credentials (~/.aws/credentials)</label>
+                                    <label htmlFor="auth-aws-credentials">{t('s3Backup.authAwsCredentials')}</label>
                                 </div>
                                 <div className={styles['setting-item']}>
                                     <input
@@ -542,7 +390,7 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                                         checked={s3Config.auth_method === 'iam_role'}
                                         onChange={() => updateS3Config({ auth_method: 'iam_role' })}
                                     />
-                                    <label htmlFor="auth-iam-role">Use IAM Role (EC2/ECS)</label>
+                                    <label htmlFor="auth-iam-role">{t('s3Backup.authIamRole')}</label>
                                 </div>
                                 <div className={styles['setting-item']}>
                                     <input
@@ -552,14 +400,14 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                                         checked={s3Config.auth_method === 'access_key'}
                                         onChange={() => updateS3Config({ auth_method: 'access_key' })}
                                     />
-                                    <label htmlFor="auth-access-key">Enter Access Key manually</label>
+                                    <label htmlFor="auth-access-key">{t('s3Backup.authAccessKey')}</label>
                                 </div>
                             </div>
                         )}
 
                         {showProfileSelector && (
                             <div className={styles['setting-row']}>
-                                <label>AWS Profile</label>
+                                <label>{t('s3Backup.awsProfile')}</label>
                                 <select
                                     value={s3Config.profile || 'default'}
                                     onChange={(e) => updateS3Config({ profile: e.target.value === 'default' ? null : e.target.value })}
@@ -575,16 +423,16 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                         {needsAccessKey && (
                             <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-md)' }}>
                                 <h4 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-sm)', fontWeight: 500 }}>
-                                    Access Key Credentials ({selectedProvider.label})
+                                    {t('s3Backup.accessKeyCredentials', { provider: selectedProvider.label })}
                                 </h4>
 
                                 {hasStoredCredentials ? (
                                     <div>
                                         <div style={{ marginBottom: 'var(--space-3)', color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
-                                            <strong style={{ color: 'var(--color-success)' }}>✓ Credentials stored securely</strong>
+                                            <strong style={{ color: 'var(--color-success)' }}>✓ {t('s3Backup.credentialsStored')}</strong>
                                             {credentialsPreview && (
                                                 <div style={{ marginTop: 'var(--space-1)' }}>
-                                                    Access Key: <code style={{ fontSize: 'var(--font-size-xs)' }}>{credentialsPreview}</code>
+                                                    {t('s3Backup.accessKey')}: <code style={{ fontSize: 'var(--font-size-xs)' }}>{credentialsPreview}</code>
                                                 </div>
                                             )}
                                         </div>
@@ -600,38 +448,38 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                                                 fontSize: 'var(--font-size-sm)'
                                             }}
                                         >
-                                            Delete Credentials
+                                            {t('s3Backup.deleteCredentials')}
                                         </button>
                                     </div>
                                 ) : (
                                     <div>
                                         <div className={styles['setting-row']} style={{ marginBottom: 'var(--space-3)' }}>
-                                            <label>Access Key ID</label>
+                                            <label>{t('s3Backup.accessKeyId')}</label>
                                             <div style={{ width: '300px' }}>
                                                 <input
                                                     type="text"
                                                     value={accessKeyId}
                                                     onChange={(e) => setAccessKeyId(e.target.value)}
-                                                    placeholder="Enter your Access Key ID"
+                                                    placeholder={t('s3Backup.accessKeyIdPlaceholder')}
                                                     style={{ width: '100%' }}
                                                 />
                                                 <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: 'var(--space-1)' }}>
-                                                    Example: AKIAIOSFODNN7EXAMPLE
+                                                    {t('s3Backup.accessKeyIdExample')}
                                                 </div>
                                             </div>
                                         </div>
                                         <div className={styles['setting-row']} style={{ marginBottom: 'var(--space-3)' }}>
-                                            <label>Secret Access Key</label>
+                                            <label>{t('s3Backup.secretAccessKey')}</label>
                                             <div style={{ width: '300px' }}>
                                                 <input
                                                     type="password"
                                                     value={secretAccessKey}
                                                     onChange={(e) => setSecretAccessKey(e.target.value)}
-                                                    placeholder="Enter your Secret Access Key"
+                                                    placeholder={t('s3Backup.secretAccessKeyPlaceholder')}
                                                     style={{ width: '100%' }}
                                                 />
                                                 <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: 'var(--space-1)' }}>
-                                                    Will be stored securely and masked after saving
+                                                    {t('s3Backup.secretAccessKeyDescription')}
                                                 </div>
                                             </div>
                                         </div>
@@ -649,10 +497,10 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                                                 fontWeight: 500
                                             }}
                                         >
-                                            Save Credentials
+                                            {t('s3Backup.saveCredentials')}
                                         </button>
                                         <p style={{ marginTop: 'var(--space-2)', color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)' }}>
-                                            Credentials are stored securely in your system's keyring
+                                            {t('s3Backup.credentialsSecurityNote')}
                                         </p>
                                     </div>
                                 )}
@@ -662,7 +510,7 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
 
                     {/* Sync Options */}
                     <div className={styles['setting-group']} style={{ marginTop: 'var(--space-4)' }}>
-                        <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-base)' }}>Sync Options</h3>
+                        <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-base)' }}>{t('s3Backup.syncOptions')}</h3>
 
                         <div className={styles['setting-item']}>
                             <input
@@ -671,7 +519,7 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                                 checked={s3Config.auto_sync}
                                 onChange={(e) => updateS3Config({ auto_sync: e.target.checked })}
                             />
-                            <label htmlFor="s3-auto-sync">Auto sync on import</label>
+                            <label htmlFor="s3-auto-sync">{t('s3Backup.autoSync')}</label>
                         </div>
 
                         <div className={styles['setting-item']}>
@@ -681,7 +529,7 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                                 checked={s3Config.backup_db}
                                 onChange={(e) => updateS3Config({ backup_db: e.target.checked })}
                             />
-                            <label htmlFor="s3-backup-db">Backup database (metadata, tags, edits)</label>
+                            <label htmlFor="s3-backup-db">{t('s3Backup.backupDatabase')}</label>
                         </div>
 
                         <div className={styles['setting-item']}>
@@ -691,11 +539,11 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                                 checked={s3Config.backup_thumbnails}
                                 onChange={(e) => updateS3Config({ backup_thumbnails: e.target.checked })}
                             />
-                            <label htmlFor="s3-backup-thumbnails">Backup thumbnails (faster restore)</label>
+                            <label htmlFor="s3-backup-thumbnails">{t('s3Backup.backupThumbnails')}</label>
                         </div>
 
                         <div className={styles['setting-row']} style={{ marginTop: 'var(--space-3)' }}>
-                            <label>Max file size</label>
+                            <label>{t('s3Backup.maxFileSize')}</label>
                             <div style={{ width: '300px' }}>
                                 <select
                                     value={s3Config.max_file_size_mb || ''}
@@ -707,7 +555,7 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                                     ))}
                                 </select>
                                 <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', marginTop: 'var(--space-1)' }}>
-                                    Files larger than this will be skipped
+                                    {t('s3Backup.maxFileSizeDescription')}
                                 </div>
                             </div>
                         </div>
@@ -716,15 +564,15 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                     {/* Sync Status */}
                     {syncStats && (
                         <div className={styles['setting-group']} style={{ marginTop: 'var(--space-4)' }}>
-                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-base)' }}>Sync Status</h3>
+                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-base)' }}>{t('s3Backup.syncStatus')}</h3>
                             <div style={{ display: 'flex', gap: 'var(--space-4)', marginBottom: 'var(--space-3)' }}>
-                                <span>Total: <strong>{syncStats.total_photos}</strong></span>
-                                <span>Synced: <strong style={{ color: 'var(--color-success)' }}>{syncStats.synced}</strong></span>
-                                <span>Pending: <strong style={{ color: 'var(--color-warning)' }}>{syncStats.not_synced}</strong></span>
+                                <span>{t('s3Backup.total')}: <strong>{syncStats.total_photos}</strong></span>
+                                <span>{t('s3Backup.synced')}: <strong style={{ color: 'var(--color-success)' }}>{syncStats.synced}</strong></span>
+                                <span>{t('s3Backup.pending')}: <strong style={{ color: 'var(--color-warning)' }}>{syncStats.not_synced}</strong></span>
                             </div>
                             {syncStats.last_sync_at && (
                                 <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)', margin: 0 }}>
-                                    Last sync: {new Date(syncStats.last_sync_at).toLocaleString()}
+                                    {t('s3Backup.lastSync')}: {new Date(syncStats.last_sync_at).toLocaleString()}
                                 </p>
                             )}
                         </div>
@@ -737,7 +585,7 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                             disabled={isTesting || !s3Config.bucket_uri}
                             style={buttonStyle(isTesting)}
                         >
-                            {isTesting ? 'Testing...' : 'Test Connection'}
+                            {isTesting ? t('s3Backup.testing') : t('s3Backup.testConnection')}
                         </button>
 
                         <button
@@ -745,7 +593,7 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                             disabled={isSyncing || !s3Config.bucket_uri}
                             style={primaryButtonStyle(isSyncing)}
                         >
-                            {isSyncing ? 'Syncing...' : 'Full Sync'}
+                            {isSyncing ? t('s3Backup.syncing') : t('s3Backup.fullSync')}
                         </button>
                     </div>
 
@@ -767,7 +615,7 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
 
             {!s3Config.enabled && (
                 <p className={styles['setting-description']} style={{ fontStyle: 'italic', marginTop: 'var(--space-4)' }}>
-                    Enable S3 Backup to configure cloud storage settings.
+                    {t('s3Backup.enableToConfig')}
                 </p>
             )}
         </div>

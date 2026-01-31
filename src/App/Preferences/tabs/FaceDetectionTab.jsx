@@ -88,39 +88,39 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
 
     return (
         <div className={styles['preferences-section']}>
-            <h2 className={styles['section-title']}>{t('preferences:tabs.faceDetection')}</h2>
+            <h2 className={styles['section-title']}>{t('preferences:faceDetection.title')}</h2>
             <p className={styles['setting-description']} style={{ marginBottom: 'var(--space-4)' }}>
-                Detect and recognize faces in your photos using InsightFace AI models.
+                {t('preferences:faceDetection.description')}
             </p>
 
             {/* Model Status */}
             <div className={styles['setting-group']}>
-                <h3 style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>Model Status</h3>
+                <h3 style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>{t('preferences:faceDetection.modelStatus')}</h3>
 
                 {/* Detector Model */}
                 <div style={modelCardStyle}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
                             <h4 style={{ margin: 0, marginBottom: 'var(--space-1)' }}>
-                                {detectorModel?.name || 'Face Detector (SCRFD)'}
+                                {detectorModel?.name || t('preferences:faceDetection.faceDetector')}
                             </h4>
                             <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
-                                {detectorModel?.description || 'Detects faces in photos'}
+                                {detectorModel?.description || t('preferences:faceDetection.faceDetectorDescription')}
                             </p>
                             <p style={{ margin: 0, marginTop: 'var(--space-1)', color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)' }}>
-                                Size: ~{detectorModel?.size_mb || 30} MB
+                                {t('preferences:faceDetection.size')}: ~{detectorModel?.size_mb || 30} MB
                             </p>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                             <span style={statusBadgeStyle(modelStatus?.detector_available)}>
-                                {modelStatus?.detector_available ? 'Ready' : 'Not Downloaded'}
+                                {modelStatus?.detector_available ? t('preferences:faceDetection.ready') : t('preferences:faceDetection.notDownloaded')}
                             </span>
                             {modelStatus?.detector_available ? (
                                 <button
                                     onClick={() => handleDeleteModel('detector')}
                                     style={deleteButtonStyle}
                                 >
-                                    Delete
+                                    {t('preferences:faceDetection.delete')}
                                 </button>
                             ) : (
                                 <button
@@ -128,7 +128,7 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
                                     disabled={isDownloading}
                                     style={downloadButtonStyle(isDownloading && downloadingModel === 'detector')}
                                 >
-                                    {isDownloading && downloadingModel === 'detector' ? 'Downloading...' : 'Download'}
+                                    {isDownloading && downloadingModel === 'detector' ? t('preferences:faceDetection.downloading') : t('preferences:faceDetection.download')}
                                 </button>
                             )}
                         </div>
@@ -140,25 +140,25 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
                             <h4 style={{ margin: 0, marginBottom: 'var(--space-1)' }}>
-                                {embedderModel?.name || 'Face Embedder (ArcFace)'}
+                                {embedderModel?.name || t('preferences:faceDetection.faceEmbedder')}
                             </h4>
                             <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
-                                {embedderModel?.description || 'Generates face embeddings for recognition'}
+                                {embedderModel?.description || t('preferences:faceDetection.faceEmbedderDescription')}
                             </p>
                             <p style={{ margin: 0, marginTop: 'var(--space-1)', color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)' }}>
-                                Size: ~{embedderModel?.size_mb || 120} MB
+                                {t('preferences:faceDetection.size')}: ~{embedderModel?.size_mb || 120} MB
                             </p>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                             <span style={statusBadgeStyle(modelStatus?.embedder_available)}>
-                                {modelStatus?.embedder_available ? 'Ready' : 'Not Downloaded'}
+                                {modelStatus?.embedder_available ? t('preferences:faceDetection.ready') : t('preferences:faceDetection.notDownloaded')}
                             </span>
                             {modelStatus?.embedder_available ? (
                                 <button
                                     onClick={() => handleDeleteModel('embedder')}
                                     style={deleteButtonStyle}
                                 >
-                                    Delete
+                                    {t('preferences:faceDetection.delete')}
                                 </button>
                             ) : (
                                 <button
@@ -166,7 +166,7 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
                                     disabled={isDownloading}
                                     style={downloadButtonStyle(isDownloading && downloadingModel === 'embedder')}
                                 >
-                                    {isDownloading && downloadingModel === 'embedder' ? 'Downloading...' : 'Download'}
+                                    {isDownloading && downloadingModel === 'embedder' ? t('preferences:faceDetection.downloading') : t('preferences:faceDetection.download')}
                                 </button>
                             )}
                         </div>
@@ -175,22 +175,22 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
 
                 {!modelStatus?.is_ready && (
                     <p style={{ color: 'var(--color-warning)', fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-3)' }}>
-                        Both models are required for face detection and recognition.
+                        {t('preferences:faceDetection.bothModelsRequired')}
                     </p>
                 )}
             </div>
 
             {/* Detection Settings */}
             <div className={styles['setting-group']} style={{ marginTop: 'var(--space-5)' }}>
-                <h3 style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>Detection Settings</h3>
+                <h3 style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>{t('preferences:faceDetection.detectionSettings')}</h3>
 
                 {/* Confidence Threshold */}
                 <div style={{ marginBottom: 'var(--space-4)' }}>
                     <label style={labelStyle}>
-                        Confidence Threshold: {Math.round((config?.face_detection?.confidence_threshold || 0.7) * 100)}%
+                        {t('preferences:faceDetection.confidenceThreshold')}: {Math.round((config?.face_detection?.confidence_threshold || 0.7) * 100)}%
                     </label>
                     <p style={descriptionStyle}>
-                        Only faces with confidence above this threshold will be detected. Higher values reduce false positives.
+                        {t('preferences:faceDetection.confidenceDescription')}
                     </p>
                     <input
                         type="range"
@@ -210,18 +210,18 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
                         style={sliderStyle}
                     />
                     <div style={sliderLabelsStyle}>
-                        <span>30% (More faces)</span>
-                        <span>95% (Fewer false positives)</span>
+                        <span>30% ({t('preferences:faceDetection.moreFaces')})</span>
+                        <span>95% ({t('preferences:faceDetection.fewerFalsePositives')})</span>
                     </div>
                 </div>
 
                 {/* Max Faces */}
                 <div style={{ marginBottom: 'var(--space-4)' }}>
                     <label style={labelStyle}>
-                        Maximum Faces per Photo: {config?.face_detection?.max_faces || 50}
+                        {t('preferences:faceDetection.maxFaces')}: {config?.face_detection?.max_faces || 50}
                     </label>
                     <p style={descriptionStyle}>
-                        Maximum number of faces to detect in a single photo.
+                        {t('preferences:faceDetection.maxFacesDescription')}
                     </p>
                     <input
                         type="range"
@@ -263,22 +263,21 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
                             }}
                             style={{ width: '16px', height: '16px' }}
                         />
-                        <span style={{ fontSize: 'var(--font-size-sm)' }}>Generate face embeddings for recognition</span>
+                        <span style={{ fontSize: 'var(--font-size-sm)' }}>{t('preferences:faceDetection.generateEmbeddings')}</span>
                     </label>
                     <p style={{ ...descriptionStyle, marginLeft: 'var(--space-6)' }}>
-                        Enables face recognition and grouping. Disable to save processing time if you only need face detection.
+                        {t('preferences:faceDetection.generateEmbeddingsDescription')}
                     </p>
                 </div>
 
                 {/* Minimum Thumbnail Size */}
                 <div className={styles['slider-container']}>
                     <div className={styles['slider-label']}>
-                        <span className={styles['slider-label-text']}>Minimum Thumbnail Size</span>
+                        <span className={styles['slider-label-text']}>{t('preferences:faceDetection.minThumbnailSize')}</span>
                         <span className={styles['slider-value']}>{config?.face_detection?.min_thumbnail_size || 160}px</span>
                     </div>
                     <p className={styles['slider-description']}>
-                        Use EXIF thumbnail for faster detection when thumbnail is larger than this size.
-                        Set to 0 to always use full image (slower but more accurate).
+                        {t('preferences:faceDetection.minThumbnailDescription')}
                     </p>
                     <input
                         type="range"
@@ -299,7 +298,7 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
                         className={styles['slider-range']}
                     />
                     <div className={styles['slider-range-labels']}>
-                        <span>0 (Always full image)</span>
+                        <span>0 ({t('preferences:faceDetection.alwaysFullImage')})</span>
                         <span>400px</span>
                     </div>
                 </div>
@@ -307,11 +306,11 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
                 {/* Face Thumbnail Size */}
                 <div className={styles['slider-container']} style={{ marginTop: 'var(--space-4)' }}>
                     <div className={styles['slider-label']}>
-                        <span className={styles['slider-label-text']}>Face Thumbnail Size</span>
+                        <span className={styles['slider-label-text']}>{t('preferences:faceDetection.faceThumbnailSize')}</span>
                         <span className={styles['slider-value']}>{config?.face_detection?.face_thumbnail_size || 150}px</span>
                     </div>
                     <p className={styles['slider-description']}>
-                        Size of cached face thumbnails. Larger sizes use more disk space but look better on high-resolution displays.
+                        {t('preferences:faceDetection.faceThumbnailDescription')}
                     </p>
                     <input
                         type="range"
@@ -339,9 +338,9 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
 
                 {/* Regenerate Face Thumbnails */}
                 <div style={{ marginTop: 'var(--space-4)' }}>
-                    <label style={labelStyle}>Regenerate Face Thumbnails</label>
+                    <label style={labelStyle}>{t('preferences:faceDetection.regenerateThumbnails')}</label>
                     <p style={descriptionStyle}>
-                        Regenerate all cached face thumbnails. Use this after changing the thumbnail size or if thumbnails are missing.
+                        {t('preferences:faceDetection.regenerateThumbnailsDescription')}
                     </p>
                     <button
                         onClick={async () => {
@@ -368,7 +367,7 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
                         className={styles['btn-secondary']}
                         style={isRegenerating ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
                     >
-                        {isRegenerating ? 'Starting...' : 'Regenerate All Thumbnails'}
+                        {isRegenerating ? t('preferences:faceDetection.starting') : t('preferences:faceDetection.regenerateAll')}
                     </button>
                 </div>
             </div>
@@ -376,23 +375,23 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
             {/* Statistics */}
             {stats && (
                 <div className={styles['setting-group']} style={{ marginTop: 'var(--space-5)' }}>
-                    <h3 style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>Statistics</h3>
+                    <h3 style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>{t('preferences:faceDetection.statistics')}</h3>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 'var(--space-3)' }}>
                         <div style={statCardStyle}>
                             <div style={statNumberStyle}>{stats.total_faces}</div>
-                            <div style={statLabelStyle}>Faces Detected</div>
+                            <div style={statLabelStyle}>{t('preferences:faceDetection.facesDetected')}</div>
                         </div>
                         <div style={statCardStyle}>
                             <div style={statNumberStyle}>{stats.photos_with_faces}</div>
-                            <div style={statLabelStyle}>Photos with Faces</div>
+                            <div style={statLabelStyle}>{t('preferences:faceDetection.photosWithFaces')}</div>
                         </div>
                         <div style={statCardStyle}>
                             <div style={statNumberStyle}>{stats.total_persons}</div>
-                            <div style={statLabelStyle}>People</div>
+                            <div style={statLabelStyle}>{t('preferences:faceDetection.people')}</div>
                         </div>
                         <div style={statCardStyle}>
                             <div style={statNumberStyle}>{stats.named_persons}</div>
-                            <div style={statLabelStyle}>Named People</div>
+                            <div style={statLabelStyle}>{t('preferences:faceDetection.namedPeople')}</div>
                         </div>
                     </div>
                 </div>
@@ -400,16 +399,16 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
 
             {/* Info */}
             <div className={styles['setting-group']} style={{ marginTop: 'var(--space-5)' }}>
-                <h3 style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>About Face Detection</h3>
+                <h3 style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>{t('preferences:faceDetection.aboutFaceDetection')}</h3>
                 <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)', lineHeight: 1.5 }}>
-                    Face detection uses InsightFace models to find and recognize faces in your photos:
+                    {t('preferences:faceDetection.aboutDescription')}
                 </p>
                 <ul style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)', lineHeight: 1.8, paddingLeft: 'var(--space-5)' }}>
-                    <li><strong>SCRFD</strong> - High-performance face detection model</li>
-                    <li><strong>ArcFace</strong> - Face embedding model for recognition (512-dimensional vectors)</li>
+                    <li><strong>SCRFD</strong> - {t('preferences:faceDetection.scrfdDescription')}</li>
+                    <li><strong>ArcFace</strong> - {t('preferences:faceDetection.arcfaceDescription')}</li>
                 </ul>
                 <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)', marginTop: 'var(--space-3)' }}>
-                    Models are from InsightFace buffalo_l pack (non-commercial research only). Total download size: ~191 MB.
+                    {t('preferences:faceDetection.modelsNote')}
                 </p>
             </div>
         </div>

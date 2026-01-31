@@ -23,7 +23,7 @@ const ThumbnailTab = ({ config, setConfig }) => {
                         onChange={(e) => setConfig(prev => ({ ...prev, use_exif_thumbnail: e.target.checked }))}
                     />
                     <label htmlFor="use-exif-thumbnail-check">
-                        Use EXIF thumbnails when available (faster import)
+                        {t('thumbnail.useExifThumbnail')}
                     </label>
                 </div>
                 <div className={styles['setting-item']}>
@@ -34,7 +34,7 @@ const ThumbnailTab = ({ config, setConfig }) => {
                         onChange={(e) => setConfig(prev => ({ ...prev, thumbnail_orientation_correction: e.target.checked }))}
                     />
                     <label htmlFor="thumbnail-orientation-correction-check">
-                        Apply EXIF orientation correction to thumbnails
+                        {t('thumbnail.applyOrientation')}
                     </label>
                 </div>
             </div>
@@ -53,7 +53,7 @@ const ThumbnailTab = ({ config, setConfig }) => {
                     </select>
                 </div>
                 <div className={styles['setting-row']}>
-                    <label>Minimize Ratio:</label>
+                    <label>{t('thumbnail.minimizeRatio')}:</label>
                     <select
                         value={config.thumbnail_ratio || ''}
                         onChange={(e) => setConfig(prev => ({ ...prev, thumbnail_ratio: parseFloat(e.target.value) }))}
@@ -64,7 +64,7 @@ const ThumbnailTab = ({ config, setConfig }) => {
                     </select>
                 </div>
                 <div className={styles['setting-row']}>
-                    <label>Ignore File Size:</label>
+                    <label>{t('thumbnail.ignoreFileSize')}:</label>
                     <select
                         value={config.thumbnail_ignore_file_size || ''}
                         onChange={(e) => setConfig(prev => ({ ...prev, thumbnail_ignore_file_size: parseFloat(e.target.value) }))}

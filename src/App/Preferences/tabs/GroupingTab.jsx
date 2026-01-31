@@ -17,7 +17,7 @@ const GroupingTab = ({
 
     const handleRecalculate = async () => {
         setIsRecalculatingGroups(true);
-        setGroupingProgress({ message: 'Submitting job...', progress: 0 });
+        setGroupingProgress({ message: t('grouping.submittingJob'), progress: 0 });
         try {
             const jobUnitId = await invoke('recalculate_grouping', {
                 thresholdSeconds: config.grouping?.burst_threshold_seconds ?? 2,
@@ -72,10 +72,10 @@ const GroupingTab = ({
                     />
                 </div>
                 <p className={styles['setting-description']}>
-                    Photos taken within this time interval are considered as burst shots.
+                    {t('grouping.burstThresholdDescription')}
                 </p>
                 <div className={styles['setting-row']}>
-                    <label>Minimum Group Size:</label>
+                    <label>{t('grouping.minGroupSize')}:</label>
                     <input
                         type="number"
                         min="2"
@@ -88,21 +88,21 @@ const GroupingTab = ({
                     />
                 </div>
                 <p className={styles['setting-description']}>
-                    Minimum number of photos required to form a group.
+                    {t('grouping.minGroupSizeDescription')}
                 </p>
             </div>
 
-            <h2 className={styles['section-title']}>🔄 Recalculate Groups</h2>
+            <h2 className={styles['section-title']}>🔄 {t('grouping.recalculateGroups')}</h2>
             <div className={styles['setting-group']}>
                 <p className={styles['setting-description']} style={{ marginBottom: 'var(--space-3)' }}>
-                    After changing threshold settings, recalculate groups to apply new values. Manual groups will be preserved.
+                    {t('grouping.recalculateDescription')}
                 </p>
                 <button
                     className={styles['btn-secondary']}
                     disabled={isRecalculatingGroups}
                     onClick={handleRecalculate}
                 >
-                    {isRecalculatingGroups ? '⏳ Recalculating...' : '🔄 Recalculate Groups'}
+                    {isRecalculatingGroups ? `⏳ ${t('grouping.recalculating')}` : `🔄 ${t('grouping.recalculateGroups')}`}
                 </button>
                 {isRecalculatingGroups && groupingProgress.message && (
                     <div className={styles['progress-container']} style={{ marginTop: 'var(--space-3)' }}>
