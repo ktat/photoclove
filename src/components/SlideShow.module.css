@@ -121,12 +121,14 @@
 /* Interval Select */
 .intervalSelect {
   padding: var(--space-2) var(--space-3);
-  background: rgba(255, 255, 255, 0.1);
+  background-color: #333;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-md);
   color: #fff;
   font-size: var(--font-size-sm);
   cursor: pointer;
+  /* Force dark appearance on all platforms */
+  color-scheme: dark;
 }
 
 .intervalSelect:focus {
@@ -135,7 +137,7 @@
 }
 
 .intervalSelect option {
-  background: #333;
+  background-color: #333;
   color: #fff;
 }
 
