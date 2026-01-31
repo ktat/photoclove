@@ -1,0 +1,64 @@
+{
+  "title": "Photography Insights",
+  "loading": "Loading insights...",
+  "photos": "photos",
+  "noData": "No data available",
+  "mostUsed": "Most used",
+  "sections": {
+    "shootingTime": "Shooting Time",
+    "cameraSettings": "Camera Settings",
+    "equipment": "Equipment",
+    "organization": "Organization",
+    "storage": "Storage"
+  },
+  "days": {
+    "sun": "Sun",
+    "mon": "Mon",
+    "tue": "Tue",
+    "wed": "Wed",
+    "thu": "Thu",
+    "fri": "Fri",
+    "sat": "Sat"
+  },
+  "shootingTime": {
+    "title": "Shooting Time Patterns",
+    "description": "When you take most of your photos",
+    "hourTitle": "Time of Day",
+    "dayTitle": "Day of Week",
+    "peak": "Peak"
+  },
+  "cameraSettings": {
+    "title": "Camera Settings",
+    "description": "Your most frequently used camera settings",
+    "iso": "ISO",
+    "aperture": "Aperture",
+    "shutterSpeed": "Shutter Speed",
+    "focalLength": "Focal Length"
+  },
+  "equipment": {
+    "title": "Your Equipment",
+    "description": "Cameras and lenses you use most frequently",
+    "cameras": "Cameras",
+    "lenses": "Lenses",
+    "noCameras": "No camera data available",
+    "noLenses": "No lens data available"
+  },
+  "organization": {
+    "title": "Library Overview",
+    "description": "Summary of your photo library organization",
+    "totalPhotos": "Total Photos",
+    "starredPhotos": "Starred Photos",
+    "totalTags": "Total Tags",
+    "totalAlbums": "Total Albums",
+    "photosWithTags": "Photos with Tags",
+    "photosInAlbums": "Photos in Albums"
+  },
+  "storage": {
+    "title": "Storage Usage",
+    "description": "Disk space used by your photo library and caches",
+    "totalSize": "Photo Library Size",
+    "thumbnailSize": "Thumbnail Cache",
+    "faceThumbnailSize": "Face Thumbnails",
+    "totalCache": "Total Cache"
+  }
+}

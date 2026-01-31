@@ -28,6 +28,7 @@ import LogViewer from "./App/LogViewer.jsx";
 import DocumentViewer from "./components/DocumentViewer.jsx";
 import LicensesView from "./App/LicensesView.jsx";
 import RecoveryQueueModal from "./App/RecoveryQueueModal.jsx";
+import InsightsModal from "./App/InsightsModal.jsx";
 import Tooltip from "./components/Tooltip.jsx";
 import NavigationIcons from "./App/NavigationIcons.jsx";
 import { useError } from "./context/ErrorContext.jsx";
@@ -85,6 +86,7 @@ function App() {
   const [showJobQueueModal, setShowJobQueueModal] = useState(false);
   const [showLicenses, setShowLicenses] = useState(false);
   const [showRecoveryQueueModal, setShowRecoveryQueueModal] = useState(false);
+  const [showInsightsModal, setShowInsightsModal] = useState(false);
   const [tooltipText, setTooltipText] = useState("");
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0 });
@@ -498,6 +500,7 @@ function App() {
             openTagsList={openTagsList}
             openFacesList={openFacesList}
             openTrash={openTrash}
+            setShowInsightsModal={setShowInsightsModal}
             handleMouseEnter={handleMouseEnter}
             handleMouseLeave={handleMouseLeave}
             config={config}
@@ -607,6 +610,9 @@ function App() {
       )}
       {showRecoveryQueueModal && (
         <RecoveryQueueModal onClose={() => setShowRecoveryQueueModal(false)} addFooterMessage={addFooterMessage} />
+      )}
+      {showInsightsModal && (
+        <InsightsModal onClose={() => setShowInsightsModal(false)} />
       )}
       <Tooltip show={leftMenuCollapsed && showTooltip} text={tooltipText} position={tooltipPosition} />
     </div >

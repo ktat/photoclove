@@ -98,7 +98,8 @@
     "import": "Import",
     "preferences": "Preferences",
     "trash": "Trash",
-    "jobs": "Jobs"
+    "jobs": "Jobs",
+    "insights": "Insights"
   },
   "status": {
     "loading": "Loading...",

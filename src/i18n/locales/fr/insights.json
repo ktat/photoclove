@@ -1,0 +1,64 @@
+{
+  "title": "Statistiques Photo",
+  "loading": "Chargement des statistiques...",
+  "photos": "photos",
+  "noData": "Aucune donnée disponible",
+  "mostUsed": "Plus utilisé",
+  "sections": {
+    "shootingTime": "Heure de Prise",
+    "cameraSettings": "Réglages Caméra",
+    "equipment": "Équipement",
+    "organization": "Organisation",
+    "storage": "Stockage"
+  },
+  "days": {
+    "sun": "Dim",
+    "mon": "Lun",
+    "tue": "Mar",
+    "wed": "Mer",
+    "thu": "Jeu",
+    "fri": "Ven",
+    "sat": "Sam"
+  },
+  "shootingTime": {
+    "title": "Tendances Horaires",
+    "description": "Quand vous prenez la plupart de vos photos",
+    "hourTitle": "Heure du Jour",
+    "dayTitle": "Jour de la Semaine",
+    "peak": "Pic"
+  },
+  "cameraSettings": {
+    "title": "Réglages Caméra",
+    "description": "Vos réglages les plus utilisés",
+    "iso": "ISO",
+    "aperture": "Ouverture",
+    "shutterSpeed": "Vitesse d'Obturation",
+    "focalLength": "Longueur Focale"
+  },
+  "equipment": {
+    "title": "Votre Équipement",
+    "description": "Appareils et objectifs les plus utilisés",
+    "cameras": "Appareils Photo",
+    "lenses": "Objectifs",
+    "noCameras": "Aucune donnée d'appareil",
+    "noLenses": "Aucune donnée d'objectif"
+  },
+  "organization": {
+    "title": "Aperçu de la Bibliothèque",
+    "description": "Résumé de l'organisation de votre bibliothèque",
+    "totalPhotos": "Total Photos",
+    "starredPhotos": "Photos Favorites",
+    "totalTags": "Total Tags",
+    "totalAlbums": "Total Albums",
+    "photosWithTags": "Photos avec Tags",
+    "photosInAlbums": "Photos dans Albums"
+  },
+  "storage": {
+    "title": "Utilisation du Stockage",
+    "description": "Espace disque utilisé par votre bibliothèque",
+    "totalSize": "Taille de la Bibliothèque",
+    "thumbnailSize": "Cache Miniatures",
+    "faceThumbnailSize": "Miniatures Visages",
+    "totalCache": "Cache Total"
+  }
+}

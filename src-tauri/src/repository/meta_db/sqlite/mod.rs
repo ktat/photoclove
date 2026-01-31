@@ -41,6 +41,7 @@ mod job_queue;
 mod recovery_queue;
 mod burst_groups;
 pub mod face_detection;
+pub mod stats;
 
 #[derive(Clone)]
 pub struct SQLite {

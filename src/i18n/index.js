@@ -8,6 +8,7 @@ import enModals from './locales/en/modals.json';
 import enMessages from './locales/en/messages.json';
 import enErrors from './locales/en/errors.json';
 import enPreferences from './locales/en/preferences.json';
+import enInsights from './locales/en/insights.json';
 
 // Import Japanese translations
 import jaCommon from './locales/ja/common.json';
@@ -15,6 +16,7 @@ import jaModals from './locales/ja/modals.json';
 import jaMessages from './locales/ja/messages.json';
 import jaErrors from './locales/ja/errors.json';
 import jaPreferences from './locales/ja/preferences.json';
+import jaInsights from './locales/ja/insights.json';
 
 // Import French translations
 import frCommon from './locales/fr/common.json';
@@ -22,6 +24,7 @@ import frModals from './locales/fr/modals.json';
 import frMessages from './locales/fr/messages.json';
 import frErrors from './locales/fr/errors.json';
 import frPreferences from './locales/fr/preferences.json';
+import frInsights from './locales/fr/insights.json';
 
 // Import German translations
 import deCommon from './locales/de/common.json';
@@ -29,6 +32,7 @@ import deModals from './locales/de/modals.json';
 import deMessages from './locales/de/messages.json';
 import deErrors from './locales/de/errors.json';
 import dePreferences from './locales/de/preferences.json';
+import deInsights from './locales/de/insights.json';
 
 // Import Chinese Simplified translations
 import zhCNCommon from './locales/zh-CN/common.json';
@@ -36,6 +40,7 @@ import zhCNModals from './locales/zh-CN/modals.json';
 import zhCNMessages from './locales/zh-CN/messages.json';
 import zhCNErrors from './locales/zh-CN/errors.json';
 import zhCNPreferences from './locales/zh-CN/preferences.json';
+import zhCNInsights from './locales/zh-CN/insights.json';
 
 // Import Chinese Traditional translations
 import zhTWCommon from './locales/zh-TW/common.json';
@@ -43,6 +48,7 @@ import zhTWModals from './locales/zh-TW/modals.json';
 import zhTWMessages from './locales/zh-TW/messages.json';
 import zhTWErrors from './locales/zh-TW/errors.json';
 import zhTWPreferences from './locales/zh-TW/preferences.json';
+import zhTWInsights from './locales/zh-TW/insights.json';
 
 // Import Spanish translations
 import esCommon from './locales/es/common.json';
@@ -50,6 +56,7 @@ import esModals from './locales/es/modals.json';
 import esMessages from './locales/es/messages.json';
 import esErrors from './locales/es/errors.json';
 import esPreferences from './locales/es/preferences.json';
+import esInsights from './locales/es/insights.json';
 
 const resources = {
   en: {
@@ -58,6 +65,7 @@ const resources = {
     messages: enMessages,
     errors: enErrors,
     preferences: enPreferences,
+    insights: enInsights,
   },
   ja: {
     common: jaCommon,
@@ -65,6 +73,7 @@ const resources = {
     messages: jaMessages,
     errors: jaErrors,
     preferences: jaPreferences,
+    insights: jaInsights,
   },
   fr: {
     common: frCommon,
@@ -72,6 +81,7 @@ const resources = {
     messages: frMessages,
     errors: frErrors,
     preferences: frPreferences,
+    insights: frInsights,
   },
   de: {
     common: deCommon,
@@ -79,6 +89,7 @@ const resources = {
     messages: deMessages,
     errors: deErrors,
     preferences: dePreferences,
+    insights: deInsights,
   },
   'zh-CN': {
     common: zhCNCommon,
@@ -86,6 +97,7 @@ const resources = {
     messages: zhCNMessages,
     errors: zhCNErrors,
     preferences: zhCNPreferences,
+    insights: zhCNInsights,
   },
   'zh-TW': {
     common: zhTWCommon,
@@ -93,6 +105,7 @@ const resources = {
     messages: zhTWMessages,
     errors: zhTWErrors,
     preferences: zhTWPreferences,
+    insights: zhTWInsights,
   },
   es: {
     common: esCommon,
@@ -100,6 +113,7 @@ const resources = {
     messages: esMessages,
     errors: esErrors,
     preferences: esPreferences,
+    insights: esInsights,
   },
 };
 
@@ -121,7 +135,7 @@ i18n
     resources,
     fallbackLng: 'en',
     defaultNS: 'common',
-    ns: ['common', 'modals', 'messages', 'errors', 'preferences'],
+    ns: ['common', 'modals', 'messages', 'errors', 'preferences', 'insights'],
 
     detection: {
       order: ['localStorage', 'navigator'],

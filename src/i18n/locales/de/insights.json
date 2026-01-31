@@ -1,0 +1,64 @@
+{
+  "title": "Foto-Statistiken",
+  "loading": "Lade Statistiken...",
+  "photos": "Fotos",
+  "noData": "Keine Daten verfügbar",
+  "mostUsed": "Am meisten verwendet",
+  "sections": {
+    "shootingTime": "Aufnahmezeit",
+    "cameraSettings": "Kameraeinstellungen",
+    "equipment": "Ausrüstung",
+    "organization": "Organisation",
+    "storage": "Speicher"
+  },
+  "days": {
+    "sun": "So",
+    "mon": "Mo",
+    "tue": "Di",
+    "wed": "Mi",
+    "thu": "Do",
+    "fri": "Fr",
+    "sat": "Sa"
+  },
+  "shootingTime": {
+    "title": "Aufnahmemuster",
+    "description": "Wann Sie die meisten Fotos machen",
+    "hourTitle": "Tageszeit",
+    "dayTitle": "Wochentag",
+    "peak": "Spitze"
+  },
+  "cameraSettings": {
+    "title": "Kameraeinstellungen",
+    "description": "Ihre am häufigsten verwendeten Einstellungen",
+    "iso": "ISO",
+    "aperture": "Blende",
+    "shutterSpeed": "Verschlusszeit",
+    "focalLength": "Brennweite"
+  },
+  "equipment": {
+    "title": "Ihre Ausrüstung",
+    "description": "Am häufigsten verwendete Kameras und Objektive",
+    "cameras": "Kameras",
+    "lenses": "Objektive",
+    "noCameras": "Keine Kameradaten verfügbar",
+    "noLenses": "Keine Objektivdaten verfügbar"
+  },
+  "organization": {
+    "title": "Bibliotheksübersicht",
+    "description": "Zusammenfassung Ihrer Fotobibliothek",
+    "totalPhotos": "Gesamte Fotos",
+    "starredPhotos": "Markierte Fotos",
+    "totalTags": "Gesamte Tags",
+    "totalAlbums": "Gesamte Alben",
+    "photosWithTags": "Fotos mit Tags",
+    "photosInAlbums": "Fotos in Alben"
+  },
+  "storage": {
+    "title": "Speichernutzung",
+    "description": "Festplattenplatz Ihrer Bibliothek und Caches",
+    "totalSize": "Bibliotheksgröße",
+    "thumbnailSize": "Miniaturbildcache",
+    "faceThumbnailSize": "Gesichtsminiaturbilder",
+    "totalCache": "Gesamter Cache"
+  }
+}

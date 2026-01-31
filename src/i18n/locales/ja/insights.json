@@ -1,0 +1,64 @@
+{
+  "title": "撮影統計",
+  "loading": "統計を読み込み中...",
+  "photos": "枚",
+  "noData": "データがありません",
+  "mostUsed": "最頻値",
+  "sections": {
+    "shootingTime": "撮影時間",
+    "cameraSettings": "カメラ設定",
+    "equipment": "機材",
+    "organization": "整理状況",
+    "storage": "ストレージ"
+  },
+  "days": {
+    "sun": "日",
+    "mon": "月",
+    "tue": "火",
+    "wed": "水",
+    "thu": "木",
+    "fri": "金",
+    "sat": "土"
+  },
+  "shootingTime": {
+    "title": "撮影時間パターン",
+    "description": "よく撮影する時間帯と曜日",
+    "hourTitle": "時間帯",
+    "dayTitle": "曜日",
+    "peak": "ピーク"
+  },
+  "cameraSettings": {
+    "title": "カメラ設定",
+    "description": "よく使用するカメラ設定",
+    "iso": "ISO",
+    "aperture": "絞り",
+    "shutterSpeed": "シャッター速度",
+    "focalLength": "焦点距離"
+  },
+  "equipment": {
+    "title": "機材",
+    "description": "よく使用するカメラとレンズ",
+    "cameras": "カメラ",
+    "lenses": "レンズ",
+    "noCameras": "カメラデータがありません",
+    "noLenses": "レンズデータがありません"
+  },
+  "organization": {
+    "title": "ライブラリ概要",
+    "description": "写真ライブラリの整理状況",
+    "totalPhotos": "総写真数",
+    "starredPhotos": "スター付き写真",
+    "totalTags": "タグ数",
+    "totalAlbums": "アルバム数",
+    "photosWithTags": "タグ付き写真",
+    "photosInAlbums": "アルバム内写真"
+  },
+  "storage": {
+    "title": "ストレージ使用量",
+    "description": "写真ライブラリとキャッシュのディスク使用量",
+    "totalSize": "写真ライブラリ",
+    "thumbnailSize": "サムネイルキャッシュ",
+    "faceThumbnailSize": "顔サムネイル",
+    "totalCache": "キャッシュ合計"
+  }
+}
