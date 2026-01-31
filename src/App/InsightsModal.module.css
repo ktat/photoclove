@@ -281,3 +281,40 @@
 .emptyMessage {
     font-size: var(--font-size-sm);
 }
+
+/* Cache Age Display */
+.cacheAge {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin-right: auto;
+    padding: var(--space-2) 0;
+}
+
+/* Refreshing Overlay */
+.refreshingOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-radius: var(--radius-md);
+}
+
+.refreshingOverlay span {
+    background: var(--color-bg-elevated);
+    padding: var(--space-3) var(--space-5);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Content needs position for overlay */
+.content {
+    position: relative;
+}

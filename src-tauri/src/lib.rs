@@ -23,6 +23,54 @@ use app_state::AppState;
 // Import all commands from the commands module
 use commands::*;
 
+/// Queue insights calculation on startup if cache is stale (>1 hour) or missing
+fn queue_startup_insights(config: &entity::config::Config, app_handle: tauri::AppHandle) {
+    use crate::domain_service::job_queue::handlers::insights;
+    use crate::entity::job_queue::{Job, JobType, JobUnit, QueuedJob};
+
+    // Check if cache is stale (older than 1 hour) or missing
+    let should_refresh = match insights::get_cache_metadata(config) {
+        Some(metadata) => metadata.age_secs > 3600, // Older than 1 hour
+        None => true, // No cache
+    };
+
+    if !should_refresh {
+        log::info!(target: "stats", "startup_insights; status=cache_valid; skipping");
+        return;
+    }
+
+    log::info!(target: "stats", "startup_insights; status=queueing");
+
+    let sqlite = repository::meta_db::sqlite::SQLite::new(config.import_to.clone());
+
+    // Create job unit
+    let job_types = vec!["insights_calculation".to_string()];
+    let job_unit = JobUnit::new(job_types);
+    let job_unit_id = job_unit.id.clone();
+
+    // Save job unit
+    if let Err(e) = sqlite.create_job_unit(&job_unit) {
+        log::error!(target: "stats", "startup_insights; status=error; error={}", e);
+        return;
+    }
+
+    // Create the job
+    let job = Job::new(job_unit_id.clone(), JobType::InsightsCalculation, vec![]);
+    let queued_job = QueuedJob::new(job_unit_id.clone(), job);
+
+    // Save job to queue
+    if let Err(e) = sqlite.create_job(&queued_job) {
+        log::error!(target: "stats", "startup_insights; status=error; error={}", e);
+        return;
+    }
+
+    log::info!(target: "stats", "startup_insights; status=queued; job_unit_id={}", job_unit_id);
+
+    // Trigger job processing
+    let db_arc = Arc::new(sqlite);
+    domain_service::job_queue::executor::process_new_jobs(db_arc, 1, app_handle);
+}
+
 #[cfg_attr(
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
@@ -183,8 +231,14 @@ pub fn run() {
             let app_handle = app.handle().clone();
             let state = app.state::<AppState>();
             let job_queue_manager = state.job_queue_manager.lock().unwrap();
-            job_queue_manager.start_background_processing(app_handle);
+            job_queue_manager.start_background_processing(app_handle.clone());
             log::info!(target: "job_queue", "background_job_processing_started");
+
+            // Queue insights calculation on startup if cache is stale or missing
+            let config = state.config.clone();
+            std::thread::spawn(move || {
+                queue_startup_insights(&config, app_handle);
+            });
 
             Ok(())
         })
@@ -342,6 +396,9 @@ pub fn run() {
             regenerate_face_thumbnails,
             // Statistics commands
             stats_commands::get_photography_insights,
+            stats_commands::get_cached_insights,
+            stats_commands::get_insights_cache_status,
+            stats_commands::queue_insights_refresh,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
