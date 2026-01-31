@@ -74,8 +74,12 @@ class SlideshowMusicService {
     this.isPlaying = false;
     this.onTrackChange = null;
     this.onPlayStateChange = null;
+    this.onError = null; // Callback for errors
     this.availableTracks = new Map(); // Cache of available tracks
     this.musicBasePath = '/music/';
+    this.musicAvailable = false; // Whether music files are available
+    this.errorCount = 0;
+    this.maxErrors = 3; // Stop trying after this many errors
   }
 
   /**
@@ -92,10 +96,27 @@ class SlideshowMusicService {
       });
 
       this.audio.addEventListener('error', (e) => {
+        this.errorCount++;
         logger.warn('SlideshowMusic', 'audio_error', 'Audio playback error', {
-          error: e.message,
-          track: this.currentTrack?.title
+          error: e.message || 'File not found',
+          track: this.currentTrack?.title,
+          errorCount: this.errorCount
         });
+
+        // Stop trying if too many errors (likely no music files)
+        if (this.errorCount >= this.maxErrors) {
+          logger.warn('SlideshowMusic', 'music_unavailable', 'Music files not available');
+          this.musicAvailable = false;
+          this.isPlaying = false;
+          if (this.onError) {
+            this.onError('Music files not found. Add MP3 files to public/music/ folder.');
+          }
+          if (this.onPlayStateChange) {
+            this.onPlayStateChange(false);
+          }
+          return;
+        }
+
         // Try next track on error
         this.playNextTrack();
       });
@@ -269,14 +290,29 @@ class SlideshowMusicService {
   play() {
     if (!this.audio || !this.currentTrack) return;
 
+    // Don't try if music is unavailable
+    if (!this.musicAvailable && this.errorCount >= this.maxErrors) {
+      logger.debug('SlideshowMusic', 'play_skipped', 'Music unavailable, skipping play');
+      return;
+    }
+
     this.audio.play().then(() => {
       this.isPlaying = true;
+      this.musicAvailable = true;
+      this.errorCount = 0; // Reset error count on successful play
       if (this.onPlayStateChange) {
         this.onPlayStateChange(true);
       }
       logger.debug('SlideshowMusic', 'play', 'Playback started', { track: this.currentTrack?.title });
     }).catch(err => {
       logger.warn('SlideshowMusic', 'play_failed', 'Failed to play audio', { error: err.message });
+      this.errorCount++;
+      if (this.errorCount >= this.maxErrors) {
+        this.musicAvailable = false;
+        if (this.onError) {
+          this.onError('Music files not found');
+        }
+      }
     });
   }
 
@@ -336,7 +372,8 @@ class SlideshowMusicService {
       isMuted: this.isMuted,
       volume: this.volume,
       currentTrack: this.currentTrack,
-      currentMood: this.currentMood
+      currentMood: this.currentMood,
+      musicAvailable: this.musicAvailable
     };
   }
 
@@ -363,6 +400,11 @@ class SlideshowMusicService {
     }
     this.currentTrack = null;
     this.currentMood = null;
+    this.errorCount = 0;
+    this.musicAvailable = false;
+    this.onTrackChange = null;
+    this.onPlayStateChange = null;
+    this.onError = null;
     logger.info('SlideshowMusic', 'destroyed', 'Music service destroyed');
   }
 }
