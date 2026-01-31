@@ -164,6 +164,48 @@ The `storage_sync` column in photo_metadata tracks synchronization status across
 ### Storage Sync Index
 - `idx_storage_sync`: Index on storage_sync for efficient queries on synced photos
 
+## Face Detection Tables
+
+Face detection tables store detected faces, person assignments, and face embeddings for similarity matching.
+
+### Persons Table
+Master table for identified people.
+
+- `id` (INTEGER PRIMARY KEY AUTOINCREMENT): Unique person identifier
+- `name` (TEXT): User-assigned name (nullable until identified)
+- `representative_face_id` (INTEGER): Best face for this person (set later)
+- `photo_count` (INTEGER DEFAULT 0): Cached count of photos with this person
+- `created_at` (TEXT NOT NULL): Creation timestamp
+- `updated_at` (TEXT NOT NULL): Last update timestamp
+
+### Detected Faces Table
+Individual face detections in photos.
+
+- `id` (INTEGER PRIMARY KEY AUTOINCREMENT): Unique face identifier
+- `photo_path` (TEXT NOT NULL): Reference to photo_metadata.path
+- `bbox_x` (REAL NOT NULL): Bounding box X coordinate (normalized 0-1)
+- `bbox_y` (REAL NOT NULL): Bounding box Y coordinate (normalized 0-1)
+- `bbox_width` (REAL NOT NULL): Bounding box width (normalized 0-1)
+- `bbox_height` (REAL NOT NULL): Bounding box height (normalized 0-1)
+- `confidence` (REAL NOT NULL): Detection confidence (0-1)
+- `embedding` (TEXT): Face embedding as JSON array (512-dim ArcFace vector)
+- `person_id` (INTEGER): Person association (NULL until clustered/identified)
+- `cluster_id` (INTEGER): Temporary cluster ID before person assignment
+- `created_at` (TEXT NOT NULL): Detection timestamp
+
+### Photo Detected Faces Table
+Junction table for photo-face relationships (for efficient queries).
+
+- `photo_path` (TEXT NOT NULL): Reference to photo_metadata.path
+- `detected_face_id` (INTEGER NOT NULL): Reference to detected_faces.id
+- Primary key: (photo_path, detected_face_id)
+
+### Face Detection Indexes
+- `idx_faces_photo_path`: Index on detected_faces.photo_path for fast photo lookups
+- `idx_faces_person_id`: Index on detected_faces.person_id for person queries
+- `idx_faces_cluster_id`: Index on detected_faces.cluster_id for clustering
+- `idx_persons_name`: Index on persons.name for name searches
+
 ## Indexes
 
 ### Performance Indexes

@@ -76,7 +76,8 @@ src/
 │   │       ├── 📄 AITaggingTab.jsx     # AI auto-tagging settings
 │   │       ├── 📄 AIModelSelector.jsx  # AI model selection component
 │   │       ├── 📄 AICustomLabels.jsx   # Custom AI label configuration
-│   │       └── 📄 S3BackupTab.jsx      # S3 cloud backup settings
+│   │       ├── 📄 S3BackupTab.jsx      # S3 cloud backup settings
+│   │       └── 📄 FaceDetectionTab.jsx # Face detection model management
 │   │
 │   └── 📁 PhotosList/          # Photo viewing components
 │       ├── 📄 DirectoryMenu.jsx     # Right sidebar menu
@@ -96,6 +97,8 @@ src/
 │       ├── 📄 AlbumTab.jsx          # Album tab component
 │       ├── 📄 TagCloudView.jsx      # Tag cloud visualization
 │       ├── 📄 VirtualPhotoGrid.jsx  # Virtualized photo grid for performance
+│       ├── 📄 FacesList.jsx         # Persons list with photo counts
+│       ├── 📄 UnknownFacesList.jsx  # Unknown faces with batch operations
 │       │
 │       ├── 📁 DirectoryMenu/
 │       │   ├── 📄 FilterTab.jsx          # Filter options tab
@@ -109,8 +112,10 @@ src/
 │       │   ├── 📄 PhotoEditor.jsx   # Image editing controls
 │       │   ├── 📄 PhotoInfo.jsx     # Photo metadata display with external app launcher
 │       │   ├── 📄 PhotoTags.jsx     # Photo tag management
+│       │   ├── 📄 PhotoFaces.jsx    # Face detection and person naming
 │       │   ├── 📄 CropTool.jsx      # Crop tool component
 │       │   ├── 📄 EditorControl.jsx # Editor control component
+│       │   ├── 📄 BurstGroupPanel.jsx # Burst group management
 │       │   │
 │       │   └── 📁 PhotoEditor/      # PhotoEditor utility modules
 │       │       ├── 📄 cssUtils.js   # CSS parsing/generation
@@ -187,6 +192,7 @@ src/
 │   ├── 📄 ErrorFallback.jsx         # Error fallback UI
 │   ├── 📄 ErrorModal.jsx            # Error modal dialog
 │   ├── 📄 ErrorToast.jsx            # Error toast notification
+│   ├── 📄 FaceThumbnail.jsx         # Face thumbnail with cache support
 │   ├── 📄 FilterPopover.jsx         # Filter popover component
 │   ├── 📄 SavedSearches.jsx         # Saved searches component
 │   ├── 📄 SearchBar.jsx             # Search bar component
@@ -212,6 +218,7 @@ src/
 ├── 📁 services/                # External service integrations
 │   ├── 📄 LoggerService.js     # Structured logging service
 │   ├── 📄 TauriService.js      # Tauri backend communication service
+│   ├── 📄 FaceDetectionService.js # Face detection API service
 │   └── 📁 firebase/            # Firebase authentication
 │       ├── 📄 app.js           # Firebase app configuration
 │       ├── 📄 auth.js          # Authentication methods
@@ -328,6 +335,8 @@ src-tauri/
 │   │   ├── 📄 album_commands.rs    # Album management commands
 │   │   ├── 📄 burst_group_commands.rs # Burst group commands
 │   │   ├── 📄 collection_commands.rs # Collection commands
+│   │   ├── 📄 face_detection_commands.rs # Face detection commands
+│   │   ├── 📄 face_batch_commands.rs # Face batch operations commands
 │   │   ├── 📄 config_commands.rs   # Configuration commands
 │   │   ├── 📄 database_commands.rs # Database commands
 │   │   ├── 📄 google_commands.rs   # Google Photos commands
@@ -394,6 +403,14 @@ src-tauri/
 │   │   │       ├── 📄 openclip.rs # OpenCLIP backend
 │   │   │       └── 📄 siglip.rs # SigLIP backend
 │   │   │
+│   │   ├── 📁 face_detection/  # Face detection subsystem
+│   │   │   ├── 📄 mod.rs       # Face detection module
+│   │   │   ├── 📄 service.rs   # Face detection service
+│   │   │   ├── 📄 detector.rs  # Face detector (SCRFD)
+│   │   │   └── 📄 embedder.rs  # Face embedder (ArcFace)
+│   │   │
+│   │   ├── 📄 face_thumbnail_service.rs # Face thumbnail generation
+│   │   │
 │   │   └── 📁 job_queue/       # Job queue subsystem
 │   │       ├── 📄 mod.rs       # Job queue module
 │   │       ├── 📄 executor.rs  # Job executor
@@ -443,11 +460,19 @@ src-tauri/
 │   │       │   ├── 📄 tags.rs      # Tag operations
 │   │       │   ├── 📄 utils.rs     # SQLite utilities
 │   │       │   │
-│   │       │   └── 📁 collections/ # Collection operations
-│   │       │       ├── 📄 mod.rs   # Collections module
-│   │       │       ├── 📄 crud.rs  # Collection CRUD operations
-│   │       │       ├── 📄 items.rs # Collection item operations
-│   │       │       └── 📄 queries.rs # Collection queries
+│   │       │   ├── 📁 collections/ # Collection operations
+│   │       │   │   ├── 📄 mod.rs   # Collections module
+│   │       │   │   ├── 📄 crud.rs  # Collection CRUD operations
+│   │       │   │   ├── 📄 items.rs # Collection item operations
+│   │       │   │   └── 📄 queries.rs # Collection queries
+│   │       │   │
+│   │       │   └── 📁 face_detection/ # Face detection operations
+│   │       │       ├── 📄 mod.rs   # Face detection module
+│   │       │       ├── 📄 faces.rs # Face CRUD and batch operations
+│   │       │       ├── 📄 persons.rs # Person management
+│   │       │       ├── 📄 unknown.rs # Unknown faces queries
+│   │       │       ├── 📄 stats.rs # Face detection statistics
+│   │       │       └── 📄 types.rs # Face detection types
 │   │       │
 │   │       └── 📁 migrations/  # Database migrations
 │   │           ├── 📄 mod.rs   # Migrations module
@@ -457,7 +482,10 @@ src-tauri/
 │   │           ├── 📄 004_create_job_queue.sql
 │   │           ├── 📄 005_create_recovery_queue.sql
 │   │           ├── 📄 006_create_burst_groups.sql
-│   │           └── 📄 007_add_storage_sync.sql
+│   │           ├── 📄 007_add_storage_sync.sql
+│   │           ├── 📄 008_create_face_detection.sql
+│   │           ├── 📄 009_fix_face_detection_fk.sql
+│   │           └── 📄 010_add_photo_id_and_face_mapping.sql
 │   │
 │   ├── 📄 value.rs             # Value objects module declaration
 │   ├── 📁 value/               # Domain value objects
