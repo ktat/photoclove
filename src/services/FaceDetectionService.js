@@ -274,6 +274,41 @@ export async function deleteFace(faceId) {
 }
 
 /**
+ * Delete multiple detected faces (batch operation)
+ * @param {number[]} faceIds - Array of face IDs
+ * @returns {Promise<number>} Number of faces deleted
+ */
+export async function deleteFacesBatch(faceIds) {
+    logger.info(CONTEXT, 'delete_faces_batch', 'Deleting faces batch', { count: faceIds.length, faceIds });
+    try {
+        const count = await invoke('delete_detected_faces_batch', { faceIds });
+        logger.info(CONTEXT, 'delete_faces_batch_complete', 'Faces batch deleted', { count });
+        return count;
+    } catch (error) {
+        logger.error(CONTEXT, 'delete_faces_batch_failed', 'Failed to delete faces batch', { faceIds, error: error.toString() });
+        throw error;
+    }
+}
+
+/**
+ * Assign multiple faces to a person (batch operation)
+ * @param {number[]} faceIds - Array of face IDs
+ * @param {number} personId - Person ID to assign to
+ * @returns {Promise<number>} Number of faces assigned
+ */
+export async function assignFacesToPersonBatch(faceIds, personId) {
+    logger.info(CONTEXT, 'assign_faces_batch', 'Assigning faces to person batch', { count: faceIds.length, personId, faceIds });
+    try {
+        const count = await invoke('assign_faces_to_person_batch', { faceIds, personId });
+        logger.info(CONTEXT, 'assign_faces_batch_complete', 'Faces batch assigned', { count, personId });
+        return count;
+    } catch (error) {
+        logger.error(CONTEXT, 'assign_faces_batch_failed', 'Failed to assign faces batch', { faceIds, personId, error: error.toString() });
+        throw error;
+    }
+}
+
+/**
  * Set person name for a face
  * Creates a new person if face doesn't have one, or updates existing person name
  * @param {number} faceId - Face ID
@@ -360,6 +395,8 @@ export default {
     getPhotosForPerson,
     deletePerson,
     deleteFace,
+    deleteFacesBatch,
+    assignFacesToPersonBatch,
     setFacePersonName,
     getUnknownFacesCount,
     getUnknownFaces,

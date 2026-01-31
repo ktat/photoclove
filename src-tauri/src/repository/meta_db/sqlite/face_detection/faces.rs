@@ -291,3 +291,42 @@ pub fn delete_detected_face(sqlite: &SQLite, face_id: i64) -> Result<(), String>
 
     Ok(())
 }
+
+/// Delete multiple detected faces by IDs (batch operation)
+pub fn delete_detected_faces_batch(sqlite: &SQLite, face_ids: &[i64]) -> Result<usize, String> {
+    if face_ids.is_empty() {
+        return Ok(0);
+    }
+
+    let conn = sqlite
+        .get_connection()
+        .map_err(|e| format!("Database error: {}", e))?;
+
+    // Build placeholders for IN clause
+    let placeholders: String = face_ids.iter().map(|_| "?").collect::<Vec<_>>().join(", ");
+
+    // Delete from mapping table first
+    let sql_mapping = format!(
+        "DELETE FROM photo_detected_faces WHERE detected_face_id IN ({})",
+        placeholders
+    );
+    let params: Vec<&dyn rusqlite::ToSql> = face_ids.iter().map(|id| id as &dyn rusqlite::ToSql).collect();
+    conn.execute(&sql_mapping, params.as_slice())
+        .map_err(|e| format!("Failed to delete face mappings: {}", e))?;
+
+    // Delete from detected_faces table
+    let sql_faces = format!("DELETE FROM detected_faces WHERE id IN ({})", placeholders);
+    let params: Vec<&dyn rusqlite::ToSql> = face_ids.iter().map(|id| id as &dyn rusqlite::ToSql).collect();
+    let rows_affected = conn
+        .execute(&sql_faces, params.as_slice())
+        .map_err(|e| format!("Failed to delete faces: {}", e))?;
+
+    log::info!(
+        target: "face_detection",
+        "deleted_detected_faces_batch; count={}; face_ids={:?}",
+        rows_affected,
+        face_ids
+    );
+
+    Ok(rows_affected)
+}

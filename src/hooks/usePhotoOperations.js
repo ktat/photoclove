@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { confirm } from '@tauri-apps/plugin-dialog';
 import { logger } from '../services/LoggerService.js';
 import { unifiedCollectionService } from '../services/UnifiedCollectionService.js';
+import { deleteFacesBatch, assignFacesToPersonBatch, createPerson } from '../services/FaceDetectionService.js';
 
 const STORAGE_KEY_ALBUMS = 'selectedAlbums';
 const STORAGE_KEY_TAGS = 'selectedTags';
@@ -183,6 +184,45 @@ export function usePhotoOperations({
         setSelectedUnknownFaces([]);
         saveSelectionToStorage(STORAGE_KEY_UNKNOWN_FACES, []);
     }, [setSelectedUnknownFaces]);
+
+    // Delete unknown faces batch
+    const deleteUnknownFacesBatch = useCallback(async (faceIds) => {
+        if (!faceIds || faceIds.length === 0) return;
+
+        try {
+            const count = await deleteFacesBatch(faceIds);
+            clearUnknownFaceSelection();
+            loadFaces();
+            addFooterMessage(`${count} face${count > 1 ? 's' : ''} deleted`);
+        } catch (error) {
+            handleError(error, 'Delete faces batch', { faceIds });
+        }
+    }, [clearUnknownFaceSelection, loadFaces, addFooterMessage, handleError]);
+
+    // Assign unknown faces to person (new or existing)
+    const assignUnknownFacesToPerson = useCallback(async (faceIds, existingPersonId, newPersonName) => {
+        if (!faceIds || faceIds.length === 0) return;
+
+        try {
+            let personId = existingPersonId;
+
+            // Create new person if name is provided
+            if (newPersonName && !existingPersonId) {
+                personId = await createPerson(newPersonName);
+            }
+
+            if (!personId) {
+                throw new Error('No person ID available');
+            }
+
+            const count = await assignFacesToPersonBatch(faceIds, personId);
+            clearUnknownFaceSelection();
+            loadFaces();
+            addFooterMessage(`${count} face${count > 1 ? 's' : ''} assigned to person`);
+        } catch (error) {
+            handleError(error, 'Assign faces to person', { faceIds, existingPersonId, newPersonName });
+        }
+    }, [clearUnknownFaceSelection, loadFaces, addFooterMessage, handleError]);
 
     // Delete selected albums
     const deleteSelectedAlbums = useCallback(async () => {
@@ -425,6 +465,8 @@ export function usePhotoOperations({
         // Unknown face operations
         handleUnknownFaceSelection,
         clearUnknownFaceSelection,
+        deleteUnknownFacesBatch,
+        assignUnknownFacesToPerson,
 
         // Photo list management
         removePhotoFromList,

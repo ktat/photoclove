@@ -157,6 +157,61 @@ pub fn assign_face_to_person(
     Ok(())
 }
 
+/// Assign multiple faces to a person (batch operation)
+pub fn assign_faces_to_person_batch(
+    sqlite: &SQLite,
+    face_ids: &[i64],
+    person_id: i64,
+) -> Result<usize, String> {
+    if face_ids.is_empty() {
+        return Ok(0);
+    }
+
+    let conn = sqlite
+        .get_connection()
+        .map_err(|e| format!("Database error: {}", e))?;
+
+    // Build placeholders for IN clause
+    let placeholders: String = face_ids.iter().map(|_| "?").collect::<Vec<_>>().join(", ");
+
+    // Update detected_faces
+    let sql = format!(
+        "UPDATE detected_faces SET person_id = ? WHERE id IN ({})",
+        placeholders
+    );
+    let mut params: Vec<&dyn rusqlite::ToSql> = vec![&person_id as &dyn rusqlite::ToSql];
+    params.extend(face_ids.iter().map(|id| id as &dyn rusqlite::ToSql));
+
+    let rows_affected = conn
+        .execute(&sql, params.as_slice())
+        .map_err(|e| format!("Failed to assign faces: {}", e))?;
+
+    // Update person's photo_count
+    conn.execute(
+        "UPDATE persons SET
+            photo_count = (
+                SELECT COUNT(DISTINCT pdf.photo_id)
+                FROM detected_faces df
+                JOIN photo_detected_faces pdf ON df.id = pdf.detected_face_id
+                WHERE df.person_id = ?
+            ),
+            updated_at = datetime('now')
+         WHERE id = ?",
+        params![person_id, person_id],
+    )
+    .map_err(|e| format!("Failed to update person count: {}", e))?;
+
+    log::info!(
+        target: "face_detection",
+        "assigned_faces_to_person_batch; person_id={}; count={}; face_ids={:?}",
+        person_id,
+        rows_affected,
+        face_ids
+    );
+
+    Ok(rows_affected)
+}
+
 /// Get photos containing a specific person (paths only)
 pub fn get_photos_for_person(
     sqlite: &SQLite,

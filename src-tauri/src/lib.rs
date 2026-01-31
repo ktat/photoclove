@@ -330,6 +330,8 @@ pub fn run() {
             get_photos_for_person,
             delete_person,
             delete_detected_face,
+            delete_detected_faces_batch,
+            assign_faces_to_person_batch,
             set_face_person_name,
             run_face_detection_for_date,
             get_unknown_faces_count,
