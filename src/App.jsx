@@ -67,7 +67,7 @@ function App() {
     recentPhotosMode
   } = usePhoto();
   const { getDates } = useDateNavigation();
-  const { useCount, config, loadConfig } = useAppConfig();
+  const { useCount, setUseCount, config, loadConfig } = useAppConfig();
 
   // Use ref to access current config in event listeners (avoids stale closure)
   const configRef = useRef(config);
@@ -397,6 +397,22 @@ function App() {
   }
 
 
+  // Wait for config to load before deciding what to show
+  if (useCount === null) {
+    return (
+      <div className="loading-container">
+        <div className="loading-scene">
+          <div className="loading-flash"></div>
+          <div className="loading-crab">&#x1f980;</div>
+          <div className="loading-camera">&#x1f4f7;</div>
+          <div className="loading-camera">&#x1f4f7;</div>
+          <div className="loading-camera">&#x1f4f7;</div>
+        </div>
+        <div className="loading-text">Loading...</div>
+      </div>
+    );
+  }
+
   if (!showPreferences && !showImporter && !showSearchPage && useCount <= 2) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -404,6 +420,7 @@ function App() {
           welcomeImage={welcomeImage}
           setWelcomeImage={setWelcomeImage}
           useCount={useCount}
+          setUseCount={setUseCount}
           togglePreferences={togglePreferences}
           toggleImporter={toggleImporter}
           config={config}

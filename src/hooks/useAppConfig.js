@@ -24,6 +24,7 @@ export const useAppConfig = () => {
 
   return {
     useCount,
+    setUseCount,
     config,
     loadConfig
   };
