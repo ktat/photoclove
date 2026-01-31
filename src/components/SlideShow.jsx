@@ -21,6 +21,7 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
   const [volume, setVolume] = useState(0.5);
   const [currentMood, setCurrentMood] = useState(null);
   const [currentTrack, setCurrentTrack] = useState(null);
+  const [musicError, setMusicError] = useState(null);
 
   const containerRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
@@ -209,6 +210,11 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
     };
     slideshowMusic.onPlayStateChange = (playing) => {
       setIsMusicPlaying(playing);
+    };
+    slideshowMusic.onError = (error) => {
+      setMusicError(error);
+      setMusicEnabled(false);
+      logger.warn('SlideShow', 'music_error', 'Music playback error', { error });
     };
 
     // Analyze mood from photos and start playing
