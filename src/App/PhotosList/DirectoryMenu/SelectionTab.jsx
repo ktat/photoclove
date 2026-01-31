@@ -185,7 +185,7 @@ function SelectionTab({
                                         return <li key={v}><a href="#" onClick={() => setPhotoIndex(i)}>{v.replace(/^.+\//, "")}</a></li>
                                     })}
                                 </ul>
-                                <button onClick={() => clearPhotoSelection()}>Clear Selection</button>
+                                <button style={{ marginTop: 'var(--space-3)' }} onClick={() => clearPhotoSelection()}>Clear Selection</button>
 
                                 {/* Import Progress Display - Import Mode Only */}
                                 {viewModeObj?.shouldShowImportProgress() && importState?.importProgress && (
@@ -558,7 +558,7 @@ function SelectionTab({
                                     </div>
                                 )}
 
-                                <button onClick={() => clearUnknownFaceSelection()}>Clear Selection</button>
+                                <button style={{ marginTop: 'var(--space-3)' }} onClick={() => clearUnknownFaceSelection()}>Clear Selection</button>
                             </div>
                         )}
                     </div>
