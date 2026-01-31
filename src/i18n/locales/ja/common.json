@@ -93,7 +93,8 @@
     "import": "インポート",
     "preferences": "設定",
     "trash": "ゴミ箱",
-    "jobs": "ジョブ"
+    "jobs": "ジョブ",
+    "insights": "統計"
   },
   "status": {
     "loading": "読み込み中...",

@@ -1,0 +1,64 @@
+{
+  "title": "攝影統計",
+  "loading": "載入統計資料...",
+  "photos": "張照片",
+  "noData": "暫無資料",
+  "mostUsed": "最常用",
+  "sections": {
+    "shootingTime": "拍攝時間",
+    "cameraSettings": "相機設定",
+    "equipment": "器材",
+    "organization": "整理",
+    "storage": "儲存"
+  },
+  "days": {
+    "sun": "週日",
+    "mon": "週一",
+    "tue": "週二",
+    "wed": "週三",
+    "thu": "週四",
+    "fri": "週五",
+    "sat": "週六"
+  },
+  "shootingTime": {
+    "title": "拍攝時間規律",
+    "description": "您拍攝照片最多的時間段",
+    "hourTitle": "一天中的時間",
+    "dayTitle": "星期幾",
+    "peak": "高峰"
+  },
+  "cameraSettings": {
+    "title": "相機設定",
+    "description": "您最常使用的相機設定",
+    "iso": "ISO",
+    "aperture": "光圈",
+    "shutterSpeed": "快門速度",
+    "focalLength": "焦距"
+  },
+  "equipment": {
+    "title": "您的器材",
+    "description": "最常使用的相機和鏡頭",
+    "cameras": "相機",
+    "lenses": "鏡頭",
+    "noCameras": "暫無相機資料",
+    "noLenses": "暫無鏡頭資料"
+  },
+  "organization": {
+    "title": "圖庫概覽",
+    "description": "您的照片庫整理情況",
+    "totalPhotos": "照片總數",
+    "starredPhotos": "星標照片",
+    "totalTags": "標籤總數",
+    "totalAlbums": "相簿總數",
+    "photosWithTags": "已標記照片",
+    "photosInAlbums": "相簿中照片"
+  },
+  "storage": {
+    "title": "儲存使用情況",
+    "description": "照片庫和快取的磁碟使用量",
+    "totalSize": "照片庫大小",
+    "thumbnailSize": "縮圖快取",
+    "faceThumbnailSize": "人臉縮圖",
+    "totalCache": "快取總計"
+  }
+}

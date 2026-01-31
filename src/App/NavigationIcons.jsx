@@ -12,6 +12,7 @@ function NavigationIcons({
   openTagsList,
   openFacesList,
   openTrash,
+  setShowInsightsModal,
   handleMouseEnter,
   handleMouseLeave,
   config
@@ -86,6 +87,10 @@ function NavigationIcons({
       }}
       onMouseEnter={(e) => handleMouseEnter(t('navigation.trash'), e)}
       onMouseLeave={handleMouseLeave}>🗑️</a>
+
+      <a href="#" onClick={() => setShowInsightsModal(true)}
+      onMouseEnter={(e) => handleMouseEnter(t('navigation.insights'), e)}
+      onMouseLeave={handleMouseLeave}>📊</a>
     </div>
   );
 }

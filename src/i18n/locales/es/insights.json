@@ -1,0 +1,64 @@
+{
+  "title": "Estadísticas Fotográficas",
+  "loading": "Cargando estadísticas...",
+  "photos": "fotos",
+  "noData": "Sin datos disponibles",
+  "mostUsed": "Más usado",
+  "sections": {
+    "shootingTime": "Hora de Disparo",
+    "cameraSettings": "Ajustes de Cámara",
+    "equipment": "Equipo",
+    "organization": "Organización",
+    "storage": "Almacenamiento"
+  },
+  "days": {
+    "sun": "Dom",
+    "mon": "Lun",
+    "tue": "Mar",
+    "wed": "Mié",
+    "thu": "Jue",
+    "fri": "Vie",
+    "sat": "Sáb"
+  },
+  "shootingTime": {
+    "title": "Patrones de Tiempo",
+    "description": "Cuándo tomas la mayoría de tus fotos",
+    "hourTitle": "Hora del Día",
+    "dayTitle": "Día de la Semana",
+    "peak": "Pico"
+  },
+  "cameraSettings": {
+    "title": "Ajustes de Cámara",
+    "description": "Tus ajustes más utilizados",
+    "iso": "ISO",
+    "aperture": "Apertura",
+    "shutterSpeed": "Velocidad de Obturación",
+    "focalLength": "Distancia Focal"
+  },
+  "equipment": {
+    "title": "Tu Equipo",
+    "description": "Cámaras y objetivos más utilizados",
+    "cameras": "Cámaras",
+    "lenses": "Objetivos",
+    "noCameras": "Sin datos de cámara",
+    "noLenses": "Sin datos de objetivo"
+  },
+  "organization": {
+    "title": "Vista General de la Biblioteca",
+    "description": "Resumen de la organización de tu biblioteca",
+    "totalPhotos": "Total de Fotos",
+    "starredPhotos": "Fotos Destacadas",
+    "totalTags": "Total de Etiquetas",
+    "totalAlbums": "Total de Álbumes",
+    "photosWithTags": "Fotos con Etiquetas",
+    "photosInAlbums": "Fotos en Álbumes"
+  },
+  "storage": {
+    "title": "Uso de Almacenamiento",
+    "description": "Espacio en disco usado por tu biblioteca",
+    "totalSize": "Tamaño de Biblioteca",
+    "thumbnailSize": "Caché de Miniaturas",
+    "faceThumbnailSize": "Miniaturas de Rostros",
+    "totalCache": "Caché Total"
+  }
+}

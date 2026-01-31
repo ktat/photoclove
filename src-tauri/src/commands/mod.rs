@@ -28,6 +28,7 @@ pub mod search_commands;
 pub mod style_commands;
 pub mod tag_commands;
 pub mod trash_commands;
+pub mod stats_commands;
 pub mod utility_commands;
 
 // Re-export all commands for convenient access

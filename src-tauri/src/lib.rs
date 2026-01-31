@@ -340,6 +340,8 @@ pub fn run() {
             get_face_thumbnail_path,
             has_face_thumbnail,
             regenerate_face_thumbnails,
+            // Statistics commands
+            stats_commands::get_photography_insights,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

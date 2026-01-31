@@ -1,0 +1,64 @@
+{
+  "title": "摄影统计",
+  "loading": "加载统计数据...",
+  "photos": "张照片",
+  "noData": "暂无数据",
+  "mostUsed": "最常用",
+  "sections": {
+    "shootingTime": "拍摄时间",
+    "cameraSettings": "相机设置",
+    "equipment": "器材",
+    "organization": "整理",
+    "storage": "存储"
+  },
+  "days": {
+    "sun": "周日",
+    "mon": "周一",
+    "tue": "周二",
+    "wed": "周三",
+    "thu": "周四",
+    "fri": "周五",
+    "sat": "周六"
+  },
+  "shootingTime": {
+    "title": "拍摄时间规律",
+    "description": "您拍摄照片最多的时间段",
+    "hourTitle": "一天中的时间",
+    "dayTitle": "星期几",
+    "peak": "高峰"
+  },
+  "cameraSettings": {
+    "title": "相机设置",
+    "description": "您最常使用的相机设置",
+    "iso": "ISO",
+    "aperture": "光圈",
+    "shutterSpeed": "快门速度",
+    "focalLength": "焦距"
+  },
+  "equipment": {
+    "title": "您的器材",
+    "description": "最常使用的相机和镜头",
+    "cameras": "相机",
+    "lenses": "镜头",
+    "noCameras": "暂无相机数据",
+    "noLenses": "暂无镜头数据"
+  },
+  "organization": {
+    "title": "图库概览",
+    "description": "您的照片库整理情况",
+    "totalPhotos": "照片总数",
+    "starredPhotos": "星标照片",
+    "totalTags": "标签总数",
+    "totalAlbums": "相册总数",
+    "photosWithTags": "已标记照片",
+    "photosInAlbums": "相册中照片"
+  },
+  "storage": {
+    "title": "存储使用情况",
+    "description": "照片库和缓存的磁盘使用量",
+    "totalSize": "照片库大小",
+    "thumbnailSize": "缩略图缓存",
+    "faceThumbnailSize": "人脸缩略图",
+    "totalCache": "缓存总计"
+  }
+}
