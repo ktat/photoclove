@@ -134,6 +134,31 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - **Implementation**: `src/App/Preferences/tabs/AICustomLabels.jsx`
 - **Description**: Custom label input for CLIP-based models
 
+### Face Detection Components
+- **Term**: PhotoFaces
+- **Implementation**: `src/App/PhotosList/PhotoOption/PhotoFaces.jsx`
+- **Description**: Face detection panel in PhotoViewer for detecting and naming faces
+
+- **Term**: FacesList
+- **Implementation**: `src/App/PhotosList/FacesList.jsx`
+- **Description**: List view of all detected persons with photo counts
+
+- **Term**: UnknownFacesList
+- **Implementation**: `src/App/PhotosList/UnknownFacesList.jsx`
+- **Description**: List view of unassigned faces with batch operations
+
+- **Term**: FaceThumbnail
+- **Implementation**: `src/components/FaceThumbnail.jsx`
+- **Description**: Face thumbnail display component with cache support
+
+- **Term**: FaceDetectionTab
+- **Implementation**: `src/App/Preferences/tabs/FaceDetectionTab.jsx`
+- **Description**: Face detection preferences and model management
+
+- **Term**: FaceDetectionService
+- **Implementation**: `src/services/FaceDetectionService.js`
+- **Description**: Frontend service for face detection API calls
+
 ### Preferences Tabs
 - **Term**: GeneralTab
 - **Implementation**: `src/App/Preferences/tabs/GeneralTab.jsx`
@@ -206,6 +231,14 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - **Implementation**: `src-tauri/src/domain_service/s3_service.rs`
 - **Description**: S3-compatible storage backup service
 
+- **Term**: FaceDetectionService
+- **Implementation**: `src-tauri/src/domain_service/face_detection/service.rs`
+- **Description**: Face detection and embedding generation service
+
+- **Term**: FaceThumbnailService
+- **Implementation**: `src-tauri/src/domain_service/face_thumbnail_service.rs`
+- **Description**: Face thumbnail generation and caching service
+
 ### Commands
 - **Term**: recovery_queue_commands
 - **Implementation**: `src-tauri/src/commands/recovery_queue_commands.rs`
@@ -222,6 +255,14 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - **Term**: burst_group_commands
 - **Implementation**: `src-tauri/src/commands/burst_group_commands.rs`
 - **Description**: Tauri commands for burst photo grouping
+
+- **Term**: face_detection_commands
+- **Implementation**: `src-tauri/src/commands/face_detection_commands.rs`
+- **Description**: Tauri commands for face detection and person management
+
+- **Term**: face_batch_commands
+- **Implementation**: `src-tauri/src/commands/face_batch_commands.rs`
+- **Description**: Tauri commands for batch face operations (delete, assign)
 
 ### Entities
 - **Term**: PhotoMeta
@@ -298,6 +339,10 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - **Implementation**: `src/context/UIContext.jsx`
 - **Description**: UI state and navigation
 
+- **Term**: FaceDetectionContext
+- **Implementation**: `src/context/FaceDetectionContext.jsx`
+- **Description**: Face detection state for PhotoDisplay bounding boxes
+
 ## Common Patterns
 
 ### UI State Toggles
@@ -320,6 +365,8 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - Thumbnail Generation: `JOB_TYPE_THUMBNAIL`
 - Google Photos Upload: `JOB_TYPE_GOOGLE_PHOTOS_UPLOAD`
 - AI Tagging: `JOB_TYPE_AI_TAGGING`
+- Face Detection: `JOB_TYPE_FACE_DETECTION`
+- Face Thumbnail Regenerate: `JOB_TYPE_FACE_THUMBNAIL_REGENERATE`
 
 ## Database Tables
 
@@ -330,6 +377,11 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - `date_summary`: Pre-computed photo counts by date
 - `job_queue`: Background job tracking
 - `saved_searches`: Stored search queries
+
+### Face Detection Tables
+- `persons`: Named people with representative faces
+- `detected_faces`: Individual face detections with embeddings
+- `photo_detected_faces`: Photo-face junction table
 
 ## File Organization
 
@@ -406,6 +458,16 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - `download_ai_model`: Download an AI model
 - `delete_ai_model`: Delete a downloaded AI model
 - `run_ai_tagging_for_all`: Run AI tagging for all photos in library
+
+### Face Detection Operations
+- `get_face_detection_model_status`: Check model availability
+- `detect_faces_in_photo`: Detect faces in a photo
+- `get_detected_faces_for_photo`: Get detected faces from database
+- `get_all_persons`: List all persons
+- `get_unknown_faces`: Get unassigned faces with pagination
+- `assign_face_to_person`: Assign a face to a person
+- `delete_detected_faces_batch`: Batch delete faces
+- `assign_faces_to_person_batch`: Batch assign faces to person
 
 ## Error Handling
 

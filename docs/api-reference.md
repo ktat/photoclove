@@ -163,3 +163,54 @@ Commands for managing AI models used in photo auto-tagging.
 
 - **Frontend**: `src/App/Preferences/AITagging.jsx`
 - **Backend**: `src-tauri/src/commands/ai_model_commands.rs`
+
+### Face Detection Commands
+
+Commands for face detection and person management.
+
+| Command | Parameters | Return Type | Description |
+|---------|-----------|-------------|-------------|
+| `get_face_detection_model_status` | None | `Result<String, String>` | Check face detection model availability; returns `{detector_available, embedder_available, is_ready}` |
+| `get_face_detection_model_info` | None | `Result<String, String>` | Get model download info (URLs, sizes) |
+| `download_face_detection_model` | `model_type: String` | `Result<String, String>` | Download a model ("detector" or "embedder"); returns `{result, filename}` |
+| `delete_face_detection_model` | `model_type: String` | `Result<String, String>` | Delete a downloaded model |
+| `detect_faces_in_photo` | `photo_path: String`, `save_to_db: bool`, `use_full_image: Option<bool>` | `Result<String, String>` | Detect faces in a photo; returns face array with bounding boxes and confidence |
+| `get_detected_faces_for_photo` | `photo_path: String` | `Result<String, String>` | Get detected faces for a photo from database |
+| `has_photo_faces` | `photo_path: String` | `Result<bool, String>` | Check if a photo has been processed for face detection |
+| `get_face_detection_stats` | None | `Result<String, String>` | Get face detection statistics (total faces, persons, unassigned) |
+| `run_face_detection_for_date` | `date: String` | `Result<String, String>` | Run face detection for all photos in a date as background job |
+
+**Person Management Commands:**
+
+| Command | Parameters | Return Type | Description |
+|---------|-----------|-------------|-------------|
+| `get_all_persons` | None | `Result<String, String>` | Get all persons |
+| `get_all_persons_for_list` | None | `Result<String, String>` | Get persons with face counts and thumbnails for list display |
+| `get_persons_with_faces` | `face_id: Option<i64>` | `Result<String, String>` | Get named persons with thumbnails, sorted by similarity to target face |
+| `create_person` | `name: Option<String>` | `Result<i64, String>` | Create a new person; returns person_id |
+| `update_person_name` | `person_id: i64`, `name: String` | `Result<(), String>` | Update person name |
+| `delete_person` | `person_id: i64` | `Result<(), String>` | Delete a person |
+| `assign_face_to_person` | `face_id: i64`, `person_id: i64` | `Result<(), String>` | Assign a face to a person |
+| `set_face_person_name` | `face_id: i64`, `name: String` | `Result<i64, String>` | Set person name for a face (creates person if needed) |
+| `get_photos_for_person` | `person_id: i64` | `Result<String, String>` | Get photos containing a specific person |
+
+**Unknown Faces Commands:**
+
+| Command | Parameters | Return Type | Description |
+|---------|-----------|-------------|-------------|
+| `get_unknown_faces_count` | None | `Result<i64, String>` | Get count of unassigned faces |
+| `get_unknown_faces` | `limit: Option<u32>`, `offset: Option<u32>` | `Result<String, String>` | Get unknown faces with pagination (default limit 50) |
+| `delete_detected_face` | `face_id: i64` | `Result<(), String>` | Delete a single detected face |
+| `delete_detected_faces_batch` | `face_ids: Vec<i64>` | `Result<usize, String>` | Delete multiple faces (batch); returns count deleted |
+| `assign_faces_to_person_batch` | `face_ids: Vec<i64>`, `person_id: i64` | `Result<usize, String>` | Assign multiple faces to a person (batch); returns count assigned |
+
+**Face Thumbnail Commands:**
+
+| Command | Parameters | Return Type | Description |
+|---------|-----------|-------------|-------------|
+| `get_face_thumbnail_path` | `face_id: i64` | `Result<String, String>` | Get cached face thumbnail path (error if not cached) |
+| `has_face_thumbnail` | `face_id: i64` | `bool` | Check if a face thumbnail exists |
+| `regenerate_face_thumbnails` | None | `Result<String, String>` | Regenerate all face thumbnails as background job |
+
+- **Frontend**: `src/services/FaceDetectionService.js`, `src/App/PhotosList/PhotoOption/PhotoFaces.jsx`
+- **Backend**: `src-tauri/src/commands/face_detection_commands.rs`, `src-tauri/src/commands/face_batch_commands.rs`
