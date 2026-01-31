@@ -1,0 +1,69 @@
+{
+  "success": {
+    "saved": "Erfolgreich gespeichert",
+    "deleted": "Erfolgreich gelöscht",
+    "created": "Erfolgreich erstellt",
+    "updated": "Erfolgreich aktualisiert",
+    "imported": "Erfolgreich importiert",
+    "exported": "Erfolgreich exportiert",
+    "copied": "Erfolgreich kopiert",
+    "moved": "Erfolgreich verschoben",
+    "restored": "Erfolgreich wiederhergestellt",
+    "photosAdded_one": "{{count}} Foto hinzugefügt",
+    "photosAdded_other": "{{count}} Fotos hinzugefügt",
+    "photosRemoved_one": "{{count}} Foto entfernt",
+    "photosRemoved_other": "{{count}} Fotos entfernt",
+    "photosMoved_one": "{{count}} Foto in Papierkorb verschoben",
+    "photosMoved_other": "{{count}} Fotos in Papierkorb verschoben",
+    "photosRestored_one": "{{count}} Foto wiederhergestellt",
+    "photosRestored_other": "{{count}} Fotos wiederhergestellt"
+  },
+  "info": {
+    "noResults": "Keine Ergebnisse gefunden",
+    "noPhotosInAlbum": "Keine Fotos in diesem Album",
+    "noPhotosWithTag": "Keine Fotos mit diesem Tag",
+    "noPhotosOfPerson": "Keine Fotos dieser Person",
+    "dragDropHint": "Fotos hier per Drag & Drop ablegen",
+    "selectPhotosHint": "Fotos auswählen, um Aktionen auszuführen",
+    "emptyTrash": "Papierkorb ist leer",
+    "processingJobs": "{{count}} Aufgaben werden verarbeitet...",
+    "queueEmpty": "Aufgabenwarteschlange ist leer"
+  },
+  "warning": {
+    "unsavedChanges": "Sie haben ungespeicherte Änderungen. Möchten Sie wirklich gehen?",
+    "largeSelection": "Sie haben {{count}} Elemente ausgewählt. Dieser Vorgang kann einige Zeit dauern.",
+    "lowDiskSpace": "Wenig Speicherplatz. Bitte geben Sie etwas Speicherplatz frei.",
+    "duplicateFound": "Doppeltes Foto gefunden",
+    "duplicatesFound_one": "{{count}} Duplikat gefunden",
+    "duplicatesFound_other": "{{count}} Duplikate gefunden"
+  },
+  "hint": {
+    "doubleClickToOpen": "Doppelklicken zum Öffnen",
+    "rightClickForOptions": "Rechtsklick für Optionen",
+    "pressEscToClose": "Esc drücken zum Schließen",
+    "pressEnterToConfirm": "Enter drücken zum Bestätigen",
+    "useArrowsToNavigate": "Pfeiltasten zum Navigieren",
+    "scrollToLoadMore": "Scrollen, um mehr zu laden"
+  },
+  "welcome": {
+    "title": "Willkommen bei PhotoClove!",
+    "description": "PhotoClove ist eine Anwendung zur Verwaltung von Fotos. Es zielt auf schnellen Import und schnelle Anzeige von Fotos ab.",
+    "step1": "Zuerst konfigurieren Sie die",
+    "step1Link": "Einstellungen",
+    "step2a": "Wenn Sie keine Fotos haben,",
+    "step2aLink": "importieren Sie Fotos",
+    "step2b": "Wenn Sie Fotos im Import-Ordner haben, gehen Sie zur",
+    "step2bLink": "Fotoliste"
+  },
+  "tips": {
+    "tip1": "Verwenden Sie Tastaturkürzel für schnellere Navigation",
+    "tip2": "Markieren Sie Ihre Lieblingsfotos als Favoriten für schnellen Zugriff",
+    "tip3": "Erstellen Sie Alben, um Ihre Fotos zu organisieren",
+    "tip4": "Verwenden Sie Tags für flexible Kategorisierung",
+    "tip5": "Gesichtserkennung hilft Ihnen, Fotos von Personen zu finden",
+    "tip6": "Verwenden Sie die Suche, um Fotos nach Datum, Ort oder Inhalt zu finden",
+    "tip7": "Drag & Drop, um Fotos schnell zu Alben hinzuzufügen",
+    "tip8": "Verwenden Sie den Burst-Modus, um ähnliche Fotos zu gruppieren",
+    "tip9": "KI-Tagging kann Ihre Fotos automatisch kategorisieren"
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "success": {
+    "saved": "Enregistré avec succès",
+    "deleted": "Supprimé avec succès",
+    "created": "Créé avec succès",
+    "updated": "Mis à jour avec succès",
+    "imported": "Importé avec succès",
+    "exported": "Exporté avec succès",
+    "copied": "Copié avec succès",
+    "moved": "Déplacé avec succès",
+    "restored": "Restauré avec succès",
+    "photosAdded_one": "{{count}} photo ajoutée",
+    "photosAdded_other": "{{count}} photos ajoutées",
+    "photosRemoved_one": "{{count}} photo retirée",
+    "photosRemoved_other": "{{count}} photos retirées",
+    "photosMoved_one": "{{count}} photo déplacée vers la corbeille",
+    "photosMoved_other": "{{count}} photos déplacées vers la corbeille",
+    "photosRestored_one": "{{count}} photo restaurée",
+    "photosRestored_other": "{{count}} photos restaurées"
+  },
+  "info": {
+    "noResults": "Aucun résultat trouvé",
+    "noPhotosInAlbum": "Aucune photo dans cet album",
+    "noPhotosWithTag": "Aucune photo avec ce tag",
+    "noPhotosOfPerson": "Aucune photo de cette personne",
+    "dragDropHint": "Glissez-déposez des photos ici",
+    "selectPhotosHint": "Sélectionnez des photos pour effectuer des actions",
+    "emptyTrash": "La corbeille est vide",
+    "processingJobs": "Traitement de {{count}} tâches...",
+    "queueEmpty": "La file d'attente est vide"
+  },
+  "warning": {
+    "unsavedChanges": "Vous avez des modifications non enregistrées. Êtes-vous sûr de vouloir quitter ?",
+    "largeSelection": "Vous avez sélectionné {{count}} éléments. Cette opération peut prendre du temps.",
+    "lowDiskSpace": "Espace disque faible. Veuillez libérer de l'espace.",
+    "duplicateFound": "Photo en double trouvée",
+    "duplicatesFound_one": "{{count}} doublon trouvé",
+    "duplicatesFound_other": "{{count}} doublons trouvés"
+  },
+  "hint": {
+    "doubleClickToOpen": "Double-cliquez pour ouvrir",
+    "rightClickForOptions": "Clic droit pour les options",
+    "pressEscToClose": "Appuyez sur Échap pour fermer",
+    "pressEnterToConfirm": "Appuyez sur Entrée pour confirmer",
+    "useArrowsToNavigate": "Utilisez les flèches pour naviguer",
+    "scrollToLoadMore": "Faites défiler pour charger plus"
+  },
+  "welcome": {
+    "title": "Bienvenue sur PhotoClove !",
+    "description": "PhotoClove est une application pour gérer vos photos. Elle vise une importation rapide et une visualisation rapide des photos.",
+    "step1": "D'abord, configurez les",
+    "step1Link": "préférences",
+    "step2a": "Si vous n'avez pas de photos,",
+    "step2aLink": "importez des photos",
+    "step2b": "Si vous avez des photos dans le dossier d'importation, allez à la",
+    "step2bLink": "liste des photos"
+  },
+  "tips": {
+    "tip1": "Utilisez les raccourcis clavier pour une navigation plus rapide",
+    "tip2": "Ajoutez vos photos préférées aux favoris pour un accès rapide",
+    "tip3": "Créez des albums pour organiser vos photos",
+    "tip4": "Utilisez les tags pour une catégorisation flexible",
+    "tip5": "La détection de visages vous aide à trouver des photos de personnes",
+    "tip6": "Utilisez la recherche pour trouver des photos par date, lieu ou contenu",
+    "tip7": "Glissez-déposez pour ajouter rapidement des photos aux albums",
+    "tip8": "Utilisez le mode rafale pour regrouper des photos similaires",
+    "tip9": "Le tagging IA peut automatiquement catégoriser vos photos"
+  }
+}

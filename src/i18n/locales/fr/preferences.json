@@ -1,0 +1,111 @@
+{
+  "title": "Préférences",
+  "tabs": {
+    "general": "Général",
+    "startup": "Démarrage",
+    "thumbnail": "Miniatures",
+    "grouping": "Groupement",
+    "performance": "Performance",
+    "appearance": "Apparence",
+    "logging": "Journaux",
+    "aiTagging": "Tagging IA",
+    "faceDetection": "Détection de visages",
+    "s3Backup": "Sauvegarde S3",
+    "advanced": "Avancé"
+  },
+  "general": {
+    "language": "Langue",
+    "languageDescription": "Sélectionnez la langue d'affichage de l'application",
+    "dateFormat": "Format de date",
+    "dateFormatDescription": "Sélectionnez le format d'affichage des dates",
+    "importFolder": "Dossier d'importation",
+    "importFolderDescription": "Dossier par défaut pour les photos importées",
+    "selectFolder": "Sélectionner un dossier",
+    "thumbnailFolder": "Dossier des miniatures",
+    "thumbnailFolderDescription": "Où stocker les miniatures générées"
+  },
+  "startup": {
+    "startupBehavior": "Comportement au démarrage",
+    "showWelcome": "Afficher l'écran d'accueil au démarrage",
+    "openLastFolder": "Ouvrir le dernier dossier consulté",
+    "startMinimized": "Démarrer minimisé"
+  },
+  "thumbnail": {
+    "thumbnailSize": "Taille des miniatures",
+    "thumbnailQuality": "Qualité des miniatures",
+    "regenerate": "Régénérer les miniatures",
+    "regenerateDescription": "Régénérer toutes les miniatures (peut prendre du temps)"
+  },
+  "grouping": {
+    "burstDetection": "Détection de rafale",
+    "burstThreshold": "Seuil de rafale (secondes)",
+    "burstThresholdDescription": "Les photos prises dans ce délai seront groupées en rafale",
+    "similarPhotos": "Détection de photos similaires",
+    "similarThreshold": "Seuil de similarité"
+  },
+  "performance": {
+    "parallelProcessing": "Traitement parallèle",
+    "copyParallel": "Nombre de copies parallèles",
+    "thumbnailParallel": "Nombre de miniatures parallèles",
+    "maxPhotosPerFetch": "Max photos par récupération",
+    "cacheSize": "Taille du cache (Mo)"
+  },
+  "appearance": {
+    "theme": "Thème",
+    "themeLight": "Clair",
+    "themeDark": "Sombre",
+    "themeSystem": "Système",
+    "gridSize": "Taille de la grille",
+    "showFilenames": "Afficher les noms de fichiers",
+    "showDates": "Afficher les dates"
+  },
+  "logging": {
+    "logLevel": "Niveau de journalisation",
+    "logLevelDebug": "Débogage",
+    "logLevelInfo": "Info",
+    "logLevelWarn": "Avertissement",
+    "logLevelError": "Erreur",
+    "logRetention": "Rétention des journaux (jours)",
+    "openLogFolder": "Ouvrir le dossier des journaux",
+    "viewLogs": "Voir les journaux"
+  },
+  "aiTagging": {
+    "enableAI": "Activer le tagging IA",
+    "model": "Modèle IA",
+    "modelDescription": "Sélectionnez le modèle IA pour le tagging automatique",
+    "autoTag": "Tagger automatiquement à l'importation",
+    "customLabels": "Étiquettes personnalisées",
+    "customLabelsDescription": "Définir des étiquettes personnalisées pour les modèles basés sur CLIP",
+    "downloadModel": "Télécharger le modèle",
+    "deleteModel": "Supprimer le modèle"
+  },
+  "faceDetection": {
+    "enableFaceDetection": "Activer la détection de visages",
+    "autoDetect": "Détecter automatiquement à l'importation",
+    "model": "Modèle de détection de visages",
+    "downloadModel": "Télécharger le modèle",
+    "deleteModel": "Supprimer le modèle",
+    "thumbnailSize": "Taille des miniatures de visages"
+  },
+  "s3Backup": {
+    "enable": "Activer la sauvegarde S3",
+    "endpoint": "Point de terminaison",
+    "bucket": "Nom du bucket",
+    "accessKey": "Clé d'accès",
+    "secretKey": "Clé secrète",
+    "region": "Région",
+    "testConnection": "Tester la connexion",
+    "sync": "Synchroniser maintenant"
+  },
+  "advanced": {
+    "resetTutorials": "Réinitialiser les info-bulles",
+    "resetTutorialsDescription": "Afficher à nouveau les tutoriels info-bulles",
+    "showWelcomeTutorial": "Afficher à nouveau le tutoriel d'accueil",
+    "clearCache": "Vider le cache",
+    "clearCacheDescription": "Effacer toutes les données en cache",
+    "exportConfig": "Exporter la configuration",
+    "importConfig": "Importer la configuration",
+    "resetAll": "Réinitialiser tous les paramètres",
+    "resetAllWarning": "Tous les paramètres seront réinitialisés aux valeurs par défaut"
+  }
+}

@@ -1,11 +1,41 @@
 import React from 'react';
 import classNames from 'classnames';
+import { useTranslation } from 'react-i18next';
 import PickFolderSingle from '../../../FolderPicker.jsx';
+import { supportedLanguages, changeLanguage } from '../../../i18n';
 import styles from '../Preferences.module.css';
 
 const GeneralTab = ({ config, setConfig, additionalExportFrom, setAdditionalExportFrom }) => {
+    const { t, i18n } = useTranslation(['preferences', 'common']);
+
+    const handleLanguageChange = (e) => {
+        const newLang = e.target.value;
+        changeLanguage(newLang);
+    };
+
     return (
         <div className={styles['preferences-section']}>
+            <h2 className={styles['section-title']}>{t('preferences:general.language')}</h2>
+            <div className={styles['setting-group']}>
+                <div className={styles['setting-row']}>
+                    <label className={styles['setting-label']}>{t('preferences:general.language')}</label>
+                    <select
+                        className={styles['setting-select']}
+                        value={i18n.language}
+                        onChange={handleLanguageChange}
+                    >
+                        {supportedLanguages.map((lang) => (
+                            <option key={lang.code} value={lang.code}>
+                                {lang.flag} {lang.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <p className={styles['setting-description']}>
+                    {t('preferences:general.languageDescription')}
+                </p>
+            </div>
+
             <h2 className={styles['section-title']}>Path Settings</h2>
             <div className={styles['setting-group']}>
                 <PickFolderSingle

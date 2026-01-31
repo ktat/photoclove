@@ -1,0 +1,77 @@
+{
+  "general": {
+    "unknown": "Une erreur inconnue s'est produite",
+    "network": "Erreur réseau. Veuillez vérifier votre connexion.",
+    "timeout": "L'opération a expiré. Veuillez réessayer.",
+    "permission": "Permission refusée",
+    "notFound": "Non trouvé",
+    "alreadyExists": "Existe déjà",
+    "invalidInput": "Entrée invalide",
+    "operationFailed": "L'opération a échoué"
+  },
+  "file": {
+    "notFound": "Fichier non trouvé",
+    "accessDenied": "Accès au fichier refusé",
+    "readError": "Erreur de lecture du fichier",
+    "writeError": "Erreur d'écriture du fichier",
+    "deleteError": "Erreur de suppression du fichier",
+    "moveError": "Erreur de déplacement du fichier",
+    "copyError": "Erreur de copie du fichier",
+    "invalidFormat": "Format de fichier invalide",
+    "tooLarge": "Le fichier est trop volumineux",
+    "corrupted": "Le fichier semble être corrompu"
+  },
+  "photo": {
+    "loadFailed": "Échec du chargement de la photo",
+    "saveFailed": "Échec de l'enregistrement de la photo",
+    "deleteFailed": "Échec de la suppression de la photo",
+    "importFailed": "Échec de l'importation de la photo",
+    "exportFailed": "Échec de l'exportation de la photo",
+    "thumbnailFailed": "Échec de la génération de la miniature",
+    "metadataFailed": "Échec de la lecture des métadonnées de la photo"
+  },
+  "album": {
+    "createFailed": "Échec de la création de l'album",
+    "deleteFailed": "Échec de la suppression de l'album",
+    "updateFailed": "Échec de la mise à jour de l'album",
+    "addPhotosFailed": "Échec de l'ajout de photos à l'album",
+    "removePhotosFailed": "Échec du retrait de photos de l'album",
+    "nameRequired": "Le nom de l'album est requis",
+    "nameExists": "Un album avec ce nom existe déjà"
+  },
+  "tag": {
+    "createFailed": "Échec de la création du tag",
+    "deleteFailed": "Échec de la suppression du tag",
+    "updateFailed": "Échec de la mise à jour du tag",
+    "nameRequired": "Le nom du tag est requis",
+    "nameExists": "Un tag avec ce nom existe déjà"
+  },
+  "person": {
+    "createFailed": "Échec de la création de la personne",
+    "deleteFailed": "Échec de la suppression de la personne",
+    "updateFailed": "Échec de la mise à jour de la personne",
+    "assignFailed": "Échec de l'attribution du visage à la personne",
+    "mergeFailed": "Échec de la fusion des personnes",
+    "nameRequired": "Le nom de la personne est requis"
+  },
+  "face": {
+    "detectionFailed": "Échec de la détection de visage",
+    "modelNotFound": "Modèle de détection de visage non trouvé",
+    "modelDownloadFailed": "Échec du téléchargement du modèle de détection de visage"
+  },
+  "ai": {
+    "taggingFailed": "Échec du tagging IA",
+    "modelNotFound": "Modèle IA non trouvé",
+    "modelDownloadFailed": "Échec du téléchargement du modèle IA"
+  },
+  "config": {
+    "loadFailed": "Échec du chargement de la configuration",
+    "saveFailed": "Échec de l'enregistrement de la configuration",
+    "invalid": "Configuration invalide"
+  },
+  "database": {
+    "connectionFailed": "Échec de la connexion à la base de données",
+    "queryFailed": "Échec de la requête de base de données",
+    "migrationFailed": "Échec de la migration de la base de données"
+  }
+}

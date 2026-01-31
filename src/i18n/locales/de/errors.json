@@ -1,0 +1,77 @@
+{
+  "general": {
+    "unknown": "Ein unbekannter Fehler ist aufgetreten",
+    "network": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung.",
+    "timeout": "Zeitüberschreitung. Bitte versuchen Sie es erneut.",
+    "permission": "Zugriff verweigert",
+    "notFound": "Nicht gefunden",
+    "alreadyExists": "Existiert bereits",
+    "invalidInput": "Ungültige Eingabe",
+    "operationFailed": "Vorgang fehlgeschlagen"
+  },
+  "file": {
+    "notFound": "Datei nicht gefunden",
+    "accessDenied": "Dateizugriff verweigert",
+    "readError": "Fehler beim Lesen der Datei",
+    "writeError": "Fehler beim Schreiben der Datei",
+    "deleteError": "Fehler beim Löschen der Datei",
+    "moveError": "Fehler beim Verschieben der Datei",
+    "copyError": "Fehler beim Kopieren der Datei",
+    "invalidFormat": "Ungültiges Dateiformat",
+    "tooLarge": "Datei ist zu groß",
+    "corrupted": "Datei scheint beschädigt zu sein"
+  },
+  "photo": {
+    "loadFailed": "Foto konnte nicht geladen werden",
+    "saveFailed": "Foto konnte nicht gespeichert werden",
+    "deleteFailed": "Foto konnte nicht gelöscht werden",
+    "importFailed": "Foto konnte nicht importiert werden",
+    "exportFailed": "Foto konnte nicht exportiert werden",
+    "thumbnailFailed": "Miniaturansicht konnte nicht erstellt werden",
+    "metadataFailed": "Foto-Metadaten konnten nicht gelesen werden"
+  },
+  "album": {
+    "createFailed": "Album konnte nicht erstellt werden",
+    "deleteFailed": "Album konnte nicht gelöscht werden",
+    "updateFailed": "Album konnte nicht aktualisiert werden",
+    "addPhotosFailed": "Fotos konnten nicht zum Album hinzugefügt werden",
+    "removePhotosFailed": "Fotos konnten nicht aus Album entfernt werden",
+    "nameRequired": "Albumname ist erforderlich",
+    "nameExists": "Ein Album mit diesem Namen existiert bereits"
+  },
+  "tag": {
+    "createFailed": "Tag konnte nicht erstellt werden",
+    "deleteFailed": "Tag konnte nicht gelöscht werden",
+    "updateFailed": "Tag konnte nicht aktualisiert werden",
+    "nameRequired": "Tag-Name ist erforderlich",
+    "nameExists": "Ein Tag mit diesem Namen existiert bereits"
+  },
+  "person": {
+    "createFailed": "Person konnte nicht erstellt werden",
+    "deleteFailed": "Person konnte nicht gelöscht werden",
+    "updateFailed": "Person konnte nicht aktualisiert werden",
+    "assignFailed": "Gesicht konnte nicht der Person zugewiesen werden",
+    "mergeFailed": "Personen konnten nicht zusammengeführt werden",
+    "nameRequired": "Personenname ist erforderlich"
+  },
+  "face": {
+    "detectionFailed": "Gesichtserkennung fehlgeschlagen",
+    "modelNotFound": "Gesichtserkennungsmodell nicht gefunden",
+    "modelDownloadFailed": "Download des Gesichtserkennungsmodells fehlgeschlagen"
+  },
+  "ai": {
+    "taggingFailed": "KI-Tagging fehlgeschlagen",
+    "modelNotFound": "KI-Modell nicht gefunden",
+    "modelDownloadFailed": "Download des KI-Modells fehlgeschlagen"
+  },
+  "config": {
+    "loadFailed": "Konfiguration konnte nicht geladen werden",
+    "saveFailed": "Konfiguration konnte nicht gespeichert werden",
+    "invalid": "Ungültige Konfiguration"
+  },
+  "database": {
+    "connectionFailed": "Datenbankverbindung fehlgeschlagen",
+    "queryFailed": "Datenbankabfrage fehlgeschlagen",
+    "migrationFailed": "Datenbankmigration fehlgeschlagen"
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "delete": {
+    "title": "削除",
+    "confirmTitle": "削除の確認",
+    "photoTitle": "写真を削除",
+    "photosTitle": "写真を削除",
+    "albumTitle": "アルバムを削除",
+    "tagTitle": "タグを削除",
+    "personTitle": "人物を削除",
+    "faceTitle": "顔を削除",
+    "confirmMessage": "本当に削除しますか？",
+    "confirmPhotos": "{{count}}枚の写真を削除しますか？",
+    "confirmAlbum": "アルバム「{{name}}」を削除しますか？",
+    "confirmTag": "タグ「{{name}}」を削除しますか？",
+    "confirmPerson": "「{{name}}」と関連するすべての顔を削除しますか？",
+    "confirmFaces": "{{count}}個の顔を削除しますか？",
+    "moveToTrash": "ゴミ箱に移動",
+    "permanentDelete": "完全に削除",
+    "warningPermanent": "この操作は取り消せません。",
+    "warningTrash": "写真はゴミ箱に移動され、後で復元できます。",
+    "keepAlbum": "アルバムを残し、写真のみ削除",
+    "deleteAlbum": "アルバムを削除し、写真も削除"
+  },
+  "album": {
+    "createTitle": "アルバム作成",
+    "editTitle": "アルバム編集",
+    "nameLabel": "アルバム名",
+    "namePlaceholder": "アルバム名を入力",
+    "descriptionLabel": "説明",
+    "descriptionPlaceholder": "アルバムの説明を入力（任意）",
+    "colorLabel": "色",
+    "coverLabel": "カバー写真"
+  },
+  "tag": {
+    "createTitle": "タグ作成",
+    "editTitle": "タグ編集",
+    "nameLabel": "タグ名",
+    "namePlaceholder": "タグ名を入力",
+    "colorLabel": "色"
+  },
+  "person": {
+    "assignTitle": "人物を割り当て",
+    "createTitle": "人物を作成",
+    "mergeTitle": "人物を統合",
+    "nameLabel": "人物名",
+    "namePlaceholder": "人物名を入力",
+    "selectExisting": "既存の人物を選択",
+    "createNew": "新しい人物を作成"
+  },
+  "import": {
+    "title": "写真をインポート",
+    "selectFolder": "フォルダを選択",
+    "selectFiles": "ファイルを選択",
+    "scanning": "写真をスキャン中...",
+    "foundPhotos": "{{count}}枚の写真が見つかりました",
+    "importing": "写真をインポート中...",
+    "completed": "インポート完了",
+    "failed": "インポート失敗"
+  },
+  "export": {
+    "title": "写真をエクスポート",
+    "selectDestination": "保存先を選択",
+    "includeMetadata": "メタデータを含める",
+    "includeEdits": "編集を含める"
+  },
+  "search": {
+    "title": "検索",
+    "savedSearches": "保存した検索",
+    "saveSearch": "検索を保存",
+    "searchName": "検索名",
+    "searchNamePlaceholder": "検索名を入力"
+  },
+  "preferences": {
+    "title": "設定"
+  },
+  "about": {
+    "title": "PhotoClove について",
+    "version": "バージョン",
+    "license": "ライセンス",
+    "credits": "クレジット"
+  },
+  "privacy": {
+    "title": "プライバシーポリシー"
+  },
+  "terms": {
+    "title": "利用規約"
+  },
+  "help": {
+    "title": "ヘルプ",
+    "documentation": "ドキュメント",
+    "shortcuts": "キーボードショートカット"
+  }
+}

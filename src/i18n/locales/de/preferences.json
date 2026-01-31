@@ -1,0 +1,111 @@
+{
+  "title": "Einstellungen",
+  "tabs": {
+    "general": "Allgemein",
+    "startup": "Start",
+    "thumbnail": "Miniaturansichten",
+    "grouping": "Gruppierung",
+    "performance": "Leistung",
+    "appearance": "Erscheinungsbild",
+    "logging": "Protokollierung",
+    "aiTagging": "KI-Tagging",
+    "faceDetection": "Gesichtserkennung",
+    "s3Backup": "S3-Backup",
+    "advanced": "Erweitert"
+  },
+  "general": {
+    "language": "Sprache",
+    "languageDescription": "Wählen Sie die Anzeigesprache der Anwendung",
+    "dateFormat": "Datumsformat",
+    "dateFormatDescription": "Wählen Sie das Anzeigeformat für Daten",
+    "importFolder": "Import-Ordner",
+    "importFolderDescription": "Standardordner für importierte Fotos",
+    "selectFolder": "Ordner auswählen",
+    "thumbnailFolder": "Miniaturansicht-Ordner",
+    "thumbnailFolderDescription": "Wo generierte Miniaturansichten gespeichert werden"
+  },
+  "startup": {
+    "startupBehavior": "Startverhalten",
+    "showWelcome": "Willkommensbildschirm beim Start anzeigen",
+    "openLastFolder": "Zuletzt angezeigten Ordner öffnen",
+    "startMinimized": "Minimiert starten"
+  },
+  "thumbnail": {
+    "thumbnailSize": "Miniaturansichtsgröße",
+    "thumbnailQuality": "Miniaturansichtsqualität",
+    "regenerate": "Miniaturansichten regenerieren",
+    "regenerateDescription": "Alle Miniaturansichten regenerieren (kann einige Zeit dauern)"
+  },
+  "grouping": {
+    "burstDetection": "Serienbilderkennung",
+    "burstThreshold": "Serienbildschwelle (Sekunden)",
+    "burstThresholdDescription": "Fotos, die innerhalb dieser Zeit aufgenommen wurden, werden als Serie gruppiert",
+    "similarPhotos": "Ähnliche Fotos erkennen",
+    "similarThreshold": "Ähnlichkeitsschwelle"
+  },
+  "performance": {
+    "parallelProcessing": "Parallele Verarbeitung",
+    "copyParallel": "Parallele Kopien",
+    "thumbnailParallel": "Parallele Miniaturansichten",
+    "maxPhotosPerFetch": "Max Fotos pro Abruf",
+    "cacheSize": "Cache-Größe (MB)"
+  },
+  "appearance": {
+    "theme": "Design",
+    "themeLight": "Hell",
+    "themeDark": "Dunkel",
+    "themeSystem": "System",
+    "gridSize": "Rastergröße",
+    "showFilenames": "Dateinamen anzeigen",
+    "showDates": "Daten anzeigen"
+  },
+  "logging": {
+    "logLevel": "Protokollierungsstufe",
+    "logLevelDebug": "Debug",
+    "logLevelInfo": "Info",
+    "logLevelWarn": "Warnung",
+    "logLevelError": "Fehler",
+    "logRetention": "Protokollaufbewahrung (Tage)",
+    "openLogFolder": "Protokollordner öffnen",
+    "viewLogs": "Protokolle anzeigen"
+  },
+  "aiTagging": {
+    "enableAI": "KI-Tagging aktivieren",
+    "model": "KI-Modell",
+    "modelDescription": "Wählen Sie das KI-Modell für automatisches Tagging",
+    "autoTag": "Automatisch beim Import taggen",
+    "customLabels": "Benutzerdefinierte Labels",
+    "customLabelsDescription": "Definieren Sie benutzerdefinierte Labels für CLIP-basierte Modelle",
+    "downloadModel": "Modell herunterladen",
+    "deleteModel": "Modell löschen"
+  },
+  "faceDetection": {
+    "enableFaceDetection": "Gesichtserkennung aktivieren",
+    "autoDetect": "Automatisch beim Import erkennen",
+    "model": "Gesichtserkennungsmodell",
+    "downloadModel": "Modell herunterladen",
+    "deleteModel": "Modell löschen",
+    "thumbnailSize": "Gesichtsminiaturansichtsgröße"
+  },
+  "s3Backup": {
+    "enable": "S3-Backup aktivieren",
+    "endpoint": "Endpunkt",
+    "bucket": "Bucket-Name",
+    "accessKey": "Zugriffsschlüssel",
+    "secretKey": "Geheimer Schlüssel",
+    "region": "Region",
+    "testConnection": "Verbindung testen",
+    "sync": "Jetzt synchronisieren"
+  },
+  "advanced": {
+    "resetTutorials": "Tooltips zurücksetzen",
+    "resetTutorialsDescription": "Tooltip-Tutorials erneut anzeigen",
+    "showWelcomeTutorial": "Willkommens-Tutorial erneut anzeigen",
+    "clearCache": "Cache leeren",
+    "clearCacheDescription": "Alle zwischengespeicherten Daten löschen",
+    "exportConfig": "Konfiguration exportieren",
+    "importConfig": "Konfiguration importieren",
+    "resetAll": "Alle Einstellungen zurücksetzen",
+    "resetAllWarning": "Alle Einstellungen werden auf Standardwerte zurückgesetzt"
+  }
+}
