@@ -3,6 +3,9 @@ import { logger } from '../services/LoggerService.js';
 import BaseModal, { ModalLoading, ModalError } from './BaseModal.jsx';
 import styles from './DocumentViewer.module.css';
 
+// GitHub raw content base URL
+const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/ktat/photoclove/main/public';
+
 const DocumentViewer = ({ title, fileName, onClose }) => {
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -14,22 +17,53 @@ const DocumentViewer = ({ title, fileName, onClose }) => {
         setIsLoading(true);
         setError(null);
 
-        // Try to load language-specific version first (Japanese)
         const lang = navigator.language.startsWith('ja') ? 'ja' : 'en';
         const langFileName = lang === 'ja' ? `${fileName}-ja.md` : `${fileName}.md`;
+        const englishFileName = `${fileName}.md`;
 
-        let response = await fetch(`/${langFileName}`);
+        let text = null;
 
-        // Fallback to English if Japanese version not found
-        if (!response.ok && lang === 'ja') {
-          response = await fetch(`/${fileName}.md`);
+        // Try to fetch from GitHub first (latest version)
+        try {
+          // Try language-specific version from GitHub
+          let response = await fetch(`${GITHUB_RAW_BASE}/${langFileName}`);
+
+          // Fallback to English if Japanese version not found on GitHub
+          if (!response.ok && lang === 'ja') {
+            response = await fetch(`${GITHUB_RAW_BASE}/${englishFileName}`);
+          }
+
+          if (response.ok) {
+            text = await response.text();
+            logger.info('DocumentViewer', 'document_loaded_github', 'Loaded from GitHub', {
+              fileName: langFileName
+            });
+          }
+        } catch (githubErr) {
+          logger.warn('DocumentViewer', 'github_fetch_failed', 'GitHub fetch failed, trying local', {
+            error: githubErr.message
+          });
         }
 
-        if (!response.ok) {
-          throw new Error(`Failed to load document: ${response.status}`);
+        // Fallback to local copy if GitHub fetch failed
+        if (!text) {
+          let response = await fetch(`/${langFileName}`);
+
+          // Fallback to English if Japanese version not found locally
+          if (!response.ok && lang === 'ja') {
+            response = await fetch(`/${englishFileName}`);
+          }
+
+          if (!response.ok) {
+            throw new Error(`Failed to load document: ${response.status}`);
+          }
+
+          text = await response.text();
+          logger.info('DocumentViewer', 'document_loaded_local', 'Loaded from local', {
+            fileName: langFileName
+          });
         }
 
-        const text = await response.text();
         setContent(text);
       } catch (err) {
         logger.error('DocumentViewer', 'document_load_failed', 'Error loading document', {
