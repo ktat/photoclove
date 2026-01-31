@@ -319,47 +319,49 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
             <option value={30000}>30s</option>
           </select>
 
-          {/* Music Controls */}
-          {musicEnabled && (
-            <div className={styles.musicControls}>
-              <button
-                className={styles.musicButton}
-                onClick={(e) => { e.stopPropagation(); toggleMusic(); }}
-                title={isMusicPlaying ? 'Pause Music' : 'Play Music'}
-              >
-                {isMusicPlaying ? '🎵' : '🔇'}
-              </button>
-              <button
-                className={styles.musicButton}
-                onClick={(e) => { e.stopPropagation(); toggleMute(); }}
-                title={isMuted ? 'Unmute (M)' : 'Mute (M)'}
-              >
-                {isMuted ? '🔇' : '🔊'}
-              </button>
-              <input
-                type="range"
-                className={styles.volumeSlider}
-                min="0"
-                max="1"
-                step="0.1"
-                value={volume}
-                onChange={handleVolumeChange}
-                onClick={(e) => e.stopPropagation()}
-                title="Volume"
-              />
-              <select
-                className={styles.moodSelect}
-                value={currentMood || ''}
-                onChange={handleMoodChange}
-                onClick={(e) => e.stopPropagation()}
-                title="Music Mood"
-              >
-                {Object.entries(MOOD_CONFIG).map(([key, config]) => (
-                  <option key={key} value={key}>{config.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
+          {/* Music Controls - Always show, but indicate error state */}
+          <div className={styles.musicControls}>
+            <button
+              className={`${styles.musicButton} ${musicError ? styles.disabled : ''}`}
+              onClick={(e) => { e.stopPropagation(); if (!musicError) toggleMusic(); }}
+              title={musicError ? 'Music unavailable' : (isMusicPlaying ? 'Pause Music' : 'Play Music')}
+              disabled={!!musicError}
+            >
+              {musicError ? '🚫' : (isMusicPlaying ? '🎵' : '🔇')}
+            </button>
+            <button
+              className={`${styles.musicButton} ${musicError ? styles.disabled : ''}`}
+              onClick={(e) => { e.stopPropagation(); if (!musicError) toggleMute(); }}
+              title={musicError ? 'Music unavailable' : (isMuted ? 'Unmute (M)' : 'Mute (M)')}
+              disabled={!!musicError}
+            >
+              {isMuted ? '🔇' : '🔊'}
+            </button>
+            <input
+              type="range"
+              className={styles.volumeSlider}
+              min="0"
+              max="1"
+              step="0.1"
+              value={volume}
+              onChange={handleVolumeChange}
+              onClick={(e) => e.stopPropagation()}
+              title="Volume"
+              disabled={!!musicError}
+            />
+            <select
+              className={styles.moodSelect}
+              value={currentMood || ''}
+              onChange={handleMoodChange}
+              onClick={(e) => e.stopPropagation()}
+              title="Music Mood"
+              disabled={!!musicError}
+            >
+              {Object.entries(MOOD_CONFIG).map(([key, config]) => (
+                <option key={key} value={key}>{config.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Progress Bar */}
@@ -379,10 +381,17 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
       )}
 
       {/* Music Track Info */}
-      {showControls && musicEnabled && currentTrack && (
+      {showControls && currentTrack && !musicError && (
         <div className={`${styles.trackInfo} ${!isMusicPlaying ? styles.paused : ''}`}>
           <span className={styles.musicIcon}>♪</span>
           <span>{currentTrack.title}</span>
+        </div>
+      )}
+
+      {/* Music Error Message */}
+      {showControls && musicError && (
+        <div className={styles.musicError}>
+          {musicError}
         </div>
       )}
     </div>

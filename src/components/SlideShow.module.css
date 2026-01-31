@@ -296,6 +296,19 @@
   50% { opacity: 1; }
 }
 
+/* Music Error Message */
+.musicError {
+  position: absolute;
+  top: 60px;
+  right: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  background: rgba(180, 50, 50, 0.8);
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: var(--font-size-xs);
+  pointer-events: auto;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .bottomBar {
