@@ -120,8 +120,17 @@ class SlideshowMusicService {
     for (const photo of photos) {
       const tags = photo.tags || [];
       for (const tag of tags) {
-        const tagLower = (tag.name || tag).toLowerCase();
-        tagCounts.set(tagLower, (tagCounts.get(tagLower) || 0) + 1);
+        // Handle various tag formats: string, {name: string}, or other objects
+        let tagName = null;
+        if (typeof tag === 'string') {
+          tagName = tag;
+        } else if (tag && typeof tag.name === 'string') {
+          tagName = tag.name;
+        }
+        if (tagName) {
+          const tagLower = tagName.toLowerCase();
+          tagCounts.set(tagLower, (tagCounts.get(tagLower) || 0) + 1);
+        }
       }
     }
 
