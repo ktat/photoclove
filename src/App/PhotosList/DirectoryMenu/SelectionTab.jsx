@@ -390,7 +390,7 @@ function SelectionTab({
                 {viewModeObj?.shouldShowPersonSelection() && faceViewType === 'unknown' && (
                     <div>
                         <div style={{ marginBottom: 'var(--space-4)' }}>
-                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>Selected Unknown Faces</h3>
+                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>Selected Faces ({selectedUnknownFaces.length})</h3>
                         </div>
                         {selectedUnknownFaces.length === 0 ? (
                             <div><br />No unknown faces selected.</div>
@@ -558,11 +558,6 @@ function SelectionTab({
                                     </div>
                                 )}
 
-                                <ul className="list-of-selected">
-                                    {selectedUnknownFaces.map((faceId) => (
-                                        <li key={faceId}>Face #{faceId}</li>
-                                    ))}
-                                </ul>
                                 <button onClick={() => clearUnknownFaceSelection()}>Clear Selection</button>
                             </div>
                         )}
