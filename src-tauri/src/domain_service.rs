@@ -6,6 +6,7 @@
 pub mod ai_tagging;
 pub mod dir_service;
 pub mod face_detection;
+pub mod face_thumbnail_service;
 pub mod file_service;
 pub mod job_queue;
 pub mod job_queue_service;

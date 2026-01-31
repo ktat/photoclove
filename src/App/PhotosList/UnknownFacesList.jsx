@@ -160,6 +160,7 @@ function UnknownFacesList({
                         >
                             {person.photo_path && (
                                 <FaceThumbnail
+                                    faceId={person.representative_face_id}
                                     photoPath={person.photo_path}
                                     bbox={{
                                         bbox_x: person.bbox_x,
@@ -278,6 +279,7 @@ function UnknownFacesList({
                                         border: '1px solid var(--color-border-default)'
                                     }}>
                                         <FaceThumbnail
+                                            faceId={face.id}
                                             photoPath={face.photo_path}
                                             bbox={{
                                                 bbox_x: face.bbox_x,

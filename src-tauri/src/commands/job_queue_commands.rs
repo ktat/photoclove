@@ -128,6 +128,165 @@ pub fn cleanup_completed_jobs(state: tauri::State<'_, AppState>) -> Result<Strin
     }
 }
 
+/// Stop a running job by creating a kill file
+#[tauri::command]
+pub fn stop_job(job_id: i64, state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let logging_service = &state.logging_service;
+    let correlation_id = logging_service.generate_correlation_id();
+
+    log::info!(
+        target: "job_queue",
+        "stop_job_request; correlation_id={}; job_id={}",
+        correlation_id,
+        job_id
+    );
+
+    // Create kill file to signal the job to stop
+    match crate::domain_service::job_queue::handlers::utils::create_kill_file(job_id) {
+        Ok(()) => {
+            log::info!(
+                target: "job_queue",
+                "stop_job_success; correlation_id={}; job_id={}",
+                correlation_id,
+                job_id
+            );
+            Ok(serde_json::json!({"Ok": true}).to_string())
+        }
+        Err(e) => {
+            log::error!(
+                target: "job_queue",
+                "stop_job_error; correlation_id={}; job_id={}; error={}",
+                correlation_id,
+                job_id,
+                e
+            );
+            Ok(serde_json::json!({"Err": e}).to_string())
+        }
+    }
+}
+
+/// Resume a job from where it stopped (skips already processed items)
+#[tauri::command]
+pub fn resume_job(
+    job_id: i64,
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    let logging_service = &state.logging_service;
+    let correlation_id = logging_service.generate_correlation_id();
+
+    log::info!(
+        target: "job_queue",
+        "resume_job_request; correlation_id={}; job_id={}",
+        correlation_id,
+        job_id
+    );
+
+    let job_queue_manager = state.job_queue_manager.clone();
+    let app_handle = window.app_handle().clone();
+    let result = {
+        let manager = job_queue_manager.lock().unwrap();
+        manager.resume_job(job_id, app_handle)
+    };
+
+    match result {
+        Ok(success) => {
+            log::info!(
+                target: "job_queue",
+                "resume_job_success; correlation_id={}; job_id={}; success={}",
+                correlation_id,
+                job_id,
+                success
+            );
+            Ok(serde_json::json!({"Ok": success}).to_string())
+        }
+        Err(e) => {
+            log::error!(
+                target: "job_queue",
+                "resume_job_error; correlation_id={}; job_id={}; error={}",
+                correlation_id,
+                job_id,
+                e
+            );
+            Ok(serde_json::json!({"Err": e}).to_string())
+        }
+    }
+}
+
+/// Restart a job from the beginning (processes all items again)
+#[tauri::command]
+pub fn restart_job(
+    job_id: i64,
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    let logging_service = &state.logging_service;
+    let correlation_id = logging_service.generate_correlation_id();
+
+    log::info!(
+        target: "job_queue",
+        "restart_job_request; correlation_id={}; job_id={}",
+        correlation_id,
+        job_id
+    );
+
+    let job_queue_manager = state.job_queue_manager.clone();
+    let app_handle = window.app_handle().clone();
+    let result = {
+        let manager = job_queue_manager.lock().unwrap();
+        manager.restart_job(job_id, app_handle)
+    };
+
+    match result {
+        Ok(success) => {
+            log::info!(
+                target: "job_queue",
+                "restart_job_success; correlation_id={}; job_id={}; success={}",
+                correlation_id,
+                job_id,
+                success
+            );
+            Ok(serde_json::json!({"Ok": success}).to_string())
+        }
+        Err(e) => {
+            log::error!(
+                target: "job_queue",
+                "restart_job_error; correlation_id={}; job_id={}; error={}",
+                correlation_id,
+                job_id,
+                e
+            );
+            Ok(serde_json::json!({"Err": e}).to_string())
+        }
+    }
+}
+
+/// Get job type configuration for UI display
+#[tauri::command]
+pub fn get_job_config(
+    job_id: i64,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    let job_queue_manager = state.job_queue_manager.clone();
+    let result = {
+        let manager = job_queue_manager.lock().unwrap();
+        manager.get_job_config(job_id)
+    };
+
+    match result {
+        Ok(config) => {
+            let json = serde_json::json!({
+                "Ok": {
+                    "resume_supported": config.resume_supported,
+                    "restart_supported": config.restart_supported
+                }
+            });
+            Ok(json.to_string())
+        }
+        Err(e) => Ok(serde_json::json!({"Err": e}).to_string()),
+    }
+}
+
 /// Runs AI tagging for all photos in the library
 #[tauri::command]
 pub fn run_ai_tagging_for_all(

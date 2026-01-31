@@ -9,6 +9,7 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
     const [isDownloading, setIsDownloading] = useState(false);
     const [downloadingModel, setDownloadingModel] = useState(null);
     const [stats, setStats] = useState(null);
+    const [isRegenerating, setIsRegenerating] = useState(false);
 
     // Fetch model status on mount
     useEffect(() => {
@@ -299,6 +300,74 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
                         <span>0 (Always full image)</span>
                         <span>400px</span>
                     </div>
+                </div>
+
+                {/* Face Thumbnail Size */}
+                <div className={styles['slider-container']} style={{ marginTop: 'var(--space-4)' }}>
+                    <div className={styles['slider-label']}>
+                        <span className={styles['slider-label-text']}>Face Thumbnail Size</span>
+                        <span className={styles['slider-value']}>{config?.face_detection?.face_thumbnail_size || 150}px</span>
+                    </div>
+                    <p className={styles['slider-description']}>
+                        Size of cached face thumbnails. Larger sizes use more disk space but look better on high-resolution displays.
+                    </p>
+                    <input
+                        type="range"
+                        min="80"
+                        max="300"
+                        step="10"
+                        value={config?.face_detection?.face_thumbnail_size ?? 150}
+                        onChange={(e) => {
+                            const newValue = parseInt(e.target.value);
+                            setConfig({
+                                ...config,
+                                face_detection: {
+                                    ...config?.face_detection,
+                                    face_thumbnail_size: newValue
+                                }
+                            });
+                        }}
+                        className={styles['slider-range']}
+                    />
+                    <div className={styles['slider-range-labels']}>
+                        <span>80px</span>
+                        <span>300px</span>
+                    </div>
+                </div>
+
+                {/* Regenerate Face Thumbnails */}
+                <div style={{ marginTop: 'var(--space-4)' }}>
+                    <label style={labelStyle}>Regenerate Face Thumbnails</label>
+                    <p style={descriptionStyle}>
+                        Regenerate all cached face thumbnails. Use this after changing the thumbnail size or if thumbnails are missing.
+                    </p>
+                    <button
+                        onClick={async () => {
+                            if (isRegenerating) return;
+                            setIsRegenerating(true);
+                            try {
+                                if (addFooterMessage) {
+                                    addFooterMessage("face_thumbnail_regenerate", "Starting face thumbnail regeneration...");
+                                }
+                                await FaceDetectionService.regenerateThumbnails();
+                                if (addFooterMessage) {
+                                    addFooterMessage("face_thumbnail_regenerate", "Face thumbnail regeneration started. Check Job Queue for progress.");
+                                }
+                            } catch (error) {
+                                logger.error('FaceDetectionTab', 'regenerate_error', 'Failed to start regeneration', { error });
+                                if (addFooterMessage) {
+                                    addFooterMessage("face_thumbnail_regenerate_error", `Failed: ${error}`);
+                                }
+                            } finally {
+                                setIsRegenerating(false);
+                            }
+                        }}
+                        disabled={isRegenerating}
+                        className={styles['btn-secondary']}
+                        style={isRegenerating ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
+                    >
+                        {isRegenerating ? 'Starting...' : 'Regenerate All Thumbnails'}
+                    </button>
                 </div>
             </div>
 

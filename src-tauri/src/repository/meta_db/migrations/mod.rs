@@ -60,6 +60,16 @@ const MIGRATIONS: &[Migration] = &[
         name: "add_photo_id_and_face_mapping",
         sql: include_str!("010_add_photo_id_and_face_mapping.sql"),
     },
+    Migration {
+        version: 11,
+        name: "add_job_processed_count",
+        sql: include_str!("011_add_job_processed_count.sql"),
+    },
+    Migration {
+        version: 12,
+        name: "add_job_last_processed_id",
+        sql: include_str!("012_add_job_last_processed_id.sql"),
+    },
 ];
 
 /// Initialize the migrations table

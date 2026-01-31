@@ -68,6 +68,11 @@ pub(crate) fn process_thumbnail_job(
         Ok(_) => {
             log::info!(target: "thumbnail_job", "thumbnail_creation; status=success; dates={}", dates.len());
 
+            // Update progress to completion
+            let job_id = job.id.unwrap_or(0);
+            let total = job.job.target.len() as i64;
+            let _ = state.meta_db.update_job_progress(job_id, total);
+
             // Emit final progress
             if let Err(e) = app_handle.emit(
                 "thumbnail_progress",

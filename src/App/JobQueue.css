@@ -115,11 +115,12 @@
 
 .retry-button {
     background: var(--color-warning);
-    color: white;
+    color: #1a1a1a;
 }
 
 .retry-button:hover {
     background: var(--color-warning);
+    color: #1a1a1a;
     filter: brightness(0.9);
 }
 
@@ -131,4 +132,35 @@
 .delete-button:hover {
     background: var(--color-danger);
     filter: brightness(0.85);
+}
+
+.resume-button {
+    background: var(--color-success);
+    color: white;
+}
+
+.resume-button:hover {
+    background: var(--color-success);
+    filter: brightness(0.9);
+}
+
+.restart-button {
+    background: var(--color-primary);
+    color: white;
+}
+
+.restart-button:hover {
+    background: var(--color-primary);
+    filter: brightness(0.9);
+}
+
+.stop-button {
+    background: var(--color-warning);
+    color: #1a1a1a;
+}
+
+.stop-button:hover {
+    background: var(--color-warning);
+    color: #1a1a1a;
+    filter: brightness(0.9);
 }

@@ -87,7 +87,8 @@ pub fn get_all_persons_for_list(sqlite: &SQLite) -> Result<Vec<PersonListItem>, 
                 df.bbox_x,
                 df.bbox_y,
                 df.bbox_width,
-                df.bbox_height
+                df.bbox_height,
+                df.id as representative_face_id
              FROM persons p
              LEFT JOIN (
                 SELECT df.*, pdf.photo_id,
@@ -113,6 +114,7 @@ pub fn get_all_persons_for_list(sqlite: &SQLite) -> Result<Vec<PersonListItem>, 
                 bbox_y: row.get(6)?,
                 bbox_width: row.get(7)?,
                 bbox_height: row.get(8)?,
+                representative_face_id: row.get(9)?,
             })
         })
         .map_err(|e| format!("Failed to query persons: {}", e))?
@@ -299,7 +301,7 @@ pub fn get_persons_with_faces(
 
     let mut stmt = conn
         .prepare(
-            "SELECT p.id, p.name, pm.path, df.bbox_x, df.bbox_y, df.bbox_width, df.bbox_height, df.embedding
+            "SELECT p.id, p.name, pm.path, df.bbox_x, df.bbox_y, df.bbox_width, df.bbox_height, df.embedding, df.id as face_id
              FROM persons p
              JOIN detected_faces df ON df.person_id = p.id
              JOIN photo_detected_faces pdf ON df.id = pdf.detected_face_id
@@ -321,6 +323,7 @@ pub fn get_persons_with_faces(
                 row.get::<_, f32>(5)?,
                 row.get::<_, f32>(6)?,
                 row.get::<_, Option<String>>(7)?,
+                row.get::<_, i64>(8)?,
             ))
         })
         .map_err(|e| format!("Failed to query persons: {}", e))?;
@@ -328,7 +331,7 @@ pub fn get_persons_with_faces(
     let mut persons: Vec<PersonWithFace> = Vec::new();
 
     for row in rows {
-        let (person_id, person_name, photo_path, bbox_x, bbox_y, bbox_width, bbox_height, embedding_json) =
+        let (person_id, person_name, photo_path, bbox_x, bbox_y, bbox_width, bbox_height, embedding_json, representative_face_id) =
             row.map_err(|e| format!("Failed to read row: {}", e))?;
 
         let similarity = match (target_embedding, &embedding_json) {
@@ -354,6 +357,7 @@ pub fn get_persons_with_faces(
             bbox_width,
             bbox_height,
             similarity,
+            representative_face_id,
         });
     }
 

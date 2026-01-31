@@ -323,6 +323,24 @@ export async function getUnknownFaces(limit = 50, offset = 0) {
     }
 }
 
+/**
+ * Regenerate face thumbnails
+ * Enqueues a job to regenerate face thumbnail cache for all detected faces
+ * @returns {Promise<Object>} Job enqueue result with job_id
+ */
+export async function regenerateThumbnails() {
+    logger.info(CONTEXT, 'regenerate_thumbnails_start', 'Starting face thumbnail regeneration');
+    try {
+        const result = await invoke('regenerate_face_thumbnails');
+        const parsed = JSON.parse(result);
+        logger.info(CONTEXT, 'regenerate_thumbnails_enqueued', 'Face thumbnail regeneration job enqueued', { jobId: parsed.job_id });
+        return parsed;
+    } catch (error) {
+        logger.error(CONTEXT, 'regenerate_thumbnails_failed', 'Failed to enqueue thumbnail regeneration', { error: error.toString() });
+        throw error;
+    }
+}
+
 // Export as default object for convenience
 export default {
     getModelStatus,
@@ -344,5 +362,6 @@ export default {
     deleteFace,
     setFacePersonName,
     getUnknownFacesCount,
-    getUnknownFaces
+    getUnknownFaces,
+    regenerateThumbnails
 };

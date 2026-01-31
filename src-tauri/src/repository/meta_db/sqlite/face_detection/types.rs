@@ -64,6 +64,8 @@ pub struct PersonListItem {
     pub bbox_y: Option<f32>,
     pub bbox_width: Option<f32>,
     pub bbox_height: Option<f32>,
+    /// Face ID for cached thumbnail lookup
+    pub representative_face_id: Option<i64>,
 }
 
 /// Face detection statistics
@@ -87,6 +89,8 @@ pub struct PersonWithFace {
     pub bbox_width: f32,
     pub bbox_height: f32,
     pub similarity: f32, // Cosine similarity to target face (0-1)
+    /// Face ID for cached thumbnail lookup
+    pub representative_face_id: i64,
 }
 
 /// Unknown face record for list display

@@ -1,31 +1,64 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { invoke } from '@tauri-apps/api/core';
 import { logger } from '../services/LoggerService.js';
 
 /**
- * FaceThumbnail - Crops and displays a face from an image
- * Uses createImageBitmap to respect EXIF orientation
- * Crops to square without distortion by extending the shorter side
+ * FaceThumbnail - Displays a face thumbnail
+ * Tries to load cached thumbnail first, falls back to canvas crop
+ * Uses createImageBitmap to respect EXIF orientation for fallback
  */
-function FaceThumbnail({ photoPath, bbox, size = 50, borderRadius = 'var(--radius-sm)' }) {
+function FaceThumbnail({ faceId, photoPath, bbox, size = 50, borderRadius = 'var(--radius-sm)' }) {
     const canvasRef = useRef(null);
+    const [thumbnailSrc, setThumbnailSrc] = useState(null);
+    const [useFallback, setUseFallback] = useState(false);
     const [loaded, setLoaded] = useState(false);
 
+    // Try to get cached thumbnail
     useEffect(() => {
-        if (!photoPath || !bbox) return;
+        if (!faceId) {
+            setUseFallback(true);
+            return;
+        }
+
+        let cancelled = false;
+
+        const loadCachedThumbnail = async () => {
+            try {
+                const cachedPath = await invoke('get_face_thumbnail_path', { faceId });
+                if (!cancelled && cachedPath) {
+                    setThumbnailSrc(convertFileSrc(cachedPath));
+                    setLoaded(true);
+                }
+            } catch (error) {
+                logger.debug('FaceThumbnail', 'cache_miss', 'Falling back to canvas', { faceId, error: error.toString() });
+                if (!cancelled) {
+                    setUseFallback(true);
+                }
+            }
+        };
+
+        loadCachedThumbnail();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [faceId]);
+
+    // Fallback: use canvas crop (existing logic)
+    useEffect(() => {
+        if (!useFallback || !photoPath || !bbox) return;
 
         let cancelled = false;
 
         const loadAndDraw = async () => {
             try {
-                // Fetch the image as blob to use createImageBitmap with EXIF orientation
                 const response = await fetch(convertFileSrc(photoPath));
                 if (!response.ok) {
                     throw new Error(`Failed to fetch: ${response.status}`);
                 }
                 const blob = await response.blob();
 
-                // createImageBitmap with imageOrientation respects EXIF rotation
                 const bitmap = await createImageBitmap(blob, {
                     imageOrientation: 'from-image'
                 });
@@ -44,41 +77,35 @@ function FaceThumbnail({ photoPath, bbox, size = 50, borderRadius = 'var(--radiu
                 const ctx = canvas.getContext('2d');
 
                 // bbox is in normalized coordinates (0-1)
-                // bitmap.width/height are the dimensions after EXIF rotation
                 const x = bbox.bbox_x * bitmap.width;
                 const y = bbox.bbox_y * bitmap.height;
                 const width = bbox.bbox_width * bitmap.width;
                 const height = bbox.bbox_height * bitmap.height;
 
-                // Add some padding around the face (20%)
+                // Add padding (20%)
                 const padding = 0.2;
                 let cropX = Math.max(0, x - width * padding);
                 let cropY = Math.max(0, y - height * padding);
                 let cropWidth = Math.min(bitmap.width - cropX, width * (1 + 2 * padding));
                 let cropHeight = Math.min(bitmap.height - cropY, height * (1 + 2 * padding));
 
-                // Make it square by extending the shorter side
+                // Make square
                 if (cropWidth > cropHeight) {
-                    // Wider than tall - extend height
                     const diff = (cropWidth - cropHeight) / 2;
                     cropY = Math.max(0, cropY - diff);
                     cropHeight = cropWidth;
-                    // Clamp to image bounds
                     if (cropY + cropHeight > bitmap.height) {
                         cropY = Math.max(0, bitmap.height - cropHeight);
                     }
                 } else if (cropHeight > cropWidth) {
-                    // Taller than wide - extend width
                     const diff = (cropHeight - cropWidth) / 2;
                     cropX = Math.max(0, cropX - diff);
                     cropWidth = cropHeight;
-                    // Clamp to image bounds
                     if (cropX + cropWidth > bitmap.width) {
                         cropX = Math.max(0, bitmap.width - cropWidth);
                     }
                 }
 
-                // Draw cropped face onto canvas (square)
                 canvas.width = size;
                 canvas.height = size;
                 ctx.drawImage(
@@ -91,7 +118,7 @@ function FaceThumbnail({ photoPath, bbox, size = 50, borderRadius = 'var(--radiu
                 setLoaded(true);
             } catch (error) {
                 if (!cancelled) {
-                    logger.warn('FaceThumbnail', 'load_error', 'Failed to load face thumbnail', {
+                    logger.warn('FaceThumbnail', 'fallback_load_error', 'Failed to load face thumbnail', {
                         photoPath,
                         error: error.toString()
                     });
@@ -105,8 +132,34 @@ function FaceThumbnail({ photoPath, bbox, size = 50, borderRadius = 'var(--radiu
         return () => {
             cancelled = true;
         };
-    }, [photoPath, bbox, size]);
+    }, [useFallback, photoPath, bbox, size]);
 
+    // If using cached thumbnail
+    if (thumbnailSrc && !useFallback) {
+        return (
+            <img
+                src={thumbnailSrc}
+                alt="Face"
+                width={size}
+                height={size}
+                style={{
+                    width: size,
+                    height: size,
+                    borderRadius: borderRadius,
+                    objectFit: 'cover',
+                    display: loaded ? 'block' : 'none'
+                }}
+                onError={() => {
+                    logger.debug('FaceThumbnail', 'img_load_error', 'Falling back to canvas');
+                    setThumbnailSrc(null);
+                    setUseFallback(true);
+                    setLoaded(false);
+                }}
+            />
+        );
+    }
+
+    // Fallback canvas
     return (
         <canvas
             ref={canvasRef}

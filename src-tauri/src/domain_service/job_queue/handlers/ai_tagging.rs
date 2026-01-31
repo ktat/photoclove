@@ -2,6 +2,7 @@
 //!
 //! Processes AI auto-tagging jobs for photos.
 
+use super::utils::{cleanup_kill_file, get_resume_start_index, log_resume_info, should_stop_job};
 use crate::domain_service::ai_tagging::service::{get_service, AITaggingConfig};
 use crate::entity::job_queue;
 use crate::repository::meta_db::sqlite::SQLite;
@@ -99,8 +100,20 @@ pub(crate) fn process_ai_tagging_job(
     let total_photos = job.job.target.len();
     let mut successful = 0;
     let mut failed = 0;
+    let job_id = job.id.unwrap_or(0);
 
-    for (index, photo_path) in job.job.target.iter().enumerate() {
+    // Calculate start index for resume functionality
+    let start_index = get_resume_start_index(job);
+    log_resume_info("ai_tagging_job", start_index, total_photos);
+
+    for (index, photo_path) in job.job.target.iter().enumerate().skip(start_index) {
+        // Check for stop signal
+        if should_stop_job(job_id) {
+            log::info!(target: "ai_tagging_job", "stopped; job_id={}; index={}", job_id, index);
+            cleanup_kill_file(job_id);
+            return Err("Job stopped by user".to_string());
+        }
+
         log::debug!(
             target: "ai_tagging_job",
             "classifying; photo={}; progress={}/{}",
@@ -109,7 +122,10 @@ pub(crate) fn process_ai_tagging_job(
             total_photos
         );
 
-        // Emit progress
+        // Update progress in database and emit event (with last_processed_id for resume)
+        let processed = (index + 1) as i64;
+        let _ = db.update_job_progress_with_last_id(job_id, processed, index as i64);
+
         let progress = (index as f64 / total_photos as f64) * 100.0;
         if let Err(e) = app_handle.emit(
             "ai_tagging_progress",

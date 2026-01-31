@@ -197,4 +197,65 @@ impl JobQueueManager {
             Err(e) => Err(format!("Failed to cleanup completed jobs: {}", e)),
         }
     }
+
+    /// Resume a job from where it stopped (uses checker to skip processed items)
+    pub fn resume_job(&self, job_id: i64, app_handle: tauri::AppHandle) -> Result<bool, String> {
+        log::info!(target: "job_queue", "resume_job; job_id={}; status=starting", job_id);
+
+        // Get the job to check its current state
+        let job = self.db.get_job_by_id(job_id)?
+            .ok_or_else(|| format!("Job {} not found", job_id))?;
+
+        // Only allow resume for pending or failed jobs
+        match job.status {
+            job_queue::JobStatus::Pending | job_queue::JobStatus::Failed => {}
+            _ => return Err(format!("Cannot resume job with status: {:?}", job.status)),
+        }
+
+        // Reset job status to pending (keep last_processed_id for resume)
+        self.db.update_job_status(job_id, &job_queue::JobStatus::Pending, None)?;
+
+        log::info!(target: "job_queue", "resume_job; job_id={}; last_processed_id={:?}; status=processing",
+            job_id, job.last_processed_id);
+
+        // Process the job (handlers will use last_processed_id to skip processed items)
+        process_specific_jobs_immediately(self.db.clone(), vec![job_id], app_handle);
+
+        Ok(true)
+    }
+
+    /// Restart a job from the beginning (clears progress)
+    pub fn restart_job(&self, job_id: i64, app_handle: tauri::AppHandle) -> Result<bool, String> {
+        log::info!(target: "job_queue", "restart_job; job_id={}; status=starting", job_id);
+
+        // Get the job to check its current state
+        let job = self.db.get_job_by_id(job_id)?
+            .ok_or_else(|| format!("Job {} not found", job_id))?;
+
+        // Only allow restart for pending or failed jobs
+        match job.status {
+            job_queue::JobStatus::Pending | job_queue::JobStatus::Failed => {}
+            _ => return Err(format!("Cannot restart job with status: {:?}", job.status)),
+        }
+
+        // Reset job status to pending AND clear progress
+        self.db.update_job_status(job_id, &job_queue::JobStatus::Pending, None)?;
+        // Reset processed_count and last_processed_id to start from beginning
+        self.db.update_job_progress_with_last_id(job_id, 0, 0)?;
+
+        log::info!(target: "job_queue", "restart_job; job_id={}; status=processing_from_start", job_id);
+
+        // Process the job from the beginning
+        process_specific_jobs_immediately(self.db.clone(), vec![job_id], app_handle);
+
+        Ok(true)
+    }
+
+    /// Get job type configuration for a job
+    pub fn get_job_config(&self, job_id: i64) -> Result<crate::entity::job_type_config::JobTypeConfig, String> {
+        let job = self.db.get_job_by_id(job_id)?
+            .ok_or_else(|| format!("Job {} not found", job_id))?;
+
+        Ok(crate::entity::job_type_config::get_job_type_config(&job.job.job_type))
+    }
 }
