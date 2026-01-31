@@ -133,7 +133,8 @@ function PhotosList({
         facesList, setFacesList, faceSearchTerm, setFaceSearchTerm,
         currentPersonId, setCurrentPersonId, currentPersonName, setCurrentPersonName,
         selectedPersons, setSelectedPersons, selectedUnknownFaces, setSelectedUnknownFaces,
-        unknownFacesCount, setUnknownFacesCount, faceViewType, setFaceViewType
+        unknownFacesCount, setUnknownFacesCount, faceViewType, setFaceViewType,
+        unknownFacesRefreshTrigger, setUnknownFacesRefreshTrigger
     } = usePhotosState();
 
     // Create ViewMode object using factory hook (must be after usePhotosState, before usePhotoSelection)
@@ -382,7 +383,8 @@ function PhotosList({
         photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex,
         setCurrentPhotoPath, setCurrentPhotoIndex, currentPhotoIndex, closePhotoDisplay,
         setTrashPhotos, setPhotosListMiniReread, photosListMiniReread,
-        dateNum, setDateNum: updateDateNum, dateList, setDateList: updateDateList, sortOfPhotos
+        dateNum, setDateNum: updateDateNum, dateList, setDateList: updateDateList, sortOfPhotos,
+        triggerUnknownFacesRefresh: () => setUnknownFacesRefreshTrigger(prev => prev + 1)
     });
 
     // Side menu visibility effect
@@ -531,7 +533,7 @@ function PhotosList({
         shortCutNavigation, setShortCutNavigation,
         appConfig, importState, photos,
         filteredAlbums, albumSearchTerm, filteredTags, tagSearchTerm,
-        facesList, faceSearchTerm, unknownFacesCount, faceViewType
+        facesList, faceSearchTerm, unknownFacesCount, faceViewType, unknownFacesRefreshTrigger
     });
 
     // Handlers object using extracted hook
