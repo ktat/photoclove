@@ -220,19 +220,19 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 .photo-list-menu label.checkbox:after {
-  left: 2px;
+  left: 0px;
   position: static;
   margin: 0;
 }
 
 .photo-list-menu label.checkbox:before {
   left: 7px;
-  margin-top: -6px;
+  margin-top: -8px;
 }
 
 /* Photo display area */
