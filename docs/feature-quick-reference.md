@@ -179,14 +179,18 @@ This document helps you quickly find the relevant documentation when working on 
 - **Related Files**: `src/App/LogViewer.jsx`, `src/services/LoggerService.js`, `src-tauri/src/domain_service/logging_service.rs`
 
 ### 🔄 Background Job Processing
-**When you need to understand**: Async operations, job queues, progress tracking, manual job retry
+**When you need to understand**: Async operations, job queues, progress tracking, manual job retry, job resume/stop
 - **Architecture**: [Performance Optimizations](architecture.md#4-performance-optimizations) → Job Queue
 - **Sequences**: [Job Queue Management](feature-sequences.md#job-queue-management)
 - **Components**: [Job Queue Interface](component-structure.md#job-queue-interface)
-- **Features**: Background processing, progress tracking, immediate manual retry, comprehensive logging with correlation IDs
-- **Job Types**: Photo import, Google Photos upload, thumbnail generation
-- **Enhanced Retry**: Manual job retry now executes immediately instead of waiting for next app startup
-- **Related Files**: `src/App/JobQueue.jsx`, `src-tauri/src/domain_service/job_queue_service.rs`, `src-tauri/src/entity/job_queue.rs`
+- **Features**: Background processing, progress tracking, immediate manual retry, job resume/stop, comprehensive logging with correlation IDs
+- **Job Types**: Photo import, Google Photos upload, thumbnail generation, face detection, face thumbnail regeneration, AI tagging, S3 sync
+- **Enhanced Features**:
+  - Manual job retry executes immediately instead of waiting for next app startup
+  - Job resume: Continue interrupted jobs from last processed item
+  - Job stop: Stop running jobs gracefully
+  - Progress persistence: `processed_count` and `last_processed_id` saved to database
+- **Related Files**: `src/App/JobQueue.jsx`, `src-tauri/src/domain_service/job_queue/`, `src-tauri/src/entity/job_queue.rs`
 
 ### 🔄 Recovery Queue
 **When you need to understand**: Failed operation tracking, retry mechanisms, error recovery
@@ -309,8 +313,9 @@ This document helps you quickly find the relevant documentation when working on 
   - Full sync: Upload all photos to S3
   - Incremental sync: Upload only new/modified photos
   - Auto-sync on import: Automatically backup newly imported photos
-- **Configuration**: Provider selection, credentials, bucket name, endpoint URL, sync preferences
-- **Related Files**: `src/App/Preferences/S3BackupTab.jsx`, `src-tauri/src/domain_service/s3_service.rs`, `src-tauri/src/commands/s3_commands.rs`
+  - **Thumbnail backup**: Option to backup photo thumbnails alongside originals
+- **Configuration**: Provider selection, credentials, bucket name, endpoint URL, sync preferences, thumbnail backup toggle
+- **Related Files**: `src/App/Preferences/tabs/S3BackupTab.jsx`, `src-tauri/src/domain_service/s3_service.rs`, `src-tauri/src/commands/s3_commands.rs`
 
 ### 🤖 AI Auto-Tagging
 **When you need to understand**: Automatic photo tagging using AI/ML models, image classification
@@ -333,31 +338,42 @@ This document helps you quickly find the relevant documentation when working on 
 - **Related Files**: `src/App/Preferences/AITaggingTab.jsx`, `src/App/PhotoViewer/PhotoMenu.jsx`, `src-tauri/src/domain_service/ai_tagging/`, `src-tauri/src/commands/ai_model_commands.rs`
 
 ### 👤 Face Detection & Recognition
-**When you need to understand**: Face detection in photos, person management, face browsing
+**When you need to understand**: Face detection in photos, person management, face browsing, unknown faces management
 - **Purpose**: Detect faces in photos and organize them by person for easy browsing and searching
 - **UI Components**:
   - Faces ViewMode (VIEW_MODES.FACE_LIST): Browse all detected persons with face thumbnails
   - Person ViewMode (VIEW_MODES.PERSON): View all photos of a specific person
+  - Unknown Faces Tab: Browse unassigned faces with infinite scroll pagination
+  - Unknown Faces Photo Viewer (VIEW_MODES.UNKNOWN_FACES): View photos containing unknown faces
   - Face detection menu: Single photo face detection from PhotoViewer
-  - Selection UI: Checkbox selection for bulk person operations (delete, rename)
+  - Selection UI: Checkbox selection for bulk operations (delete, assign, rename)
 - **Key Features**:
-  - Automatic face detection using MTCNN model
+  - Automatic face detection using SCRFD + ArcFace models
   - Person name assignment and management
   - Face thumbnail display with proper cropping (square aspect ratio)
+  - **Face Thumbnail Cache**: Pre-generated thumbnails stored in `{thumbnail_store}/faces/` for fast display
   - EXIF thumbnail optimization for faster detection
   - SessionStorage-based selection state persistence
   - Face count and photo count statistics
   - Person deletion (removes name but keeps face detections)
+  - **Unknown Faces Management**:
+    - Unknown tab in Faces list with pagination (50 faces per page)
+    - Batch operations: Delete multiple faces, Assign to new/existing person
+    - Individual face operations in PhotoViewer Faces tab
+    - Auto-refresh after batch operations
 - **Architecture**:
-  - Face detection backend service with MTCNN model
+  - Face detection backend service with SCRFD (detector) + ArcFace (embedder)
   - Person database with face_count and photo_count
-  - FaceThumbnail shared component for consistent face display
+  - FaceThumbnail shared component with cache-first loading
+  - Face thumbnail service for cache management and regeneration
   - GenericListView for unified UI pattern (Albums/Tags/Faces)
   - ViewMode-aware selection management
+  - Batch API using SQL IN clause for efficient operations
 - **Related Files**:
-  - Frontend: `src/App/PhotosList/PhotoListContent.jsx`, `src/App/PhotoViewer/PhotoMenu.jsx`, `src/components/FaceThumbnail.jsx`, `src/App/PhotosList/DirectoryMenu/SelectionTab.jsx`
-  - Backend: `src-tauri/src/domain_service/face_detection/`, `src-tauri/src/commands/face_commands.rs`
+  - Frontend: `src/App/PhotosList/PhotoListContent.jsx`, `src/App/PhotosList/FacesList.jsx`, `src/App/PhotosList/UnknownFacesList.jsx`, `src/App/PhotoViewer/PhotoMenu.jsx`, `src/components/FaceThumbnail.jsx`, `src/App/PhotosList/DirectoryMenu/SelectionTab.jsx`
+  - Backend: `src-tauri/src/domain_service/face_detection/`, `src-tauri/src/domain_service/face_thumbnail_service.rs`, `src-tauri/src/commands/face_detection_commands.rs`, `src-tauri/src/commands/face_batch_commands.rs`
   - Hooks: `src/hooks/usePhotoOperations.js`, `src/hooks/usePhotosState.js`
+  - Services: `src/services/FaceDetectionService.js`
 
 ### 🎨 UI Theme & Dark Mode
 **When you need to understand**: Application theming, dark mode implementation, UI consistency, color management
