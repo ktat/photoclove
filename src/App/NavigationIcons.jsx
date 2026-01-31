@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import WelcomeImage from "../WelcomeImage.jsx";
+import WelcomeImage, { getMemoriesStartupImage } from "../WelcomeImage.jsx";
 
 function NavigationIcons({
   updateCurrentDate,
@@ -18,14 +18,34 @@ function NavigationIcons({
 }) {
   const { t } = useTranslation('common');
 
+  const handleHomeClick = async () => {
+    updateCurrentDate("");
+    resetPhotoState();
+    toggleHome();
+
+    // Handle memories mode
+    const mode = config?.startup_images?.mode;
+    if (mode === 'memories') {
+      const memoriesImage = await getMemoriesStartupImage();
+      if (memoriesImage) {
+        setWelcomeImage(memoriesImage);
+      } else {
+        // Fallback based on user preference
+        const fallback = config?.startup_images?.memories_fallback || 'default';
+        if (fallback === 'custom') {
+          setWelcomeImage(WelcomeImage({ ...config, startup_images: { ...config.startup_images, mode: 'custom' } }));
+        } else {
+          setWelcomeImage(WelcomeImage(null));
+        }
+      }
+    } else {
+      setWelcomeImage(WelcomeImage(config));
+    }
+  };
+
   return (
     <div className="navigation-icons">
-      <a href="#" onClick={() => {
-        updateCurrentDate("");
-        resetPhotoState();
-        toggleHome();
-        setWelcomeImage(WelcomeImage(config));
-      }}
+      <a href="#" onClick={handleHomeClick}
       onMouseEnter={(e) => handleMouseEnter(t('navigation.home'), e)}
       onMouseLeave={handleMouseLeave}>🏠</a>
 
