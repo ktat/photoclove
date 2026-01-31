@@ -226,7 +226,7 @@ function SelectionTab({
                             <div><br />No albums selected.</div>
                         ) : (
                             <div>
-                                <div className="operation" style={{ marginBottom: 'var(--space-4)' }}>
+                                <div className="operation" style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
                                     <button
                                         onClick={deleteSelectedAlbums}
                                         style={{
@@ -235,8 +235,7 @@ function SelectionTab({
                                             color: 'white',
                                             border: 'none',
                                             borderRadius: 'var(--radius-sm)',
-                                            cursor: 'pointer',
-                                            marginRight: 'var(--space-3)'
+                                            cursor: 'pointer'
                                         }}
                                     >
                                         Delete Selected Albums
@@ -280,7 +279,7 @@ function SelectionTab({
                             <div><br />No tags selected.</div>
                         ) : (
                             <div>
-                                <div className="operation" style={{ marginBottom: 'var(--space-4)' }}>
+                                <div className="operation" style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
                                     <button
                                         onClick={deleteSelectedTags}
                                         style={{
@@ -289,8 +288,7 @@ function SelectionTab({
                                             color: 'white',
                                             border: 'none',
                                             borderRadius: 'var(--radius-sm)',
-                                            cursor: 'pointer',
-                                            marginRight: 'var(--space-3)'
+                                            cursor: 'pointer'
                                         }}
                                     >
                                         Delete Selected Tags
@@ -342,7 +340,7 @@ function SelectionTab({
                             <div><br />No persons selected.</div>
                         ) : (
                             <div>
-                                <div className="operation" style={{ marginBottom: 'var(--space-4)' }}>
+                                <div className="operation" style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
                                     <button
                                         onClick={deleteSelectedPersons}
                                         style={{
@@ -351,8 +349,7 @@ function SelectionTab({
                                             color: 'white',
                                             border: 'none',
                                             borderRadius: 'var(--radius-sm)',
-                                            cursor: 'pointer',
-                                            marginRight: 'var(--space-3)'
+                                            cursor: 'pointer'
                                         }}
                                     >
                                         Delete Selected Persons
