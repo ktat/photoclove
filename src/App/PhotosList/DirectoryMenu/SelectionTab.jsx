@@ -390,43 +390,18 @@ function SelectionTab({
                 {viewModeObj?.shouldShowPersonSelection() && faceViewType === 'unknown' && (
                     <div>
                         <div style={{ marginBottom: 'var(--space-4)' }}>
-                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>
-                                Selected Unknown Faces ({selectedUnknownFaces.length})
-                            </h3>
+                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>Selected Unknown Faces</h3>
                         </div>
                         {selectedUnknownFaces.length === 0 ? (
                             <div><br />No unknown faces selected.</div>
                         ) : (
                             <div>
-                                <div className="operation" style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-                                    <button
-                                        onClick={() => clearUnknownFaceSelection()}
-                                        style={{
-                                            padding: 'var(--space-2) var(--space-3)',
-                                            backgroundColor: 'var(--color-bg-elevated)',
-                                            color: 'var(--color-text-primary)',
-                                            border: '1px solid var(--color-border-default)',
-                                            borderRadius: 'var(--radius-sm)',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        Clear Selection
-                                    </button>
-                                    <select
-                                        onChange={handleUnknownFacesOperation}
-                                        style={{
-                                            padding: 'var(--space-2) var(--space-3)',
-                                            backgroundColor: 'var(--color-bg-elevated)',
-                                            color: 'var(--color-text-primary)',
-                                            border: '1px solid var(--color-border-default)',
-                                            borderRadius: 'var(--radius-sm)',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        <option value="select">Operation</option>
-                                        <option value="assignNew">Assign to New Person</option>
-                                        <option value="assignExisting">Assign to Existing Person</option>
-                                        <option value="delete">Delete</option>
+                                <div className="operation">
+                                    <select onChange={handleUnknownFacesOperation}>
+                                        <option value="select">Select an Operation</option>
+                                        <option value="assignNew">👤 Assign to New Person</option>
+                                        <option value="assignExisting">👥 Assign to Existing Person</option>
+                                        <option value="delete">🗑️ Delete</option>
                                     </select>
                                 </div>
 
@@ -582,6 +557,13 @@ function SelectionTab({
                                         </div>
                                     </div>
                                 )}
+
+                                <ul className="list-of-selected">
+                                    {selectedUnknownFaces.map((faceId) => (
+                                        <li key={faceId}>Face #{faceId}</li>
+                                    ))}
+                                </ul>
+                                <button onClick={() => clearUnknownFaceSelection()}>Clear Selection</button>
                             </div>
                         )}
                     </div>
