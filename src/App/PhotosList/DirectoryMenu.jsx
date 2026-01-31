@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { useTranslation } from 'react-i18next';
 import { logger } from "../../services/LoggerService.js";
 import { useUI } from "../../context/UIContext.jsx";
 import { useError } from "../../context/ErrorContext.jsx";
@@ -21,6 +22,7 @@ import { useDateOperations } from "./DirectoryMenu/dateOperations.js";
 import { useGroupOperations } from "./DirectoryMenu/groupOperations.js";
 
 function DirectoryMenu(props) {
+    const { t } = useTranslation(['directoryMenu']);
     const { handleTauriError } = useError();
 
     // Delete confirmation modal state
@@ -254,13 +256,13 @@ function DirectoryMenu(props) {
             {props.viewModeObj?.shouldShowMaintenanceTab() && (
                 <div id="tab-maintenance" className={props.tabClass['maintenance'] ? "tab-active" : "tab"}>
                     <ul style={{ listStyle: 'none', paddingLeft: '20px', paddingTop: '8px', paddingBottom: '8px', paddingRight: '8px' }}>
-                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { createDbInDate() }}>🗄️ (re)Create database of the date</a></li>
-                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { movePhotosToExifDate() }}>📅 Move files according to Exif date</a></li>
-                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { createThumbnails() }}>🖼️ Make thumbnails</a></li>
-                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { recalculateGroupsInDate() }}>🔄 Recalculate Groups of the date</a></li>
-                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { runAiTaggingInDate() }}>🤖 Run AI Tagging</a></li>
-                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { runFaceDetectionInDate() }}>👤 Run Face Detection</a></li>
-                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { syncToS3InDate() }}>☁️ Sync to S3</a></li>
+                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { createDbInDate() }}>🗄️ {t('directoryMenu:maintenance.createDb')}</a></li>
+                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { movePhotosToExifDate() }}>📅 {t('directoryMenu:maintenance.moveToExifDate')}</a></li>
+                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { createThumbnails() }}>🖼️ {t('directoryMenu:maintenance.makeThumbnails')}</a></li>
+                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { recalculateGroupsInDate() }}>🔄 {t('directoryMenu:maintenance.recalculateGroups')}</a></li>
+                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { runAiTaggingInDate() }}>🤖 {t('directoryMenu:maintenance.runAiTagging')}</a></li>
+                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { runFaceDetectionInDate() }}>👤 {t('directoryMenu:maintenance.runFaceDetection')}</a></li>
+                        <li style={{ padding: '4px 0' }}><a href="#" onClick={() => { syncToS3InDate() }}>☁️ {t('directoryMenu:maintenance.syncToS3')}</a></li>
                     </ul>
                 </div>
             )}
@@ -277,7 +279,7 @@ function DirectoryMenu(props) {
                 >
                     {/* Import paths dropdown */}
                     <div style={{ marginBottom: '10px' }}>
-                        <label><strong>Import Photos From</strong>: </label>
+                        <label><strong>{t('directoryMenu:import.importFrom')}</strong>: </label>
                         <select
                             value={props.importState.currentImportPath || ''}
                             onChange={(e) => props.importState.changeDirectory(e.target.value)}
@@ -288,7 +290,7 @@ function DirectoryMenu(props) {
                                 marginTop: '4px'
                             }}
                         >
-                            <option value="">Select import source...</option>
+                            <option value="">{t('directoryMenu:import.selectSource')}</option>
                             {props.importState.importPaths?.map((p, i) => (
                                 <option key={i} value={p}>{p}</option>
                             ))}
@@ -304,13 +306,13 @@ function DirectoryMenu(props) {
                                 marginBottom: '10px',
                                 fontStyle: 'italic'
                             }}>
-                                Currently browsing: {props.importState.currentImportPath}
+                                {t('directoryMenu:import.currentlyBrowsing')} {props.importState.currentImportPath}
                             </p>
                         )}
 
                     {/* Date filter - integrated with directory selection */}
                     <div style={{ marginBottom: '10px' }}>
-                        <label>Created Date: after </label>
+                        <label>{t('directoryMenu:import.createdDateAfter')} </label>
                         <DatePicker
                             selected={props.importState.importFilter ? new Date(props.importState.importFilter) : null}
                             onChange={(date) => {
@@ -319,7 +321,7 @@ function DirectoryMenu(props) {
                             }}
                             dateFormat="yyyy-MM-dd"
                             dateFormatCalendar="MMMM yyyy"
-                            placeholderText="Select date"
+                            placeholderText={t('directoryMenu:import.selectDate')}
                             isClearable
                             showYearDropdown
                             showMonthDropdown

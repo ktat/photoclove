@@ -1,15 +1,16 @@
 import React from "react";
+import { useTranslation } from 'react-i18next';
 
-// Available AI models
+// Available AI models (descriptions are i18n keys)
 export const AI_MODELS = [
     {
         id: "mobilenet",
         name: "MobileNet (ImageNet)",
         license: "Apache 2.0",
         size: "~15MB",
-        speed: "Fast",
+        speedKey: "fast",
         accuracy: 2,
-        description: "Fast classification with 32 predefined categories. Good for basic object and scene detection.",
+        descriptionKey: "mobilenetDescription",
         supportsCustomLabels: false,
     },
     {
@@ -17,9 +18,9 @@ export const AI_MODELS = [
         name: "OpenCLIP (ViT-B/32)",
         license: "MIT",
         size: "~350MB",
-        speed: "Medium",
+        speedKey: "medium",
         accuracy: 4,
-        description: "Flexible tagging with custom labels. Can detect people, scenes, events, and any custom concept.",
+        descriptionKey: "openclipDescription",
         supportsCustomLabels: true,
         recommended: true,
     },
@@ -28,19 +29,20 @@ export const AI_MODELS = [
         name: "SigLIP (Base)",
         license: "Apache 2.0",
         size: "~400MB",
-        speed: "Medium",
+        speedKey: "medium",
         accuracy: 5,
-        description: "Improved CLIP variant with better accuracy. Supports custom labels and multilingual text.",
+        descriptionKey: "siglipDescription",
         supportsCustomLabels: true,
     },
 ];
 
 function AIModelSelector({ selectedModelId, modelStatuses, downloadingModelId, onModelSelect, onDownloadModel }) {
+    const { t } = useTranslation(['preferences']);
     const isAnyDownloading = downloadingModelId !== null;
 
     return (
         <div style={{ marginTop: 'var(--space-4)' }}>
-            <h3 style={{ marginBottom: 'var(--space-3)' }}>AI Model</h3>
+            <h3 style={{ marginBottom: 'var(--space-3)' }}>{t('preferences:aiTagging.model')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                 {AI_MODELS.map(model => {
                     const isSelected = selectedModelId === model.id;
@@ -80,7 +82,7 @@ function AIModelSelector({ selectedModelId, modelStatuses, downloadingModelId, o
                                         borderRadius: 'var(--radius-sm)',
                                         fontWeight: '600',
                                     }}>
-                                        Recommended
+                                        {t('preferences:aiTagging.recommended')}
                                     </span>
                                 )}
                                 {!isDownloaded && (
@@ -92,7 +94,7 @@ function AIModelSelector({ selectedModelId, modelStatuses, downloadingModelId, o
                                         borderRadius: 'var(--radius-sm)',
                                         fontWeight: '600',
                                     }}>
-                                        Not Downloaded
+                                        {t('preferences:aiTagging.notDownloaded')}
                                     </span>
                                 )}
                             </div>
@@ -101,7 +103,7 @@ function AIModelSelector({ selectedModelId, modelStatuses, downloadingModelId, o
                                 color: 'var(--color-text-secondary)',
                                 margin: 'var(--space-2) 0 var(--space-2) var(--space-5)',
                             }}>
-                                {model.description}
+                                {t(`preferences:aiTagging.${model.descriptionKey}`)}
                             </p>
                             <div style={{
                                 display: 'flex',
@@ -110,10 +112,10 @@ function AIModelSelector({ selectedModelId, modelStatuses, downloadingModelId, o
                                 fontSize: 'var(--font-size-xs)',
                                 color: 'var(--color-text-muted)',
                             }}>
-                                <span>License: {model.license}</span>
-                                <span>Size: {model.size}</span>
-                                <span>Speed: {model.speed}</span>
-                                <span>Accuracy: {'★'.repeat(model.accuracy)}{'☆'.repeat(5 - model.accuracy)}</span>
+                                <span>{t('preferences:aiTagging.license')}: {model.license}</span>
+                                <span>{t('preferences:aiTagging.size')}: {model.size}</span>
+                                <span>{t('preferences:aiTagging.speed')}: {t(`preferences:aiTagging.speed_${model.speedKey}`)}</span>
+                                <span>{t('preferences:aiTagging.accuracy')}: {'★'.repeat(model.accuracy)}{'☆'.repeat(5 - model.accuracy)}</span>
                             </div>
                             {!isDownloaded && (
                                 <button
@@ -137,7 +139,7 @@ function AIModelSelector({ selectedModelId, modelStatuses, downloadingModelId, o
                                         fontSize: 'var(--font-size-sm)',
                                     }}
                                 >
-                                    {isDownloadingThis ? 'Downloading...' : 'Download Model'}
+                                    {isDownloadingThis ? t('preferences:aiTagging.downloading') : t('preferences:aiTagging.downloadModel')}
                                 </button>
                             )}
                         </div>

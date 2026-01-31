@@ -158,5 +158,25 @@
     "viewPhoto": "写真を表示",
     "photoView": "写真表示",
     "listView": "リスト表示"
+  },
+  "dateList": {
+    "year": "年",
+    "month": "月",
+    "list": "リスト",
+    "tree": "ツリー",
+    "months": {
+      "jan": "1月",
+      "feb": "2月",
+      "mar": "3月",
+      "apr": "4月",
+      "may": "5月",
+      "jun": "6月",
+      "jul": "7月",
+      "aug": "8月",
+      "sep": "9月",
+      "oct": "10月",
+      "nov": "11月",
+      "dec": "12月"
+    }
   }
 }

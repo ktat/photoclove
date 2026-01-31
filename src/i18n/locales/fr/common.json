@@ -148,5 +148,25 @@
     "burstGroup": "Grouper les photos en rafale",
     "slideshow": "Diaporama",
     "filterPhotos": "Filtrer les photos"
+  },
+  "dateList": {
+    "year": "Année",
+    "month": "Mois",
+    "list": "Liste",
+    "tree": "Arbre",
+    "months": {
+      "jan": "Jan",
+      "feb": "Fév",
+      "mar": "Mar",
+      "apr": "Avr",
+      "may": "Mai",
+      "jun": "Juin",
+      "jul": "Juil",
+      "aug": "Août",
+      "sep": "Sep",
+      "oct": "Oct",
+      "nov": "Nov",
+      "dec": "Déc"
+    }
   }
 }

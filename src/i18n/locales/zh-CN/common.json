@@ -143,5 +143,25 @@
     "burstGroup": "将连拍照片分组",
     "slideshow": "幻灯片",
     "filterPhotos": "筛选照片"
+  },
+  "dateList": {
+    "year": "年份",
+    "month": "月份",
+    "list": "列表",
+    "tree": "树形",
+    "months": {
+      "jan": "1月",
+      "feb": "2月",
+      "mar": "3月",
+      "apr": "4月",
+      "may": "5月",
+      "jun": "6月",
+      "jul": "7月",
+      "aug": "8月",
+      "sep": "9月",
+      "oct": "10月",
+      "nov": "11月",
+      "dec": "12月"
+    }
   }
 }

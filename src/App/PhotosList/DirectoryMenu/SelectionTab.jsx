@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { confirm } from "@tauri-apps/plugin-dialog";
+import { useTranslation } from 'react-i18next';
 import FaceThumbnail from "../../../components/FaceThumbnail.jsx";
 
 /**
@@ -45,6 +46,7 @@ function SelectionTab({
     dropdownRef,
     tabClass
 }) {
+    const { t } = useTranslation(['directoryMenu']);
     // Local state for photo preview
     const [photoIndex, setPhotoIndex] = useState(-1);
     const [showBigPhoto, setShowBigPhoto] = useState(false);
@@ -76,7 +78,7 @@ function SelectionTab({
         e.target.value = 'select'; // Reset dropdown first
 
         if (operation === 'delete') {
-            const confirmed = await confirm(`Delete ${selectedUnknownFaces.length} selected faces?`, { title: 'Delete Faces' });
+            const confirmed = await confirm(t('directoryMenu:face.confirmDelete', { count: selectedUnknownFaces.length }), { title: t('directoryMenu:face.delete') });
             if (confirmed) {
                 deleteUnknownFacesBatch(selectedUnknownFaces);
             }
@@ -111,71 +113,71 @@ function SelectionTab({
                 {viewModeObj?.shouldShowPhotoSelection() && (
                     <>
                         <div style={{ marginBottom: 'var(--space-3)' }}>
-                            <button onClick={() => selectAllPhotoToSelection()}>Select all photos in page</button>
+                            <button onClick={() => selectAllPhotoToSelection()}>{t('directoryMenu:selection.selectAllInPage')}</button>
                         </div>
                         {photoSelection.length == 0
                             ?
-                            <div><br />Photos are not selected.</div>
+                            <div><br />{t('directoryMenu:selection.photosNotSelected')}</div>
                             :
                             <div>
                                 <div className="operation">
                                     <select ref={dropdownRef} onChange={(e) => doOperation(e)}>
-                                        <option value="select">Select an Operation</option>
+                                        <option value="select">{t('directoryMenu:selection.selectOperation')}</option>
 
                                         {/* Import-specific operations (only in import mode) */}
                                         {viewModeObj?.shouldShowImportOperations() && (
                                             <>
-                                                {viewModeObj?.showImportSelected() && <option value="importSelected">📥 Import Selected Photos</option>}
-                                                {viewModeObj?.showSelectAllInDirectory() && <option value="selectAllInDirectory">✅ Select All in This Directory</option>}
-                                                <option value="unselectAll">❎ Unselect All</option>
+                                                {viewModeObj?.showImportSelected() && <option value="importSelected">📥 {t('directoryMenu:operations.importSelected')}</option>}
+                                                {viewModeObj?.showSelectAllInDirectory() && <option value="selectAllInDirectory">✅ {t('directoryMenu:operations.selectAllInDirectory')}</option>}
+                                                <option value="unselectAll">❎ {t('directoryMenu:operations.unselectAll')}</option>
                                             </>
                                         )}
 
                                         {/* Album-specific operations (only in album mode) */}
                                         {viewModeObj?.shouldShowAlbumOperations() && (
                                             <>
-                                                {viewModeObj?.showRemoveFromAlbum() && <option value="removeFromAlbum">📤 Remove from Album</option>}
+                                                {viewModeObj?.showRemoveFromAlbum() && <option value="removeFromAlbum">📤 {t('directoryMenu:operations.removeFromAlbum')}</option>}
                                             </>
                                         )}
 
                                         {/* Tag-specific operations (only in tag mode) */}
                                         {viewModeObj?.shouldShowTagOperations() && (
                                             <>
-                                                {viewModeObj?.showRemoveFromTag() && <option value="removeFromTag">🏷️ Remove from Tag</option>}
+                                                {viewModeObj?.showRemoveFromTag() && <option value="removeFromTag">🏷️ {t('directoryMenu:operations.removeFromTag')}</option>}
                                             </>
                                         )}
 
                                         {/* Trash mode operations */}
                                         {viewModeObj?.isTrashMode() && (
                                             <>
-                                                {viewModeObj?.showRestoreFromTrash() && <option value="restoreFromTrash">♻️ Restore</option>}
-                                                {viewModeObj?.showPermanentDelete() && <option value="permanentDelete">🗑️ Delete Permanently</option>}
+                                                {viewModeObj?.showRestoreFromTrash() && <option value="restoreFromTrash">♻️ {t('directoryMenu:operations.restore')}</option>}
+                                                {viewModeObj?.showPermanentDelete() && <option value="permanentDelete">🗑️ {t('directoryMenu:operations.deletePermanently')}</option>}
                                             </>
                                         )}
 
                                         {/* Standard operations (non-import, non-trash modes) */}
                                         {viewModeObj?.shouldShowStandardOperations() && !viewModeObj?.isTrashMode() && (
                                             <>
-                                                {viewModeObj?.showUploadToGooglePhotos() && <option value="uploadToGooglePhotos">☁️ Upload to Google Photos</option>}
-                                                {viewModeObj?.showDeleteFiles() && <option value="deleteFiles">🗑️ Delete files</option>}
+                                                {viewModeObj?.showUploadToGooglePhotos() && <option value="uploadToGooglePhotos">☁️ {t('directoryMenu:operations.uploadToGooglePhotos')}</option>}
+                                                {viewModeObj?.showDeleteFiles() && <option value="deleteFiles">🗑️ {t('directoryMenu:operations.deleteFiles')}</option>}
 
                                                 {/* Album operations (all modes) */}
-                                                {viewModeObj?.showCreateAlbum() && <option value="createAlbum">📚 Create Album</option>}
-                                                {viewModeObj?.showAddToAlbum() && <option value="addToAlbum">📚 Add to Existing Album</option>}
+                                                {viewModeObj?.showCreateAlbum() && <option value="createAlbum">📚 {t('directoryMenu:operations.createAlbum')}</option>}
+                                                {viewModeObj?.showAddToAlbum() && <option value="addToAlbum">📚 {t('directoryMenu:operations.addToAlbum')}</option>}
 
                                                 {/* Tag operations */}
-                                                {viewModeObj?.showAddTags() && <option value="addTags">🏷️ Add Tags</option>}
+                                                {viewModeObj?.showAddTags() && <option value="addTags">🏷️ {t('directoryMenu:operations.addTags')}</option>}
 
                                                 {/* Burst group operations */}
                                                 {viewModeObj?.showCreateBurstGroup() && photoSelection.length >= 2 && (
-                                                    <option value="createBurstGroup">📸 Create Burst Group</option>
+                                                    <option value="createBurstGroup">📸 {t('directoryMenu:operations.createBurstGroup')}</option>
                                                 )}
                                                 {viewModeObj?.showRemoveFromBurstGroup() && (
-                                                    <option value="removeFromBurstGroup">📤 Remove from Burst Group</option>
+                                                    <option value="removeFromBurstGroup">📤 {t('directoryMenu:operations.removeFromBurstGroup')}</option>
                                                 )}
 
                                                 {/* Startup image operation */}
-                                                <option value="addToStartupImages">🚀 Add to Startup Images</option>
+                                                <option value="addToStartupImages">🚀 {t('directoryMenu:operations.addToStartupImages')}</option>
                                             </>
                                         )}
                                     </select>
@@ -185,7 +187,7 @@ function SelectionTab({
                                         return <li key={v}><a href="#" onClick={() => setPhotoIndex(i)}>{v.replace(/^.+\//, "")}</a></li>
                                     })}
                                 </ul>
-                                <button style={{ marginTop: 'var(--space-3)' }} onClick={() => clearPhotoSelection()}>Clear Selection</button>
+                                <button style={{ marginTop: 'var(--space-3)' }} onClick={() => clearPhotoSelection()}>{t('directoryMenu:selection.clearSelection')}</button>
 
                                 {/* Import Progress Display - Import Mode Only */}
                                 {viewModeObj?.shouldShowImportProgress() && importState?.importProgress && (
@@ -196,12 +198,12 @@ function SelectionTab({
                                         border: '1px solid var(--color-border-default)',
                                         borderRadius: 'var(--radius-sm)'
                                     }}>
-                                        <div style={{ fontWeight: 'bold', marginBottom: 'var(--space-1)' }}>Import Progress</div>
-                                        <div>Progress: {importState.importProgress.progress}%</div>
-                                        <div>Current: {importState.importProgress.current_file}</div>
+                                        <div style={{ fontWeight: 'bold', marginBottom: 'var(--space-1)' }}>{t('directoryMenu:selection.importProgress')}</div>
+                                        <div>{t('directoryMenu:selection.progress')}: {importState.importProgress.progress}%</div>
+                                        <div>{t('directoryMenu:selection.current')}: {importState.importProgress.current_file}</div>
                                         {importState.importProgress.error && (
                                             <div style={{ color: 'var(--color-danger)', marginTop: 'var(--space-1)' }}>
-                                                Error: {importState.importProgress.error}
+                                                {t('directoryMenu:selection.error')}: {importState.importProgress.error}
                                             </div>
                                         )}
                                     </div>
@@ -220,10 +222,10 @@ function SelectionTab({
                 {viewModeObj?.shouldShowAlbumSelection() && (
                     <div>
                         <div style={{ marginBottom: 'var(--space-4)' }}>
-                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>Selected Albums</h3>
+                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>{t('directoryMenu:album.selectedAlbums')}</h3>
                         </div>
                         {selectedAlbums.length === 0 ? (
-                            <div><br />No albums selected.</div>
+                            <div><br />{t('directoryMenu:album.noAlbumsSelected')}</div>
                         ) : (
                             <div>
                                 <div className="operation" style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -238,7 +240,7 @@ function SelectionTab({
                                             cursor: 'pointer'
                                         }}
                                     >
-                                        Delete Selected Albums
+                                        {t('directoryMenu:album.deleteSelectedAlbums')}
                                     </button>
                                     <button
                                         onClick={() => clearAlbumSelection()}
@@ -251,7 +253,7 @@ function SelectionTab({
                                             cursor: 'pointer'
                                         }}
                                     >
-                                        Clear Selection
+                                        {t('directoryMenu:selection.clearSelection')}
                                     </button>
                                 </div>
                                 <ul className="list-of-selected">
@@ -259,7 +261,7 @@ function SelectionTab({
                                         const album = albumsList.find(a => a.id === albumId);
                                         return album ? (
                                             <li key={albumId}>
-                                                <span>{album.name} ({album.photoCount} photos)</span>
+                                                <span>{album.name} ({t('directoryMenu:album.photoCount', { count: album.photoCount })})</span>
                                             </li>
                                         ) : null;
                                     })}
@@ -273,10 +275,10 @@ function SelectionTab({
                 {viewModeObj?.shouldShowTagSelection() && (
                     <div>
                         <div style={{ marginBottom: 'var(--space-4)' }}>
-                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>Selected Tags</h3>
+                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>{t('directoryMenu:tag.selectedTags')}</h3>
                         </div>
                         {selectedTags.length === 0 ? (
-                            <div><br />No tags selected.</div>
+                            <div><br />{t('directoryMenu:tag.noTagsSelected')}</div>
                         ) : (
                             <div>
                                 <div className="operation" style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -291,7 +293,7 @@ function SelectionTab({
                                             cursor: 'pointer'
                                         }}
                                     >
-                                        Delete Selected Tags
+                                        {t('directoryMenu:tag.deleteSelectedTags')}
                                     </button>
                                     <button
                                         onClick={() => clearTagSelection()}
@@ -304,7 +306,7 @@ function SelectionTab({
                                             cursor: 'pointer'
                                         }}
                                     >
-                                        Clear Selection
+                                        {t('directoryMenu:selection.clearSelection')}
                                     </button>
                                 </div>
                                 <ul className="list-of-selected">
@@ -320,7 +322,7 @@ function SelectionTab({
                                                     borderRadius: '50%',
                                                     marginRight: 'var(--space-2)'
                                                 }}></span>
-                                                <span>{tag.name} ({tag.photoCount} photos)</span>
+                                                <span>{tag.name} ({t('directoryMenu:tag.photoCount', { count: tag.photoCount })})</span>
                                             </li>
                                         ) : null;
                                     })}
@@ -334,10 +336,10 @@ function SelectionTab({
                 {viewModeObj?.shouldShowPersonSelection() && faceViewType === 'persons' && (
                     <div>
                         <div style={{ marginBottom: 'var(--space-4)' }}>
-                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>Selected Persons</h3>
+                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>{t('directoryMenu:person.selectedPersons')}</h3>
                         </div>
                         {selectedPersons.length === 0 ? (
-                            <div><br />No persons selected.</div>
+                            <div><br />{t('directoryMenu:person.noPersonsSelected')}</div>
                         ) : (
                             <div>
                                 <div className="operation" style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -352,7 +354,7 @@ function SelectionTab({
                                             cursor: 'pointer'
                                         }}
                                     >
-                                        Delete Selected Persons
+                                        {t('directoryMenu:person.deleteSelectedPersons')}
                                     </button>
                                     <button
                                         onClick={() => clearPersonSelection()}
@@ -365,7 +367,7 @@ function SelectionTab({
                                             cursor: 'pointer'
                                         }}
                                     >
-                                        Clear Selection
+                                        {t('directoryMenu:selection.clearSelection')}
                                     </button>
                                 </div>
                                 <ul className="list-of-selected">
@@ -373,7 +375,7 @@ function SelectionTab({
                                         const person = facesList.find(p => p.person_id === personId);
                                         return person ? (
                                             <li key={personId}>
-                                                <span>{person.person_name || 'Unknown'} ({person.face_count || 0} faces)</span>
+                                                <span>{person.person_name || t('directoryMenu:person.unknown')} ({t('directoryMenu:person.faceCount', { count: person.face_count || 0 })})</span>
                                             </li>
                                         ) : null;
                                     })}
@@ -387,18 +389,18 @@ function SelectionTab({
                 {viewModeObj?.shouldShowPersonSelection() && faceViewType === 'unknown' && (
                     <div>
                         <div style={{ marginBottom: 'var(--space-4)' }}>
-                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>Selected Faces ({selectedUnknownFaces.length})</h3>
+                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>{t('directoryMenu:face.selectedFaces', { count: selectedUnknownFaces.length })}</h3>
                         </div>
                         {selectedUnknownFaces.length === 0 ? (
-                            <div><br />No unknown faces selected.</div>
+                            <div><br />{t('directoryMenu:face.noFacesSelected')}</div>
                         ) : (
                             <div>
                                 <div className="operation">
                                     <select onChange={handleUnknownFacesOperation}>
-                                        <option value="select">Select an Operation</option>
-                                        <option value="assignNew">👤 Assign to New Person</option>
-                                        <option value="assignExisting">👥 Assign to Existing Person</option>
-                                        <option value="delete">🗑️ Delete</option>
+                                        <option value="select">{t('directoryMenu:selection.selectOperation')}</option>
+                                        <option value="assignNew">👤 {t('directoryMenu:face.assignToNewPerson')}</option>
+                                        <option value="assignExisting">👥 {t('directoryMenu:face.assignToExistingPerson')}</option>
+                                        <option value="delete">🗑️ {t('directoryMenu:face.delete')}</option>
                                     </select>
                                 </div>
 
@@ -411,12 +413,12 @@ function SelectionTab({
                                         border: '1px solid var(--color-border-default)',
                                         borderRadius: 'var(--radius-sm)'
                                     }}>
-                                        <div style={{ marginBottom: 'var(--space-2)', fontWeight: 'bold' }}>Create New Person</div>
+                                        <div style={{ marginBottom: 'var(--space-2)', fontWeight: 'bold' }}>{t('directoryMenu:face.createNewPerson')}</div>
                                         <input
                                             type="text"
                                             value={newPersonName}
                                             onChange={(e) => setNewPersonName(e.target.value)}
-                                            placeholder="Enter person name"
+                                            placeholder={t('directoryMenu:face.enterPersonName')}
                                             style={{
                                                 width: '100%',
                                                 padding: 'var(--space-2)',
@@ -440,7 +442,7 @@ function SelectionTab({
                                                     cursor: 'pointer'
                                                 }}
                                             >
-                                                Create & Assign
+                                                {t('directoryMenu:face.createAndAssign')}
                                             </button>
                                             <button
                                                 onClick={() => setShowNewPersonInput(false)}
@@ -453,7 +455,7 @@ function SelectionTab({
                                                     cursor: 'pointer'
                                                 }}
                                             >
-                                                Cancel
+                                                {t('directoryMenu:face.cancel')}
                                             </button>
                                         </div>
                                     </div>
@@ -469,7 +471,7 @@ function SelectionTab({
                                         borderRadius: 'var(--radius-sm)'
                                     }}>
                                         <div style={{ marginBottom: 'var(--space-2)', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <span>Select Person</span>
+                                            <span>{t('directoryMenu:face.selectPerson')}</span>
                                             <button
                                                 onClick={() => setShowPersonSelector(false)}
                                                 style={{
@@ -548,14 +550,14 @@ function SelectionTab({
                                             ))}
                                             {facesList.filter(p => p.person_name).length === 0 && (
                                                 <div style={{ color: 'var(--color-text-muted)', padding: 'var(--space-3)' }}>
-                                                    No named persons found. Use "Assign to New Person" to create one.
+                                                    {t('directoryMenu:face.noNamedPersons')}
                                                 </div>
                                             )}
                                         </div>
                                     </div>
                                 )}
 
-                                <button style={{ marginTop: 'var(--space-3)' }} onClick={() => clearUnknownFaceSelection()}>Clear Selection</button>
+                                <button style={{ marginTop: 'var(--space-3)' }} onClick={() => clearUnknownFaceSelection()}>{t('directoryMenu:selection.clearSelection')}</button>
                             </div>
                         )}
                     </div>

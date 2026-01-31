@@ -1,0 +1,85 @@
+{
+  "maintenance": {
+    "createDb": "この日のデータベースを(再)作成",
+    "moveToExifDate": "Exif日付に基づいてファイルを移動",
+    "makeThumbnails": "サムネイルを作成",
+    "recalculateGroups": "この日のグループを再計算",
+    "runAiTagging": "AIタグ付けを実行",
+    "runFaceDetection": "顔検出を実行",
+    "syncToS3": "S3に同期"
+  },
+  "import": {
+    "importFrom": "インポート元",
+    "selectSource": "インポート元を選択...",
+    "currentlyBrowsing": "現在の場所:",
+    "createdDateAfter": "作成日: 以降",
+    "selectDate": "日付を選択"
+  },
+  "filter": {
+    "stars": "星",
+    "hasComment": "コメントあり",
+    "extensions": "拡張子",
+    "image": "画像",
+    "movie": "動画"
+  },
+  "selection": {
+    "selectAllInPage": "ページ内の全写真を選択",
+    "photosNotSelected": "写真が選択されていません。",
+    "selectOperation": "操作を選択",
+    "clearSelection": "選択をクリア",
+    "importProgress": "インポート進捗",
+    "progress": "進捗",
+    "current": "現在",
+    "error": "エラー"
+  },
+  "operations": {
+    "importSelected": "選択した写真をインポート",
+    "selectAllInDirectory": "このディレクトリ内のすべてを選択",
+    "unselectAll": "すべての選択を解除",
+    "removeFromAlbum": "アルバムから削除",
+    "removeFromTag": "タグから削除",
+    "restore": "復元",
+    "deletePermanently": "完全に削除",
+    "uploadToGooglePhotos": "Google フォトにアップロード",
+    "deleteFiles": "ファイルを削除",
+    "createAlbum": "アルバムを作成",
+    "addToAlbum": "既存のアルバムに追加",
+    "addTags": "タグを追加",
+    "createBurstGroup": "連写グループを作成",
+    "removeFromBurstGroup": "連写グループから削除",
+    "addToStartupImages": "起動時の画像に追加"
+  },
+  "album": {
+    "selectedAlbums": "選択したアルバム",
+    "noAlbumsSelected": "アルバムが選択されていません。",
+    "deleteSelectedAlbums": "選択したアルバムを削除",
+    "photoCount": "{{count}}枚"
+  },
+  "tag": {
+    "selectedTags": "選択したタグ",
+    "noTagsSelected": "タグが選択されていません。",
+    "deleteSelectedTags": "選択したタグを削除",
+    "photoCount": "{{count}}枚"
+  },
+  "person": {
+    "selectedPersons": "選択した人物",
+    "noPersonsSelected": "人物が選択されていません。",
+    "deleteSelectedPersons": "選択した人物を削除",
+    "unknown": "不明",
+    "faceCount": "{{count}}件の顔"
+  },
+  "face": {
+    "selectedFaces": "選択した顔 ({{count}})",
+    "noFacesSelected": "不明な顔が選択されていません。",
+    "assignToNewPerson": "新しい人物に割り当て",
+    "assignToExistingPerson": "既存の人物に割り当て",
+    "delete": "削除",
+    "createNewPerson": "新しい人物を作成",
+    "enterPersonName": "人物の名前を入力",
+    "createAndAssign": "作成して割り当て",
+    "cancel": "キャンセル",
+    "selectPerson": "人物を選択",
+    "noNamedPersons": "名前付きの人物がいません。「新しい人物に割り当て」で作成してください。",
+    "confirmDelete": "選択した{{count}}件の顔を削除しますか？"
+  }
+}

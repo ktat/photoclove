@@ -27,30 +27,30 @@ const toActualThreshold = (normalized, modelType) => {
     return (normalized / 100) * (range.max - range.min) + range.min;
 };
 
-// AI Tagging category groups
+// AI Tagging category groups (labels are i18n keys)
 const CATEGORY_GROUPS = {
     people: {
-        label: "People",
+        labelKey: "people",
         categories: ["person", "face", "group"]
     },
     animals: {
-        label: "Animals",
+        labelKey: "animals",
         categories: ["dog", "cat", "bird", "fish", "horse", "cow", "insect", "wildlife"]
     },
     nature: {
-        label: "Nature",
+        labelKey: "nature",
         categories: ["sea", "beach", "mountain", "forest", "river", "lake", "sky", "sunset"]
     },
     plants: {
-        label: "Plants",
+        labelKey: "plants",
         categories: ["flower", "tree", "plant", "garden"]
     },
     scenes: {
-        label: "Scenes",
+        labelKey: "scenes",
         categories: ["food", "building", "street", "indoor", "outdoor", "night"]
     },
     events: {
-        label: "Events",
+        labelKey: "events",
         categories: ["wedding", "birthday", "travel"]
     }
 };
@@ -97,7 +97,7 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                     setIsProcessing(false);
                     setProgress({ message: '', progress: 0 });
                     if (addFooterMessage) {
-                        addFooterMessage("ai_tagging", "AI tagging completed");
+                        addFooterMessage("ai_tagging", t('preferences:aiTagging.completed'));
                     }
                 }
             });
@@ -198,13 +198,13 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
     const handleDownloadModel = async (modelId) => {
         setDownloadingModelId(modelId);
         try {
-            if (addFooterMessage) addFooterMessage("ai_model_download", `Downloading ${modelId} model...`);
+            if (addFooterMessage) addFooterMessage("ai_model_download", t('preferences:aiTagging.downloadingModel', { model: modelId }));
             await invoke("download_ai_model", { modelId });
             setModelStatuses(prev => ({ ...prev, [modelId]: { downloaded: true, status: "ready" } }));
-            if (addFooterMessage) addFooterMessage("ai_model_download", `${modelId} model downloaded successfully`);
+            if (addFooterMessage) addFooterMessage("ai_model_download", t('preferences:aiTagging.downloadSuccess', { model: modelId }));
         } catch (error) {
             logger.error('AITaggingTab', 'model_download_error', 'Failed to download model', { modelId, error });
-            if (addFooterMessage) addFooterMessage("ai_model_download_error", `Failed to download ${modelId}: ${error}`);
+            if (addFooterMessage) addFooterMessage("ai_model_download_error", t('preferences:aiTagging.downloadFailed', { model: modelId, error }));
         } finally {
             setDownloadingModelId(null);
         }
@@ -243,7 +243,7 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
         }
 
         setIsProcessing(true);
-        setProgress({ message: 'Starting AI tagging for all photos...', progress: 0 });
+        setProgress({ message: t('preferences:aiTagging.startingTagging'), progress: 0 });
 
         try {
             const result = await invoke("run_ai_tagging_for_all");
@@ -252,9 +252,9 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
             if (data.result === "no_photos" || data.result === "no_images") {
                 setIsProcessing(false);
                 setProgress({ message: '', progress: 0 });
-                if (addFooterMessage) addFooterMessage("ai_tagging", "No photos found in library");
+                if (addFooterMessage) addFooterMessage("ai_tagging", t('preferences:aiTagging.noPhotosFound'));
             } else {
-                if (addFooterMessage) addFooterMessage("ai_tagging", `Processing ${data.photo_count} photos...`);
+                if (addFooterMessage) addFooterMessage("ai_tagging", t('preferences:aiTagging.processingPhotos', { count: data.photo_count }));
             }
         } catch (error) {
             setIsProcessing(false);
@@ -439,7 +439,7 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                                     <div key={groupKey} style={{ marginBottom: 'var(--space-3)' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 'var(--space-1)', cursor: 'pointer' }} onClick={() => handleToggleGroup(groupKey)}>
                                             <input type="checkbox" checked={allEnabled} onChange={() => handleToggleGroup(groupKey)} style={{ marginRight: 'var(--space-2)' }} />
-                                            <strong>{group.label}</strong>
+                                            <strong>{t(`preferences:aiTagging.categories.${group.labelKey}`)}</strong>
                                             <span style={{ marginLeft: 'var(--space-2)', color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)' }}>
                                                 ({enabledInGroup}/{group.categories.length})
                                             </span>

@@ -163,5 +163,25 @@
     "viewPhoto": "View photo",
     "photoView": "Photo view",
     "listView": "List view"
+  },
+  "dateList": {
+    "year": "Year",
+    "month": "Month",
+    "list": "List",
+    "tree": "Tree",
+    "months": {
+      "jan": "Jan",
+      "feb": "Feb",
+      "mar": "Mar",
+      "apr": "Apr",
+      "may": "May",
+      "jun": "Jun",
+      "jul": "Jul",
+      "aug": "Aug",
+      "sep": "Sep",
+      "oct": "Oct",
+      "nov": "Nov",
+      "dec": "Dec"
+    }
   }
 }

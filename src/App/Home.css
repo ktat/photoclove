@@ -87,7 +87,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-2);
 }
 
 .home-memories-title {
@@ -107,24 +107,27 @@
 /* View Toggle Buttons */
 .home-view-toggle {
   display: flex;
-  gap: var(--space-1);
+  gap: 0;
   background: var(--color-bg-surface);
-  border-radius: var(--radius-md);
-  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  padding: 0;
+  overflow: hidden;
 }
 
 .home-view-toggle-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
+  border-radius: 0;
+  background: var(--color-bg-surface);
   color: var(--color-text-muted);
   cursor: pointer;
   transition: all 0.2s ease-out;
+  margin: 0;
+  padding: 0;
 }
 
 .home-view-toggle-btn:hover {
