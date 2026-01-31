@@ -16,6 +16,7 @@ function DateList(props) {
         datePage,
         dateNum,
         hideLoading,
+        currentDate,
         updateCurrentDate,
         recentPhotosMode,
         updateRecentPhotosMode
@@ -35,6 +36,21 @@ function DateList(props) {
             setIsRefreshing(false);
         }
     }, [hideLoading, isRefreshing]);
+
+    // Sync selectedStyle with currentDate from context (e.g., when navigating from memories)
+    useEffect(() => {
+        if (currentDate) {
+            // Parse date string (handles both "2018-01-31" and "2018/01/31" formats)
+            const normalizedDate = currentDate.replace(/-/g, '/');
+            const dateParts = normalizedDate.split('/');
+            if (dateParts.length === 3) {
+                const [year, month, day] = dateParts;
+                // Create the same format used by DateList for keys
+                const dateKey = new Date(year + '/' + month + '/' + day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                setSelectedStyle({ ["a-" + dateKey]: "var(--color-text-primary)", ["li-" + dateKey]: "square" });
+            }
+        }
+    }, [currentDate]);
 
     // Get selected date color based on current ViewMode
     // White when viewing date photos, muted when viewing other modes

@@ -343,7 +343,25 @@ function App() {
             updateCurrentDate("");
             resetPhotoState();
             toggleHome();
-            setWelcomeImage(WelcomeImage(configRef.current));
+            // Handle memories mode for welcome image
+            const currentConfig = configRef.current;
+            const mode = currentConfig?.startup_images?.mode;
+            if (mode === 'memories') {
+              getMemoriesStartupImage().then((memoriesImage) => {
+                if (memoriesImage) {
+                  setWelcomeImage(memoriesImage);
+                } else {
+                  const fallback = currentConfig?.startup_images?.memories_fallback || 'default';
+                  if (fallback === 'custom') {
+                    setWelcomeImage(WelcomeImage({ ...currentConfig, startup_images: { ...currentConfig.startup_images, mode: 'custom' } }));
+                  } else {
+                    setWelcomeImage(WelcomeImage(null));
+                  }
+                }
+              });
+            } else {
+              setWelcomeImage(WelcomeImage(currentConfig));
+            }
           } else if (e.payload === "import") {
             toggleImporter(true);
           } else if (e.payload === "pref") {
