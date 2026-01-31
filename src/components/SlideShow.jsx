@@ -3,6 +3,7 @@ import { convertFileSrc } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../services/LoggerService.js';
+import { slideshowMusic, MOOD_CONFIG } from '../services/SlideshowMusicService.js';
 import styles from './SlideShow.module.css';
 
 const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
@@ -12,6 +13,14 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [slideInterval, setSlideInterval] = useState(5000);
+
+  // Music state
+  const [musicEnabled, setMusicEnabled] = useState(true);
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(0.5);
+  const [currentMood, setCurrentMood] = useState(null);
+  const [currentTrack, setCurrentTrack] = useState(null);
 
   const containerRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
@@ -33,6 +42,32 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
   const togglePlay = useCallback(() => {
     setIsPlaying((prev) => !prev);
   }, []);
+
+  // Music controls
+  const toggleMusic = useCallback(() => {
+    if (isMusicPlaying) {
+      slideshowMusic.pause();
+    } else {
+      slideshowMusic.play();
+    }
+  }, [isMusicPlaying]);
+
+  const toggleMute = useCallback(() => {
+    const muted = slideshowMusic.toggleMute();
+    setIsMuted(muted);
+  }, []);
+
+  const handleVolumeChange = useCallback((e) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    slideshowMusic.setVolume(newVolume);
+  }, []);
+
+  const handleMoodChange = useCallback((e) => {
+    const newMood = e.target.value;
+    setCurrentMood(newMood);
+    slideshowMusic.setMood(newMood, isMusicPlaying);
+  }, [isMusicPlaying]);
 
   // Fullscreen using Tauri API
   const enterFullscreen = useCallback(async () => {
@@ -91,6 +126,10 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
         case 'P':
           togglePlay();
           break;
+        case 'm':
+        case 'M':
+          toggleMute();
+          break;
         default:
           break;
       }
@@ -98,7 +137,7 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [goToNext, goToPrevious, handleClose, toggleFullscreen, togglePlay]);
+  }, [goToNext, goToPrevious, handleClose, toggleFullscreen, togglePlay, toggleMute]);
 
   // Auto-advance timer
   useEffect(() => {
@@ -159,6 +198,34 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
       logger.info('SlideShow', 'ended', 'Slideshow ended');
     };
   }, []);
+
+  // Initialize music on mount
+  useEffect(() => {
+    if (!musicEnabled) return;
+
+    // Set up callbacks
+    slideshowMusic.onTrackChange = (track) => {
+      setCurrentTrack(track);
+    };
+    slideshowMusic.onPlayStateChange = (playing) => {
+      setIsMusicPlaying(playing);
+    };
+
+    // Analyze mood from photos and start playing
+    const detectedMood = slideshowMusic.analyzeMood(photos);
+    setCurrentMood(detectedMood);
+    slideshowMusic.setVolume(volume);
+    slideshowMusic.setMood(detectedMood, true);
+
+    logger.info('SlideShow', 'music_initialized', 'Music initialized', {
+      detectedMood,
+      photoCount: photos.length
+    });
+
+    return () => {
+      slideshowMusic.destroy();
+    };
+  }, [musicEnabled]);
 
   if (!currentPhoto) {
     return null;
@@ -245,6 +312,48 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
             <option value={10000}>10s</option>
             <option value={30000}>30s</option>
           </select>
+
+          {/* Music Controls */}
+          {musicEnabled && (
+            <div className={styles.musicControls}>
+              <button
+                className={styles.musicButton}
+                onClick={(e) => { e.stopPropagation(); toggleMusic(); }}
+                title={isMusicPlaying ? 'Pause Music' : 'Play Music'}
+              >
+                {isMusicPlaying ? '🎵' : '🔇'}
+              </button>
+              <button
+                className={styles.musicButton}
+                onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+                title={isMuted ? 'Unmute (M)' : 'Mute (M)'}
+              >
+                {isMuted ? '🔇' : '🔊'}
+              </button>
+              <input
+                type="range"
+                className={styles.volumeSlider}
+                min="0"
+                max="1"
+                step="0.1"
+                value={volume}
+                onChange={handleVolumeChange}
+                onClick={(e) => e.stopPropagation()}
+                title="Volume"
+              />
+              <select
+                className={styles.moodSelect}
+                value={currentMood || ''}
+                onChange={handleMoodChange}
+                onClick={(e) => e.stopPropagation()}
+                title="Music Mood"
+              >
+                {Object.entries(MOOD_CONFIG).map(([key, config]) => (
+                  <option key={key} value={key}>{config.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Progress Bar */}
@@ -260,6 +369,14 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
       {showControls && currentPhoto.name && (
         <div className={styles.photoInfo}>
           {currentPhoto.name}
+        </div>
+      )}
+
+      {/* Music Track Info */}
+      {showControls && musicEnabled && currentTrack && (
+        <div className={`${styles.trackInfo} ${!isMusicPlaying ? styles.paused : ''}`}>
+          <span className={styles.musicIcon}>♪</span>
+          <span>{currentTrack.title}</span>
         </div>
       )}
     </div>
