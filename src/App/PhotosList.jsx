@@ -33,7 +33,7 @@ import { useFilteredPhotos } from "../hooks/useFilteredPhotos.js";
 import { usePhotosListHandlers } from "../hooks/usePhotosListHandlers.js";
 
 import { FaceDetectionProvider } from "../context/FaceDetectionContext.jsx";
-import { getAllPersonsForList } from "../services/FaceDetectionService.js";
+import { getAllPersonsForList, getUnknownFacesCount } from "../services/FaceDetectionService.js";
 import {
     useViewModeChangeEffect,
     usePhotoSyncEffect,
@@ -132,7 +132,7 @@ function PhotosList({
         filterButtonRef,
         facesList, setFacesList, faceSearchTerm, setFaceSearchTerm,
         currentPersonId, setCurrentPersonId, currentPersonName, setCurrentPersonName,
-        selectedPersons, setSelectedPersons
+        selectedPersons, setSelectedPersons, unknownFacesCount, setUnknownFacesCount
     } = usePhotosState();
 
     // Create ViewMode object using factory hook (must be after usePhotosState, before usePhotoSelection)
@@ -340,13 +340,20 @@ function PhotosList({
     const reloadFaces = useCallback(async () => {
         try {
             logger.info('PhotosList', 'reload_faces_start', 'Loading faces list');
-            const persons = await getAllPersonsForList();
+            const [persons, unknownCount] = await Promise.all([
+                getAllPersonsForList(),
+                getUnknownFacesCount()
+            ]);
             setFacesList(persons);
-            logger.info('PhotosList', 'reload_faces_complete', 'Faces loaded', { count: persons.length });
+            setUnknownFacesCount(unknownCount);
+            logger.info('PhotosList', 'reload_faces_complete', 'Faces loaded', {
+                personsCount: persons.length,
+                unknownCount
+            });
         } catch (error) {
             logger.error('PhotosList', 'reload_faces_error', 'Failed to load faces', { error: error.toString() });
         }
-    }, [setFacesList]);
+    }, [setFacesList, setUnknownFacesCount]);
 
     // Photo operations hook
     const {
@@ -506,7 +513,7 @@ function PhotosList({
         shortCutNavigation, setShortCutNavigation,
         appConfig, importState, photos,
         filteredAlbums, albumSearchTerm, filteredTags, tagSearchTerm,
-        facesList, faceSearchTerm
+        facesList, faceSearchTerm, unknownFacesCount
     });
 
     // Handlers object using extracted hook

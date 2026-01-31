@@ -91,7 +91,8 @@ export function usePhotoListStateGroups({
     filteredTags,
     tagSearchTerm,
     facesList,
-    faceSearchTerm
+    faceSearchTerm,
+    unknownFacesCount
 }) {
     /** @type {import('../types/PageState.js').ViewState} */
     // ViewState - Simplified to only essential properties
@@ -206,9 +207,10 @@ export function usePhotoListStateGroups({
         },
         faces: {
             list: facesList,
-            searchTerm: faceSearchTerm
+            searchTerm: faceSearchTerm,
+            unknownCount: unknownFacesCount
         }
-    }), [filteredAlbums, albumSearchTerm, filteredTags, tagSearchTerm, facesList, faceSearchTerm]);
+    }), [filteredAlbums, albumSearchTerm, filteredTags, tagSearchTerm, facesList, faceSearchTerm, unknownFacesCount]);
 
     return {
         viewState,

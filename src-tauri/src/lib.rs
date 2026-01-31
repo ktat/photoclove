@@ -325,6 +325,8 @@ pub fn run() {
             delete_detected_face,
             set_face_person_name,
             run_face_detection_for_date,
+            get_unknown_faces_count,
+            get_unknown_faces,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -292,6 +292,37 @@ export async function setFacePersonName(faceId, name) {
     }
 }
 
+/**
+ * Get count of unknown (unassigned) faces
+ * @returns {Promise<number>} Count of unknown faces
+ */
+export async function getUnknownFacesCount() {
+    try {
+        return await invoke('get_unknown_faces_count');
+    } catch (error) {
+        logger.error(CONTEXT, 'get_unknown_faces_count_failed', 'Failed to get unknown faces count', { error: error.toString() });
+        throw error;
+    }
+}
+
+/**
+ * Get unknown (unassigned) faces with pagination
+ * Sorted by detection time (newest first)
+ * @param {number} limit - Maximum number of faces to return (default: 50)
+ * @param {number} offset - Number of faces to skip (default: 0)
+ * @returns {Promise<Array>} Array of unknown face records
+ * Each record contains: id, photo_path, bbox_x, bbox_y, bbox_width, bbox_height, confidence, created_at
+ */
+export async function getUnknownFaces(limit = 50, offset = 0) {
+    try {
+        const result = await invoke('get_unknown_faces', { limit, offset });
+        return JSON.parse(result);
+    } catch (error) {
+        logger.error(CONTEXT, 'get_unknown_faces_failed', 'Failed to get unknown faces', { limit, offset, error: error.toString() });
+        throw error;
+    }
+}
+
 // Export as default object for convenience
 export default {
     getModelStatus,
@@ -311,5 +342,7 @@ export default {
     getPhotosForPerson,
     deletePerson,
     deleteFace,
-    setFacePersonName
+    setFacePersonName,
+    getUnknownFacesCount,
+    getUnknownFaces
 };

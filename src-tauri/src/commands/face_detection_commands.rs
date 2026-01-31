@@ -607,6 +607,28 @@ pub fn run_face_detection_for_date(
     Ok(result.to_json())
 }
 
+/// Get count of unknown (unassigned) faces
+#[tauri::command]
+pub fn get_unknown_faces_count(state: State<AppState>) -> Result<i64, String> {
+    state.meta_db.get_unknown_faces_count()
+}
+
+/// Get unknown (unassigned) faces with pagination
+/// Sorted by detection time (newest first)
+#[tauri::command]
+pub fn get_unknown_faces(
+    state: State<AppState>,
+    limit: Option<u32>,
+    offset: Option<u32>,
+) -> Result<String, String> {
+    let limit = limit.unwrap_or(50);
+    let offset = offset.unwrap_or(0);
+
+    let faces = state.meta_db.get_unknown_faces(limit, offset)?;
+
+    serde_json::to_string(&faces).map_err(|e| format!("Serialization error: {}", e))
+}
+
 /// Helper to get models directory
 fn get_models_dir(_state: &State<AppState>) -> std::path::PathBuf {
     // Use app data directory for models

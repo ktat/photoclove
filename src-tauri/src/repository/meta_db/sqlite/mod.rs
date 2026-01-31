@@ -665,4 +665,18 @@ impl SQLite {
     pub fn delete_detected_face(&self, face_id: i64) -> Result<(), String> {
         face_detection::delete_detected_face(self, face_id)
     }
+
+    /// Get count of unknown (unassigned) faces
+    pub fn get_unknown_faces_count(&self) -> Result<i64, String> {
+        face_detection::get_unknown_faces_count(self)
+    }
+
+    /// Get unknown (unassigned) faces with pagination
+    pub fn get_unknown_faces(
+        &self,
+        limit: u32,
+        offset: u32,
+    ) -> Result<Vec<face_detection::UnknownFaceRecord>, String> {
+        face_detection::get_unknown_faces(self, limit, offset)
+    }
 }
