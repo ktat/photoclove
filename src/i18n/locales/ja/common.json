@@ -178,5 +178,12 @@
       "nov": "11月",
       "dec": "12月"
     }
+  },
+  "licenses": {
+    "title": "ライセンスとクレジット",
+    "footerNote": "クリックでソースを表示",
+    "aiModels": "AIモデル",
+    "music": "音楽",
+    "noLicenses": "ライセンス情報がありません。"
   }
 }

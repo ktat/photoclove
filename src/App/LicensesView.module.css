@@ -86,3 +86,42 @@
   color: var(--color-text-muted);
   padding: var(--space-6);
 }
+
+/* AI Models and Music specific styles */
+.packageCategory {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--color-primary-selected);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.modelDetails,
+.musicDetails {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+  text-align: right;
+  max-width: 50%;
+}
+
+.modelDescription {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.3;
+}
+
+.trackList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: var(--space-1);
+}
+
+.trackItem {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.3;
+}
