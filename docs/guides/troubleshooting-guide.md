@@ -165,3 +165,11 @@ This document provides comprehensive troubleshooting guidance for common issues 
 - Added event handlers for `privacy_policy` and `terms_of_use` in `src-tauri/src/lib.rs`
 - Migrated DocumentViewer to CSS Modules (`DocumentViewer.module.css`) using PhotoClove's design system variables
 - Fixed markdown parser to properly handle consecutive list items and remove extra `<br/>` tags around `<ul>` elements
+
+### Face Deletion Confirm Dialog Showing After Deletion
+**Fixed 2025-01-31**: Face deletion in PhotoViewer and Unknown Faces batch operations showed confirm dialog after the face was already deleted. Caused by `window.confirm` being synchronous but not properly blocking in Tauri environment.
+
+**Solution**:
+- Replaced `window.confirm` with `@tauri-apps/plugin-dialog` `confirm` function
+- Used async/await for proper dialog handling
+- Applied fix to both PhotoFaces.jsx and SelectionTab.jsx
