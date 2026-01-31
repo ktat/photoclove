@@ -7,6 +7,7 @@ import { unifiedCollectionService } from '../services/UnifiedCollectionService.j
 const STORAGE_KEY_ALBUMS = 'selectedAlbums';
 const STORAGE_KEY_TAGS = 'selectedTags';
 const STORAGE_KEY_PERSONS = 'selectedPersons';
+const STORAGE_KEY_UNKNOWN_FACES = 'selectedUnknownFaces';
 
 /**
  * Save selection to SessionStorage
@@ -37,6 +38,8 @@ export function usePhotoOperations({
     setSelectedTags,
     selectedPersons,
     setSelectedPersons,
+    selectedUnknownFaces,
+    setSelectedUnknownFaces,
     handleError,
     addFooterMessage,
     loadAlbums,
@@ -166,6 +169,20 @@ export function usePhotoOperations({
         setSelectedPersons([]);
         saveSelectionToStorage(STORAGE_KEY_PERSONS, []);
     }, [setSelectedPersons]);
+
+    // Unknown face selection handlers
+    const handleUnknownFaceSelection = useCallback((faceId, isSelected) => {
+        const newSelection = isSelected
+            ? [...selectedUnknownFaces, faceId]
+            : selectedUnknownFaces.filter(id => id !== faceId);
+        setSelectedUnknownFaces(newSelection);
+        saveSelectionToStorage(STORAGE_KEY_UNKNOWN_FACES, newSelection);
+    }, [selectedUnknownFaces, setSelectedUnknownFaces]);
+
+    const clearUnknownFaceSelection = useCallback(() => {
+        setSelectedUnknownFaces([]);
+        saveSelectionToStorage(STORAGE_KEY_UNKNOWN_FACES, []);
+    }, [setSelectedUnknownFaces]);
 
     // Delete selected albums
     const deleteSelectedAlbums = useCallback(async () => {
@@ -404,6 +421,10 @@ export function usePhotoOperations({
         handlePersonSelection,
         clearPersonSelection,
         deleteSelectedPersons,
+
+        // Unknown face operations
+        handleUnknownFaceSelection,
+        clearUnknownFaceSelection,
 
         // Photo list management
         removePhotoFromList,

@@ -12,6 +12,7 @@
  * @param {number} selectedTagsCount - Number of selected tags
  * @param {number} selectedPersonsCount - Number of selected persons
  * @param {string} baseClass - Base CSS class name (default: 'vertical-tab-button')
+ * @param {number} selectedUnknownFacesCount - Number of selected unknown faces
  * @returns {string} Complete className string
  *
  * Color logic:
@@ -26,9 +27,10 @@ export function getSelectionTabClassName(
     selectedAlbumsCount = 0,
     selectedTagsCount = 0,
     selectedPersonsCount = 0,
-    baseClass = 'vertical-tab-button'
+    baseClass = 'vertical-tab-button',
+    selectedUnknownFacesCount = 0
 ) {
-    const hasSelection = photoSelectionCount + selectedAlbumsCount + selectedTagsCount + selectedPersonsCount > 0;
+    const hasSelection = photoSelectionCount + selectedAlbumsCount + selectedTagsCount + selectedPersonsCount + selectedUnknownFacesCount > 0;
 
     let className = baseClass;
     className += ' selection-tab'; // Mark as Selection tab

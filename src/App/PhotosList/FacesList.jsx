@@ -22,12 +22,15 @@ function FacesList({
     onPersonClick,
     selectedPersons = [],
     onPersonSelection,
+    selectedUnknownFaces = [],
+    onUnknownFaceSelection,
     searchTerm,
     onSearchChange,
     onRefresh,
     unknownFacesCount = 0,
     onFaceClick,
-    onAssignFace
+    onAssignFace,
+    onViewTypeChange
 }) {
     const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm || '');
     const [viewType, setViewType] = useState(VIEW_TYPE.PERSONS);
@@ -57,7 +60,10 @@ function FacesList({
             padding: '0 var(--space-2)'
         }}>
             <button
-                onClick={() => setViewType(VIEW_TYPE.PERSONS)}
+                onClick={() => {
+                    setViewType(VIEW_TYPE.PERSONS);
+                    onViewTypeChange && onViewTypeChange(VIEW_TYPE.PERSONS);
+                }}
                 style={{
                     padding: 'var(--space-2) var(--space-4)',
                     backgroundColor: viewType === VIEW_TYPE.PERSONS ? 'var(--color-primary)' : 'var(--color-bg-elevated)',
@@ -73,7 +79,10 @@ function FacesList({
                 Persons
             </button>
             <button
-                onClick={() => setViewType(VIEW_TYPE.UNKNOWN)}
+                onClick={() => {
+                    setViewType(VIEW_TYPE.UNKNOWN);
+                    onViewTypeChange && onViewTypeChange(VIEW_TYPE.UNKNOWN);
+                }}
                 style={{
                     padding: 'var(--space-2) var(--space-4)',
                     backgroundColor: viewType === VIEW_TYPE.UNKNOWN ? 'var(--color-primary)' : 'var(--color-bg-elevated)',
@@ -167,18 +176,20 @@ function FacesList({
                             >
                                 {/* Selection Checkbox */}
                                 {onPersonSelection && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        top: '8px',
-                                        right: '8px',
-                                        zIndex: 1
-                                    }}>
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            top: '8px',
+                                            right: '8px',
+                                            zIndex: 1
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
                                         <input
                                             type="checkbox"
                                             id={`person-checkbox-${person.person_id}`}
                                             checked={selectedPersons.includes(person.person_id)}
                                             onChange={(e) => {
-                                                e.stopPropagation();
                                                 onPersonSelection(person.person_id, e.target.checked);
                                             }}
                                             style={{ display: 'none' }}
@@ -186,7 +197,6 @@ function FacesList({
                                         <label
                                             className="checkbox checkbox-normal"
                                             htmlFor={`person-checkbox-${person.person_id}`}
-                                            onClick={(e) => e.stopPropagation()}
                                             style={{
                                                 margin: 0,
                                                 borderRadius: '3px',
@@ -281,6 +291,8 @@ function FacesList({
                     onFaceClick={onFaceClick}
                     onAssignFace={onAssignFace}
                     persons={persons}
+                    selectedFaces={selectedUnknownFaces}
+                    onFaceSelection={onUnknownFaceSelection}
                 />
             )}
         </div>

@@ -37,6 +37,7 @@ export function usePhotoListStateGroups({
     selectedAlbums,
     selectedTags,
     selectedPersons,
+    selectedUnknownFaces,
 
     // DisplayState params
     currentPhotoPath,
@@ -92,7 +93,8 @@ export function usePhotoListStateGroups({
     tagSearchTerm,
     facesList,
     faceSearchTerm,
-    unknownFacesCount
+    unknownFacesCount,
+    faceViewType
 }) {
     /** @type {import('../types/PageState.js').ViewState} */
     // ViewState - Simplified to only essential properties
@@ -122,8 +124,9 @@ export function usePhotoListStateGroups({
         photoList: photoSelection,
         albums: selectedAlbums,
         tags: selectedTags,
-        persons: selectedPersons
-    }), [photoSelectionDict, photoSelection, selectedAlbums, selectedTags, selectedPersons]);
+        persons: selectedPersons,
+        unknownFaces: selectedUnknownFaces
+    }), [photoSelectionDict, photoSelection, selectedAlbums, selectedTags, selectedPersons, selectedUnknownFaces]);
 
     /** @type {import('../types/PageState.js').DisplayState} */
     const displayState = useMemo(() => ({
@@ -208,9 +211,10 @@ export function usePhotoListStateGroups({
         faces: {
             list: facesList,
             searchTerm: faceSearchTerm,
-            unknownCount: unknownFacesCount
+            unknownCount: unknownFacesCount,
+            viewType: faceViewType
         }
-    }), [filteredAlbums, albumSearchTerm, filteredTags, tagSearchTerm, facesList, faceSearchTerm, unknownFacesCount]);
+    }), [filteredAlbums, albumSearchTerm, filteredTags, tagSearchTerm, facesList, faceSearchTerm, unknownFacesCount, faceViewType]);
 
     return {
         viewState,

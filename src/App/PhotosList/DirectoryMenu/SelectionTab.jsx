@@ -39,6 +39,7 @@ function SelectionTab({
     albumsList,
     tagsList,
     facesList = [],
+    faceViewType = 'persons',
     dropdownRef,
     tabClass
 }) {
@@ -47,7 +48,7 @@ function SelectionTab({
     const [showBigPhoto, setShowBigPhoto] = useState(false);
 
     // Destructure from state groups
-    const { photoSelection, selectedAlbums, selectedTags, persons: selectedPersons = [] } = selectionState;
+    const { photoSelection, selectedAlbums, selectedTags, persons: selectedPersons = [], unknownFaces: selectedUnknownFaces = [] } = selectionState;
     const {
         doOperation,
         selectAllPhotoToSelection,
@@ -57,7 +58,8 @@ function SelectionTab({
         deleteSelectedTags,
         clearTagSelection,
         deleteSelectedPersons = () => {},
-        clearPersonSelection = () => {}
+        clearPersonSelection = () => {},
+        clearUnknownFaceSelection = () => {}
     } = handlers;
 
     return (
@@ -288,8 +290,8 @@ function SelectionTab({
                     </div>
                 )}
 
-                {/* Person Selection (face list mode) */}
-                {viewModeObj?.shouldShowPersonSelection() && (
+                {/* Person Selection (face list mode - Persons tab) */}
+                {viewModeObj?.shouldShowPersonSelection() && faceViewType === 'persons' && (
                     <div>
                         <div style={{ marginBottom: 'var(--space-4)' }}>
                             <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>Selected Persons</h3>
@@ -336,6 +338,43 @@ function SelectionTab({
                                             </li>
                                         ) : null;
                                     })}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Unknown Faces Selection (face list mode - Unknown tab) */}
+                {viewModeObj?.shouldShowPersonSelection() && faceViewType === 'unknown' && (
+                    <div>
+                        <div style={{ marginBottom: 'var(--space-4)' }}>
+                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>Selected Unknown Faces</h3>
+                        </div>
+                        {selectedUnknownFaces.length === 0 ? (
+                            <div><br />No unknown faces selected.</div>
+                        ) : (
+                            <div>
+                                <div className="operation" style={{ marginBottom: 'var(--space-4)' }}>
+                                    <button
+                                        onClick={() => clearUnknownFaceSelection()}
+                                        style={{
+                                            padding: 'var(--space-2) var(--space-3)',
+                                            backgroundColor: 'var(--color-bg-elevated)',
+                                            color: 'var(--color-text-primary)',
+                                            border: '1px solid var(--color-border-default)',
+                                            borderRadius: 'var(--radius-sm)',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        Clear Selection
+                                    </button>
+                                </div>
+                                <ul className="list-of-selected">
+                                    {selectedUnknownFaces.map((faceId) => (
+                                        <li key={faceId}>
+                                            <span>Unknown Face #{faceId}</span>
+                                        </li>
+                                    ))}
                                 </ul>
                             </div>
                         )}

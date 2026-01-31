@@ -14,13 +14,14 @@ function UnknownFacesList({
     iconSize,
     onFaceClick,
     onAssignFace,
-    persons = []
+    persons = [],
+    selectedFaces = [],
+    onFaceSelection
 }) {
     const [faces, setFaces] = useState([]);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const [error, setError] = useState(null);
-    const [selectedFaces, setSelectedFaces] = useState([]);
     const [assignDropdownFaceId, setAssignDropdownFaceId] = useState(null);
     const observerRef = useRef(null);
     const loadingRef = useRef(false);
@@ -77,21 +78,20 @@ function UnknownFacesList({
     }, [loading, hasMore, faces.length, loadFaces]);
 
     const handleFaceSelection = useCallback((faceId, checked) => {
-        setSelectedFaces(prev => {
-            if (checked) {
-                return [...prev, faceId];
-            } else {
-                return prev.filter(id => id !== faceId);
-            }
-        });
-    }, []);
+        if (onFaceSelection) {
+            onFaceSelection(faceId, checked);
+        }
+    }, [onFaceSelection]);
 
     const handleAssignToPerson = useCallback(async (faceId, personId) => {
         try {
             await assignFaceToPerson(faceId, personId);
             // Remove the assigned face from the list
             setFaces(prev => prev.filter(f => f.id !== faceId));
-            setSelectedFaces(prev => prev.filter(id => id !== faceId));
+            // Also remove from selection via parent handler
+            if (onFaceSelection) {
+                onFaceSelection(faceId, false);
+            }
             setAssignDropdownFaceId(null);
 
             if (onAssignFace) {
@@ -109,7 +109,7 @@ function UnknownFacesList({
                 error: err.toString()
             });
         }
-    }, [onAssignFace]);
+    }, [onAssignFace, onFaceSelection]);
 
     const renderAssignDropdown = (faceId) => {
         const namedPersons = persons.filter(p => p.person_name);
@@ -219,7 +219,7 @@ function UnknownFacesList({
                                     key={face.id}
                                     ref={isLast ? lastFaceRef : null}
                                     style={{
-                                        width: `${iconSize + 50}px`,
+                                        width: `${iconSize + 30}px`,
                                         height: `${iconSize + 80}px`,
                                         cursor: 'pointer',
                                         border: isSelected
@@ -237,18 +237,20 @@ function UnknownFacesList({
                                     onClick={() => onFaceClick && onFaceClick(face)}
                                 >
                                     {/* Selection Checkbox */}
-                                    <div style={{
-                                        position: 'absolute',
-                                        top: '8px',
-                                        right: '8px',
-                                        zIndex: 1
-                                    }}>
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            top: '8px',
+                                            right: '8px',
+                                            zIndex: 1
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
                                         <input
                                             type="checkbox"
                                             id={`face-checkbox-${face.id}`}
                                             checked={isSelected}
                                             onChange={(e) => {
-                                                e.stopPropagation();
                                                 handleFaceSelection(face.id, e.target.checked);
                                             }}
                                             style={{ display: 'none' }}
@@ -256,7 +258,6 @@ function UnknownFacesList({
                                         <label
                                             className="checkbox checkbox-normal"
                                             htmlFor={`face-checkbox-${face.id}`}
-                                            onClick={(e) => e.stopPropagation()}
                                             style={{
                                                 margin: 0,
                                                 borderRadius: '3px',
@@ -293,7 +294,7 @@ function UnknownFacesList({
                                     </div>
 
                                     {/* Assign Button */}
-                                    <div style={{ position: 'relative' }}>
+                                    <div style={{ position: 'relative', width: `${iconSize}px` }}>
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
