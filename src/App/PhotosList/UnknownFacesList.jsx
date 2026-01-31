@@ -241,7 +241,7 @@ function UnknownFacesList({
                                         style={{
                                             position: 'absolute',
                                             top: '8px',
-                                            right: '8px',
+                                            right: '4px',
                                             zIndex: 1
                                         }}
                                         onClick={(e) => e.stopPropagation()}
