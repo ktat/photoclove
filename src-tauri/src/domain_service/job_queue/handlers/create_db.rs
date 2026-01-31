@@ -59,6 +59,11 @@ pub(crate) fn process_create_db_job(
             log::info!(target: "create_db_job", "database_creation; status=success");
             log::debug!(target: "create_db_job", "database_result; result={:?}", result);
 
+            // Update progress to completion
+            let job_id = job.id.unwrap_or(0);
+            let total = job.job.target.len() as i64;
+            let _ = meta_db.update_job_progress(job_id, total);
+
             // Emit final progress
             if let Err(e) = app_handle.emit(
                 "create_db_progress",

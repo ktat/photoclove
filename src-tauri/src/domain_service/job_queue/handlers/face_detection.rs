@@ -2,13 +2,16 @@
 //!
 //! Processes face detection jobs for photos.
 
+use super::utils::{cleanup_kill_file, get_resume_start_index, log_resume_info, should_stop_job};
 use crate::domain_service::face_detection::embedder::cosine_similarity;
 use crate::domain_service::face_detection::service::FaceDetectionService;
+use crate::domain_service::face_detection::BoundingBox;
+use crate::domain_service::face_thumbnail_service;
 use crate::entity::job_queue;
 use crate::repository::meta_db::sqlite::face_detection::{DetectedFaceInput, NamedFaceEmbedding};
 use crate::repository::meta_db::sqlite::SQLite;
 use std::sync::Arc;
-use tauri::Emitter;
+use tauri::{Emitter, Manager};
 
 /// Threshold for face matching (cosine similarity)
 const FACE_MATCH_THRESHOLD: f32 = 0.5;
@@ -88,8 +91,20 @@ pub(crate) fn process_face_detection_job(
     let mut successful = 0;
     let mut failed = 0;
     let mut total_faces = 0;
+    let job_id = job.id.unwrap_or(0);
 
-    for (index, photo_path) in job.job.target.iter().enumerate() {
+    // Calculate start index for resume functionality
+    let start_index = get_resume_start_index(job);
+    log_resume_info("face_detection_job", start_index, total_photos);
+
+    for (index, photo_path) in job.job.target.iter().enumerate().skip(start_index) {
+        // Check for stop signal
+        if should_stop_job(job_id) {
+            log::info!(target: "face_detection_job", "stopped; job_id={}; index={}", job_id, index);
+            cleanup_kill_file(job_id);
+            return Err("Job stopped by user".to_string());
+        }
+
         log::debug!(
             target: "face_detection_job",
             "detecting; photo={}; progress={}/{}",
@@ -98,7 +113,10 @@ pub(crate) fn process_face_detection_job(
             total_photos
         );
 
-        // Emit progress
+        // Update progress in database and emit event (with last_processed_id for resume)
+        let processed = (index + 1) as i64;
+        let _ = db.update_job_progress_with_last_id(job_id, processed, index as i64);
+
         let progress = (index as f64 / total_photos as f64) * 100.0;
         if let Err(e) = app_handle.emit(
             "face_detection_progress",
@@ -170,14 +188,51 @@ pub(crate) fn process_face_detection_job(
                         })
                         .collect();
 
-                    // Save to database
-                    if let Err(e) = db.save_detected_faces(photo_path, &face_inputs) {
-                        log::error!(
-                            target: "face_detection_job",
-                            "save_faces_error; photo={}; error={}",
-                            photo_path,
-                            e
-                        );
+                    // Save to database and generate thumbnails
+                    match db.save_detected_faces(photo_path, &face_inputs) {
+                        Ok(face_ids) => {
+                            // Get config for thumbnail generation
+                            let state = app_handle.state::<crate::AppState>();
+                            let thumbnail_store = &state.config.thumbnail_store;
+                            let thumbnail_size = state.config.face_detection.face_thumbnail_size;
+
+                            // Generate thumbnails for each detected face
+                            for (idx, face_id) in face_ids.iter().enumerate() {
+                                if let Some(face) = faces.get(idx) {
+                                    let bbox = BoundingBox::new(
+                                        face.bbox.x,
+                                        face.bbox.y,
+                                        face.bbox.width,
+                                        face.bbox.height,
+                                    );
+
+                                    if let Err(e) =
+                                        face_thumbnail_service::generate_face_thumbnail_from_file(
+                                            photo_path,
+                                            &bbox,
+                                            thumbnail_store,
+                                            *face_id,
+                                            thumbnail_size,
+                                        )
+                                    {
+                                        log::warn!(
+                                            target: "face_detection_job",
+                                            "thumbnail_generation_failed; face_id={}; error={}",
+                                            face_id,
+                                            e
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            log::error!(
+                                target: "face_detection_job",
+                                "save_faces_error; photo={}; error={}",
+                                photo_path,
+                                e
+                            );
+                        }
                     }
                 }
 

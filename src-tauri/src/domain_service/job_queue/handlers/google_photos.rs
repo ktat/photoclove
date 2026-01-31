@@ -7,7 +7,7 @@ use tauri::{Emitter, Manager};
 pub(crate) async fn process_google_photos_upload_job(
     job: &job_queue::QueuedJob,
     app_handle: &tauri::AppHandle,
-    _db: &Arc<SQLite>,
+    db: &Arc<SQLite>,
 ) -> Result<(), String> {
     log::info!(target: "google_photos", "upload_job; status=starting");
     log::info!(target: "job_queue", "job_info; job_unit_id={}", job.job_unit_id);
@@ -83,6 +83,11 @@ pub(crate) async fn process_google_photos_upload_job(
     // This now returns Result<(), String> so we can properly handle errors
     match google_photos.upload_photo(photo_refs).await {
         Ok(()) => {
+            // Update progress to completion
+            let job_id = job.id.unwrap_or(0);
+            let total = job_data.photo_paths.len() as i64;
+            let _ = db.update_job_progress(job_id, total);
+
             // Emit completion event
             if let Err(e) = app_handle.emit(
                 "upload_progress",

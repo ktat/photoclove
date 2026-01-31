@@ -2,6 +2,7 @@
 //!
 //! Handles uploading photos to S3 or S3-compatible storage.
 
+use super::utils::{cleanup_kill_file, get_resume_start_index, log_resume_info, should_stop_job};
 use crate::domain_service::s3_service::S3Service;
 use crate::entity::job_queue;
 use crate::entity::recovery_queue::OperationType;
@@ -50,12 +51,27 @@ pub(crate) async fn process_s3_sync_job(
 
     let mut success_count = 0;
     let mut fail_count = 0;
+    let job_id = job.id.unwrap_or(0);
+
+    // Calculate start index for resume functionality
+    let start_index = get_resume_start_index(job);
+    log_resume_info("s3_sync", start_index, total);
 
     // Process each photo
-    for (idx, photo_path) in photo_paths.iter().enumerate() {
+    for (idx, photo_path) in photo_paths.iter().enumerate().skip(start_index) {
+        // Check for stop signal
+        if should_stop_job(job_id) {
+            log::info!(target: "s3_sync", "stopped; job_id={}; index={}", job_id, idx);
+            cleanup_kill_file(job_id);
+            return Err("Job stopped by user".to_string());
+        }
+
         log::debug!(target: "s3_sync", "uploading; index={}/{}; path={}", idx + 1, total, photo_path);
 
-        // Emit progress event
+        // Update progress in database and emit event (with last_processed_id for resume)
+        let processed = (idx + 1) as i64;
+        let _ = db.update_job_progress_with_last_id(job_id, processed, idx as i64);
+
         let progress = ((idx as f32 / total as f32) * 100.0) as u32;
         if let Err(e) = app_handle.emit(
             "s3_sync_progress",

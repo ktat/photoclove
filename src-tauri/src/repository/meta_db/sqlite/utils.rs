@@ -39,7 +39,7 @@ use crate::entity::job_queue::{Job, JobStatus, QueuedJob};
 
 /// Convert a database row to a QueuedJob entity.
 /// Row must have columns in order:
-/// id, job_unit_id, job (JSON), status, created_at, started_at, completed_at, error_message
+/// id, job_unit_id, job (JSON), status, created_at, started_at, completed_at, error_message, processed_count, last_processed_id
 pub(super) fn row_to_queued_job(row: &Row) -> rusqlite::Result<QueuedJob> {
     let job_json: String = row.get(2)?;
     let job: Job = serde_json::from_str(&job_json).map_err(|_e| {
@@ -55,6 +55,8 @@ pub(super) fn row_to_queued_job(row: &Row) -> rusqlite::Result<QueuedJob> {
         started_at: row.get(5)?,
         completed_at: row.get(6)?,
         error_message: row.get(7)?,
+        processed_count: row.get(8)?,
+        last_processed_id: row.get(9)?,
     })
 }
 

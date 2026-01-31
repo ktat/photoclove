@@ -11,7 +11,7 @@ use uuid::Uuid;
 pub(crate) fn process_recalculate_grouping_job(
     job: &job_queue::QueuedJob,
     app_handle: &tauri::AppHandle,
-    _db: &Arc<SQLite>,
+    db: &Arc<SQLite>,
 ) -> Result<(), String> {
     log::info!(target: "recalculate_grouping", "job; status=starting; job_unit_id={}", job.job_unit_id);
 
@@ -170,6 +170,11 @@ pub(crate) fn process_recalculate_grouping_job(
             new_groups
         );
     }
+
+    // Update progress to completion
+    let job_id = job.id.unwrap_or(0);
+    let total = job.job.target.len() as i64;
+    let _ = db.update_job_progress(job_id, if total > 0 { total } else { 1 });
 
     // Emit completion
     emit_progress(

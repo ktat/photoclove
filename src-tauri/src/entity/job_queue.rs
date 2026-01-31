@@ -71,6 +71,8 @@ pub enum JobType {
     S3Sync,
     #[serde(rename = "face_detection")]
     FaceDetection,
+    #[serde(rename = "face_thumbnail_regenerate")]
+    FaceThumbnailRegenerate,
 }
 
 impl ToString for JobType {
@@ -84,6 +86,7 @@ impl ToString for JobType {
             JobType::AiTagging => "ai_tagging".to_string(),
             JobType::S3Sync => "s3_sync".to_string(),
             JobType::FaceDetection => "face_detection".to_string(),
+            JobType::FaceThumbnailRegenerate => "face_thumbnail_regenerate".to_string(),
         }
     }
 }
@@ -98,6 +101,9 @@ pub struct QueuedJob {
     pub started_at: Option<String>,
     pub completed_at: Option<String>,
     pub error_message: Option<String>,
+    pub processed_count: i64,
+    /// Last processed item ID for resume functionality (LastProcessedId strategy)
+    pub last_processed_id: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -175,6 +181,8 @@ impl QueuedJob {
             started_at: None,
             completed_at: None,
             error_message: None,
+            processed_count: 0,
+            last_processed_id: None,
         }
     }
 }

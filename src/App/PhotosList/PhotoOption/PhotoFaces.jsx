@@ -326,6 +326,7 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
                                 >
                                     <div className={styles['face-preview']}>
                                         <FaceThumbnail
+                                            faceId={face.id}
                                             photoPath={currentPhotoPath}
                                             bbox={face}
                                             size={50}
@@ -362,6 +363,7 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
                                                                     title={`Assign to ${person.person_name}`}
                                                                 >
                                                                     <FaceThumbnail
+                                                                        faceId={person.representative_face_id}
                                                                         photoPath={person.photo_path}
                                                                         bbox={person}
                                                                         size={32}

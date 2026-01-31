@@ -1,3 +1,4 @@
+use super::utils::{cleanup_kill_file, get_resume_start_index, log_resume_info, should_stop_job};
 use crate::entity::job_queue;
 use crate::repository::MetaInfoDB;
 use crate::value::file;
@@ -37,9 +38,21 @@ pub(crate) fn process_import_job(
 
     let mut imported_photos = Vec::new();
     let mut imported_file_paths = Vec::new();
+    let job_id = job.id.unwrap_or(0);
     log::info!(target: "import_job", "file_processing; status=starting; files={}", job.job.target.len());
 
-    for (i, file_path) in job.job.target.iter().enumerate() {
+    // Calculate start index for resume functionality
+    let start_index = get_resume_start_index(job);
+    log_resume_info("import_job", start_index, job.job.target.len());
+
+    for (i, file_path) in job.job.target.iter().enumerate().skip(start_index) {
+        // Check for stop signal
+        if should_stop_job(job_id) {
+            log::info!(target: "import_job", "stopped; job_id={}; index={}", job_id, i);
+            cleanup_kill_file(job_id);
+            return Err("Job stopped by user".to_string());
+        }
+
         // Processing section separator
         log::info!(target: "import_job", "file_processing; index={}; total={}; file={}", i + 1, job.job.target.len(), file_path);
         log::debug!(target: "import_job", "file_info; source={}", file_path);
@@ -167,8 +180,11 @@ pub(crate) fn process_import_job(
             }
         }
 
-        // Emit progress
-        let progress = ((i + 1) as f64 / job.job.target.len() as f64) * 100.0;
+        // Update progress in database and emit event (with last_processed_id for resume)
+        let processed = (i + 1) as i64;
+        let _ = state.meta_db.update_job_progress_with_last_id(job_id, processed, i as i64);
+
+        let progress = (processed as f64 / job.job.target.len() as f64) * 100.0;
         if let Err(e) = app_handle.emit("import_progress", (&job.job_unit_id, file_path, progress))
         {
             log::error!(target: "import_job", "progress_event_error; error={}", e);

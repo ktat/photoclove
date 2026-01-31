@@ -2,10 +2,10 @@ use super::utils::{row_to_queued_job, with_connection};
 use crate::entity::job_queue::{Job, JobProgress, JobStatus, JobType, JobUnit, QueuedJob};
 use crate::repository::meta_db::sqlite::SQLite;
 use crate::value::date;
-use rusqlite::params;
+use rusqlite::{params, OptionalExtension};
 
 const JOB_COLUMNS: &str =
-    "id, job_unit_id, job, status, created_at, started_at, completed_at, error_message";
+    "id, job_unit_id, job, status, created_at, started_at, completed_at, error_message, processed_count, last_processed_id";
 
 /// Get jobs with optional status filter
 fn get_jobs_with_filter(
@@ -133,6 +133,58 @@ pub(super) fn update_job_status(
         }
 
         Ok(())
+    })
+}
+
+/// Update job progress count
+pub(super) fn update_job_progress(
+    sqlite: &SQLite,
+    job_id: i64,
+    processed_count: i64,
+) -> Result<(), String> {
+    with_connection(sqlite, |conn| {
+        conn.execute(
+            "UPDATE job_queue SET processed_count = ?1 WHERE id = ?2",
+            params![processed_count, job_id],
+        )
+        .map_err(|e| format!("Failed to update job progress: {}", e))?;
+
+        Ok(())
+    })
+}
+
+/// Update job progress with last processed item ID (for LastProcessedId strategy)
+pub(super) fn update_job_progress_with_last_id(
+    sqlite: &SQLite,
+    job_id: i64,
+    processed_count: i64,
+    last_processed_id: i64,
+) -> Result<(), String> {
+    with_connection(sqlite, |conn| {
+        conn.execute(
+            "UPDATE job_queue SET processed_count = ?1, last_processed_id = ?2 WHERE id = ?3",
+            params![processed_count, last_processed_id, job_id],
+        )
+        .map_err(|e| format!("Failed to update job progress with last_id: {}", e))?;
+
+        Ok(())
+    })
+}
+
+/// Get a job by ID
+pub(super) fn get_job_by_id(sqlite: &SQLite, job_id: i64) -> Result<Option<QueuedJob>, String> {
+    with_connection(sqlite, |conn| {
+        let query = format!(
+            "SELECT {} FROM job_queue WHERE id = ?1",
+            JOB_COLUMNS
+        );
+
+        let result = conn
+            .query_row(&query, params![job_id], row_to_queued_job)
+            .optional()
+            .map_err(|e| format!("Failed to get job: {}", e))?;
+
+        Ok(result)
     })
 }
 

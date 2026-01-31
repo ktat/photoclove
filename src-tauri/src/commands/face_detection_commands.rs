@@ -8,6 +8,7 @@ use crate::commands::job_helpers::{
 };
 use crate::domain_service::face_detection::embedder::cosine_similarity;
 use crate::domain_service::face_detection::service::FaceDetectionService;
+use crate::domain_service::face_thumbnail_service;
 use crate::entity::job_queue::JobType;
 use crate::repository::meta_db::sqlite::face_detection::DetectedFaceInput;
 use serde::Serialize;
@@ -627,6 +628,76 @@ pub fn get_unknown_faces(
     let faces = state.meta_db.get_unknown_faces(limit, offset)?;
 
     serde_json::to_string(&faces).map_err(|e| format!("Serialization error: {}", e))
+}
+
+/// Get the path to a face thumbnail (returns error if not cached)
+#[tauri::command]
+pub fn get_face_thumbnail_path(state: State<AppState>, face_id: i64) -> Result<String, String> {
+    let thumbnail_store = &state.config.thumbnail_store;
+    let path = face_thumbnail_service::get_face_thumbnail_path(thumbnail_store, face_id);
+
+    // Only return if thumbnail exists - don't generate on demand (too slow for UI)
+    if path.exists() {
+        return Ok(path.to_string_lossy().to_string());
+    }
+
+    Err(format!("Face thumbnail not cached: {}", face_id))
+}
+
+/// Check if a face thumbnail exists
+#[tauri::command]
+pub fn has_face_thumbnail(state: State<AppState>, face_id: i64) -> bool {
+    let thumbnail_store = &state.config.thumbnail_store;
+    face_thumbnail_service::face_thumbnail_exists(thumbnail_store, face_id)
+}
+
+/// Regenerate face thumbnails for all faces (runs as background job)
+#[tauri::command]
+pub fn regenerate_face_thumbnails(
+    window: tauri::Window,
+    state: State<AppState>,
+) -> Result<String, String> {
+    use crate::commands::job_helpers::create_and_start_job;
+
+    let logging_service = &state.logging_service;
+    let correlation_id = logging_service.generate_correlation_id();
+
+    log::info!(
+        target: "face_thumbnail",
+        "regenerate_request; correlation_id={}",
+        correlation_id
+    );
+
+    // Get all face IDs from database
+    let face_ids = state
+        .meta_db
+        .get_all_face_ids()
+        .map_err(|e| format!("Failed to get face IDs: {}", e))?;
+
+    if face_ids.is_empty() {
+        return Err("No faces found in database".to_string());
+    }
+
+    log::info!(
+        target: "face_thumbnail",
+        "regenerate_request; correlation_id={}; face_count={}",
+        correlation_id,
+        face_ids.len()
+    );
+
+    // Convert face IDs to strings for job target
+    let targets: Vec<String> = face_ids.iter().map(|id| id.to_string()).collect();
+
+    let result = create_and_start_job(
+        &state.meta_db,
+        JobType::FaceThumbnailRegenerate,
+        targets,
+        window.app_handle().clone(),
+        &correlation_id,
+        "face_thumbnail",
+    )?;
+
+    Ok(result.to_json())
 }
 
 /// Helper to get models directory

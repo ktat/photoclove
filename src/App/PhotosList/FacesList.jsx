@@ -210,6 +210,7 @@ function FacesList({
                                 }}>
                                     {hasThumbnail ? (
                                         <FaceThumbnail
+                                            faceId={person.representative_face_id}
                                             photoPath={person.photo_path}
                                             bbox={{
                                                 bbox_x: person.bbox_x,

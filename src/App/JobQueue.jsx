@@ -24,8 +24,19 @@ const JobQueue = ({ onClose, ...props }) => {
         return "Create DB";
       case "GooglePhotosUpload":
         return "Google Photos Upload";
+      case "RecalculateGrouping":
+        return "Recalculate Grouping";
+      case "AiTagging":
+        return "AI Tagging";
+      case "S3Sync":
+        return "S3 Sync";
+      case "FaceDetection":
+        return "Face Detection";
+      case "FaceThumbnailRegenerate":
+        return "Face Thumbnail Regenerate";
       default:
-        return jobType;
+        // Handle snake_case format from Rust serialization
+        return jobType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     }
   };
 
@@ -109,7 +120,7 @@ const JobQueue = ({ onClose, ...props }) => {
         props.addFooterMessage("Failed to parse retry response: " + result);
         return;
       }
-      
+
       // Handle Rust Result wrapper: {"Ok": boolean} or {"Err": "error message"}
       if (response.Ok) {
         logger.info('JobQueue', 'job_retry_success', 'Job queued for retry', { jobId });
@@ -126,6 +137,98 @@ const JobQueue = ({ onClose, ...props }) => {
       logger.error('JobQueue', 'retry_error', 'Error retrying job', { jobId, error: err.message });
       props.addFooterMessage("Error retrying job: " + err.message);
     }
+  };
+
+  const resumeJob = async (jobId) => {
+    try {
+      const result = await invoke("resume_job", { jobId });
+      let response;
+      try {
+        response = JSON.parse(result);
+      } catch (parseError) {
+        logger.error('JobQueue', 'resume_parse_failed', 'Failed to parse resume response', { error: parseError.message, result });
+        props.addFooterMessage("Failed to parse resume response: " + result);
+        return;
+      }
+
+      if (response.Ok) {
+        logger.info('JobQueue', 'job_resume_success', 'Job resumed', { jobId });
+        props.addFooterMessage("Job resumed from last position");
+        loadJobs();
+      } else if (response.Err) {
+        logger.error('JobQueue', 'job_resume_failed', 'Failed to resume job', { jobId, error: response.Err });
+        props.addFooterMessage(`Failed to resume job: ${response.Err}`);
+      }
+    } catch (err) {
+      logger.error('JobQueue', 'resume_error', 'Error resuming job', { jobId, error: err.message });
+      props.addFooterMessage("Error resuming job: " + err.message);
+    }
+  };
+
+  const restartJob = async (jobId) => {
+    if (!window.confirm("This will restart the job from the beginning. Continue?")) {
+      return;
+    }
+
+    try {
+      const result = await invoke("restart_job", { jobId });
+      let response;
+      try {
+        response = JSON.parse(result);
+      } catch (parseError) {
+        logger.error('JobQueue', 'restart_parse_failed', 'Failed to parse restart response', { error: parseError.message, result });
+        props.addFooterMessage("Failed to parse restart response: " + result);
+        return;
+      }
+
+      if (response.Ok) {
+        logger.info('JobQueue', 'job_restart_success', 'Job restarted', { jobId });
+        props.addFooterMessage("Job restarted from beginning");
+        loadJobs();
+      } else if (response.Err) {
+        logger.error('JobQueue', 'job_restart_failed', 'Failed to restart job', { jobId, error: response.Err });
+        props.addFooterMessage(`Failed to restart job: ${response.Err}`);
+      }
+    } catch (err) {
+      logger.error('JobQueue', 'restart_error', 'Error restarting job', { jobId, error: err.message });
+      props.addFooterMessage("Error restarting job: " + err.message);
+    }
+  };
+
+  const stopJob = async (jobId) => {
+    if (!window.confirm("Are you sure you want to stop this running job?")) {
+      return;
+    }
+
+    try {
+      const result = await invoke("stop_job", { jobId });
+      let response;
+      try {
+        response = JSON.parse(result);
+      } catch (parseError) {
+        logger.error('JobQueue', 'stop_parse_failed', 'Failed to parse stop response', { error: parseError.message, result });
+        props.addFooterMessage("Failed to parse stop response: " + result);
+        return;
+      }
+
+      if (response.Ok) {
+        logger.info('JobQueue', 'job_stop_success', 'Job stop requested', { jobId });
+        props.addFooterMessage("Job stop requested. It will stop after current item.");
+        // Refresh after a short delay to show updated status
+        setTimeout(loadJobs, 1000);
+      } else if (response.Err) {
+        logger.error('JobQueue', 'job_stop_failed', 'Failed to stop job', { jobId, error: response.Err });
+        props.addFooterMessage(`Failed to stop job: ${response.Err}`);
+      }
+    } catch (err) {
+      logger.error('JobQueue', 'stop_error', 'Error stopping job', { jobId, error: err.message });
+      props.addFooterMessage("Error stopping job: " + err.message);
+    }
+  };
+
+  // Check if a job has partial progress (for Resume/Restart UI)
+  const hasProgress = (job) => {
+    return job.processed_count > 0 && job.processed_count < job.job.target.length;
   };
 
   const deleteJob = async (jobId) => {
@@ -225,7 +328,7 @@ const JobQueue = ({ onClose, ...props }) => {
                     <th>ID</th>
                     <th>Job Unit ID</th>
                     <th>Job Type</th>
-                    <th>Target Count</th>
+                    <th>Progress</th>
                     <th>Status</th>
                     <th>Created</th>
                     <th>Started</th>
@@ -249,7 +352,11 @@ const JobQueue = ({ onClose, ...props }) => {
                           {job.job_unit_id.substring(0, 8)}...
                         </td>
                         <td>{getJobTypeName(job.job.job_type)}</td>
-                        <td>{job.job.target.length}</td>
+                        <td>
+                          {job.status === "running" || job.status === "completed"
+                            ? `${job.processed_count}/${job.job.target.length}`
+                            : job.job.target.length}
+                        </td>
                         <td>
                           <span
                             className="status-badge"
@@ -280,13 +387,41 @@ const JobQueue = ({ onClose, ...props }) => {
                         </td>
                         <td>
                           <div className="job-actions">
-                            {job.status === "failed" && (
+                            {(job.status === "pending" || job.status === "failed") && (
+                              hasProgress(job) ? (
+                                <>
+                                  <button
+                                    onClick={() => resumeJob(job.id)}
+                                    className="resume-button"
+                                    title="Resume from last position"
+                                  >
+                                    Resume
+                                  </button>
+                                  <button
+                                    onClick={() => restartJob(job.id)}
+                                    className="restart-button"
+                                    title="Restart from beginning"
+                                  >
+                                    Restart
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  onClick={() => retryJob(job.id)}
+                                  className="retry-button"
+                                  title={job.status === "pending" ? "Start job" : "Retry job"}
+                                >
+                                  {job.status === "pending" ? "Start" : "Retry"}
+                                </button>
+                              )
+                            )}
+                            {job.status === "running" && (
                               <button
-                                onClick={() => retryJob(job.id)}
-                                className="retry-button"
-                                title="Retry job"
+                                onClick={() => stopJob(job.id)}
+                                className="stop-button"
+                                title="Stop running job"
                               >
-                                Retry
+                                Stop
                               </button>
                             )}
                             {(job.status === "pending" || job.status === "failed") && (

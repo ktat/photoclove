@@ -199,6 +199,25 @@ pub fn get_detected_face(sqlite: &SQLite, face_id: i64) -> Result<DetectedFaceRe
     .map_err(|e| format!("Failed to get face {}: {}", face_id, e))
 }
 
+/// Get all face IDs (for batch operations like thumbnail regeneration)
+pub fn get_all_face_ids(sqlite: &SQLite) -> Result<Vec<i64>, String> {
+    let conn = sqlite
+        .get_connection()
+        .map_err(|e| format!("Database error: {}", e))?;
+
+    let mut stmt = conn
+        .prepare("SELECT id FROM detected_faces ORDER BY id")
+        .map_err(|e| format!("Failed to prepare query: {}", e))?;
+
+    let ids = stmt
+        .query_map([], |row| row.get(0))
+        .map_err(|e| format!("Failed to query faces: {}", e))?
+        .collect::<Result<Vec<i64>, _>>()
+        .map_err(|e| format!("Failed to collect face IDs: {}", e))?;
+
+    Ok(ids)
+}
+
 /// Get all faces with person_id (named faces) and their embeddings for matching
 pub fn get_named_face_embeddings(sqlite: &SQLite) -> Result<Vec<NamedFaceEmbedding>, String> {
     let conn = sqlite

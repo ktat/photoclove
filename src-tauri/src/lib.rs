@@ -175,6 +175,9 @@ pub fn run() {
                 }
             });
 
+            // Cleanup any stale kill files from previous sessions
+            domain_service::job_queue::handlers::cleanup_all_kill_files();
+
             // Start background job processing
             log::info!(target: "job_queue", "starting_background_job_processing");
             let app_handle = app.handle().clone();
@@ -204,6 +207,10 @@ pub fn run() {
             get_all_job_units,
             get_all_jobs,
             retry_job,
+            resume_job,
+            restart_job,
+            stop_job,
+            get_job_config,
             delete_job,
             delete_job_unit,
             cleanup_completed_jobs,
@@ -327,6 +334,10 @@ pub fn run() {
             run_face_detection_for_date,
             get_unknown_faces_count,
             get_unknown_faces,
+            // Face Thumbnail commands
+            get_face_thumbnail_path,
+            has_face_thumbnail,
+            regenerate_face_thumbnails,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

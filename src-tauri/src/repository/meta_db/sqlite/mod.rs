@@ -239,6 +239,23 @@ impl SQLite {
         job_queue::update_job_status(self, job_id, status, error_message)
     }
 
+    pub fn update_job_progress(&self, job_id: i64, processed_count: i64) -> Result<(), String> {
+        job_queue::update_job_progress(self, job_id, processed_count)
+    }
+
+    pub fn update_job_progress_with_last_id(
+        &self,
+        job_id: i64,
+        processed_count: i64,
+        last_processed_id: i64,
+    ) -> Result<(), String> {
+        job_queue::update_job_progress_with_last_id(self, job_id, processed_count, last_processed_id)
+    }
+
+    pub fn get_job_by_id(&self, job_id: i64) -> Result<Option<crate::entity::job_queue::QueuedJob>, String> {
+        job_queue::get_job_by_id(self, job_id)
+    }
+
     pub fn get_job_unit_progress(&self, job_unit_id: &str) -> Result<crate::entity::job_queue::JobProgress, String> {
         job_queue::get_job_unit_progress(self, job_unit_id)
     }
@@ -592,6 +609,11 @@ impl SQLite {
         face_id: i64,
     ) -> Result<face_detection::DetectedFaceRecord, String> {
         face_detection::get_detected_face(self, face_id)
+    }
+
+    /// Get all face IDs (for batch operations)
+    pub fn get_all_face_ids(&self) -> Result<Vec<i64>, String> {
+        face_detection::get_all_face_ids(self)
     }
 
     /// Get all named face embeddings for matching
