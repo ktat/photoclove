@@ -1,0 +1,77 @@
+{
+  "general": {
+    "unknown": "An unknown error occurred",
+    "network": "Network error. Please check your connection.",
+    "timeout": "Operation timed out. Please try again.",
+    "permission": "Permission denied",
+    "notFound": "Not found",
+    "alreadyExists": "Already exists",
+    "invalidInput": "Invalid input",
+    "operationFailed": "Operation failed"
+  },
+  "file": {
+    "notFound": "File not found",
+    "accessDenied": "File access denied",
+    "readError": "Error reading file",
+    "writeError": "Error writing file",
+    "deleteError": "Error deleting file",
+    "moveError": "Error moving file",
+    "copyError": "Error copying file",
+    "invalidFormat": "Invalid file format",
+    "tooLarge": "File is too large",
+    "corrupted": "File appears to be corrupted"
+  },
+  "photo": {
+    "loadFailed": "Failed to load photo",
+    "saveFailed": "Failed to save photo",
+    "deleteFailed": "Failed to delete photo",
+    "importFailed": "Failed to import photo",
+    "exportFailed": "Failed to export photo",
+    "thumbnailFailed": "Failed to generate thumbnail",
+    "metadataFailed": "Failed to read photo metadata"
+  },
+  "album": {
+    "createFailed": "Failed to create album",
+    "deleteFailed": "Failed to delete album",
+    "updateFailed": "Failed to update album",
+    "addPhotosFailed": "Failed to add photos to album",
+    "removePhotosFailed": "Failed to remove photos from album",
+    "nameRequired": "Album name is required",
+    "nameExists": "Album with this name already exists"
+  },
+  "tag": {
+    "createFailed": "Failed to create tag",
+    "deleteFailed": "Failed to delete tag",
+    "updateFailed": "Failed to update tag",
+    "nameRequired": "Tag name is required",
+    "nameExists": "Tag with this name already exists"
+  },
+  "person": {
+    "createFailed": "Failed to create person",
+    "deleteFailed": "Failed to delete person",
+    "updateFailed": "Failed to update person",
+    "assignFailed": "Failed to assign face to person",
+    "mergeFailed": "Failed to merge people",
+    "nameRequired": "Person name is required"
+  },
+  "face": {
+    "detectionFailed": "Face detection failed",
+    "modelNotFound": "Face detection model not found",
+    "modelDownloadFailed": "Failed to download face detection model"
+  },
+  "ai": {
+    "taggingFailed": "AI tagging failed",
+    "modelNotFound": "AI model not found",
+    "modelDownloadFailed": "Failed to download AI model"
+  },
+  "config": {
+    "loadFailed": "Failed to load configuration",
+    "saveFailed": "Failed to save configuration",
+    "invalid": "Invalid configuration"
+  },
+  "database": {
+    "connectionFailed": "Database connection failed",
+    "queryFailed": "Database query failed",
+    "migrationFailed": "Database migration failed"
+  }
+}

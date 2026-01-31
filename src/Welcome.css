@@ -56,3 +56,71 @@
 #welcome ol span.useCount-2 {
   text-decoration: line-through;
 }
+
+/* Language Selection Styles */
+.welcome.language-select {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.language-icon {
+  font-size: 64px;
+  margin-bottom: var(--space-4);
+}
+
+.language-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 300px;
+}
+
+.language-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-bg-surface);
+  border: 2px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: var(--font-size-lg);
+}
+
+.language-btn:hover {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-primary);
+}
+
+.language-btn.selected {
+  background: var(--color-primary-selected);
+  border-color: var(--color-primary);
+}
+
+.lang-flag {
+  font-size: 24px;
+}
+
+.lang-name {
+  color: var(--color-text-primary);
+}
+
+.language-confirm-btn {
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-6);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-lg);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.language-confirm-btn:hover {
+  background: var(--color-primary-hover);
+}

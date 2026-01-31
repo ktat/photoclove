@@ -1,0 +1,67 @@
+{
+  "success": {
+    "saved": "保存しました",
+    "deleted": "削除しました",
+    "created": "作成しました",
+    "updated": "更新しました",
+    "imported": "インポートしました",
+    "exported": "エクスポートしました",
+    "copied": "コピーしました",
+    "moved": "移動しました",
+    "restored": "復元しました",
+    "photosAdded": "{{count}}枚の写真を追加しました",
+    "photosRemoved": "{{count}}枚の写真を削除しました",
+    "photosMoved": "{{count}}枚の写真をゴミ箱に移動しました",
+    "photosRestored": "{{count}}枚の写真を復元しました"
+  },
+  "info": {
+    "noResults": "結果が見つかりません",
+    "noPhotosInAlbum": "このアルバムには写真がありません",
+    "noPhotosWithTag": "このタグの写真がありません",
+    "noPhotosOfPerson": "この人物の写真がありません",
+    "dragDropHint": "ここに写真をドラッグ＆ドロップ",
+    "selectPhotosHint": "写真を選択して操作を実行",
+    "emptyTrash": "ゴミ箱は空です",
+    "processingJobs": "{{count}}件のジョブを処理中...",
+    "queueEmpty": "ジョブキューは空です"
+  },
+  "warning": {
+    "unsavedChanges": "保存されていない変更があります。本当に離れますか？",
+    "largeSelection": "{{count}}件の項目が選択されています。この操作には時間がかかる場合があります。",
+    "lowDiskSpace": "ディスク容量が不足しています。空き容量を確保してください。",
+    "duplicateFound": "重複した写真が見つかりました",
+    "duplicatesFound": "{{count}}件の重複が見つかりました"
+  },
+  "hint": {
+    "doubleClickToOpen": "ダブルクリックで開く",
+    "rightClickForOptions": "右クリックでオプションを表示",
+    "pressEscToClose": "Escキーで閉じる",
+    "pressEnterToConfirm": "Enterキーで確認",
+    "useArrowsToNavigate": "矢印キーで移動",
+    "scrollToLoadMore": "スクロールでさらに読み込み"
+  },
+  "welcome": {
+    "title": "PhotoClove へようこそ！",
+    "description": "PhotoClove は写真を管理するアプリケーションです。写真の高速インポートと高速閲覧を目指しています。",
+    "step1": "まず、",
+    "step1Link": "設定",
+    "step1After": "を行ってください。",
+    "step2a": "写真がない場合は、",
+    "step2aLink": "写真をインポート",
+    "step2aAfter": "してください。",
+    "step2b": "インポートフォルダに写真がある場合は、",
+    "step2bLink": "写真一覧",
+    "step2bAfter": "へ進んでください。"
+  },
+  "tips": {
+    "tip1": "キーボードショートカットでより速く操作できます",
+    "tip2": "お気に入りの写真にスターを付けてすばやくアクセス",
+    "tip3": "アルバムを作成して写真を整理しましょう",
+    "tip4": "タグを使って柔軟に分類できます",
+    "tip5": "顔検出で人物の写真を見つけやすく",
+    "tip6": "検索で日付、場所、内容から写真を探せます",
+    "tip7": "ドラッグ＆ドロップでアルバムに簡単追加",
+    "tip8": "バーストモードで連写写真をグループ化",
+    "tip9": "AI タギングで写真を自動分類"
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "title": "設定",
+  "tabs": {
+    "general": "一般",
+    "startup": "起動",
+    "thumbnail": "サムネイル",
+    "grouping": "グループ化",
+    "performance": "パフォーマンス",
+    "appearance": "外観",
+    "logging": "ログ",
+    "aiTagging": "AIタギング",
+    "faceDetection": "顔検出",
+    "s3Backup": "S3バックアップ",
+    "advanced": "詳細"
+  },
+  "general": {
+    "language": "言語",
+    "languageDescription": "アプリケーションの表示言語を選択",
+    "dateFormat": "日付形式",
+    "dateFormatDescription": "日付の表示形式を選択",
+    "importFolder": "インポートフォルダ",
+    "importFolderDescription": "インポートした写真のデフォルトフォルダ",
+    "selectFolder": "フォルダを選択",
+    "thumbnailFolder": "サムネイルフォルダ",
+    "thumbnailFolderDescription": "生成したサムネイルの保存先"
+  },
+  "startup": {
+    "startupBehavior": "起動時の動作",
+    "showWelcome": "起動時にウェルカム画面を表示",
+    "openLastFolder": "最後に表示したフォルダを開く",
+    "startMinimized": "最小化で起動"
+  },
+  "thumbnail": {
+    "thumbnailSize": "サムネイルサイズ",
+    "thumbnailQuality": "サムネイル品質",
+    "regenerate": "サムネイル再生成",
+    "regenerateDescription": "すべてのサムネイルを再生成（時間がかかる場合があります）"
+  },
+  "grouping": {
+    "burstDetection": "バースト検出",
+    "burstThreshold": "バーストしきい値（秒）",
+    "burstThresholdDescription": "この時間内に撮影された写真をバーストとしてグループ化",
+    "similarPhotos": "類似写真検出",
+    "similarThreshold": "類似度しきい値"
+  },
+  "performance": {
+    "parallelProcessing": "並列処理",
+    "copyParallel": "コピー並列数",
+    "thumbnailParallel": "サムネイル並列数",
+    "maxPhotosPerFetch": "1回の取得最大写真数",
+    "cacheSize": "キャッシュサイズ（MB）"
+  },
+  "appearance": {
+    "theme": "テーマ",
+    "themeLight": "ライト",
+    "themeDark": "ダーク",
+    "themeSystem": "システム",
+    "gridSize": "グリッドサイズ",
+    "showFilenames": "ファイル名を表示",
+    "showDates": "日付を表示"
+  },
+  "logging": {
+    "logLevel": "ログレベル",
+    "logLevelDebug": "デバッグ",
+    "logLevelInfo": "情報",
+    "logLevelWarn": "警告",
+    "logLevelError": "エラー",
+    "logRetention": "ログ保持期間（日）",
+    "openLogFolder": "ログフォルダを開く",
+    "viewLogs": "ログを表示"
+  },
+  "aiTagging": {
+    "enableAI": "AIタギングを有効化",
+    "model": "AIモデル",
+    "modelDescription": "自動タギング用のAIモデルを選択",
+    "autoTag": "インポート時に自動タグ付け",
+    "customLabels": "カスタムラベル",
+    "customLabelsDescription": "CLIPベースモデル用のカスタムラベルを定義",
+    "downloadModel": "モデルをダウンロード",
+    "deleteModel": "モデルを削除"
+  },
+  "faceDetection": {
+    "enableFaceDetection": "顔検出を有効化",
+    "autoDetect": "インポート時に自動検出",
+    "model": "顔検出モデル",
+    "downloadModel": "モデルをダウンロード",
+    "deleteModel": "モデルを削除",
+    "thumbnailSize": "顔サムネイルサイズ"
+  },
+  "s3Backup": {
+    "enable": "S3バックアップを有効化",
+    "endpoint": "エンドポイント",
+    "bucket": "バケット名",
+    "accessKey": "アクセスキー",
+    "secretKey": "シークレットキー",
+    "region": "リージョン",
+    "testConnection": "接続テスト",
+    "sync": "今すぐ同期"
+  },
+  "advanced": {
+    "resetTutorials": "ツールチップをリセット",
+    "resetTutorialsDescription": "ツールチップチュートリアルを再表示",
+    "showWelcomeTutorial": "ウェルカムチュートリアルを再表示",
+    "clearCache": "キャッシュをクリア",
+    "clearCacheDescription": "すべてのキャッシュデータをクリア",
+    "exportConfig": "設定をエクスポート",
+    "importConfig": "設定をインポート",
+    "resetAll": "すべての設定をリセット",
+    "resetAllWarning": "すべての設定がデフォルト値にリセットされます"
+  }
+}

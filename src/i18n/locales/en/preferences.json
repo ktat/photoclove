@@ -1,0 +1,111 @@
+{
+  "title": "Preferences",
+  "tabs": {
+    "general": "General",
+    "startup": "Startup",
+    "thumbnail": "Thumbnail",
+    "grouping": "Grouping",
+    "performance": "Performance",
+    "appearance": "Appearance",
+    "logging": "Logging",
+    "aiTagging": "AI Tagging",
+    "faceDetection": "Face Detection",
+    "s3Backup": "S3 Backup",
+    "advanced": "Advanced"
+  },
+  "general": {
+    "language": "Language",
+    "languageDescription": "Select the display language for the application",
+    "dateFormat": "Date Format",
+    "dateFormatDescription": "Select how dates are displayed",
+    "importFolder": "Import Folder",
+    "importFolderDescription": "Default folder for imported photos",
+    "selectFolder": "Select Folder",
+    "thumbnailFolder": "Thumbnail Folder",
+    "thumbnailFolderDescription": "Where to store generated thumbnails"
+  },
+  "startup": {
+    "startupBehavior": "Startup Behavior",
+    "showWelcome": "Show Welcome screen on startup",
+    "openLastFolder": "Open last viewed folder",
+    "startMinimized": "Start minimized"
+  },
+  "thumbnail": {
+    "thumbnailSize": "Thumbnail Size",
+    "thumbnailQuality": "Thumbnail Quality",
+    "regenerate": "Regenerate Thumbnails",
+    "regenerateDescription": "Regenerate all thumbnails (this may take a while)"
+  },
+  "grouping": {
+    "burstDetection": "Burst Detection",
+    "burstThreshold": "Burst Threshold (seconds)",
+    "burstThresholdDescription": "Photos taken within this time will be grouped as burst",
+    "similarPhotos": "Similar Photo Detection",
+    "similarThreshold": "Similarity Threshold"
+  },
+  "performance": {
+    "parallelProcessing": "Parallel Processing",
+    "copyParallel": "Copy Parallel Count",
+    "thumbnailParallel": "Thumbnail Parallel Count",
+    "maxPhotosPerFetch": "Max Photos Per Fetch",
+    "cacheSize": "Cache Size (MB)"
+  },
+  "appearance": {
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "gridSize": "Grid Size",
+    "showFilenames": "Show Filenames",
+    "showDates": "Show Dates"
+  },
+  "logging": {
+    "logLevel": "Log Level",
+    "logLevelDebug": "Debug",
+    "logLevelInfo": "Info",
+    "logLevelWarn": "Warning",
+    "logLevelError": "Error",
+    "logRetention": "Log Retention (days)",
+    "openLogFolder": "Open Log Folder",
+    "viewLogs": "View Logs"
+  },
+  "aiTagging": {
+    "enableAI": "Enable AI Tagging",
+    "model": "AI Model",
+    "modelDescription": "Select the AI model for automatic tagging",
+    "autoTag": "Auto-tag on Import",
+    "customLabels": "Custom Labels",
+    "customLabelsDescription": "Define custom labels for CLIP-based models",
+    "downloadModel": "Download Model",
+    "deleteModel": "Delete Model"
+  },
+  "faceDetection": {
+    "enableFaceDetection": "Enable Face Detection",
+    "autoDetect": "Auto-detect on Import",
+    "model": "Face Detection Model",
+    "downloadModel": "Download Model",
+    "deleteModel": "Delete Model",
+    "thumbnailSize": "Face Thumbnail Size"
+  },
+  "s3Backup": {
+    "enable": "Enable S3 Backup",
+    "endpoint": "Endpoint",
+    "bucket": "Bucket Name",
+    "accessKey": "Access Key",
+    "secretKey": "Secret Key",
+    "region": "Region",
+    "testConnection": "Test Connection",
+    "sync": "Sync Now"
+  },
+  "advanced": {
+    "resetTutorials": "Reset Tooltips",
+    "resetTutorialsDescription": "Show tooltip tutorials again",
+    "showWelcomeTutorial": "Show Welcome tutorial again",
+    "clearCache": "Clear Cache",
+    "clearCacheDescription": "Clear all cached data",
+    "exportConfig": "Export Configuration",
+    "importConfig": "Import Configuration",
+    "resetAll": "Reset All Settings",
+    "resetAllWarning": "This will reset all settings to default values"
+  }
+}

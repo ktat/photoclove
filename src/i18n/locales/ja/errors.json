@@ -1,0 +1,77 @@
+{
+  "general": {
+    "unknown": "不明なエラーが発生しました",
+    "network": "ネットワークエラーです。接続を確認してください。",
+    "timeout": "操作がタイムアウトしました。再試行してください。",
+    "permission": "権限がありません",
+    "notFound": "見つかりません",
+    "alreadyExists": "すでに存在します",
+    "invalidInput": "入力が無効です",
+    "operationFailed": "操作に失敗しました"
+  },
+  "file": {
+    "notFound": "ファイルが見つかりません",
+    "accessDenied": "ファイルへのアクセスが拒否されました",
+    "readError": "ファイルの読み取りエラー",
+    "writeError": "ファイルの書き込みエラー",
+    "deleteError": "ファイルの削除エラー",
+    "moveError": "ファイルの移動エラー",
+    "copyError": "ファイルのコピーエラー",
+    "invalidFormat": "ファイル形式が無効です",
+    "tooLarge": "ファイルが大きすぎます",
+    "corrupted": "ファイルが破損しているようです"
+  },
+  "photo": {
+    "loadFailed": "写真の読み込みに失敗しました",
+    "saveFailed": "写真の保存に失敗しました",
+    "deleteFailed": "写真の削除に失敗しました",
+    "importFailed": "写真のインポートに失敗しました",
+    "exportFailed": "写真のエクスポートに失敗しました",
+    "thumbnailFailed": "サムネイルの生成に失敗しました",
+    "metadataFailed": "写真のメタデータの読み取りに失敗しました"
+  },
+  "album": {
+    "createFailed": "アルバムの作成に失敗しました",
+    "deleteFailed": "アルバムの削除に失敗しました",
+    "updateFailed": "アルバムの更新に失敗しました",
+    "addPhotosFailed": "写真のアルバムへの追加に失敗しました",
+    "removePhotosFailed": "写真のアルバムからの削除に失敗しました",
+    "nameRequired": "アルバム名は必須です",
+    "nameExists": "この名前のアルバムはすでに存在します"
+  },
+  "tag": {
+    "createFailed": "タグの作成に失敗しました",
+    "deleteFailed": "タグの削除に失敗しました",
+    "updateFailed": "タグの更新に失敗しました",
+    "nameRequired": "タグ名は必須です",
+    "nameExists": "この名前のタグはすでに存在します"
+  },
+  "person": {
+    "createFailed": "人物の作成に失敗しました",
+    "deleteFailed": "人物の削除に失敗しました",
+    "updateFailed": "人物の更新に失敗しました",
+    "assignFailed": "顔の人物への割り当てに失敗しました",
+    "mergeFailed": "人物の統合に失敗しました",
+    "nameRequired": "人物名は必須です"
+  },
+  "face": {
+    "detectionFailed": "顔検出に失敗しました",
+    "modelNotFound": "顔検出モデルが見つかりません",
+    "modelDownloadFailed": "顔検出モデルのダウンロードに失敗しました"
+  },
+  "ai": {
+    "taggingFailed": "AIタギングに失敗しました",
+    "modelNotFound": "AIモデルが見つかりません",
+    "modelDownloadFailed": "AIモデルのダウンロードに失敗しました"
+  },
+  "config": {
+    "loadFailed": "設定の読み込みに失敗しました",
+    "saveFailed": "設定の保存に失敗しました",
+    "invalid": "設定が無効です"
+  },
+  "database": {
+    "connectionFailed": "データベース接続に失敗しました",
+    "queryFailed": "データベースクエリに失敗しました",
+    "migrationFailed": "データベースマイグレーションに失敗しました"
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "delete": {
+    "title": "Delete",
+    "confirmTitle": "Confirm Delete",
+    "photoTitle": "Delete Photo",
+    "photosTitle": "Delete Photos",
+    "albumTitle": "Delete Album",
+    "tagTitle": "Delete Tag",
+    "personTitle": "Delete Person",
+    "faceTitle": "Delete Face",
+    "confirmMessage": "Are you sure you want to delete this?",
+    "confirmPhotos_one": "Are you sure you want to delete {{count}} photo?",
+    "confirmPhotos_other": "Are you sure you want to delete {{count}} photos?",
+    "confirmAlbum": "Are you sure you want to delete the album \"{{name}}\"?",
+    "confirmTag": "Are you sure you want to delete the tag \"{{name}}\"?",
+    "confirmPerson": "Are you sure you want to delete \"{{name}}\" and all associated faces?",
+    "confirmFaces_one": "Are you sure you want to delete {{count}} face?",
+    "confirmFaces_other": "Are you sure you want to delete {{count}} faces?",
+    "moveToTrash": "Move to Trash",
+    "permanentDelete": "Delete Permanently",
+    "warningPermanent": "This action cannot be undone.",
+    "warningTrash": "Photos will be moved to trash and can be restored later.",
+    "keepAlbum": "Keep album, remove photos only",
+    "deleteAlbum": "Delete album and remove photos"
+  },
+  "album": {
+    "createTitle": "Create Album",
+    "editTitle": "Edit Album",
+    "nameLabel": "Album Name",
+    "namePlaceholder": "Enter album name",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Enter album description (optional)",
+    "colorLabel": "Color",
+    "coverLabel": "Cover Photo"
+  },
+  "tag": {
+    "createTitle": "Create Tag",
+    "editTitle": "Edit Tag",
+    "nameLabel": "Tag Name",
+    "namePlaceholder": "Enter tag name",
+    "colorLabel": "Color"
+  },
+  "person": {
+    "assignTitle": "Assign Person",
+    "createTitle": "Create Person",
+    "mergeTitle": "Merge People",
+    "nameLabel": "Person Name",
+    "namePlaceholder": "Enter person name",
+    "selectExisting": "Select Existing Person",
+    "createNew": "Create New Person"
+  },
+  "import": {
+    "title": "Import Photos",
+    "selectFolder": "Select Folder",
+    "selectFiles": "Select Files",
+    "scanning": "Scanning for photos...",
+    "foundPhotos_one": "Found {{count}} photo",
+    "foundPhotos_other": "Found {{count}} photos",
+    "importing": "Importing photos...",
+    "completed": "Import completed",
+    "failed": "Import failed"
+  },
+  "export": {
+    "title": "Export Photos",
+    "selectDestination": "Select Destination",
+    "includeMetadata": "Include Metadata",
+    "includeEdits": "Include Edits"
+  },
+  "search": {
+    "title": "Search",
+    "savedSearches": "Saved Searches",
+    "saveSearch": "Save Search",
+    "searchName": "Search Name",
+    "searchNamePlaceholder": "Enter search name"
+  },
+  "preferences": {
+    "title": "Preferences"
+  },
+  "about": {
+    "title": "About PhotoClove",
+    "version": "Version",
+    "license": "License",
+    "credits": "Credits"
+  },
+  "privacy": {
+    "title": "Privacy Policy"
+  },
+  "terms": {
+    "title": "Terms of Use"
+  },
+  "help": {
+    "title": "Help",
+    "documentation": "Documentation",
+    "shortcuts": "Keyboard Shortcuts"
+  }
+}

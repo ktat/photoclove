@@ -1,0 +1,69 @@
+{
+  "success": {
+    "saved": "Saved successfully",
+    "deleted": "Deleted successfully",
+    "created": "Created successfully",
+    "updated": "Updated successfully",
+    "imported": "Imported successfully",
+    "exported": "Exported successfully",
+    "copied": "Copied successfully",
+    "moved": "Moved successfully",
+    "restored": "Restored successfully",
+    "photosAdded_one": "{{count}} photo added",
+    "photosAdded_other": "{{count}} photos added",
+    "photosRemoved_one": "{{count}} photo removed",
+    "photosRemoved_other": "{{count}} photos removed",
+    "photosMoved_one": "{{count}} photo moved to trash",
+    "photosMoved_other": "{{count}} photos moved to trash",
+    "photosRestored_one": "{{count}} photo restored",
+    "photosRestored_other": "{{count}} photos restored"
+  },
+  "info": {
+    "noResults": "No results found",
+    "noPhotosInAlbum": "No photos in this album",
+    "noPhotosWithTag": "No photos with this tag",
+    "noPhotosOfPerson": "No photos of this person",
+    "dragDropHint": "Drag and drop photos here",
+    "selectPhotosHint": "Select photos to perform actions",
+    "emptyTrash": "Trash is empty",
+    "processingJobs": "Processing {{count}} jobs...",
+    "queueEmpty": "Job queue is empty"
+  },
+  "warning": {
+    "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?",
+    "largeSelection": "You have selected {{count}} items. This operation may take a while.",
+    "lowDiskSpace": "Low disk space. Please free up some space.",
+    "duplicateFound": "Duplicate photo found",
+    "duplicatesFound_one": "{{count}} duplicate found",
+    "duplicatesFound_other": "{{count}} duplicates found"
+  },
+  "hint": {
+    "doubleClickToOpen": "Double-click to open",
+    "rightClickForOptions": "Right-click for options",
+    "pressEscToClose": "Press Esc to close",
+    "pressEnterToConfirm": "Press Enter to confirm",
+    "useArrowsToNavigate": "Use arrow keys to navigate",
+    "scrollToLoadMore": "Scroll to load more"
+  },
+  "welcome": {
+    "title": "Welcome to PhotoClove!",
+    "description": "PhotoClove is an application to manage photos. It aims fast importing photos and fast viewing photos.",
+    "step1": "At first, configure",
+    "step1Link": "preferences",
+    "step2a": "If you don't have photos,",
+    "step2aLink": "import photos",
+    "step2b": "If you have photos in import folder, go to",
+    "step2bLink": "photo list"
+  },
+  "tips": {
+    "tip1": "Use keyboard shortcuts for faster navigation",
+    "tip2": "Star your favorite photos for quick access",
+    "tip3": "Create albums to organize your photos",
+    "tip4": "Use tags for flexible categorization",
+    "tip5": "Face detection helps you find photos of people",
+    "tip6": "Use search to find photos by date, location, or content",
+    "tip7": "Drag and drop to quickly add photos to albums",
+    "tip8": "Use burst mode to group similar photos",
+    "tip9": "AI tagging can automatically categorize your photos"
+  }
+}
