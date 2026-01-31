@@ -23,6 +23,7 @@ PhotoClove is a desktop photo manager designed for speed and simplicity. Built w
 - **☁️ Google Photos Integration**: Secure OAuth authentication with automatic token refresh and seamless photo uploads
 - **☁️ S3 Cloud Backup**: Backup photos to Amazon S3 or S3-compatible storage (Wasabi, MinIO, Cloudflare R2, DigitalOcean Spaces, iDrive e2) with auto-sync on import, custom region support, and provider-specific credentials
 - **🤖 AI Auto-Tagging**: Automatic photo classification using MobileNet (fast, 32 categories), OpenCLIP, or SigLIP models with customizable labels
+- **👤 Face Detection**: Detect and recognize faces in photos with person assignment, similarity matching, and batch operations for Unknown Faces management
 - **🔄 Background Processing**: Advanced job queue with immediate retry, progress tracking, and comprehensive logging
 - **🔐 Secure Authentication**: Platform-native keyring storage for OAuth tokens with external service integration
 - **📚 Album Management**: Create custom photo collections with descriptions, cover photos, and custom ordering
@@ -230,6 +231,31 @@ PhotoClove includes AI-powered automatic photo tagging with multiple model optio
 ### Configuration
 Configure AI tagging in Preferences → AI Auto-Tagging. Models are downloaded on first use.
 
+## 👤 Face Detection
+
+PhotoClove includes AI-powered face detection and recognition:
+
+### Detection Features
+- **Face Detection**: Detect faces in photos using neural network models
+- **High Accuracy Mode**: Optional full-resolution processing for better detection of small faces
+- **Confidence Scoring**: Each detected face includes a confidence percentage
+- **Bounding Box Display**: Visual indicators show detected face locations on photos
+
+### Person Management
+- **Person Assignment**: Name detected faces and create person profiles
+- **Similarity Matching**: Automatically suggest matching persons based on face similarity
+- **Face Thumbnails**: Cached face thumbnails for fast browsing
+- **Person Gallery**: View all photos of a specific person
+
+### Unknown Faces Management
+- **Unknown Faces List**: Browse all unassigned faces across your photo collection
+- **Batch Operations**: Delete or assign multiple faces at once
+- **Photo Viewer Integration**: Click any unknown face to view the source photo
+- **Selection Mode**: Multi-select with Shift/Ctrl for bulk operations
+
+### Configuration
+Configure Face Detection in Preferences → Face Detection. Download required models on first use.
+
 ## ☁️ S3 Cloud Backup
 
 PhotoClove supports backing up photos to S3-compatible cloud storage:
@@ -391,6 +417,7 @@ PhotoClove uses a structured development workflow with the `improvement/` direct
 - [x] **AI Auto-Tagging**: Multi-model support (MobileNet, OpenCLIP, SigLIP) with customizable labels and auto-tag on import
 - [x] **S3 Cloud Backup**: Amazon S3 and S3-compatible storage backup with auto-sync, incremental sync, and per-photo tracking
 - [x] **S3 Enhanced Support**: iDrive e2 integration, updated region lists (Wasabi 15, DigitalOcean 13, iDrive e2 16), custom region input, provider-specific credentials, and emoji-enhanced UI
+- [x] **Face Detection**: AI-powered face detection with person assignment, similarity matching, Unknown Faces batch operations, and face thumbnail caching
 
 ### Current Focus 🎯
 - [ ] **CSS Modules Migration Completion**: Migrate remaining components (search/, modals, utilities) to CSS Modules
@@ -432,6 +459,12 @@ See [`CHANGES.md`](./CHANGES.md) for detailed version history and recent updates
 - Ensure database migration completed (check logs)
 - Verify album/tag tables exist in SQLite database
 - Try restarting the application to trigger migrations
+
+**Face Detection not working?**
+- Ensure models are downloaded in Preferences → Face Detection
+- Check that the photo file is accessible
+- Try "High Accuracy" mode for small or distant faces
+- Check LogViewer for detection errors
 
 **Performance issues?**
 - Increase thumbnail parallel processing in Preferences
