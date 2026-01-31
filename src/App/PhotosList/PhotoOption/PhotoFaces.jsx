@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { confirm } from '@tauri-apps/plugin-dialog';
 import { logger } from '../../../services/LoggerService.js';
 import FaceDetectionService from '../../../services/FaceDetectionService.js';
 import { useFaceDetection } from '../../../context/FaceDetectionContext.jsx';
@@ -94,8 +95,8 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
         }
 
         // Ask for confirmation
-        const confirm = window.confirm('Delete this face detection? This cannot be undone.');
-        if (!confirm) return;
+        const confirmed = await confirm('Delete this face detection? This cannot be undone.', { title: 'Delete Face' });
+        if (!confirmed) return;
 
         try {
             await FaceDetectionService.deleteFace(face.id);
