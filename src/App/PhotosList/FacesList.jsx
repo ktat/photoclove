@@ -2,6 +2,15 @@ import React, { useState, useMemo } from 'react';
 import Scrollable from "../../Scrollable.jsx";
 import { useOverlayMargin } from "../../hooks/useOverlayMargin.js";
 import FaceThumbnail from "../../components/FaceThumbnail.jsx";
+import UnknownFacesList from "./UnknownFacesList.jsx";
+
+/**
+ * Tab types for faces view
+ */
+const VIEW_TYPE = {
+    PERSONS: 'persons',
+    UNKNOWN: 'unknown'
+};
 
 /**
  * FacesList component - Displays a list of detected faces/persons
@@ -15,9 +24,13 @@ function FacesList({
     onPersonSelection,
     searchTerm,
     onSearchChange,
-    onRefresh
+    onRefresh,
+    unknownFacesCount = 0,
+    onFaceClick,
+    onAssignFace
 }) {
     const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm || '');
+    const [viewType, setViewType] = useState(VIEW_TYPE.PERSONS);
     const overlayMargin = useOverlayMargin();
 
     // Use provided search term if available, otherwise use local state
@@ -35,6 +48,63 @@ function FacesList({
             return name.toLowerCase().includes(term);
         });
     }, [persons, effectiveSearchTerm]);
+
+    const renderTabs = () => (
+        <div style={{
+            display: 'flex',
+            gap: 'var(--space-2)',
+            marginBottom: 'var(--space-3)',
+            padding: '0 var(--space-2)'
+        }}>
+            <button
+                onClick={() => setViewType(VIEW_TYPE.PERSONS)}
+                style={{
+                    padding: 'var(--space-2) var(--space-4)',
+                    backgroundColor: viewType === VIEW_TYPE.PERSONS ? 'var(--color-primary)' : 'var(--color-bg-elevated)',
+                    color: 'var(--color-text-primary)',
+                    border: '1px solid var(--color-border-default)',
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
+                    fontSize: 'var(--font-size-base)',
+                    fontWeight: viewType === VIEW_TYPE.PERSONS ? 'bold' : 'normal',
+                    transition: 'all 0.2s'
+                }}
+            >
+                Persons
+            </button>
+            <button
+                onClick={() => setViewType(VIEW_TYPE.UNKNOWN)}
+                style={{
+                    padding: 'var(--space-2) var(--space-4)',
+                    backgroundColor: viewType === VIEW_TYPE.UNKNOWN ? 'var(--color-primary)' : 'var(--color-bg-elevated)',
+                    color: 'var(--color-text-primary)',
+                    border: '1px solid var(--color-border-default)',
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
+                    fontSize: 'var(--font-size-base)',
+                    fontWeight: viewType === VIEW_TYPE.UNKNOWN ? 'bold' : 'normal',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--space-2)'
+                }}
+            >
+                Unknown
+                {unknownFacesCount > 0 && (
+                    <span style={{
+                        backgroundColor: 'var(--color-danger)',
+                        color: 'var(--color-text-primary)',
+                        borderRadius: '10px',
+                        padding: '2px 8px',
+                        fontSize: 'var(--font-size-xs)',
+                        fontWeight: 'bold'
+                    }}>
+                        {unknownFacesCount}
+                    </span>
+                )}
+            </button>
+        </div>
+    );
 
     const renderSearchFilter = () => (
         <div style={{
@@ -198,8 +268,20 @@ function FacesList({
             className="faces-list-view"
             style={{ marginLeft: overlayMargin > 0 ? `${overlayMargin}px` : undefined }}
         >
-            {renderSearchFilter()}
-            {renderPersonGrid()}
+            {renderTabs()}
+            {viewType === VIEW_TYPE.PERSONS ? (
+                <>
+                    {renderSearchFilter()}
+                    {renderPersonGrid()}
+                </>
+            ) : (
+                <UnknownFacesList
+                    iconSize={iconSize}
+                    onFaceClick={onFaceClick}
+                    onAssignFace={onAssignFace}
+                    persons={persons}
+                />
+            )}
         </div>
     );
 }

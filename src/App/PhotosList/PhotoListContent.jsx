@@ -78,6 +78,7 @@ function PhotoListContent({
     const tagSearchTerm = tags.searchTerm;
     const facesList = faces?.list || [];
     const faceSearchTerm = faces?.searchTerm || '';
+    const unknownFacesCount = faces?.unknownCount || 0;
 
     // Destructure from config state
     const { import: importState, app: appConfig } = configState;
@@ -295,40 +296,16 @@ function PhotoListContent({
                             showViewModeToggle={false}
                             onRefresh={reloadFaces}
                         />
-                        <GenericListView
-                            items={facesList}
-                            itemType="person"
+                        <FacesList
+                            persons={facesList}
                             iconSize={iconSize}
-                            selectedItems={selectedPersons}
-                            onItemSelection={handlePersonSelection}
-                            onItemClick={handlePersonClick}
-                            onNewItemClick={() => {}} // No-op for faces (auto-detected)
+                            onPersonClick={handlePersonClick}
+                            selectedPersons={selectedPersons}
+                            onPersonSelection={handlePersonSelection}
                             searchTerm={faceSearchTerm}
                             onSearchChange={setFaceSearchTerm}
-                            showNewItemTile={false}
-                            renderCover={(person, size) => {
-                                const hasThumbnail = person.photo_path && person.bbox_x !== null;
-                                return hasThumbnail ? (
-                                    <FaceThumbnail
-                                        photoPath={person.photo_path}
-                                        bbox={{
-                                            bbox_x: person.bbox_x,
-                                            bbox_y: person.bbox_y,
-                                            bbox_width: person.bbox_width,
-                                            bbox_height: person.bbox_height
-                                        }}
-                                        size={size}
-                                        borderRadius="var(--radius-md)"
-                                    />
-                                ) : (
-                                    <div style={{
-                                        fontSize: `${size * 0.3}px`,
-                                        color: 'var(--color-text-muted)'
-                                    }}>
-                                        👤
-                                    </div>
-                                );
-                            }}
+                            onRefresh={reloadFaces}
+                            unknownFacesCount={unknownFacesCount}
                         />
                     </>
                 )}

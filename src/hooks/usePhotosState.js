@@ -107,6 +107,7 @@ export const usePhotosState = () => {
     const [currentPersonId, setCurrentPersonId] = useState(null);
     const [currentPersonName, setCurrentPersonName] = useState('');
     const [selectedPersons, setSelectedPersons] = useState(() => loadSelectionFromStorage(STORAGE_KEY_PERSONS));
+    const [unknownFacesCount, setUnknownFacesCount] = useState(0);
 
     // Filter popover state
     const [showFilterPopover, setShowFilterPopover] = useState(false);
@@ -249,6 +250,8 @@ export const usePhotosState = () => {
         setCurrentPersonName,
         selectedPersons,
         setSelectedPersons,
+        unknownFacesCount,
+        setUnknownFacesCount,
 
         // Filter popover
         showFilterPopover,
