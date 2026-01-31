@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import FaceThumbnail from "../../../components/FaceThumbnail.jsx";
 
 /**
  * SelectionTab Component
@@ -46,6 +47,10 @@ function SelectionTab({
     // Local state for photo preview
     const [photoIndex, setPhotoIndex] = useState(-1);
     const [showBigPhoto, setShowBigPhoto] = useState(false);
+    // State for unknown faces batch operations
+    const [showPersonSelector, setShowPersonSelector] = useState(false);
+    const [newPersonName, setNewPersonName] = useState('');
+    const [showNewPersonInput, setShowNewPersonInput] = useState(false);
 
     // Destructure from state groups
     const { photoSelection, selectedAlbums, selectedTags, persons: selectedPersons = [], unknownFaces: selectedUnknownFaces = [] } = selectionState;
@@ -59,8 +64,42 @@ function SelectionTab({
         clearTagSelection,
         deleteSelectedPersons = () => {},
         clearPersonSelection = () => {},
-        clearUnknownFaceSelection = () => {}
+        clearUnknownFaceSelection = () => {},
+        deleteUnknownFacesBatch = () => {},
+        assignUnknownFacesToPerson = () => {}
     } = handlers;
+
+    // Handle unknown faces operation selection
+    const handleUnknownFacesOperation = (e) => {
+        const operation = e.target.value;
+        if (operation === 'delete') {
+            if (window.confirm(`Delete ${selectedUnknownFaces.length} selected faces?`)) {
+                deleteUnknownFacesBatch(selectedUnknownFaces);
+            }
+        } else if (operation === 'assignNew') {
+            setShowNewPersonInput(true);
+            setShowPersonSelector(false);
+        } else if (operation === 'assignExisting') {
+            setShowPersonSelector(true);
+            setShowNewPersonInput(false);
+        }
+        e.target.value = 'select'; // Reset dropdown
+    };
+
+    // Handle new person creation and assignment
+    const handleCreateAndAssign = () => {
+        if (newPersonName.trim()) {
+            assignUnknownFacesToPerson(selectedUnknownFaces, null, newPersonName.trim());
+            setNewPersonName('');
+            setShowNewPersonInput(false);
+        }
+    };
+
+    // Handle existing person assignment
+    const handleAssignToExistingPerson = (personId) => {
+        assignUnknownFacesToPerson(selectedUnknownFaces, personId, null);
+        setShowPersonSelector(false);
+    };
 
     return (
         <>
@@ -348,13 +387,15 @@ function SelectionTab({
                 {viewModeObj?.shouldShowPersonSelection() && faceViewType === 'unknown' && (
                     <div>
                         <div style={{ marginBottom: 'var(--space-4)' }}>
-                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>Selected Unknown Faces</h3>
+                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>
+                                Selected Unknown Faces ({selectedUnknownFaces.length})
+                            </h3>
                         </div>
                         {selectedUnknownFaces.length === 0 ? (
                             <div><br />No unknown faces selected.</div>
                         ) : (
                             <div>
-                                <div className="operation" style={{ marginBottom: 'var(--space-4)' }}>
+                                <div className="operation" style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
                                     <button
                                         onClick={() => clearUnknownFaceSelection()}
                                         style={{
@@ -368,14 +409,176 @@ function SelectionTab({
                                     >
                                         Clear Selection
                                     </button>
+                                    <select
+                                        onChange={handleUnknownFacesOperation}
+                                        style={{
+                                            padding: 'var(--space-2) var(--space-3)',
+                                            backgroundColor: 'var(--color-bg-elevated)',
+                                            color: 'var(--color-text-primary)',
+                                            border: '1px solid var(--color-border-default)',
+                                            borderRadius: 'var(--radius-sm)',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        <option value="select">Operation</option>
+                                        <option value="assignNew">Assign to New Person</option>
+                                        <option value="assignExisting">Assign to Existing Person</option>
+                                        <option value="delete">Delete</option>
+                                    </select>
                                 </div>
-                                <ul className="list-of-selected">
-                                    {selectedUnknownFaces.map((faceId) => (
-                                        <li key={faceId}>
-                                            <span>Unknown Face #{faceId}</span>
-                                        </li>
-                                    ))}
-                                </ul>
+
+                                {/* New Person Input */}
+                                {showNewPersonInput && (
+                                    <div style={{
+                                        marginBottom: 'var(--space-4)',
+                                        padding: 'var(--space-3)',
+                                        backgroundColor: 'var(--color-bg-elevated)',
+                                        border: '1px solid var(--color-border-default)',
+                                        borderRadius: 'var(--radius-sm)'
+                                    }}>
+                                        <div style={{ marginBottom: 'var(--space-2)', fontWeight: 'bold' }}>Create New Person</div>
+                                        <input
+                                            type="text"
+                                            value={newPersonName}
+                                            onChange={(e) => setNewPersonName(e.target.value)}
+                                            placeholder="Enter person name"
+                                            style={{
+                                                width: '100%',
+                                                padding: 'var(--space-2)',
+                                                marginBottom: 'var(--space-2)',
+                                                border: '1px solid var(--color-border-default)',
+                                                borderRadius: 'var(--radius-sm)',
+                                                backgroundColor: 'var(--color-bg-surface)',
+                                                color: 'var(--color-text-primary)'
+                                            }}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleCreateAndAssign()}
+                                        />
+                                        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                                            <button
+                                                onClick={handleCreateAndAssign}
+                                                style={{
+                                                    padding: 'var(--space-2) var(--space-3)',
+                                                    backgroundColor: 'var(--color-primary)',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: 'var(--radius-sm)',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                Create & Assign
+                                            </button>
+                                            <button
+                                                onClick={() => setShowNewPersonInput(false)}
+                                                style={{
+                                                    padding: 'var(--space-2) var(--space-3)',
+                                                    backgroundColor: 'var(--color-bg-elevated)',
+                                                    color: 'var(--color-text-primary)',
+                                                    border: '1px solid var(--color-border-default)',
+                                                    borderRadius: 'var(--radius-sm)',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Existing Person Selector */}
+                                {showPersonSelector && (
+                                    <div style={{
+                                        marginBottom: 'var(--space-4)',
+                                        padding: 'var(--space-3)',
+                                        backgroundColor: 'var(--color-bg-elevated)',
+                                        border: '1px solid var(--color-border-default)',
+                                        borderRadius: 'var(--radius-sm)'
+                                    }}>
+                                        <div style={{ marginBottom: 'var(--space-2)', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span>Select Person</span>
+                                            <button
+                                                onClick={() => setShowPersonSelector(false)}
+                                                style={{
+                                                    padding: 'var(--space-1) var(--space-2)',
+                                                    backgroundColor: 'transparent',
+                                                    color: 'var(--color-text-muted)',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    fontSize: 'var(--font-size-lg)'
+                                                }}
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                        <div style={{
+                                            maxHeight: '300px',
+                                            overflowY: 'auto',
+                                            display: 'flex',
+                                            flexWrap: 'wrap',
+                                            gap: 'var(--space-2)'
+                                        }}>
+                                            {facesList.filter(p => p.person_name).map((person) => (
+                                                <div
+                                                    key={person.person_id}
+                                                    onClick={() => handleAssignToExistingPerson(person.person_id)}
+                                                    style={{
+                                                        cursor: 'pointer',
+                                                        padding: 'var(--space-2)',
+                                                        backgroundColor: 'var(--color-bg-muted)',
+                                                        borderRadius: 'var(--radius-sm)',
+                                                        border: '1px solid var(--color-border-default)',
+                                                        textAlign: 'center',
+                                                        transition: 'border-color 0.2s'
+                                                    }}
+                                                    onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--color-primary)'}
+                                                    onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--color-border-default)'}
+                                                >
+                                                    {person.photo_path && person.bbox_x !== null ? (
+                                                        <FaceThumbnail
+                                                            faceId={person.representative_face_id}
+                                                            photoPath={person.photo_path}
+                                                            bbox={{
+                                                                bbox_x: person.bbox_x,
+                                                                bbox_y: person.bbox_y,
+                                                                bbox_width: person.bbox_width,
+                                                                bbox_height: person.bbox_height
+                                                            }}
+                                                            size={60}
+                                                            borderRadius="var(--radius-sm)"
+                                                        />
+                                                    ) : (
+                                                        <div style={{
+                                                            width: '60px',
+                                                            height: '60px',
+                                                            backgroundColor: 'var(--color-bg-surface)',
+                                                            borderRadius: 'var(--radius-sm)',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            fontSize: 'var(--font-size-xl)'
+                                                        }}>
+                                                            👤
+                                                        </div>
+                                                    )}
+                                                    <div style={{
+                                                        marginTop: 'var(--space-1)',
+                                                        fontSize: 'var(--font-size-xs)',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        whiteSpace: 'nowrap',
+                                                        maxWidth: '70px'
+                                                    }}>
+                                                        {person.person_name}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {facesList.filter(p => p.person_name).length === 0 && (
+                                                <div style={{ color: 'var(--color-text-muted)', padding: 'var(--space-3)' }}>
+                                                    No named persons found. Use "Assign to New Person" to create one.
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

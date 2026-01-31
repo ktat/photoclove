@@ -370,7 +370,7 @@ function PhotosList({
         deleteSelectedAlbums, handleAlbumDelete, handleTagSelection, clearTagSelection,
         deleteSelectedTags, handlePersonSelection, clearPersonSelection,
         deleteSelectedPersons, handleUnknownFaceSelection, clearUnknownFaceSelection,
-        removePhotoFromList
+        deleteUnknownFacesBatch, assignUnknownFacesToPerson, removePhotoFromList
     } = usePhotoOperations({
         selectedAlbums, setSelectedAlbums, selectedTags, setSelectedTags,
         selectedPersons, setSelectedPersons, selectedUnknownFaces, setSelectedUnknownFaces,
@@ -546,6 +546,7 @@ function PhotosList({
         handleTagClick, handleTagSelection, handleNewTagClick, clearTagSelection, deleteSelectedTags,
         handlePersonClick, handlePersonSelection, clearPersonSelection, deleteSelectedPersons,
         handleUnknownFaceClick, handleUnknownFaceSelection, clearUnknownFaceSelection,
+        deleteUnknownFacesBatch, assignUnknownFacesToPerson,
         setFaceSearchTerm, setFaceViewType, openFacesList, reloadFaces,
         handleSearch, clearSearch, handleFiltersChange, handleSavedSearchSelect, clearAllFilters,
         setShowSideMenu, setIconSize, setSort, setImportSort, setCurrentPhotoPath, setCurrentPhotoIndex,

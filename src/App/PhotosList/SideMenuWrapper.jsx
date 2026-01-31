@@ -93,6 +93,8 @@ function SideMenuWrapper({
         clearTagSelection,
         clearPersonSelection,
         clearUnknownFaceSelection,
+        deleteUnknownFacesBatch,
+        assignUnknownFacesToPerson,
         deleteSelectedAlbums,
         deleteSelectedTags,
         deleteSelectedPersons,
@@ -167,6 +169,8 @@ function SideMenuWrapper({
                     clearTagSelection={clearTagSelection}
                     clearPersonSelection={clearPersonSelection}
                     clearUnknownFaceSelection={clearUnknownFaceSelection}
+                    deleteUnknownFacesBatch={deleteUnknownFacesBatch}
+                    assignUnknownFacesToPerson={assignUnknownFacesToPerson}
                     deleteSelectedAlbums={deleteSelectedAlbums}
                     deleteSelectedTags={deleteSelectedTags}
                     deleteSelectedPersons={deleteSelectedPersons}

@@ -393,7 +393,9 @@ function DirectoryMenu(props) {
                     clearTagSelection: props.clearTagSelection,
                     deleteSelectedPersons: props.deleteSelectedPersons,
                     clearPersonSelection: props.clearPersonSelection,
-                    clearUnknownFaceSelection: props.clearUnknownFaceSelection
+                    clearUnknownFaceSelection: props.clearUnknownFaceSelection,
+                    deleteUnknownFacesBatch: props.deleteUnknownFacesBatch,
+                    assignUnknownFacesToPerson: props.assignUnknownFacesToPerson
                 }}
                 importState={props.importState}
                 albumsList={props.albumsList}
