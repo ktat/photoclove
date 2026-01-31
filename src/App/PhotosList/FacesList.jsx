@@ -31,7 +31,8 @@ function FacesList({
     onFaceClick,
     onAssignFace,
     onViewTypeChange,
-    viewType: controlledViewType
+    viewType: controlledViewType,
+    unknownFacesRefreshTrigger = 0
 }) {
     const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm || '');
     const [internalViewType, setInternalViewType] = useState(VIEW_TYPE.PERSONS);
@@ -306,6 +307,7 @@ function FacesList({
                     persons={persons}
                     selectedFaces={selectedUnknownFaces}
                     onFaceSelection={onUnknownFaceSelection}
+                    refreshTrigger={unknownFacesRefreshTrigger}
                 />
             )}
         </div>

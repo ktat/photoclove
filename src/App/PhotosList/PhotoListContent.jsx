@@ -80,6 +80,7 @@ function PhotoListContent({
     const faceSearchTerm = faces?.searchTerm || '';
     const unknownFacesCount = faces?.unknownCount || 0;
     const faceViewType = faces?.viewType || 'persons';
+    const unknownFacesRefreshTrigger = faces?.refreshTrigger || 0;
 
     // Destructure from config state
     const { import: importState, app: appConfig } = configState;
@@ -322,6 +323,7 @@ function PhotoListContent({
                             unknownFacesCount={unknownFacesCount}
                             viewType={faceViewType}
                             onViewTypeChange={setFaceViewType}
+                            unknownFacesRefreshTrigger={unknownFacesRefreshTrigger}
                         />
                     </>
                 )}

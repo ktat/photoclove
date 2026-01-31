@@ -16,7 +16,8 @@ function UnknownFacesList({
     onAssignFace,
     persons = [],
     selectedFaces = [],
-    onFaceSelection
+    onFaceSelection,
+    refreshTrigger = 0
 }) {
     const [faces, setFaces] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -26,10 +27,10 @@ function UnknownFacesList({
     const observerRef = useRef(null);
     const loadingRef = useRef(false);
 
-    // Load initial faces
+    // Load initial faces and reload when refreshTrigger changes
     useEffect(() => {
         loadFaces(0, true);
-    }, []);
+    }, [refreshTrigger]);
 
     const loadFaces = useCallback(async (offset, reset = false) => {
         if (loadingRef.current) return;

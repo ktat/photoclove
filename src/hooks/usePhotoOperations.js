@@ -69,7 +69,8 @@ export function usePhotoOperations({
     setDateNum,
     dateList,
     setDateList,
-    sortOfPhotos
+    sortOfPhotos,
+    triggerUnknownFacesRefresh
 }) {
     /**
      * Shared helper: Handle photo removal from list and navigation adjustment
@@ -193,11 +194,12 @@ export function usePhotoOperations({
             const count = await deleteFacesBatch(faceIds);
             clearUnknownFaceSelection();
             loadFaces();
+            triggerUnknownFacesRefresh?.();
             addFooterMessage(`${count} face${count > 1 ? 's' : ''} deleted`);
         } catch (error) {
             handleError(error, 'Delete faces batch', { faceIds });
         }
-    }, [clearUnknownFaceSelection, loadFaces, addFooterMessage, handleError]);
+    }, [clearUnknownFaceSelection, loadFaces, triggerUnknownFacesRefresh, addFooterMessage, handleError]);
 
     // Assign unknown faces to person (new or existing)
     const assignUnknownFacesToPerson = useCallback(async (faceIds, existingPersonId, newPersonName) => {
@@ -218,11 +220,12 @@ export function usePhotoOperations({
             const count = await assignFacesToPersonBatch(faceIds, personId);
             clearUnknownFaceSelection();
             loadFaces();
+            triggerUnknownFacesRefresh?.();
             addFooterMessage(`${count} face${count > 1 ? 's' : ''} assigned to person`);
         } catch (error) {
             handleError(error, 'Assign faces to person', { faceIds, existingPersonId, newPersonName });
         }
-    }, [clearUnknownFaceSelection, loadFaces, addFooterMessage, handleError]);
+    }, [clearUnknownFaceSelection, loadFaces, triggerUnknownFacesRefresh, addFooterMessage, handleError]);
 
     // Delete selected albums
     const deleteSelectedAlbums = useCallback(async () => {

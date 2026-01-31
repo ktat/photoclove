@@ -111,6 +111,7 @@ export const usePhotosState = () => {
     const [selectedUnknownFaces, setSelectedUnknownFaces] = useState(() => loadSelectionFromStorage(STORAGE_KEY_UNKNOWN_FACES));
     const [unknownFacesCount, setUnknownFacesCount] = useState(0);
     const [faceViewType, setFaceViewType] = useState('persons'); // 'persons' or 'unknown'
+    const [unknownFacesRefreshTrigger, setUnknownFacesRefreshTrigger] = useState(0);
 
     // Filter popover state
     const [showFilterPopover, setShowFilterPopover] = useState(false);
@@ -259,6 +260,8 @@ export const usePhotosState = () => {
         setUnknownFacesCount,
         faceViewType,
         setFaceViewType,
+        unknownFacesRefreshTrigger,
+        setUnknownFacesRefreshTrigger,
 
         // Filter popover
         showFilterPopover,
