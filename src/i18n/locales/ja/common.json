@@ -143,5 +143,19 @@
     "burstGroup": "連写写真をグループ化",
     "slideshow": "スライドショー",
     "filterPhotos": "写真をフィルター"
+  },
+  "search": {
+    "placeholder": "写真を検索...",
+    "button": "検索",
+    "detailedSearch": "詳細検索"
+  },
+  "memories": {
+    "onThisDay": "この日の思い出",
+    "noMemories": "今日の思い出は見つかりませんでした。",
+    "yearsAgoSingular": "1年前",
+    "yearsAgoPlural": "{{count}}年前",
+    "viewPhoto": "写真を表示",
+    "photoView": "写真表示",
+    "listView": "リスト表示"
   }
 }

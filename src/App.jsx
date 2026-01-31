@@ -22,7 +22,7 @@ import Home from "./App/Home.jsx"
 // import SearchPage from "./App/SearchPage.jsx" // Now using PhotosList directly for search
 import loginGoogle from "./App/Login.jsx"
 import Footer from "./App/Footer.jsx"
-import WelcomeImage from "./WelcomeImage.jsx";
+import WelcomeImage, { getMemoriesStartupImage } from "./WelcomeImage.jsx";
 import ErrorDisplay from "./components/ErrorDisplay.jsx";
 import LogViewer from "./App/LogViewer.jsx";
 import DocumentViewer from "./components/DocumentViewer.jsx";
@@ -115,7 +115,27 @@ function App() {
   // Update welcome image when config loads (ensures custom images work on startup)
   useEffect(() => {
     if (config) {
-      setWelcomeImage(WelcomeImage(config));
+      const mode = config?.startup_images?.mode;
+      if (mode === 'memories') {
+        // Fetch memories photo asynchronously
+        getMemoriesStartupImage().then((memoriesImage) => {
+          if (memoriesImage) {
+            setWelcomeImage(memoriesImage);
+          } else {
+            // Fallback based on user preference
+            const fallback = config?.startup_images?.memories_fallback || 'default';
+            if (fallback === 'custom') {
+              // Use custom images as fallback
+              setWelcomeImage(WelcomeImage({ ...config, startup_images: { ...config.startup_images, mode: 'custom' } }));
+            } else {
+              // Fallback to default images
+              setWelcomeImage(WelcomeImage(null));
+            }
+          }
+        });
+      } else {
+        setWelcomeImage(WelcomeImage(config));
+      }
     }
   }, [config, setWelcomeImage]);
 
@@ -537,7 +557,7 @@ function App() {
                 logger.debug('App', 'rendering_home', 'Rendering Home component');
                 return null;
               })()}
-              <Home welcomeImage={welcomeImage} setWelcomeImage={setWelcomeImage} />
+              <Home welcomeImage={welcomeImage} setWelcomeImage={setWelcomeImage} config={config} />
             </div>
           </>
         }

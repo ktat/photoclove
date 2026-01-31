@@ -284,8 +284,20 @@ fn default_face_detection() -> FaceDetectionConfig {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StartupImageConfig {
-    pub mode: String,  // "default" or "custom"
+    pub mode: String,  // "default", "custom", or "memories"
     pub images: Vec<StartupImage>,
+    #[serde(default = "default_show_memories_on_home")]
+    pub show_memories_on_home: bool,
+    #[serde(default = "default_memories_fallback")]
+    pub memories_fallback: String,  // "default" or "custom"
+}
+
+fn default_show_memories_on_home() -> bool {
+    true
+}
+
+fn default_memories_fallback() -> String {
+    "default".to_string()
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

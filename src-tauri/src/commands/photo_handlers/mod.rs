@@ -7,6 +7,7 @@ pub mod album;
 pub mod burst;
 pub mod collections;
 pub mod date;
+pub mod memories;
 pub mod navigation;
 pub mod person;
 pub mod recent;
