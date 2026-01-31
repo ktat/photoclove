@@ -12,7 +12,7 @@
   max-width: 230px;
   min-width: 230px;
   border: none;
-  background-color: var(--color-bg-base);
+  background-color: var(--color-bg-elevated);
   flex-shrink: 0;
   position: relative;
 }
