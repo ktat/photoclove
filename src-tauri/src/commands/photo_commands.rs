@@ -175,6 +175,7 @@ pub async fn get_photos_unified(
                 "album_photos" => photo_handlers::album::handle(&ctx, &search_params).await,
                 "tag" => photo_handlers::tag::handle(&ctx, &search_params).await,
                 "person" => photo_handlers::person::handle(&ctx, &search_params).await,
+                "unknown_faces" => photo_handlers::unknown_faces::handle(&ctx, &search_params).await,
                 "all" => photo_handlers::search::handle_all(&ctx, &search_params).await,
                 "search" => photo_handlers::search::handle(&ctx, &search_params).await,
                 "trash" => photo_handlers::trash::handle(&ctx).await,

@@ -30,10 +30,15 @@ function FacesList({
     unknownFacesCount = 0,
     onFaceClick,
     onAssignFace,
-    onViewTypeChange
+    onViewTypeChange,
+    viewType: controlledViewType
 }) {
     const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm || '');
-    const [viewType, setViewType] = useState(VIEW_TYPE.PERSONS);
+    const [internalViewType, setInternalViewType] = useState(VIEW_TYPE.PERSONS);
+
+    // Use controlled viewType if provided, otherwise use internal state
+    const viewType = controlledViewType || internalViewType;
+    const setViewType = controlledViewType ? onViewTypeChange : setInternalViewType;
     const overlayMargin = useOverlayMargin();
 
     // Use provided search term if available, otherwise use local state
@@ -61,8 +66,12 @@ function FacesList({
         }}>
             <button
                 onClick={() => {
-                    setViewType(VIEW_TYPE.PERSONS);
-                    onViewTypeChange && onViewTypeChange(VIEW_TYPE.PERSONS);
+                    if (controlledViewType) {
+                        onViewTypeChange && onViewTypeChange(VIEW_TYPE.PERSONS);
+                    } else {
+                        setInternalViewType(VIEW_TYPE.PERSONS);
+                        onViewTypeChange && onViewTypeChange(VIEW_TYPE.PERSONS);
+                    }
                 }}
                 style={{
                     padding: 'var(--space-2) var(--space-4)',
@@ -80,8 +89,12 @@ function FacesList({
             </button>
             <button
                 onClick={() => {
-                    setViewType(VIEW_TYPE.UNKNOWN);
-                    onViewTypeChange && onViewTypeChange(VIEW_TYPE.UNKNOWN);
+                    if (controlledViewType) {
+                        onViewTypeChange && onViewTypeChange(VIEW_TYPE.UNKNOWN);
+                    } else {
+                        setInternalViewType(VIEW_TYPE.UNKNOWN);
+                        onViewTypeChange && onViewTypeChange(VIEW_TYPE.UNKNOWN);
+                    }
                 }}
                 style={{
                     padding: 'var(--space-2) var(--space-4)',

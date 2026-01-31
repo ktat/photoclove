@@ -31,12 +31,24 @@ function PhotoOption(props) {
     const isTrashMode = viewMode === VIEW_MODES.TRASH;
     const isImportMode = viewMode === VIEW_MODES.IMPORT;
     const isInBurstGroupMode = viewMode === VIEW_MODES.IN_BURST_GROUP;
+    const isUnknownFacesMode = viewMode === VIEW_MODES.UNKNOWN_FACES;
 
     // Check if current photo is a burst representative (has burst badge)
     // Editor and Tags are disabled for burst representatives when burst mode is ON
     const currentPhoto = props.currentPhoto;
     const isBurstRepresentative = currentPhoto?.burst_group_id && currentPhoto?.burst_count > 1;
     const burstRestrictionsActive = burstModeEnabled && isBurstRepresentative && !isInBurstGroupMode;
+
+    // Auto-open Faces tab when in Unknown Faces mode
+    useEffect(() => {
+        if (isUnknownFacesMode) {
+            setActiveTab("faces");
+            if (!props.showSideMenu) {
+                props.setShowSideMenu(true);
+            }
+            logger.info('PhotoOption', 'auto_open_faces_tab', 'Auto-opening Faces tab for Unknown Faces mode');
+        }
+    }, [isUnknownFacesMode, props.showSideMenu, props.setShowSideMenu]);
 
     // Track Face tab active state for showing face bounding boxes
     useEffect(() => {

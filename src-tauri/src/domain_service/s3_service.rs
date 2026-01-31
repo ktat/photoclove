@@ -269,6 +269,73 @@ impl S3Service {
         }
     }
 
+    /// Upload a thumbnail file to S3
+    ///
+    /// Thumbnails are stored under the "thumbnails/" prefix to separate them from photos.
+    pub async fn upload_thumbnail(
+        &self,
+        thumbnail_path: &str,
+        thumbnail_store: &str,
+    ) -> Result<String, String> {
+        let client = self.client.as_ref()
+            .ok_or("S3 client not initialized")?;
+
+        let (bucket, prefix) = self.parse_bucket_uri()?;
+
+        // Check if file exists
+        if !Path::new(thumbnail_path).exists() {
+            return Err(format!("Thumbnail file not found: {}", thumbnail_path));
+        }
+
+        // Get relative path from thumbnail_store
+        let relative_path = if thumbnail_path.starts_with(thumbnail_store) {
+            thumbnail_path.strip_prefix(thumbnail_store).unwrap_or(thumbnail_path)
+        } else {
+            thumbnail_path
+        };
+        let relative_path = relative_path.trim_start_matches('/');
+
+        // Generate S3 key with "thumbnails/" prefix
+        let s3_key = if prefix.is_empty() {
+            format!("thumbnails/{}", relative_path)
+        } else {
+            format!("{}/thumbnails/{}", prefix, relative_path)
+        };
+
+        // Read file content
+        let path = Path::new(thumbnail_path);
+        let mut file = File::open(path).await
+            .map_err(|e| format!("Failed to open thumbnail: {}", e))?;
+
+        let mut contents = Vec::new();
+        file.read_to_end(&mut contents).await
+            .map_err(|e| format!("Failed to read thumbnail: {}", e))?;
+
+        // Upload to S3
+        let result = client
+            .put_object()
+            .bucket(&bucket)
+            .key(&s3_key)
+            .body(contents.into())
+            .content_type("image/jpeg")
+            .send()
+            .await;
+
+        match result {
+            Ok(_) => {
+                let s3_url = format!("s3://{}/{}", bucket, s3_key);
+                log::debug!(target: "s3_service", "upload_thumbnail; status=success; path={}; s3_url={}",
+                    thumbnail_path, s3_url);
+                Ok(s3_url)
+            }
+            Err(e) => {
+                log::error!(target: "s3_service", "upload_thumbnail; status=failed; path={}; error={}",
+                    thumbnail_path, e);
+                Err(format!("Thumbnail upload failed: {}", e))
+            }
+        }
+    }
+
     /// Check if a file exists in S3
     #[allow(dead_code)]
     pub async fn file_exists(&self, s3_key: &str) -> Result<bool, String> {

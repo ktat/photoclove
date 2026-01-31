@@ -19,6 +19,7 @@ function StatusBar({
     toggleAlbumListMode,
     openTagsList,
     openFacesList,
+    onBackToUnknownFaces,
     goBackFromBurstGroup,
     isLimitedByConfig,
     onRefresh
@@ -91,6 +92,16 @@ function StatusBar({
                 <>
                     <a className="back-to-home no-home-icon" href="#" onClick={(e) => { e.preventDefault(); openFacesList(); }}>
                         ← Back to Faces List
+                    </a>
+                    <span style={{ marginLeft: "10px" }}>{title}</span>
+                    <ReloadButton />
+                </>
+            );
+        } else if (viewMode === VIEW_MODES.UNKNOWN_FACES) {
+            return (
+                <>
+                    <a className="back-to-home no-home-icon" href="#" onClick={(e) => { e.preventDefault(); onBackToUnknownFaces ? onBackToUnknownFaces() : openFacesList(); }}>
+                        ← Back to Unknown Faces
                     </a>
                     <span style={{ marginLeft: "10px" }}>{title}</span>
                     <ReloadButton />

@@ -13,6 +13,7 @@ pub mod recent;
 pub mod search;
 pub mod tag;
 pub mod trash;
+pub mod unknown_faces;
 
 use crate::app_state::AppState;
 use crate::repository::{MetaDB, RepoDB};

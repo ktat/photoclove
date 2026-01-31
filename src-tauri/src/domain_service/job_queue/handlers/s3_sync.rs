@@ -7,6 +7,7 @@ use crate::domain_service::s3_service::S3Service;
 use crate::entity::job_queue;
 use crate::entity::recovery_queue::OperationType;
 use crate::repository::meta_db::sqlite::SQLite;
+use std::path::Path;
 use std::sync::Arc;
 use tauri::{Emitter, Manager};
 
@@ -38,6 +39,8 @@ pub(crate) async fn process_s3_sync_job(
     };
 
     let import_to = state.config.import_to.clone();
+    let thumbnail_store = state.config.thumbnail_store.clone();
+    let backup_thumbnails = s3_config.backup_thumbnails;
 
     // Initialize S3 service
     let mut s3_service = S3Service::new(s3_config.clone());
@@ -90,6 +93,26 @@ pub(crate) async fn process_s3_sync_job(
                 }
                 success_count += 1;
                 log::info!(target: "s3_sync", "upload_success; path={}; s3_url={}", photo_path, s3_url);
+
+                // Upload thumbnail if enabled
+                if backup_thumbnails {
+                    // Calculate thumbnail path by replacing import_to with thumbnail_store
+                    let thumbnail_path = photo_path.replace(&import_to, &thumbnail_store);
+                    // Thumbnail uses .jpg extension
+                    let thumbnail_path = change_extension_to_jpg(&thumbnail_path);
+
+                    if Path::new(&thumbnail_path).exists() {
+                        match s3_service.upload_thumbnail(&thumbnail_path, &thumbnail_store).await {
+                            Ok(thumb_url) => {
+                                log::debug!(target: "s3_sync", "thumbnail_upload_success; path={}; s3_url={}", thumbnail_path, thumb_url);
+                            }
+                            Err(e) => {
+                                // Don't fail the job for thumbnail upload failure
+                                log::warn!(target: "s3_sync", "thumbnail_upload_failed; path={}; error={}", thumbnail_path, e);
+                            }
+                        }
+                    }
+                }
             }
             Err(e) => {
                 log::error!(target: "s3_sync", "upload_failed; path={}; error={}", photo_path, e);
@@ -114,6 +137,32 @@ pub(crate) async fn process_s3_sync_job(
         (&job.job_unit_id, format!("Completed: {} success, {} failed", success_count, fail_count), 100),
     ) {
         log::error!(target: "s3_sync", "emit_error; error={}", e);
+    }
+
+    // Backup face thumbnails if enabled
+    if backup_thumbnails {
+        let faces_dir = Path::new(&thumbnail_store).join("faces");
+        if faces_dir.exists() {
+            log::info!(target: "s3_sync", "backing_up_face_thumbnails; dir={}", faces_dir.display());
+            let mut face_thumb_count = 0;
+            if let Ok(entries) = std::fs::read_dir(&faces_dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.extension().map_or(false, |e| e == "jpg") {
+                        let path_str = path.to_string_lossy().to_string();
+                        match s3_service.upload_thumbnail(&path_str, &thumbnail_store).await {
+                            Ok(_) => {
+                                face_thumb_count += 1;
+                            }
+                            Err(e) => {
+                                log::warn!(target: "s3_sync", "face_thumbnail_upload_failed; path={}; error={}", path_str, e);
+                            }
+                        }
+                    }
+                }
+            }
+            log::info!(target: "s3_sync", "face_thumbnails_backed_up; count={}", face_thumb_count);
+        }
     }
 
     // Backup database if enabled and all uploads succeeded
@@ -183,4 +232,16 @@ fn update_storage_sync(
     ).map_err(|e| format!("Failed to update storage_sync: {}", e))?;
 
     Ok(())
+}
+
+/// Change file extension to .jpg (thumbnails are always JPEG)
+fn change_extension_to_jpg(path: &str) -> String {
+    let path_buf = Path::new(path);
+    if let Some(stem) = path_buf.file_stem() {
+        if let Some(parent) = path_buf.parent() {
+            return parent.join(format!("{}.jpg", stem.to_string_lossy())).to_string_lossy().to_string();
+        }
+    }
+    // Fallback: just append .jpg
+    format!("{}.jpg", path.trim_end_matches(|c: char| c != '.'))
 }

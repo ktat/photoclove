@@ -701,4 +701,13 @@ impl SQLite {
     ) -> Result<Vec<face_detection::UnknownFaceRecord>, String> {
         face_detection::get_unknown_faces(self, limit, offset)
     }
+
+    /// Get full photo objects for photos containing unknown faces
+    pub fn get_photos_for_unknown_faces_full(
+        &self,
+        sort_value: i32,
+        config: Option<config::Config>,
+    ) -> Result<Vec<photo::Photo>, String> {
+        face_detection::get_photos_for_unknown_faces_full(self, sort_value, config)
+    }
 }
