@@ -50,13 +50,14 @@ function Welcome(props) {
                         <ol className="tutorial">
                             <li><span className={"useCount-" + props.useCount}>At first, configure <a href="#"
                                 onClick={() => {
+                                    getAndSaveConfig(3);
                                     props.togglePreferences(true);
                                 }
                                 }>preferences</a>.</span></li>
                             <li>
                                 <span className={"useCount-" + (props.useCount == 2 ? 2 : 0)}>If you don't have photos, <a href="#"
                                     onClick={() => {
-                                        getAndSaveConfig(2);
+                                        getAndSaveConfig(3);
                                         props.toggleImporter(true);
                                     }
                                     }>import photos</a>.

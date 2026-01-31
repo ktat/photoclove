@@ -23,7 +23,7 @@ export const UIProvider = ({ children }) => {
   // Keep non-view-related state
   const [footerMessages, setFooterMessages] = useState({});
   const [welcomeImage, setWelcomeImage] = useState(WelcomeImage());
-  const [useCount, setUseCount] = useState(0);
+  const [useCount, setUseCount] = useState(null);
 
   // Burst grouping mode state
   const [burstModeEnabled, setBurstModeEnabled] = useState(false);

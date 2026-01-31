@@ -58,7 +58,8 @@
         "resizable": true,
         "title": "🦀PhotoClove🦀",
         "width": 1600,
-        "useHttpsScheme": true
+        "useHttpsScheme": true,
+        "backgroundColor": "#1b1b1b"
       }
     ],
     "security": {
