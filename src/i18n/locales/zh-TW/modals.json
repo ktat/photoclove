@@ -1,0 +1,96 @@
+{
+  "delete": {
+    "title": "刪除",
+    "confirmTitle": "確認刪除",
+    "photoTitle": "刪除照片",
+    "photosTitle": "刪除照片",
+    "albumTitle": "刪除相簿",
+    "tagTitle": "刪除標籤",
+    "personTitle": "刪除人物",
+    "faceTitle": "刪除臉孔",
+    "confirmMessage": "您確定要刪除嗎？",
+    "confirmPhotos_one": "您確定要刪除 {{count}} 張照片嗎？",
+    "confirmPhotos_other": "您確定要刪除 {{count}} 張照片嗎？",
+    "confirmAlbum": "您確定要刪除相簿「{{name}}」嗎？",
+    "confirmTag": "您確定要刪除標籤「{{name}}」嗎？",
+    "confirmPerson": "您確定要刪除「{{name}}」及其所有相關臉孔嗎？",
+    "confirmFaces_one": "您確定要刪除 {{count}} 個臉孔嗎？",
+    "confirmFaces_other": "您確定要刪除 {{count}} 個臉孔嗎？",
+    "moveToTrash": "移至垃圾桶",
+    "permanentDelete": "永久刪除",
+    "warningPermanent": "此操作無法復原。",
+    "warningTrash": "照片將移至垃圾桶，之後可以還原。",
+    "keepAlbum": "保留相簿，僅移除照片",
+    "deleteAlbum": "刪除相簿並移除照片"
+  },
+  "album": {
+    "createTitle": "建立相簿",
+    "editTitle": "編輯相簿",
+    "nameLabel": "相簿名稱",
+    "namePlaceholder": "輸入相簿名稱",
+    "descriptionLabel": "描述",
+    "descriptionPlaceholder": "輸入相簿描述（選填）",
+    "colorLabel": "顏色",
+    "coverLabel": "封面照片"
+  },
+  "tag": {
+    "createTitle": "建立標籤",
+    "editTitle": "編輯標籤",
+    "nameLabel": "標籤名稱",
+    "namePlaceholder": "輸入標籤名稱",
+    "colorLabel": "顏色"
+  },
+  "person": {
+    "assignTitle": "指定人物",
+    "createTitle": "建立人物",
+    "mergeTitle": "合併人物",
+    "nameLabel": "人物名稱",
+    "namePlaceholder": "輸入人物名稱",
+    "selectExisting": "選擇現有人物",
+    "createNew": "建立新人物"
+  },
+  "import": {
+    "title": "匯入照片",
+    "selectFolder": "選擇資料夾",
+    "selectFiles": "選擇檔案",
+    "scanning": "正在掃描照片...",
+    "foundPhotos_one": "找到 {{count}} 張照片",
+    "foundPhotos_other": "找到 {{count}} 張照片",
+    "importing": "正在匯入照片...",
+    "completed": "匯入完成",
+    "failed": "匯入失敗"
+  },
+  "export": {
+    "title": "匯出照片",
+    "selectDestination": "選擇目的地",
+    "includeMetadata": "包含中繼資料",
+    "includeEdits": "包含編輯"
+  },
+  "search": {
+    "title": "搜尋",
+    "savedSearches": "已儲存的搜尋",
+    "saveSearch": "儲存搜尋",
+    "searchName": "搜尋名稱",
+    "searchNamePlaceholder": "輸入搜尋名稱"
+  },
+  "preferences": {
+    "title": "偏好設定"
+  },
+  "about": {
+    "title": "關於 PhotoClove",
+    "version": "版本",
+    "license": "授權",
+    "credits": "致謝"
+  },
+  "privacy": {
+    "title": "隱私權政策"
+  },
+  "terms": {
+    "title": "使用條款"
+  },
+  "help": {
+    "title": "說明",
+    "documentation": "文件",
+    "shortcuts": "鍵盤快速鍵"
+  }
+}

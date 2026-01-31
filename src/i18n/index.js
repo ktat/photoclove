@@ -30,6 +30,27 @@ import deMessages from './locales/de/messages.json';
 import deErrors from './locales/de/errors.json';
 import dePreferences from './locales/de/preferences.json';
 
+// Import Chinese Simplified translations
+import zhCNCommon from './locales/zh-CN/common.json';
+import zhCNModals from './locales/zh-CN/modals.json';
+import zhCNMessages from './locales/zh-CN/messages.json';
+import zhCNErrors from './locales/zh-CN/errors.json';
+import zhCNPreferences from './locales/zh-CN/preferences.json';
+
+// Import Chinese Traditional translations
+import zhTWCommon from './locales/zh-TW/common.json';
+import zhTWModals from './locales/zh-TW/modals.json';
+import zhTWMessages from './locales/zh-TW/messages.json';
+import zhTWErrors from './locales/zh-TW/errors.json';
+import zhTWPreferences from './locales/zh-TW/preferences.json';
+
+// Import Spanish translations
+import esCommon from './locales/es/common.json';
+import esModals from './locales/es/modals.json';
+import esMessages from './locales/es/messages.json';
+import esErrors from './locales/es/errors.json';
+import esPreferences from './locales/es/preferences.json';
+
 const resources = {
   en: {
     common: enCommon,
@@ -59,6 +80,27 @@ const resources = {
     errors: deErrors,
     preferences: dePreferences,
   },
+  'zh-CN': {
+    common: zhCNCommon,
+    modals: zhCNModals,
+    messages: zhCNMessages,
+    errors: zhCNErrors,
+    preferences: zhCNPreferences,
+  },
+  'zh-TW': {
+    common: zhTWCommon,
+    modals: zhTWModals,
+    messages: zhTWMessages,
+    errors: zhTWErrors,
+    preferences: zhTWPreferences,
+  },
+  es: {
+    common: esCommon,
+    modals: esModals,
+    messages: esMessages,
+    errors: esErrors,
+    preferences: esPreferences,
+  },
 };
 
 // Supported languages with display names
@@ -67,6 +109,9 @@ export const supportedLanguages = [
   { code: 'ja', name: '日本語', flag: '🇯🇵' },
   { code: 'fr', name: 'Français', flag: '🇫🇷' },
   { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+  { code: 'zh-CN', name: '简体中文', flag: '🇨🇳' },
+  { code: 'zh-TW', name: '繁體中文', flag: '🇹🇼' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
 ];
 
 i18n

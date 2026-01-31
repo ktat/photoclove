@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useUI } from '../../context/UIContext.jsx';
 import { VIEW_MODES, supportsBurstGrouping } from '../../constants/viewModes.js';
 import styles from './PhotosToolbar.module.css';
@@ -24,6 +25,7 @@ function PhotosToolbar({
     onStartSlideshow,
     photosCount = 0
 }) {
+    const { t } = useTranslation('common');
     // Determine mode from viewMode
     const { viewMode, burstModeEnabled, toggleBurstMode } = useUI();
     const isImportMode = viewMode === VIEW_MODES.IMPORT;
@@ -40,45 +42,45 @@ function PhotosToolbar({
                 <button
                     className={burstModeEnabled ? styles.burstButtonActive : styles.burstButton}
                     onClick={toggleBurstMode}
-                    title={burstModeEnabled ? "Show all photos" : "Group burst photos"}
+                    title={burstModeEnabled ? t('toolbar.burstShowAll') : t('toolbar.burstGroup')}
                 >
-                    {burstModeEnabled ? "Burst ON" : "Burst"}
+                    {burstModeEnabled ? t('toolbar.burstOn') : t('toolbar.burst')}
                 </button>
             )}
-            Icon:<select
+            {t('toolbar.icon')}:<select
                 name="icon_size"
                 value={iconSize}
                 onChange={(e) => setIconSize(parseInt(e.target.value))}
             >
-                <option value={50}>small</option>
-                <option value={100}>normal</option>
-                <option value={200}>large</option>
-                <option value={300}>huge</option>
+                <option value={50}>{t('toolbar.iconSmall')}</option>
+                <option value={100}>{t('toolbar.iconNormal')}</option>
+                <option value={200}>{t('toolbar.iconLarge')}</option>
+                <option value={300}>{t('toolbar.iconHuge')}</option>
             </select>
-            
-            Sort:<select
+
+            {t('button.sort')}:<select
                 name="sort"
                 value={sortOfPhotos}
                 onChange={(e) => setSort(parseInt(e.target.value))}
             >
-                {!isImportMode && <option value={0}>Shot Time (desc)</option>}
-                {!isImportMode && <option value={1}>Shot Time (asc)</option>}
-                <option value={2}>Added Time (desc)</option>
-                <option value={3}>Added Time (asc)</option>
-                {!isImportMode && <option value={4}>Star Rating (desc)</option>}
-                {!isImportMode && <option value={5}>Star Rating (asc)</option>}
-                <option value={6}>File Name (desc)</option>
-                <option value={7}>File Name (asc)</option>
+                {!isImportMode && <option value={0}>{t('toolbar.sortShotTimeDesc')}</option>}
+                {!isImportMode && <option value={1}>{t('toolbar.sortShotTimeAsc')}</option>}
+                <option value={2}>{t('toolbar.sortAddedTimeDesc')}</option>
+                <option value={3}>{t('toolbar.sortAddedTimeAsc')}</option>
+                {!isImportMode && <option value={4}>{t('toolbar.sortStarDesc')}</option>}
+                {!isImportMode && <option value={5}>{t('toolbar.sortStarAsc')}</option>}
+                <option value={6}>{t('toolbar.sortFileNameDesc')}</option>
+                <option value={7}>{t('toolbar.sortFileNameAsc')}</option>
             </select>
-            
+
             <button
                 ref={filterButtonRef}
                 onClick={() => setShowFilterPopover(!showFilterPopover)}
                 className={hasActiveFilters ? styles.filterButtonActive : styles.filterButton}
-                title="Filter photos"
+                title={t('toolbar.filterPhotos')}
             >
                 <span className={styles.filterIcon}>⚙️</span>
-                Filter
+                {t('button.filter')}
                 {hasActiveFilters && (
                     <span className={styles.filterBadge}>
                         {activeFilterCount}
@@ -90,10 +92,10 @@ function PhotosToolbar({
                 <button
                     onClick={onStartSlideshow}
                     className={styles.slideshowButton}
-                    title="Start slideshow (F5)"
+                    title={t('toolbar.slideshow') + ' (F5)'}
                 >
                     <span className={styles.slideshowIcon}>▶</span>
-                    Slideshow
+                    {t('toolbar.slideshow')}
                 </button>
             )}
             {/* Num selector removed - not needed with infinite scroll */}

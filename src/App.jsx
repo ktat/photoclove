@@ -3,6 +3,7 @@ import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-shell";
 import { listen } from "@tauri-apps/api/event";
 import { ask, message } from '@tauri-apps/plugin-dialog';
+import { useTranslation } from 'react-i18next';
 import "./App.css";
 import "./components/search.css";
 import "./App/LeftMenu.css";
@@ -38,6 +39,7 @@ import { useAppConfig } from "./hooks/useAppConfig.js";
 import { useRef } from "react";
 
 function App() {
+  const { t } = useTranslation('common');
   const { handleTauriError } = useError();
   const {
     showImporter,
@@ -408,7 +410,7 @@ function App() {
           <div className="loading-camera">&#x1f4f7;</div>
           <div className="loading-camera">&#x1f4f7;</div>
         </div>
-        <div className="loading-text">Loading...</div>
+        <div className="loading-text">{t('status.loading')}</div>
       </div>
     );
   }

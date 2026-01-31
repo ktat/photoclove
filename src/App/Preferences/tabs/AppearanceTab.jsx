@@ -1,18 +1,18 @@
 import React from 'react';
 import classNames from 'classnames';
+import { useTranslation } from 'react-i18next';
 import styles from '../Preferences.module.css';
 import previewStyles from './ThemePreview.module.css';
 
 const AppearanceTab = ({ config, setConfig }) => {
+    const { t } = useTranslation('preferences');
+
     return (
         <div className={styles['preferences-section']}>
-            <p className={styles['setting-description']} style={{ marginBottom: 'var(--space-4)' }}>
-                Theme changes are applied immediately for preview. Click "Save Changes" to persist.
-            </p>
-            <h2 className={styles['section-title']}>Color Theme</h2>
+            <h2 className={styles['section-title']}>{t('appearance.theme')}</h2>
             <div className={styles['setting-group']}>
                 <div className={styles['setting-row']}>
-                    <label>App Theme:</label>
+                    <label>{t('appearance.theme')}:</label>
                     <select
                         value={config.color_theme || 'dark'}
                         onChange={(e) => {
@@ -20,19 +20,16 @@ const AppearanceTab = ({ config, setConfig }) => {
                             document.documentElement.setAttribute('data-theme', e.target.value);
                         }}
                     >
-                        <option value="dark">Dark</option>
-                        <option value="light">Light</option>
+                        <option value="dark">{t('appearance.themeDark')}</option>
+                        <option value="light">{t('appearance.themeLight')}</option>
                     </select>
                 </div>
-                <p className={styles['setting-description']}>
-                    Change the overall color scheme of the application.
-                </p>
             </div>
 
-            <h2 className={styles['section-title']}>Photo Grid Theme</h2>
+            <h2 className={styles['section-title']}>{t('appearance.gridSize')}</h2>
             <div className={styles['setting-group']}>
                 <div className={styles['setting-row']}>
-                    <label>Grid Style:</label>
+                    <label>{t('appearance.gridSize')}:</label>
                     <select
                         value={config.photo_grid_theme || 'default'}
                         onChange={(e) => {
@@ -47,9 +44,6 @@ const AppearanceTab = ({ config, setConfig }) => {
                         <option value="slide-35mm">35mm Slide</option>
                     </select>
                 </div>
-                <p className={styles['setting-description']}>
-                    Choose how photos are displayed in the grid.
-                </p>
             </div>
 
             {/* Theme Preview Section */}

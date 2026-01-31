@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { flushSync } from "react-dom";
+import { useTranslation } from 'react-i18next';
 import Scrollable from "../Scrollable.jsx";
 import '../scrollable.css';
 import { usePhoto } from "../context/PhotoContext.jsx";
@@ -9,6 +10,7 @@ import { logger } from "../services/LoggerService.js";
 const unlisten = {};
 
 function DateList(props) {
+    const { t } = useTranslation('common');
     const {
         dateList,
         datePage,
@@ -18,7 +20,7 @@ function DateList(props) {
         recentPhotosMode,
         updateRecentPhotosMode
     } = usePhoto();
-    
+
     const { toggleSearchPage, showPhotosListView, showDatePhotos, showRecentPhotos, viewMode: currentAppViewMode } = useUI();
 
     const [selectedStyle, setSelectedStyle] = useState({});
@@ -210,10 +212,10 @@ function DateList(props) {
                            updateRecentPhotosMode(true);
                            showRecentPhotos();
                        }}
-                       onMouseEnter={(e) => props.handleMouseEnter && props.handleMouseEnter("Recent Photos", e)}
+                       onMouseEnter={(e) => props.handleMouseEnter && props.handleMouseEnter(t('date.recent'), e)}
                        onMouseLeave={() => props.handleMouseLeave && props.handleMouseLeave()}>
                         <span className="recent-photos-icon" style={{ fontSize: 'var(--font-size-lg)' }}>⏱️</span>
-                        <span className="recent-photos-text">Recent Photos</span>
+                        <span className="recent-photos-text">{t('date.recent')}</span>
                     </a>
                 </div>
 
@@ -228,7 +230,7 @@ function DateList(props) {
                         display: props.leftMenuCollapsed ? 'block' : 'none'
                     }}
                     onClick={() => props.setLeftMenuCollapsed(false)}
-                    onMouseEnter={(e) => props.handleMouseEnter && props.handleMouseEnter("Calendar", e)}
+                    onMouseEnter={(e) => props.handleMouseEnter && props.handleMouseEnter(t('date.allTime'), e)}
                     onMouseLeave={() => props.handleMouseLeave && props.handleMouseLeave()}
                 >
                     📅

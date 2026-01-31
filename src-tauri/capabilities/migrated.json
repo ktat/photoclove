@@ -42,6 +42,7 @@
     "clipboard-manager:default",
     "shell:default",
     "dialog:default",
-    "opener:default"
+    "opener:default",
+    "core:window:allow-set-fullscreen"
   ]
 }
