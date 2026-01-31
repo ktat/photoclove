@@ -12,7 +12,7 @@ const AdvancedTab = ({ config, setConfig, useCount }) => {
             <h2 className={styles['section-title']}>⚡ {t('preferences:performance.parallelProcessing')}</h2>
             <div className={styles['setting-group']}>
                 <div className={styles['setting-row']}>
-                    <label>Import Parallel:</label>
+                    <label>{t('preferences:performance.copyParallel')}:</label>
                     <input
                         value={config.copy_parallel || ''}
                         type="number"
@@ -21,7 +21,7 @@ const AdvancedTab = ({ config, setConfig, useCount }) => {
                     />
                 </div>
                 <div className={styles['setting-row']}>
-                    <label>Thumbnail Parallel:</label>
+                    <label>{t('preferences:performance.thumbnailParallel')}:</label>
                     <input
                         value={config.thumbnail_parallel || ''}
                         type="number"
@@ -31,10 +31,10 @@ const AdvancedTab = ({ config, setConfig, useCount }) => {
                 </div>
             </div>
 
-            <h2 className={styles['section-title']}>📊 Display</h2>
+            <h2 className={styles['section-title']}>📊 {t('preferences:performance.display')}</h2>
             <div className={styles['setting-group']}>
                 <div className={styles['setting-row']}>
-                    <label>Max Photos Per Fetch:</label>
+                    <label>{t('preferences:performance.maxPhotosPerFetch')}:</label>
                     <input
                         value={config.max_photos_per_fetch || ''}
                         type="number"
@@ -45,7 +45,7 @@ const AdvancedTab = ({ config, setConfig, useCount }) => {
                 </div>
             </div>
 
-            <h2 className={styles['section-title']}>🖼️ Photo Viewer</h2>
+            <h2 className={styles['section-title']}>🖼️ {t('preferences:performance.photoViewer')}</h2>
             <div className={styles['setting-group']}>
                 <div className={styles['setting-item']}>
                     <input
@@ -55,11 +55,11 @@ const AdvancedTab = ({ config, setConfig, useCount }) => {
                         onChange={(e) => setConfig(prev => ({ ...prev, progressive_image_loading: e.target.checked }))}
                     />
                     <label htmlFor="progressive-image-loading-check">
-                        Progressive image loading (show thumbnail first during navigation)
+                        {t('preferences:performance.progressiveLoading')}
                     </label>
                 </div>
                 <p className={styles['setting-description']}>
-                    When enabled, shows thumbnail immediately while navigating photos, then loads full image after navigation stops. Improves responsiveness during rapid navigation.
+                    {t('preferences:performance.progressiveLoadingDescription')}
                 </p>
             </div>
 
@@ -93,7 +93,7 @@ const AdvancedTab = ({ config, setConfig, useCount }) => {
             </div>
 
             {/* Google Photos Section */}
-            <h2 className={styles['section-title']}>📤 Google Photos</h2>
+            <h2 className={styles['section-title']}>📤 {t('preferences:advanced.googlePhotos')}</h2>
             <div className={styles['setting-group']}>
                 <div className={styles['setting-item']}>
                     <input
@@ -103,7 +103,7 @@ const AdvancedTab = ({ config, setConfig, useCount }) => {
                         onChange={(e) => setConfig(prev => ({ ...prev, google_auth_auto_reauth: e.target.checked }))}
                     />
                     <label htmlFor="google-auth-auto-reauth-check">
-                        🔄 Automatically prompt for Google Photos re-authentication on startup
+                        🔄 {t('preferences:advanced.autoReauth')}
                     </label>
                 </div>
             </div>

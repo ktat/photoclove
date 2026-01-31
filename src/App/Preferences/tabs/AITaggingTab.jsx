@@ -238,7 +238,7 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
     const handleSelectNone = () => updateAIConfig({ enabled_categories: [] });
 
     const handleRunForAll = async () => {
-        if (!window.confirm("This will run AI tagging for ALL photos in your library. This may take a long time. Continue?")) {
+        if (!window.confirm(t('preferences:aiTagging.confirmRunAll'))) {
             return;
         }
 
@@ -272,9 +272,9 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
             className={styles['preferences-section']}
             style={{ cursor: downloadingModelId ? 'wait' : 'default' }}
         >
-            <h2 className={styles['section-title']}>{t('preferences:tabs.aiTagging')}</h2>
+            <h2 className={styles['section-title']}>{t('preferences:aiTagging.title')}</h2>
             <p className={styles['setting-description']} style={{ marginBottom: 'var(--space-4)' }}>
-                Automatically classify and tag photos using AI. Tags are prefixed with <code>ai:</code>.
+                {t('preferences:aiTagging.description')}
             </p>
 
             {/* Main Toggle */}
@@ -295,7 +295,7 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                     marginLeft: 'var(--space-6)',
                     marginBottom: 0
                 }}>
-                    ⚠️ Restart the application after enabling/disabling for changes to take effect.
+                    ⚠️ {t('preferences:aiTagging.enableWarning')}
                 </p>
             </div>
 
@@ -317,12 +317,11 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                     {/* Minimum Thumbnail Size */}
                     <div className={styles['slider-container']}>
                         <div className={styles['slider-label']}>
-                            <span className={styles['slider-label-text']}>Minimum Thumbnail Size</span>
+                            <span className={styles['slider-label-text']}>{t('preferences:aiTagging.minThumbnailSize')}</span>
                             <span className={styles['slider-value']}>{aiConfig.min_thumbnail_size ?? 160}px</span>
                         </div>
                         <p className={styles['slider-description']}>
-                            Use EXIF thumbnail for faster tagging when thumbnail is larger than this size.
-                            Set to 0 to always use full image (slower but more accurate).
+                            {t('preferences:aiTagging.minThumbnailDescription')}
                         </p>
                         <input
                             type="range"
@@ -337,7 +336,7 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                             className={styles['slider-range']}
                         />
                         <div className={styles['slider-range-labels']}>
-                            <span>0 (Always full image)</span>
+                            <span>0 ({t('preferences:aiTagging.alwaysFullImage')})</span>
                             <span>400px</span>
                         </div>
                     </div>
@@ -345,11 +344,11 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                     {/* Confidence Threshold */}
                     <div className={styles['slider-container']}>
                         <div className={styles['slider-label']}>
-                            <span className={styles['slider-label-text']}>Confidence Threshold</span>
+                            <span className={styles['slider-label-text']}>{t('preferences:aiTagging.confidenceThreshold')}</span>
                             <span className={styles['slider-value']}>{toNormalizedThreshold(aiConfig.confidence_threshold, aiConfig.model_type)}%</span>
                         </div>
                         <p className={styles['slider-description']}>
-                            Lower values = more tags (less strict), Higher values = fewer tags (more strict)
+                            {t('preferences:aiTagging.confidenceDescription')}
                         </p>
                         <input
                             type="range"
@@ -365,15 +364,15 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                             className={styles['slider-range']}
                         />
                         <div className={styles['slider-range-labels']}>
-                            <span>0% (Less strict)</span>
-                            <span>100% (More strict)</span>
+                            <span>0% ({t('preferences:aiTagging.lessStrict')})</span>
+                            <span>100% ({t('preferences:aiTagging.moreStrict')})</span>
                         </div>
                     </div>
 
                     {/* Max Tags per Image */}
                     <div className={styles['setting-group']}>
                         <div className={styles['setting-row']}>
-                            <label>Max tags per image</label>
+                            <label>{t('preferences:aiTagging.maxTagsPerImage')}</label>
                             <input
                                 type="number"
                                 min="1"
@@ -398,15 +397,15 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                     {aiConfig.model_type === 'mobilenet' && (
                         <div className={styles['setting-group']} style={{ marginTop: 'var(--space-4)' }}>
                             <div className={styles['setting-row']}>
-                                <label>Model Preset</label>
+                                <label>{t('preferences:aiTagging.modelPreset')}</label>
                                 <select
                                     value={aiConfig.model_preset || 'standard'}
                                     onChange={(e) => updateAIConfig({ model_preset: e.target.value })}
                                     style={{ width: '200px' }}
                                 >
-                                    <option value="light">Light (Fast)</option>
-                                    <option value="standard">Standard (Balanced)</option>
-                                    <option value="accurate">Accurate (Slow)</option>
+                                    <option value="light">{t('preferences:aiTagging.presetLight')}</option>
+                                    <option value="standard">{t('preferences:aiTagging.presetStandard')}</option>
+                                    <option value="accurate">{t('preferences:aiTagging.presetAccurate')}</option>
                                 </select>
                             </div>
                         </div>
@@ -425,10 +424,10 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                     {aiConfig.model_type === 'mobilenet' && (
                         <div style={{ marginTop: 'var(--space-5)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
-                                <h3 style={{ margin: 0 }}>Enabled Categories ({enabledCount}/{totalCategories})</h3>
+                                <h3 style={{ margin: 0 }}>{t('preferences:aiTagging.enabledCategories')} ({enabledCount}/{totalCategories})</h3>
                                 <div>
-                                    <button onClick={handleSelectAll} style={smallButtonStyle}>Select All</button>
-                                    <button onClick={handleSelectNone} style={{ ...smallButtonStyle, marginLeft: 'var(--space-2)' }}>Select None</button>
+                                    <button onClick={handleSelectAll} style={smallButtonStyle}>{t('preferences:aiTagging.selectAll')}</button>
+                                    <button onClick={handleSelectNone} style={{ ...smallButtonStyle, marginLeft: 'var(--space-2)' }}>{t('preferences:aiTagging.selectNone')}</button>
                                 </div>
                             </div>
 
@@ -466,16 +465,16 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
 
                     {/* Apply to All Photos */}
                     <div style={{ marginTop: 'var(--space-5)', padding: 'var(--space-4)', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-default)' }}>
-                        <h3 style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>Run AI Tagging for Existing Photos</h3>
+                        <h3 style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>{t('preferences:aiTagging.runForAll')}</h3>
                         <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--space-3)' }}>
-                            Apply AI tags to all photos in your library.
+                            {t('preferences:aiTagging.runForAllDescription')}
                         </p>
                         <button
                             onClick={handleRunForAll}
                             disabled={isProcessing}
                             className={styles['btn-warning']}
                         >
-                            {isProcessing ? 'Processing...' : 'Apply to All Photos'}
+                            {isProcessing ? t('preferences:aiTagging.processing') : t('preferences:aiTagging.applyToAll')}
                         </button>
 
                         {isProcessing && (
@@ -494,7 +493,7 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
 
             {!aiConfig.enabled && (
                 <p className={styles['setting-description']} style={{ fontStyle: 'italic', marginTop: 'var(--space-4)' }}>
-                    Enable AI Auto-Tagging to configure options and run on existing photos.
+                    {t('preferences:aiTagging.enableToConfig')}
                 </p>
             )}
         </div>
