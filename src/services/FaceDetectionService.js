@@ -261,16 +261,10 @@ export async function deletePerson(personId) {
 /**
  * Delete a detected face (for removing false positives)
  * @param {number} faceId - Face ID
- * @returns {Promise<void>}
+ * @returns {Promise<number>} Number of faces deleted (1)
  */
 export async function deleteFace(faceId) {
-    logger.info(CONTEXT, 'delete_face', 'Deleting face', { faceId });
-    try {
-        await invoke('delete_detected_face', { faceId });
-    } catch (error) {
-        logger.error(CONTEXT, 'delete_face_failed', 'Failed to delete face', { faceId, error: error.toString() });
-        throw error;
-    }
+    return deleteFacesBatch([faceId]);
 }
 
 /**
