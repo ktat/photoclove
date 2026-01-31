@@ -1,0 +1,111 @@
+{
+  "title": "设置",
+  "tabs": {
+    "general": "常规",
+    "startup": "启动",
+    "thumbnail": "缩略图",
+    "grouping": "分组",
+    "performance": "性能",
+    "appearance": "外观",
+    "logging": "日志",
+    "aiTagging": "AI 标签",
+    "faceDetection": "人脸检测",
+    "s3Backup": "S3 备份",
+    "advanced": "高级"
+  },
+  "general": {
+    "language": "语言",
+    "languageDescription": "选择应用程序的显示语言",
+    "dateFormat": "日期格式",
+    "dateFormatDescription": "选择日期的显示方式",
+    "importFolder": "导入文件夹",
+    "importFolderDescription": "导入照片的默认文件夹",
+    "selectFolder": "选择文件夹",
+    "thumbnailFolder": "缩略图文件夹",
+    "thumbnailFolderDescription": "存储生成的缩略图的位置"
+  },
+  "startup": {
+    "startupBehavior": "启动行为",
+    "showWelcome": "启动时显示欢迎界面",
+    "openLastFolder": "打开上次查看的文件夹",
+    "startMinimized": "启动时最小化"
+  },
+  "thumbnail": {
+    "thumbnailSize": "缩略图大小",
+    "thumbnailQuality": "缩略图质量",
+    "regenerate": "重新生成缩略图",
+    "regenerateDescription": "重新生成所有缩略图（这可能需要一些时间）"
+  },
+  "grouping": {
+    "burstDetection": "连拍检测",
+    "burstThreshold": "连拍阈值（秒）",
+    "burstThresholdDescription": "在此时间内拍摄的照片将被分组为连拍",
+    "similarPhotos": "相似照片检测",
+    "similarThreshold": "相似度阈值"
+  },
+  "performance": {
+    "parallelProcessing": "并行处理",
+    "copyParallel": "复制并行数",
+    "thumbnailParallel": "缩略图并行数",
+    "maxPhotosPerFetch": "每次获取的最大照片数",
+    "cacheSize": "缓存大小（MB）"
+  },
+  "appearance": {
+    "theme": "主题",
+    "themeLight": "浅色",
+    "themeDark": "深色",
+    "themeSystem": "跟随系统",
+    "gridSize": "网格大小",
+    "showFilenames": "显示文件名",
+    "showDates": "显示日期"
+  },
+  "logging": {
+    "logLevel": "日志级别",
+    "logLevelDebug": "调试",
+    "logLevelInfo": "信息",
+    "logLevelWarn": "警告",
+    "logLevelError": "错误",
+    "logRetention": "日志保留天数",
+    "openLogFolder": "打开日志文件夹",
+    "viewLogs": "查看日志"
+  },
+  "aiTagging": {
+    "enableAI": "启用 AI 标签",
+    "model": "AI 模型",
+    "modelDescription": "选择用于自动标签的 AI 模型",
+    "autoTag": "导入时自动标签",
+    "customLabels": "自定义标签",
+    "customLabelsDescription": "为基于 CLIP 的模型定义自定义标签",
+    "downloadModel": "下载模型",
+    "deleteModel": "删除模型"
+  },
+  "faceDetection": {
+    "enableFaceDetection": "启用人脸检测",
+    "autoDetect": "导入时自动检测",
+    "model": "人脸检测模型",
+    "downloadModel": "下载模型",
+    "deleteModel": "删除模型",
+    "thumbnailSize": "人脸缩略图大小"
+  },
+  "s3Backup": {
+    "enable": "启用 S3 备份",
+    "endpoint": "端点",
+    "bucket": "存储桶名称",
+    "accessKey": "访问密钥",
+    "secretKey": "秘密密钥",
+    "region": "区域",
+    "testConnection": "测试连接",
+    "sync": "立即同步"
+  },
+  "advanced": {
+    "resetTutorials": "重置提示",
+    "resetTutorialsDescription": "再次显示提示教程",
+    "showWelcomeTutorial": "再次显示欢迎教程",
+    "clearCache": "清除缓存",
+    "clearCacheDescription": "清除所有缓存数据",
+    "exportConfig": "导出配置",
+    "importConfig": "导入配置",
+    "resetAll": "重置所有设置",
+    "resetAllWarning": "这将把所有设置重置为默认值"
+  }
+}

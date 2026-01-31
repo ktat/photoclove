@@ -1,0 +1,77 @@
+{
+  "general": {
+    "unknown": "发生未知错误",
+    "network": "网络错误。请检查您的连接。",
+    "timeout": "操作超时。请重试。",
+    "permission": "权限被拒绝",
+    "notFound": "未找到",
+    "alreadyExists": "已存在",
+    "invalidInput": "输入无效",
+    "operationFailed": "操作失败"
+  },
+  "file": {
+    "notFound": "文件未找到",
+    "accessDenied": "文件访问被拒绝",
+    "readError": "读取文件时出错",
+    "writeError": "写入文件时出错",
+    "deleteError": "删除文件时出错",
+    "moveError": "移动文件时出错",
+    "copyError": "复制文件时出错",
+    "invalidFormat": "文件格式无效",
+    "tooLarge": "文件过大",
+    "corrupted": "文件似乎已损坏"
+  },
+  "photo": {
+    "loadFailed": "加载照片失败",
+    "saveFailed": "保存照片失败",
+    "deleteFailed": "删除照片失败",
+    "importFailed": "导入照片失败",
+    "exportFailed": "导出照片失败",
+    "thumbnailFailed": "生成缩略图失败",
+    "metadataFailed": "读取照片元数据失败"
+  },
+  "album": {
+    "createFailed": "创建相册失败",
+    "deleteFailed": "删除相册失败",
+    "updateFailed": "更新相册失败",
+    "addPhotosFailed": "添加照片到相册失败",
+    "removePhotosFailed": "从相册移除照片失败",
+    "nameRequired": "相册名称为必填项",
+    "nameExists": "此名称的相册已存在"
+  },
+  "tag": {
+    "createFailed": "创建标签失败",
+    "deleteFailed": "删除标签失败",
+    "updateFailed": "更新标签失败",
+    "nameRequired": "标签名称为必填项",
+    "nameExists": "此名称的标签已存在"
+  },
+  "person": {
+    "createFailed": "创建人物失败",
+    "deleteFailed": "删除人物失败",
+    "updateFailed": "更新人物失败",
+    "assignFailed": "将人脸分配给人物失败",
+    "mergeFailed": "合并人物失败",
+    "nameRequired": "人物姓名为必填项"
+  },
+  "face": {
+    "detectionFailed": "人脸检测失败",
+    "modelNotFound": "人脸检测模型未找到",
+    "modelDownloadFailed": "下载人脸检测模型失败"
+  },
+  "ai": {
+    "taggingFailed": "AI 标签失败",
+    "modelNotFound": "AI 模型未找到",
+    "modelDownloadFailed": "下载 AI 模型失败"
+  },
+  "config": {
+    "loadFailed": "加载配置失败",
+    "saveFailed": "保存配置失败",
+    "invalid": "配置无效"
+  },
+  "database": {
+    "connectionFailed": "数据库连接失败",
+    "queryFailed": "数据库查询失败",
+    "migrationFailed": "数据库迁移失败"
+  }
+}

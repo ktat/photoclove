@@ -1,14 +1,17 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import PickFolderSingle from '../../../FolderPicker.jsx';
 import styles from '../Preferences.module.css';
 
 const ThumbnailTab = ({ config, setConfig }) => {
+    const { t } = useTranslation('preferences');
+
     return (
         <div className={styles['preferences-section']}>
-            <h2 className={styles['section-title']}>Thumbnail Settings</h2>
+            <h2 className={styles['section-title']}>{t('thumbnail.thumbnailSize')}</h2>
             <div className={styles['setting-group']}>
                 <PickFolderSingle
-                    label="Store Path:"
+                    label={t('thumbnail.thumbnailSize') + ':'}
                     folder={config.thumbnail_store}
                     setFunc={(folder) => setConfig(prev => ({ ...prev, thumbnail_store: folder }))}
                 />
@@ -36,10 +39,10 @@ const ThumbnailTab = ({ config, setConfig }) => {
                 </div>
             </div>
 
-            <h2 className={styles['section-title']}>Compression</h2>
+            <h2 className={styles['section-title']}>{t('thumbnail.thumbnailQuality')}</h2>
             <div className={styles['setting-group']}>
                 <div className={styles['setting-row']}>
-                    <label>Compress Quality:</label>
+                    <label>{t('thumbnail.thumbnailQuality')}:</label>
                     <select
                         value={config.thumbnail_compression_quality || ''}
                         onChange={(e) => setConfig(prev => ({ ...prev, thumbnail_compression_quality: parseFloat(e.target.value) }))}

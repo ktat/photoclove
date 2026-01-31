@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { message } from '@tauri-apps/plugin-dialog';
 import classNames from 'classnames';
+import { useTranslation } from 'react-i18next';
 import { logger } from "../../services/LoggerService.js";
 import GeneralTab from "./tabs/GeneralTab.jsx";
 import AppearanceTab from "./tabs/AppearanceTab.jsx";
@@ -17,6 +18,7 @@ import styles from './Preferences.module.css';
 
 
 function Preferences(props) {
+    const { t } = useTranslation(['preferences', 'common']);
     const [config, setConfig] = useState({
         export_from: [],
         copy_parallel: '',
@@ -168,15 +170,15 @@ function Preferences(props) {
     }
 
     const tabs = [
-        { id: 'general', label: 'General', icon: '⚙️' },
-        { id: 'appearance', label: 'Appearance', icon: '🎨' },
-        { id: 'startup', label: 'Startup', icon: '🚀' },
-        { id: 'thumbnail', label: 'Thumbnail', icon: '🖼️' },
-        { id: 'grouping', label: 'Grouping', icon: '📸' },
-        { id: 'ai_tagging', label: 'AI Tagging', icon: '🤖' },
-        { id: 'face_detection', label: 'Face Detection', icon: '👤' },
-        { id: 's3_backup', label: 'S3 Backup', icon: '☁️' },
-        { id: 'advanced', label: 'Advanced', icon: '🔧' }
+        { id: 'general', label: t('preferences:tabs.general'), icon: '⚙️' },
+        { id: 'appearance', label: t('preferences:tabs.appearance'), icon: '🎨' },
+        { id: 'startup', label: t('preferences:tabs.startup'), icon: '🚀' },
+        { id: 'thumbnail', label: t('preferences:tabs.thumbnail'), icon: '🖼️' },
+        { id: 'grouping', label: t('preferences:tabs.grouping'), icon: '📸' },
+        { id: 'ai_tagging', label: t('preferences:tabs.aiTagging'), icon: '🤖' },
+        { id: 'face_detection', label: t('preferences:tabs.faceDetection'), icon: '👤' },
+        { id: 's3_backup', label: t('preferences:tabs.s3Backup'), icon: '☁️' },
+        { id: 'advanced', label: t('preferences:tabs.advanced'), icon: '🔧' }
     ];
 
     const renderTabContent = () => {
@@ -242,8 +244,8 @@ function Preferences(props) {
     return (
         <div id="preferences" className={styles.preferences}>
             <div className={styles['preferences-header']}>
-                <h1>Preferences</h1>
-                <p className={styles['preferences-subtitle']}>Customize PhotoClove settings</p>
+                <h1>{t('preferences:title')}</h1>
+                <p className={styles['preferences-subtitle']}>{t('common:app.name')}</p>
             </div>
 
             {/* Tab Navigation */}
@@ -268,7 +270,7 @@ function Preferences(props) {
             {/* Save Button */}
             <div className={styles['preferences-footer']}>
                 <button className={styles['btn-primary']} onClick={saveConfig}>
-                    Save Changes
+                    {t('common:button.save')}
                 </button>
             </div>
         </div>

@@ -1,42 +1,23 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../services/LoggerService.js';
 import styles from './SlideShow.module.css';
 
-const SlideShow = ({ photos, startIndex = 0, onClose }) => {
+const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
   const { t } = useTranslation(['common']);
   const [currentIndex, setCurrentIndex] = useState(startIndex);
   const [isPlaying, setIsPlaying] = useState(true);
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [interval, setIntervalTime] = useState(5000); // 5 seconds default
-  const [preloadedImages, setPreloadedImages] = useState({});
+  const [slideInterval, setSlideInterval] = useState(5000);
 
   const containerRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
   const autoAdvanceRef = useRef(null);
 
   const currentPhoto = photos[currentIndex];
-
-  // Preload next and previous images
-  const preloadImages = useCallback((index) => {
-    const indicesToPreload = [
-      index,
-      (index + 1) % photos.length,
-      (index - 1 + photos.length) % photos.length,
-      (index + 2) % photos.length,
-    ];
-
-    indicesToPreload.forEach((i) => {
-      const photo = photos[i];
-      if (photo && !preloadedImages[photo.path]) {
-        const img = new Image();
-        img.src = convertFileSrc(photo.path);
-        setPreloadedImages((prev) => ({ ...prev, [photo.path]: true }));
-      }
-    });
-  }, [photos, preloadedImages]);
 
   // Navigate to next photo
   const goToNext = useCallback(() => {
@@ -53,29 +34,25 @@ const SlideShow = ({ photos, startIndex = 0, onClose }) => {
     setIsPlaying((prev) => !prev);
   }, []);
 
-  // Enter fullscreen
-  const enterFullscreen = useCallback(() => {
-    if (containerRef.current && !document.fullscreenElement) {
-      containerRef.current.requestFullscreen().then(() => {
-        setIsFullscreen(true);
-      }).catch((err) => {
-        logger.warn('SlideShow', 'fullscreen_failed', 'Failed to enter fullscreen', { error: err.message });
-      });
+  // Fullscreen using Tauri API
+  const enterFullscreen = useCallback(async () => {
+    try {
+      await getCurrentWindow().setFullscreen(true);
+      setIsFullscreen(true);
+    } catch (err) {
+      logger.warn('SlideShow', 'fullscreen_failed', 'Failed to enter fullscreen', { error: err.message });
     }
   }, []);
 
-  // Exit fullscreen
-  const exitFullscreen = useCallback(() => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen().then(() => {
-        setIsFullscreen(false);
-      }).catch((err) => {
-        logger.warn('SlideShow', 'exit_fullscreen_failed', 'Failed to exit fullscreen', { error: err.message });
-      });
+  const exitFullscreen = useCallback(async () => {
+    try {
+      await getCurrentWindow().setFullscreen(false);
+      setIsFullscreen(false);
+    } catch (err) {
+      logger.warn('SlideShow', 'exit_fullscreen_failed', 'Failed to exit fullscreen', { error: err.message });
     }
   }, []);
 
-  // Toggle fullscreen
   const toggleFullscreen = useCallback(() => {
     if (isFullscreen) {
       exitFullscreen();
@@ -85,12 +62,12 @@ const SlideShow = ({ photos, startIndex = 0, onClose }) => {
   }, [isFullscreen, enterFullscreen, exitFullscreen]);
 
   // Handle close
-  const handleClose = useCallback(() => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
+  const handleClose = useCallback(async () => {
+    if (isFullscreen) {
+      await exitFullscreen();
     }
     onClose();
-  }, [onClose]);
+  }, [isFullscreen, exitFullscreen, onClose]);
 
   // Handle keyboard events
   useEffect(() => {
@@ -123,22 +100,12 @@ const SlideShow = ({ photos, startIndex = 0, onClose }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [goToNext, goToPrevious, handleClose, toggleFullscreen, togglePlay]);
 
-  // Handle fullscreen change
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-
   // Auto-advance timer
   useEffect(() => {
     if (isPlaying && photos.length > 1) {
       autoAdvanceRef.current = setTimeout(() => {
         goToNext();
-      }, interval);
+      }, slideInterval);
     }
 
     return () => {
@@ -146,12 +113,7 @@ const SlideShow = ({ photos, startIndex = 0, onClose }) => {
         clearTimeout(autoAdvanceRef.current);
       }
     };
-  }, [isPlaying, currentIndex, interval, goToNext, photos.length]);
-
-  // Preload images when index changes
-  useEffect(() => {
-    preloadImages(currentIndex);
-  }, [currentIndex, preloadImages]);
+  }, [isPlaying, currentIndex, slideInterval, goToNext, photos.length]);
 
   // Show/hide controls on mouse movement
   const handleMouseMove = useCallback(() => {
@@ -170,6 +132,7 @@ const SlideShow = ({ photos, startIndex = 0, onClose }) => {
 
   // Handle click on left/right sides
   const handleClick = useCallback((e) => {
+    if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const width = rect.width;
@@ -183,7 +146,7 @@ const SlideShow = ({ photos, startIndex = 0, onClose }) => {
     }
   }, [goToPrevious, goToNext, togglePlay]);
 
-  // Enter fullscreen on mount
+  // Enter fullscreen on mount, exit on unmount
   useEffect(() => {
     enterFullscreen();
     logger.info('SlideShow', 'started', 'Slideshow started', {
@@ -192,6 +155,7 @@ const SlideShow = ({ photos, startIndex = 0, onClose }) => {
     });
 
     return () => {
+      exitFullscreen();
       logger.info('SlideShow', 'ended', 'Slideshow ended');
     };
   }, []);
@@ -199,6 +163,9 @@ const SlideShow = ({ photos, startIndex = 0, onClose }) => {
   if (!currentPhoto) {
     return null;
   }
+
+  const photoPath = currentPhoto.displayPath();
+  const imgSrc = convertFileSrc(photoPath);
 
   return (
     <div
@@ -210,8 +177,8 @@ const SlideShow = ({ photos, startIndex = 0, onClose }) => {
       {/* Photo Display */}
       <div className={styles.photoWrapper}>
         <img
-          src={convertFileSrc(currentPhoto.path)}
-          alt={currentPhoto.filename || ''}
+          src={imgSrc}
+          alt={currentPhoto.name || ''}
           className={styles.photo}
           draggable={false}
         />
@@ -228,7 +195,7 @@ const SlideShow = ({ photos, startIndex = 0, onClose }) => {
             <button
               className={styles.controlButton}
               onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
-              title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+              title={isFullscreen ? 'Exit Fullscreen (F)' : 'Fullscreen (F)'}
             >
               {isFullscreen ? '⛶' : '⛶'}
             </button>
@@ -269,8 +236,8 @@ const SlideShow = ({ photos, startIndex = 0, onClose }) => {
           {/* Interval selector */}
           <select
             className={styles.intervalSelect}
-            value={interval}
-            onChange={(e) => { e.stopPropagation(); setIntervalTime(Number(e.target.value)); }}
+            value={slideInterval}
+            onChange={(e) => { e.stopPropagation(); setSlideInterval(Number(e.target.value)); }}
             onClick={(e) => e.stopPropagation()}
           >
             <option value={3000}>3s</option>
@@ -290,9 +257,9 @@ const SlideShow = ({ photos, startIndex = 0, onClose }) => {
       </div>
 
       {/* Photo Info */}
-      {showControls && currentPhoto.filename && (
+      {showControls && currentPhoto.name && (
         <div className={styles.photoInfo}>
-          {currentPhoto.filename}
+          {currentPhoto.name}
         </div>
       )}
     </div>

@@ -118,11 +118,35 @@
     "english": "Anglais",
     "japanese": "Japonais",
     "french": "Français",
-    "german": "Allemand"
+    "german": "Allemand",
+    "chinese_simplified": "Chinois (simplifié)",
+    "chinese_traditional": "Chinois (traditionnel)",
+    "spanish": "Espagnol"
   },
   "app": {
     "name": "PhotoClove",
     "loading": "Chargement de PhotoClove",
     "welcome": "Bienvenue sur PhotoClove !"
+  },
+  "toolbar": {
+    "icon": "Icône",
+    "iconSmall": "petit",
+    "iconNormal": "normal",
+    "iconLarge": "grand",
+    "iconHuge": "énorme",
+    "sortShotTimeDesc": "Date de prise (desc)",
+    "sortShotTimeAsc": "Date de prise (asc)",
+    "sortAddedTimeDesc": "Date d'ajout (desc)",
+    "sortAddedTimeAsc": "Date d'ajout (asc)",
+    "sortStarDesc": "Note étoile (desc)",
+    "sortStarAsc": "Note étoile (asc)",
+    "sortFileNameDesc": "Nom de fichier (desc)",
+    "sortFileNameAsc": "Nom de fichier (asc)",
+    "burst": "Rafale",
+    "burstOn": "Rafale ON",
+    "burstShowAll": "Afficher toutes les photos",
+    "burstGroup": "Grouper les photos en rafale",
+    "slideshow": "Diaporama",
+    "filterPhotos": "Filtrer les photos"
   }
 }

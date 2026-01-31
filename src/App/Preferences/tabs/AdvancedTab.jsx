@@ -1,12 +1,15 @@
 import React from 'react';
 import { message } from '@tauri-apps/plugin-dialog';
+import { useTranslation } from 'react-i18next';
 import styles from '../Preferences.module.css';
 
 const AdvancedTab = ({ config, setConfig, useCount }) => {
+    const { t } = useTranslation(['preferences', 'common']);
+
     return (
         <div className={styles['preferences-section']}>
             {/* Performance Section */}
-            <h2 className={styles['section-title']}>⚡ Parallel Processing</h2>
+            <h2 className={styles['section-title']}>⚡ {t('preferences:performance.parallelProcessing')}</h2>
             <div className={styles['setting-group']}>
                 <div className={styles['setting-row']}>
                     <label>Import Parallel:</label>
@@ -61,7 +64,7 @@ const AdvancedTab = ({ config, setConfig, useCount }) => {
             </div>
 
             {/* Logging Section */}
-            <h2 className={styles['section-title']}>📝 Logging</h2>
+            <h2 className={styles['section-title']}>📝 {t('preferences:tabs.logging')}</h2>
             <div className={styles['setting-group']}>
                 <div className={styles['setting-item']}>
                     <input
@@ -71,20 +74,20 @@ const AdvancedTab = ({ config, setConfig, useCount }) => {
                         onChange={(e) => setConfig(prev => ({ ...prev, logging_enabled: e.target.checked }))}
                     />
                     <label htmlFor="logging-enabled-check">
-                        Enable debug logging
+                        {t('preferences:logging.logLevel')}
                     </label>
                 </div>
                 <div className={styles['setting-row']}>
-                    <label>Log Level:</label>
+                    <label>{t('preferences:logging.logLevel')}:</label>
                     <select
                         value={config.logging_level || 'info'}
                         onChange={(e) => setConfig(prev => ({ ...prev, logging_level: e.target.value }))}
                         disabled={!config.logging_enabled}
                     >
-                        <option value="debug">Debug</option>
-                        <option value="info">Info</option>
-                        <option value="warn">Warning</option>
-                        <option value="error">Error</option>
+                        <option value="debug">{t('preferences:logging.logLevelDebug')}</option>
+                        <option value="info">{t('preferences:logging.logLevelInfo')}</option>
+                        <option value="warn">{t('preferences:logging.logLevelWarn')}</option>
+                        <option value="error">{t('preferences:logging.logLevelError')}</option>
                     </select>
                 </div>
             </div>
@@ -106,7 +109,7 @@ const AdvancedTab = ({ config, setConfig, useCount }) => {
             </div>
 
             {/* Tutorial Section */}
-            <h2 className={styles['section-title']}>📚 Tutorial</h2>
+            <h2 className={styles['section-title']}>📚 {t('preferences:tabs.advanced')}</h2>
             <div className={styles['setting-group']}>
                 <div className={styles['setting-item']}>
                     <input
@@ -116,19 +119,19 @@ const AdvancedTab = ({ config, setConfig, useCount }) => {
                         onChange={(e) => setConfig(prev => ({ ...prev, use_count: e.target.checked ? 0 : useCount }))}
                     />
                     <label htmlFor="preference-check">
-                        👋 Show Welcome tutorial again
+                        👋 {t('preferences:advanced.showWelcomeTutorial')}
                     </label>
                 </div>
                 <div className={styles['setting-row']}>
-                    <label>💡 Tab Instruction Tooltips:</label>
+                    <label>💡 {t('preferences:advanced.resetTutorials')}:</label>
                     <button
                         className={styles['btn-secondary']}
                         onClick={() => {
                             localStorage.removeItem('photoclove_tutorials');
-                            message("Tab instruction tooltips will be shown again.");
+                            message(t('preferences:advanced.resetTutorialsDescription'));
                         }}
                     >
-                        🔄 Reset Tooltips
+                        🔄 {t('common:button.reset')}
                     </button>
                 </div>
             </div>

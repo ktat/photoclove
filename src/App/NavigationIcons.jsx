@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import WelcomeImage from "../WelcomeImage.jsx";
 
 function NavigationIcons({
@@ -15,6 +16,8 @@ function NavigationIcons({
   handleMouseLeave,
   config
 }) {
+  const { t } = useTranslation('common');
+
   return (
     <div className="navigation-icons">
       <a href="#" onClick={() => {
@@ -23,45 +26,45 @@ function NavigationIcons({
         toggleHome();
         setWelcomeImage(WelcomeImage(config));
       }}
-      onMouseEnter={(e) => handleMouseEnter("HOME", e)}
+      onMouseEnter={(e) => handleMouseEnter(t('navigation.home'), e)}
       onMouseLeave={handleMouseLeave}>🏠</a>
 
       <a href="#" onClick={() => {
         toggleSearchPage(true, "", true);
       }}
-      onMouseEnter={(e) => handleMouseEnter("Search", e)}
+      onMouseEnter={(e) => handleMouseEnter(t('navigation.search'), e)}
       onMouseLeave={handleMouseLeave}>🔍</a>
 
       <a href="#" onClick={() => toggleImporter(true)}
-      onMouseEnter={(e) => handleMouseEnter("Import", e)}
+      onMouseEnter={(e) => handleMouseEnter(t('navigation.import'), e)}
       onMouseLeave={handleMouseLeave}>📥</a>
 
       <a href="#" onClick={() => {
         resetPhotoState();
         toggleAlbumListMode();
       }}
-      onMouseEnter={(e) => handleMouseEnter("Albums", e)}
+      onMouseEnter={(e) => handleMouseEnter(t('navigation.albums'), e)}
       onMouseLeave={handleMouseLeave}>📚</a>
 
       <a href="#" onClick={() => {
         resetPhotoState();
         openTagsList();
       }}
-      onMouseEnter={(e) => handleMouseEnter("Tags", e)}
+      onMouseEnter={(e) => handleMouseEnter(t('navigation.tags'), e)}
       onMouseLeave={handleMouseLeave}>🏷️</a>
 
       <a href="#" onClick={() => {
         resetPhotoState();
         openFacesList();
       }}
-      onMouseEnter={(e) => handleMouseEnter("Faces", e)}
+      onMouseEnter={(e) => handleMouseEnter(t('navigation.people'), e)}
       onMouseLeave={handleMouseLeave}>👤</a>
 
       <a href="#" onClick={() => {
         resetPhotoState();
         openTrash();
       }}
-      onMouseEnter={(e) => handleMouseEnter("Trash", e)}
+      onMouseEnter={(e) => handleMouseEnter(t('navigation.trash'), e)}
       onMouseLeave={handleMouseLeave}>🗑️</a>
     </div>
   );
