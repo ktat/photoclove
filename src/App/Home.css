@@ -74,18 +74,187 @@
   color: white;
 }
 
+/* On This Day Memories Section */
+.home-memories-section {
+  margin: var(--space-5);
+  padding: var(--space-4);
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-default);
+}
+
+.home-memories-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.home-memories-title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.home-memories-title::before {
+  content: "📸";
+}
+
+/* View Toggle Buttons */
+.home-view-toggle {
+  display: flex;
+  gap: var(--space-1);
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-md);
+  padding: var(--space-1);
+}
+
+.home-view-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+}
+
+.home-view-toggle-btn:hover {
+  background: var(--color-bg-muted);
+  color: var(--color-text-primary);
+}
+
+.home-view-toggle-btn.active {
+  background: var(--color-primary);
+  color: white;
+}
+
+.home-view-toggle-btn svg {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.home-memories-loading,
+.home-memories-empty {
+  text-align: center;
+  padding: var(--space-4);
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.home-memories-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.home-memories-group {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+.home-memories-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.home-memories-years-ago {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.home-memories-date {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.home-memories-thumbnails {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.home-memory-thumbnail {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-bg-muted);
+  cursor: pointer;
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+
+.home-memory-thumbnail:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.home-memory-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-memories-more {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+/* Large Photo View */
+.home-memories-photo-view {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-height: calc(100vh - 280px);
+  overflow: hidden;
+}
+
+.home-memories-large-photo {
+  max-width: 100%;
+  max-height: calc(100vh - 280px);
+  object-fit: contain;
+  border-radius: var(--radius-md);
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .home-search-bar {
     flex-direction: column;
     gap: var(--space-2);
   }
-  
+
   .home-search-input {
     width: 100%;
   }
-  
+
   .home-search-button, .home-advanced-search-button {
     width: 100%;
+  }
+
+  .home-memory-thumbnail,
+  .home-memories-more {
+    width: 60px;
+    height: 60px;
   }
 }

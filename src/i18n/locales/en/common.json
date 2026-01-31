@@ -148,5 +148,19 @@
     "burstGroup": "Group burst photos",
     "slideshow": "Slideshow",
     "filterPhotos": "Filter photos"
+  },
+  "search": {
+    "placeholder": "Search photos...",
+    "button": "Search",
+    "detailedSearch": "Detailed Search"
+  },
+  "memories": {
+    "onThisDay": "On This Day",
+    "noMemories": "No memories found for today.",
+    "yearsAgoSingular": "1 year ago",
+    "yearsAgoPlural": "{{count}} years ago",
+    "viewPhoto": "View photo",
+    "photoView": "Photo view",
+    "listView": "List view"
   }
 }

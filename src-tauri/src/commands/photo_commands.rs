@@ -186,6 +186,9 @@ pub async fn get_photos_unified(
                 "burst_album" => photo_handlers::burst::handle_burst_album(&ctx, &search_params).await,
                 "burst_tag" => photo_handlers::burst::handle_burst_tag(&ctx, &search_params).await,
                 "burst_group" => photo_handlers::burst::handle_burst_group(&ctx, &search_params).await,
+                // Memories ("On This Day") handlers
+                "memories" => photo_handlers::memories::handle(&ctx, &search_params).await,
+                "memories_startup" => photo_handlers::memories::handle_startup(&ctx, &search_params).await,
                 _ => {
                     log::error!(target: "get_photos", "unsupported_search_type; search_type={}", search_type);
                     Err(())
