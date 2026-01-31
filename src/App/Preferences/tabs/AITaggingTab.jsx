@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { useTranslation } from 'react-i18next';
 import { logger } from "../../../services/LoggerService.js";
 import styles from '../Preferences.module.css';
 import AIModelSelector, { AI_MODELS } from './AIModelSelector.jsx';
@@ -55,6 +56,7 @@ const CATEGORY_GROUPS = {
 };
 
 function AITaggingTab({ config, setConfig, addFooterMessage }) {
+    const { t } = useTranslation(['preferences', 'common']);
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState({ message: '', progress: 0 });
     const [modelStatuses, setModelStatuses] = useState({});
@@ -270,7 +272,7 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
             className={styles['preferences-section']}
             style={{ cursor: downloadingModelId ? 'wait' : 'default' }}
         >
-            <h2 className={styles['section-title']}>AI Auto-Tagging</h2>
+            <h2 className={styles['section-title']}>{t('preferences:tabs.aiTagging')}</h2>
             <p className={styles['setting-description']} style={{ marginBottom: 'var(--space-4)' }}>
                 Automatically classify and tag photos using AI. Tags are prefixed with <code>ai:</code>.
             </p>
@@ -284,7 +286,7 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                         checked={aiConfig.enabled}
                         onChange={(e) => updateAIConfig({ enabled: e.target.checked })}
                     />
-                    <label htmlFor="ai-tagging-enabled">Enable AI Auto-Tagging</label>
+                    <label htmlFor="ai-tagging-enabled">{t('preferences:aiTagging.enableAI')}</label>
                 </div>
                 <p style={{
                     fontSize: 'var(--font-size-xs)',
@@ -308,7 +310,7 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                                 checked={aiConfig.auto_tag_on_import}
                                 onChange={(e) => updateAIConfig({ auto_tag_on_import: e.target.checked })}
                             />
-                            <label htmlFor="ai-auto-tag-import">Auto-tag photos on import</label>
+                            <label htmlFor="ai-auto-tag-import">{t('preferences:aiTagging.autoTag')}</label>
                         </div>
                     </div>
 

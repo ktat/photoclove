@@ -1,5 +1,6 @@
 import React from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { useTranslation } from 'react-i18next';
 import { logger } from '../../../services/LoggerService.js';
 import styles from '../Preferences.module.css';
 
@@ -12,6 +13,8 @@ const GroupingTab = ({
     setGroupingProgress,
     addFooterMessage
 }) => {
+    const { t } = useTranslation('preferences');
+
     const handleRecalculate = async () => {
         setIsRecalculatingGroups(true);
         setGroupingProgress({ message: 'Submitting job...', progress: 0 });
@@ -32,9 +35,9 @@ const GroupingTab = ({
 
     return (
         <div className={styles['preferences-section']}>
-            <h2 className={styles['section-title']}>Photo Grouping</h2>
+            <h2 className={styles['section-title']}>{t('grouping.burstDetection')}</h2>
             <p className={styles['setting-description']} style={{ marginBottom: 'var(--space-4)' }}>
-                Automatically group burst/continuous shooting photos for easier management.
+                {t('grouping.burstThresholdDescription')}
             </p>
             <div className={styles['setting-group']}>
                 <div className={styles['setting-item']}>
@@ -48,15 +51,15 @@ const GroupingTab = ({
                         }))}
                     />
                     <label htmlFor="grouping-enabled-check">
-                        Enable burst mode display (group continuous shots)
+                        {t('grouping.burstDetection')}
                     </label>
                 </div>
             </div>
 
-            <h2 className={styles['section-title']}>Grouping Thresholds</h2>
+            <h2 className={styles['section-title']}>{t('grouping.burstThreshold')}</h2>
             <div className={styles['setting-group']}>
                 <div className={styles['setting-row']}>
-                    <label>Time Threshold (seconds):</label>
+                    <label>{t('grouping.burstThreshold')}:</label>
                     <input
                         type="number"
                         min="1"

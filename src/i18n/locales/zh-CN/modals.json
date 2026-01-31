@@ -1,0 +1,93 @@
+{
+  "delete": {
+    "title": "删除",
+    "confirmTitle": "确认删除",
+    "photoTitle": "删除照片",
+    "photosTitle": "删除照片",
+    "albumTitle": "删除相册",
+    "tagTitle": "删除标签",
+    "personTitle": "删除人物",
+    "faceTitle": "删除人脸",
+    "confirmMessage": "确定要删除吗？",
+    "confirmPhotos": "确定要删除 {{count}} 张照片吗？",
+    "confirmAlbum": "确定要删除相册「{{name}}」吗？",
+    "confirmTag": "确定要删除标签「{{name}}」吗？",
+    "confirmPerson": "确定要删除「{{name}}」及其所有关联的人脸吗？",
+    "confirmFaces": "确定要删除 {{count}} 个人脸吗？",
+    "moveToTrash": "移至回收站",
+    "permanentDelete": "永久删除",
+    "warningPermanent": "此操作无法撤销。",
+    "warningTrash": "照片将移至回收站，稍后可以恢复。",
+    "keepAlbum": "保留相册，仅删除照片",
+    "deleteAlbum": "删除相册和照片"
+  },
+  "album": {
+    "createTitle": "创建相册",
+    "editTitle": "编辑相册",
+    "nameLabel": "相册名称",
+    "namePlaceholder": "输入相册名称",
+    "descriptionLabel": "描述",
+    "descriptionPlaceholder": "输入相册描述（可选）",
+    "colorLabel": "颜色",
+    "coverLabel": "封面照片"
+  },
+  "tag": {
+    "createTitle": "创建标签",
+    "editTitle": "编辑标签",
+    "nameLabel": "标签名称",
+    "namePlaceholder": "输入标签名称",
+    "colorLabel": "颜色"
+  },
+  "person": {
+    "assignTitle": "指定人物",
+    "createTitle": "创建人物",
+    "mergeTitle": "合并人物",
+    "nameLabel": "人物姓名",
+    "namePlaceholder": "输入人物姓名",
+    "selectExisting": "选择已有人物",
+    "createNew": "创建新人物"
+  },
+  "import": {
+    "title": "导入照片",
+    "selectFolder": "选择文件夹",
+    "selectFiles": "选择文件",
+    "scanning": "正在扫描照片...",
+    "foundPhotos": "找到 {{count}} 张照片",
+    "importing": "正在导入照片...",
+    "completed": "导入完成",
+    "failed": "导入失败"
+  },
+  "export": {
+    "title": "导出照片",
+    "selectDestination": "选择目标位置",
+    "includeMetadata": "包含元数据",
+    "includeEdits": "包含编辑"
+  },
+  "search": {
+    "title": "搜索",
+    "savedSearches": "已保存的搜索",
+    "saveSearch": "保存搜索",
+    "searchName": "搜索名称",
+    "searchNamePlaceholder": "输入搜索名称"
+  },
+  "preferences": {
+    "title": "设置"
+  },
+  "about": {
+    "title": "关于 PhotoClove",
+    "version": "版本",
+    "license": "许可证",
+    "credits": "致谢"
+  },
+  "privacy": {
+    "title": "隐私政策"
+  },
+  "terms": {
+    "title": "使用条款"
+  },
+  "help": {
+    "title": "帮助",
+    "documentation": "文档",
+    "shortcuts": "键盘快捷键"
+  }
+}

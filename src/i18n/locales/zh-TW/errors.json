@@ -1,0 +1,77 @@
+{
+  "general": {
+    "unknown": "發生未知錯誤",
+    "network": "網路錯誤。請檢查您的連線。",
+    "timeout": "操作逾時。請重試。",
+    "permission": "權限被拒絕",
+    "notFound": "找不到",
+    "alreadyExists": "已存在",
+    "invalidInput": "輸入無效",
+    "operationFailed": "操作失敗"
+  },
+  "file": {
+    "notFound": "找不到檔案",
+    "accessDenied": "檔案存取被拒絕",
+    "readError": "讀取檔案時發生錯誤",
+    "writeError": "寫入檔案時發生錯誤",
+    "deleteError": "刪除檔案時發生錯誤",
+    "moveError": "移動檔案時發生錯誤",
+    "copyError": "複製檔案時發生錯誤",
+    "invalidFormat": "檔案格式無效",
+    "tooLarge": "檔案太大",
+    "corrupted": "檔案似乎已損壞"
+  },
+  "photo": {
+    "loadFailed": "載入照片失敗",
+    "saveFailed": "儲存照片失敗",
+    "deleteFailed": "刪除照片失敗",
+    "importFailed": "匯入照片失敗",
+    "exportFailed": "匯出照片失敗",
+    "thumbnailFailed": "產生縮圖失敗",
+    "metadataFailed": "讀取照片中繼資料失敗"
+  },
+  "album": {
+    "createFailed": "建立相簿失敗",
+    "deleteFailed": "刪除相簿失敗",
+    "updateFailed": "更新相簿失敗",
+    "addPhotosFailed": "新增照片至相簿失敗",
+    "removePhotosFailed": "從相簿移除照片失敗",
+    "nameRequired": "相簿名稱為必填",
+    "nameExists": "此名稱的相簿已存在"
+  },
+  "tag": {
+    "createFailed": "建立標籤失敗",
+    "deleteFailed": "刪除標籤失敗",
+    "updateFailed": "更新標籤失敗",
+    "nameRequired": "標籤名稱為必填",
+    "nameExists": "此名稱的標籤已存在"
+  },
+  "person": {
+    "createFailed": "建立人物失敗",
+    "deleteFailed": "刪除人物失敗",
+    "updateFailed": "更新人物失敗",
+    "assignFailed": "將臉孔指定給人物失敗",
+    "mergeFailed": "合併人物失敗",
+    "nameRequired": "人物名稱為必填"
+  },
+  "face": {
+    "detectionFailed": "臉孔偵測失敗",
+    "modelNotFound": "找不到臉孔偵測模型",
+    "modelDownloadFailed": "下載臉孔偵測模型失敗"
+  },
+  "ai": {
+    "taggingFailed": "AI 標籤失敗",
+    "modelNotFound": "找不到 AI 模型",
+    "modelDownloadFailed": "下載 AI 模型失敗"
+  },
+  "config": {
+    "loadFailed": "載入設定失敗",
+    "saveFailed": "儲存設定失敗",
+    "invalid": "設定無效"
+  },
+  "database": {
+    "connectionFailed": "資料庫連線失敗",
+    "queryFailed": "資料庫查詢失敗",
+    "migrationFailed": "資料庫遷移失敗"
+  }
+}

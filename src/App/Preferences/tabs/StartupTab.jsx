@@ -1,14 +1,14 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import StartupImageManager from '../../../components/StartupImageManager.jsx';
 import styles from '../Preferences.module.css';
 
 const StartupTab = ({ config, setConfig }) => {
+    const { t } = useTranslation('preferences');
+
     return (
         <div className={styles['preferences-section']}>
-            <h2 className={styles['section-title']}>Startup Image Settings</h2>
-            <p className={styles['setting-description']} style={{ marginBottom: 'var(--space-4)' }}>
-                Choose what images are displayed when the application starts.
-            </p>
+            <h2 className={styles['section-title']}>{t('startup.startupBehavior')}</h2>
             <StartupImageManager config={config} setConfig={setConfig} />
         </div>
     );

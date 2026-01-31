@@ -1,0 +1,69 @@
+{
+  "success": {
+    "saved": "儲存成功",
+    "deleted": "刪除成功",
+    "created": "建立成功",
+    "updated": "更新成功",
+    "imported": "匯入成功",
+    "exported": "匯出成功",
+    "copied": "複製成功",
+    "moved": "移動成功",
+    "restored": "還原成功",
+    "photosAdded_one": "已新增 {{count}} 張照片",
+    "photosAdded_other": "已新增 {{count}} 張照片",
+    "photosRemoved_one": "已移除 {{count}} 張照片",
+    "photosRemoved_other": "已移除 {{count}} 張照片",
+    "photosMoved_one": "{{count}} 張照片已移至垃圾桶",
+    "photosMoved_other": "{{count}} 張照片已移至垃圾桶",
+    "photosRestored_one": "已還原 {{count}} 張照片",
+    "photosRestored_other": "已還原 {{count}} 張照片"
+  },
+  "info": {
+    "noResults": "找不到結果",
+    "noPhotosInAlbum": "此相簿中沒有照片",
+    "noPhotosWithTag": "沒有使用此標籤的照片",
+    "noPhotosOfPerson": "沒有此人物的照片",
+    "dragDropHint": "將照片拖放到這裡",
+    "selectPhotosHint": "選取照片以執行操作",
+    "emptyTrash": "垃圾桶是空的",
+    "processingJobs": "正在處理 {{count}} 個工作...",
+    "queueEmpty": "工作佇列是空的"
+  },
+  "warning": {
+    "unsavedChanges": "您有未儲存的變更。確定要離開嗎？",
+    "largeSelection": "您已選取 {{count}} 個項目。此操作可能需要一些時間。",
+    "lowDiskSpace": "磁碟空間不足。請釋放一些空間。",
+    "duplicateFound": "找到重複的照片",
+    "duplicatesFound_one": "找到 {{count}} 個重複項目",
+    "duplicatesFound_other": "找到 {{count}} 個重複項目"
+  },
+  "hint": {
+    "doubleClickToOpen": "按兩下以開啟",
+    "rightClickForOptions": "按右鍵以顯示選項",
+    "pressEscToClose": "按 Esc 關閉",
+    "pressEnterToConfirm": "按 Enter 確認",
+    "useArrowsToNavigate": "使用方向鍵導覽",
+    "scrollToLoadMore": "捲動以載入更多"
+  },
+  "welcome": {
+    "title": "歡迎使用 PhotoClove！",
+    "description": "PhotoClove 是一個照片管理應用程式，致力於快速匯入和檢視照片。",
+    "step1": "首先，設定",
+    "step1Link": "偏好設定",
+    "step2a": "如果您還沒有照片，",
+    "step2aLink": "匯入照片",
+    "step2b": "如果您的匯入資料夾中已有照片，請前往",
+    "step2bLink": "照片列表"
+  },
+  "tips": {
+    "tip1": "使用鍵盤快速鍵更快速地導覽",
+    "tip2": "為您喜愛的照片加星號以便快速存取",
+    "tip3": "建立相簿來整理您的照片",
+    "tip4": "使用標籤進行靈活分類",
+    "tip5": "臉孔偵測可幫助您找到特定人物的照片",
+    "tip6": "使用搜尋按日期、地點或內容尋找照片",
+    "tip7": "拖放可快速將照片新增至相簿",
+    "tip8": "使用連拍模式將相似照片分組",
+    "tip9": "AI 標籤可自動為您的照片分類"
+  }
+}
