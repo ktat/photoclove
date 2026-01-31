@@ -1,0 +1,200 @@
+/* SlideShow Component Styles */
+.container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  z-index: 10000;
+  cursor: none;
+  user-select: none;
+}
+
+.container:hover {
+  cursor: default;
+}
+
+.photoWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.photo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transition: opacity 0.3s ease;
+}
+
+/* Controls Overlay */
+.controls {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.controls.visible {
+  opacity: 1;
+}
+
+/* Top Bar */
+.topBar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent);
+  pointer-events: auto;
+}
+
+.counter {
+  color: #fff;
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.topActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* Bottom Bar */
+.bottomBar {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: var(--radius-xl);
+  pointer-events: auto;
+}
+
+/* Control Buttons */
+.controlButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.controlButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.playButton {
+  width: 50px;
+  height: 50px;
+  font-size: 22px;
+  background: var(--color-primary);
+}
+
+.playButton:hover {
+  background: var(--color-primary-hover);
+}
+
+/* Interval Select */
+.intervalSelect {
+  padding: var(--space-2) var(--space-3);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.intervalSelect:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.intervalSelect option {
+  background: #333;
+  color: #fff;
+}
+
+/* Progress Bar */
+.progressBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+}
+
+.progress {
+  height: 100%;
+  background: var(--color-primary);
+  transition: width 0.3s ease;
+}
+
+/* Photo Info */
+.photoInfo {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-2) var(--space-4);
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: var(--font-size-sm);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  max-width: 80%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .bottomBar {
+    padding: var(--space-2) var(--space-3);
+    gap: var(--space-2);
+  }
+
+  .controlButton {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .playButton {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+
+  .photoInfo {
+    bottom: 100px;
+    font-size: var(--font-size-xs);
+  }
+}

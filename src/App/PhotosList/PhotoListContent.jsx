@@ -23,6 +23,7 @@ import StatusBar from "./StatusBar.jsx";
 import PhotosToolbar from "./PhotosToolbar.jsx";
 import PhotoGrid from "./PhotoGrid.jsx";
 import EmptyState from "./EmptyState.jsx";
+import SlideShow from "../../components/SlideShow.jsx";
 import { logger } from "../../services/LoggerService.js";
 
 /**
@@ -66,6 +67,10 @@ function PhotoListContent({
 }) {
     // Get burst mode from UI context
     const { burstModeEnabled } = useUI();
+
+    // Slideshow state
+    const [showSlideshow, setShowSlideshow] = useState(false);
+    const [slideshowStartIndex, setSlideshowStartIndex] = useState(0);
 
     // Destructure from state groups
     const { viewModeObj, mode: viewMode, currentDate } = viewState;
@@ -166,6 +171,23 @@ function PhotoListContent({
         reloadTags,
         reloadFaces
     } = handlers;
+
+    // Slideshow handlers
+    const handleStartSlideshow = useCallback((startIndex = 0) => {
+        if (displayedPhotos.length > 0) {
+            setSlideshowStartIndex(startIndex);
+            setShowSlideshow(true);
+            logger.info('PhotoListContent', 'slideshow_start', 'Starting slideshow', {
+                photoCount: displayedPhotos.length,
+                startIndex
+            });
+        }
+    }, [displayedPhotos.length]);
+
+    const handleCloseSlideshow = useCallback(() => {
+        setShowSlideshow(false);
+        logger.info('PhotoListContent', 'slideshow_close', 'Slideshow closed');
+    }, []);
 
     // Wrapper for openBurstGroup to include current view mode data
     // This ensures that when returning from burst group, the context (album/tag) and photo position are preserved
@@ -371,6 +393,8 @@ function PhotoListContent({
                                     hasTagFilter={hasTagFilter}
                                     extensionFilter={viewModeObj.isImportMode() ? importExtensionFilter : extensionFilter}
                                     hasActiveFilters={hasActiveFiltersState}
+                                    onStartSlideshow={() => handleStartSlideshow(0)}
+                                    photosCount={displayedPhotos.length}
                                 />
                             </div>
                             : <div>
@@ -410,6 +434,15 @@ function PhotoListContent({
                     </>
                 )}
             </div>
+
+            {/* Slideshow overlay */}
+            {showSlideshow && displayedPhotos.length > 0 && (
+                <SlideShow
+                    photos={displayedPhotos}
+                    startIndex={slideshowStartIndex}
+                    onClose={handleCloseSlideshow}
+                />
+            )}
         </div>
     );
 }
