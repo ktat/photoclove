@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { logger } from '../services/LoggerService.js';
 import BaseModal, { ModalLoading, ModalError } from '../components/BaseModal.jsx';
 import styles from './LicensesView.module.css';
@@ -18,7 +19,67 @@ const compareVersions = (a, b) => {
   return 0;
 };
 
+// AI Models and their licenses
+const AI_MODELS = [
+  // AI Tagging Models
+  {
+    name: 'MobileNet (ImageNet)',
+    category: 'AI Tagging',
+    license: 'Apache 2.0',
+    repository: 'https://github.com/onnx/models',
+    description: 'Image classification model for basic object and scene detection',
+  },
+  {
+    name: 'OpenCLIP (ViT-B/32)',
+    category: 'AI Tagging',
+    license: 'MIT',
+    repository: 'https://huggingface.co/immich-app/ViT-B-32__laion2b-s34b-b79k',
+    description: 'Vision-language model trained on LAION-2B dataset',
+  },
+  {
+    name: 'SigLIP (Base)',
+    category: 'AI Tagging',
+    license: 'Apache 2.0',
+    repository: 'https://huggingface.co/Xenova/siglip-base-patch16-224',
+    description: 'Improved CLIP variant by Google with better accuracy',
+  },
+  // Face Detection Models
+  {
+    name: 'SCRFD (det_10g)',
+    category: 'Face Detection',
+    license: 'MIT',
+    repository: 'https://github.com/deepinsight/insightface',
+    description: 'High-performance face detection model from InsightFace',
+  },
+  {
+    name: 'ArcFace (w600k_r50)',
+    category: 'Face Detection',
+    license: 'MIT',
+    repository: 'https://github.com/deepinsight/insightface',
+    description: 'Face recognition/embedding model from InsightFace',
+  },
+];
+
+// Music credits
+const MUSIC_CREDITS = [
+  {
+    name: 'SoundHelix',
+    license: 'Royalty-free',
+    repository: 'https://www.soundhelix.com/',
+    description: 'Royalty-free sample music for slideshow background',
+    tracks: [
+      'Calm: Peaceful Morning, Gentle Waves, Forest Dreams',
+      'Upbeat: Happy Journey, Sunny Days, Adventure Time',
+      'Romantic: Love Story, Sweet Memories, Together Forever',
+      'Family: Family Time, Precious Moments, Growing Up',
+      'Nostalgic: Memories, Time Gone By, Golden Days',
+      'Ambient: City Lights, Night Sky, Urban Dreams',
+    ],
+  },
+];
+
 const LicensesView = ({ onClose }) => {
+  const { t } = useTranslation('common');
   const [npmLicenses, setNpmLicenses] = useState([]);
   const [rustLicenses, setRustLicenses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -96,6 +157,48 @@ const LicensesView = ({ onClose }) => {
     </div>
   );
 
+  const renderAIModelItem = (model) => (
+    <div
+      key={model.name}
+      className={styles.licenseItem}
+      onClick={() => model.repository && window.open(model.repository, '_blank')}
+      role="link"
+      tabIndex={0}
+    >
+      <div className={styles.packageInfo}>
+        <span className={styles.packageName}>{model.name}</span>
+        <span className={styles.packageCategory}>{model.category}</span>
+      </div>
+      <div className={styles.modelDetails}>
+        <span className={styles.modelDescription}>{model.description}</span>
+        <span className={styles.licenseType}>{model.license}</span>
+      </div>
+    </div>
+  );
+
+  const renderMusicItem = (music) => (
+    <div
+      key={music.name}
+      className={styles.licenseItem}
+      onClick={() => music.repository && window.open(music.repository, '_blank')}
+      role="link"
+      tabIndex={0}
+    >
+      <div className={styles.packageInfo}>
+        <span className={styles.packageName}>{music.name}</span>
+        <span className={styles.licenseType}>{music.license}</span>
+      </div>
+      <div className={styles.musicDetails}>
+        <span className={styles.modelDescription}>{music.description}</span>
+        <div className={styles.trackList}>
+          {music.tracks.map((track, idx) => (
+            <div key={idx} className={styles.trackItem}>{track}</div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
   const currentLicenses = activeTab === 'npm' ? npmLicenses : rustLicenses;
 
   const tabs = (
@@ -112,26 +215,50 @@ const LicensesView = ({ onClose }) => {
       >
         Rust ({rustLicenses.length})
       </button>
+      <button
+        className={`${styles.tab} ${activeTab === 'ai' ? styles.tabActive : ''}`}
+        onClick={() => setActiveTab('ai')}
+      >
+        {t('licenses.aiModels', 'AI Models')} ({AI_MODELS.length})
+      </button>
+      <button
+        className={`${styles.tab} ${activeTab === 'music' ? styles.tabActive : ''}`}
+        onClick={() => setActiveTab('music')}
+      >
+        {t('licenses.music', 'Music')} ({MUSIC_CREDITS.length})
+      </button>
     </div>
   );
 
   return (
     <BaseModal
-      title="Open Source Licenses"
+      title={t('licenses.title', 'Licenses & Credits')}
       onClose={onClose}
       tabs={tabs}
-      footerNote="Click on a package to view its repository"
+      footerNote={t('licenses.footerNote', 'Click on an item to view its source')}
     >
       {isLoading && <ModalLoading message="Loading licenses..." />}
 
       {error && <ModalError message={error} />}
 
-      {!isLoading && !error && (
+      {!isLoading && !error && (activeTab === 'npm' || activeTab === 'rust') && (
         <div className={styles.licenseList}>
           {currentLicenses.map(pkg => renderLicenseItem(pkg, activeTab))}
           {currentLicenses.length === 0 && (
-            <div className={styles.empty}>No licenses found.</div>
+            <div className={styles.empty}>{t('licenses.noLicenses', 'No licenses found.')}</div>
           )}
+        </div>
+      )}
+
+      {activeTab === 'ai' && (
+        <div className={styles.licenseList}>
+          {AI_MODELS.map(model => renderAIModelItem(model))}
+        </div>
+      )}
+
+      {activeTab === 'music' && (
+        <div className={styles.licenseList}>
+          {MUSIC_CREDITS.map(music => renderMusicItem(music))}
         </div>
       )}
     </BaseModal>

@@ -173,7 +173,7 @@ pub fn run() {
                 .separator()
                 .text("privacy_policy", "Privacy Policy")
                 .text("terms_of_use", "Terms of Use")
-                .text("licenses", "Licenses")
+                .text("licenses", "Licenses & Credits")
                 .separator()
                 .text("about", "About")
                 .build()?;

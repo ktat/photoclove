@@ -183,5 +183,12 @@
       "nov": "Nov",
       "dec": "Dec"
     }
+  },
+  "licenses": {
+    "title": "Licenses & Credits",
+    "footerNote": "Click on an item to view its source",
+    "aiModels": "AI Models",
+    "music": "Music",
+    "noLicenses": "No licenses found."
   }
 }
