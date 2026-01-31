@@ -1,0 +1,111 @@
+{
+  "title": "Preferencias",
+  "tabs": {
+    "general": "General",
+    "startup": "Inicio",
+    "thumbnail": "Miniaturas",
+    "grouping": "Agrupación",
+    "performance": "Rendimiento",
+    "appearance": "Apariencia",
+    "logging": "Registro",
+    "aiTagging": "Etiquetado IA",
+    "faceDetection": "Detección de rostros",
+    "s3Backup": "Copia de seguridad S3",
+    "advanced": "Avanzado"
+  },
+  "general": {
+    "language": "Idioma",
+    "languageDescription": "Seleccione el idioma de la aplicación",
+    "dateFormat": "Formato de fecha",
+    "dateFormatDescription": "Seleccione cómo se muestran las fechas",
+    "importFolder": "Carpeta de importación",
+    "importFolderDescription": "Carpeta predeterminada para fotos importadas",
+    "selectFolder": "Seleccionar carpeta",
+    "thumbnailFolder": "Carpeta de miniaturas",
+    "thumbnailFolderDescription": "Dónde almacenar las miniaturas generadas"
+  },
+  "startup": {
+    "startupBehavior": "Comportamiento de inicio",
+    "showWelcome": "Mostrar pantalla de bienvenida al iniciar",
+    "openLastFolder": "Abrir última carpeta vista",
+    "startMinimized": "Iniciar minimizado"
+  },
+  "thumbnail": {
+    "thumbnailSize": "Tamaño de miniatura",
+    "thumbnailQuality": "Calidad de miniatura",
+    "regenerate": "Regenerar miniaturas",
+    "regenerateDescription": "Regenerar todas las miniaturas (esto puede demorar)"
+  },
+  "grouping": {
+    "burstDetection": "Detección de ráfaga",
+    "burstThreshold": "Umbral de ráfaga (segundos)",
+    "burstThresholdDescription": "Las fotos tomadas dentro de este tiempo se agruparán como ráfaga",
+    "similarPhotos": "Detección de fotos similares",
+    "similarThreshold": "Umbral de similitud"
+  },
+  "performance": {
+    "parallelProcessing": "Procesamiento paralelo",
+    "copyParallel": "Cantidad de copias paralelas",
+    "thumbnailParallel": "Cantidad de miniaturas paralelas",
+    "maxPhotosPerFetch": "Máximo de fotos por obtención",
+    "cacheSize": "Tamaño de caché (MB)"
+  },
+  "appearance": {
+    "theme": "Tema",
+    "themeLight": "Claro",
+    "themeDark": "Oscuro",
+    "themeSystem": "Sistema",
+    "gridSize": "Tamaño de cuadrícula",
+    "showFilenames": "Mostrar nombres de archivo",
+    "showDates": "Mostrar fechas"
+  },
+  "logging": {
+    "logLevel": "Nivel de registro",
+    "logLevelDebug": "Depuración",
+    "logLevelInfo": "Información",
+    "logLevelWarn": "Advertencia",
+    "logLevelError": "Error",
+    "logRetention": "Retención de registros (días)",
+    "openLogFolder": "Abrir carpeta de registros",
+    "viewLogs": "Ver registros"
+  },
+  "aiTagging": {
+    "enableAI": "Habilitar etiquetado IA",
+    "model": "Modelo de IA",
+    "modelDescription": "Seleccione el modelo de IA para etiquetado automático",
+    "autoTag": "Etiquetar automáticamente al importar",
+    "customLabels": "Etiquetas personalizadas",
+    "customLabelsDescription": "Defina etiquetas personalizadas para modelos basados en CLIP",
+    "downloadModel": "Descargar modelo",
+    "deleteModel": "Eliminar modelo"
+  },
+  "faceDetection": {
+    "enableFaceDetection": "Habilitar detección de rostros",
+    "autoDetect": "Detectar automáticamente al importar",
+    "model": "Modelo de detección de rostros",
+    "downloadModel": "Descargar modelo",
+    "deleteModel": "Eliminar modelo",
+    "thumbnailSize": "Tamaño de miniatura de rostro"
+  },
+  "s3Backup": {
+    "enable": "Habilitar copia de seguridad S3",
+    "endpoint": "Punto final",
+    "bucket": "Nombre del bucket",
+    "accessKey": "Clave de acceso",
+    "secretKey": "Clave secreta",
+    "region": "Región",
+    "testConnection": "Probar conexión",
+    "sync": "Sincronizar ahora"
+  },
+  "advanced": {
+    "resetTutorials": "Restablecer consejos",
+    "resetTutorialsDescription": "Mostrar tutoriales de consejos nuevamente",
+    "showWelcomeTutorial": "Mostrar tutorial de bienvenida nuevamente",
+    "clearCache": "Borrar caché",
+    "clearCacheDescription": "Borrar todos los datos en caché",
+    "exportConfig": "Exportar configuración",
+    "importConfig": "Importar configuración",
+    "resetAll": "Restablecer toda la configuración",
+    "resetAllWarning": "Esto restablecerá toda la configuración a los valores predeterminados"
+  }
+}

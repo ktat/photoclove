@@ -36,36 +36,36 @@ const GeneralTab = ({ config, setConfig, additionalExportFrom, setAdditionalExpo
                 </p>
             </div>
 
-            <h2 className={styles['section-title']}>Path Settings</h2>
+            <h2 className={styles['section-title']}>{t('preferences:general.importFolder')}</h2>
             <div className={styles['setting-group']}>
                 <PickFolderSingle
-                    label="Data Path:"
+                    label={t('preferences:general.importFolder') + ':'}
                     folder={config.data_path}
                     setFunc={(folder) => setConfig(prev => ({ ...prev, data_path: folder }))}
                 />
                 <PickFolderSingle
-                    label="Trash Path:"
+                    label={t('common:navigation.trash') + ':'}
                     folder={config.trash_path}
                     setFunc={(folder) => setConfig(prev => ({ ...prev, trash_path: folder }))}
                 />
                 <PickFolderSingle
-                    label="Download Directory:"
+                    label={t('common:button.download') + ':'}
                     folder={config.download_dir}
                     setFunc={(folder) => setConfig(prev => ({ ...prev, download_dir: folder }))}
                 />
                 <PickFolderSingle
-                    label="Import To:"
+                    label={t('common:button.import') + ':'}
                     folder={config.import_to}
                     setFunc={(folder) => setConfig(prev => ({ ...prev, import_to: folder }))}
                 />
             </div>
 
-            <h2 className={styles['section-title']}>Export From</h2>
+            <h2 className={styles['section-title']}>{t('common:button.export')}</h2>
             <div className={classNames(styles['setting-group'], styles['folder-list'])}>
                 {config.export_from.map((v, i) => (
                     <PickFolderSingle
                         key={i}
-                        label={i === 0 ? "Export From:" : ""}
+                        label={i === 0 ? t('common:button.export') + ':' : ''}
                         folder={config.export_from[i]}
                         setFunc={(folder) => {
                             setConfig(prev => ({
@@ -82,7 +82,7 @@ const GeneralTab = ({ config, setConfig, additionalExportFrom, setAdditionalExpo
                         className={styles['btn-secondary']}
                         onClick={() => setAdditionalExportFrom(additionalExportFrom + 1)}
                     >
-                        + Add Path
+                        + {t('common:button.add')}
                     </button>
                 </div>
             </div>

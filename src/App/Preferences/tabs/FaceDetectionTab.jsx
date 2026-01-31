@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import { logger } from "../../../services/LoggerService.js";
 import FaceDetectionService from "../../../services/FaceDetectionService.js";
 import styles from '../Preferences.module.css';
 
 function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
+    const { t } = useTranslation(['preferences', 'common']);
     const [modelStatus, setModelStatus] = useState(null);
     const [modelInfo, setModelInfo] = useState(null);
     const [isDownloading, setIsDownloading] = useState(false);
@@ -86,7 +88,7 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
 
     return (
         <div className={styles['preferences-section']}>
-            <h2 className={styles['section-title']}>Face Detection</h2>
+            <h2 className={styles['section-title']}>{t('preferences:tabs.faceDetection')}</h2>
             <p className={styles['setting-description']} style={{ marginBottom: 'var(--space-4)' }}>
                 Detect and recognize faces in your photos using InsightFace AI models.
             </p>

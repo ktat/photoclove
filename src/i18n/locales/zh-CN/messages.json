@@ -1,0 +1,67 @@
+{
+  "success": {
+    "saved": "保存成功",
+    "deleted": "删除成功",
+    "created": "创建成功",
+    "updated": "更新成功",
+    "imported": "导入成功",
+    "exported": "导出成功",
+    "copied": "复制成功",
+    "moved": "移动成功",
+    "restored": "恢复成功",
+    "photosAdded": "已添加 {{count}} 张照片",
+    "photosRemoved": "已移除 {{count}} 张照片",
+    "photosMoved": "已将 {{count}} 张照片移至回收站",
+    "photosRestored": "已恢复 {{count}} 张照片"
+  },
+  "info": {
+    "noResults": "未找到结果",
+    "noPhotosInAlbum": "此相册中没有照片",
+    "noPhotosWithTag": "没有使用此标签的照片",
+    "noPhotosOfPerson": "没有此人物的照片",
+    "dragDropHint": "将照片拖放到此处",
+    "selectPhotosHint": "选择照片以执行操作",
+    "emptyTrash": "回收站为空",
+    "processingJobs": "正在处理 {{count}} 个任务...",
+    "queueEmpty": "任务队列为空"
+  },
+  "warning": {
+    "unsavedChanges": "您有未保存的更改。确定要离开吗？",
+    "largeSelection": "您已选择 {{count}} 个项目。此操作可能需要一些时间。",
+    "lowDiskSpace": "磁盘空间不足。请释放一些空间。",
+    "duplicateFound": "发现重复照片",
+    "duplicatesFound": "发现 {{count}} 个重复项"
+  },
+  "hint": {
+    "doubleClickToOpen": "双击打开",
+    "rightClickForOptions": "右键查看选项",
+    "pressEscToClose": "按 Esc 键关闭",
+    "pressEnterToConfirm": "按回车键确认",
+    "useArrowsToNavigate": "使用方向键导航",
+    "scrollToLoadMore": "滚动加载更多"
+  },
+  "welcome": {
+    "title": "欢迎使用 PhotoClove！",
+    "description": "PhotoClove 是一款照片管理应用程序。它旨在实现快速导入和快速浏览照片。",
+    "step1": "首先，请进行",
+    "step1Link": "设置",
+    "step1After": "。",
+    "step2a": "如果您没有照片，请",
+    "step2aLink": "导入照片",
+    "step2aAfter": "。",
+    "step2b": "如果导入文件夹中已有照片，请前往",
+    "step2bLink": "照片列表",
+    "step2bAfter": "。"
+  },
+  "tips": {
+    "tip1": "使用键盘快捷键更快地导航",
+    "tip2": "为喜爱的照片添加星标以快速访问",
+    "tip3": "创建相册来整理您的照片",
+    "tip4": "使用标签进行灵活分类",
+    "tip5": "人脸检测帮助您找到特定人物的照片",
+    "tip6": "使用搜索按日期、地点或内容查找照片",
+    "tip7": "拖放即可快速将照片添加到相册",
+    "tip8": "使用连拍模式将相似照片分组",
+    "tip9": "AI 标签可以自动为您的照片分类"
+  }
+}

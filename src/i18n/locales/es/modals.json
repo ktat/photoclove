@@ -1,0 +1,96 @@
+{
+  "delete": {
+    "title": "Eliminar",
+    "confirmTitle": "Confirmar eliminación",
+    "photoTitle": "Eliminar foto",
+    "photosTitle": "Eliminar fotos",
+    "albumTitle": "Eliminar álbum",
+    "tagTitle": "Eliminar etiqueta",
+    "personTitle": "Eliminar persona",
+    "faceTitle": "Eliminar rostro",
+    "confirmMessage": "¿Está seguro de que desea eliminar esto?",
+    "confirmPhotos_one": "¿Está seguro de que desea eliminar {{count}} foto?",
+    "confirmPhotos_other": "¿Está seguro de que desea eliminar {{count}} fotos?",
+    "confirmAlbum": "¿Está seguro de que desea eliminar el álbum \"{{name}}\"?",
+    "confirmTag": "¿Está seguro de que desea eliminar la etiqueta \"{{name}}\"?",
+    "confirmPerson": "¿Está seguro de que desea eliminar \"{{name}}\" y todos los rostros asociados?",
+    "confirmFaces_one": "¿Está seguro de que desea eliminar {{count}} rostro?",
+    "confirmFaces_other": "¿Está seguro de que desea eliminar {{count}} rostros?",
+    "moveToTrash": "Mover a la papelera",
+    "permanentDelete": "Eliminar permanentemente",
+    "warningPermanent": "Esta acción no se puede deshacer.",
+    "warningTrash": "Las fotos se moverán a la papelera y se podrán restaurar más tarde.",
+    "keepAlbum": "Mantener álbum, solo quitar fotos",
+    "deleteAlbum": "Eliminar álbum y quitar fotos"
+  },
+  "album": {
+    "createTitle": "Crear álbum",
+    "editTitle": "Editar álbum",
+    "nameLabel": "Nombre del álbum",
+    "namePlaceholder": "Ingrese el nombre del álbum",
+    "descriptionLabel": "Descripción",
+    "descriptionPlaceholder": "Ingrese la descripción del álbum (opcional)",
+    "colorLabel": "Color",
+    "coverLabel": "Foto de portada"
+  },
+  "tag": {
+    "createTitle": "Crear etiqueta",
+    "editTitle": "Editar etiqueta",
+    "nameLabel": "Nombre de la etiqueta",
+    "namePlaceholder": "Ingrese el nombre de la etiqueta",
+    "colorLabel": "Color"
+  },
+  "person": {
+    "assignTitle": "Asignar persona",
+    "createTitle": "Crear persona",
+    "mergeTitle": "Fusionar personas",
+    "nameLabel": "Nombre de la persona",
+    "namePlaceholder": "Ingrese el nombre de la persona",
+    "selectExisting": "Seleccionar persona existente",
+    "createNew": "Crear nueva persona"
+  },
+  "import": {
+    "title": "Importar fotos",
+    "selectFolder": "Seleccionar carpeta",
+    "selectFiles": "Seleccionar archivos",
+    "scanning": "Buscando fotos...",
+    "foundPhotos_one": "Se encontró {{count}} foto",
+    "foundPhotos_other": "Se encontraron {{count}} fotos",
+    "importing": "Importando fotos...",
+    "completed": "Importación completada",
+    "failed": "Error en la importación"
+  },
+  "export": {
+    "title": "Exportar fotos",
+    "selectDestination": "Seleccionar destino",
+    "includeMetadata": "Incluir metadatos",
+    "includeEdits": "Incluir ediciones"
+  },
+  "search": {
+    "title": "Buscar",
+    "savedSearches": "Búsquedas guardadas",
+    "saveSearch": "Guardar búsqueda",
+    "searchName": "Nombre de búsqueda",
+    "searchNamePlaceholder": "Ingrese el nombre de la búsqueda"
+  },
+  "preferences": {
+    "title": "Preferencias"
+  },
+  "about": {
+    "title": "Acerca de PhotoClove",
+    "version": "Versión",
+    "license": "Licencia",
+    "credits": "Créditos"
+  },
+  "privacy": {
+    "title": "Política de privacidad"
+  },
+  "terms": {
+    "title": "Términos de uso"
+  },
+  "help": {
+    "title": "Ayuda",
+    "documentation": "Documentación",
+    "shortcuts": "Atajos de teclado"
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "title": "偏好設定",
+  "tabs": {
+    "general": "一般",
+    "startup": "啟動",
+    "thumbnail": "縮圖",
+    "grouping": "分組",
+    "performance": "效能",
+    "appearance": "外觀",
+    "logging": "記錄",
+    "aiTagging": "AI 標籤",
+    "faceDetection": "臉孔偵測",
+    "s3Backup": "S3 備份",
+    "advanced": "進階"
+  },
+  "general": {
+    "language": "語言",
+    "languageDescription": "選擇應用程式的顯示語言",
+    "dateFormat": "日期格式",
+    "dateFormatDescription": "選擇日期的顯示方式",
+    "importFolder": "匯入資料夾",
+    "importFolderDescription": "匯入照片的預設資料夾",
+    "selectFolder": "選擇資料夾",
+    "thumbnailFolder": "縮圖資料夾",
+    "thumbnailFolderDescription": "儲存產生的縮圖的位置"
+  },
+  "startup": {
+    "startupBehavior": "啟動行為",
+    "showWelcome": "啟動時顯示歡迎畫面",
+    "openLastFolder": "開啟上次檢視的資料夾",
+    "startMinimized": "啟動時最小化"
+  },
+  "thumbnail": {
+    "thumbnailSize": "縮圖大小",
+    "thumbnailQuality": "縮圖品質",
+    "regenerate": "重新產生縮圖",
+    "regenerateDescription": "重新產生所有縮圖（這可能需要一些時間）"
+  },
+  "grouping": {
+    "burstDetection": "連拍偵測",
+    "burstThreshold": "連拍閾值（秒）",
+    "burstThresholdDescription": "在此時間內拍攝的照片將被分組為連拍",
+    "similarPhotos": "相似照片偵測",
+    "similarThreshold": "相似度閾值"
+  },
+  "performance": {
+    "parallelProcessing": "平行處理",
+    "copyParallel": "複製平行數",
+    "thumbnailParallel": "縮圖平行數",
+    "maxPhotosPerFetch": "每次擷取的最大照片數",
+    "cacheSize": "快取大小（MB）"
+  },
+  "appearance": {
+    "theme": "主題",
+    "themeLight": "淺色",
+    "themeDark": "深色",
+    "themeSystem": "跟隨系統",
+    "gridSize": "網格大小",
+    "showFilenames": "顯示檔案名稱",
+    "showDates": "顯示日期"
+  },
+  "logging": {
+    "logLevel": "記錄層級",
+    "logLevelDebug": "偵錯",
+    "logLevelInfo": "資訊",
+    "logLevelWarn": "警告",
+    "logLevelError": "錯誤",
+    "logRetention": "記錄保留天數",
+    "openLogFolder": "開啟記錄資料夾",
+    "viewLogs": "檢視記錄"
+  },
+  "aiTagging": {
+    "enableAI": "啟用 AI 標籤",
+    "model": "AI 模型",
+    "modelDescription": "選擇用於自動標籤的 AI 模型",
+    "autoTag": "匯入時自動標籤",
+    "customLabels": "自訂標籤",
+    "customLabelsDescription": "為基於 CLIP 的模型定義自訂標籤",
+    "downloadModel": "下載模型",
+    "deleteModel": "刪除模型"
+  },
+  "faceDetection": {
+    "enableFaceDetection": "啟用臉孔偵測",
+    "autoDetect": "匯入時自動偵測",
+    "model": "臉孔偵測模型",
+    "downloadModel": "下載模型",
+    "deleteModel": "刪除模型",
+    "thumbnailSize": "臉孔縮圖大小"
+  },
+  "s3Backup": {
+    "enable": "啟用 S3 備份",
+    "endpoint": "端點",
+    "bucket": "儲存貯體名稱",
+    "accessKey": "存取金鑰",
+    "secretKey": "秘密金鑰",
+    "region": "區域",
+    "testConnection": "測試連線",
+    "sync": "立即同步"
+  },
+  "advanced": {
+    "resetTutorials": "重設提示",
+    "resetTutorialsDescription": "再次顯示提示教學課程",
+    "showWelcomeTutorial": "再次顯示歡迎教學課程",
+    "clearCache": "清除快取",
+    "clearCacheDescription": "清除所有快取資料",
+    "exportConfig": "匯出設定",
+    "importConfig": "匯入設定",
+    "resetAll": "重設所有設定",
+    "resetAllWarning": "這會將所有設定重設為預設值"
+  }
+}

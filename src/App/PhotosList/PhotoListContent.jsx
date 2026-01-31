@@ -174,9 +174,16 @@ function PhotoListContent({
 
     // Slideshow handlers
     const handleStartSlideshow = useCallback((startIndex = 0) => {
+        logger.debug('PhotoListContent', 'slideshow_handler_called', 'handleStartSlideshow called', { startIndex, photoCount: displayedPhotos.length });
         if (displayedPhotos.length > 0) {
+            const firstPhoto = displayedPhotos[0];
+            logger.debug('PhotoListContent', 'slideshow_first_photo', 'First photo info', {
+                hasDisplayPath: typeof firstPhoto?.displayPath === 'function',
+                displayPath: typeof firstPhoto?.displayPath === 'function' ? firstPhoto.displayPath() : 'NOT_A_FUNCTION'
+            });
             setSlideshowStartIndex(startIndex);
             setShowSlideshow(true);
+            logger.debug('PhotoListContent', 'slideshow_state_set', 'setShowSlideshow(true) called');
             logger.info('PhotoListContent', 'slideshow_start', 'Starting slideshow', {
                 photoCount: displayedPhotos.length,
                 startIndex
@@ -436,9 +443,9 @@ function PhotoListContent({
             </div>
 
             {/* Slideshow overlay */}
-            {showSlideshow && displayedPhotos.length > 0 && (
+            {showSlideshow && filteredPhotos.length > 0 && (
                 <SlideShow
-                    photos={displayedPhotos}
+                    photos={filteredPhotos}
                     startIndex={slideshowStartIndex}
                     onClose={handleCloseSlideshow}
                 />
