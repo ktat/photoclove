@@ -226,7 +226,7 @@ function SelectionTab({
                             <div><br />No albums selected.</div>
                         ) : (
                             <div>
-                                <div className="operation" style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+                                <div className="operation" style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', justifyContent: 'center' }}>
                                     <button
                                         onClick={deleteSelectedAlbums}
                                         style={{
@@ -279,7 +279,7 @@ function SelectionTab({
                             <div><br />No tags selected.</div>
                         ) : (
                             <div>
-                                <div className="operation" style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+                                <div className="operation" style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', justifyContent: 'center' }}>
                                     <button
                                         onClick={deleteSelectedTags}
                                         style={{
@@ -340,7 +340,7 @@ function SelectionTab({
                             <div><br />No persons selected.</div>
                         ) : (
                             <div>
-                                <div className="operation" style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+                                <div className="operation" style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', justifyContent: 'center' }}>
                                     <button
                                         onClick={deleteSelectedPersons}
                                         style={{
