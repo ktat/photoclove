@@ -15,7 +15,7 @@ import {
 import { logger } from '../services/LoggerService.js';
 import styles from './ShareStatsDialog.module.css';
 
-function ShareStatsDialog({ insights, onClose }) {
+function ShareStatsDialog({ insights, period = 'all', onClose }) {
     const { t } = useTranslation(['common', 'insights']);
     const [shareText, setShareText] = useState('');
     const [imageBlob, setImageBlob] = useState(null);
@@ -26,16 +26,16 @@ function ShareStatsDialog({ insights, onClose }) {
     // Generate share text
     useEffect(() => {
         if (insights) {
-            const text = generateStatsShareText(insights);
+            const text = generateStatsShareText(insights, period);
             setShareText(text);
         }
-    }, [insights]);
+    }, [insights, period]);
 
     // Generate image preview
     useEffect(() => {
         if (insights) {
             setGenerating(true);
-            generateStatsImage(insights)
+            generateStatsImage(insights, { period })
                 .then(blob => {
                     setImageBlob(blob);
                     setImageUrl(URL.createObjectURL(blob));
@@ -52,7 +52,7 @@ function ShareStatsDialog({ insights, onClose }) {
                 URL.revokeObjectURL(imageUrl);
             }
         };
-    }, [insights]);
+    }, [insights, period]);
 
     // Handle copy text
     const handleCopyText = useCallback(async () => {

@@ -269,6 +269,7 @@ function InsightsModal({ onClose }) {
             {showShareDialog && (
                 <ShareStatsDialog
                     insights={insights}
+                    period={selectedPeriod}
                     onClose={() => setShowShareDialog(false)}
                 />
             )}
