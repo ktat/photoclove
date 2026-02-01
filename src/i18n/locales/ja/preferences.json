@@ -19,6 +19,7 @@
     "dateFormat": "日付形式",
     "dateFormatDescription": "日付の表示形式を選択",
     "folders": "フォルダ",
+    "importSource": "インポート元",
     "selectFolder": "フォルダを選択",
     "thumbnailFolder": "サムネイルフォルダ",
     "thumbnailFolderDescription": "生成されたサムネイルの保存先"

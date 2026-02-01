@@ -19,6 +19,7 @@
     "dateFormat": "Datumsformat",
     "dateFormatDescription": "Wählen Sie das Anzeigeformat für Daten",
     "folders": "Ordner",
+    "importSource": "Importquelle",
     "selectFolder": "Ordner auswählen",
     "thumbnailFolder": "Miniaturansicht-Ordner",
     "thumbnailFolderDescription": "Wo generierte Miniaturansichten gespeichert werden"

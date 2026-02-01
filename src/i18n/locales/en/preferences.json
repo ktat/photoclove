@@ -19,6 +19,7 @@
     "dateFormat": "Date Format",
     "dateFormatDescription": "Select how dates are displayed",
     "folders": "Folders",
+    "importSource": "Import Source",
     "selectFolder": "Select Folder",
     "thumbnailFolder": "Thumbnail Folder",
     "thumbnailFolderDescription": "Where to store generated thumbnails"
