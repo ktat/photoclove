@@ -60,5 +60,17 @@
     "thumbnailSize": "サムネイルキャッシュ",
     "faceThumbnailSize": "顔サムネイル",
     "totalCache": "キャッシュ合計"
+  },
+  "share": {
+    "title": "統計をシェア",
+    "button": "シェア",
+    "preview": "プレビュー",
+    "noPreview": "プレビューを生成できません",
+    "copyText": "テキストをコピー",
+    "copyImage": "画像をコピー",
+    "saveImage": "画像を保存",
+    "shareTo": "シェア先",
+    "socialHint": "テキストのみ - 画像はコピー後に手動で貼り付けてください",
+    "showText": "シェアテキストを表示"
   }
 }

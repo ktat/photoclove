@@ -60,5 +60,17 @@
     "thumbnailSize": "缩略图缓存",
     "faceThumbnailSize": "人脸缩略图",
     "totalCache": "缓存总计"
+  },
+  "share": {
+    "title": "分享统计",
+    "button": "分享",
+    "preview": "预览",
+    "noPreview": "无法生成预览",
+    "copyText": "复制文本",
+    "copyImage": "复制图片",
+    "saveImage": "保存图片",
+    "shareTo": "分享至",
+    "socialHint": "仅限文本 - 复制后手动粘贴图片",
+    "showText": "显示分享文本"
   }
 }

@@ -60,5 +60,17 @@
     "thumbnailSize": "Caché de Miniaturas",
     "faceThumbnailSize": "Miniaturas de Rostros",
     "totalCache": "Caché Total"
+  },
+  "share": {
+    "title": "Compartir Estadísticas",
+    "button": "Compartir",
+    "preview": "Vista previa",
+    "noPreview": "No se puede generar vista previa",
+    "copyText": "Copiar Texto",
+    "copyImage": "Copiar Imagen",
+    "saveImage": "Guardar Imagen",
+    "shareTo": "Compartir en",
+    "socialHint": "Solo texto - pega la imagen manualmente después de copiar",
+    "showText": "Mostrar texto para compartir"
   }
 }

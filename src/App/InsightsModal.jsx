@@ -21,6 +21,7 @@ import CameraSettingsSection from "./Insights/CameraSettingsSection.jsx";
 import EquipmentSection from "./Insights/EquipmentSection.jsx";
 import OrganizationSection from "./Insights/OrganizationSection.jsx";
 import StorageSection from "./Insights/StorageSection.jsx";
+import ShareStatsDialog from "../components/ShareStatsDialog.jsx";
 import styles from './InsightsModal.module.css';
 
 function InsightsModal({ onClose }) {
@@ -31,6 +32,7 @@ function InsightsModal({ onClose }) {
     const [error, setError] = useState(null);
     const [activeSection, setActiveSection] = useState('shooting_time');
     const [cacheAge, setCacheAge] = useState(null);
+    const [showShareDialog, setShowShareDialog] = useState(false);
 
     // Load insights from cache or trigger refresh
     const loadInsights = useCallback(async () => {
@@ -164,46 +166,66 @@ function InsightsModal({ onClose }) {
 
     const footerContent = (
         <div className={styles.footerActions}>
-            {cacheAge !== null && (
-                <span className={styles.cacheAge}>
-                    {InsightsService.formatAge(cacheAge)}
-                </span>
-            )}
-            <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className={styles.refreshBtn}
-            >
-                {refreshing ? t('common:status.processing', 'Processing...') : t('common:button.refresh', 'Refresh')}
-            </button>
-            <button onClick={onClose} className={styles.closeBtn}>
-                {t('common:button.close', 'Close')}
-            </button>
+            <div className={styles.footerLeft}>
+                <button
+                    onClick={() => setShowShareDialog(true)}
+                    disabled={!insights}
+                    className={styles.shareBtn}
+                    title={t('insights:share.title', 'Share Stats')}
+                >
+                    📤 {t('insights:share.button', 'Share')}
+                </button>
+            </div>
+            <div className={styles.footerRight}>
+                {cacheAge !== null && (
+                    <span className={styles.cacheAge}>
+                        {InsightsService.formatAge(cacheAge)}
+                    </span>
+                )}
+                <button
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                    className={styles.refreshBtn}
+                >
+                    {refreshing ? t('common:status.processing', 'Processing...') : t('common:button.refresh', 'Refresh')}
+                </button>
+                <button onClick={onClose} className={styles.closeBtn}>
+                    {t('common:button.close', 'Close')}
+                </button>
+            </div>
         </div>
     );
 
     return (
-        <BaseModal
-            title={t('insights:title', 'Photography Insights')}
-            onClose={onClose}
-            tabs={tabs}
-            footer={footerContent}
-        >
-            {loading && !insights ? (
-                <ModalLoading message={refreshing ? t('common:status.processing', 'Processing...') : t('insights:loading', 'Loading insights...')} />
-            ) : error && !insights ? (
-                <ModalError message={error} />
-            ) : (
-                <div className={styles.content}>
-                    {refreshing && (
-                        <div className={styles.refreshingOverlay}>
-                            <span>{t('common:status.processing', 'Processing...')}</span>
-                        </div>
-                    )}
-                    {renderSection()}
-                </div>
+        <>
+            <BaseModal
+                title={t('insights:title', 'Photography Insights')}
+                onClose={onClose}
+                tabs={tabs}
+                footer={footerContent}
+            >
+                {loading && !insights ? (
+                    <ModalLoading message={refreshing ? t('common:status.processing', 'Processing...') : t('insights:loading', 'Loading insights...')} />
+                ) : error && !insights ? (
+                    <ModalError message={error} />
+                ) : (
+                    <div className={styles.content}>
+                        {refreshing && (
+                            <div className={styles.refreshingOverlay}>
+                                <span>{t('common:status.processing', 'Processing...')}</span>
+                            </div>
+                        )}
+                        {renderSection()}
+                    </div>
+                )}
+            </BaseModal>
+            {showShareDialog && (
+                <ShareStatsDialog
+                    insights={insights}
+                    onClose={() => setShowShareDialog(false)}
+                />
             )}
-        </BaseModal>
+        </>
     );
 }
 
