@@ -21,7 +21,7 @@ pub fn check_setup_status() -> SetupStatus {
     let config_path = Config::config_path_if_exists();
     let config_exists = config_path.is_some();
 
-    let db_exists = if let Some(_) = config_path {
+    let db_exists = if config_path.is_some() {
         // Config exists, check if DB exists at import_to location
         let config = Config::new();
         let db_path = format!("{}/photoclove.db", config.import_to);
