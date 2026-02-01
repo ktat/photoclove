@@ -328,7 +328,8 @@ export class ViewMode {
     getSelectionKey() {
         switch (this._mode) {
             case VIEW_MODES.DATE:
-                return `DATE:${this._data.date || 'unknown'}`;
+                // All dates share the same selection (unified selection across dates)
+                return 'DATE';
             case VIEW_MODES.RECENT:
                 return 'RECENT';
             case VIEW_MODES.ALBUM:
