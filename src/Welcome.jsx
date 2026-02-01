@@ -51,7 +51,7 @@ function Welcome(props) {
 
     return (
         <div id="welcome-container">
-            <h1>{showLanguageSelect ? t('common:language.select') : t('messages:welcome.title')}</h1>
+            {showWelcome && <h1>{t('messages:welcome.title')}</h1>}
             {showSplash &&
                 <div className="welcome-splash">
                     <div className="splash-container">
@@ -62,6 +62,7 @@ function Welcome(props) {
             {showLanguageSelect &&
                 <div id="welcome">
                     <div className="welcome language-select">
+                        <h1 className="language-title">{t('common:language.select')}</h1>
                         <div className="language-icon">&#x1F310;</div>
                         <div className="language-buttons">
                             {supportedLanguages.map((lang) => (

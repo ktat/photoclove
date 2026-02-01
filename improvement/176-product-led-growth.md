@@ -494,10 +494,14 @@ https://photoclove.com（仮）
 | マイルストーン | 条件 | バッジアイコン案 |
 |---------------|------|-----------------|
 | Week Complete | 7日連続で写真がある | 📆 |
-| Month Complete | 1ヶ月全日に写真がある | 🗓️ |
-| 100 Days | 100日分の写真 | 💯 |
-| 365 Days | 365日全日付に写真がある | 🎊🏆 |
+| 100 Dates | 100個のユニークな日付（年を含む） | 💯 |
+| 365 Dates | 365個のユニークな日付（年を含む） | 🎊 |
 | Leap Year | うるう年2/29の写真がある | 🦘 |
+| **Calendar Complete** | 全366日のカレンダー日（1/1-12/31 + 2/29、年は問わない） | 🗓️🏆 |
+
+**日付アチーブメントの違い**:
+- `100 Dates` / `365 Dates`: 年を含むユニークな日付（2024-01-01 と 2023-01-01 は別々にカウント）
+- `Calendar Complete`: 月-日の組み合わせ（年は無視、01-01 は1つとしてカウント）
 
 #### E. その他のアチーブメント
 
@@ -578,17 +582,23 @@ CREATE TABLE achievements (
 ```
 
 **チェックタイミング**
-| トリガー | チェック対象 |
-|----------|-------------|
-| インポート完了時 | First Import, 月別, 累計枚数, 日付系 |
-| 編集保存時 | First Edit |
-| タグ追加時 | First Tag, Tag Master |
-| スター変更時 | First Star |
-| アルバム作成時 | First Album, Album Curator |
-| 検索実行時 | First Search |
-| エクスポート時 | First Export |
-| Google Upload時 | First Google Upload |
-| 削除時 | First Delete |
+| トリガー | チェック対象 | 実装状況 |
+|----------|-------------|----------|
+| インポート完了時 | First Import, 月別, 累計枚数, 日付系 | ✅ |
+| 編集保存時 | First Edit | ✅ |
+| タグ追加時 | First Tag, Tag Master | ✅ |
+| スター変更時 | First Star | ✅ |
+| アルバム作成時 | First Album, Album Curator | ✅ |
+| 検索実行時 | First Search | ✅ |
+| エクスポート時 | First Export | - |
+| Google Upload時 | First Google Upload | ✅ |
+| 削除時 | First Delete | ✅ |
+
+**バックエンド統合（実装済み）**
+- バックエンド（Rust）でアクション実行時にアチーブメントをチェック
+- `app_handle.emit("achievement_unlocked", achievement)` でフロントエンドにイベント送信
+- フロントエンド（React）で `listen("achievement_unlocked")` でイベント受信
+- 達成時にポップアップ表示
 
 **パフォーマンス考慮**
 - 達成済みアチーブメントはスキップ
@@ -687,7 +697,7 @@ CREATE TABLE achievements (
 - [x] 使用統計表示（ダッシュボード）
 - [x] 「この日の思い出」機能
 - [ ] シェアボタン（アプリ紹介用）
-- [ ] マイルストーン/アチーブメント
+- [x] マイルストーン/アチーブメント
 
 ### Phase 2: 収益化基盤
 - [ ] ライセンス管理システム（ローカル）
