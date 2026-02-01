@@ -117,66 +117,112 @@ pub fn run_migrations(conn: &Connection) -> Result<()> {
     // Check if we need to handle legacy database migration
     handle_legacy_migrations(conn)?;
 
-    // Run new migrations
+    // Run migrations
     for migration in MIGRATIONS {
-        if !is_migration_applied(conn, migration.version)? {
-            log::info!(target: "migrations", "applying_migration; version={}; name={}", migration.version, migration.name);
+        if is_migration_applied(conn, migration.version)? {
+            continue;
+        }
 
-            // Split and execute SQL statements
-            for statement in migration.sql.split(';') {
-                let statement = statement.trim();
-                if !statement.is_empty() {
-                    conn.execute(statement, [])?;
+        // Special handling for migrations that add columns which might already exist
+        // (e.g., from migration 001 which now includes these columns for fresh DBs)
+        match migration.version {
+            7 => {
+                // Migration 7 adds storage_sync column
+                if has_column(conn, "storage_sync") {
+                    log::info!(target: "migrations", "skipping_migration; version=7; reason=column_already_exists");
+                    mark_migration_applied(conn, 7, "add_storage_sync (column exists)")?;
+                    continue;
                 }
             }
-
-            mark_migration_applied(conn, migration.version, migration.name)?;
-            log::info!(target: "migrations", "migration_applied; version={}; name={}", migration.version, migration.name);
+            10 => {
+                // Migration 10 assumes burst_group_id and storage_sync exist
+                // Ensure they exist before running this migration
+                if table_exists(conn) {
+                    if !has_column(conn, "burst_group_id") {
+                        log::info!(target: "migrations", "adding_burst_group_id_before_migration_10");
+                        conn.execute(
+                            "ALTER TABLE photo_metadata ADD COLUMN burst_group_id TEXT",
+                            [],
+                        )?;
+                    }
+                    if !has_column(conn, "storage_sync") {
+                        log::info!(target: "migrations", "adding_storage_sync_before_migration_10");
+                        conn.execute(
+                            "ALTER TABLE photo_metadata ADD COLUMN storage_sync TEXT DEFAULT NULL",
+                            [],
+                        )?;
+                    }
+                }
+            }
+            _ => {}
         }
+
+        log::info!(target: "migrations", "applying_migration; version={}; name={}", migration.version, migration.name);
+
+        // Split and execute SQL statements
+        for statement in migration.sql.split(';') {
+            let statement = statement.trim();
+            if !statement.is_empty() {
+                conn.execute(statement, [])?;
+            }
+        }
+
+        mark_migration_applied(conn, migration.version, migration.name)?;
+        log::info!(target: "migrations", "migration_applied; version={}; name={}", migration.version, migration.name);
     }
 
-    // Add burst_group_id column if it doesn't exist
-    ensure_burst_group_id_column(conn)?;
+    // Ensure indexes exist (for any edge cases)
+    ensure_column_indexes(conn)?;
 
     Ok(())
 }
 
-/// Ensure burst_group_id column exists in photo_metadata table
-fn ensure_burst_group_id_column(conn: &Connection) -> Result<()> {
-    // Check if column exists
-    let has_burst_group_id = conn
-        .prepare("PRAGMA table_info(photo_metadata)")
+/// Ensure indexes exist for burst_group_id and storage_sync columns
+fn ensure_column_indexes(conn: &Connection) -> Result<()> {
+    if table_exists(conn) {
+        if has_column(conn, "burst_group_id") {
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_burst_group_id ON photo_metadata(burst_group_id)",
+                [],
+            )?;
+        }
+        if has_column(conn, "storage_sync") {
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_storage_sync ON photo_metadata(storage_sync)",
+                [],
+            )?;
+        }
+    }
+    Ok(())
+}
+
+/// Check if photo_metadata table exists
+fn table_exists(conn: &Connection) -> bool {
+    conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='photo_metadata'")
+        .and_then(|mut stmt| stmt.query_row([], |_| Ok(true)))
+        .unwrap_or(false)
+}
+
+/// Check if a column exists in photo_metadata table
+fn has_column(conn: &Connection, column_name: &str) -> bool {
+    conn.prepare("PRAGMA table_info(photo_metadata)")
         .and_then(|mut stmt| {
             let rows = stmt.query_map([], |row| {
-                let column_name: String = row.get(1)?;
-                Ok(column_name)
+                let name: String = row.get(1)?;
+                Ok(name)
             })?;
             for row in rows {
                 if let Ok(name) = row {
-                    if name == "burst_group_id" {
+                    if name == column_name {
                         return Ok(true);
                     }
                 }
             }
             Ok(false)
         })
-        .unwrap_or(false);
-
-    if !has_burst_group_id {
-        log::info!(target: "migrations", "adding_burst_group_id_column");
-        conn.execute(
-            "ALTER TABLE photo_metadata ADD COLUMN burst_group_id TEXT",
-            [],
-        )?;
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_burst_group_id ON photo_metadata(burst_group_id)",
-            [],
-        )?;
-        log::info!(target: "migrations", "burst_group_id_column_added");
-    }
-
-    Ok(())
+        .unwrap_or(false)
 }
+
 
 /// Handle legacy database migrations (from old schema without migrations table)
 fn handle_legacy_migrations(conn: &Connection) -> Result<()> {

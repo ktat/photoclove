@@ -32,6 +32,9 @@ pub struct AppState {
 
     /// Application configuration
     pub config: Config,
+
+    /// Whether initial setup is needed (no config or no DB)
+    pub needs_setup: bool,
 }
 
 /// Result of a batch operation on multiple photos.

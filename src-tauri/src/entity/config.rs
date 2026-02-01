@@ -392,6 +392,7 @@ impl Config {
         self.s3 = config.s3;
     }
 
+    /// Get the config path, creating the file if it doesn't exist
     pub fn config_path() -> String {
         let home = match home_dir() {
             Some(path) => path,
@@ -412,6 +413,18 @@ impl Config {
             serde_yaml::to_writer(writer, &config).unwrap();
         }
         config_file.display().to_string()
+    }
+
+    /// Check if config file exists without creating it
+    /// Returns Some(path) if exists, None if not
+    pub fn config_path_if_exists() -> Option<String> {
+        let home = home_dir()?;
+        let config_file = home.join(".photoclove.yml");
+        if config_file.exists() {
+            Some(config_file.display().to_string())
+        } else {
+            None
+        }
     }
 
     fn prepare_directory_if_required(&self) {

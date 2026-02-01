@@ -28,7 +28,9 @@ CREATE TABLE IF NOT EXISTS photo_metadata (
     exif_white_balance_mode TEXT,
     exif_orientation TEXT,
     css_style TEXT,
-    delete_flg INTEGER NOT NULL DEFAULT 0
+    delete_flg INTEGER NOT NULL DEFAULT 0,
+    burst_group_id TEXT,
+    storage_sync TEXT
 );
 
 -- Create indexes for photo_metadata
@@ -38,3 +40,5 @@ CREATE INDEX IF NOT EXISTS idx_star ON photo_metadata(star);
 CREATE INDEX IF NOT EXISTS idx_search_composite ON photo_metadata(exif_date_time_original, star, photo_date);
 CREATE INDEX IF NOT EXISTS idx_photo_date_delete_flg ON photo_metadata(photo_date, delete_flg);
 CREATE INDEX IF NOT EXISTS idx_photo_metadata_delete_flg ON photo_metadata(delete_flg);
+CREATE INDEX IF NOT EXISTS idx_burst_group_id ON photo_metadata(burst_group_id);
+CREATE INDEX IF NOT EXISTS idx_storage_sync ON photo_metadata(storage_sync);

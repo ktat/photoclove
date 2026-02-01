@@ -79,6 +79,7 @@ fn queue_startup_insights(config: &entity::config::Config, app_handle: tauri::Ap
 pub fn run() {
     use crate::entity::config;
     use crate::repository::*;
+    use std::path::Path;
 
     // Set ORT_DYLIB_PATH early, before any ONNX Runtime code could be triggered
     // This is required for face detection and AI tagging to find the library
@@ -91,23 +92,36 @@ pub fn run() {
         }
     }
 
+    // Check if this is first run (no config file)
+    let is_first_run = config::Config::config_path_if_exists().is_none();
+
     let c = config::Config::new();
-    // if c.repository.store == "memory".to_string() {
-    //     db = repository::RepoDB::new();
-    // } else {
-    //     db = repository::RepoDB::new("".to_string());
-    // }
     let ip: importer::ImportProgress = importer::ImportProgress::new();
+
+    // Check if DB exists at import_to location
+    let db_path = format!("{}/photoclove.db", c.import_to);
+    let db_exists = Path::new(&db_path).exists();
 
     // Create job queue manager with same database instance
     let sqlite_db = repository::meta_db::sqlite::SQLite::new(c.import_to.clone());
-    // Initialize the database to ensure job queue tables are created
-    log::info!(target: "app", "initializing_job_queue_database");
-    if let Err(e) = sqlite_db.init_db() {
-        log::error!(target: "app", "job_queue_database_init_failed; error={}", e);
-        panic!("Failed to initialize job queue database: {}", e);
+
+    // Initialize the database only if DB exists or this is not first run
+    // (If first run with no DB, user needs to set import_to in Preferences first)
+    let needs_setup = is_first_run || !db_exists;
+
+    if !needs_setup {
+        log::info!(target: "app", "initializing_job_queue_database");
+        if let Err(e) = sqlite_db.init_db() {
+            log::error!(target: "app", "job_queue_database_init_failed; error={}", e);
+            // Don't panic - let the app start in setup mode
+            log::warn!(target: "app", "app_starting_in_setup_mode; reason=db_init_failed");
+        } else {
+            log::info!(target: "app", "job_queue_database_initialized");
+        }
+    } else {
+        log::info!(target: "app", "app_starting_in_setup_mode; is_first_run={}; db_exists={}", is_first_run, db_exists);
     }
-    log::info!(target: "app", "job_queue_database_initialized");
+
     let job_queue_manager =
         job_queue_service::JobQueueManager::new(sqlite_db, c.copy_parallel as usize);
 
@@ -143,9 +157,12 @@ pub fn run() {
         job_queue_manager: Arc::new(Mutex::new(job_queue_manager)),
         logging_service: Arc::new(logging_service),
         config: c,
+        needs_setup,
     };
 
-    state.repo_db.connect();
+    if !needs_setup {
+        state.repo_db.connect();
+    }
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
@@ -229,19 +246,25 @@ pub fn run() {
             // Cleanup any stale kill files from previous sessions
             domain_service::job_queue::handlers::cleanup_all_kill_files();
 
-            // Start background job processing
-            log::info!(target: "job_queue", "starting_background_job_processing");
-            let app_handle = app.handle().clone();
             let state = app.state::<AppState>();
-            let job_queue_manager = state.job_queue_manager.lock().unwrap();
-            job_queue_manager.start_background_processing(app_handle.clone());
-            log::info!(target: "job_queue", "background_job_processing_started");
 
-            // Queue insights calculation on startup if cache is stale or missing
-            let config = state.config.clone();
-            std::thread::spawn(move || {
-                queue_startup_insights(&config, app_handle);
-            });
+            // Skip background processing if setup is needed
+            if !state.needs_setup {
+                // Start background job processing
+                log::info!(target: "job_queue", "starting_background_job_processing");
+                let app_handle = app.handle().clone();
+                let job_queue_manager = state.job_queue_manager.lock().unwrap();
+                job_queue_manager.start_background_processing(app_handle.clone());
+                log::info!(target: "job_queue", "background_job_processing_started");
+
+                // Queue insights calculation on startup if cache is stale or missing
+                let config = state.config.clone();
+                std::thread::spawn(move || {
+                    queue_startup_insights(&config, app_handle);
+                });
+            } else {
+                log::info!(target: "app", "skipping_background_processing; reason=needs_setup");
+            }
 
             Ok(())
         })
@@ -294,6 +317,9 @@ pub fn run() {
             create_thumbnails_in_date,
             get_config,
             save_config,
+            config_commands::check_setup_status,
+            config_commands::check_db_exists,
+            config_commands::initialize_database,
             save_star,
             save_comment,
             link_file_to_public,

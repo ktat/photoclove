@@ -45,8 +45,8 @@ function Welcome(props) {
     function handleLanguageConfirm() {
         setShowLanguageSelect(false);
         setShowWelcome(true);
-        // Set use_count to 1 after language selection
-        getAndSaveConfig(1);
+        // Don't change use_count here - keep at 0
+        // use_count will be set to 1 when user completes Preferences setup (import_to + DB init)
     }
 
     return (
