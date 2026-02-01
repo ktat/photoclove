@@ -299,6 +299,14 @@ pub const ACHIEVEMENTS: &[AchievementDefinition] = &[
         category: AchievementCategory::Date,
         threshold: 1,
     },
+    AchievementDefinition {
+        id: "all_dates_complete",
+        name: "Calendar Complete",
+        description: "Have photos from all 366 days of the year (1/1-12/31 + 2/29)",
+        icon: "🗓️",
+        category: AchievementCategory::Date,
+        threshold: 366,
+    },
 
     // === Special Achievements ===
     AchievementDefinition {
