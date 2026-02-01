@@ -6,10 +6,12 @@ import { logger } from '../../services/LoggerService.js';
 import styles from './GettingStartedChecklist.module.css';
 
 const STORAGE_KEY = 'photoclove_getting_started_dismissed';
+const COLLAPSED_KEY = 'photoclove_getting_started_collapsed';
 
 /**
  * Getting Started checklist for new users
  * Shows progress through 5 key steps to help users discover main features
+ * Displayed as a floating overlay in the bottom-right corner
  */
 function GettingStartedChecklist({ config }) {
     const { t } = useTranslation('common');
@@ -18,6 +20,9 @@ function GettingStartedChecklist({ config }) {
     const [loading, setLoading] = useState(true);
     const [dismissed, setDismissed] = useState(() => {
         return localStorage.getItem(STORAGE_KEY) === 'true';
+    });
+    const [collapsed, setCollapsed] = useState(() => {
+        return localStorage.getItem(COLLAPSED_KEY) === 'true';
     });
 
     // Load achievements on mount and periodically
@@ -94,6 +99,7 @@ function GettingStartedChecklist({ config }) {
     const steps = getStepStatus();
     const completedCount = steps.filter(s => s.completed).length;
     const allComplete = completedCount === steps.length;
+    const progressPercent = steps.length > 0 ? (completedCount / steps.length) * 100 : 0;
 
     // Handle dismiss
     const handleDismiss = useCallback(() => {
@@ -101,6 +107,14 @@ function GettingStartedChecklist({ config }) {
         setDismissed(true);
         logger.info('GettingStartedChecklist', 'dismissed', 'User dismissed getting started checklist');
     }, []);
+
+    // Handle collapse toggle
+    const handleToggleCollapse = useCallback(() => {
+        const newCollapsed = !collapsed;
+        setCollapsed(newCollapsed);
+        localStorage.setItem(COLLAPSED_KEY, newCollapsed.toString());
+        logger.debug('GettingStartedChecklist', 'toggle_collapse', 'Collapse toggled', { collapsed: newCollapsed });
+    }, [collapsed]);
 
     // Handle step click
     const handleStepClick = useCallback((step) => {
@@ -143,34 +157,47 @@ function GettingStartedChecklist({ config }) {
     }
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <span className={styles.headerIcon}>🎯</span>
-                <span className={styles.headerTitle}>
-                    {t('gettingStarted.title', 'Getting Started')}
-                </span>
+        <div className={`${styles.container} ${collapsed ? styles.collapsed : ''}`}>
+            <div className={styles.header} onClick={handleToggleCollapse}>
+                <div className={styles.headerLeft}>
+                    <span className={styles.headerIcon}>🎯</span>
+                    <span className={styles.headerTitle}>
+                        {t('gettingStarted.title', 'Getting Started')}
+                    </span>
+                </div>
                 <span className={styles.progress}>
                     {completedCount}/{steps.length}
                 </span>
+                <button className={styles.collapseButton} onClick={(e) => { e.stopPropagation(); handleToggleCollapse(); }}>
+                    {collapsed ? '▲' : '▼'}
+                </button>
             </div>
-            <div className={styles.stepsList}>
-                {steps.map((step) => (
+            <div className={styles.content}>
+                <div className={styles.progressBar}>
                     <div
-                        key={step.id}
-                        className={`${styles.step} ${step.completed ? styles.completed : ''} ${!step.completed && step.action ? styles.clickable : ''}`}
-                        onClick={() => handleStepClick(step)}
-                    >
-                        <span className={styles.stepIcon}>
-                            {step.completed ? '✅' : '⬜'}
-                        </span>
-                        <span className={styles.stepLabel}>
-                            {step.label}
-                        </span>
-                        {!step.completed && step.action && (
-                            <span className={styles.stepArrow}>→</span>
-                        )}
-                    </div>
-                ))}
+                        className={styles.progressFill}
+                        style={{ width: `${progressPercent}%` }}
+                    />
+                </div>
+                <div className={styles.stepsList}>
+                    {steps.map((step) => (
+                        <div
+                            key={step.id}
+                            className={`${styles.step} ${step.completed ? styles.completed : ''} ${!step.completed && step.action ? styles.clickable : ''}`}
+                            onClick={() => handleStepClick(step)}
+                        >
+                            <span className={styles.stepIcon}>
+                                {step.completed ? '✅' : '⬜'}
+                            </span>
+                            <span className={styles.stepLabel}>
+                                {step.label}
+                            </span>
+                            {!step.completed && step.action && (
+                                <span className={styles.stepArrow}>→</span>
+                            )}
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );
