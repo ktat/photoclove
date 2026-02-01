@@ -59,7 +59,8 @@ export function useSelectionTabEffect({
     faceViewType,
     changeTab,
     setShowSideMenu,
-    viewModeObj
+    viewModeObj,
+    tabClass
 }) {
     const prevSelectionCount = useRef(0);
 
@@ -83,7 +84,9 @@ export function useSelectionTabEffect({
         }
 
         // Auto-open Selection tab when selection goes from 0 to 1+
-        if (prevSelectionCount.current === 0 && relevantSelectionCount > 0) {
+        // But don't switch if Share tab is active (user is working on sharing)
+        const isShareTabActive = tabClass?.share === true;
+        if (prevSelectionCount.current === 0 && relevantSelectionCount > 0 && !isShareTabActive) {
             changeTab(undefined, "#tab-selection");
             setShowSideMenu(true);
             logger.info('usePhotosListEffects', 'auto_open_selection', 'Auto-opening Selection tab', {
@@ -98,7 +101,7 @@ export function useSelectionTabEffect({
             });
         }
         prevSelectionCount.current = relevantSelectionCount;
-    }, [photoSelection.length, selectedAlbums.length, selectedTags.length, selectedPersons.length, selectedUnknownFaces.length, faceViewType, viewModeObj, changeTab, setShowSideMenu]);
+    }, [photoSelection.length, selectedAlbums.length, selectedTags.length, selectedPersons.length, selectedUnknownFaces.length, faceViewType, viewModeObj, changeTab, setShowSideMenu, tabClass]);
 }
 
 /**
