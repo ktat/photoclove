@@ -193,7 +193,7 @@
 .home-memory-thumbnail {
   width: 80px;
   height: 80px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--color-bg-muted);
   cursor: pointer;
@@ -214,7 +214,7 @@
 .home-memories-more {
   width: 80px;
   height: 80px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-lg);
   background: var(--color-bg-muted);
   display: flex;
   align-items: center;
@@ -231,6 +231,7 @@
   align-items: center;
   max-height: calc(100vh - 280px);
   overflow: hidden;
+  padding-bottom: 50px;
 }
 
 .home-memories-large-photo {
