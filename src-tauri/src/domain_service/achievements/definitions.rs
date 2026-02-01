@@ -101,6 +101,14 @@ pub const ACHIEVEMENTS: &[AchievementDefinition] = &[
         category: AchievementCategory::First,
         threshold: 1,
     },
+    AchievementDefinition {
+        id: "first_view",
+        name: "First View",
+        description: "View your first photo in detail",
+        icon: "👁️",
+        category: AchievementCategory::First,
+        threshold: 1,
+    },
 
     // === Monthly Pioneer Achievements ===
     AchievementDefinition {

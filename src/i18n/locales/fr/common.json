@@ -168,5 +168,15 @@
       "nov": "Nov",
       "dec": "Déc"
     }
+  },
+  "gettingStarted": {
+    "title": "Premiers pas",
+    "setupFolder": "Configurer le dossier photos",
+    "importPhotos": "Importer vos premières photos",
+    "browsePhotos": "Voir une photo en détail",
+    "addTag": "Ajouter un tag à une photo",
+    "trySearch": "Essayer la recherche de photos",
+    "complete": "C'est fait ! Vous maîtrisez les bases.",
+    "dismiss": "Fermer"
   }
 }

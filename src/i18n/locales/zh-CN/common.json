@@ -163,5 +163,15 @@
       "nov": "11月",
       "dec": "12月"
     }
+  },
+  "gettingStarted": {
+    "title": "入门指南",
+    "setupFolder": "设置照片文件夹",
+    "importPhotos": "导入第一批照片",
+    "browsePhotos": "查看照片详情",
+    "addTag": "为照片添加标签",
+    "trySearch": "尝试搜索照片",
+    "complete": "设置完成！您已掌握基础操作。",
+    "dismiss": "关闭"
   }
 }

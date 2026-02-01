@@ -197,5 +197,15 @@
     "congratulations": "Congratulations!",
     "loading": "Loading achievements...",
     "loadError": "Failed to load achievements"
+  },
+  "gettingStarted": {
+    "title": "Getting Started",
+    "setupFolder": "Set up your photo folder",
+    "importPhotos": "Import your first photos",
+    "browsePhotos": "View a photo in detail",
+    "addTag": "Add a tag to a photo",
+    "trySearch": "Try searching for photos",
+    "complete": "All set! You've completed the basics.",
+    "dismiss": "Dismiss"
   }
 }

@@ -118,8 +118,10 @@ pub async fn check_all_achievements(
 
 /// Check a specific first-time action achievement.
 /// Call this when user performs an action for the first time.
+/// Emits "achievement_unlocked" event if newly achieved.
 #[tauri::command]
 pub async fn check_first_action_achievement(
+    app_handle: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
     achievement_id: String,
 ) -> Result<AchievementCheckResult, String> {
@@ -129,10 +131,13 @@ pub async fn check_first_action_achievement(
         achievement_id
     );
 
-    let db = SQLite::new(state.config.import_to.clone());
-    let service = AchievementService::new(db);
+    use crate::domain_service::achievements::check_and_emit_achievement;
 
-    service.check_first_action(&achievement_id)
+    let result = check_and_emit_achievement(&app_handle, &state.config.import_to, &achievement_id)?;
+
+    Ok(AchievementCheckResult {
+        newly_achieved: result.into_iter().collect(),
+    })
 }
 
 /// Check photo count achievements after import.
