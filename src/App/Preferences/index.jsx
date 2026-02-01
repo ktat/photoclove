@@ -147,7 +147,7 @@ function Preferences(props) {
             }
         };
 
-        invoke("save_config", { config: updatedConfig }).then(() => {
+        invoke("save_config", { config: updatedConfig }).then(async () => {
             setConfig(updatedConfig);
             logger.setEnabled(updatedConfig.logging_enabled);
             logger.info('Preferences', 'config_saved', 'Configuration saved successfully', { updatedConfig });
@@ -158,14 +158,24 @@ function Preferences(props) {
             }
 
             if (isFirstView) {
+                // Initialize database for first-time setup
+                try {
+                    await invoke("initialize_database", { importTo: updatedConfig.import_to });
+                    logger.info('Preferences', 'database_initialized', 'Database initialized successfully');
+                    await message(t('preferences:firstSetup.restartRequired'));
+                } catch (error) {
+                    logger.error('Preferences', 'database_init_failed', 'Failed to initialize database', { error: error.message });
+                    await message(t('preferences:firstSetup.dbInitFailed', { error: error.message || error }));
+                }
                 props.togglePreferences(false);
+            } else {
+                message(t('preferences:messages.restartMayBeRequired')).then(() => {
+                    props.addFooterMessage("configSaved", t('preferences:messages.configSaved'));
+                });
             }
         }).catch((error) => {
             logger.error('Preferences', 'config_save_failed', 'Failed to save configuration', { error: error.message });
-            message("Failed to save configuration. Please try again.");
-        });
-        message("Some changes may require restart to take effect.").then((t) => {
-            props.addFooterMessage("configSaved", "Configuration saved.");
+            message(t('preferences:messages.saveFailed'));
         });
     }
 

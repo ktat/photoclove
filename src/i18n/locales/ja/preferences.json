@@ -296,5 +296,14 @@
     "resetAllWarning": "すべての設定がデフォルト値にリセットされます",
     "googlePhotos": "Google フォト",
     "autoReauth": "起動時にGoogle フォトの再認証を自動的にプロンプト"
+  },
+  "firstSetup": {
+    "restartRequired": "データベースの初期化が完了しました。セットアップを完了するためにアプリケーションを再起動してください。",
+    "dbInitFailed": "データベースの初期化に失敗しました: {{error}}。インポートフォルダのパスを確認して再試行してください。"
+  },
+  "messages": {
+    "restartMayBeRequired": "一部の変更は再起動後に適用されます。",
+    "configSaved": "設定を保存しました。",
+    "saveFailed": "設定の保存に失敗しました。再試行してください。"
   }
 }

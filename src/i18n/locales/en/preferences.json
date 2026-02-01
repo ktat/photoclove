@@ -296,5 +296,14 @@
     "resetAllWarning": "This will reset all settings to default values",
     "googlePhotos": "Google Photos",
     "autoReauth": "Automatically prompt for Google Photos re-authentication on startup"
+  },
+  "firstSetup": {
+    "restartRequired": "Database initialized successfully. Please restart the application to complete setup.",
+    "dbInitFailed": "Failed to initialize database: {{error}}. Please check the import folder path and try again."
+  },
+  "messages": {
+    "restartMayBeRequired": "Some changes may require restart to take effect.",
+    "configSaved": "Configuration saved.",
+    "saveFailed": "Failed to save configuration. Please try again."
   }
 }
