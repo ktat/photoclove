@@ -59,6 +59,8 @@ function SideMenuWrapper({
     tagsList,
     config,
     saveConfigWithStartupImages,
+    sharedOperations,
+    modalState,
 }) {
     // Destructure from state groups
     const { viewModeObj, currentDate } = viewState;
@@ -176,6 +178,8 @@ function SideMenuWrapper({
                     deleteSelectedPersons={deleteSelectedPersons}
                     config={config}
                     saveConfigWithStartupImages={saveConfigWithStartupImages}
+                    sharedOperations={sharedOperations}
+                    modalState={modalState}
                 />
             </div>
         </div>
