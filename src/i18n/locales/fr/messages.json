@@ -50,6 +50,7 @@
     "description": "PhotoClove est une application pour gérer vos photos. Elle vise une importation rapide et une visualisation rapide des photos.",
     "step1": "D'abord, configurez les dossiers dans",
     "step1Link": "Préférences > Général",
+    "step1After": ".",
     "step2a": "Si vous n'avez pas de photos,",
     "step2aLink": "importez des photos",
     "step2b": "Si vous avez des photos dans le dossier d'importation, allez à la",

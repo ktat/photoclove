@@ -50,6 +50,7 @@
     "description": "PhotoClove ist eine Anwendung zur Verwaltung von Fotos. Es zielt auf schnellen Import und schnelle Anzeige von Fotos ab.",
     "step1": "Zuerst konfigurieren Sie die Ordner unter",
     "step1Link": "Einstellungen > Allgemein",
+    "step1After": ".",
     "step2a": "Wenn Sie keine Fotos haben,",
     "step2aLink": "importieren Sie Fotos",
     "step2b": "Wenn Sie Fotos im Import-Ordner haben, gehen Sie zur",
