@@ -48,8 +48,8 @@
   "welcome": {
     "title": "¡Bienvenido a PhotoClove!",
     "description": "PhotoClove es una aplicación para gestionar fotos. Su objetivo es importar y visualizar fotos rápidamente.",
-    "step1": "Primero, configure las",
-    "step1Link": "preferencias",
+    "step1": "Primero, configure las carpetas en",
+    "step1Link": "Preferencias > General",
     "step2a": "Si no tiene fotos,",
     "step2aLink": "importe fotos",
     "step2b": "Si tiene fotos en la carpeta de importación, vaya a",
