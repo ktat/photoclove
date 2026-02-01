@@ -195,7 +195,7 @@ export function usePhotoOperations({
             clearUnknownFaceSelection();
             loadFaces();
             triggerUnknownFacesRefresh?.();
-            addFooterMessage(`${count} face${count > 1 ? 's' : ''} deleted`);
+            addFooterMessage('face_op', `${count} face${count > 1 ? 's' : ''} deleted`);
         } catch (error) {
             handleError(error, 'Delete faces batch', { faceIds });
         }
@@ -221,7 +221,7 @@ export function usePhotoOperations({
             clearUnknownFaceSelection();
             loadFaces();
             triggerUnknownFacesRefresh?.();
-            addFooterMessage(`${count} face${count > 1 ? 's' : ''} assigned to person`);
+            addFooterMessage('face_op', `${count} face${count > 1 ? 's' : ''} assigned to person`);
         } catch (error) {
             handleError(error, 'Assign faces to person', { faceIds, existingPersonId, newPersonName });
         }
@@ -243,7 +243,7 @@ export function usePhotoOperations({
 
             loadAlbums();
             clearAlbumSelection();
-            addFooterMessage(`${count} album${count > 1 ? 's' : ''} deleted`);
+            addFooterMessage('album_op', `${count} album${count > 1 ? 's' : ''} deleted`);
         } catch (error) {
             handleError(error, 'Delete albums', { albumIds: selectedAlbums });
         }
@@ -265,7 +265,7 @@ export function usePhotoOperations({
 
             loadTags();
             clearTagSelection();
-            addFooterMessage(`${count} tag${count > 1 ? 's' : ''} deleted`);
+            addFooterMessage('tag_op', `${count} tag${count > 1 ? 's' : ''} deleted`);
         } catch (error) {
             handleError(error, 'Delete tags', { tagIds: selectedTags });
         }
@@ -287,7 +287,7 @@ export function usePhotoOperations({
 
             loadFaces();
             clearPersonSelection();
-            addFooterMessage(`${count} person${count > 1 ? 's' : ''} deleted`);
+            addFooterMessage('person_op', `${count} person${count > 1 ? 's' : ''} deleted`);
         } catch (error) {
             handleError(error, 'Delete persons', { personIds: selectedPersons });
         }
@@ -305,7 +305,7 @@ export function usePhotoOperations({
     const handleAddToAlbum = useCallback(async (photoPath, albumId) => {
         try {
             await invoke("add_photo_to_album", { albumId, photoPath });
-            addFooterMessage('Photo added to album');
+            addFooterMessage('album_op', 'Photo added to album');
             return true;
         } catch (error) {
             handleError(error, 'Add photo to album', { photoPath, albumId });
@@ -316,7 +316,7 @@ export function usePhotoOperations({
     const removePhotoFromAlbum = useCallback(async (photoPath, albumId) => {
         try {
             await invoke("remove_photo_from_album", { albumId, photoPath });
-            addFooterMessage('Photo removed from album');
+            addFooterMessage('album_op', 'Photo removed from album');
             return true;
         } catch (error) {
             handleError(error, 'Remove photo from album', { photoPath, albumId });
@@ -425,7 +425,7 @@ export function usePhotoOperations({
                 setTrashPhotos(prevPhotos => prevPhotos.filter(photo => photo.path !== photoPath));
             }
 
-            addFooterMessage('Photo restored from trash');
+            addFooterMessage('trash', 'Photo restored from trash');
             return true;
         } catch (error) {
             handleError(error, 'Restore photo from trash', { path: photoPath });

@@ -40,7 +40,9 @@ function Footer({ onRecoveryQueueClick }) {
     };
 
     const hasRecoveryItems = recoveryCount > 0;
-    const hasFooterMessages = Object.keys(footerMessages).length > 0;
+    // Filter out empty/undefined values
+    const validMessages = Object.entries(footerMessages).filter(([, v]) => v != null && v !== '');
+    const hasFooterMessages = validMessages.length > 0;
 
     return (
         <footer>
@@ -65,13 +67,12 @@ function Footer({ onRecoveryQueueClick }) {
                         <span>&#x1f980;.｡o( </span>
                         {!hasFooterMessages
                             ? <RandomMessages />
-                            : Object.keys(footerMessages).map((k, i) => {
-                                return (<React.Fragment key={i}>
+                            : validMessages.map(([k, v], i) => (
+                                <React.Fragment key={k}>
                                     {i > 0 && " | "}
-                                    <span className={k}>
-                                        {footerMessages[k]}</span>
-                                </React.Fragment>)
-                            })}
+                                    <span className={k}>{v}</span>
+                                </React.Fragment>
+                            ))}
                         <span> )</span>
                     </>
                 )}

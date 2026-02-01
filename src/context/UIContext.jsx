@@ -29,9 +29,13 @@ export const UIProvider = ({ children }) => {
   const [burstModeEnabled, setBurstModeEnabled] = useState(false);
 
   const addFooterMessage = useCallback((k, v, withDialog, deleteAfter) => {
+    // Handle single-argument call: addFooterMessage('message') -> use 'default' as key
+    const key = v === undefined ? 'default' : k;
+    const value = v === undefined ? k : v;
+
     setFooterMessages(prev => ({
       ...prev,
-      [k]: v
+      [key]: value
     }));
     
     if (withDialog) {
