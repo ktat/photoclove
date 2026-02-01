@@ -259,7 +259,7 @@ export function usePhotoLoader({
 
             handleError(error, 'Load photos', { mode: viewMode.mode });
             const errorMsg = error?.message || error?.toString() || String(error) || 'Unknown error';
-            addFooterMessage && addFooterMessage(`Failed to load photos: ${errorMsg}`);
+            addFooterMessage && addFooterMessage('photo_load', `Failed to load photos: ${errorMsg}`);
         } finally {
             if (isRequestValid(requestId) && !silent) {
                 setPhotoLoading(false);

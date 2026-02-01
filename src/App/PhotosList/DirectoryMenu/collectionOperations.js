@@ -63,7 +63,7 @@ async function removePhotosFromCollection({
             }
 
             clearPhotoSelection();
-            addFooterMessage(`${count} photo${count > 1 ? 's' : ''} removed from ${typeName}`);
+            addFooterMessage('collection_op', `${count} photo${count > 1 ? 's' : ''} removed from ${typeName}`);
 
             logger.info('collectionOperations', `photos_removed_from_${typeName}`, `Photos removed from ${typeName} successfully`, {
                 collectionId,
@@ -92,7 +92,7 @@ export function useAlbumOperations({
 
     const showCreateAlbumModal = useCallback(() => {
         if (photoSelection.length === 0) {
-            addFooterMessage('Please select photos first');
+            addFooterMessage('album_op', 'Please select photos first');
             return;
         }
 
@@ -104,7 +104,7 @@ export function useAlbumOperations({
 
     const showAddToAlbumModal = useCallback(() => {
         if (photoSelection.length === 0) {
-            addFooterMessage('Please select photos first');
+            addFooterMessage('album_op', 'Please select photos first');
             return;
         }
 
@@ -144,7 +144,7 @@ export function useAlbumOperations({
 
             const photoCount = photoSelection.length;
             clearPhotoSelection();
-            addFooterMessage(`Album "${albumData.name}" created with ${photoCount} photos`);
+            addFooterMessage('album_op', `Album "${albumData.name}" created with ${photoCount} photos`);
 
             logger.info('collectionOperations', 'album_created_from_selection', 'Album created from selected photos', {
                 albumName: albumData.name,
@@ -177,10 +177,10 @@ export function useAlbumOperations({
             clearPhotoSelection();
 
             if (addedCount === photoCount) {
-                addFooterMessage(`${addedCount} photo${addedCount !== 1 ? 's' : ''} added to album`);
+                addFooterMessage('album_op', `${addedCount} photo${addedCount !== 1 ? 's' : ''} added to album`);
             } else {
                 const skipped = photoCount - addedCount;
-                addFooterMessage(`${addedCount} photo${addedCount !== 1 ? 's' : ''} added to album (${skipped} already existed)`);
+                addFooterMessage('album_op', `${addedCount} photo${addedCount !== 1 ? 's' : ''} added to album (${skipped} already existed)`);
             }
 
             setShowAlbumSelectorModal(false);
@@ -231,7 +231,7 @@ export function useTagOperations({
 
     const showAddTagsModal = useCallback(() => {
         if (photoSelection.length === 0) {
-            addFooterMessage('Please select photos first');
+            addFooterMessage('tag_op', 'Please select photos first');
             return;
         }
 
@@ -258,7 +258,7 @@ export function useTagOperations({
             }
 
             clearPhotoSelection();
-            addFooterMessage(`${tagCount} tag${tagCount > 1 ? 's' : ''} added to ${photoCount} photo${photoCount > 1 ? 's' : ''}`);
+            addFooterMessage('tag_op', `${tagCount} tag${tagCount > 1 ? 's' : ''} added to ${photoCount} photo${photoCount > 1 ? 's' : ''}`);
 
             logger.info('collectionOperations', 'tags_added_to_photos', 'Tags added to photos successfully (bulk)', {
                 tagIds: selectedTagIds,

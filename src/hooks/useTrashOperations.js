@@ -63,7 +63,7 @@ export function useTrashOperations({
         });
 
         if (!paths || paths.length === 0) {
-            addFooterMessage('No photos to delete');
+            addFooterMessage('trash', 'No photos to delete');
             return false;
         }
 
@@ -139,9 +139,9 @@ export function useTrashOperations({
 
                 // Show result message
                 if (result.failed > 0) {
-                    addFooterMessage(`${result.succeeded} photo${result.succeeded !== 1 ? 's' : ''} moved to trash, ${result.failed} failed`);
+                    addFooterMessage('trash', `${result.succeeded} photo${result.succeeded !== 1 ? 's' : ''} moved to trash, ${result.failed} failed`);
                 } else {
-                    addFooterMessage(`${count} photo${count > 1 ? 's' : ''} moved to trash`);
+                    addFooterMessage('trash', `${count} photo${count > 1 ? 's' : ''} moved to trash`);
                 }
 
                 logger.info('useTrashOperations', 'delete_photos_success', 'Photos deleted successfully', {
@@ -160,7 +160,7 @@ export function useTrashOperations({
                 if (photosBackup && setAllPhotosForCurrentFetch) {
                     setAllPhotosForCurrentFetch(photosBackup);
                 }
-                addFooterMessage('Delete operation failed. Reloading...');
+                addFooterMessage('trash', 'Delete operation failed. Reloading...');
 
                 // Reload to ensure UI matches database state
                 if (reloadCurrentModeData) {
@@ -201,7 +201,7 @@ export function useTrashOperations({
      */
     const restorePhotos = useCallback(async (paths, { skipConfirmation = false, clearSelection = true } = {}) => {
         if (!paths || paths.length === 0) {
-            addFooterMessage('No photos to restore');
+            addFooterMessage('trash', 'No photos to restore');
             return false;
         }
 
@@ -255,9 +255,9 @@ export function useTrashOperations({
 
                 // Show result message
                 if (result.failed > 0) {
-                    addFooterMessage(`${result.succeeded} photo${result.succeeded !== 1 ? 's' : ''} restored, ${result.failed} failed`);
+                    addFooterMessage('trash', `${result.succeeded} photo${result.succeeded !== 1 ? 's' : ''} restored, ${result.failed} failed`);
                 } else {
-                    addFooterMessage(`${count} photo${count > 1 ? 's' : ''} restored successfully`);
+                    addFooterMessage('trash', `${count} photo${count > 1 ? 's' : ''} restored successfully`);
                 }
 
                 logger.info('useTrashOperations', 'restore_photos_success', 'Photos restored successfully', {
@@ -273,7 +273,7 @@ export function useTrashOperations({
                     error: backendError.message
                 });
 
-                addFooterMessage('Restore operation failed. Reloading...');
+                addFooterMessage('trash', 'Restore operation failed. Reloading...');
 
                 // Reload trash view to restore UI state
                 if (reloadCurrentModeData) {

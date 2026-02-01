@@ -29,7 +29,7 @@ export function useGroupOperations({
      */
     const createBurstGroup = useCallback(async () => {
         if (photoSelection.length < 2) {
-            addFooterMessage('Please select at least 2 photos to create a group');
+            addFooterMessage('burst_group', 'Please select at least 2 photos to create a group');
             return;
         }
 
@@ -51,7 +51,7 @@ export function useGroupOperations({
             });
 
             clearPhotoSelection();
-            addFooterMessage(`Created burst group with ${count} photos`);
+            addFooterMessage('burst_group', `Created burst group with ${count} photos`);
 
             logger.info('groupOperations', 'create_burst_group_success', 'Burst group created', {
                 groupId,
@@ -77,7 +77,7 @@ export function useGroupOperations({
      */
     const removeFromBurstGroup = useCallback(async () => {
         if (photoSelection.length === 0) {
-            addFooterMessage('Please select photos to remove from groups');
+            addFooterMessage('burst_group', 'Please select photos to remove from groups');
             return;
         }
 
@@ -100,7 +100,7 @@ export function useGroupOperations({
             });
 
             clearPhotoSelection();
-            addFooterMessage(`Removed ${count} photo${count > 1 ? 's' : ''} from burst group${count > 1 ? 's' : ''}`);
+            addFooterMessage('burst_group', `Removed ${count} photo${count > 1 ? 's' : ''} from burst group${count > 1 ? 's' : ''}`);
 
             logger.info('groupOperations', 'remove_from_burst_group_success', 'Photos removed from burst groups', {
                 photoCount: count

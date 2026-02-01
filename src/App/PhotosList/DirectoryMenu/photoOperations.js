@@ -15,7 +15,7 @@ import { invokeWithErrorHandling } from "../../../services/TauriService.js";
 export function usePhotoImport({ importState, photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError }) {
     const importSelectedPhotos = useCallback(async () => {
         if (!importState || photoSelection.length === 0) {
-            addFooterMessage('Please select photos first');
+            addFooterMessage('import', 'Please select photos first');
             return;
         }
 
@@ -35,7 +35,7 @@ export function usePhotoImport({ importState, photoSelection, clearPhotoSelectio
                 await importState.importPhotos(photoSelection);
 
                 clearPhotoSelection();
-                addFooterMessage(`${count} photo${count > 1 ? 's' : ''} imported successfully`);
+                addFooterMessage('import', `${count} photo${count > 1 ? 's' : ''} imported successfully`);
 
                 logger.info('photoOperations', 'photos_imported', 'Photos imported successfully', {
                     photoCount: count
@@ -155,7 +155,7 @@ export function useTrashOperations({
         if (lockDeleteRef.current) return false;
 
         if (!photoSelection || photoSelection.length === 0) {
-            addFooterMessage('Please select photos first');
+            addFooterMessage('photo_op', 'Please select photos first');
             return false;
         }
 
@@ -187,7 +187,7 @@ export function useTrashOperations({
 
     const restoreSelectedFromTrash = useCallback(async () => {
         if (!photoSelection || photoSelection.length === 0) {
-            addFooterMessage('Please select photos first');
+            addFooterMessage('photo_op', 'Please select photos first');
             return false;
         }
 
@@ -213,7 +213,7 @@ export function useTrashOperations({
 
     const permanentDeleteSelected = useCallback(async () => {
         if (photoSelection.length === 0) {
-            addFooterMessage('Please select photos first');
+            addFooterMessage('photo_op', 'Please select photos first');
             return;
         }
 
@@ -246,12 +246,12 @@ export function useTrashOperations({
                         );
 
                         if (result.failed > 0) {
-                            addFooterMessage(`${result.succeeded} photo${result.succeeded !== 1 ? 's' : ''} permanently deleted, ${result.failed} failed`);
+                            addFooterMessage('photo_op', `${result.succeeded} photo${result.succeeded !== 1 ? 's' : ''} permanently deleted, ${result.failed} failed`);
                         } else {
-                            addFooterMessage(`${count} photo${count > 1 ? 's' : ''} permanently deleted`);
+                            addFooterMessage('photo_op', `${count} photo${count > 1 ? 's' : ''} permanently deleted`);
                         }
                     } catch (backendError) {
-                        addFooterMessage('Permanent delete operation failed. Reloading...');
+                        addFooterMessage('photo_op', 'Permanent delete operation failed. Reloading...');
 
                         if (reloadCurrentModeData) {
                             await reloadCurrentModeData();

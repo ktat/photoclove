@@ -117,25 +117,25 @@ const JobQueue = ({ onClose, ...props }) => {
         response = JSON.parse(result);
       } catch (parseError) {
         logger.error('JobQueue', 'retry_parse_failed', 'Failed to parse retry response', { error: parseError.message, result });
-        props.addFooterMessage("Failed to parse retry response: " + result);
+        props.addFooterMessage("job_queue", "Failed to parse retry response: " + result);
         return;
       }
 
       // Handle Rust Result wrapper: {"Ok": boolean} or {"Err": "error message"}
       if (response.Ok) {
         logger.info('JobQueue', 'job_retry_success', 'Job queued for retry', { jobId });
-        props.addFooterMessage("Job queued for retry");
+        props.addFooterMessage("job_queue", "Job queued for retry");
         loadJobs(); // Reload jobs
       } else if (response.Err) {
         logger.error('JobQueue', 'job_retry_failed', 'Failed to retry job', { jobId, error: response.Err });
-        props.addFooterMessage(`Failed to retry job: ${response.Err}`);
+        props.addFooterMessage("job_queue", `Failed to retry job: ${response.Err}`);
       } else {
         logger.warn('JobQueue', 'retry_unexpected_format', 'Unexpected retry response format', { response });
-        props.addFooterMessage("Failed to retry job: unexpected response format");
+        props.addFooterMessage("job_queue", "Failed to retry job: unexpected response format");
       }
     } catch (err) {
       logger.error('JobQueue', 'retry_error', 'Error retrying job', { jobId, error: err.message });
-      props.addFooterMessage("Error retrying job: " + err.message);
+      props.addFooterMessage("job_queue", "Error retrying job: " + err.message);
     }
   };
 
@@ -147,21 +147,21 @@ const JobQueue = ({ onClose, ...props }) => {
         response = JSON.parse(result);
       } catch (parseError) {
         logger.error('JobQueue', 'resume_parse_failed', 'Failed to parse resume response', { error: parseError.message, result });
-        props.addFooterMessage("Failed to parse resume response: " + result);
+        props.addFooterMessage("job_queue", "Failed to parse resume response: " + result);
         return;
       }
 
       if (response.Ok) {
         logger.info('JobQueue', 'job_resume_success', 'Job resumed', { jobId });
-        props.addFooterMessage("Job resumed from last position");
+        props.addFooterMessage("job_queue", "Job resumed from last position");
         loadJobs();
       } else if (response.Err) {
         logger.error('JobQueue', 'job_resume_failed', 'Failed to resume job', { jobId, error: response.Err });
-        props.addFooterMessage(`Failed to resume job: ${response.Err}`);
+        props.addFooterMessage("job_queue", `Failed to resume job: ${response.Err}`);
       }
     } catch (err) {
       logger.error('JobQueue', 'resume_error', 'Error resuming job', { jobId, error: err.message });
-      props.addFooterMessage("Error resuming job: " + err.message);
+      props.addFooterMessage("job_queue", "Error resuming job: " + err.message);
     }
   };
 
@@ -177,21 +177,21 @@ const JobQueue = ({ onClose, ...props }) => {
         response = JSON.parse(result);
       } catch (parseError) {
         logger.error('JobQueue', 'restart_parse_failed', 'Failed to parse restart response', { error: parseError.message, result });
-        props.addFooterMessage("Failed to parse restart response: " + result);
+        props.addFooterMessage("job_queue", "Failed to parse restart response: " + result);
         return;
       }
 
       if (response.Ok) {
         logger.info('JobQueue', 'job_restart_success', 'Job restarted', { jobId });
-        props.addFooterMessage("Job restarted from beginning");
+        props.addFooterMessage("job_queue", "Job restarted from beginning");
         loadJobs();
       } else if (response.Err) {
         logger.error('JobQueue', 'job_restart_failed', 'Failed to restart job', { jobId, error: response.Err });
-        props.addFooterMessage(`Failed to restart job: ${response.Err}`);
+        props.addFooterMessage("job_queue", `Failed to restart job: ${response.Err}`);
       }
     } catch (err) {
       logger.error('JobQueue', 'restart_error', 'Error restarting job', { jobId, error: err.message });
-      props.addFooterMessage("Error restarting job: " + err.message);
+      props.addFooterMessage("job_queue", "Error restarting job: " + err.message);
     }
   };
 
@@ -207,22 +207,22 @@ const JobQueue = ({ onClose, ...props }) => {
         response = JSON.parse(result);
       } catch (parseError) {
         logger.error('JobQueue', 'stop_parse_failed', 'Failed to parse stop response', { error: parseError.message, result });
-        props.addFooterMessage("Failed to parse stop response: " + result);
+        props.addFooterMessage("job_queue", "Failed to parse stop response: " + result);
         return;
       }
 
       if (response.Ok) {
         logger.info('JobQueue', 'job_stop_success', 'Job stop requested', { jobId });
-        props.addFooterMessage("Job stop requested. It will stop after current item.");
+        props.addFooterMessage("job_queue", "Job stop requested. It will stop after current item.");
         // Refresh after a short delay to show updated status
         setTimeout(loadJobs, 1000);
       } else if (response.Err) {
         logger.error('JobQueue', 'job_stop_failed', 'Failed to stop job', { jobId, error: response.Err });
-        props.addFooterMessage(`Failed to stop job: ${response.Err}`);
+        props.addFooterMessage("job_queue", `Failed to stop job: ${response.Err}`);
       }
     } catch (err) {
       logger.error('JobQueue', 'stop_error', 'Error stopping job', { jobId, error: err.message });
-      props.addFooterMessage("Error stopping job: " + err.message);
+      props.addFooterMessage("job_queue", "Error stopping job: " + err.message);
     }
   };
 
@@ -243,25 +243,25 @@ const JobQueue = ({ onClose, ...props }) => {
         response = JSON.parse(result);
       } catch (parseError) {
         logger.error('JobQueue', 'delete_parse_failed', 'Failed to parse delete response', { error: parseError.message, result });
-        props.addFooterMessage("Failed to parse delete response: " + result);
+        props.addFooterMessage("job_queue", "Failed to parse delete response: " + result);
         return;
       }
       
       // Handle Rust Result wrapper: {"Ok": boolean} or {"Err": "error message"}
       if (response.Ok) {
         logger.info('JobQueue', 'job_delete_success', 'Job deleted successfully', { jobId });
-        props.addFooterMessage("Job deleted successfully");
+        props.addFooterMessage("job_queue", "Job deleted successfully");
         loadJobs(); // Reload jobs
       } else if (response.Err) {
         logger.error('JobQueue', 'job_delete_failed', 'Failed to delete job', { jobId, error: response.Err });
-        props.addFooterMessage(`Failed to delete job: ${response.Err}`);
+        props.addFooterMessage("job_queue", `Failed to delete job: ${response.Err}`);
       } else {
         logger.warn('JobQueue', 'delete_unexpected_format', 'Unexpected delete response format', { response });
-        props.addFooterMessage("Failed to delete job: unexpected response format");
+        props.addFooterMessage("job_queue", "Failed to delete job: unexpected response format");
       }
     } catch (err) {
       logger.error('JobQueue', 'delete_error', 'Error deleting job', { jobId, error: err.message });
-      props.addFooterMessage("Error deleting job: " + err.message);
+      props.addFooterMessage("job_queue", "Error deleting job: " + err.message);
     }
   };
 
@@ -272,18 +272,18 @@ const JobQueue = ({ onClose, ...props }) => {
       try {
         response = JSON.parse(result);
       } catch (parseError) {
-        props.addFooterMessage("Failed to parse cleanup response: " + result);
+        props.addFooterMessage("job_queue", "Failed to parse cleanup response: " + result);
         return;
       }
       
       if (response.result) {
-        props.addFooterMessage("Completed jobs cleaned up");
+        props.addFooterMessage("job_queue", "Completed jobs cleaned up");
         loadJobs(); // Reload jobs
       } else {
-        props.addFooterMessage("Failed to cleanup completed jobs");
+        props.addFooterMessage("job_queue", "Failed to cleanup completed jobs");
       }
     } catch (err) {
-      props.addFooterMessage("Error cleaning up jobs: " + err.message);
+      props.addFooterMessage("job_queue", "Error cleaning up jobs: " + err.message);
     }
   };
 
