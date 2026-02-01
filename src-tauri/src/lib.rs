@@ -281,6 +281,7 @@ pub fn run() {
             get_resized_image,
             get_thumbnail_path,
             clear_import_cache,
+            save_image_to_download_dir,
             import_photos,
             get_import_progress,
             get_job_progress,

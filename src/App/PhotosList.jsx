@@ -627,7 +627,7 @@ function PhotosList({
                         imgCacheMap={imgCacheMap} setStar={setStarWithUpdate} star={star}
                         onPhotosRefresh={refreshPhotosOnly} onCommentUpdate={updatePhotoComment}
                         onAlbumUpdate={handleAlbumUpdate} onAlbumDelete={handleAlbumDelete}
-                        photoSelection={photoSelection}
+                        photoSelection={photoSelection} config={appConfig}
                         selectedAlbums={selectedAlbums} selectedTags={selectedTags} selectedPersons={selectedPersons}
                         selectAllPhotoToSelection={selectAllPhotoToSelection}
                         clearPhotoSelection={clearPhotoSelection} deleteSelectedAlbums={deleteSelectedAlbums}

@@ -144,7 +144,8 @@ function Preferences(props) {
                 custom_labels: config.ai_tagging?.custom_labels || [],
                 use_exif_thumbnail: config.ai_tagging?.use_exif_thumbnail ?? true,
                 min_thumbnail_size: parseInt(config.ai_tagging?.min_thumbnail_size) || 160
-            }
+            },
+            custom_watermark: config.custom_watermark || null
         };
 
         invoke("save_config", { config: updatedConfig }).then(async () => {

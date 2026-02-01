@@ -318,6 +318,7 @@ function DirectoryMenu(props) {
                     <ShareTab
                         photoSelection={props.photoSelection}
                         isPhotoViewer={false}
+                        userWatermarkText={props.config?.custom_watermark || ''}
                     />
                 </div>
             )}

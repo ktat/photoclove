@@ -19,6 +19,7 @@
   min-height: calc(100vh - 30px);
   padding: var(--space-5) var(--space-5) var(--space-3) var(--space-5);
   margin: 0;
+  background-color: var(--color-bg-surface);
 }
 
 .centerDisplay {
@@ -274,7 +275,7 @@
   max-width: 320px;
   padding-left: var(--space-5);
   border: none;
-  background-color: var(--color-bg-base);
+  background-color: var(--color-bg-film);
   position: fixed;
   right: 0;
   top: 0;

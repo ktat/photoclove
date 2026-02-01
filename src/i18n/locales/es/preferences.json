@@ -22,7 +22,11 @@
     "importSource": "Origen de importación",
     "selectFolder": "Seleccionar carpeta",
     "thumbnailFolder": "Carpeta de miniaturas",
-    "thumbnailFolderDescription": "Dónde almacenar las miniaturas generadas"
+    "thumbnailFolderDescription": "Dónde almacenar las miniaturas generadas",
+    "sharing": "Compartir",
+    "customWatermark": "Marca de agua personalizada",
+    "customWatermarkPlaceholder": "Tu nombre o @usuario",
+    "customWatermarkDescription": "Añade tu propia marca de agua al compartir fotos"
   },
   "startup": {
     "startupBehavior": "Comportamiento de inicio",

@@ -432,3 +432,49 @@ pub fn clear_import_cache() -> Result<usize, String> {
     // Clear all cache files
     clear_import_thumbnail_cache(&cache_dir)
 }
+
+/// Saves base64 encoded image data to the download directory
+///
+/// # Arguments
+///
+/// * `image_data` - Base64 encoded image data (without data URL prefix)
+/// * `filename` - Target filename
+/// * `state` - Application state containing config
+///
+/// # Returns
+///
+/// Full path to the saved file on success
+#[tauri::command]
+pub fn save_image_to_download_dir(
+    image_data: &str,
+    filename: &str,
+    state: tauri::State<'_, crate::AppState>,
+) -> Result<String, String> {
+    use base64::{Engine as _, engine::general_purpose::STANDARD};
+
+    log::info!(target: "image", "save_image_to_download_dir; filename={}", filename);
+
+    // Decode base64 data
+    let decoded = STANDARD
+        .decode(image_data)
+        .map_err(|e| format!("Failed to decode base64 image data: {}", e))?;
+
+    // Get download directory from config
+    let download_dir = &state.config.download_dir;
+
+    // Ensure download directory exists
+    fs::create_dir_all(download_dir)
+        .map_err(|e| format!("Failed to create download directory: {}", e))?;
+
+    // Build full path
+    let full_path = path::Path::new(download_dir).join(filename);
+    let full_path_str = full_path.to_string_lossy().to_string();
+
+    // Write file
+    fs::write(&full_path, decoded)
+        .map_err(|e| format!("Failed to write image file: {}", e))?;
+
+    log::info!(target: "image", "save_image_to_download_dir_success; path={}", full_path_str);
+
+    Ok(full_path_str)
+}

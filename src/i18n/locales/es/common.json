@@ -111,7 +111,9 @@
     "failed": "Error",
     "cancelled": "Cancelado",
     "pending": "Pendiente",
-    "inProgress": "En progreso"
+    "inProgress": "En progreso",
+    "saved": "¡Guardado!",
+    "copied": "¡Copiado!"
   },
   "language": {
     "select": "Seleccionar idioma",

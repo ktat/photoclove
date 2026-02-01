@@ -432,6 +432,7 @@ function PhotoOption(props) {
                             currentPhotoPath={props.currentPhotoPath}
                             photoSelection={props.photoSelection || []}
                             isPhotoViewer={true}
+                            userWatermarkText={props.config?.custom_watermark || ''}
                         />
                     )}
                     {activeTab === "selection" && (

@@ -81,6 +81,24 @@ const GeneralTab = ({ config, setConfig, additionalExportFrom, setAdditionalExpo
                     </button>
                 </div>
             </div>
+
+            <h2 className={styles['section-title']}>{t('preferences:general.sharing')}</h2>
+            <div className={styles['setting-group']}>
+                <div className={styles['setting-row']}>
+                    <label className={styles['setting-label']}>{t('preferences:general.customWatermark')}</label>
+                    <input
+                        type="text"
+                        className={styles['setting-input']}
+                        value={config.custom_watermark || ''}
+                        onChange={(e) => setConfig(prev => ({ ...prev, custom_watermark: e.target.value }))}
+                        placeholder={t('preferences:general.customWatermarkPlaceholder')}
+                        maxLength={50}
+                    />
+                </div>
+                <p className={styles['setting-description']}>
+                    {t('preferences:general.customWatermarkDescription')}
+                </p>
+            </div>
         </div>
     );
 };
