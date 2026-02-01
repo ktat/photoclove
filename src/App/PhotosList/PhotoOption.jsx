@@ -93,7 +93,7 @@ function PhotoOption(props) {
         }
 
         prevSelectionCount.current = photoCount;
-    }, [props.photoSelection?.length, props.showSideMenu, props.setShowSideMenu]);
+    }, [props.photoSelection?.length, props.showSideMenu, props.setShowSideMenu, activeTab]);
 
     // Tutorial trigger effect (Feature #152/#153)
     useEffect(() => {
