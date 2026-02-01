@@ -113,6 +113,8 @@
   justify-content: start;
   align-content: start;
   max-height: calc(100vh - 150px);
+  background-color: var(--color-bg-surface);
+  border-radius: var(--radius-lg);
 }
 
 /* Film strip theme - grid adjustments */
