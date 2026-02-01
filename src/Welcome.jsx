@@ -100,7 +100,7 @@ function Welcome(props) {
                                     getAndSaveConfig(3);
                                     props.togglePreferences(true);
                                 }
-                                }>{t('messages:welcome.step1Link')}</a>.</span></li>
+                                }>{t('messages:welcome.step1Link')}</a>{t('messages:welcome.step1After', '')}</span></li>
                             <li>
                                 <span className={"useCount-" + (props.useCount == 2 ? 2 : 0)}>{t('messages:welcome.step2a')} <a href="#"
                                     onClick={() => {
