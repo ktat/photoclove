@@ -18,8 +18,7 @@
     "languageDescription": "アプリケーションの表示言語を選択",
     "dateFormat": "日付形式",
     "dateFormatDescription": "日付の表示形式を選択",
-    "importFolder": "インポートフォルダ",
-    "importFolderDescription": "写真をインポートするデフォルトフォルダ",
+    "folders": "フォルダ",
     "selectFolder": "フォルダを選択",
     "thumbnailFolder": "サムネイルフォルダ",
     "thumbnailFolderDescription": "生成されたサムネイルの保存先"

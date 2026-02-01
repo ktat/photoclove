@@ -18,8 +18,7 @@
     "languageDescription": "選擇應用程式的顯示語言",
     "dateFormat": "日期格式",
     "dateFormatDescription": "選擇日期的顯示方式",
-    "importFolder": "匯入資料夾",
-    "importFolderDescription": "匯入照片的預設資料夾",
+    "folders": "資料夾",
     "selectFolder": "選擇資料夾",
     "thumbnailFolder": "縮圖資料夾",
     "thumbnailFolderDescription": "儲存產生的縮圖的位置"

@@ -18,8 +18,7 @@
     "languageDescription": "Seleccione el idioma de la aplicación",
     "dateFormat": "Formato de fecha",
     "dateFormatDescription": "Seleccione cómo se muestran las fechas",
-    "importFolder": "Carpeta de importación",
-    "importFolderDescription": "Carpeta predeterminada para fotos importadas",
+    "folders": "Carpetas",
     "selectFolder": "Seleccionar carpeta",
     "thumbnailFolder": "Carpeta de miniaturas",
     "thumbnailFolderDescription": "Dónde almacenar las miniaturas generadas"

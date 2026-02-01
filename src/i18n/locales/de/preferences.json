@@ -18,8 +18,7 @@
     "languageDescription": "Wählen Sie die Anzeigesprache der Anwendung",
     "dateFormat": "Datumsformat",
     "dateFormatDescription": "Wählen Sie das Anzeigeformat für Daten",
-    "importFolder": "Import-Ordner",
-    "importFolderDescription": "Standardordner für importierte Fotos",
+    "folders": "Ordner",
     "selectFolder": "Ordner auswählen",
     "thumbnailFolder": "Miniaturansicht-Ordner",
     "thumbnailFolderDescription": "Wo generierte Miniaturansichten gespeichert werden"

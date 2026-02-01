@@ -18,8 +18,7 @@
     "languageDescription": "Select the display language for the application",
     "dateFormat": "Date Format",
     "dateFormatDescription": "Select how dates are displayed",
-    "importFolder": "Import Folder",
-    "importFolderDescription": "Default folder for imported photos",
+    "folders": "Folders",
     "selectFolder": "Select Folder",
     "thumbnailFolder": "Thumbnail Folder",
     "thumbnailFolderDescription": "Where to store generated thumbnails"

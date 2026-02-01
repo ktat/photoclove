@@ -36,13 +36,8 @@ const GeneralTab = ({ config, setConfig, additionalExportFrom, setAdditionalExpo
                 </p>
             </div>
 
-            <h2 className={styles['section-title']}>{t('preferences:general.importFolder')}</h2>
+            <h2 className={styles['section-title']}>{t('preferences:general.folders')}</h2>
             <div className={styles['setting-group']}>
-                <PickFolderSingle
-                    label={t('preferences:general.importFolder') + ':'}
-                    folder={config.data_path}
-                    setFunc={(folder) => setConfig(prev => ({ ...prev, data_path: folder }))}
-                />
                 <PickFolderSingle
                     label={t('common:navigation.trash') + ':'}
                     folder={config.trash_path}

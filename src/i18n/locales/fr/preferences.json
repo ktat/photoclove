@@ -18,8 +18,7 @@
     "languageDescription": "Sélectionnez la langue d'affichage de l'application",
     "dateFormat": "Format de date",
     "dateFormatDescription": "Sélectionnez le format d'affichage des dates",
-    "importFolder": "Dossier d'importation",
-    "importFolderDescription": "Dossier par défaut pour les photos importées",
+    "folders": "Dossiers",
     "selectFolder": "Sélectionner un dossier",
     "thumbnailFolder": "Dossier des miniatures",
     "thumbnailFolderDescription": "Où stocker les miniatures générées"
