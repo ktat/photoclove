@@ -60,11 +60,17 @@ export function useSelectionTabEffect({
     changeTab,
     setShowSideMenu,
     viewModeObj,
-    tabClass
+    tabClass,
+    currentPhotoPath
 }) {
     const prevSelectionCount = useRef(0);
 
     useEffect(() => {
+        // Skip if PhotoViewer is open - PhotoOption handles tab switching there
+        if (currentPhotoPath) {
+            return;
+        }
+
         // Calculate relevant selection count based on current ViewMode
         let relevantSelectionCount = 0;
         if (viewModeObj?.isAlbumListMode()) {
@@ -101,7 +107,7 @@ export function useSelectionTabEffect({
             });
         }
         prevSelectionCount.current = relevantSelectionCount;
-    }, [photoSelection.length, selectedAlbums.length, selectedTags.length, selectedPersons.length, selectedUnknownFaces.length, faceViewType, viewModeObj, changeTab, setShowSideMenu, tabClass]);
+    }, [photoSelection.length, selectedAlbums.length, selectedTags.length, selectedPersons.length, selectedUnknownFaces.length, faceViewType, viewModeObj, changeTab, setShowSideMenu, tabClass, currentPhotoPath]);
 }
 
 /**

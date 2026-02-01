@@ -450,7 +450,7 @@ function PhotosList({
 
     // Selection tab auto-open effect
     useSelectionTabEffect({
-        photoSelection, selectedAlbums, selectedTags, selectedPersons, selectedUnknownFaces, faceViewType, changeTab, setShowSideMenu, viewModeObj, tabClass
+        photoSelection, selectedAlbums, selectedTags, selectedPersons, selectedUnknownFaces, faceViewType, changeTab, setShowSideMenu, viewModeObj, tabClass, currentPhotoPath
     });
 
     // Data synchronization
