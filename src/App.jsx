@@ -342,10 +342,12 @@ function App() {
         }
       });
 
-      // Listen for import finish to check achievements
+      // Listen for import finish to check achievements and refresh date list
       unlistenImport = await listen("import", async (e) => {
         if (e.payload === "finish") {
-          logger.info('App', 'import_finish', 'Import finished, checking achievements');
+          logger.info('App', 'import_finish', 'Import finished, refreshing dates and checking achievements');
+          // Refresh the date list to show newly imported photos
+          getDates();
           try {
             const result = await checkAllAchievements();
             if (result.newly_achieved?.length > 0) {
