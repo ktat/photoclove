@@ -539,7 +539,6 @@ function App() {
             openTagsList={openTagsList}
             openFacesList={openFacesList}
             openTrash={openTrash}
-            setShowInsightsModal={setShowInsightsModal}
             handleMouseEnter={handleMouseEnter}
             handleMouseLeave={handleMouseLeave}
             config={config}
@@ -568,6 +567,8 @@ function App() {
             showTooltip={showTooltip}
             tooltipText={tooltipText}
             tooltipPosition={tooltipPosition}
+            setShowInsightsModal={setShowInsightsModal}
+            setShowAchievementsModal={setShowAchievementsModal}
           />
         </div>
         {(() => {

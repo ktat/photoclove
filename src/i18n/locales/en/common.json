@@ -99,7 +99,8 @@
     "preferences": "Preferences",
     "trash": "Trash",
     "jobs": "Jobs",
-    "insights": "Insights"
+    "insights": "Insights",
+    "achievements": "Achievements"
   },
   "status": {
     "loading": "Loading...",
