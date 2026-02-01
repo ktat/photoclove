@@ -70,6 +70,11 @@ const MIGRATIONS: &[Migration] = &[
         name: "add_job_last_processed_id",
         sql: include_str!("012_add_job_last_processed_id.sql"),
     },
+    Migration {
+        version: 13,
+        name: "create_achievements",
+        sql: include_str!("013_create_achievements.sql"),
+    },
 ];
 
 /// Initialize the migrations table

@@ -235,3 +235,30 @@ pub(crate) fn get_or_create_collection(
 
     Ok(collection_id)
 }
+
+/// Get the type of a collection (album or tag)
+///
+/// # Arguments
+/// * `sqlite` - Database connection
+/// * `collection_id` - Collection ID
+///
+/// # Returns
+/// The collection type as Option<String>, None if not found
+pub(crate) fn get_collection_type(
+    sqlite: &SQLite,
+    collection_id: i32,
+) -> Result<Option<String>, String> {
+    let conn = sqlite
+        .get_connection()
+        .map_err(|_| "Failed to connect to database".to_string())?;
+
+    let result: Option<String> = conn
+        .query_row(
+            "SELECT type FROM photo_collections WHERE id = ?1",
+            params![collection_id],
+            |row| row.get(0),
+        )
+        .ok();
+
+    Ok(result)
+}

@@ -168,6 +168,7 @@ pub fn run() {
 
             let help_submenu = SubmenuBuilder::new(app, "?")
                 .text("show_log", "Show log")
+                .text("achievements", "Achievements")
                 .text("github", "GitHub")
                 .text("sponsor", "Sponsor")
                 .separator()
@@ -206,6 +207,8 @@ pub fn run() {
                     app.emit("click_menu_static", "terms_of_use").unwrap();
                 } else if e.id == "licenses" {
                     app.emit("click_menu_static", "licenses").unwrap();
+                } else if e.id == "achievements" {
+                    app.emit("click_menu_static", "achievements").unwrap();
                 } else if e.id == "load_dates" {
                     app.emit("click_menu", "load_dates").unwrap();
                 } else if e.id == "create_db" {
@@ -399,6 +402,12 @@ pub fn run() {
             stats_commands::get_cached_insights,
             stats_commands::get_insights_cache_status,
             stats_commands::queue_insights_refresh,
+            // Achievement commands
+            achievement_commands::get_achievements,
+            achievement_commands::check_all_achievements,
+            achievement_commands::check_first_action_achievement,
+            achievement_commands::check_photo_count_achievements,
+            achievement_commands::check_monthly_achievements,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

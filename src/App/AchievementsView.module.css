@@ -1,0 +1,129 @@
+/* Achievements View Styles */
+
+.modalTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.totalProgress {
+  font-size: var(--font-size-sm);
+  font-weight: normal;
+  color: var(--color-text-secondary);
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--color-bg-surface);
+  border-radius: var(--radius-sm);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.category {
+  background-color: var(--color-bg-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.categoryHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.categoryIcon {
+  font-size: var(--font-size-lg);
+}
+
+.categoryName {
+  flex: 1;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.categoryProgress {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--color-bg-base);
+  border-radius: var(--radius-sm);
+}
+
+.badgeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: var(--space-3);
+}
+
+.badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-base);
+  cursor: default;
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.badge.achieved {
+  background: linear-gradient(135deg, var(--color-primary-selected), var(--color-bg-surface));
+}
+
+.badge.locked {
+  opacity: 0.6;
+}
+
+.badgeIcon {
+  font-size: 28px;
+  margin-bottom: var(--space-1);
+}
+
+.checkmark {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  background-color: var(--color-success);
+  color: white;
+  border-radius: 50%;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  font-size: 9px;
+  color: var(--color-text-muted);
+  background-color: var(--color-bg-elevated);
+  padding: 1px 4px;
+  border-radius: var(--radius-sm);
+}
+
+.badgeName {
+  font-size: 9px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -1,3 +1,4 @@
+use crate::domain_service::achievements;
 use crate::AppState;
 use tauri::Manager;
 
@@ -68,6 +69,13 @@ pub async fn upload_to_google_photos(
         "upload_jobs_submitted; correlation_id={}; job_unit_id={}",
         correlation_id,
         job_unit_id
+    );
+
+    // Check first_cloud_upload achievement
+    let _ = achievements::check_and_emit_achievement(
+        _window.app_handle(),
+        &state.config.import_to,
+        "first_cloud_upload",
     );
 
     Ok(vec![job_unit_id])

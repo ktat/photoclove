@@ -185,5 +185,11 @@
     "aiModels": "AIモデル",
     "music": "音楽",
     "noLicenses": "ライセンス情報がありません。"
+  },
+  "achievements": {
+    "title": "アチーブメント",
+    "congratulations": "おめでとうございます！",
+    "loading": "アチーブメントを読み込み中...",
+    "loadError": "アチーブメントの読み込みに失敗しました"
   }
 }

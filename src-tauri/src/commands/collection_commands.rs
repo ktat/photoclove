@@ -1,4 +1,5 @@
 use crate::app_state::AppState;
+use crate::domain_service::achievements;
 use crate::repository::MetaInfoDB;
 use tauri::State;
 
@@ -11,6 +12,7 @@ pub async fn create_collection(
     name: String,
     description: Option<String>,
     color: Option<String>,
+    app_handle: tauri::AppHandle,
     state: State<'_, AppState>,
 ) -> Result<i32, String> {
     let meta_db = &state.meta_db;
@@ -27,6 +29,19 @@ pub async fn create_collection(
     ) {
         Ok(collection_id) => {
             log::info!(target: "photo_collections", "create_collection_success; correlation_id={}; collection_id={}", correlation_id, collection_id);
+
+            // Check achievement based on collection type
+            let achievement_id = if collection_type == "album" {
+                "first_album"
+            } else {
+                "first_tag"
+            };
+            let _ = achievements::check_and_emit_achievement(
+                &app_handle,
+                &state.config.import_to,
+                achievement_id,
+            );
+
             Ok(collection_id)
         }
         Err(e) => {
@@ -132,6 +147,7 @@ pub async fn delete_collection(id: i32, state: State<'_, AppState>) -> Result<bo
 pub async fn add_photo_to_collection(
     collection_id: i32,
     photo_path: String,
+    app_handle: tauri::AppHandle,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     let meta_db = &state.meta_db;
@@ -143,6 +159,21 @@ pub async fn add_photo_to_collection(
     match meta_db.add_photo_to_collection(collection_id, &photo_path) {
         Ok(()) => {
             log::info!(target: "photo_collections", "add_photo_to_collection_success; correlation_id={}", correlation_id);
+
+            // Check achievement based on collection type
+            if let Ok(Some(collection_type)) = meta_db.get_collection_type(collection_id) {
+                let achievement_id = if collection_type == "album" {
+                    "first_album"
+                } else {
+                    "first_tag"
+                };
+                let _ = achievements::check_and_emit_achievement(
+                    &app_handle,
+                    &state.config.import_to,
+                    achievement_id,
+                );
+            }
+
             Ok(())
         }
         Err(e) => {

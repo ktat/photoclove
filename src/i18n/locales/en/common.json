@@ -190,5 +190,11 @@
     "aiModels": "AI Models",
     "music": "Music",
     "noLicenses": "No licenses found."
+  },
+  "achievements": {
+    "title": "Achievements",
+    "congratulations": "Congratulations!",
+    "loading": "Loading achievements...",
+    "loadError": "Failed to load achievements"
   }
 }

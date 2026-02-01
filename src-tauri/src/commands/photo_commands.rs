@@ -7,7 +7,7 @@
 //! for better maintainability.
 
 use crate::app_state::{AppState, PhotoRequest};
-use crate::domain_service::photo_service;
+use crate::domain_service::{achievements, photo_service};
 use crate::entity::photo;
 use crate::entity::photo_meta;
 use crate::repository;
@@ -136,6 +136,7 @@ pub async fn get_dates_num(
 #[tauri::command]
 pub async fn get_photos_unified(
     request: PhotoRequest,
+    app_handle: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, ()> {
     log::info!(target: "get_photos", "unified_request; type={:?}", request);
@@ -168,6 +169,15 @@ pub async fn get_photos_unified(
             );
 
             log::info!(target: "get_photos", "search_request; search_type={}; query={:?}", search_type, search_params.query);
+
+            // Check first_search achievement for actual search queries
+            if (search_type == "search" || search_type == "all") && search_params.query.is_some() {
+                let _ = achievements::check_and_emit_achievement(
+                    &app_handle,
+                    &state.config.import_to,
+                    "first_search",
+                );
+            }
 
             match search_type.as_str() {
                 "recent" => photo_handlers::recent::handle(&ctx, &search_params).await,
@@ -304,6 +314,7 @@ pub async fn get_prev_photo(
 #[tauri::command]
 pub fn save_star(
     _window: tauri::Window,
+    app_handle: tauri::AppHandle,
     state: tauri::State<AppState>,
     path_str: &str,
     star_num: i32,
@@ -312,6 +323,15 @@ pub fn save_star(
     let p = photo::Photo::new(file::File::new(path_str.to_string()), None);
     let s = star::Star::new(star_num);
     photo_service::save_photo_star(db, &p, s);
+
+    // Check first_star achievement when user adds a star rating
+    if star_num > 0 {
+        let _ = achievements::check_and_emit_achievement(
+            &app_handle,
+            &state.config.import_to,
+            "first_star",
+        );
+    }
 }
 
 /// Save or update a photo's comment.

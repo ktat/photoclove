@@ -1,5 +1,5 @@
 use crate::app_state::AppState;
-use crate::domain_service::photo_service;
+use crate::domain_service::{achievements, photo_service};
 use crate::entity::photo;
 use crate::repository;
 use crate::repository::MetaInfoDB;
@@ -69,6 +69,7 @@ pub async fn get_css_style(
 /// * `original_photo_path` - Path to the original photo
 /// * `css_style` - CSS style string used to transform the photo
 /// * `image_data` - Base64-encoded JPEG image data from the frontend
+/// * `app_handle` - Tauri app handle for emitting events
 /// * `state` - Application state containing database and config
 ///
 /// # Returns
@@ -79,6 +80,7 @@ pub async fn save_styled_copy_from_frontend(
     original_photo_path: &str,
     css_style: &str,
     image_data: &str,
+    app_handle: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
     // 1. Generate SHA256 hash of normalized CSS
@@ -177,6 +179,13 @@ pub async fn save_styled_copy_from_frontend(
             log::warn!(target: "photo", "create_thumbnail_failed; error={:?}", e);
         }
     });
+
+    // Check first_edit achievement
+    let _ = achievements::check_and_emit_achievement(
+        &app_handle,
+        &state.config.import_to,
+        "first_edit",
+    );
 
     Ok(new_path_str)
 }

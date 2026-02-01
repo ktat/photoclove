@@ -259,4 +259,5 @@ pub(crate) trait MetaInfoDB {
         sort_value: i32,
         config: Option<config::Config>,
     ) -> Result<Vec<photo::Photo>, String>;
+    fn get_collection_type(&self, collection_id: i32) -> Result<Option<String>, String>;
 }
