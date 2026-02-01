@@ -42,6 +42,7 @@ mod recovery_queue;
 mod burst_groups;
 pub mod face_detection;
 pub mod stats;
+pub mod achievements;
 
 #[derive(Clone)]
 pub struct SQLite {
@@ -548,6 +549,10 @@ impl MetaInfoDB for SQLite {
         config: Option<config::Config>,
     ) -> Result<Vec<photo::Photo>, String> {
         collections::get_photos_by_collection_ids(self, collection_ids, sort_value, config)
+    }
+
+    fn get_collection_type(&self, collection_id: i32) -> Result<Option<String>, String> {
+        collections::get_collection_type(self, collection_id)
     }
 }
 

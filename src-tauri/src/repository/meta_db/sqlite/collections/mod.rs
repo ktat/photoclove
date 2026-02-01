@@ -14,6 +14,7 @@ pub(crate) use crud::{
     create_collection,
     delete_collection,
     get_all_collections,
+    get_collection_type,
     get_or_create_collection,
     update_collection,
 };

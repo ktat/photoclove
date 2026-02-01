@@ -4,6 +4,7 @@
 //! Each submodule handles a specific domain of commands.
 
 // Re-export all command modules
+pub mod achievement_commands;
 pub mod ai_model_commands;
 
 // Internal helpers (not re-exported)
@@ -32,6 +33,7 @@ pub mod stats_commands;
 pub mod utility_commands;
 
 // Re-export all commands for convenient access
+pub use achievement_commands::*;
 pub use ai_model_commands::*;
 pub use album_commands::*;
 pub use burst_group_commands::*;

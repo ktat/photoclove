@@ -29,10 +29,13 @@ import DocumentViewer from "./components/DocumentViewer.jsx";
 import LicensesView from "./App/LicensesView.jsx";
 import RecoveryQueueModal from "./App/RecoveryQueueModal.jsx";
 import InsightsModal from "./App/InsightsModal.jsx";
+import AchievementsView from "./App/AchievementsView.jsx";
+import AchievementPopup from "./components/AchievementPopup.jsx";
 import Tooltip from "./components/Tooltip.jsx";
 import NavigationIcons from "./App/NavigationIcons.jsx";
 import { useError } from "./context/ErrorContext.jsx";
 import { logger } from "./services/LoggerService.js";
+import { checkAllAchievements } from "./services/AchievementService.js";
 import { useUI } from "./context/UIContext.jsx";
 import { usePhoto } from "./context/PhotoContext.jsx";
 import { useDateNavigation } from "./hooks/useDateNavigation.js";
@@ -87,6 +90,8 @@ function App() {
   const [showLicenses, setShowLicenses] = useState(false);
   const [showRecoveryQueueModal, setShowRecoveryQueueModal] = useState(false);
   const [showInsightsModal, setShowInsightsModal] = useState(false);
+  const [showAchievementsModal, setShowAchievementsModal] = useState(false);
+  const [achievementQueue, setAchievementQueue] = useState([]);
   const [tooltipText, setTooltipText] = useState("");
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0 });
@@ -245,7 +250,7 @@ function App() {
 
   useEffect((e) => {
 
-    let unlisten0, unlisten1, unlisten2, unlisten3, unlisten4, unlisten5, menuUnlisten;
+    let unlisten0, unlisten1, unlisten2, unlisten3, unlisten4, unlisten5, menuUnlisten, unlistenImport, unlistenAchievement;
 
     const setupListeners = async () => {
       // Listen for new menu events (Privacy Policy and Terms of Use)
@@ -280,6 +285,8 @@ function App() {
             setShowTermsOfUse(true);
           } else if (e.payload === "licenses") {
             setShowLicenses(true);
+          } else if (e.payload === "achievements") {
+            setShowAchievementsModal(true);
           } else {
             logger.warn('App', 'unhandled_menu_event', 'Unmatched menu payload', { payload: e.payload })
           }
@@ -332,6 +339,36 @@ function App() {
 
         if (shouldOpen) {
           setShowJobQueueModal(true);
+        }
+      });
+
+      // Listen for import finish to check achievements
+      unlistenImport = await listen("import", async (e) => {
+        if (e.payload === "finish") {
+          logger.info('App', 'import_finish', 'Import finished, checking achievements');
+          try {
+            const result = await checkAllAchievements();
+            if (result.newly_achieved?.length > 0) {
+              logger.info('App', 'new_achievements', 'New achievements unlocked', {
+                count: result.newly_achieved.length,
+              });
+              setAchievementQueue((prev) => [...prev, ...result.newly_achieved]);
+            }
+          } catch (error) {
+            logger.error('App', 'achievement_check_error', 'Failed to check achievements', {
+              error: error.toString(),
+            });
+          }
+        }
+      });
+
+      // Listen for achievement_unlocked event from backend (first-action achievements)
+      unlistenAchievement = await listen("achievement_unlocked", (e) => {
+        logger.info('App', 'achievement_unlocked', 'Achievement unlocked from backend', {
+          achievement: e.payload?.id,
+        });
+        if (e.payload) {
+          setAchievementQueue((prev) => [...prev, e.payload]);
         }
       });
 
@@ -415,6 +452,8 @@ function App() {
       if (unlisten3) unlisten3();
       if (unlisten4) unlisten4();
       if (unlisten5) unlisten5();
+      if (unlistenImport) unlistenImport();
+      if (unlistenAchievement) unlistenAchievement();
       window.removeEventListener('refreshDates', handleRefreshDates);
     };
   }, []);
@@ -613,6 +652,15 @@ function App() {
       )}
       {showInsightsModal && (
         <InsightsModal onClose={() => setShowInsightsModal(false)} />
+      )}
+      {showAchievementsModal && (
+        <AchievementsView onClose={() => setShowAchievementsModal(false)} />
+      )}
+      {achievementQueue.length > 0 && (
+        <AchievementPopup
+          achievement={achievementQueue[0]}
+          onClose={() => setAchievementQueue((prev) => prev.slice(1))}
+        />
       )}
       <Tooltip show={leftMenuCollapsed && showTooltip} text={tooltipText} position={tooltipPosition} />
     </div >

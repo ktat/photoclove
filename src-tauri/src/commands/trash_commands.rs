@@ -9,7 +9,7 @@
 //! All batch operations track success/failure counts and update date summaries efficiently.
 
 use crate::app_state::{AppState, BatchOperationResult};
-use crate::domain_service::{file_service, thumbnail_service};
+use crate::domain_service::{achievements, file_service, thumbnail_service};
 use crate::entity::{photo, trash};
 use crate::repository::MetaInfoDB;
 use crate::value::file;
@@ -26,10 +26,12 @@ use crate::value::file;
 ///
 /// # Arguments
 /// * `paths` - Vector of photo file paths to move to trash
+/// * `app_handle` - Tauri app handle for emitting events
 /// * `state` - Application state containing database and configuration
 #[tauri::command]
 pub async fn move_to_trash_batch(
     paths: Vec<String>,
+    app_handle: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
     log::info!(target: "trash", "move_to_trash_batch; count={}", paths.len());
@@ -84,6 +86,15 @@ pub async fn move_to_trash_batch(
     }
 
     log::info!(target: "trash", "move_to_trash_batch; succeeded={}; failed={}", succeeded, failed);
+
+    // Check first_delete achievement if any photos were deleted
+    if succeeded > 0 {
+        let _ = achievements::check_and_emit_achievement(
+            &app_handle,
+            &state.config.import_to,
+            "first_delete",
+        );
+    }
 
     let result = BatchOperationResult {
         succeeded,
