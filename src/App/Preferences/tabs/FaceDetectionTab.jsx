@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from 'react-i18next';
 import { logger } from "../../../services/LoggerService.js";
 import FaceDetectionService from "../../../services/FaceDetectionService.js";
+import { checkFirstActionAchievement } from "../../../services/AchievementService.js";
 import styles from '../Preferences.module.css';
 
 function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
@@ -44,6 +45,9 @@ function FaceDetectionTab({ config, setConfig, addFooterMessage }) {
             // Refresh status
             const newStatus = await FaceDetectionService.getModelStatus();
             setModelStatus(newStatus);
+
+            // Trigger face detection achievement
+            checkFirstActionAchievement('first_face_detection').catch(() => {});
 
             if (addFooterMessage) {
                 addFooterMessage("face_model_download", `${modelType} model downloaded successfully`);

@@ -109,6 +109,38 @@ pub const ACHIEVEMENTS: &[AchievementDefinition] = &[
         category: AchievementCategory::First,
         threshold: 1,
     },
+    AchievementDefinition {
+        id: "first_collage",
+        name: "First Collage",
+        description: "Create your first photo collage",
+        icon: "🖼️",
+        category: AchievementCategory::First,
+        threshold: 1,
+    },
+    AchievementDefinition {
+        id: "first_slideshow",
+        name: "First Slideshow",
+        description: "View your first slideshow",
+        icon: "🎬",
+        category: AchievementCategory::First,
+        threshold: 1,
+    },
+    AchievementDefinition {
+        id: "first_ai_tagging",
+        name: "AI Explorer",
+        description: "Enable AI tagging for the first time",
+        icon: "🤖",
+        category: AchievementCategory::First,
+        threshold: 1,
+    },
+    AchievementDefinition {
+        id: "first_face_detection",
+        name: "Face Finder",
+        description: "Enable face detection for the first time",
+        icon: "👤",
+        category: AchievementCategory::First,
+        threshold: 1,
+    },
 
     // === Monthly Pioneer Achievements ===
     AchievementDefinition {
@@ -274,6 +306,32 @@ pub const ACHIEVEMENTS: &[AchievementDefinition] = &[
         threshold: 100000,
     },
 
+    // === Star Count Milestones ===
+    AchievementDefinition {
+        id: "stars_10",
+        name: "Rising Star",
+        description: "Star 10 photos",
+        icon: "⭐",
+        category: AchievementCategory::Count,
+        threshold: 10,
+    },
+    AchievementDefinition {
+        id: "stars_50",
+        name: "Star Collector",
+        description: "Star 50 photos",
+        icon: "🌟",
+        category: AchievementCategory::Count,
+        threshold: 50,
+    },
+    AchievementDefinition {
+        id: "stars_100",
+        name: "Constellation",
+        description: "Star 100 photos",
+        icon: "✨",
+        category: AchievementCategory::Count,
+        threshold: 100,
+    },
+
     // === Date Completion ===
     AchievementDefinition {
         id: "days_7",
@@ -350,6 +408,14 @@ pub const ACHIEVEMENTS: &[AchievementDefinition] = &[
         threshold: 100,
     },
     AchievementDefinition {
+        id: "golden_hour",
+        name: "Golden Hour",
+        description: "Have 50+ photos taken during golden hour (6-8 AM or 5-7 PM)",
+        icon: "🌅",
+        category: AchievementCategory::Special,
+        threshold: 50,
+    },
+    AchievementDefinition {
         id: "gear_collector",
         name: "Gear Collector",
         description: "Use 5+ different cameras",
@@ -415,4 +481,11 @@ pub const DAYS_ACHIEVEMENTS: &[&str] = &[
     "days_7",
     "days_100",
     "days_365",
+];
+
+/// Star count achievement IDs in order
+pub const STAR_COUNT_ACHIEVEMENTS: &[&str] = &[
+    "stars_10",
+    "stars_50",
+    "stars_100",
 ];

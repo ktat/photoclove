@@ -165,3 +165,16 @@ pub async fn check_monthly_achievements(
 
     service.check_monthly_achievements()
 }
+
+/// Check star count achievements after starring a photo.
+#[tauri::command]
+pub async fn check_star_count_achievements(
+    state: tauri::State<'_, AppState>,
+) -> Result<AchievementCheckResult, String> {
+    log::info!(target: "achievements", "check_star_count; status=checking");
+
+    let db = SQLite::new(state.config.import_to.clone());
+    let service = AchievementService::new(db);
+
+    service.check_star_count()
+}

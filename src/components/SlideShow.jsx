@@ -4,6 +4,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../services/LoggerService.js';
 import { slideshowMusic, MOOD_CONFIG } from '../services/SlideshowMusicService.js';
+import { checkFirstActionAchievement } from '../services/AchievementService.js';
 import styles from './SlideShow.module.css';
 
 // Video extensions to skip in slideshow
@@ -220,6 +221,9 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
       photosOnly: filteredPhotos.length,
       startIndex
     });
+
+    // Trigger first slideshow achievement
+    checkFirstActionAchievement('first_slideshow').catch(() => {});
 
     return () => {
       exitFullscreen();

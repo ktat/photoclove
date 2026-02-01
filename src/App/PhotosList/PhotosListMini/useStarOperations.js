@@ -3,6 +3,7 @@
  */
 import { useState, useCallback } from 'react';
 import { invoke } from "@tauri-apps/api/core";
+import { checkStarCountAchievements } from '../../../services/AchievementService.js';
 
 /**
  * Hook for managing star rating changes and selection feedback
@@ -65,7 +66,12 @@ export function useStarOperations({
             }, 700);
             setSelectedInfoHidden(false);
 
-            invoke("save_star", { pathStr: currentPhotoPath, starNum: star });
+            invoke("save_star", { pathStr: currentPhotoPath, starNum: star }).then(() => {
+                // Check star count achievements when a photo is starred
+                if (star > 0) {
+                    checkStarCountAchievements().catch(() => {});
+                }
+            });
         });
     }, [currentPhotoPath, setStar]);
 

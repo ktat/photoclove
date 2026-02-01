@@ -6,7 +6,7 @@ use crate::repository::meta_db::sqlite::SQLite;
 use crate::repository::meta_db::sqlite::achievements::AchievementProgress;
 use super::definitions::{
     self, AchievementCategory, AchievementDefinition, ACHIEVEMENTS,
-    PHOTO_COUNT_ACHIEVEMENTS, DAYS_ACHIEVEMENTS,
+    PHOTO_COUNT_ACHIEVEMENTS, DAYS_ACHIEVEMENTS, STAR_COUNT_ACHIEVEMENTS,
 };
 use rusqlite::params;
 use serde::{Deserialize, Serialize};
@@ -127,6 +127,47 @@ impl AchievementService {
         if count > 0 {
             let first_import_result = self.check_first_action("first_import")?;
             newly_achieved.extend(first_import_result.newly_achieved);
+        }
+
+        Ok(AchievementCheckResult { newly_achieved })
+    }
+
+    /// Check star count achievements
+    pub fn check_star_count(&self) -> Result<AchievementCheckResult, String> {
+        let conn = self.db.get_connection()
+            .map_err(|e| format!("Failed to get connection: {}", e))?;
+
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM photo_metadata WHERE (delete_flg = 0 OR delete_flg IS NULL) AND star > 0",
+            [],
+            |row| row.get(0),
+        ).map_err(|e| format!("Failed to count starred photos: {}", e))?;
+
+        let mut newly_achieved = Vec::new();
+
+        for achievement_id in STAR_COUNT_ACHIEVEMENTS {
+            if let Some(def) = definitions::get_achievement_def(achievement_id) {
+                let was_newly_achieved = self.db.upsert_achievement(
+                    achievement_id,
+                    count,
+                    def.threshold,
+                ).map_err(|e| format!("Failed to upsert achievement: {}", e))?;
+
+                if was_newly_achieved {
+                    let progress = self.db.get_achievement(achievement_id)
+                        .map_err(|e| format!("Failed to get achievement: {}", e))?;
+                    newly_achieved.push(AchievementWithProgress::from_def_and_progress(
+                        def,
+                        progress.as_ref(),
+                    ));
+                }
+            }
+        }
+
+        // Also check first_star if count > 0
+        if count > 0 {
+            let first_star_result = self.check_first_action("first_star")?;
+            newly_achieved.extend(first_star_result.newly_achieved);
         }
 
         Ok(AchievementCheckResult { newly_achieved })
@@ -338,6 +379,23 @@ impl AchievementService {
             }
         }
 
+        // Golden Hour - photos between 6-8 AM or 5-7 PM (17-19)
+        let golden_hour_photos: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM photo_metadata
+             WHERE (delete_flg = 0 OR delete_flg IS NULL)
+             AND (CAST(strftime('%H', photo_date) AS INTEGER) BETWEEN 6 AND 7
+                  OR CAST(strftime('%H', photo_date) AS INTEGER) BETWEEN 17 AND 18)",
+            [],
+            |row| row.get(0),
+        ).unwrap_or(0);
+
+        if let Some(def) = definitions::get_achievement_def("golden_hour") {
+            if let Ok(true) = self.db.upsert_achievement("golden_hour", golden_hour_photos, def.threshold) {
+                let progress = self.db.get_achievement("golden_hour").ok().flatten();
+                newly_achieved.push(AchievementWithProgress::from_def_and_progress(def, progress.as_ref()));
+            }
+        }
+
         // Gear Collector - different cameras
         let camera_count: i64 = conn.query_row(
             "SELECT COUNT(DISTINCT exif_model) FROM photo_metadata
@@ -393,6 +451,9 @@ impl AchievementService {
 
         let photo_result = self.check_photo_count()?;
         all_newly_achieved.extend(photo_result.newly_achieved);
+
+        let star_result = self.check_star_count()?;
+        all_newly_achieved.extend(star_result.newly_achieved);
 
         let monthly_result = self.check_monthly_achievements()?;
         all_newly_achieved.extend(monthly_result.newly_achieved);

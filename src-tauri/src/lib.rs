@@ -435,6 +435,7 @@ pub fn run() {
             achievement_commands::check_first_action_achievement,
             achievement_commands::check_photo_count_achievements,
             achievement_commands::check_monthly_achievements,
+            achievement_commands::check_star_count_achievements,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

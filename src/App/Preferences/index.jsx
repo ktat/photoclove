@@ -5,6 +5,7 @@ import { message } from '@tauri-apps/plugin-dialog';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 import { logger } from "../../services/LoggerService.js";
+import { checkFirstActionAchievement } from "../../services/AchievementService.js";
 import GeneralTab from "./tabs/GeneralTab.jsx";
 import AppearanceTab from "./tabs/AppearanceTab.jsx";
 import StartupTab from "./tabs/StartupTab.jsx";
@@ -152,6 +153,11 @@ function Preferences(props) {
             setConfig(updatedConfig);
             logger.setEnabled(updatedConfig.logging_enabled);
             logger.info('Preferences', 'config_saved', 'Configuration saved successfully', { updatedConfig });
+
+            // Trigger AI tagging achievement if enabled
+            if (updatedConfig.ai_tagging?.enabled) {
+                checkFirstActionAchievement('first_ai_tagging').catch(() => {});
+            }
 
             // Reload config in parent to apply changes without restart
             if (props.reloadConfig) {

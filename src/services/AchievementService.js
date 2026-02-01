@@ -114,6 +114,23 @@ export async function checkMonthlyAchievements() {
 }
 
 /**
+ * Check star count achievements
+ * @returns {Promise<Object>} Object with newly_achieved array
+ */
+export async function checkStarCountAchievements() {
+  try {
+    logger.debug('AchievementService', 'check_star_count', 'Checking star count achievements');
+    const result = await invoke('check_star_count_achievements');
+    return result;
+  } catch (error) {
+    logger.error('AchievementService', 'check_star_count_error', 'Failed to check star count achievements', {
+      error: error.toString(),
+    });
+    throw error;
+  }
+}
+
+/**
  * Achievement category display names
  */
 export const CATEGORY_NAMES = {
@@ -146,6 +163,7 @@ export default {
   checkFirstActionAchievement,
   checkPhotoCountAchievements,
   checkMonthlyAchievements,
+  checkStarCountAchievements,
   CATEGORY_NAMES,
   getCategoryIcon,
 };

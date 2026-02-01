@@ -22,6 +22,7 @@ import {
     shareToSocial
 } from '../../../utils/ShareUtils.js';
 import { logger } from '../../../services/LoggerService.js';
+import { checkFirstActionAchievement } from '../../../services/AchievementService.js';
 import styles from './ShareTab.module.css';
 
 const BACKGROUND_COLORS = [
@@ -158,7 +159,11 @@ function ShareTab({
         const success = await copyImageToClipboard(imageBlob);
         setCopyStatus(success ? 'copied' : 'error');
         setTimeout(() => setCopyStatus(null), 2000);
-    }, [imageBlob]);
+        // Trigger collage achievement if successful
+        if (success && shareMode === 'collage') {
+            checkFirstActionAchievement('first_collage').catch(() => {});
+        }
+    }, [imageBlob, shareMode]);
 
     // Handle save image
     const [saveStatus, setSaveStatus] = useState(null);
@@ -172,6 +177,10 @@ function ShareTab({
             await saveImageAsFile(imageBlob, filename);
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus(null), 2000);
+            // Trigger collage achievement if successful
+            if (shareMode === 'collage') {
+                checkFirstActionAchievement('first_collage').catch(() => {});
+            }
         } catch (error) {
             setSaveStatus('error');
             setTimeout(() => setSaveStatus(null), 2000);
