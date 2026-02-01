@@ -81,7 +81,8 @@ function PhotoOption(props) {
         const photoCount = props.photoSelection?.length || 0;
 
         // Auto-open Selection tab when selection goes from 0 to 1+
-        if (prevSelectionCount.current === 0 && photoCount > 0) {
+        // But don't switch if Share tab is active (user is working on sharing)
+        if (prevSelectionCount.current === 0 && photoCount > 0 && activeTab !== "share") {
             setActiveTab("selection");
             if (!props.showSideMenu) {
                 props.setShowSideMenu(true);
