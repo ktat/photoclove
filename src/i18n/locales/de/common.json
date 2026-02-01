@@ -168,5 +168,15 @@
       "nov": "Nov",
       "dec": "Dez"
     }
+  },
+  "gettingStarted": {
+    "title": "Erste Schritte",
+    "setupFolder": "Fotoordner einrichten",
+    "importPhotos": "Erste Fotos importieren",
+    "browsePhotos": "Foto im Detail ansehen",
+    "addTag": "Einem Foto ein Tag hinzufügen",
+    "trySearch": "Fotosuche ausprobieren",
+    "complete": "Fertig! Sie haben die Grundlagen abgeschlossen.",
+    "dismiss": "Schließen"
   }
 }

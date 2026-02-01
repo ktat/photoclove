@@ -168,5 +168,15 @@
       "nov": "11月",
       "dec": "12月"
     }
+  },
+  "gettingStarted": {
+    "title": "入門指南",
+    "setupFolder": "設定照片資料夾",
+    "importPhotos": "匯入第一批照片",
+    "browsePhotos": "查看照片詳情",
+    "addTag": "為照片新增標籤",
+    "trySearch": "嘗試搜尋照片",
+    "complete": "設定完成！您已掌握基礎操作。",
+    "dismiss": "關閉"
   }
 }

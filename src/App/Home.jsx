@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useUI } from "../context/UIContext.jsx";
 import { usePhoto } from "../context/PhotoContext.jsx";
 import { logger } from "../services/LoggerService.js";
+import GettingStartedChecklist from "./Home/GettingStartedChecklist.jsx";
 import "./Home.css";
 
 function Home(props) {
@@ -109,6 +110,9 @@ function Home(props) {
                         </button>
                     </div>
                 </div>
+
+                {/* Getting Started Checklist */}
+                <GettingStartedChecklist config={props.config} />
 
                 {/* On This Day Memories Section with View Toggle */}
                 {showMemoriesOnHome && (

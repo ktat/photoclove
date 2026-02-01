@@ -192,5 +192,15 @@
     "congratulations": "おめでとうございます！",
     "loading": "アチーブメントを読み込み中...",
     "loadError": "アチーブメントの読み込みに失敗しました"
+  },
+  "gettingStarted": {
+    "title": "はじめに",
+    "setupFolder": "写真フォルダを設定する",
+    "importPhotos": "最初の写真をインポートする",
+    "browsePhotos": "写真を詳細表示する",
+    "addTag": "写真にタグを付ける",
+    "trySearch": "写真を検索してみる",
+    "complete": "準備完了！基本操作をマスターしました。",
+    "dismiss": "閉じる"
   }
 }

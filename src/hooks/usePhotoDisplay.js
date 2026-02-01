@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { logger } from '../services/LoggerService.js';
+import { checkFirstActionAchievement } from '../services/AchievementService.js';
 
 /**
  * Custom hook for photo display management
@@ -73,6 +74,9 @@ export function usePhotoDisplay({
             displayPath,
             globalIndex
         });
+
+        // Check first_view achievement
+        checkFirstActionAchievement('first_view');
     }, [
         photosListMiniAllPhotos,
         viewModeObj,
