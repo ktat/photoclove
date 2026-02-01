@@ -364,11 +364,6 @@ pub fn get_achievement_def(id: &str) -> Option<&'static AchievementDefinition> {
     ACHIEVEMENTS.iter().find(|a| a.id == id)
 }
 
-/// Get all achievements in a category
-pub fn get_achievements_by_category(category: AchievementCategory) -> Vec<&'static AchievementDefinition> {
-    ACHIEVEMENTS.iter().filter(|a| a.category == category).collect()
-}
-
 /// Get the month ID for a given month number (1-12)
 pub fn month_to_achievement_id(month: u32) -> Option<&'static str> {
     match month {

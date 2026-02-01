@@ -250,13 +250,3 @@ pub struct AiTaggingJob {
     pub target_date: Option<String>,
 }
 
-/// Job parameters for S3 sync
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct S3SyncJob {
-    /// Photo paths to sync
-    pub photo_paths: Vec<String>,
-    /// Storage provider name (e.g., "aws_s3", "wasabi")
-    pub provider: String,
-    /// Optional: specific date to process (for maintenance tab)
-    pub target_date: Option<String>,
-}

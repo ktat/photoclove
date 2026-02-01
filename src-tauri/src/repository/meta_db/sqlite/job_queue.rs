@@ -1,5 +1,5 @@
 use super::utils::{row_to_queued_job, with_connection};
-use crate::entity::job_queue::{Job, JobProgress, JobStatus, JobType, JobUnit, QueuedJob};
+use crate::entity::job_queue::{Job, JobProgress, JobStatus, JobUnit, QueuedJob};
 use crate::repository::meta_db::sqlite::SQLite;
 use crate::value::date;
 use rusqlite::{params, OptionalExtension};

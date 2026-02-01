@@ -60,6 +60,7 @@ impl FaceEmbedder {
     }
 
     /// Check if the embedder is initialized
+    #[allow(dead_code)]
     pub fn is_initialized(&self) -> bool {
         self.session.is_some()
     }
@@ -193,6 +194,7 @@ pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
 }
 
 /// Check if two faces belong to the same person
+#[allow(dead_code)]
 pub fn is_same_person(embedding1: &[f32], embedding2: &[f32], threshold: f32) -> bool {
     cosine_similarity(embedding1, embedding2) > threshold
 }

@@ -9,7 +9,6 @@ use crate::entity::job_queue::{Job, JobType, JobUnit, QueuedJob};
 use crate::repository::meta_db::sqlite::SQLite;
 use serde::Serialize;
 use std::sync::Arc;
-use tauri::Manager;
 
 /// Cache status response
 #[derive(Debug, Serialize)]

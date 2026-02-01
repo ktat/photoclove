@@ -58,6 +58,7 @@ impl FaceDetector {
     }
 
     /// Check if the detector is initialized
+    #[allow(dead_code)]
     pub fn is_initialized(&self) -> bool {
         self.session.is_some()
     }

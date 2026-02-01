@@ -33,7 +33,6 @@ pub mod stats_commands;
 pub mod utility_commands;
 
 // Re-export all commands for convenient access
-pub use achievement_commands::*;
 pub use ai_model_commands::*;
 pub use album_commands::*;
 pub use burst_group_commands::*;
