@@ -81,5 +81,26 @@
     "selectPerson": "Sélectionner une personne",
     "noNamedPersons": "Aucune personne nommée trouvée. Utilisez \"Attribuer à une nouvelle personne\" pour en créer une.",
     "confirmDelete": "Supprimer {{count}} visages sélectionnés?"
+  },
+  "share": {
+    "photoSource": "Source de la photo",
+    "currentPhoto": "Photo actuelle",
+    "selection": "Sélection",
+    "mode": "Mode",
+    "singlePhoto": "Photo unique",
+    "collage": "Collage",
+    "needTwoPhotos": "2+ photos nécessaires pour le collage",
+    "options": "Options",
+    "backgroundColor": "Arrière-plan",
+    "padding": "Marge",
+    "corners": "Coins arrondis",
+    "addWatermark": "Ajouter le filigrane PhotoClove",
+    "copy": "Copier",
+    "save": "Enregistrer",
+    "noPreview": "Pas d'aperçu",
+    "noPhotoSelected": "Aucune photo sélectionnée",
+    "selectPhotosFirst": "Sélectionnez des photos à partager",
+    "shareTo": "Partager sur",
+    "socialHint": "Copiez d'abord l'image, puis collez après ouverture"
   }
 }

@@ -7,6 +7,7 @@ import PhotoTags from "./PhotoOption/PhotoTags.jsx";
 import PhotoFaces from "./PhotoOption/PhotoFaces.jsx";
 import AlbumTab from "./AlbumTab.jsx";
 import SelectionTab from "./DirectoryMenu/SelectionTab.jsx";
+import ShareTab from "./DirectoryMenu/ShareTab.jsx";
 import TutorialTooltip from "../../components/TutorialTooltip.jsx";
 import { useUI } from "../../context/UIContext.jsx";
 import { useFaceDetection } from "../../context/FaceDetectionContext.jsx";
@@ -337,6 +338,17 @@ function PhotoOption(props) {
                     </button>
                 )}
 
+                {/* Share tab - available in non-import/trash modes */}
+                {!isImportMode && !isTrashMode && (
+                    <button
+                        className={classNames(styles['vertical-tab-button'], { [styles.active]: activeTab === "share" && props.showSideMenu })}
+                        onClick={() => handleTabClick("share")}
+                        title="Share Photo"
+                    >
+                        <span className={styles['vertical-text']}>Share</span>
+                    </button>
+                )}
+
                 {/* Selection tab - always available (Feature #153) */}
                 <button
                     className={getSelectionTabClass()}
@@ -412,6 +424,13 @@ function PhotoOption(props) {
                             currentPhotoPath={props.currentPhotoPath}
                             onAlbumUpdate={props.onAlbumUpdate}
                             onAlbumDelete={props.onAlbumDelete}
+                        />
+                    )}
+                    {activeTab === "share" && (
+                        <ShareTab
+                            currentPhotoPath={props.currentPhotoPath}
+                            photoSelection={props.photoSelection || []}
+                            isPhotoViewer={true}
                         />
                     )}
                     {activeTab === "selection" && (

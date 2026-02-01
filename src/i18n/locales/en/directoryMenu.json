@@ -81,5 +81,26 @@
     "selectPerson": "Select Person",
     "noNamedPersons": "No named persons found. Use \"Assign to New Person\" to create one.",
     "confirmDelete": "Delete {{count}} selected faces?"
+  },
+  "share": {
+    "photoSource": "Photo Source",
+    "currentPhoto": "Current Photo",
+    "selection": "Selection",
+    "mode": "Mode",
+    "singlePhoto": "Single Photo",
+    "collage": "Collage",
+    "needTwoPhotos": "Need 2+ photos for collage",
+    "options": "Options",
+    "backgroundColor": "Background",
+    "padding": "Padding",
+    "corners": "Corners",
+    "addWatermark": "Add PhotoClove watermark",
+    "copy": "Copy",
+    "save": "Save",
+    "noPreview": "No preview",
+    "noPhotoSelected": "No photo selected",
+    "selectPhotosFirst": "Select photos to share",
+    "shareTo": "Share to",
+    "socialHint": "Copy image first, then paste after opening"
   }
 }

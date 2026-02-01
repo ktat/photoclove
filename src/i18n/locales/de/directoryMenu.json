@@ -81,5 +81,26 @@
     "selectPerson": "Person auswählen",
     "noNamedPersons": "Keine benannten Personen gefunden. Verwenden Sie \"Neuer Person zuweisen\" um eine zu erstellen.",
     "confirmDelete": "{{count}} ausgewählte Gesichter löschen?"
+  },
+  "share": {
+    "photoSource": "Fotoquelle",
+    "currentPhoto": "Aktuelles Foto",
+    "selection": "Auswahl",
+    "mode": "Modus",
+    "singlePhoto": "Einzelfoto",
+    "collage": "Collage",
+    "needTwoPhotos": "2+ Fotos für Collage erforderlich",
+    "options": "Optionen",
+    "backgroundColor": "Hintergrund",
+    "padding": "Abstand",
+    "corners": "Eckenradius",
+    "addWatermark": "PhotoClove-Wasserzeichen hinzufügen",
+    "copy": "Kopieren",
+    "save": "Speichern",
+    "noPreview": "Keine Vorschau",
+    "noPhotoSelected": "Kein Foto ausgewählt",
+    "selectPhotosFirst": "Wählen Sie Fotos zum Teilen",
+    "shareTo": "Teilen auf",
+    "socialHint": "Bild zuerst kopieren, dann nach dem Öffnen einfügen"
   }
 }
