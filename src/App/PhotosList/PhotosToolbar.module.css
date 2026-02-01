@@ -71,26 +71,21 @@
     font-weight: bold;
 }
 
-/* Slideshow button */
-.slideshowButton {
-    padding: var(--space-2) var(--space-3);
-    margin-left: var(--space-3);
-    background-color: var(--color-bg-elevated);
-    border: 1px solid var(--color-border-default);
+/* Slideshow icon button */
+.slideshowIconButton {
+    padding: var(--space-1) var(--space-2);
+    margin-left: var(--space-2);
+    background-color: transparent;
+    border: none;
     border-radius: var(--radius-sm);
     cursor: pointer;
-    color: var(--color-text-primary);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-xl);
     display: inline-flex;
     align-items: center;
-    gap: var(--space-1);
+    justify-content: center;
+    transition: transform 0.2s ease;
 }
 
-.slideshowButton:hover {
-    background-color: var(--color-primary-muted);
-    border-color: var(--color-primary);
-}
-
-.slideshowIcon {
-    font-size: var(--font-size-base);
+.slideshowIconButton:hover {
+    transform: scale(1.2);
 }
