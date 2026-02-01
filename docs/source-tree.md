@@ -116,6 +116,7 @@ src/
 │       ├── 📁 DirectoryMenu/
 │       │   ├── 📄 FilterTab.jsx          # Filter options tab
 │       │   ├── 📄 SelectionTab.jsx       # Selection operations tab
+│       │   ├── 📄 ShareTab.jsx           # Photo sharing and collage creation
 │       │   ├── 📄 tutorialContent.jsx    # Tutorial content
 │       │   ├── 📄 collectionOperations.js # Collection operations
 │       │   ├── 📄 dateOperations.js      # Date operations
@@ -220,6 +221,7 @@ src/
 │   ├── 📄 TutorialTooltip.jsx       # Tutorial tooltip component
 │   ├── 📄 VerticalTabBar.jsx        # Vertical tab bar component
 │   ├── 📄 AchievementPopup.jsx      # Achievement unlock notification
+│   ├── 📄 ShareStatsDialog.jsx      # Share photography stats as images
 │   └── 📄 SlideShow.jsx             # Slideshow with music support
 │
 ├── 📁 domain/                  # Domain entities and value objects
@@ -259,6 +261,10 @@ src/
 │   └── 📁 utils/               # i18n utility functions
 │       ├── 📄 formatDate.js    # Date formatting
 │       └── 📄 formatNumber.js  # Number formatting
+│
+├── 📁 utils/                   # Utility functions
+│   ├── 📄 ShareUtils.js        # Photo sharing utilities (collage, watermark)
+│   └── 📄 orientationUtils.js  # EXIF orientation correction
 │
 └── 📁 assets/                  # Static frontend assets
     └── 📄 react.svg            # React logo
