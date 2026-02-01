@@ -19,6 +19,7 @@
     "dateFormat": "Format de date",
     "dateFormatDescription": "Sélectionnez le format d'affichage des dates",
     "folders": "Dossiers",
+    "importSource": "Source d'importation",
     "selectFolder": "Sélectionner un dossier",
     "thumbnailFolder": "Dossier des miniatures",
     "thumbnailFolderDescription": "Où stocker les miniatures générées"

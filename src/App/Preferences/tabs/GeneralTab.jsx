@@ -39,6 +39,11 @@ const GeneralTab = ({ config, setConfig, additionalExportFrom, setAdditionalExpo
             <h2 className={styles['section-title']}>{t('preferences:general.folders')}</h2>
             <div className={styles['setting-group']}>
                 <PickFolderSingle
+                    label={t('common:button.import') + ':'}
+                    folder={config.import_to}
+                    setFunc={(folder) => setConfig(prev => ({ ...prev, import_to: folder }))}
+                />
+                <PickFolderSingle
                     label={t('common:navigation.trash') + ':'}
                     folder={config.trash_path}
                     setFunc={(folder) => setConfig(prev => ({ ...prev, trash_path: folder }))}
@@ -48,19 +53,14 @@ const GeneralTab = ({ config, setConfig, additionalExportFrom, setAdditionalExpo
                     folder={config.download_dir}
                     setFunc={(folder) => setConfig(prev => ({ ...prev, download_dir: folder }))}
                 />
-                <PickFolderSingle
-                    label={t('common:button.import') + ':'}
-                    folder={config.import_to}
-                    setFunc={(folder) => setConfig(prev => ({ ...prev, import_to: folder }))}
-                />
             </div>
 
-            <h2 className={styles['section-title']}>{t('common:button.export')}</h2>
+            <h2 className={styles['section-title']}>{t('preferences:general.importSource')}</h2>
             <div className={classNames(styles['setting-group'], styles['folder-list'])}>
                 {config.export_from.map((v, i) => (
                     <PickFolderSingle
                         key={i}
-                        label={i === 0 ? t('common:button.export') + ':' : ''}
+                        label={i === 0 ? t('preferences:general.importSource') + ':' : ''}
                         folder={config.export_from[i]}
                         setFunc={(folder) => {
                             setConfig(prev => ({

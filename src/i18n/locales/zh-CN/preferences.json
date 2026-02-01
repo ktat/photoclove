@@ -19,6 +19,7 @@
     "dateFormat": "日期格式",
     "dateFormatDescription": "选择日期的显示方式",
     "folders": "文件夹",
+    "importSource": "导入来源",
     "selectFolder": "选择文件夹",
     "thumbnailFolder": "缩略图文件夹",
     "thumbnailFolderDescription": "存储生成的缩略图的位置"

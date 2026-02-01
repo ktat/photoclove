@@ -19,6 +19,7 @@
     "dateFormat": "Formato de fecha",
     "dateFormatDescription": "Seleccione cómo se muestran las fechas",
     "folders": "Carpetas",
+    "importSource": "Origen de importación",
     "selectFolder": "Seleccionar carpeta",
     "thumbnailFolder": "Carpeta de miniaturas",
     "thumbnailFolderDescription": "Dónde almacenar las miniaturas generadas"
