@@ -55,7 +55,11 @@ import PhotoOption from "./PhotosList/PhotoOption.jsx";
 import AlbumCreationModal from "../components/AlbumCreationModal.jsx";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import FilterPopover from "../components/FilterPopover.jsx";
+import SharedModals from "./PhotosList/SharedModals.jsx";
 import VerticalTabBar from "../components/VerticalTabBar.jsx";
+
+// Operation hooks for PhotoOption
+import { usePhotoOptionOperations } from "../hooks/usePhotoOptionOperations.js";
 
 import { convertPhotosToEntities } from "../utils/PhotoProcessingUtils.js";
 import { hasActiveFilters, getFilterSummary } from "../utils/UIStateUtils.js";
@@ -557,6 +561,15 @@ function PhotosList({
         addFooterMessage, handleTauriError
     });
 
+    // PhotoOption operations (shared with DirectoryMenu)
+    const { operations: photoOptionOperations, modalState } = usePhotoOptionOperations({
+        photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError,
+        deletePhotos: deletePhotosHandler, restorePhotos: restorePhotosHandler,
+        updatePhotosAfterTrashOperation, reloadCurrentModeData,
+        refreshPhotosOnly, viewModeObj, removePhotoFromList,
+        appConfig, saveConfigWithStartupImages, setShowJobQueueModal
+    });
+
     // Auto-close photo display effect
     useAutoClosePhotoDisplayEffect({ viewMode, currentPhotoPath, closePhotoDisplay });
 
@@ -623,6 +636,7 @@ function PhotosList({
                         setEditorHasUnsavedChanges={setEditorHasUnsavedChanges}
                         removePhotoFromList={removePhotoFromList}
                         totalPhotosCount={photosListMiniAllPhotos.length}
+                        operations={photoOptionOperations}
                     />
                 )}
 
@@ -637,6 +651,7 @@ function PhotosList({
                     loadFilterOptions={loadFilterOptions} isFilterOptionsLoading={isFilterOptionsLoading}
                     importState={importState} albumsList={albumsList} tagsList={tagsList}
                     config={appConfig} saveConfigWithStartupImages={saveConfigWithStartupImages}
+                    sharedOperations={photoOptionOperations} modalState={modalState}
                 />
 
                 <AlbumCreationModal
@@ -655,6 +670,8 @@ function PhotosList({
                     setExtensionFilter={viewModeObj.isImportMode() ? setImportExtensionFilter : setExtensionFilter}
                     isImportMode={viewModeObj.isImportMode()}
                 />
+
+                <SharedModals modalState={modalState} photoSelectionCount={photoSelection.length} />
             </FaceDetectionProvider>
         </ErrorBoundary>
     );

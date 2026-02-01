@@ -1,39 +1,23 @@
 import React, { useState, useEffect, useRef } from "react";
-import { convertFileSrc } from "@tauri-apps/api/core";
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useTranslation } from 'react-i18next';
 import { logger } from "../../services/LoggerService.js";
-import { useUI } from "../../context/UIContext.jsx";
 import { useError } from "../../context/ErrorContext.jsx";
-import { VIEW_MODES } from "../../constants/viewModes.js";
 import { useTutorial } from "../../hooks/useTutorial.js";
-import AlbumCreationModal from "../../components/AlbumCreationModal.jsx";
-import CollectionSelectorModal from "../../components/CollectionSelectorModal.jsx";
-import ContextualDeleteModal from "../../components/ContextualDeleteModal.jsx";
 import TutorialTooltip from "../../components/TutorialTooltip.jsx";
 import Scrollable from "../../Scrollable.jsx";
 import SelectionTab from "./DirectoryMenu/SelectionTab.jsx";
 import FilterTab from "./DirectoryMenu/FilterTab.jsx";
 import { getTutorialContent } from "./DirectoryMenu/tutorialContent.jsx";
-import { usePhotoImport, useGooglePhotosUpload, useTrashOperations, useStartupImageOperations } from "./DirectoryMenu/photoOperations.js";
-import { useAlbumOperations, useTagOperations } from "./DirectoryMenu/collectionOperations.js";
+import { usePhotoImport } from "./DirectoryMenu/photoOperations.js";
 import { useDateOperations } from "./DirectoryMenu/dateOperations.js";
-import { useGroupOperations } from "./DirectoryMenu/groupOperations.js";
 
 function DirectoryMenu(props) {
     const { t } = useTranslation(['directoryMenu']);
     const { handleTauriError } = useError();
 
-    // Delete confirmation modal state
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [deleteModalConfig, setDeleteModalConfig] = useState({
-        operation: null,
-        count: 0,
-        onConfirm: null
-    });
-
-    // Photo operations hooks
+    // Photo import (DirectoryMenu-specific for IMPORT mode)
     const { importSelectedPhotos } = usePhotoImport({
         importState: props.importState,
         photoSelection: props.photoSelection,
@@ -42,63 +26,7 @@ function DirectoryMenu(props) {
         handleTauriError
     });
 
-    const { uploadToGooglePhotos } = useGooglePhotosUpload({
-        photoSelection: props.photoSelection,
-        clearPhotoSelection: props.clearPhotoSelection,
-        addFooterMessage: props.addFooterMessage,
-        setShowJobQueue: props.setShowJobQueue
-    });
-
-    const { deleteFiles, restoreSelectedFromTrash, permanentDeleteSelected } = useTrashOperations({
-        photoSelection: props.photoSelection,
-        clearPhotoSelection: props.clearPhotoSelection,
-        addFooterMessage: props.addFooterMessage,
-        handleTauriError,
-        deletePhotos: props.deletePhotos,
-        restorePhotos: props.restorePhotos,
-        updatePhotosAfterTrashOperation: props.updatePhotosAfterTrashOperation,
-        reloadCurrentModeData: props.reloadCurrentModeData,
-        setDeleteModalConfig,
-        setShowDeleteModal
-    });
-
-    // Collection operations hooks
-    const {
-        showAlbumCreationModal,
-        setShowAlbumCreationModal,
-        showAlbumSelectorModal,
-        setShowAlbumSelectorModal,
-        showCreateAlbumModal,
-        showAddToAlbumModal,
-        createAlbumFromSelection,
-        addPhotosToAlbum,
-        removeFromCurrentAlbum
-    } = useAlbumOperations({
-        photoSelection: props.photoSelection,
-        clearPhotoSelection: props.clearPhotoSelection,
-        addFooterMessage: props.addFooterMessage,
-        handleTauriError,
-        viewModeObj: props.viewModeObj,
-        removePhotoFromList: props.removePhotoFromList
-    });
-
-    const {
-        showBulkTagModal,
-        setShowBulkTagModal,
-        showAddTagsModal,
-        addTagsToPhotos,
-        removeFromCurrentTag
-    } = useTagOperations({
-        photoSelection: props.photoSelection,
-        clearPhotoSelection: props.clearPhotoSelection,
-        addFooterMessage: props.addFooterMessage,
-        handleTauriError,
-        onPhotosRefresh: props.onPhotosRefresh,
-        viewModeObj: props.viewModeObj,
-        removePhotoFromList: props.removePhotoFromList
-    });
-
-    // Date operations hook
+    // Date operations (DirectoryMenu-specific for maintenance tab)
     const { createDbInDate, movePhotosToExifDate, createThumbnails, recalculateGroupsInDate, runAiTaggingInDate, runFaceDetectionInDate, syncToS3InDate, applyDateChanges } = useDateOperations({
         currentDate: props.currentDate,
         setCurrentDateNum: props.setCurrentDateNum,
@@ -107,24 +35,6 @@ function DirectoryMenu(props) {
         dateList: props.dateList,
         setDateList: props.setDateList,
         config: props.config
-    });
-
-    // Startup image operations hook
-    const { addToStartupImages } = useStartupImageOperations({
-        photoSelection: props.photoSelection,
-        clearPhotoSelection: props.clearPhotoSelection,
-        addFooterMessage: props.addFooterMessage,
-        config: props.config,
-        saveConfigWithStartupImages: props.saveConfigWithStartupImages
-    });
-
-    // Burst group operations hook
-    const { createBurstGroup, removeFromBurstGroup } = useGroupOperations({
-        photoSelection: props.photoSelection,
-        clearPhotoSelection: props.clearPhotoSelection,
-        addFooterMessage: props.addFooterMessage,
-        handleTauriError,
-        reloadPhotos: props.onPhotosRefresh
     });
 
     // Tutorial state
@@ -187,9 +97,10 @@ function DirectoryMenu(props) {
         logger.info('DirectoryMenu', 'tutorial_disabled', 'User disabled selection tutorial', { context });
     };
 
-    // doOperation handler for dropdown menu
+    // doOperation handler for dropdown menu - uses shared operations from props
     function doOperation(e) {
         const selected = e.target.value;
+        const ops = props.sharedOperations || {};
         logger.debug('DirectoryMenu', 'do_operation', 'doOperation called', {
             selected,
             viewMode: props.viewModeObj?.mode,
@@ -198,23 +109,23 @@ function DirectoryMenu(props) {
             photoSelectionCount: props.photoSelection?.length
         });
         if (selected == "uploadToGooglePhotos") {
-            uploadToGooglePhotos()
+            ops.uploadToGooglePhotos?.();
         } else if (selected == "deleteFiles") {
-            deleteFiles();
+            ops.deleteFiles?.();
         } else if (selected == "removeFromAlbum") {
             logger.info('DirectoryMenu', 'remove_from_album_selected', 'User selected Remove from Album', {
                 currentAlbumId: props.viewModeObj?.getCurrentAlbumId(),
                 photoSelectionCount: props.photoSelection?.length
             });
-            removeFromCurrentAlbum();
+            ops.removeFromCurrentAlbum?.();
         } else if (selected == "removeFromTag") {
-            removeFromCurrentTag();
+            ops.removeFromCurrentTag?.();
         } else if (selected == "createAlbum") {
-            showCreateAlbumModal();
+            ops.showCreateAlbumModal?.();
         } else if (selected == "addToAlbum") {
-            showAddToAlbumModal();
+            ops.showAddToAlbumModal?.();
         } else if (selected == "addTags") {
-            showAddTagsModal();
+            ops.showAddTagsModal?.();
         } else if (selected == "importSelected") {
             importSelectedPhotos();
         } else if (selected == "selectAllInDirectory") {
@@ -222,26 +133,18 @@ function DirectoryMenu(props) {
         } else if (selected == "unselectAll") {
             props.clearPhotoSelection();
         } else if (selected == "restoreFromTrash") {
-            restoreSelectedFromTrash();
+            ops.restoreSelectedFromTrash?.();
         } else if (selected == "permanentDelete") {
-            permanentDeleteSelected();
+            ops.permanentDeleteSelected?.();
         } else if (selected == "addToStartupImages") {
-            addToStartupImages();
+            ops.addToStartupImages?.();
         } else if (selected == "createBurstGroup") {
-            createBurstGroup();
+            ops.createBurstGroup?.();
         } else if (selected == "removeFromBurstGroup") {
-            removeFromBurstGroup();
+            ops.removeFromBurstGroup?.();
         }
         e.target.value = "";
     }
-
-    // The following functions have been moved to operation hooks:
-    // - importSelectedPhotos -> usePhotoImport
-    // - uploadToGooglePhotos -> useGooglePhotosUpload
-    // - deleteFiles, restoreSelectedFromTrash, permanentDeleteSelected -> useTrashOperations
-    // - createDbInDate, movePhotosToExifDate, createThumbnails, applyDateChanges -> useDateOperations
-    // - showCreateAlbumModal, showAddToAlbumModal, createAlbumFromSelection, addPhotosToAlbum, removeFromCurrentAlbum -> useAlbumOperations
-    // - showAddTagsModal, addTagsToPhotos, removeFromCurrentTag -> useTagOperations
 
     return (
         <div id="directory-maintenance">
@@ -408,43 +311,7 @@ function DirectoryMenu(props) {
                 tabClass={props.tabClass}
             />
 
-            {/* Album Creation Modal */}
-            <AlbumCreationModal
-                isOpen={showAlbumCreationModal}
-                onClose={() => setShowAlbumCreationModal(false)}
-                onConfirm={createAlbumFromSelection}
-                selectedPhotosCount={props.photoSelection.length}
-            />
-
-            {/* Album Selector Modal */}
-            <CollectionSelectorModal
-                isOpen={showAlbumSelectorModal}
-                onClose={() => setShowAlbumSelectorModal(false)}
-                onConfirm={addPhotosToAlbum}
-                selectedPhotosCount={props.photoSelection.length}
-                collectionType="album"
-                selectionMode="single"
-            />
-
-            {/* Bulk Tag Selector Modal */}
-            <CollectionSelectorModal
-                isOpen={showBulkTagModal}
-                onClose={() => setShowBulkTagModal(false)}
-                onConfirm={addTagsToPhotos}
-                selectedPhotosCount={props.photoSelection.length}
-                collectionType="tag"
-                selectionMode="multiple"
-                allowCreate={true}
-            />
-
-            {/* Contextual Delete Modal */}
-            <ContextualDeleteModal
-                isOpen={showDeleteModal}
-                operation={deleteModalConfig.operation}
-                photoCount={deleteModalConfig.count}
-                onConfirm={deleteModalConfig.onConfirm}
-                onCancel={() => setShowDeleteModal(false)}
-            />
+            {/* Modals are now rendered by SharedModals in PhotosList.jsx */}
 
             {/* Tutorial Tooltip */}
             <TutorialTooltip

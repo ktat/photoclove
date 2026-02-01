@@ -215,6 +215,7 @@ function PhotoOption(props) {
     };
 
     // doOperation handler for SelectionTab (Feature #153)
+    // Operations are passed from parent via props.operations
     const doOperation = async (e) => {
         const selected = e.target.value;
         logger.debug('PhotoOption', 'do_operation', 'doOperation called in PhotoViewer', {
@@ -226,25 +227,28 @@ function PhotoOption(props) {
             photoSelectionCount: props.photoSelection?.length
         });
 
+        const operations = props.operations || {};
+
         if (selected === "removeFromAlbum") {
             await removePhotosFromCollection(currentAlbumId, 'album');
         } else if (selected === "removeFromTag") {
             await removePhotosFromCollection(currentTagId, 'tag');
         } else if (selected === "deleteFiles") {
-            // TODO: Implement delete operation
-            if (props.addFooterMessage) {
-                props.addFooterMessage("Delete operation not yet implemented in photo viewer");
-            }
+            operations.deleteFiles?.();
         } else if (selected === "createAlbum") {
-            // TODO: Show album creation modal
-            if (props.addFooterMessage) {
-                props.addFooterMessage("Album creation not yet implemented in photo viewer");
-            }
+            operations.showCreateAlbumModal?.();
         } else if (selected === "addToAlbum") {
-            // TODO: Show add to album modal
-            if (props.addFooterMessage) {
-                props.addFooterMessage("Add to album not yet implemented in photo viewer");
-            }
+            operations.showAddToAlbumModal?.();
+        } else if (selected === "addTags") {
+            operations.showAddTagsModal?.();
+        } else if (selected === "uploadToGooglePhotos") {
+            operations.uploadToGooglePhotos?.();
+        } else if (selected === "addToStartupImages") {
+            operations.addToStartupImages?.();
+        } else if (selected === "createBurstGroup") {
+            operations.createBurstGroup?.();
+        } else if (selected === "removeFromBurstGroup") {
+            operations.removeFromBurstGroup?.();
         } else if (selected === "unselectAll") {
             if (props.clearPhotoSelection) {
                 props.clearPhotoSelection();
