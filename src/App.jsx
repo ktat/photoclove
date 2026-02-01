@@ -484,14 +484,16 @@ function App() {
   if (useCount === null) {
     return (
       <div className="loading-container">
-        <div className="loading-scene">
-          <div className="loading-flash"></div>
-          <div className="loading-crab">&#x1f980;</div>
-          <div className="loading-camera">&#x1f4f7;</div>
-          <div className="loading-camera">&#x1f4f7;</div>
-          <div className="loading-camera">&#x1f4f7;</div>
+        <img className="loading-bg" src={welcomeImage} alt="" />
+        <div className="loading-overlay"></div>
+        <div className="loading-text">
+          PhotoClove is Loading
+          <span className="loading-dots">
+            <span className="dot">.</span>
+            <span className="dot">.</span>
+            <span className="dot">.</span>
+          </span>
         </div>
-        <div className="loading-text">{t('status.loading')}</div>
       </div>
     );
   }

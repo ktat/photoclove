@@ -28,6 +28,8 @@ body,
 body {
   min-width: 100%;
   max-width: 100%;
+  background: var(--color-bg-base);
+  color: var(--color-text-primary);
 }
 
 :root {
@@ -37,7 +39,6 @@ body {
   font-weight: 400;
 
   color-scheme: dark light;
-  background: #1b1b1b;
   color: #e4e4e4;
 
   font-synthesis: none;
@@ -177,8 +178,6 @@ body {
 /* ========== Light Theme ========== */
 [data-theme="light"] {
   color-scheme: light;
-  background: var(--color-bg-base);
-  color: var(--color-text-primary);
 
   /* --- Background Colors (Warm Beige) --- */
   --color-bg-base: #faf8f5;
