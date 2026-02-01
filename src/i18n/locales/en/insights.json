@@ -60,5 +60,17 @@
     "thumbnailSize": "Thumbnail Cache",
     "faceThumbnailSize": "Face Thumbnails",
     "totalCache": "Total Cache"
+  },
+  "share": {
+    "title": "Share Stats",
+    "button": "Share",
+    "preview": "Preview",
+    "noPreview": "Unable to generate preview",
+    "copyText": "Copy Text",
+    "copyImage": "Copy Image",
+    "saveImage": "Save Image",
+    "shareTo": "Share to",
+    "socialHint": "Text only - paste image manually after copying",
+    "showText": "Show share text"
   }
 }

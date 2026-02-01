@@ -60,5 +60,17 @@
     "thumbnailSize": "縮圖快取",
     "faceThumbnailSize": "人臉縮圖",
     "totalCache": "快取總計"
+  },
+  "share": {
+    "title": "分享統計",
+    "button": "分享",
+    "preview": "預覽",
+    "noPreview": "無法產生預覽",
+    "copyText": "複製文字",
+    "copyImage": "複製圖片",
+    "saveImage": "儲存圖片",
+    "shareTo": "分享至",
+    "socialHint": "僅限文字 - 複製後手動貼上圖片",
+    "showText": "顯示分享文字"
   }
 }
