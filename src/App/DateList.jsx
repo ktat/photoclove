@@ -208,9 +208,19 @@ function DateList(props) {
     return (
         <>
             {/* Fixed Controls - Outside Scroll Area */}
-            <div className="dateList-controls" style={{ borderBottom: '1px solid var(--color-border-default)', paddingBottom: '5px', marginBottom: '5px' }}>
+            <div className="dateList-controls" style={{
+                borderBottom: '1px solid var(--color-border-default)',
+                paddingBottom: '5px',
+                marginBottom: '5px',
+                display: 'flex',
+                flexDirection: props.leftMenuCollapsed ? 'column' : 'row',
+                justifyContent: props.leftMenuCollapsed ? 'center' : 'space-between',
+                alignItems: 'center',
+                gap: props.leftMenuCollapsed ? 'var(--space-4)' : '4px',
+                padding: props.leftMenuCollapsed ? 'var(--space-3) 0' : '4px var(--space-4)'
+            }}>
                 {/* Recent Photos */}
-                <div style={{ marginBottom: '3px' }}>
+                <div style={{ marginTop: props.leftMenuCollapsed ? 'var(--space-1)' : '0' }}>
                     <a href="#"
                        className="recent-photos-link"
                        style={{
@@ -218,7 +228,7 @@ function DateList(props) {
                            textDecoration: "none",
                            display: 'flex',
                            alignItems: 'center',
-                           justifyContent: 'center',
+                           justifyContent: props.leftMenuCollapsed ? 'center' : 'flex-start',
                            gap: '4px'
                        }}
                        onClick={(e) => {
@@ -235,22 +245,106 @@ function DateList(props) {
                     </a>
                 </div>
 
-                {/* Calendar Icon - Click to expand sidebar */}
-                <div
-                    className="calendar-expand-trigger"
-                    style={{
-                        textAlign: 'center',
-                        fontSize: 'var(--font-size-lg)',
-                        padding: '8px 0',
-                        cursor: 'pointer',
-                        display: props.leftMenuCollapsed ? 'block' : 'none'
-                    }}
-                    onClick={() => props.setLeftMenuCollapsed(false)}
-                    onMouseEnter={(e) => props.handleMouseEnter && props.handleMouseEnter(t('date.allTime'), e)}
-                    onMouseLeave={() => props.handleMouseLeave && props.handleMouseLeave()}
-                >
-                    📅
-                </div>
+                {/* Right side icons (when expanded) or vertical items (when collapsed) */}
+                {props.leftMenuCollapsed ? (
+                    <>
+                        {/* Insights */}
+                        <div className="dateList-insights-link">
+                            <a href="#"
+                               style={{
+                                   color: 'var(--color-primary)',
+                                   textDecoration: 'none',
+                                   display: 'flex',
+                                   alignItems: 'center',
+                                   justifyContent: 'center',
+                                   gap: '4px'
+                               }}
+                               onClick={(e) => {
+                                   e.preventDefault();
+                                   props.setShowInsightsModal && props.setShowInsightsModal(true);
+                               }}
+                               onMouseEnter={(e) => props.handleMouseEnter && props.handleMouseEnter(t('navigation.insights'), e)}
+                               onMouseLeave={() => props.handleMouseLeave && props.handleMouseLeave()}>
+                                <span style={{ fontSize: 'var(--font-size-lg)' }}>📊</span>
+                                <span className="dateList-link-text">{t('navigation.insights')}</span>
+                            </a>
+                        </div>
+
+                        {/* Achievements */}
+                        <div className="dateList-achievements-link">
+                            <a href="#"
+                               style={{
+                                   color: 'var(--color-primary)',
+                                   textDecoration: 'none',
+                                   display: 'flex',
+                                   alignItems: 'center',
+                                   justifyContent: 'center',
+                                   gap: '4px'
+                               }}
+                               onClick={(e) => {
+                                   e.preventDefault();
+                                   props.setShowAchievementsModal && props.setShowAchievementsModal(true);
+                               }}
+                               onMouseEnter={(e) => props.handleMouseEnter && props.handleMouseEnter(t('navigation.achievements'), e)}
+                               onMouseLeave={() => props.handleMouseLeave && props.handleMouseLeave()}>
+                                <span style={{ fontSize: 'var(--font-size-lg)' }}>🏆</span>
+                                <span className="dateList-link-text">{t('navigation.achievements')}</span>
+                            </a>
+                        </div>
+
+                        {/* Calendar Icon - Click to expand sidebar */}
+                        <div
+                            className="calendar-expand-trigger"
+                            style={{
+                                textAlign: 'center',
+                                fontSize: 'var(--font-size-lg)',
+                                padding: '0 0 2px 0',
+                                marginTop: '-4px',
+                                cursor: 'pointer'
+                            }}
+                            onClick={() => props.setLeftMenuCollapsed(false)}
+                            onMouseEnter={(e) => props.handleMouseEnter && props.handleMouseEnter(t('date.allTime'), e)}
+                            onMouseLeave={() => props.handleMouseLeave && props.handleMouseLeave()}
+                        >
+                            📅
+                        </div>
+                    </>
+                ) : (
+                    /* Icons only on the right when expanded */
+                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                        {/* Insights */}
+                        <a href="#"
+                           style={{
+                               color: 'var(--color-primary)',
+                               textDecoration: 'none',
+                               fontSize: 'var(--font-size-lg)'
+                           }}
+                           onClick={(e) => {
+                               e.preventDefault();
+                               props.setShowInsightsModal && props.setShowInsightsModal(true);
+                           }}
+                           onMouseEnter={(e) => props.handleMouseEnter && props.handleMouseEnter(t('navigation.insights'), e)}
+                           onMouseLeave={() => props.handleMouseLeave && props.handleMouseLeave()}>
+                            📊
+                        </a>
+
+                        {/* Achievements */}
+                        <a href="#"
+                           style={{
+                               color: 'var(--color-primary)',
+                               textDecoration: 'none',
+                               fontSize: 'var(--font-size-lg)'
+                           }}
+                           onClick={(e) => {
+                               e.preventDefault();
+                               props.setShowAchievementsModal && props.setShowAchievementsModal(true);
+                           }}
+                           onMouseEnter={(e) => props.handleMouseEnter && props.handleMouseEnter(t('navigation.achievements'), e)}
+                           onMouseLeave={() => props.handleMouseLeave && props.handleMouseLeave()}>
+                            🏆
+                        </a>
+                    </div>
+                )}
             </div>
 
             {/* Title */}
