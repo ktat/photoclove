@@ -15,7 +15,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from 'react-i18next';
 import BaseModal, { ModalLoading, ModalError } from "../components/BaseModal.jsx";
 import { logger } from "../services/LoggerService.js";
-import InsightsService from "../services/InsightsService.js";
+import InsightsService, { TIME_PERIODS } from "../services/InsightsService.js";
 import ShootingTimeSection from "./Insights/ShootingTimeSection.jsx";
 import CameraSettingsSection from "./Insights/CameraSettingsSection.jsx";
 import EquipmentSection from "./Insights/EquipmentSection.jsx";
@@ -33,58 +33,76 @@ function InsightsModal({ onClose }) {
     const [activeSection, setActiveSection] = useState('shooting_time');
     const [cacheAge, setCacheAge] = useState(null);
     const [showShareDialog, setShowShareDialog] = useState(false);
+    const [selectedPeriod, setSelectedPeriod] = useState(TIME_PERIODS.ALL);
+
+    // Period options for the selector
+    const periodOptions = [
+        { value: TIME_PERIODS.ALL, label: t('insights:periods.all', 'All Time') },
+        { value: TIME_PERIODS.WEEKLY, label: t('insights:periods.weekly', 'Weekly') },
+        { value: TIME_PERIODS.MONTHLY, label: t('insights:periods.monthly', 'Monthly') },
+        { value: TIME_PERIODS.YEARLY, label: t('insights:periods.yearly', 'Yearly') },
+    ];
 
     // Load insights from cache or trigger refresh
-    const loadInsights = useCallback(async () => {
+    const loadInsights = useCallback(async (period = selectedPeriod) => {
         try {
             setLoading(true);
             setError(null);
 
             // First, try to get cached insights
-            const cached = await InsightsService.getCachedInsights();
+            const cached = await InsightsService.getCachedInsights(period);
 
             if (cached) {
                 setInsights(cached);
                 // Get cache age
-                const status = await InsightsService.getCacheStatus();
+                const status = await InsightsService.getCacheStatus(period);
                 setCacheAge(status.age_secs);
                 logger.info('InsightsModal', 'load_from_cache', 'Loaded from cache', {
-                    age_secs: status.age_secs
+                    age_secs: status.age_secs,
+                    period
                 });
             } else {
                 // No cache, trigger refresh
-                logger.info('InsightsModal', 'no_cache', 'No cache found, triggering refresh');
-                await triggerRefresh();
+                logger.info('InsightsModal', 'no_cache', 'No cache found, triggering refresh', { period });
+                await triggerRefresh(period);
             }
         } catch (err) {
             const errorMsg = typeof err === 'string' ? err : (err.message || JSON.stringify(err) || 'Failed to load insights');
             setError(errorMsg);
-            logger.error('InsightsModal', 'load_error', 'Failed to load insights', { error: err });
+            logger.error('InsightsModal', 'load_error', 'Failed to load insights', { error: err, period });
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [selectedPeriod]);
 
     // Trigger background refresh
-    const triggerRefresh = async () => {
+    const triggerRefresh = async (period = selectedPeriod) => {
         try {
             setRefreshing(true);
             setError(null);
-            logger.info('InsightsModal', 'refresh_start', 'Queueing refresh job');
-            await InsightsService.queueRefresh();
+            logger.info('InsightsModal', 'refresh_start', 'Queueing refresh job', { period });
+            await InsightsService.queueRefresh(period);
             // Job will emit 'insights_updated' event when done
         } catch (err) {
             const errorMsg = typeof err === 'string' ? err : (err.message || 'Failed to queue refresh');
             setError(errorMsg);
             setRefreshing(false);
-            logger.error('InsightsModal', 'refresh_error', 'Failed to queue refresh', { error: err });
+            logger.error('InsightsModal', 'refresh_error', 'Failed to queue refresh', { error: err, period });
         }
+    };
+
+    // Handle period change
+    const handlePeriodChange = async (newPeriod) => {
+        if (newPeriod === selectedPeriod || refreshing) return;
+        logger.info('InsightsModal', 'period_change', 'Changing period', { from: selectedPeriod, to: newPeriod });
+        setSelectedPeriod(newPeriod);
+        await loadInsights(newPeriod);
     };
 
     // Handle refresh button click
     const handleRefresh = async () => {
         if (refreshing) return;
-        await triggerRefresh();
+        await triggerRefresh(selectedPeriod);
     };
 
     // Listen for insights_updated event
@@ -92,20 +110,28 @@ function InsightsModal({ onClose }) {
         let unlisten;
 
         const setupListener = async () => {
-            unlisten = await InsightsService.onInsightsUpdated(async () => {
-                logger.info('InsightsModal', 'insights_updated', 'Received update event');
-                // Reload from cache
-                try {
-                    const cached = await InsightsService.getCachedInsights();
-                    if (cached) {
-                        setInsights(cached);
-                        setCacheAge(0); // Just updated
+            unlisten = await InsightsService.onInsightsUpdated(async (payload) => {
+                const updatedPeriod = payload?.period || TIME_PERIODS.ALL;
+                logger.info('InsightsModal', 'insights_updated', 'Received update event', {
+                    updatedPeriod,
+                    selectedPeriod
+                });
+
+                // Only update if the period matches
+                if (updatedPeriod === selectedPeriod) {
+                    // Reload from cache
+                    try {
+                        const cached = await InsightsService.getCachedInsights(selectedPeriod);
+                        if (cached) {
+                            setInsights(cached);
+                            setCacheAge(0); // Just updated
+                        }
+                    } catch (err) {
+                        logger.error('InsightsModal', 'reload_error', 'Failed to reload after update', { error: err });
+                    } finally {
+                        setRefreshing(false);
+                        setLoading(false);
                     }
-                } catch (err) {
-                    logger.error('InsightsModal', 'reload_error', 'Failed to reload after update', { error: err });
-                } finally {
-                    setRefreshing(false);
-                    setLoading(false);
                 }
             });
         };
@@ -115,7 +141,7 @@ function InsightsModal({ onClose }) {
         return () => {
             if (unlisten) unlisten();
         };
-    }, []);
+    }, [selectedPeriod]);
 
     // Initial load
     useEffect(() => {
@@ -149,19 +175,40 @@ function InsightsModal({ onClose }) {
         }
     };
 
-    const tabs = (
-        <div className={styles.tabs}>
-            {sections.map(section => (
-                <button
-                    key={section.id}
-                    className={`${styles.tab} ${activeSection === section.id ? styles.active : ''}`}
-                    onClick={() => setActiveSection(section.id)}
-                >
-                    <span className={styles.tabIcon}>{section.icon}</span>
-                    <span className={styles.tabLabel}>{section.label}</span>
-                </button>
-            ))}
+    const periodSelector = (
+        <div className={styles.periodSelector}>
+            <span className={styles.periodLabel}>{t('insights:periods.label', 'Period:')}</span>
+            <div className={styles.periodButtons}>
+                {periodOptions.map(option => (
+                    <button
+                        key={option.value}
+                        className={`${styles.periodBtn} ${selectedPeriod === option.value ? styles.active : ''}`}
+                        onClick={() => handlePeriodChange(option.value)}
+                        disabled={refreshing || loading}
+                    >
+                        {option.label}
+                    </button>
+                ))}
+            </div>
         </div>
+    );
+
+    const tabs = (
+        <>
+            {periodSelector}
+            <div className={styles.tabs}>
+                {sections.map(section => (
+                    <button
+                        key={section.id}
+                        className={`${styles.tab} ${activeSection === section.id ? styles.active : ''}`}
+                        onClick={() => setActiveSection(section.id)}
+                    >
+                        <span className={styles.tabIcon}>{section.icon}</span>
+                        <span className={styles.tabLabel}>{section.label}</span>
+                    </button>
+                ))}
+            </div>
+        </>
     );
 
     const footerContent = (

@@ -1,5 +1,53 @@
 /* InsightsModal Styles */
 
+/* Period Selector */
+.periodSelector {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background-color: var(--color-bg-elevated);
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.periodLabel {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin-right: var(--space-2);
+}
+
+.periodButtons {
+    display: flex;
+    gap: var(--space-1);
+}
+
+.periodBtn {
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border-default);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: all 0.15s ease-out;
+}
+
+.periodBtn:hover {
+    background: var(--color-bg-muted);
+    color: var(--color-text-primary);
+}
+
+.periodBtn.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+.periodBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .tabs {
     display: flex;
     gap: var(--space-1);
