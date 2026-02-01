@@ -91,11 +91,10 @@ function PhotosToolbar({
             {!isImportMode && photosCount > 0 && onStartSlideshow && (
                 <button
                     onClick={onStartSlideshow}
-                    className={styles.slideshowButton}
+                    className={styles.slideshowIconButton}
                     title={t('toolbar.slideshow') + ' (F5)'}
                 >
-                    <span className={styles.slideshowIcon}>▶</span>
-                    {t('toolbar.slideshow')}
+                    📽
                 </button>
             )}
             {/* Num selector removed - not needed with infinite scroll */}
