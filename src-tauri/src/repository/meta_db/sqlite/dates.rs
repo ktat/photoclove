@@ -84,50 +84,27 @@ pub fn process_date_rows(
             );
         }
 
-        // Parse date string in "yyyy-mm-dd" format
-        let parts: Vec<&str> = date_str.split('-').collect();
-        if parts.len() == 3 {
-            if let (Ok(year), Ok(month), Ok(day)) = (
-                parts[0].parse::<i32>(),
-                parts[1].parse::<u32>(),
-                parts[2].parse::<u32>(),
-            ) {
+        // Parse date string in "yyyy-mm-dd" format using value object
+        match date::Date::try_from_db_format(&date_str) {
+            Ok(date) => {
                 if row_count <= 3 {
                     log::trace!(
                         target: "dates",
-                        "process_date_rows; parsed_components; year={}; month={}; day={}",
-                        year, month, day
+                        "process_date_rows; date_created; date={}-{:02}-{:02}",
+                        date.year, date.month, date.day
                     );
                 }
-
-                if let Some(date) = date::Date::new(year, month, day) {
-                    dates.push(date);
-                    parsed_count += 1;
-
-                    if row_count <= 3 {
-                        log::trace!(
-                            target: "dates",
-                            "process_date_rows; date_created; date={}-{:02}-{:02}",
-                            year, month, day
-                        );
-                    }
-                } else {
-                    if row_count <= 3 {
-                        log::warn!(target: "dates", "process_date_rows; date_creation_failed; year={}; month={}; day={}", year, month, day);
-                    }
-                }
-            } else {
-                if row_count <= 3 {
-                    log::warn!(target: "dates", "process_date_rows; component_parse_failed; parts={:?}", parts);
-                }
+                dates.push(date);
+                parsed_count += 1;
             }
-        } else {
-            if row_count <= 3 {
-                log::warn!(
-                    target: "dates",
-                    "process_date_rows; invalid_part_count; parts={:?}",
-                    parts
-                );
+            Err(e) => {
+                if row_count <= 3 {
+                    log::warn!(
+                        target: "dates",
+                        "process_date_rows; date_parse_failed; date_str={}; error={}",
+                        date_str, e
+                    );
+                }
             }
         }
     }
@@ -215,19 +192,10 @@ where
             format!("Failed to parse row: {}", e)
         })?;
 
-        // Parse date string in "yyyy-mm-dd" format
-        let parts: Vec<&str> = date_str.split('-').collect();
-        if parts.len() == 3 {
-            if let (Ok(year), Ok(month), Ok(day)) = (
-                parts[0].parse::<i32>(),
-                parts[1].parse::<u32>(),
-                parts[2].parse::<u32>(),
-            ) {
-                if let Some(date) = date::Date::new(year, month, day) {
-                    dates.push(date);
-                    parsed_count += 1;
-                }
-            }
+        // Parse date string in "yyyy-mm-dd" format using value object
+        if let Ok(date) = date::Date::try_from_db_format(&date_str) {
+            dates.push(date);
+            parsed_count += 1;
         }
     }
 

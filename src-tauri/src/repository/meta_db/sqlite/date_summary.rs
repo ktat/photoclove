@@ -89,12 +89,13 @@ pub(super) fn update_date_summary_for_photo(db: &SQLite, photo_date: &str, delta
         .unchecked_transaction()
         .map_err(|e| format!("Transaction failed: {}", e))?;
 
-    let date_str = if let Ok(parsed_date) =
-        chrono::NaiveDateTime::parse_from_str(photo_date, "%Y-%m-%d %H:%M:%S")
-    {
-        parsed_date.format("%Y-%m-%d").to_string()
-    } else if let Ok(parsed_date) = chrono::NaiveDate::parse_from_str(photo_date, "%Y-%m-%d") {
-        parsed_date.format("%Y-%m-%d").to_string()
+    // Extract date part from photo_date using value object
+    let date_str = if let Ok(dt) = date::DateTime::try_from_string(photo_date) {
+        // DateTime parsed successfully, extract date part
+        format!("{:04}-{:02}-{:02}", dt.year, dt.month, dt.day)
+    } else if let Ok(d) = date::Date::try_from_db_format(photo_date) {
+        // Date-only format
+        d.to_string()
     } else {
         // Fallback: extract date part if format is unexpected
         photo_date

@@ -2,7 +2,6 @@ use super::utils::{cleanup_kill_file, get_resume_start_index, log_resume_info, s
 use crate::entity::job_queue;
 use crate::repository::MetaInfoDB;
 use crate::value::file;
-use chrono::Datelike;
 use sha2::{Digest, Sha256};
 use tauri::{Emitter, Manager};
 
@@ -96,9 +95,8 @@ pub(crate) fn process_import_job(
             let modified = metadata
                 .modified()
                 .map_err(|e| format!("Cannot get file modification time: {}", e))?;
-            let datetime = chrono::DateTime::<chrono::Utc>::from(modified);
 
-            crate::value::date::Date::new(datetime.year(), datetime.month(), datetime.day())
+            crate::value::date::Date::from_system_time(modified)
                 .ok_or_else(|| "Failed to create date from file modification time".to_string())?
         };
 

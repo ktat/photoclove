@@ -188,7 +188,6 @@ impl PhotoCollectionItem {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::str::FromStr;
 
     #[test]
     fn test_collection_type_from_str() {
