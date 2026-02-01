@@ -17,13 +17,13 @@
   font-size: 30px;
 }
 
-#welcome div.introduction {
+#welcome div.introduce {
   font-size: var(--font-size-xl);
   color: var(--color-text-secondary);
   max-width: 600px;
   text-align: center;
   margin: 0 auto;
-  line-height: 1.6;
+  line-height: 2;
 }
 
 #welcome-container .welcome-splash {
