@@ -178,9 +178,10 @@ export function usePhotoLoader({
             let photoEntities;
 
             // Modes that need unified API: album, tag, burst group, date with burst enabled
-            const needsUnifiedAPI = viewMode.isAlbumMode() || viewMode.isTagMode() ||
+            // IMPORT mode never uses unified API - it has its own loading mechanism
+            const needsUnifiedAPI = !viewMode.isImportMode() && (viewMode.isAlbumMode() || viewMode.isTagMode() ||
                 viewMode.isInBurstGroupMode() || (viewMode.isDateMode() && burstModeEnabled) ||
-                applyFilters;
+                applyFilters);
 
             if (needsUnifiedAPI) {
                 photoEntities = await loadViaUnifiedAPI(viewMode, config, requestId, silent);
