@@ -237,7 +237,8 @@ function PhotosList({
     const filteredPhotos = useFilteredPhotos({
         viewModeObj, albumPhotos, tagPhotos, photoCollection,
         allPhotosForCurrentFetch, applyFiltersWithConfig,
-        importSortOfPhotos, sortOfPhotos, appConfig
+        importSortOfPhotos, sortOfPhotos, appConfig,
+        searchResults
     });
 
     // Photo loader hook
@@ -253,7 +254,8 @@ function PhotosList({
         setCurrentPhotoPath, setCurrentPhotoIndex,
         convertPhotosToEntities: convertPhotosWithConfig, handleError,
         datePage: datePage || {}, updateDatePage, addFooterMessage,
-        burstModeEnabled
+        burstModeEnabled,
+        currentSearchParams
     });
 
     // Album/Tag photo loading wrappers

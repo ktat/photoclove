@@ -3,6 +3,7 @@
  */
 import { useMemo } from 'react';
 import { convertJSONToPhotoEntities } from '../utils/PhotoProcessingUtils.js';
+import { Photo } from '../domain/Photo.js';
 import { logger } from '../services/LoggerService.js';
 
 /**
@@ -17,6 +18,7 @@ import { logger } from '../services/LoggerService.js';
  * @param {number} options.importSortOfPhotos - Import mode sort value
  * @param {number} options.sortOfPhotos - General sort value
  * @param {Object} options.appConfig - Application config
+ * @param {Array} options.searchResults - Search results from useSearch
  * @returns {Array} Filtered and sorted photos
  */
 export function useFilteredPhotos({
@@ -28,25 +30,51 @@ export function useFilteredPhotos({
     applyFiltersWithConfig,
     importSortOfPhotos,
     sortOfPhotos,
-    appConfig
+    appConfig,
+    searchResults = []
 }) {
     return useMemo(() => {
         // Use appropriate photo source based on current mode
-        const sourcePhotos = viewModeObj.isAlbumMode() ? albumPhotos :
-            (viewModeObj.isTagMode() ? tagPhotos :
-                (viewModeObj.isTrashMode() ? (photoCollection?.photos || []) :
-                    allPhotosForCurrentFetch));
+        // For search mode, use searchResults if available
+        const sourcePhotos = viewModeObj.isSearchMode() && searchResults.length > 0 ? searchResults :
+            (viewModeObj.isAlbumMode() ? albumPhotos :
+                (viewModeObj.isTagMode() ? tagPhotos :
+                    (viewModeObj.isTrashMode() ? (photoCollection?.photos || []) :
+                        allPhotosForCurrentFetch)));
+
+        const usingSearchResults = viewModeObj.isSearchMode() && searchResults.length > 0;
 
         logger.debug('useFilteredPhotos', 'source_selection', 'Using photo source for filtering', {
             mode: viewModeObj.mode,
             sourceCount: sourcePhotos.length,
             isAlbumMode: viewModeObj.isAlbumMode(),
             isTagMode: viewModeObj.isTagMode(),
-            isTrashMode: viewModeObj.isTrashMode()
+            isTrashMode: viewModeObj.isTrashMode(),
+            isSearchMode: viewModeObj.isSearchMode(),
+            searchResultsCount: searchResults.length,
+            usingSearchResults
         });
 
-        // Convert source photos to Photo entities if they're plain objects
-        const photosWithMethods = convertJSONToPhotoEntities(sourcePhotos, appConfig);
+        // Convert source photos to Photo entities
+        // For search results (raw backend data), use Photo.fromBackendData
+        // For other sources, use convertJSONToPhotoEntities
+        let photosWithMethods;
+        if (usingSearchResults && appConfig) {
+            photosWithMethods = sourcePhotos
+                .map(photoData => {
+                    try {
+                        return Photo.fromBackendData(photoData, appConfig, false);
+                    } catch (e) {
+                        logger.warn('useFilteredPhotos', 'conversion_error', 'Failed to convert search result', {
+                            error: e.message
+                        });
+                        return null;
+                    }
+                })
+                .filter(photo => photo !== null);
+        } else {
+            photosWithMethods = convertJSONToPhotoEntities(sourcePhotos, appConfig);
+        }
 
         // Apply frontend filters
         let result = applyFiltersWithConfig(photosWithMethods);
@@ -69,7 +97,7 @@ export function useFilteredPhotos({
         });
 
         return result;
-    }, [viewModeObj, albumPhotos, tagPhotos, photoCollection?.photos, allPhotosForCurrentFetch, applyFiltersWithConfig, importSortOfPhotos, sortOfPhotos, appConfig]);
+    }, [viewModeObj, albumPhotos, tagPhotos, photoCollection?.photos, allPhotosForCurrentFetch, applyFiltersWithConfig, importSortOfPhotos, sortOfPhotos, appConfig, searchResults]);
 }
 
 /**

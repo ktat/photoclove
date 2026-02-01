@@ -44,6 +44,7 @@ import { useAsyncCancellation } from './useAsyncCancellation.js';
  * @param {Function} params.updateDatePage - Update datePage function
  * @param {Function} params.addFooterMessage - Footer message function
  * @param {boolean} params.burstModeEnabled - Burst grouping mode flag
+ * @param {Object} params.currentSearchParams - Current search parameters from useSearchAndFilters
  * @returns {Object} Photo loader functions and state
  */
 export function usePhotoLoader({
@@ -70,7 +71,8 @@ export function usePhotoLoader({
     datePage,
     updateDatePage,
     addFooterMessage,
-    burstModeEnabled = false
+    burstModeEnabled = false,
+    currentSearchParams = null
 }) {
     // Loading state
     const [photoLoading, setPhotoLoading] = useState(false);
@@ -198,7 +200,8 @@ export function usePhotoLoader({
                 } else if (viewMode.isRecentMode()) {
                     collection = PhotoCollection.createRecentCollection([], config, parseInt(sortOfPhotos));
                 } else if (viewMode.isSearchMode()) {
-                    const searchParams = viewMode.data.searchParams;
+                    // Use currentSearchParams from hook state, fallback to viewMode.data.searchParams
+                    const searchParams = currentSearchParams || viewMode.data.searchParams;
                     collection = PhotoCollection.createSearchCollection([], viewMode.getSearchQuery(), config, searchParams, parseInt(sortOfPhotos));
                 } else if (viewMode.isImportMode()) {
                     collection = PhotoCollection.createImportCollection(

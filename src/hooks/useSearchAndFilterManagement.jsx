@@ -120,7 +120,7 @@ export function useSearchAndFilterManagement({
     /**
      * Handle search execution
      */
-    const handleSearch = useCallback((query, type, filters) => {
+    const handleSearch = useCallback(async (query, type, filters) => {
         logger.info('useSearchAndFilterManagement', 'handleSearch', 'Search triggered', {
             query,
             type,
@@ -130,8 +130,15 @@ export function useSearchAndFilterManagement({
         });
         const params = { query, searchType: type, filters };
         updateSearchParams(params);
-        // PhotoCollection will automatically reload via useViewModeSync when searchParams change
-    }, [updateSearchParams]);
+        // Directly execute search using performSearch
+        try {
+            await performSearch(query, type, filters);
+        } catch (error) {
+            logger.error('useSearchAndFilterManagement', 'handleSearch_error', 'Search failed', {
+                error: error.message
+            });
+        }
+    }, [updateSearchParams, performSearch]);
 
     /**
      * Handle saved search selection
