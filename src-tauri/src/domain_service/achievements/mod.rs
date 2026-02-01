@@ -6,6 +6,6 @@ pub mod definitions;
 pub mod emitter;
 pub mod service;
 
-pub use definitions::{AchievementCategory, AchievementDefinition, ACHIEVEMENTS};
+pub use definitions::AchievementCategory;
 pub use emitter::check_and_emit_achievement;
 pub use service::{AchievementCheckResult, AchievementService, AchievementWithProgress};

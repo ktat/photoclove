@@ -2,7 +2,7 @@
 //!
 //! Handles persistence of achievement progress and completion status.
 
-use rusqlite::{params, Connection, Result};
+use rusqlite::{params, Result};
 use serde::{Deserialize, Serialize};
 
 use super::SQLite;
@@ -160,29 +160,5 @@ impl SQLite {
         );
 
         Ok(true)
-    }
-
-    /// Get count of achieved achievements
-    pub fn get_achieved_count(&self) -> Result<i64> {
-        let conn = self.get_connection()?;
-        let count: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM achievement_progress WHERE achieved_at IS NOT NULL",
-            [],
-            |row| row.get(0),
-        )?;
-        Ok(count)
-    }
-
-    /// Check if a specific achievement is achieved
-    pub fn is_achievement_achieved(&self, id: &str) -> Result<bool> {
-        let conn = self.get_connection()?;
-        let achieved: bool = conn
-            .query_row(
-                "SELECT achieved_at IS NOT NULL FROM achievement_progress WHERE id = ?",
-                params![id],
-                |row| row.get(0),
-            )
-            .unwrap_or(false);
-        Ok(achieved)
     }
 }

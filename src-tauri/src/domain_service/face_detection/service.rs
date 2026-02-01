@@ -3,7 +3,7 @@
 //! Main service that orchestrates face detection and embedding generation.
 
 use image::DynamicImage;
-use std::io::{BufReader, Read, Seek};
+use std::io::Read;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
@@ -144,6 +144,7 @@ impl FaceDetectionService {
     }
 
     /// Check if the service is initialized
+    #[allow(dead_code)]
     pub fn is_initialized(&self) -> bool {
         self.initialized
     }
@@ -336,6 +337,7 @@ impl ModelsStatus {
         self.detector_available && self.embedder_available
     }
 
+    #[allow(dead_code)]
     pub fn is_partial(&self) -> bool {
         self.detector_available != self.embedder_available
     }

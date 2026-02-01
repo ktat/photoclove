@@ -55,7 +55,7 @@ pub(crate) fn process_insights_job(
 }
 
 /// Get the cache file path for insights
-pub fn get_insights_cache_path(config: &crate::entity::config::Config) -> String {
+pub fn get_insights_cache_path(_config: &crate::entity::config::Config) -> String {
     let cache_dir = dirs::data_local_dir()
         .unwrap_or_else(|| std::path::PathBuf::from("."))
         .join("photoclove")

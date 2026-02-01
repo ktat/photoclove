@@ -181,6 +181,7 @@ pub fn generate_face_thumbnail_from_file(
 }
 
 /// Delete a face thumbnail
+#[allow(dead_code)]
 pub fn delete_face_thumbnail(thumbnail_store: &str, face_id: i64) -> Result<(), String> {
     let path = get_face_thumbnail_path(thumbnail_store, face_id);
     if path.exists() {

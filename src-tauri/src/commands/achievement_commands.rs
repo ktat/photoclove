@@ -5,10 +5,9 @@
 use crate::app_state::AppState;
 use crate::domain_service::achievements::{
     AchievementCategory, AchievementCheckResult, AchievementService, AchievementWithProgress,
-    ACHIEVEMENTS,
 };
 use crate::repository::meta_db::sqlite::SQLite;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 /// Summary of achievements for display
 #[derive(Debug, Serialize)]

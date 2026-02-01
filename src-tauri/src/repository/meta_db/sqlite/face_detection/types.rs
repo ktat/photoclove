@@ -34,6 +34,7 @@ pub struct PersonRecord {
 
 /// Input for saving a detected face
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct DetectedFaceInput {
     pub photo_path: String,
     pub bbox_x: f32,
