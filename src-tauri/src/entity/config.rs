@@ -313,7 +313,6 @@ pub struct Config {
     pub import_to: String,
     pub export_from: Vec<String>,
     pub trash_path: String,
-    pub data_path: String,
     pub thumbnail_store: String,
     pub thumbnail_ratio: f32,
     pub thumbnail_compression_quality: f32,
@@ -367,7 +366,6 @@ impl Config {
         self.import_to = config.import_to;
         self.export_from = config.export_from;
         self.trash_path = config.trash_path;
-        self.data_path = config.data_path;
         self.thumbnail_store = config.thumbnail_store;
         self.copy_parallel = config.copy_parallel;
         self.thumbnail_parallel = config.thumbnail_parallel;
@@ -480,7 +478,6 @@ impl Config {
             import_to: home.join(".photoclove/import/").display().to_string(),
             export_from: vec!["/".to_string()],
             trash_path: home.join(".photoclove/trash/").display().to_string(),
-            data_path: home.join(".photoclove/data/").display().to_string(),
             thumbnail_store: home.join(".photoclove/thumbnail/").display().to_string(),
             thumbnail_ratio: 0.05,
             thumbnail_compression_quality: 0.5,
