@@ -1,12 +1,17 @@
 //! Achievement progress repository
 //!
 //! Handles persistence of achievement progress and completion status.
+//! Includes hash verification to detect tampering.
 
 use rusqlite::{params, Result};
 use serde::{Deserialize, Serialize};
+use sha2::{Sha256, Digest};
 
 use super::SQLite;
 use crate::value::date;
+
+/// Secret salt for hash generation (obfuscated to make casual tampering harder)
+const HASH_SALT: &str = "Ph0t0Cl0v3_Ach13v3m3nt_S4lt_2024";
 
 /// Achievement progress record
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -17,20 +22,63 @@ pub struct AchievementProgress {
     pub updated_at: String,
 }
 
+/// Generate verification hash for an achievement
+fn generate_hash(id: &str, achieved_at: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(format!("{}:{}:{}", id, achieved_at, HASH_SALT));
+    let result = hasher.finalize();
+    // Convert to hex string
+    result.iter().map(|b| format!("{:02x}", b)).collect()
+}
+
+/// Verify achievement hash
+fn verify_hash(id: &str, achieved_at: &str, stored_hash: Option<&str>) -> bool {
+    match stored_hash {
+        Some(hash) if !hash.is_empty() => {
+            let expected = generate_hash(id, achieved_at);
+            hash == expected
+        }
+        _ => false, // No hash = tampered or legacy, reject
+    }
+}
+
 impl SQLite {
     /// Get all achievement progress records
+    /// Records with invalid hashes will have achieved_at set to None
     pub fn get_all_achievements(&self) -> Result<Vec<AchievementProgress>> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
-            "SELECT id, current_value, achieved_at, updated_at FROM achievement_progress ORDER BY id"
+            "SELECT id, current_value, achieved_at, updated_at, verification_hash FROM achievement_progress ORDER BY id"
         )?;
 
         let rows = stmt.query_map([], |row| {
+            let id: String = row.get(0)?;
+            let current_value: i64 = row.get(1)?;
+            let achieved_at: Option<String> = row.get(2)?;
+            let updated_at: String = row.get(3)?;
+            let verification_hash: Option<String> = row.get(4)?;
+
+            // Verify hash if achieved
+            let verified_achieved_at = if let Some(ref at) = achieved_at {
+                if verify_hash(&id, at, verification_hash.as_deref()) {
+                    achieved_at
+                } else {
+                    log::warn!(
+                        target: "achievements",
+                        "hash_verification_failed; id={}; possible_tampering",
+                        id
+                    );
+                    None // Invalid hash - treat as not achieved
+                }
+            } else {
+                None
+            };
+
             Ok(AchievementProgress {
-                id: row.get(0)?,
-                current_value: row.get(1)?,
-                achieved_at: row.get(2)?,
-                updated_at: row.get(3)?,
+                id,
+                current_value,
+                achieved_at: verified_achieved_at,
+                updated_at,
             })
         })?;
 
@@ -43,18 +91,41 @@ impl SQLite {
     }
 
     /// Get a single achievement progress record
+    /// Record with invalid hash will have achieved_at set to None
     pub fn get_achievement(&self, id: &str) -> Result<Option<AchievementProgress>> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
-            "SELECT id, current_value, achieved_at, updated_at FROM achievement_progress WHERE id = ?"
+            "SELECT id, current_value, achieved_at, updated_at, verification_hash FROM achievement_progress WHERE id = ?"
         )?;
 
         let result = stmt.query_row(params![id], |row| {
+            let id: String = row.get(0)?;
+            let current_value: i64 = row.get(1)?;
+            let achieved_at: Option<String> = row.get(2)?;
+            let updated_at: String = row.get(3)?;
+            let verification_hash: Option<String> = row.get(4)?;
+
+            // Verify hash if achieved
+            let verified_achieved_at = if let Some(ref at) = achieved_at {
+                if verify_hash(&id, at, verification_hash.as_deref()) {
+                    achieved_at
+                } else {
+                    log::warn!(
+                        target: "achievements",
+                        "hash_verification_failed; id={}; possible_tampering",
+                        id
+                    );
+                    None
+                }
+            } else {
+                None
+            };
+
             Ok(AchievementProgress {
-                id: row.get(0)?,
-                current_value: row.get(1)?,
-                achieved_at: row.get(2)?,
-                updated_at: row.get(3)?,
+                id,
+                current_value,
+                achieved_at: verified_achieved_at,
+                updated_at,
             })
         });
 
@@ -76,43 +147,53 @@ impl SQLite {
         let conn = self.get_connection()?;
         let now = date::DateTime::now().to_db_string();
 
-        // Check if already achieved
-        let existing: Option<(i64, Option<String>)> = conn
+        // Check if already achieved (with hash verification)
+        let existing: Option<(i64, Option<String>, Option<String>)> = conn
             .query_row(
-                "SELECT current_value, achieved_at FROM achievement_progress WHERE id = ?",
+                "SELECT current_value, achieved_at, verification_hash FROM achievement_progress WHERE id = ?",
                 params![id],
-                |row| Ok((row.get(0)?, row.get(1)?)),
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
             )
             .ok();
 
+        // Verify existing achievement
         let was_achieved = existing
             .as_ref()
-            .map(|(_, achieved)| achieved.is_some())
+            .map(|(_, achieved_at, hash)| {
+                if let Some(at) = achieved_at {
+                    verify_hash(id, at, hash.as_deref())
+                } else {
+                    false
+                }
+            })
             .unwrap_or(false);
 
         let should_achieve = current_value >= threshold;
         let newly_achieved = !was_achieved && should_achieve;
 
-        let achieved_at = if should_achieve {
+        let (achieved_at, verification_hash) = if should_achieve {
             if was_achieved {
-                // Keep existing achieved_at
-                existing.as_ref().and_then(|(_, a)| a.clone())
+                // Keep existing achieved_at and hash
+                let (_, achieved, hash) = existing.as_ref().unwrap();
+                (achieved.clone(), hash.clone())
             } else {
-                // New achievement
-                Some(now.clone())
+                // New achievement - generate hash
+                let hash = generate_hash(id, &now);
+                (Some(now.clone()), Some(hash))
             }
         } else {
-            None
+            (None, None)
         };
 
         conn.execute(
-            "INSERT INTO achievement_progress (id, current_value, achieved_at, updated_at)
-             VALUES (?, ?, ?, ?)
+            "INSERT INTO achievement_progress (id, current_value, achieved_at, updated_at, verification_hash)
+             VALUES (?, ?, ?, ?, ?)
              ON CONFLICT(id) DO UPDATE SET
                 current_value = excluded.current_value,
                 achieved_at = COALESCE(achievement_progress.achieved_at, excluded.achieved_at),
-                updated_at = excluded.updated_at",
-            params![id, current_value, achieved_at, now],
+                updated_at = excluded.updated_at,
+                verification_hash = COALESCE(achievement_progress.verification_hash, excluded.verification_hash)",
+            params![id, current_value, achieved_at, now, verification_hash],
         )?;
 
         log::debug!(
@@ -130,27 +211,42 @@ impl SQLite {
         let conn = self.get_connection()?;
         let now = date::DateTime::now().to_db_string();
 
-        // Check if already achieved
-        let already_achieved: bool = conn
+        // Check if already achieved (with hash verification)
+        let existing: Option<(Option<String>, Option<String>)> = conn
             .query_row(
-                "SELECT achieved_at IS NOT NULL FROM achievement_progress WHERE id = ?",
+                "SELECT achieved_at, verification_hash FROM achievement_progress WHERE id = ?",
                 params![id],
-                |row| row.get(0),
+                |row| Ok((row.get(0)?, row.get(1)?)),
             )
+            .ok();
+
+        let already_achieved = existing
+            .as_ref()
+            .map(|(achieved_at, hash)| {
+                if let Some(at) = achieved_at {
+                    verify_hash(id, at, hash.as_deref())
+                } else {
+                    false
+                }
+            })
             .unwrap_or(false);
 
         if already_achieved {
             return Ok(false);
         }
 
+        // Generate hash for new achievement
+        let verification_hash = generate_hash(id, &now);
+
         conn.execute(
-            "INSERT INTO achievement_progress (id, current_value, achieved_at, updated_at)
-             VALUES (?, 1, ?, ?)
+            "INSERT INTO achievement_progress (id, current_value, achieved_at, updated_at, verification_hash)
+             VALUES (?, 1, ?, ?, ?)
              ON CONFLICT(id) DO UPDATE SET
                 current_value = 1,
                 achieved_at = COALESCE(achievement_progress.achieved_at, excluded.achieved_at),
-                updated_at = excluded.updated_at",
-            params![id, now, now],
+                updated_at = excluded.updated_at,
+                verification_hash = COALESCE(achievement_progress.verification_hash, excluded.verification_hash)",
+            params![id, now, now, verification_hash],
         )?;
 
         log::info!(

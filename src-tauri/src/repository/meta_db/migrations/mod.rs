@@ -75,6 +75,11 @@ const MIGRATIONS: &[Migration] = &[
         name: "create_achievements",
         sql: include_str!("013_create_achievements.sql"),
     },
+    Migration {
+        version: 14,
+        name: "add_achievement_hash",
+        sql: include_str!("014_add_achievement_hash.sql"),
+    },
 ];
 
 /// Initialize the migrations table
