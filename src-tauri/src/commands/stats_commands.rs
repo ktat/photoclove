@@ -2,10 +2,12 @@
 //!
 //! Provides commands for retrieving photography insights and statistics.
 //! Uses job queue for background calculation and caching for fast access.
+//! Supports time period filtering: all, weekly, monthly, yearly.
 
 use crate::app_state::AppState;
 use crate::domain_service::job_queue::handlers::insights;
 use crate::entity::job_queue::{Job, JobType, JobUnit, QueuedJob};
+use crate::repository::meta_db::sqlite::stats::TimePeriod;
 use crate::repository::meta_db::sqlite::SQLite;
 use serde::Serialize;
 use std::sync::Arc;
@@ -22,36 +24,53 @@ pub struct InsightsCacheStatus {
 ///
 /// Returns cached insights if available, null otherwise.
 /// Use queue_insights_refresh to trigger recalculation.
+///
+/// # Arguments
+/// * `period` - Time period: "all", "weekly", "monthly", "yearly" (default: "all")
 #[tauri::command]
 pub async fn get_cached_insights(
     state: tauri::State<'_, AppState>,
+    period: Option<String>,
 ) -> Result<Option<String>, String> {
-    log::info!(target: "stats", "get_cached_insights; status=checking");
+    let time_period = period
+        .map(|p| TimePeriod::from_str(&p))
+        .unwrap_or(TimePeriod::All);
 
-    match insights::read_cached_insights(&state.config) {
+    log::info!(target: "stats", "get_cached_insights; status=checking; period={}", time_period.as_str());
+
+    match insights::read_cached_insights(&state.config, time_period) {
         Some(cached) => {
-            log::info!(target: "stats", "get_cached_insights; status=found");
+            log::info!(target: "stats", "get_cached_insights; status=found; period={}", time_period.as_str());
             let json = serde_json::to_string(&cached)
                 .map_err(|e| format!("Serialization error: {}", e))?;
             Ok(Some(json))
         }
         None => {
-            log::info!(target: "stats", "get_cached_insights; status=not_found");
+            log::info!(target: "stats", "get_cached_insights; status=not_found; period={}", time_period.as_str());
             Ok(None)
         }
     }
 }
 
 /// Get cache status (whether cache exists and how old it is).
+///
+/// # Arguments
+/// * `period` - Time period: "all", "weekly", "monthly", "yearly" (default: "all")
 #[tauri::command]
 pub async fn get_insights_cache_status(
     state: tauri::State<'_, AppState>,
+    period: Option<String>,
 ) -> Result<InsightsCacheStatus, String> {
-    log::info!(target: "stats", "get_insights_cache_status; status=checking");
+    let time_period = period
+        .map(|p| TimePeriod::from_str(&p))
+        .unwrap_or(TimePeriod::All);
 
-    match insights::get_cache_metadata(&state.config) {
+    log::info!(target: "stats", "get_insights_cache_status; status=checking; period={}", time_period.as_str());
+
+    match insights::get_cache_metadata(&state.config, time_period) {
         Some(metadata) => {
-            log::info!(target: "stats", "get_insights_cache_status; available=true; age_secs={}", metadata.age_secs);
+            log::info!(target: "stats", "get_insights_cache_status; available=true; age_secs={}; period={}",
+                metadata.age_secs, time_period.as_str());
             Ok(InsightsCacheStatus {
                 available: true,
                 age_secs: Some(metadata.age_secs),
@@ -59,7 +78,7 @@ pub async fn get_insights_cache_status(
             })
         }
         None => {
-            log::info!(target: "stats", "get_insights_cache_status; available=false");
+            log::info!(target: "stats", "get_insights_cache_status; available=false; period={}", time_period.as_str());
             Ok(InsightsCacheStatus {
                 available: false,
                 age_secs: None,
@@ -72,12 +91,20 @@ pub async fn get_insights_cache_status(
 /// Queue insights calculation job.
 ///
 /// Returns the job unit ID for tracking progress.
+///
+/// # Arguments
+/// * `period` - Time period: "all", "weekly", "monthly", "yearly" (default: "all")
 #[tauri::command]
 pub async fn queue_insights_refresh(
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
+    period: Option<String>,
 ) -> Result<String, String> {
-    log::info!(target: "stats", "queue_insights_refresh; status=queueing");
+    let time_period = period
+        .map(|p| TimePeriod::from_str(&p))
+        .unwrap_or(TimePeriod::All);
+
+    log::info!(target: "stats", "queue_insights_refresh; status=queueing; period={}", time_period.as_str());
 
     let sqlite = SQLite::new(state.config.import_to.clone());
 
@@ -89,14 +116,19 @@ pub async fn queue_insights_refresh(
     // Save job unit
     sqlite.create_job_unit(&job_unit)?;
 
-    // Create the job (empty target - insights doesn't need file list)
-    let job = Job::new(job_unit_id.clone(), JobType::InsightsCalculation, vec![]);
+    // Create the job with period as target (to pass period info to job handler)
+    let job = Job::new(
+        job_unit_id.clone(),
+        JobType::InsightsCalculation,
+        vec![time_period.as_str().to_string()],
+    );
     let queued_job = QueuedJob::new(job_unit_id.clone(), job);
 
     // Save job to queue
     sqlite.create_job(&queued_job)?;
 
-    log::info!(target: "stats", "queue_insights_refresh; status=queued; job_unit_id={}", job_unit_id);
+    log::info!(target: "stats", "queue_insights_refresh; status=queued; job_unit_id={}; period={}",
+        job_unit_id, time_period.as_str());
 
     // Trigger job processing
     let db_arc = Arc::new(sqlite);
@@ -109,17 +141,29 @@ pub async fn queue_insights_refresh(
 ///
 /// This is a fallback for when cache is not available.
 /// Prefer using get_cached_insights + queue_insights_refresh.
+///
+/// # Arguments
+/// * `period` - Time period: "all", "weekly", "monthly", "yearly" (default: "all")
 #[tauri::command]
 pub async fn get_photography_insights(
     state: tauri::State<'_, AppState>,
+    period: Option<String>,
 ) -> Result<String, String> {
-    log::info!(target: "stats", "get_photography_insights; status=starting");
+    let time_period = period
+        .map(|p| TimePeriod::from_str(&p))
+        .unwrap_or(TimePeriod::All);
+
+    log::info!(target: "stats", "get_photography_insights; status=starting; period={}", time_period.as_str());
 
     let sqlite = SQLite::new(state.config.import_to.clone());
 
-    let insights = crate::repository::meta_db::sqlite::stats::get_all_insights(&sqlite, &state.config)?;
+    let insights = crate::repository::meta_db::sqlite::stats::get_all_insights(
+        &sqlite,
+        &state.config,
+        time_period,
+    )?;
 
-    log::info!(target: "stats", "get_photography_insights; status=complete");
+    log::info!(target: "stats", "get_photography_insights; status=complete; period={}", time_period.as_str());
 
     serde_json::to_string(&insights).map_err(|e| format!("Serialization error: {}", e))
 }

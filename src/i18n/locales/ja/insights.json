@@ -4,6 +4,13 @@
   "photos": "枚",
   "noData": "データがありません",
   "mostUsed": "最頻値",
+  "periods": {
+    "label": "期間:",
+    "all": "全期間",
+    "weekly": "週間",
+    "monthly": "月間",
+    "yearly": "年間"
+  },
   "sections": {
     "shootingTime": "撮影時間",
     "cameraSettings": "カメラ設定",

@@ -6,16 +6,85 @@
 //! - Equipment usage (cameras, lenses)
 //! - Organization metrics (total photos, tags, albums)
 //! - Storage usage
+//!
+//! Supports time period filtering: all, weekly, monthly, yearly.
 
 use crate::entity::config::Config;
 use crate::repository::meta_db::sqlite::SQLite;
+use chrono::{Duration, Local, NaiveDate};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
+/// Time period for filtering statistics
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum TimePeriod {
+    /// All time (no filtering)
+    All,
+    /// Last 7 days
+    Weekly,
+    /// Last 30 days
+    Monthly,
+    /// Last 365 days
+    Yearly,
+}
+
+impl Default for TimePeriod {
+    fn default() -> Self {
+        TimePeriod::All
+    }
+}
+
+impl TimePeriod {
+    /// Get the start date for this period (None means no filtering)
+    pub fn start_date(&self) -> Option<NaiveDate> {
+        let today = Local::now().date_naive();
+        match self {
+            TimePeriod::All => None,
+            TimePeriod::Weekly => Some(today - Duration::days(7)),
+            TimePeriod::Monthly => Some(today - Duration::days(30)),
+            TimePeriod::Yearly => Some(today - Duration::days(365)),
+        }
+    }
+
+    /// Get SQL date condition for this period
+    pub fn date_condition(&self) -> String {
+        match self.start_date() {
+            Some(date) => format!(
+                " AND date(COALESCE(exif_date_time_original, photo_date)) >= '{}'",
+                date.format("%Y-%m-%d")
+            ),
+            None => String::new(),
+        }
+    }
+
+    /// Parse from string
+    pub fn from_str(s: &str) -> Self {
+        match s.to_lowercase().as_str() {
+            "weekly" => TimePeriod::Weekly,
+            "monthly" => TimePeriod::Monthly,
+            "yearly" => TimePeriod::Yearly,
+            _ => TimePeriod::All,
+        }
+    }
+
+    /// Convert to string
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            TimePeriod::All => "all",
+            TimePeriod::Weekly => "weekly",
+            TimePeriod::Monthly => "monthly",
+            TimePeriod::Yearly => "yearly",
+        }
+    }
+}
+
 /// Complete photography insights data
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PhotographyInsights {
+    /// Time period for this statistics
+    pub period: TimePeriod,
     pub shooting_time: ShootingTimeStats,
     pub camera_settings: CameraSettingsStats,
     pub equipment: EquipmentStats,
@@ -91,19 +160,25 @@ pub struct StorageStats {
     pub face_thumbnail_size_bytes: u64,
 }
 
-/// Get all photography insights
-pub fn get_all_insights(sqlite: &SQLite, config: &Config) -> Result<PhotographyInsights, String> {
-    log::info!(target: "stats", "get_all_insights; status=starting");
+/// Get all photography insights for a specific time period
+pub fn get_all_insights(
+    sqlite: &SQLite,
+    config: &Config,
+    period: TimePeriod,
+) -> Result<PhotographyInsights, String> {
+    log::info!(target: "stats", "get_all_insights; status=starting; period={}", period.as_str());
 
-    let shooting_time = get_shooting_time_stats(sqlite)?;
-    let camera_settings = get_camera_settings_stats(sqlite)?;
-    let equipment = get_equipment_stats(sqlite)?;
-    let organization = get_organization_stats(sqlite)?;
+    let shooting_time = get_shooting_time_stats(sqlite, period)?;
+    let camera_settings = get_camera_settings_stats(sqlite, period)?;
+    let equipment = get_equipment_stats(sqlite, period)?;
+    let organization = get_organization_stats(sqlite, period)?;
+    // Storage stats are not affected by time period (always shows current usage)
     let storage = get_storage_stats(config)?;
 
-    log::info!(target: "stats", "get_all_insights; status=complete");
+    log::info!(target: "stats", "get_all_insights; status=complete; period={}", period.as_str());
 
     Ok(PhotographyInsights {
+        period,
         shooting_time,
         camera_settings,
         equipment,
@@ -113,23 +188,28 @@ pub fn get_all_insights(sqlite: &SQLite, config: &Config) -> Result<PhotographyI
 }
 
 /// Get shooting time statistics (hour of day, day of week)
-fn get_shooting_time_stats(sqlite: &SQLite) -> Result<ShootingTimeStats, String> {
+fn get_shooting_time_stats(sqlite: &SQLite, period: TimePeriod) -> Result<ShootingTimeStats, String> {
     let conn = sqlite
         .get_connection()
         .map_err(|e| format!("Failed to connect: {}", e))?;
 
+    let date_filter = period.date_condition();
+
     // Hour distribution from exif_date_time_original
+    let hour_query = format!(
+        "SELECT
+            CAST(SUBSTR(COALESCE(exif_date_time_original, photo_date), 12, 2) AS INTEGER) as hour,
+            COUNT(*) as count
+         FROM photo_metadata
+         WHERE (exif_date_time_original IS NOT NULL OR photo_date IS NOT NULL)
+           AND (delete_flg = 0 OR delete_flg IS NULL){}
+         GROUP BY hour
+         ORDER BY hour",
+        date_filter
+    );
+
     let mut hour_stmt = conn
-        .prepare(
-            "SELECT
-                CAST(SUBSTR(COALESCE(exif_date_time_original, photo_date), 12, 2) AS INTEGER) as hour,
-                COUNT(*) as count
-             FROM photo_metadata
-             WHERE (exif_date_time_original IS NOT NULL OR photo_date IS NOT NULL)
-               AND (delete_flg = 0 OR delete_flg IS NULL)
-             GROUP BY hour
-             ORDER BY hour",
-        )
+        .prepare(&hour_query)
         .map_err(|e| format!("Failed to prepare hour query: {}", e))?;
 
     let hour_distribution: Vec<HourCount> = hour_stmt
@@ -144,17 +224,20 @@ fn get_shooting_time_stats(sqlite: &SQLite) -> Result<ShootingTimeStats, String>
         .collect();
 
     // Day of week distribution
+    let day_query = format!(
+        "SELECT
+            CAST(strftime('%w', date(COALESCE(exif_date_time_original, photo_date))) AS INTEGER) as day,
+            COUNT(*) as count
+         FROM photo_metadata
+         WHERE (exif_date_time_original IS NOT NULL OR photo_date IS NOT NULL)
+           AND (delete_flg = 0 OR delete_flg IS NULL){}
+         GROUP BY day
+         ORDER BY day",
+        date_filter
+    );
+
     let mut day_stmt = conn
-        .prepare(
-            "SELECT
-                CAST(strftime('%w', date(COALESCE(exif_date_time_original, photo_date))) AS INTEGER) as day,
-                COUNT(*) as count
-             FROM photo_metadata
-             WHERE (exif_date_time_original IS NOT NULL OR photo_date IS NOT NULL)
-               AND (delete_flg = 0 OR delete_flg IS NULL)
-             GROUP BY day
-             ORDER BY day",
-        )
+        .prepare(&day_query)
         .map_err(|e| format!("Failed to prepare day query: {}", e))?;
 
     let day_names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -179,45 +262,59 @@ fn get_shooting_time_stats(sqlite: &SQLite) -> Result<ShootingTimeStats, String>
 }
 
 /// Get camera settings distribution
-fn get_camera_settings_stats(sqlite: &SQLite) -> Result<CameraSettingsStats, String> {
+fn get_camera_settings_stats(sqlite: &SQLite, period: TimePeriod) -> Result<CameraSettingsStats, String> {
     let conn = sqlite
         .get_connection()
         .map_err(|e| format!("Failed to connect: {}", e))?;
 
+    let date_filter = period.date_condition();
+
     // ISO distribution
     let iso_distribution = query_setting_distribution(
         &conn,
-        "SELECT exif_iso, COUNT(*) FROM photo_metadata
-         WHERE exif_iso IS NOT NULL AND exif_iso != ''
-           AND (delete_flg = 0 OR delete_flg IS NULL)
-         GROUP BY exif_iso ORDER BY CAST(exif_iso AS INTEGER) LIMIT 20",
+        &format!(
+            "SELECT exif_iso, COUNT(*) FROM photo_metadata
+             WHERE exif_iso IS NOT NULL AND exif_iso != ''
+               AND (delete_flg = 0 OR delete_flg IS NULL){}
+             GROUP BY exif_iso ORDER BY CAST(exif_iso AS INTEGER) LIMIT 20",
+            date_filter
+        ),
     )?;
 
     // Aperture distribution
     let aperture_distribution = query_setting_distribution(
         &conn,
-        "SELECT exif_fnumber, COUNT(*) FROM photo_metadata
-         WHERE exif_fnumber IS NOT NULL AND exif_fnumber != ''
-           AND (delete_flg = 0 OR delete_flg IS NULL)
-         GROUP BY exif_fnumber ORDER BY CAST(exif_fnumber AS REAL) LIMIT 20",
+        &format!(
+            "SELECT exif_fnumber, COUNT(*) FROM photo_metadata
+             WHERE exif_fnumber IS NOT NULL AND exif_fnumber != ''
+               AND (delete_flg = 0 OR delete_flg IS NULL){}
+             GROUP BY exif_fnumber ORDER BY CAST(exif_fnumber AS REAL) LIMIT 20",
+            date_filter
+        ),
     )?;
 
     // Shutter speed distribution
     let shutter_speed_distribution = query_setting_distribution(
         &conn,
-        "SELECT exif_exposure_time, COUNT(*) as count FROM photo_metadata
-         WHERE exif_exposure_time IS NOT NULL AND exif_exposure_time != ''
-           AND (delete_flg = 0 OR delete_flg IS NULL)
-         GROUP BY exif_exposure_time ORDER BY count DESC LIMIT 20",
+        &format!(
+            "SELECT exif_exposure_time, COUNT(*) as count FROM photo_metadata
+             WHERE exif_exposure_time IS NOT NULL AND exif_exposure_time != ''
+               AND (delete_flg = 0 OR delete_flg IS NULL){}
+             GROUP BY exif_exposure_time ORDER BY count DESC LIMIT 20",
+            date_filter
+        ),
     )?;
 
     // Focal length distribution
     let focal_length_distribution = query_setting_distribution(
         &conn,
-        "SELECT exif_focal_length, COUNT(*) FROM photo_metadata
-         WHERE exif_focal_length IS NOT NULL AND exif_focal_length != ''
-           AND (delete_flg = 0 OR delete_flg IS NULL)
-         GROUP BY exif_focal_length ORDER BY CAST(exif_focal_length AS REAL) LIMIT 20",
+        &format!(
+            "SELECT exif_focal_length, COUNT(*) FROM photo_metadata
+             WHERE exif_focal_length IS NOT NULL AND exif_focal_length != ''
+               AND (delete_flg = 0 OR delete_flg IS NULL){}
+             GROUP BY exif_focal_length ORDER BY CAST(exif_focal_length AS REAL) LIMIT 20",
+            date_filter
+        ),
     )?;
 
     Ok(CameraSettingsStats {
@@ -252,22 +349,27 @@ fn query_setting_distribution(
 }
 
 /// Get equipment statistics (cameras, lenses)
-fn get_equipment_stats(sqlite: &SQLite) -> Result<EquipmentStats, String> {
+fn get_equipment_stats(sqlite: &SQLite, period: TimePeriod) -> Result<EquipmentStats, String> {
     let conn = sqlite
         .get_connection()
         .map_err(|e| format!("Failed to connect: {}", e))?;
 
+    let date_filter = period.date_condition();
+
     // Camera ranking
+    let camera_query = format!(
+        "SELECT exif_make, exif_model, COUNT(*) as count
+         FROM photo_metadata
+         WHERE exif_model IS NOT NULL AND exif_model != ''
+           AND (delete_flg = 0 OR delete_flg IS NULL){}
+         GROUP BY exif_make, exif_model
+         ORDER BY count DESC
+         LIMIT 10",
+        date_filter
+    );
+
     let mut camera_stmt = conn
-        .prepare(
-            "SELECT exif_make, exif_model, COUNT(*) as count
-             FROM photo_metadata
-             WHERE exif_model IS NOT NULL AND exif_model != ''
-               AND (delete_flg = 0 OR delete_flg IS NULL)
-             GROUP BY exif_make, exif_model
-             ORDER BY count DESC
-             LIMIT 10",
-        )
+        .prepare(&camera_query)
         .map_err(|e| format!("Failed to prepare camera query: {}", e))?;
 
     let cameras: Vec<EquipmentCount> = camera_stmt
@@ -283,16 +385,19 @@ fn get_equipment_stats(sqlite: &SQLite) -> Result<EquipmentStats, String> {
         .collect();
 
     // Lens ranking
+    let lens_query = format!(
+        "SELECT exif_lens_make, exif_lens_model, COUNT(*) as count
+         FROM photo_metadata
+         WHERE exif_lens_model IS NOT NULL AND exif_lens_model != ''
+           AND (delete_flg = 0 OR delete_flg IS NULL){}
+         GROUP BY exif_lens_make, exif_lens_model
+         ORDER BY count DESC
+         LIMIT 10",
+        date_filter
+    );
+
     let mut lens_stmt = conn
-        .prepare(
-            "SELECT exif_lens_make, exif_lens_model, COUNT(*) as count
-             FROM photo_metadata
-             WHERE exif_lens_model IS NOT NULL AND exif_lens_model != ''
-               AND (delete_flg = 0 OR delete_flg IS NULL)
-             GROUP BY exif_lens_make, exif_lens_model
-             ORDER BY count DESC
-             LIMIT 10",
-        )
+        .prepare(&lens_query)
         .map_err(|e| format!("Failed to prepare lens query: {}", e))?;
 
     let lenses: Vec<EquipmentCount> = lens_stmt
@@ -311,28 +416,34 @@ fn get_equipment_stats(sqlite: &SQLite) -> Result<EquipmentStats, String> {
 }
 
 /// Get organization metrics
-fn get_organization_stats(sqlite: &SQLite) -> Result<OrganizationStats, String> {
+fn get_organization_stats(sqlite: &SQLite, period: TimePeriod) -> Result<OrganizationStats, String> {
     let conn = sqlite
         .get_connection()
         .map_err(|e| format!("Failed to connect: {}", e))?;
 
+    let date_filter = period.date_condition();
+
+    let total_photos_query = format!(
+        "SELECT COUNT(*) FROM photo_metadata
+         WHERE (delete_flg = 0 OR delete_flg IS NULL){}",
+        date_filter
+    );
+
     let total_photos: i64 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM photo_metadata WHERE delete_flg = 0 OR delete_flg IS NULL",
-            [],
-            |row| row.get(0),
-        )
+        .query_row(&total_photos_query, [], |row| row.get(0))
         .unwrap_or(0);
+
+    let starred_photos_query = format!(
+        "SELECT COUNT(*) FROM photo_metadata
+         WHERE star > 0 AND (delete_flg = 0 OR delete_flg IS NULL){}",
+        date_filter
+    );
 
     let starred_photos: i64 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM photo_metadata
-             WHERE star > 0 AND (delete_flg = 0 OR delete_flg IS NULL)",
-            [],
-            |row| row.get(0),
-        )
+        .query_row(&starred_photos_query, [], |row| row.get(0))
         .unwrap_or(0);
 
+    // Tags and albums count are not filtered by date (they are collections, not photos)
     let total_tags: i64 = conn
         .query_row(
             "SELECT COUNT(*) FROM photo_collections WHERE type = 'tag'",
@@ -349,26 +460,39 @@ fn get_organization_stats(sqlite: &SQLite) -> Result<OrganizationStats, String> 
         )
         .unwrap_or(0);
 
-    let photos_with_tags: i64 = conn
-        .query_row(
-            "SELECT COUNT(DISTINCT pci.photo_path)
-             FROM photo_collection_items pci
-             JOIN photo_collections pc ON pc.id = pci.collection_id
-             WHERE pc.type = 'tag'",
-            [],
-            |row| row.get(0),
+    // Photos with tags/albums are filtered by the photo's date
+    let photos_with_tags_query = format!(
+        "SELECT COUNT(DISTINCT pci.photo_path)
+         FROM photo_collection_items pci
+         JOIN photo_collections pc ON pc.id = pci.collection_id
+         JOIN photo_metadata pm ON pm.absolute_path = pci.photo_path
+         WHERE pc.type = 'tag'
+           AND (pm.delete_flg = 0 OR pm.delete_flg IS NULL){}",
+        date_filter.replace(
+            "COALESCE(exif_date_time_original, photo_date)",
+            "COALESCE(pm.exif_date_time_original, pm.photo_date)"
         )
+    );
+
+    let photos_with_tags: i64 = conn
+        .query_row(&photos_with_tags_query, [], |row| row.get(0))
         .unwrap_or(0);
 
-    let photos_in_albums: i64 = conn
-        .query_row(
-            "SELECT COUNT(DISTINCT pci.photo_path)
-             FROM photo_collection_items pci
-             JOIN photo_collections pc ON pc.id = pci.collection_id
-             WHERE pc.type = 'album'",
-            [],
-            |row| row.get(0),
+    let photos_in_albums_query = format!(
+        "SELECT COUNT(DISTINCT pci.photo_path)
+         FROM photo_collection_items pci
+         JOIN photo_collections pc ON pc.id = pci.collection_id
+         JOIN photo_metadata pm ON pm.absolute_path = pci.photo_path
+         WHERE pc.type = 'album'
+           AND (pm.delete_flg = 0 OR pm.delete_flg IS NULL){}",
+        date_filter.replace(
+            "COALESCE(exif_date_time_original, photo_date)",
+            "COALESCE(pm.exif_date_time_original, pm.photo_date)"
         )
+    );
+
+    let photos_in_albums: i64 = conn
+        .query_row(&photos_in_albums_query, [], |row| row.get(0))
         .unwrap_or(0);
 
     Ok(OrganizationStats {
