@@ -12,11 +12,18 @@
 }
 
 #login-container,
-#welcome,
-#welcome div.introduction,
-#welcome ol.tutorial {
+#welcome {
   margin-left: 30px;
   font-size: 30px;
+}
+
+#welcome div.introduction {
+  font-size: var(--font-size-xl);
+  color: var(--color-text-secondary);
+  max-width: 600px;
+  text-align: center;
+  margin: 0 auto;
+  line-height: 1.6;
 }
 
 #welcome-container .welcome-splash {
@@ -44,17 +51,51 @@
   font-size: 0.8em;
 }
 
+#welcome ol.tutorial {
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-6);
+  padding-left: calc(var(--space-6) + 2em);
+  margin-top: var(--space-4);
+  font-size: var(--font-size-xl);
+}
+
 #welcome ol li {
-  padding-top: 1em;
-  line-height: 1.5em;
+  padding-top: 0.8em;
+  padding-bottom: 0.8em;
+  line-height: 1.6em;
+}
+
+#welcome ol li:first-child {
+  padding-top: 0;
+}
+
+#welcome ol li:last-child {
+  padding-bottom: 0;
+}
+
+#welcome ol a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+#welcome ol a:hover {
+  background: var(--color-primary);
+  color: white;
 }
 
 #welcome ol span.useCount-1 {
   text-decoration: line-through;
+  opacity: 0.5;
 }
 
 #welcome ol span.useCount-2 {
   text-decoration: line-through;
+  opacity: 0.5;
 }
 
 /* Language Selection Styles */
