@@ -39,9 +39,9 @@ const AchievementsView = ({ onClose }) => {
 
   const renderAchievementBadge = (achievement) => {
     const isAchieved = achievement.achieved_at != null;
-    const progress = achievement.threshold > 1
-      ? `${achievement.current_value}/${achievement.threshold}`
-      : null;
+    const progressPercent = achievement.threshold > 0
+      ? Math.min(100, Math.round((achievement.current_value / achievement.threshold) * 100))
+      : 0;
 
     return (
       <div
@@ -55,8 +55,14 @@ const AchievementsView = ({ onClose }) => {
         {isAchieved && (
           <span className={styles.checkmark}>✓</span>
         )}
-        {!isAchieved && progress && (
-          <span className={styles.progress}>{progress}</span>
+        {!isAchieved && achievement.threshold > 1 && (
+          <div className={styles.progressBar}>
+            <div
+              className={styles.progressFill}
+              style={{ width: `${progressPercent}%` }}
+            />
+            <span className={styles.progressText}>{progressPercent}%</span>
+          </div>
         )}
         <span className={styles.badgeName}>{achievement.name}</span>
       </div>
