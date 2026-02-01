@@ -4,11 +4,11 @@
   flex-direction: column;
   align-items: center;
   flex: 1;
-  padding: 20px;
+  padding: 40px 20px 20px 20px;
 }
 
 #welcome-container h1 {
-  margin: 0 0 20px 0;
+  margin: 3px 0 20px 0;
 }
 
 #login-container,
@@ -62,12 +62,19 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-6);
+  gap: var(--space-4);
+  margin-left: 0;
+}
+
+.language-title {
+  font-size: var(--font-size-2xl);
+  margin: 0 0 var(--space-2) 0;
+  color: var(--color-text-primary);
 }
 
 .language-icon {
-  font-size: 64px;
-  margin-bottom: var(--space-4);
+  font-size: 48px;
+  margin-bottom: var(--space-2);
 }
 
 .language-buttons {
