@@ -4,6 +4,13 @@
   "photos": "張照片",
   "noData": "暫無資料",
   "mostUsed": "最常用",
+  "periods": {
+    "label": "時間段:",
+    "all": "全部時間",
+    "weekly": "本週",
+    "monthly": "本月",
+    "yearly": "本年"
+  },
   "sections": {
     "shootingTime": "拍攝時間",
     "cameraSettings": "相機設定",

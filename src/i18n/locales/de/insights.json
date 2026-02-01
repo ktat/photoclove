@@ -4,6 +4,13 @@
   "photos": "Fotos",
   "noData": "Keine Daten verfügbar",
   "mostUsed": "Am meisten verwendet",
+  "periods": {
+    "label": "Zeitraum:",
+    "all": "Gesamter Zeitraum",
+    "weekly": "Wöchentlich",
+    "monthly": "Monatlich",
+    "yearly": "Jährlich"
+  },
   "sections": {
     "shootingTime": "Aufnahmezeit",
     "cameraSettings": "Kameraeinstellungen",
