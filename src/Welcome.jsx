@@ -54,8 +54,15 @@ function Welcome(props) {
             {showWelcome && <h1>{t('messages:welcome.title')}</h1>}
             {showSplash &&
                 <div className="welcome-splash">
-                    <div className="splash-container">
-                        <img className="splash" src={props.welcomeImage} />
+                    <img className="splash-bg" src={props.welcomeImage} />
+                    <div className="splash-overlay"></div>
+                    <div className="splash-loading">
+                        PhotoClove is Loading
+                        <span className="loading-dots">
+                            <span className="dot">.</span>
+                            <span className="dot">.</span>
+                            <span className="dot">.</span>
+                        </span>
                     </div>
                 </div>
             }
