@@ -197,3 +197,10 @@ This document provides comprehensive troubleshooting guidance for common issues 
 - Created `SharedModals` component for unified modal rendering
 - Updated PhotoOption to receive operations via props from PhotosList.jsx
 - Modal state is now lifted to PhotosList.jsx and shared between PhotoOption and DirectoryMenu
+
+### Date Mode Selection Not Unified Across Dates
+**Fixed 2026-02-02**: In Date ViewMode, photo selection was stored separately for each date. Selecting photos on one date and switching to another date would lose the selection.
+
+**Solution**:
+- Changed `getSelectionKey()` in ViewMode.js to return just `'DATE'` instead of `DATE:${date}`
+- All dates now share a unified selection state, allowing users to select photos across multiple dates

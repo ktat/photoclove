@@ -452,6 +452,26 @@ This document helps you quickly find the relevant documentation when working on 
   - Frontend: `src/App/InsightsModal.jsx`, `src/App/Insights/*.jsx`, `src/services/InsightsService.js`
   - Backend: `src-tauri/src/commands/stats_commands.rs`, `src-tauri/src/domain_service/job_queue/handlers/insights.rs`, `src-tauri/src/repository/meta_db/sqlite/stats.rs`
 
+### 📤 Share Tab (Photo Sharing & Collage)
+**When you need to understand**: Photo sharing, collage creation, watermarks, social sharing
+- **Purpose**: Create and share photo collages with customizable layouts and watermarks
+- **UI Components**:
+  - ShareTab: Main sharing interface in DirectoryMenu and PhotoOption
+  - ShareStatsDialog: Share photography statistics as images
+- **Key Features**:
+  - Multiple collage layout templates (grid, masonry, polaroid, etc.)
+  - Custom watermark support (PhotoClove logo or user-defined text)
+  - Export to clipboard or file
+  - Share photography insights/statistics
+  - Layout customization (spacing, background color)
+- **Watermark Options**:
+  - PhotoClove watermark with logo
+  - Custom user watermark (configurable in Preferences)
+  - Position and opacity controls
+- **Related Files**:
+  - Frontend: `src/App/PhotosList/DirectoryMenu/ShareTab.jsx`, `src/components/ShareStatsDialog.jsx`, `src/utils/ShareUtils.js`
+  - Backend: `src-tauri/src/commands/image_commands.rs`
+
 ### 🎬 Slideshow Mode
 **When you need to understand**: Photo presentation, automatic slideshow, background music
 - **Purpose**: Full-screen photo slideshow with customizable settings and background music
