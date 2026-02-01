@@ -46,11 +46,13 @@ src/
 ├── 📁 App/                     # Main application components
 │   ├── 📄 DateList.jsx         # Calendar/date navigation sidebar
 │   ├── 📄 Footer.jsx           # Application footer with messages
-│   ├── 📄 Home.jsx             # Home/dashboard screen
+│   ├── 📄 Home.jsx             # Home/dashboard screen with On This Day
+│   ├── 📄 AchievementsView.jsx # Achievement gallery and progress
+│   ├── 📄 InsightsModal.jsx    # Photography insights dashboard
 │   ├── 📄 ImgCacheContext.jsx  # React context for image caching
 │   ├── 📄 Importer.jsx         # Photo import interface
 │   ├── 📄 JobQueue.jsx         # Background job monitoring
-│   ├── 📄 LicensesView.jsx     # Open source licenses display
+│   ├── 📄 LicensesView.jsx     # Open source licenses display (with AI/Music tabs)
 │   ├── 📄 Login.jsx            # Authentication (Google login)
 │   ├── 📄 NavigationIcons.jsx  # Navigation icon components
 │   ├── 📄 PhotosList.jsx       # Main photo grid view
@@ -79,10 +81,21 @@ src/
 │   │       ├── 📄 S3BackupTab.jsx      # S3 cloud backup settings
 │   │       └── 📄 FaceDetectionTab.jsx # Face detection model management
 │   │
+│   ├── 📁 Home/                # Home screen components
+│   │   └── 📄 GettingStartedChecklist.jsx # New user onboarding checklist
+│   │
+│   ├── 📁 Insights/            # Insights dashboard sections
+│   │   ├── 📄 CameraSettingsSection.jsx   # Camera settings stats
+│   │   ├── 📄 EquipmentSection.jsx        # Equipment usage stats
+│   │   ├── 📄 OrganizationSection.jsx     # Organization stats
+│   │   ├── 📄 ShootingTimeSection.jsx     # Shooting time patterns
+│   │   └── 📄 StorageSection.jsx          # Storage usage stats
+│   │
 │   └── 📁 PhotosList/          # Photo viewing components
 │       ├── 📄 DirectoryMenu.jsx     # Right sidebar menu
 │       ├── 📄 PhotoLoading.jsx      # Loading indicator
 │       ├── 📄 PhotoOption.jsx       # Photo metadata panel
+│       ├── 📄 SharedModals.jsx      # Shared modals for operations
 │       ├── 📄 PhotosListMini.jsx    # Full-screen photo viewer (475 lines, refactored)
 │       ├── 📄 PhotoGrid.jsx         # Photo grid display component
 │       ├── 📄 PhotoCard.jsx         # Individual photo card component
@@ -174,6 +187,7 @@ src/
 │   ├── 📄 useThumbnailGeneration.js # Thumbnail generation logic
 │   ├── 📄 useTrashOperations.js     # Trash operations hook
 │   ├── 📄 useTutorial.js            # Tutorial state management
+│   ├── 📄 usePhotoOptionOperations.js # Shared operations for PhotoOption/DirectoryMenu
 │   ├── 📄 useViewMode.js            # View mode state machine
 │   ├── 📄 useViewModeFactory.js     # ViewMode factory (extracted)
 │   ├── 📄 useViewModeHelpers.js     # ViewMode helper functions
@@ -204,7 +218,9 @@ src/
 │   ├── 📄 TagSelector.jsx           # Tag selection component
 │   ├── 📄 Tooltip.jsx               # Tooltip component
 │   ├── 📄 TutorialTooltip.jsx       # Tutorial tooltip component
-│   └── 📄 VerticalTabBar.jsx        # Vertical tab bar component
+│   ├── 📄 VerticalTabBar.jsx        # Vertical tab bar component
+│   ├── 📄 AchievementPopup.jsx      # Achievement unlock notification
+│   └── 📄 SlideShow.jsx             # Slideshow with music support
 │
 ├── 📁 domain/                  # Domain entities and value objects
 │   ├── 📄 Photo.js                  # Photo domain entity
@@ -218,6 +234,9 @@ src/
 ├── 📁 services/                # External service integrations
 │   ├── 📄 LoggerService.js     # Structured logging service
 │   ├── 📄 TauriService.js      # Tauri backend communication service
+│   ├── 📄 AchievementService.js # Achievement tracking and display
+│   ├── 📄 InsightsService.js   # Photography insights fetching
+│   ├── 📄 SlideshowMusicService.js # Slideshow music management
 │   ├── 📄 FaceDetectionService.js # Face detection API service
 │   └── 📁 firebase/            # Firebase authentication
 │       ├── 📄 app.js           # Firebase app configuration
@@ -226,6 +245,20 @@ src/
 │
 ├── 📁 storage/                 # Client-side storage
 │   └── 📄 forage.js            # LocalForage configuration
+│
+├── 📁 i18n/                    # Internationalization
+│   ├── 📄 index.js             # i18n configuration
+│   ├── 📁 locales/             # Translation files by language
+│   │   ├── 📁 en/              # English translations
+│   │   ├── 📁 ja/              # Japanese translations
+│   │   ├── 📁 de/              # German translations
+│   │   ├── 📁 fr/              # French translations
+│   │   ├── 📁 es/              # Spanish translations
+│   │   ├── 📁 zh-CN/           # Chinese Simplified translations
+│   │   └── 📁 zh-TW/           # Chinese Traditional translations
+│   └── 📁 utils/               # i18n utility functions
+│       ├── 📄 formatDate.js    # Date formatting
+│       └── 📄 formatNumber.js  # Number formatting
 │
 └── 📁 assets/                  # Static frontend assets
     └── 📄 react.svg            # React logo
@@ -389,6 +422,12 @@ src-tauri/
 │   │   ├── 📄 s3_service.rs    # S3 cloud storage service
 │   │   ├── 📄 thumbnail_service.rs # Thumbnail generation service
 │   │   ├── 📄 token_storage_service.rs # OAuth token management
+│   │   │
+│   │   ├── 📁 achievements/    # Achievements/gamification system
+│   │   │   ├── 📄 mod.rs       # Achievements module
+│   │   │   ├── 📄 service.rs   # Achievement service
+│   │   │   ├── 📄 definitions.rs # Achievement definitions
+│   │   │   └── 📄 emitter.rs   # Achievement event emitter
 │   │   │
 │   │   ├── 📁 ai_tagging/      # AI auto-tagging subsystem
 │   │   │   ├── 📄 mod.rs       # AI tagging module

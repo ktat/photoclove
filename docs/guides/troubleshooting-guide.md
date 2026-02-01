@@ -173,3 +173,27 @@ This document provides comprehensive troubleshooting guidance for common issues 
 - Replaced `window.confirm` with `@tauri-apps/plugin-dialog` `confirm` function
 - Used async/await for proper dialog handling
 - Applied fix to both PhotoFaces.jsx and SelectionTab.jsx
+
+### IMPORT Mode Error with Unified API
+**Fixed 2026-02-01**: Clicking photos in IMPORT mode caused error "IMPORT mode uses ImportState.changeDirectory(), not get_photos_unified".
+
+**Solution**:
+- Added `!viewMode.isImportMode()` check to `needsUnifiedAPI` condition in `usePhotoLoader.js`
+- IMPORT mode now correctly uses its own loading mechanism via ImportState
+
+### Language Selection Screen Layout Issues
+**Fixed 2026-02-01**: First-time startup language selection screen had layout issues - title cut off, globe icon overlapping with title.
+
+**Solution**:
+- Adjusted CSS padding and margins in `Welcome.css`
+- Fixed h1 display logic to prevent "PhotoClove へようこそ!" appearing during language selection
+- Added separate `.language-title` class for proper styling
+
+### PhotoOption Operations Not Working in PhotoViewer
+**Fixed 2026-02-01**: PhotoViewer Selection tab operations (Add to Album, Add Tags, etc.) did nothing when clicked.
+
+**Solution**:
+- Created `usePhotoOptionOperations` hook for shared operations
+- Created `SharedModals` component for unified modal rendering
+- Updated PhotoOption to receive operations via props from PhotosList.jsx
+- Modal state is now lifted to PhotosList.jsx and shared between PhotoOption and DirectoryMenu

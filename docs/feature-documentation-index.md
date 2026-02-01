@@ -32,6 +32,10 @@ This index helps you quickly navigate to the right documentation for PhotoClove 
 - **[S3 Backup](guides/configuration.md#s3-backup-settings)** - Cloud backup to S3-compatible storage
 - **[Recovery Queue](feature-quick-reference.md#recovery-queue)** - Failed operation tracking and retry
 - **[Burst Photo Grouping](feature-quick-reference.md#burst-photo-grouping)** - Group photos taken in rapid succession
+- **[Achievements System](feature-quick-reference.md#achievements-system)** - Gamification with unlockable achievements
+- **[Photography Insights](feature-quick-reference.md#photography-insights-dashboard)** - Analytics and statistics dashboard
+- **[Slideshow Mode](feature-quick-reference.md#slideshow-mode)** - Photo presentation with background music
+- **[Internationalization](feature-quick-reference.md#internationalization-i18n)** - Multi-language support (7 languages)
 
 ### Development Workflows
 - **[Feature Sequences](feature-sequences.md)** - Frontend/backend interaction flows

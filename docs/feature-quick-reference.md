@@ -407,8 +407,117 @@ This document helps you quickly find the relevant documentation when working on 
   - Displays licenses for frontend (npm) and backend (Rust) dependencies
   - Searchable license list
   - Full license text viewing
+  - AI Models tab with model credits and licenses
+  - Music tab with slideshow music attributions
 - **Access**: Help menu → "Licenses" or "About"
 - **Related Files**: `src/App/LicensesView.jsx`
+
+### 🏆 Achievements System
+**When you need to understand**: Gamification, unlockable achievements, progress tracking, user engagement
+- **Purpose**: Gamification system to reward users for photo library milestones and feature usage
+- **UI Components**:
+  - AchievementsView: Full achievement gallery accessible from navigation
+  - AchievementPopup: Toast notification when achievements unlock
+- **Achievement Categories**:
+  - **Collection milestones**: Photo count achievements (First Photo, Photo Hoarder 10K, etc.)
+  - **Date achievements**: Date diversity (Photo on 100 different dates, Calendar Complete 366 days)
+  - **Album/Tag usage**: Organization achievements
+  - **Feature discovery**: Using various app features
+- **Backend**: Achievement service with definitions, progress tracking, unlock detection
+- **Key Features**:
+  - Real-time unlock detection on photo operations
+  - Progress bar display for locked achievements
+  - Persistent achievement state in SQLite database
+  - Event-driven achievement emission to frontend
+- **Related Files**:
+  - Frontend: `src/App/AchievementsView.jsx`, `src/components/AchievementPopup.jsx`, `src/services/AchievementService.js`
+  - Backend: `src-tauri/src/domain_service/achievements/`, `src-tauri/src/commands/achievement_commands.rs`, `src-tauri/src/repository/meta_db/sqlite/achievements.rs`
+
+### 📊 Photography Insights Dashboard
+**When you need to understand**: Photo statistics, analytics, library analysis, equipment usage
+- **Purpose**: Analytics dashboard providing insights about your photo library
+- **UI Components**: InsightsModal accessible from navigation (lightbulb icon)
+- **Insight Sections**:
+  - **Equipment**: Camera models, lens usage statistics
+  - **Camera Settings**: ISO, aperture, shutter speed distributions
+  - **Shooting Time**: Photos by hour/day patterns
+  - **Storage**: File size distribution, storage usage
+  - **Organization**: Album/tag coverage statistics
+- **Backend**: Stats commands with SQL analytics queries, job queue for calculation
+- **Key Features**:
+  - Cached insights for performance (recalculated via job queue)
+  - Visual charts and statistics
+  - Equipment usage rankings
+- **Related Files**:
+  - Frontend: `src/App/InsightsModal.jsx`, `src/App/Insights/*.jsx`, `src/services/InsightsService.js`
+  - Backend: `src-tauri/src/commands/stats_commands.rs`, `src-tauri/src/domain_service/job_queue/handlers/insights.rs`, `src-tauri/src/repository/meta_db/sqlite/stats.rs`
+
+### 🎬 Slideshow Mode
+**When you need to understand**: Photo presentation, automatic slideshow, background music
+- **Purpose**: Full-screen photo slideshow with customizable settings and background music
+- **UI Components**: SlideShow component accessible from PhotosToolbar
+- **Key Features**:
+  - Configurable slide interval (3-30 seconds)
+  - Background music with genre categories (Ambient, Calm, Family, Nostalgic, Romantic, Upbeat)
+  - Volume control and music toggle
+  - Fullscreen mode support
+  - Keyboard navigation (arrow keys, escape)
+- **Music Service**: SlideshowMusicService for genre-based music selection
+- **Music Files**: Royalty-free tracks in `public/music/` with MUSIC_CREDITS.md attribution
+- **Related Files**:
+  - Frontend: `src/components/SlideShow.jsx`, `src/services/SlideshowMusicService.js`
+  - Music: `public/music/`, `public/music/MUSIC_CREDITS.md`
+
+### 🏠 On This Day Memories
+**When you need to understand**: Home screen memories, historical photos, nostalgia feature
+- **Purpose**: Display photos from the same date in previous years on the home screen
+- **UI Components**: Home component with "On This Day" section
+- **Key Features**:
+  - Shows photos taken on today's date from previous years
+  - Year headers for organization
+  - Clickable photos to view full-size
+  - Graceful handling when no memories exist
+- **Backend**: `get_on_this_day_photos` command for date-based photo retrieval
+- **Related Files**: `src/App/Home.jsx`, `src/App/Home.css`, `src-tauri/src/commands/photo_handlers/memories.rs`
+
+### ✅ Getting Started Checklist
+**When you need to understand**: New user onboarding, first-time setup, tutorial flow
+- **Purpose**: Guide new users through initial app setup with a checklist
+- **UI Components**: GettingStartedChecklist component on Home screen for new users
+- **Checklist Items**:
+  - Configure photo folders (import_to path)
+  - Import first photos
+  - Create first album
+  - Add tags to photos
+- **Key Features**:
+  - Progress tracking with checkmarks
+  - Direct links to relevant features
+  - Auto-hides after completion
+  - Only shown for new users (use_count based)
+- **Related Files**: `src/App/Home/GettingStartedChecklist.jsx`, `src/App/Home.jsx`
+
+### 🌍 Internationalization (i18n)
+**When you need to understand**: Multi-language support, translations, locale management
+- **Purpose**: Full internationalization support for 7 languages
+- **Supported Languages**:
+  - English (en) - Default
+  - Japanese (ja)
+  - German (de)
+  - French (fr)
+  - Spanish (es)
+  - Chinese Simplified (zh-CN)
+  - Chinese Traditional (zh-TW)
+- **Implementation**: react-i18next for React components
+- **Translation Files**: JSON files in `src/i18n/locales/{lang}/`
+- **Namespaces**: common, messages, preferences, modals, errors, directoryMenu, insights
+- **Key Features**:
+  - Language selection on first startup
+  - Language change in Preferences
+  - Date/number formatting utilities
+- **Related Files**:
+  - Config: `src/i18n/index.js`
+  - Locales: `src/i18n/locales/`
+  - Utils: `src/i18n/utils/formatDate.js`, `src/i18n/utils/formatNumber.js`
 
 ## Quick Reference by Technology
 
