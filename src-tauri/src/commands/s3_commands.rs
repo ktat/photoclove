@@ -348,13 +348,11 @@ pub fn enqueue_s3_sync_by_date(
     // Use range query for photo_date (format: "YYYY-MM-DD HH:MM:SS")
     // Range: "YYYY-MM-DD 00:00:00" <= photo_date < "YYYY-MM-DD+1 00:00:00"
     let date_str = date_obj.to_string();
-    let next_date = format!(
-        "{} 00:00:00",
-        chrono::NaiveDate::parse_from_str(&date_str, "%Y-%m-%d")
-            .map(|d| d.succ_opt().unwrap_or(d))
-            .unwrap_or_else(|_| chrono::NaiveDate::from_ymd_opt(2099, 12, 31).unwrap())
-            .format("%Y-%m-%d")
-    );
+    let next_date_str = date_obj
+        .next_day()
+        .map(|d| d.to_string())
+        .unwrap_or_else(|| "2099-12-31".to_string());
+    let next_date = format!("{} 00:00:00", next_date_str);
     let date_start = format!("{} 00:00:00", date_str);
 
     let mut stmt = conn.prepare(&format!(

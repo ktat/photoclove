@@ -1,5 +1,6 @@
 use chrono::{Datelike, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc};
 use serde::{Deserialize, Serialize};
+use std::time::SystemTime;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Date {
@@ -264,6 +265,26 @@ impl Date {
             ),
         }
     }
+
+    /// Parse from database format "YYYY-MM-DD" directly
+    /// This is a convenience method that uses "-" as the delimiter
+    pub fn try_from_db_format(date_str: &str) -> Result<Date, String> {
+        Self::try_from_string(&date_str.to_string(), Some("-"))
+    }
+
+    /// Get the next day
+    /// Returns None if the resulting date would be invalid
+    pub fn next_day(&self) -> Option<Date> {
+        let naive_date = NaiveDate::from_ymd_opt(self.year, self.month, self.day)?;
+        let next = naive_date.succ_opt()?;
+        Date::new(next.year(), next.month(), next.day())
+    }
+
+    /// Create Date from SystemTime (file modification time, etc.)
+    pub fn from_system_time(time: SystemTime) -> Option<Date> {
+        let datetime = chrono::DateTime::<Utc>::from(time);
+        Date::new(datetime.year(), datetime.month(), datetime.day())
+    }
 }
 
 impl Dates {
@@ -356,5 +377,57 @@ mod tests {
             "2025:11:23 06:17:23",
             "2025:11:24 06:17:23"
         ));
+    }
+
+    #[test]
+    fn test_try_from_db_format() {
+        let d = date::Date::try_from_db_format("2025-01-15").unwrap();
+        assert_eq!(d.year, 2025);
+        assert_eq!(d.month, 1);
+        assert_eq!(d.day, 15);
+    }
+
+    #[test]
+    fn test_try_from_db_format_invalid() {
+        let result = date::Date::try_from_db_format("invalid");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_next_day() {
+        let d = date::Date::new(2025, 1, 15).unwrap();
+        let next = d.next_day().unwrap();
+        assert_eq!(next.year, 2025);
+        assert_eq!(next.month, 1);
+        assert_eq!(next.day, 16);
+    }
+
+    #[test]
+    fn test_next_day_month_boundary() {
+        let d = date::Date::new(2025, 1, 31).unwrap();
+        let next = d.next_day().unwrap();
+        assert_eq!(next.year, 2025);
+        assert_eq!(next.month, 2);
+        assert_eq!(next.day, 1);
+    }
+
+    #[test]
+    fn test_next_day_year_boundary() {
+        let d = date::Date::new(2025, 12, 31).unwrap();
+        let next = d.next_day().unwrap();
+        assert_eq!(next.year, 2026);
+        assert_eq!(next.month, 1);
+        assert_eq!(next.day, 1);
+    }
+
+    #[test]
+    fn test_from_system_time() {
+        use std::time::{Duration, UNIX_EPOCH};
+        // 2025-01-15 00:00:00 UTC = 1736899200 seconds since UNIX epoch
+        let time = UNIX_EPOCH + Duration::from_secs(1736899200);
+        let d = date::Date::from_system_time(time).unwrap();
+        assert_eq!(d.year, 2025);
+        assert_eq!(d.month, 1);
+        assert_eq!(d.day, 15);
     }
 }

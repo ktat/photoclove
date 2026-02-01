@@ -209,13 +209,11 @@ pub fn get_photo_meta_data_in_date(
     // photo_date format: "YYYY-MM-DD HH:MM:SS"
     // Range: "YYYY-MM-DD 00:00:00" <= photo_date < "YYYY-MM-DD+1 00:00:00"
     let date_str = date.to_string();
-    let next_date = format!(
-        "{} 00:00:00",
-        chrono::NaiveDate::parse_from_str(&date_str, "%Y-%m-%d")
-            .map(|d| d.succ_opt().unwrap_or(d))
-            .unwrap_or_else(|_| chrono::NaiveDate::from_ymd_opt(2099, 12, 31).unwrap())
-            .format("%Y-%m-%d")
-    );
+    let next_date_str = date
+        .next_day()
+        .map(|d| d.to_string())
+        .unwrap_or_else(|| "2099-12-31".to_string());
+    let next_date = format!("{} 00:00:00", next_date_str);
 
     let query_sql = "SELECT pm.path, COALESCE(pm.exif_date_time_original, pm.exif_date_time, pm.photo_date) as photo_time, pm.star, pm.comment, pm.css_style, pm.google_photos_url,
                         GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags, pm.exif_orientation, pm.storage_sync
