@@ -252,6 +252,31 @@ impl AchievementService {
             }
         }
 
+        // Check all dates complete (366 unique month-day combinations including Feb 29)
+        let unique_month_days: i64 = conn.query_row(
+            "SELECT COUNT(DISTINCT strftime('%m-%d', photo_date)) FROM photo_metadata
+             WHERE (delete_flg = 0 OR delete_flg IS NULL) AND photo_date IS NOT NULL",
+            [],
+            |row| row.get(0),
+        ).unwrap_or(0);
+
+        if let Some(def) = definitions::get_achievement_def("all_dates_complete") {
+            let was_newly_achieved = self.db.upsert_achievement(
+                "all_dates_complete",
+                unique_month_days,
+                def.threshold,
+            ).map_err(|e| format!("Failed to upsert achievement: {}", e))?;
+
+            if was_newly_achieved {
+                let progress = self.db.get_achievement("all_dates_complete")
+                    .map_err(|e| format!("Failed to get achievement: {}", e))?;
+                newly_achieved.push(AchievementWithProgress::from_def_and_progress(
+                    def,
+                    progress.as_ref(),
+                ));
+            }
+        }
+
         Ok(AchievementCheckResult { newly_achieved })
     }
 
