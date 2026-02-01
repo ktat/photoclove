@@ -481,7 +481,7 @@ function PhotosList({
         allPhotosForCurrentFetch, setAllPhotosForCurrentFetch, viewMode,
         loadAlbums, currentAlbumId, loadAlbumPhotos, photoSelectionDict,
         togglePhotoSelection, changeTab, infiniteScrollEnabled, displayedPhotos,
-        filteredPhotos, selectAllPhotos
+        filteredPhotos, selectAllPhotos, tabClass
     });
 
     // Side menu toggle notification effect

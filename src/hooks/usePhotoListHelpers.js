@@ -54,7 +54,8 @@ export function usePhotoListHelpers({
     infiniteScrollEnabled,
     displayedPhotos,
     filteredPhotos,
-    selectAllPhotos
+    selectAllPhotos,
+    tabClass
 }) {
     /**
      * Enhanced setStar function that updates photosListMiniAllPhotos
@@ -141,13 +142,16 @@ export function usePhotoListHelpers({
             if (!photoSelectionDict[f]) {
                 togglePhotoSelection(f);
             }
-            changeTab(undefined, "#tab-selection");
+            // Don't switch to Selection tab if Share tab is active
+            if (!tabClass?.share) {
+                changeTab(undefined, "#tab-selection");
+            }
         } else {
             if (photoSelectionDict[f]) {
                 togglePhotoSelection(f);
             }
         }
-    }, [photoSelectionDict, togglePhotoSelection, changeTab]);
+    }, [photoSelectionDict, togglePhotoSelection, changeTab, tabClass]);
 
     /**
      * Toggle photo selection and return new state
