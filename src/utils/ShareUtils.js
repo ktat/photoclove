@@ -9,7 +9,7 @@ import { logger } from '../services/LoggerService.js';
 /**
  * Generate share text from insights data
  * @param {Object} insights - Insights data from InsightsService
- * @param {string} period - 'all' | 'monthly' | 'yearly'
+ * @param {string} period - 'all' | 'weekly' | 'monthly' | 'yearly'
  * @returns {string} Formatted share text
  */
 export function generateStatsShareText(insights, period = 'all') {
@@ -19,7 +19,9 @@ export function generateStatsShareText(insights, period = 'all') {
     const now = new Date();
 
     // Header based on period
-    if (period === 'monthly') {
+    if (period === 'weekly') {
+        lines.push('📊 This Week\'s Photography Stats');
+    } else if (period === 'monthly') {
         const monthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
         lines.push(`📊 ${monthName} Photography Stats`);
     } else if (period === 'yearly') {
@@ -201,7 +203,8 @@ export async function generateStatsImage(insights, options = {}) {
         height = 400,
         backgroundColor = '#1a1a2e',
         textColor = '#ffffff',
-        accentColor = '#4ade80'
+        accentColor = '#4ade80',
+        period = 'all'
     } = options;
 
     const canvas = document.createElement('canvas');
@@ -218,10 +221,21 @@ export async function generateStatsImage(insights, options = {}) {
     ctx.lineWidth = 2;
     ctx.strokeRect(1, 1, width - 2, height - 2);
 
-    // Header
+    // Header based on period
+    let headerText = '📊 Photography Stats';
+    const now = new Date();
+    if (period === 'weekly') {
+        headerText = '📊 This Week\'s Stats';
+    } else if (period === 'monthly') {
+        const monthName = now.toLocaleDateString('en-US', { month: 'long' });
+        headerText = `📊 ${monthName} Stats`;
+    } else if (period === 'yearly') {
+        headerText = `📊 ${now.getFullYear()} Stats`;
+    }
+
     ctx.fillStyle = textColor;
     ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, sans-serif';
-    ctx.fillText('📊 Photography Stats', 30, 50);
+    ctx.fillText(headerText, 30, 50);
 
     // Stats
     let y = 100;
