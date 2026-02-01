@@ -48,8 +48,9 @@
   "welcome": {
     "title": "歡迎使用 PhotoClove！",
     "description": "PhotoClove 是一個照片管理應用程式，致力於快速匯入和檢視照片。",
-    "step1": "首先，設定",
-    "step1Link": "偏好設定",
+    "step1": "首先，請在",
+    "step1Link": "偏好設定 > 一般",
+    "step1After": "中設定資料夾。",
     "step2a": "如果您還沒有照片，",
     "step2aLink": "匯入照片",
     "step2b": "如果您的匯入資料夾中已有照片，請前往",
