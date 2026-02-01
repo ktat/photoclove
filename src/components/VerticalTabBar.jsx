@@ -54,7 +54,17 @@ function VerticalTabBar({
             title: 'Photo Selection',
             targetTab: '#tab-selection'
         });
-        
+
+        // Share tab - available in standard photo modes (not import/trash)
+        if (viewModeObj?.shouldShowPhotoSelection() && !viewModeObj?.isImportMode() && !viewModeObj?.isTrashMode()) {
+            tabs.push({
+                id: 'share',
+                label: 'Share',
+                title: 'Share Photos',
+                targetTab: '#tab-share'
+            });
+        }
+
         // Maintenance tab - only in date mode
         if (viewModeObj?.shouldShowMaintenanceTab()) {
             tabs.push({

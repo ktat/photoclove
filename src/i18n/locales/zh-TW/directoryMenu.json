@@ -81,5 +81,26 @@
     "selectPerson": "選擇人物",
     "noNamedPersons": "找不到已命名的人物。使用\"指派給新人物\"來建立。",
     "confirmDelete": "刪除選取的{{count}}張臉孔？"
+  },
+  "share": {
+    "photoSource": "照片來源",
+    "currentPhoto": "目前照片",
+    "selection": "已選取",
+    "mode": "模式",
+    "singlePhoto": "單張照片",
+    "collage": "拼貼",
+    "needTwoPhotos": "拼貼需要2張以上照片",
+    "options": "選項",
+    "backgroundColor": "背景",
+    "padding": "間距",
+    "corners": "圓角",
+    "addWatermark": "新增PhotoClove浮水印",
+    "copy": "複製",
+    "save": "儲存",
+    "noPreview": "無預覽",
+    "noPhotoSelected": "未選取照片",
+    "selectPhotosFirst": "選取要分享的照片",
+    "shareTo": "分享到",
+    "socialHint": "先複製圖片，然後開啟後貼上"
   }
 }

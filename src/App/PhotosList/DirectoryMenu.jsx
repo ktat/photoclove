@@ -9,6 +9,7 @@ import TutorialTooltip from "../../components/TutorialTooltip.jsx";
 import Scrollable from "../../Scrollable.jsx";
 import SelectionTab from "./DirectoryMenu/SelectionTab.jsx";
 import FilterTab from "./DirectoryMenu/FilterTab.jsx";
+import ShareTab from "./DirectoryMenu/ShareTab.jsx";
 import { getTutorialContent } from "./DirectoryMenu/tutorialContent.jsx";
 import { usePhotoImport } from "./DirectoryMenu/photoOperations.js";
 import { useDateOperations } from "./DirectoryMenu/dateOperations.js";
@@ -310,6 +311,16 @@ function DirectoryMenu(props) {
                 dropdownRef={dropdownRef}
                 tabClass={props.tabClass}
             />
+
+            {/* Share Tab - available in standard photo modes */}
+            {props.viewModeObj?.shouldShowPhotoSelection() && !props.viewModeObj?.isImportMode() && !props.viewModeObj?.isTrashMode() && (
+                <div id="tab-share" className={props.tabClass['share'] ? "tab-active" : "tab"}>
+                    <ShareTab
+                        photoSelection={props.photoSelection}
+                        isPhotoViewer={false}
+                    />
+                </div>
+            )}
 
             {/* Modals are now rendered by SharedModals in PhotosList.jsx */}
 

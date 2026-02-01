@@ -29,6 +29,7 @@ export function useTabManagement({ viewMode, viewModeObj }) {
                 'filter': false,
                 'maintenance': false,
                 'search': false,
+                'share': false,
             };
         } else {
             return {
@@ -37,6 +38,7 @@ export function useTabManagement({ viewMode, viewModeObj }) {
                 'search': isSearchMode,
                 'filter': false,
                 'directory': false,
+                'share': false,
             };
         }
     });
@@ -64,6 +66,7 @@ export function useTabManagement({ viewMode, viewModeObj }) {
             'selection': false,
             'search': false,
             'directory': false,
+            'share': false,
         };
         newTabState[tabName] = true;
         setTabClass(newTabState);
@@ -80,6 +83,7 @@ export function useTabManagement({ viewMode, viewModeObj }) {
             'selection': false,
             'search': false,
             'directory': false,
+            'share': false,
         });
     }, []);
 

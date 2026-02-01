@@ -81,5 +81,26 @@
     "selectPerson": "人物を選択",
     "noNamedPersons": "名前付きの人物がいません。「新しい人物に割り当て」で作成してください。",
     "confirmDelete": "選択した{{count}}件の顔を削除しますか？"
+  },
+  "share": {
+    "photoSource": "写真ソース",
+    "currentPhoto": "表示中の写真",
+    "selection": "選択した写真",
+    "mode": "モード",
+    "singlePhoto": "単体写真",
+    "collage": "コラージュ",
+    "needTwoPhotos": "コラージュには2枚以上必要",
+    "options": "オプション",
+    "backgroundColor": "背景色",
+    "padding": "余白",
+    "corners": "角丸",
+    "addWatermark": "PhotoCloveウォーターマークを追加",
+    "copy": "コピー",
+    "save": "保存",
+    "noPreview": "プレビューなし",
+    "noPhotoSelected": "写真が選択されていません",
+    "selectPhotosFirst": "シェアする写真を選択してください",
+    "shareTo": "シェア先",
+    "socialHint": "先に画像をコピーしてから、開いた後に貼り付けてください"
   }
 }
