@@ -22,7 +22,11 @@
     "importSource": "匯入來源",
     "selectFolder": "選擇資料夾",
     "thumbnailFolder": "縮圖資料夾",
-    "thumbnailFolderDescription": "儲存產生的縮圖的位置"
+    "thumbnailFolderDescription": "儲存產生的縮圖的位置",
+    "sharing": "分享",
+    "customWatermark": "自訂浮水印",
+    "customWatermarkPlaceholder": "您的名稱或@帳號",
+    "customWatermarkDescription": "分享照片時新增您自己的浮水印"
   },
   "startup": {
     "startupBehavior": "啟動行為",

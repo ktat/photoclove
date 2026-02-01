@@ -208,14 +208,29 @@
 }
 
 .checkboxLabel input[type="checkbox"] {
-    width: 14px;
-    height: 14px;
+    display: inline-block !important;
+    width: 14px !important;
+    height: 14px !important;
+    min-width: 14px;
+    min-height: 14px;
     accent-color: var(--color-primary);
     cursor: pointer;
+    appearance: checkbox !important;
+    -webkit-appearance: checkbox !important;
+    margin: 0;
+    padding: 0;
+    flex-shrink: 0;
 }
 
 .checkboxLabel:hover {
     color: var(--color-text-primary);
+}
+
+.watermarkPreview {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    font-style: italic;
+    padding-left: var(--space-5);
 }
 
 /* Actions */

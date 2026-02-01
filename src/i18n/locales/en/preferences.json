@@ -22,7 +22,11 @@
     "importSource": "Import Source",
     "selectFolder": "Select Folder",
     "thumbnailFolder": "Thumbnail Folder",
-    "thumbnailFolderDescription": "Where to store generated thumbnails"
+    "thumbnailFolderDescription": "Where to store generated thumbnails",
+    "sharing": "Sharing",
+    "customWatermark": "Custom Watermark",
+    "customWatermarkPlaceholder": "Your name or @handle",
+    "customWatermarkDescription": "Add your own watermark text when sharing photos"
   },
   "startup": {
     "startupBehavior": "Startup Behavior",

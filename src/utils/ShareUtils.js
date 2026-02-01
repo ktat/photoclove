@@ -3,7 +3,7 @@
  */
 
 import { open } from '@tauri-apps/plugin-shell';
-import { convertFileSrc } from '@tauri-apps/api/core';
+import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { logger } from '../services/LoggerService.js';
 
 /**
@@ -114,20 +114,34 @@ export async function copyImageToClipboard(blob) {
 }
 
 /**
- * Save image blob as file
+ * Save image blob as file using Tauri backend
  * @param {Blob} blob - Image blob
  * @param {string} filename - Filename to save as
+ * @returns {Promise<string>} Full path to saved file
  */
-export function saveImageAsFile(blob, filename = 'photoclove-stats.png') {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    logger.info('ShareUtils', 'save_image_success', 'Image saved', { filename });
+export async function saveImageAsFile(blob, filename = 'photoclove-stats.png') {
+    try {
+        // Convert blob to base64
+        const arrayBuffer = await blob.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        let binary = '';
+        for (let i = 0; i < uint8Array.length; i++) {
+            binary += String.fromCharCode(uint8Array[i]);
+        }
+        const base64Data = btoa(binary);
+
+        // Save via Tauri command
+        const savedPath = await invoke('save_image_to_download_dir', {
+            imageData: base64Data,
+            filename: filename
+        });
+
+        logger.info('ShareUtils', 'save_image_success', 'Image saved', { filename, savedPath });
+        return savedPath;
+    } catch (error) {
+        logger.error('ShareUtils', 'save_image_error', 'Failed to save image', { filename, error: error.message });
+        throw error;
+    }
 }
 
 /**
@@ -339,7 +353,68 @@ export function addPhotoCloveWatermark(ctx, width, height, options = {}) {
     ctx.fillText(text, x, y);
     ctx.restore();
 
-    logger.debug('ShareUtils', 'watermark_added', 'Watermark drawn', { position, fontSize });
+    logger.debug('ShareUtils', 'watermark_added', 'PhotoClove watermark drawn', { position, fontSize });
+}
+
+/**
+ * Draw user custom watermark on canvas
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {number} width - Canvas width
+ * @param {number} height - Canvas height
+ * @param {string} text - User watermark text
+ * @param {Object} options - Watermark options
+ */
+export function addUserWatermark(ctx, width, height, text, options = {}) {
+    if (!text || text.trim() === '') return;
+
+    const {
+        position = 'bottom-left',  // Different default from PhotoClove watermark
+        opacity = 0.7,
+        size = 'auto'
+    } = options;
+
+    // Calculate font size based on canvas size
+    const fontSize = size === 'auto' ? Math.max(12, Math.min(width, height) / 35) : size;
+
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+
+    const metrics = ctx.measureText(text);
+    const padding = fontSize * 0.8;
+
+    let x, y;
+    switch (position) {
+        case 'top-left':
+            x = padding;
+            y = padding + fontSize;
+            break;
+        case 'top-right':
+            x = width - metrics.width - padding;
+            y = padding + fontSize;
+            break;
+        case 'bottom-left':
+        default:
+            x = padding;
+            y = height - padding;
+            break;
+        case 'bottom-right':
+            x = width - metrics.width - padding;
+            y = height - padding;
+            break;
+    }
+
+    // Draw shadow for visibility on any background
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = fontSize / 3;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+
+    ctx.fillText(text, x, y);
+    ctx.restore();
+
+    logger.debug('ShareUtils', 'user_watermark_added', 'User watermark drawn', { position, fontSize, text });
 }
 
 /**
@@ -390,19 +465,25 @@ export function drawRoundedImage(ctx, img, x, y, width, height, radius) {
 }
 
 /**
- * Generate shareable photo with optional watermark
+ * Generate shareable photo with optional watermarks
  * @param {string} photoPath - Path to the photo
  * @param {Object} options - Options
  * @returns {Promise<Blob>} Image blob
  */
 export async function generateShareablePhoto(photoPath, options = {}) {
     const {
-        addWatermark = false,
+        addPhotoCloveWatermark: addPCWatermark = true,
+        addUserWatermark: addUWatermark = false,
+        userWatermarkText = '',
         maxSize = 2000,
         quality = 0.92
     } = options;
 
-    logger.info('ShareUtils', 'generate_shareable_photo', 'Generating shareable photo', { photoPath, addWatermark });
+    logger.info('ShareUtils', 'generate_shareable_photo', 'Generating shareable photo', {
+        photoPath,
+        addPhotoCloveWatermark: addPCWatermark,
+        addUserWatermark: addUWatermark
+    });
 
     const img = await loadImageFromPath(photoPath);
 
@@ -424,9 +505,14 @@ export async function generateShareablePhoto(photoPath, options = {}) {
     // Draw the image
     ctx.drawImage(img, 0, 0, width, height);
 
-    // Add watermark if requested
-    if (addWatermark) {
-        addPhotoCloveWatermark(ctx, width, height);
+    // Add user watermark if requested (bottom-left)
+    if (addUWatermark && userWatermarkText) {
+        addUserWatermark(ctx, width, height, userWatermarkText, { position: 'bottom-left' });
+    }
+
+    // Add PhotoClove watermark if requested (bottom-right)
+    if (addPCWatermark) {
+        addPhotoCloveWatermark(ctx, width, height, { position: 'bottom-right' });
     }
 
     return new Promise((resolve) => {
@@ -475,7 +561,9 @@ export async function generateCollage(photoPaths, options = {}) {
         backgroundColor = '#000000',
         padding = 10,
         cornerRadius = 8,
-        addWatermark = false,
+        addPhotoCloveWatermark: addPCWatermark = true,
+        addUserWatermark: addUWatermark = false,
+        userWatermarkText = '',
         maxSize = 1800,
         cellSize = 400
     } = options;
@@ -542,11 +630,17 @@ export async function generateCollage(photoPaths, options = {}) {
         drawRoundedImage(ctx, img, x, y, w, h, cornerRadius);
     }
 
-    // Add watermark if requested
-    if (addWatermark) {
-        // Reset scale for watermark
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        addPhotoCloveWatermark(ctx, canvas.width, canvas.height);
+    // Reset scale for watermarks
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    // Add user watermark if requested (bottom-left)
+    if (addUWatermark && userWatermarkText) {
+        addUserWatermark(ctx, canvas.width, canvas.height, userWatermarkText, { position: 'bottom-left' });
+    }
+
+    // Add PhotoClove watermark if requested (bottom-right)
+    if (addPCWatermark) {
+        addPhotoCloveWatermark(ctx, canvas.width, canvas.height, { position: 'bottom-right' });
     }
 
     return new Promise((resolve) => {

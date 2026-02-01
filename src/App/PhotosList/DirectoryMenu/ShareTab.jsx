@@ -8,6 +8,7 @@
  * @param {string} props.currentPhotoPath - Current photo path (PhotoViewer only)
  * @param {Array} props.photoSelection - Selected photo paths
  * @param {boolean} props.isPhotoViewer - True if in PhotoViewer context
+ * @param {string} props.userWatermarkText - Custom watermark text from preferences
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -33,7 +34,8 @@ const BACKGROUND_COLORS = [
 function ShareTab({
     currentPhotoPath,
     photoSelection = [],
-    isPhotoViewer = false
+    isPhotoViewer = false,
+    userWatermarkText = ''
 }) {
     const { t } = useTranslation(['directoryMenu', 'common']);
 
@@ -49,8 +51,9 @@ function ShareTab({
     const [generating, setGenerating] = useState(false);
     const [copyStatus, setCopyStatus] = useState(null);
 
-    // Single photo options
-    const [addWatermark, setAddWatermark] = useState(false);
+    // Watermark options
+    const [addPhotoCloveWatermark, setAddPhotoCloveWatermark] = useState(true);
+    const [addUserWatermark, setAddUserWatermark] = useState(true);
 
     // Collage options
     const [backgroundColor, setBackgroundColor] = useState('#000000');
@@ -102,14 +105,20 @@ function ShareTab({
             const generateImage = async () => {
                 try {
                     let blob;
+                    const watermarkOptions = {
+                        addPhotoCloveWatermark,
+                        addUserWatermark: addUserWatermark && !!userWatermarkText,
+                        userWatermarkText
+                    };
+
                     if (shareMode === 'single' && activePhotos.length >= 1) {
-                        blob = await generateShareablePhoto(activePhotos[0], { addWatermark });
+                        blob = await generateShareablePhoto(activePhotos[0], watermarkOptions);
                     } else if (shareMode === 'collage' && activePhotos.length >= 2) {
                         blob = await generateCollage(activePhotos.slice(0, 9), {
                             backgroundColor: effectiveBackgroundColor,
                             padding,
                             cornerRadius,
-                            addWatermark
+                            ...watermarkOptions
                         });
                     }
 
@@ -132,7 +141,7 @@ function ShareTab({
         }, 300);
 
         return () => clearTimeout(timeoutId);
-    }, [activePhotos, shareMode, addWatermark, effectiveBackgroundColor, padding, cornerRadius]);
+    }, [activePhotos, shareMode, addPhotoCloveWatermark, addUserWatermark, userWatermarkText, effectiveBackgroundColor, padding, cornerRadius]);
 
     // Cleanup URL on unmount
     useEffect(() => {
@@ -152,13 +161,21 @@ function ShareTab({
     }, [imageBlob]);
 
     // Handle save image
-    const handleSaveImage = useCallback(() => {
+    const [saveStatus, setSaveStatus] = useState(null);
+    const handleSaveImage = useCallback(async () => {
         if (!imageBlob) return;
         const date = new Date().toISOString().split('T')[0];
         const filename = shareMode === 'collage'
             ? `photoclove-collage-${date}.png`
             : `photoclove-share-${date}.png`;
-        saveImageAsFile(imageBlob, filename);
+        try {
+            await saveImageAsFile(imageBlob, filename);
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus(null), 2000);
+        } catch (error) {
+            setSaveStatus('error');
+            setTimeout(() => setSaveStatus(null), 2000);
+        }
     }, [imageBlob, shareMode]);
 
     // Check if we have enough photos
@@ -318,17 +335,32 @@ function ShareTab({
                         </>
                     )}
 
-                    {/* Watermark (all modes) */}
+                    {/* PhotoClove Watermark */}
                     <div className={styles.optionGroup}>
                         <label className={styles.checkboxLabel}>
                             <input
                                 type="checkbox"
-                                checked={addWatermark}
-                                onChange={(e) => setAddWatermark(e.target.checked)}
+                                checked={addPhotoCloveWatermark}
+                                onChange={(e) => setAddPhotoCloveWatermark(e.target.checked)}
                             />
-                            <span>{t('directoryMenu:share.addWatermark', 'Add PhotoClove watermark')}</span>
+                            <span>{t('directoryMenu:share.addPhotoCloveWatermark', 'Add PhotoClove watermark')}</span>
                         </label>
                     </div>
+
+                    {/* User Watermark (only shown when configured) */}
+                    {userWatermarkText && (
+                        <div className={styles.optionGroup}>
+                            <label className={styles.checkboxLabel}>
+                                <input
+                                    type="checkbox"
+                                    checked={addUserWatermark}
+                                    onChange={(e) => setAddUserWatermark(e.target.checked)}
+                                />
+                                <span>{t('directoryMenu:share.addUserWatermark', 'Add your watermark')}</span>
+                            </label>
+                            <span className={styles.watermarkPreview}>"{userWatermarkText}"</span>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -349,12 +381,16 @@ function ShareTab({
                             </span>
                         </button>
                         <button
-                            className={styles.actionBtn}
+                            className={`${styles.actionBtn} ${saveStatus === 'saved' ? styles.success : ''}`}
                             onClick={handleSaveImage}
                             disabled={generating}
                         >
                             <span className={styles.actionIcon}>💾</span>
-                            <span>{t('directoryMenu:share.save', 'Save')}</span>
+                            <span>
+                                {saveStatus === 'saved'
+                                    ? t('common:status.saved', 'Saved!')
+                                    : t('directoryMenu:share.save', 'Save')}
+                            </span>
                         </button>
                     </div>
 

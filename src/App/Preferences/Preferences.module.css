@@ -190,6 +190,29 @@
   cursor: pointer;
 }
 
+/* Setting input with explicit class */
+.setting-input {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  transition: border-color 0.2s ease-out;
+  width: 100%;
+  max-width: 400px;
+}
+
+.setting-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.setting-input::placeholder {
+  color: var(--color-text-muted);
+}
+
 .setting-row select:disabled {
   opacity: 0.5;
   cursor: not-allowed;

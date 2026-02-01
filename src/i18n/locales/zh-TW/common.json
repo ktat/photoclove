@@ -111,7 +111,9 @@
     "failed": "失敗",
     "cancelled": "已取消",
     "pending": "待處理",
-    "inProgress": "進行中"
+    "inProgress": "進行中",
+    "saved": "已儲存！",
+    "copied": "已複製！"
   },
   "language": {
     "select": "選擇語言",

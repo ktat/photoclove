@@ -22,7 +22,11 @@
     "importSource": "导入来源",
     "selectFolder": "选择文件夹",
     "thumbnailFolder": "缩略图文件夹",
-    "thumbnailFolderDescription": "存储生成的缩略图的位置"
+    "thumbnailFolderDescription": "存储生成的缩略图的位置",
+    "sharing": "分享",
+    "customWatermark": "自定义水印",
+    "customWatermarkPlaceholder": "您的名字或@用户名",
+    "customWatermarkDescription": "分享照片时添加您自己的水印"
   },
   "startup": {
     "startupBehavior": "启动行为",

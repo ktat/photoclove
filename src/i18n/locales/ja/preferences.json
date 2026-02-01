@@ -22,7 +22,11 @@
     "importSource": "インポート元",
     "selectFolder": "フォルダを選択",
     "thumbnailFolder": "サムネイルフォルダ",
-    "thumbnailFolderDescription": "生成されたサムネイルの保存先"
+    "thumbnailFolderDescription": "生成されたサムネイルの保存先",
+    "sharing": "シェア",
+    "customWatermark": "カスタムウォーターマーク",
+    "customWatermarkPlaceholder": "あなたの名前や@ハンドル",
+    "customWatermarkDescription": "写真をシェアする際に独自のウォーターマークを追加"
   },
   "startup": {
     "startupBehavior": "起動時の動作",

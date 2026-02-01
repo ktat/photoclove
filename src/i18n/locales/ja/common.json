@@ -108,7 +108,9 @@
     "failed": "失敗",
     "cancelled": "キャンセル",
     "pending": "待機中",
-    "inProgress": "処理中"
+    "inProgress": "処理中",
+    "saved": "保存しました！",
+    "copied": "コピーしました！"
   },
   "language": {
     "select": "言語を選択",

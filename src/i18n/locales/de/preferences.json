@@ -22,7 +22,11 @@
     "importSource": "Importquelle",
     "selectFolder": "Ordner auswählen",
     "thumbnailFolder": "Miniaturansicht-Ordner",
-    "thumbnailFolderDescription": "Wo generierte Miniaturansichten gespeichert werden"
+    "thumbnailFolderDescription": "Wo generierte Miniaturansichten gespeichert werden",
+    "sharing": "Teilen",
+    "customWatermark": "Eigenes Wasserzeichen",
+    "customWatermarkPlaceholder": "Ihr Name oder @Handle",
+    "customWatermarkDescription": "Fügen Sie beim Teilen Ihr eigenes Wasserzeichen hinzu"
   },
   "startup": {
     "startupBehavior": "Startverhalten",

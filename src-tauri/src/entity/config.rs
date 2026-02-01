@@ -74,6 +74,10 @@ fn default_s3() -> Option<S3Config> {
     None
 }
 
+fn default_custom_watermark() -> Option<String> {
+    None
+}
+
 /// S3 Backup configuration
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct S3Config {
@@ -350,6 +354,8 @@ pub struct Config {
     pub face_detection: FaceDetectionConfig,
     #[serde(default = "default_s3")]
     pub s3: Option<S3Config>,
+    #[serde(default = "default_custom_watermark")]
+    pub custom_watermark: Option<String>,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryConfig {
@@ -388,6 +394,7 @@ impl Config {
         self.ai_tagging = config.ai_tagging;
         self.face_detection = config.face_detection;
         self.s3 = config.s3;
+        self.custom_watermark = config.custom_watermark;
     }
 
     /// Get the config path, creating the file if it doesn't exist
@@ -503,6 +510,7 @@ impl Config {
             ai_tagging: default_ai_tagging(),
             face_detection: default_face_detection(),
             s3: default_s3(),
+            custom_watermark: default_custom_watermark(),
         }
     }
 

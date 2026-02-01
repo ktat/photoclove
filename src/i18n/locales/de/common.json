@@ -111,7 +111,9 @@
     "failed": "Fehlgeschlagen",
     "cancelled": "Abgebrochen",
     "pending": "Ausstehend",
-    "inProgress": "In Bearbeitung"
+    "inProgress": "In Bearbeitung",
+    "saved": "Gespeichert!",
+    "copied": "Kopiert!"
   },
   "language": {
     "select": "Sprache auswählen",
