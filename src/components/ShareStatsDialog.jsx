@@ -70,10 +70,19 @@ function ShareStatsDialog({ insights, period = 'all', onClose }) {
     }, [imageBlob]);
 
     // Handle save image
-    const handleSaveImage = useCallback(() => {
+    const [saveStatus, setSaveStatus] = useState(null);
+    const handleSaveImage = useCallback(async () => {
         if (!imageBlob) return;
         const date = new Date().toISOString().split('T')[0];
-        saveImageAsFile(imageBlob, `photoclove-stats-${date}.png`);
+        try {
+            await saveImageAsFile(imageBlob, `photoclove-stats-${date}.png`);
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus(null), 2000);
+        } catch (error) {
+            logger.error('ShareStatsDialog', 'save_image_error', 'Failed to save image', { error: error.message });
+            setSaveStatus('error');
+            setTimeout(() => setSaveStatus(null), 2000);
+        }
     }, [imageBlob]);
 
     // Handle social share
@@ -149,13 +158,15 @@ function ShareStatsDialog({ insights, period = 'all', onClose }) {
                         </button>
 
                         <button
-                            className={styles.actionBtn}
+                            className={`${styles.actionBtn} ${saveStatus === 'saved' ? styles.success : ''}`}
                             onClick={handleSaveImage}
                             disabled={!imageBlob}
                         >
                             <span className={styles.actionIcon}>💾</span>
                             <span className={styles.actionLabel}>
-                                {t('insights:share.saveImage', 'Save Image')}
+                                {saveStatus === 'saved'
+                                    ? t('common:status.saved', 'Saved!')
+                                    : t('insights:share.saveImage', 'Save Image')}
                             </span>
                         </button>
                     </div>

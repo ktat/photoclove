@@ -221,16 +221,27 @@ export async function generateStatsImage(insights, options = {}) {
     ctx.lineWidth = 2;
     ctx.strokeRect(1, 1, width - 2, height - 2);
 
-    // Header based on period
-    let headerText = '📊 Photography Stats';
+    // Header based on period (match generateStatsShareText)
+    let headerText = '📊 My Photography Stats';
     const now = new Date();
-    if (period === 'weekly') {
-        headerText = '📊 This Week\'s Stats';
+    if (period.startsWith('weekly:')) {
+        headerText = '📊 This Week\'s Photography Stats';
+    } else if (period === 'weekly') {
+        headerText = '📊 This Week\'s Photography Stats';
+    } else if (period.startsWith('monthly:')) {
+        const monthStr = period.replace('monthly:', '');
+        const [year, month] = monthStr.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+        const monthName = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        headerText = `📊 ${monthName} Photography Stats`;
     } else if (period === 'monthly') {
-        const monthName = now.toLocaleDateString('en-US', { month: 'long' });
-        headerText = `📊 ${monthName} Stats`;
+        const monthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        headerText = `📊 ${monthName} Photography Stats`;
+    } else if (period.startsWith('yearly:')) {
+        const year = period.replace('yearly:', '');
+        headerText = `📊 ${year} Year in Review`;
     } else if (period === 'yearly') {
-        headerText = `📊 ${now.getFullYear()} Stats`;
+        headerText = `📊 ${now.getFullYear()} Year in Review`;
     }
 
     ctx.fillStyle = textColor;
@@ -252,6 +263,8 @@ export async function generateStatsImage(insights, options = {}) {
         if (org.starred_photos > 0) {
             ctx.fillText(`⭐ Best Shots: ${org.starred_photos}`, 30, y);
             y += lineHeight;
+        }
+        if (org.total_tags > 0) { ctx.fillText(`🏷️ Tags: ${org.total_tags}`, 30, y); y += lineHeight;
         }
     }
 
@@ -276,8 +289,8 @@ export async function generateStatsImage(insights, options = {}) {
     // Footer
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.font = '14px -apple-system, BlinkMacSystemFont, sans-serif';
-    ctx.fillText('#PhotoClove', 30, height - 30);
-    ctx.fillText('github.com/ktat/photoclove', width - 200, height - 30);
+    ctx.fillText('#PhotoClove #PhotographyStats', 30, height - 30);
+    ctx.fillText('github.com/ktat/photoclove', width - 220, height - 30);
 
     // Convert to blob
     return new Promise((resolve) => {
