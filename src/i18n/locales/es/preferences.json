@@ -45,7 +45,12 @@
     "burstThreshold": "Umbral de ráfaga (segundos)",
     "burstThresholdDescription": "Las fotos tomadas dentro de este tiempo se agruparán como ráfaga",
     "similarPhotos": "Detección de fotos similares",
-    "similarThreshold": "Umbral de similitud"
+    "similarThreshold": "Umbral de similitud",
+    "aiEnhancedDetection": "Detección mejorada por IA",
+    "aiEnhancedDescription": "Utiliza etiquetas de IA para mejorar la precisión de la detección de ráfaga. Las fotos dentro del umbral de tiempo solo se agruparán si comparten contenido similar.",
+    "useAiTagging": "Usar etiquetado IA para detección de ráfaga",
+    "minMatchingTags": "Mínimo de etiquetas coincidentes",
+    "minMatchingTagsDescription": "etiquetas deben coincidir para estar en el mismo grupo"
   },
   "performance": {
     "parallelProcessing": "Procesamiento paralelo",

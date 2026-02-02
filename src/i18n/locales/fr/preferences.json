@@ -45,7 +45,12 @@
     "burstThreshold": "Seuil de rafale (secondes)",
     "burstThresholdDescription": "Les photos prises dans ce délai seront groupées en rafale",
     "similarPhotos": "Détection de photos similaires",
-    "similarThreshold": "Seuil de similarité"
+    "similarThreshold": "Seuil de similarité",
+    "aiEnhancedDetection": "Détection améliorée par IA",
+    "aiEnhancedDescription": "Utilisez les tags IA pour améliorer la précision de la détection de rafale. Les photos dans le seuil de temps ne seront groupées que si elles partagent un contenu similaire.",
+    "useAiTagging": "Utiliser le tagging IA pour la détection de rafale",
+    "minMatchingTags": "Nombre minimum de tags correspondants",
+    "minMatchingTagsDescription": "tags doivent correspondre pour être dans le même groupe"
   },
   "performance": {
     "parallelProcessing": "Traitement parallèle",

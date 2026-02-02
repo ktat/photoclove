@@ -92,6 +92,53 @@ const GroupingTab = ({
                 </p>
             </div>
 
+            {/* AI-Enhanced Burst Detection - only shown when AI Tagging is enabled */}
+            {config.ai_tagging?.enabled && (
+                <>
+                    <h2 className={styles['section-title']}>🤖 {t('grouping.aiEnhancedDetection')}</h2>
+                    <div className={styles['setting-group']}>
+                        <p className={styles['setting-description']} style={{ marginBottom: 'var(--space-3)' }}>
+                            {t('grouping.aiEnhancedDescription')}
+                        </p>
+                        <div className={styles['setting-item']}>
+                            <input
+                                type="checkbox"
+                                id="ai-burst-enabled-check"
+                                checked={config.grouping?.use_ai_tagging ?? false}
+                                onChange={(e) => setConfig(prev => ({
+                                    ...prev,
+                                    grouping: { ...prev.grouping, use_ai_tagging: e.target.checked }
+                                }))}
+                            />
+                            <label htmlFor="ai-burst-enabled-check">
+                                {t('grouping.useAiTagging')}
+                            </label>
+                        </div>
+
+                        {config.grouping?.use_ai_tagging && (
+                            <div className={styles['setting-row']} style={{ marginTop: 'var(--space-3)' }}>
+                                <label>{t('grouping.minMatchingTags')}:</label>
+                                <select
+                                    value={config.grouping?.min_matching_tags ?? 2}
+                                    onChange={(e) => setConfig(prev => ({
+                                        ...prev,
+                                        grouping: { ...prev.grouping, min_matching_tags: parseInt(e.target.value) }
+                                    }))}
+                                    style={{ width: '80px', marginLeft: 'var(--space-2)' }}
+                                >
+                                    {[1, 2, 3, 4, 5].map(n => (
+                                        <option key={n} value={n}>{n}</option>
+                                    ))}
+                                </select>
+                                <p className={styles['setting-description']} style={{ marginLeft: 'var(--space-2)', marginBottom: 0 }}>
+                                    {t('grouping.minMatchingTagsDescription')}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </>
+            )}
+
             <h2 className={styles['section-title']}>🔄 {t('grouping.recalculateGroups')}</h2>
             <div className={styles['setting-group']}>
                 <p className={styles['setting-description']} style={{ marginBottom: 'var(--space-3)' }}>

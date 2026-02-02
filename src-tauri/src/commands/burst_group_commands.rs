@@ -198,6 +198,8 @@ pub async fn recalculate_grouping(
 /// * `date_str` - Date in YYYY-MM-DD format
 /// * `threshold_seconds` - Time threshold in seconds for grouping consecutive shots
 /// * `min_group_size` - Minimum number of photos required to form a group
+/// * `use_ai_tagging` - Whether to use AI tags for more accurate grouping
+/// * `min_matching_tags` - Minimum number of matching tags to consider same burst (when use_ai_tagging=true)
 /// * `state` - Application state
 ///
 /// # Returns
@@ -208,8 +210,12 @@ pub async fn recalculate_grouping_in_date(
     date_str: String,
     threshold_seconds: u32,
     min_group_size: u32,
+    use_ai_tagging: Option<bool>,
+    min_matching_tags: Option<u32>,
     state: tauri::State<'_, AppState>,
 ) -> Result<u32, String> {
+    let use_ai = use_ai_tagging.unwrap_or(false);
+    let min_tags = min_matching_tags.unwrap_or(2) as usize;
     let meta_db = &state.meta_db;
     let logging_service = &state.logging_service;
 
@@ -221,11 +227,13 @@ pub async fn recalculate_grouping_in_date(
     let correlation_id = logging_service.generate_correlation_id();
     log::info!(
         target: "burst_groups",
-        "recalculate_grouping_in_date; correlation_id={}; date={}; threshold_seconds={}; min_group_size={}",
+        "recalculate_grouping_in_date; correlation_id={}; date={}; threshold_seconds={}; min_group_size={}; use_ai={}; min_tags={}",
         correlation_id,
         date_str,
         threshold_seconds,
-        min_group_size
+        min_group_size,
+        use_ai,
+        min_tags
     );
 
     // Step 1: Get manual group photos for this date to preserve them
@@ -255,7 +263,32 @@ pub async fn recalculate_grouping_in_date(
         total_photos
     );
 
-    // Step 4: Group photos by camera (make + model)
+    // Step 4: Load AI tags if enabled
+    let photo_tags: HashMap<String, Vec<String>> = if use_ai && !photos_to_group.is_empty() {
+        let photo_paths: Vec<String> = photos_to_group.iter().map(|p| p.file.path.clone()).collect();
+        let tags_map = meta_db.get_tags_for_photos_bulk(&photo_paths)?;
+        // Convert to simple tag name map
+        tags_map
+            .into_iter()
+            .map(|(path, tags)| {
+                let tag_names: Vec<String> = tags.into_iter().map(|(_, name, _)| name).collect();
+                (path, tag_names)
+            })
+            .collect()
+    } else {
+        HashMap::new()
+    };
+
+    if use_ai {
+        log::debug!(
+            target: "burst_groups",
+            "ai_tags_loaded; correlation_id={}; photos_with_tags={}",
+            correlation_id,
+            photo_tags.len()
+        );
+    }
+
+    // Step 5: Group photos by camera (make + model)
     let mut photos_by_camera: HashMap<String, Vec<&Photo>> = HashMap::new();
     for photo in &photos_to_group {
         let make = if photo.meta_data.make.is_empty() {
@@ -272,7 +305,7 @@ pub async fn recalculate_grouping_in_date(
         photos_by_camera.entry(camera_key).or_default().push(photo);
     }
 
-    // Step 5: For each camera, sort by time and group consecutive shots
+    // Step 6: For each camera, sort by time and group consecutive shots
     let threshold_ms = (threshold_seconds as i64) * 1000;
     let min_size = min_group_size as usize;
     let mut new_groups = 0u32;
@@ -285,58 +318,188 @@ pub async fn recalculate_grouping_in_date(
             a_time.cmp(b_time)
         });
 
-        // Group consecutive shots within threshold
-        let mut current_group: Vec<&Photo> = Vec::new();
-        let mut last_time_ms: Option<i64> = None;
-
-        for photo in camera_photos {
-            let photo_time_ms = photo.get_datetime_ms();
-
-            let should_start_new_group = match (last_time_ms, photo_time_ms) {
-                (Some(last), Some(current)) => (current - last).abs() > threshold_ms,
-                _ => true,
-            };
-
-            if should_start_new_group {
-                // Save previous group if it meets minimum size
-                if current_group.len() >= min_size {
-                    let group_id = format!("auto_{}", Uuid::new_v4());
-                    let group = BurstGroup::new_auto(group_id.clone());
-                    meta_db.save_burst_group(&group)?;
-
-                    for group_photo in &current_group {
-                        meta_db.update_photo_burst_group(&group_photo.file.path, &group_id)?;
-                    }
-                    new_groups += 1;
-                }
-                current_group.clear();
-            }
-
-            current_group.push(photo);
-            last_time_ms = photo_time_ms;
-        }
-
-        // Don't forget the last group
-        if current_group.len() >= min_size {
-            let group_id = format!("auto_{}", Uuid::new_v4());
-            let group = BurstGroup::new_auto(group_id.clone());
-            meta_db.save_burst_group(&group)?;
-
-            for group_photo in &current_group {
-                meta_db.update_photo_burst_group(&group_photo.file.path, &group_id)?;
-            }
-            new_groups += 1;
+        if use_ai {
+            // AI-enhanced grouping: group by time AND tag similarity
+            new_groups += group_photos_with_ai(
+                &camera_photos,
+                &photo_tags,
+                threshold_ms,
+                min_size,
+                min_tags,
+                meta_db,
+            )?;
+        } else {
+            // Traditional grouping: time-based only
+            new_groups += group_photos_by_time(
+                &camera_photos,
+                threshold_ms,
+                min_size,
+                meta_db,
+            )?;
         }
     }
 
     log::info!(
         target: "burst_groups",
-        "recalculate_grouping_in_date_complete; correlation_id={}; date={}; new_groups={}; photos_processed={}",
+        "recalculate_grouping_in_date_complete; correlation_id={}; date={}; new_groups={}; photos_processed={}; use_ai={}",
         correlation_id,
         date_str,
         new_groups,
-        total_photos
+        total_photos,
+        use_ai
     );
 
     Ok(new_groups)
+}
+
+/// Count matching tags between two tag sets
+fn count_matching_tags(tags_a: &[String], tags_b: &[String]) -> usize {
+    tags_a.iter().filter(|t| tags_b.contains(t)).count()
+}
+
+/// Traditional time-based grouping
+fn group_photos_by_time(
+    camera_photos: &[&Photo],
+    threshold_ms: i64,
+    min_size: usize,
+    meta_db: &crate::repository::meta_db::sqlite::SQLite,
+) -> Result<u32, String> {
+    let mut new_groups = 0u32;
+    let mut current_group: Vec<&Photo> = Vec::new();
+    let mut last_time_ms: Option<i64> = None;
+
+    for photo in camera_photos {
+        let photo_time_ms = photo.get_datetime_ms();
+
+        let should_start_new_group = match (last_time_ms, photo_time_ms) {
+            (Some(last), Some(current)) => (current - last).abs() > threshold_ms,
+            _ => true,
+        };
+
+        if should_start_new_group {
+            // Save previous group if it meets minimum size
+            if current_group.len() >= min_size {
+                new_groups += save_burst_group(&current_group, meta_db)?;
+            }
+            current_group.clear();
+        }
+
+        current_group.push(photo);
+        last_time_ms = photo_time_ms;
+    }
+
+    // Don't forget the last group
+    if current_group.len() >= min_size {
+        new_groups += save_burst_group(&current_group, meta_db)?;
+    }
+
+    Ok(new_groups)
+}
+
+/// AI-enhanced grouping: group by time AND tag similarity
+/// Multiple groups can be created within the same time window if tags differ
+fn group_photos_with_ai(
+    camera_photos: &[&Photo],
+    photo_tags: &HashMap<String, Vec<String>>,
+    threshold_ms: i64,
+    min_size: usize,
+    min_tags: usize,
+    meta_db: &crate::repository::meta_db::sqlite::SQLite,
+) -> Result<u32, String> {
+    let mut new_groups = 0u32;
+
+    // First, group photos by time window (same as before)
+    let mut time_groups: Vec<Vec<&Photo>> = Vec::new();
+    let mut current_time_group: Vec<&Photo> = Vec::new();
+    let mut last_time_ms: Option<i64> = None;
+
+    for photo in camera_photos {
+        let photo_time_ms = photo.get_datetime_ms();
+
+        let should_start_new_group = match (last_time_ms, photo_time_ms) {
+            (Some(last), Some(current)) => (current - last).abs() > threshold_ms,
+            _ => true,
+        };
+
+        if should_start_new_group && !current_time_group.is_empty() {
+            time_groups.push(current_time_group);
+            current_time_group = Vec::new();
+        }
+
+        current_time_group.push(photo);
+        last_time_ms = photo_time_ms;
+    }
+    if !current_time_group.is_empty() {
+        time_groups.push(current_time_group);
+    }
+
+    // For each time group, sub-group by tag similarity
+    for time_group in time_groups {
+        if time_group.len() < min_size {
+            continue;
+        }
+
+        // Get empty tags for photos without tags
+        let empty_tags: Vec<String> = Vec::new();
+
+        // Sub-group by tag similarity within the time group
+        let mut tag_sub_groups: Vec<Vec<&Photo>> = Vec::new();
+
+        for photo in time_group {
+            let photo_tag_list = photo_tags.get(&photo.file.path).unwrap_or(&empty_tags);
+
+            // Find a sub-group with matching tags
+            let mut found_group = false;
+            for sub_group in &mut tag_sub_groups {
+                if let Some(first_photo) = sub_group.first() {
+                    let first_tags = photo_tags.get(&first_photo.file.path).unwrap_or(&empty_tags);
+
+                    // If both have tags and they match >= min_tags, add to this group
+                    // If either has no tags, fall back to time-only grouping (add to group)
+                    let should_join = if photo_tag_list.is_empty() || first_tags.is_empty() {
+                        // No tags - fall back to time-based grouping
+                        true
+                    } else {
+                        count_matching_tags(photo_tag_list, first_tags) >= min_tags
+                    };
+
+                    if should_join {
+                        sub_group.push(photo);
+                        found_group = true;
+                        break;
+                    }
+                }
+            }
+
+            if !found_group {
+                // Start a new sub-group
+                tag_sub_groups.push(vec![photo]);
+            }
+        }
+
+        // Save each sub-group that meets minimum size
+        for sub_group in tag_sub_groups {
+            if sub_group.len() >= min_size {
+                new_groups += save_burst_group(&sub_group, meta_db)?;
+            }
+        }
+    }
+
+    Ok(new_groups)
+}
+
+/// Save a burst group to database
+fn save_burst_group(
+    photos: &[&Photo],
+    meta_db: &crate::repository::meta_db::sqlite::SQLite,
+) -> Result<u32, String> {
+    let group_id = format!("auto_{}", Uuid::new_v4());
+    let group = BurstGroup::new_auto(group_id.clone());
+    meta_db.save_burst_group(&group)?;
+
+    for photo in photos {
+        meta_db.update_photo_burst_group(&photo.file.path, &group_id)?;
+    }
+
+    Ok(1)
 }

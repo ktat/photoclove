@@ -585,6 +585,14 @@ impl SQLite {
         tags::get_tags_for_photo_with_metadata(self, photo_path)
     }
 
+    /// Get tags for multiple photos in bulk (optimized for burst detection)
+    pub fn get_tags_for_photos_bulk(
+        &self,
+        photo_paths: &[String],
+    ) -> Result<std::collections::HashMap<String, Vec<(i32, String, Option<String>)>>, String> {
+        tags::get_tags_for_photos_bulk(self, photo_paths)
+    }
+
     // ==================== Face Detection Operations ====================
 
     /// Save detected faces for a photo

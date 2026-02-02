@@ -45,7 +45,12 @@
     "burstThreshold": "连拍阈值（秒）",
     "burstThresholdDescription": "在此时间内拍摄的照片将被分组为连拍",
     "similarPhotos": "相似照片检测",
-    "similarThreshold": "相似度阈值"
+    "similarThreshold": "相似度阈值",
+    "aiEnhancedDetection": "AI 增强检测",
+    "aiEnhancedDescription": "使用 AI 标签提高连拍检测的准确性。只有在时间阈值内且内容相似的照片才会被分组。",
+    "useAiTagging": "使用 AI 标签进行连拍检测",
+    "minMatchingTags": "最少匹配标签数",
+    "minMatchingTagsDescription": "个标签必须匹配才能在同一组"
   },
   "performance": {
     "parallelProcessing": "并行处理",

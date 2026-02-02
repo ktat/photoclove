@@ -45,7 +45,12 @@
     "burstThreshold": "Serienbildschwelle (Sekunden)",
     "burstThresholdDescription": "Fotos, die innerhalb dieser Zeit aufgenommen wurden, werden als Serie gruppiert",
     "similarPhotos": "Ähnliche Fotos erkennen",
-    "similarThreshold": "Ähnlichkeitsschwelle"
+    "similarThreshold": "Ähnlichkeitsschwelle",
+    "aiEnhancedDetection": "KI-verbesserte Erkennung",
+    "aiEnhancedDescription": "Verwenden Sie KI-Tags, um die Genauigkeit der Serienbilderkennung zu verbessern. Fotos innerhalb des Zeitschwellenwerts werden nur gruppiert, wenn sie ähnliche Inhalte aufweisen.",
+    "useAiTagging": "KI-Tagging für Serienbilderkennung verwenden",
+    "minMatchingTags": "Mindestanzahl übereinstimmender Tags",
+    "minMatchingTagsDescription": "Tags müssen übereinstimmen, um in derselben Gruppe zu sein"
   },
   "performance": {
     "parallelProcessing": "Parallele Verarbeitung",

@@ -175,6 +175,20 @@ pub struct GroupingConfig {
     pub enabled: bool,
     pub burst_threshold_seconds: u32,
     pub min_group_size: u32,
+    /// Use AI tagging for more accurate burst detection
+    #[serde(default = "default_burst_use_ai_tagging")]
+    pub use_ai_tagging: bool,
+    /// Minimum number of matching tags to consider photos as same burst
+    #[serde(default = "default_burst_min_matching_tags")]
+    pub min_matching_tags: u32,
+}
+
+fn default_burst_use_ai_tagging() -> bool {
+    false
+}
+
+fn default_burst_min_matching_tags() -> u32 {
+    2
 }
 
 impl Default for GroupingConfig {
@@ -183,6 +197,8 @@ impl Default for GroupingConfig {
             enabled: true,
             burst_threshold_seconds: 2,
             min_group_size: 2,
+            use_ai_tagging: false,
+            min_matching_tags: 2,
         }
     }
 }
