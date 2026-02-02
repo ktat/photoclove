@@ -96,6 +96,8 @@
     "corners": "Corners",
     "addPhotoCloveWatermark": "Add PhotoClove watermark",
     "addUserWatermark": "Add your watermark",
+    "watermarkColor": "Watermark Color",
+    "watermarkOpacity": "Watermark Opacity",
     "copy": "Copy",
     "save": "Save",
     "noPreview": "No preview",

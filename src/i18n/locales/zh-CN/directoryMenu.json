@@ -96,6 +96,8 @@
     "corners": "圆角",
     "addPhotoCloveWatermark": "添加PhotoClove水印",
     "addUserWatermark": "添加您的水印",
+    "watermarkColor": "水印颜色",
+    "watermarkOpacity": "水印透明度",
     "copy": "复制",
     "save": "保存",
     "noPreview": "无预览",

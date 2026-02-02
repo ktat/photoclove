@@ -96,6 +96,8 @@
     "corners": "角丸",
     "addPhotoCloveWatermark": "PhotoCloveウォーターマークを追加",
     "addUserWatermark": "あなたのウォーターマークを追加",
+    "watermarkColor": "透かしの色",
+    "watermarkOpacity": "透かしの濃度",
     "copy": "コピー",
     "save": "保存",
     "noPreview": "プレビューなし",

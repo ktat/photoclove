@@ -96,6 +96,8 @@
     "corners": "Radio de esquina",
     "addPhotoCloveWatermark": "Añadir marca de agua PhotoClove",
     "addUserWatermark": "Añadir tu marca de agua",
+    "watermarkColor": "Color de marca de agua",
+    "watermarkOpacity": "Opacidad de marca de agua",
     "copy": "Copiar",
     "save": "Guardar",
     "noPreview": "Sin vista previa",

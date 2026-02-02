@@ -322,7 +322,8 @@ export function addPhotoCloveWatermark(ctx, width, height, options = {}) {
     const {
         position = 'bottom-right',
         opacity = 0.6,
-        size = 'auto'
+        size = 'auto',
+        color = '#ffffff'
     } = options;
 
     // Calculate font size based on canvas size
@@ -330,7 +331,7 @@ export function addPhotoCloveWatermark(ctx, width, height, options = {}) {
 
     ctx.save();
     ctx.globalAlpha = opacity;
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = color;
     ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
 
     const text = 'PhotoClove';
@@ -384,7 +385,8 @@ export function addUserWatermark(ctx, width, height, text, options = {}) {
     const {
         position = 'bottom-left',  // Different default from PhotoClove watermark
         opacity = 0.7,
-        size = 'auto'
+        size = 'auto',
+        color = '#ffffff'
     } = options;
 
     // Calculate font size based on canvas size
@@ -392,7 +394,7 @@ export function addUserWatermark(ctx, width, height, text, options = {}) {
 
     ctx.save();
     ctx.globalAlpha = opacity;
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = color;
     ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
 
     const metrics = ctx.measureText(text);
@@ -489,6 +491,8 @@ export async function generateShareablePhoto(photoPath, options = {}) {
         addPhotoCloveWatermark: addPCWatermark = true,
         addUserWatermark: addUWatermark = false,
         userWatermarkText = '',
+        watermarkColor = '#ffffff',
+        watermarkOpacity = 0.7,
         maxSize = 2000,
         quality = 0.92
     } = options;
@@ -521,12 +525,20 @@ export async function generateShareablePhoto(photoPath, options = {}) {
 
     // Add user watermark if requested (bottom-left)
     if (addUWatermark && userWatermarkText) {
-        addUserWatermark(ctx, width, height, userWatermarkText, { position: 'bottom-left' });
+        addUserWatermark(ctx, width, height, userWatermarkText, {
+            position: 'bottom-left',
+            color: watermarkColor,
+            opacity: watermarkOpacity
+        });
     }
 
     // Add PhotoClove watermark if requested (bottom-right)
     if (addPCWatermark) {
-        addPhotoCloveWatermark(ctx, width, height, { position: 'bottom-right' });
+        addPhotoCloveWatermark(ctx, width, height, {
+            position: 'bottom-right',
+            color: watermarkColor,
+            opacity: watermarkOpacity
+        });
     }
 
     return new Promise((resolve) => {
@@ -578,6 +590,8 @@ export async function generateCollage(photoPaths, options = {}) {
         addPhotoCloveWatermark: addPCWatermark = true,
         addUserWatermark: addUWatermark = false,
         userWatermarkText = '',
+        watermarkColor = '#ffffff',
+        watermarkOpacity = 0.7,
         maxSize = 1800,
         cellSize = 400
     } = options;
@@ -649,12 +663,20 @@ export async function generateCollage(photoPaths, options = {}) {
 
     // Add user watermark if requested (bottom-left)
     if (addUWatermark && userWatermarkText) {
-        addUserWatermark(ctx, canvas.width, canvas.height, userWatermarkText, { position: 'bottom-left' });
+        addUserWatermark(ctx, canvas.width, canvas.height, userWatermarkText, {
+            position: 'bottom-left',
+            color: watermarkColor,
+            opacity: watermarkOpacity
+        });
     }
 
     // Add PhotoClove watermark if requested (bottom-right)
     if (addPCWatermark) {
-        addPhotoCloveWatermark(ctx, canvas.width, canvas.height, { position: 'bottom-right' });
+        addPhotoCloveWatermark(ctx, canvas.width, canvas.height, {
+            position: 'bottom-right',
+            color: watermarkColor,
+            opacity: watermarkOpacity
+        });
     }
 
     return new Promise((resolve) => {

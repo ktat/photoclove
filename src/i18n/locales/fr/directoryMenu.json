@@ -96,6 +96,8 @@
     "corners": "Coins arrondis",
     "addPhotoCloveWatermark": "Ajouter le filigrane PhotoClove",
     "addUserWatermark": "Ajouter votre filigrane",
+    "watermarkColor": "Couleur du filigrane",
+    "watermarkOpacity": "Opacité du filigrane",
     "copy": "Copier",
     "save": "Enregistrer",
     "noPreview": "Pas d'aperçu",

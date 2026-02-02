@@ -55,6 +55,8 @@ function ShareTab({
     // Watermark options
     const [addPhotoCloveWatermark, setAddPhotoCloveWatermark] = useState(true);
     const [addUserWatermark, setAddUserWatermark] = useState(true);
+    const [watermarkColor, setWatermarkColor] = useState('#ffffff');
+    const [watermarkOpacity, setWatermarkOpacity] = useState(70);
 
     // Collage options
     const [backgroundColor, setBackgroundColor] = useState('#000000');
@@ -109,7 +111,9 @@ function ShareTab({
                     const watermarkOptions = {
                         addPhotoCloveWatermark,
                         addUserWatermark: addUserWatermark && !!userWatermarkText,
-                        userWatermarkText
+                        userWatermarkText,
+                        watermarkColor,
+                        watermarkOpacity: watermarkOpacity / 100
                     };
 
                     if (shareMode === 'single' && activePhotos.length >= 1) {
@@ -142,7 +146,7 @@ function ShareTab({
         }, 300);
 
         return () => clearTimeout(timeoutId);
-    }, [activePhotos, shareMode, addPhotoCloveWatermark, addUserWatermark, userWatermarkText, effectiveBackgroundColor, padding, cornerRadius]);
+    }, [activePhotos, shareMode, addPhotoCloveWatermark, addUserWatermark, userWatermarkText, effectiveBackgroundColor, padding, cornerRadius, watermarkColor, watermarkOpacity]);
 
     // Cleanup URL on unmount
     useEffect(() => {
@@ -369,6 +373,61 @@ function ShareTab({
                             </label>
                             <span className={styles.watermarkPreview}>"{userWatermarkText}"</span>
                         </div>
+                    )}
+
+                    {/* Watermark Color & Opacity (show when at least one watermark is enabled) */}
+                    {(addPhotoCloveWatermark || (addUserWatermark && userWatermarkText)) && (
+                        <>
+                            {/* Watermark Color */}
+                            <div className={styles.optionGroup}>
+                                <label className={styles.optionLabel}>
+                                    {t('directoryMenu:share.watermarkColor', 'Watermark Color')}
+                                </label>
+                                <div className={styles.colorOptions}>
+                                    {[
+                                        { value: '#ffffff', label: 'White' },
+                                        { value: '#000000', label: 'Black' },
+                                        { value: '#cccccc', label: 'Gray' }
+                                    ].map(color => (
+                                        <button
+                                            key={color.value}
+                                            className={`${styles.colorBtn} ${watermarkColor === color.value ? styles.selected : ''}`}
+                                            style={{ backgroundColor: color.value }}
+                                            onClick={() => setWatermarkColor(color.value)}
+                                            title={color.label}
+                                        />
+                                    ))}
+                                    <label className={styles.customColorWrapper}>
+                                        <input
+                                            type="color"
+                                            value={watermarkColor}
+                                            onChange={(e) => setWatermarkColor(e.target.value)}
+                                            className={styles.customColorInput}
+                                        />
+                                        <span
+                                            className={`${styles.colorBtn} ${styles.customColor} ${!['#ffffff', '#000000', '#cccccc'].includes(watermarkColor) ? styles.selected : ''}`}
+                                            style={{ backgroundColor: watermarkColor }}
+                                            title="Custom"
+                                        />
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Watermark Opacity */}
+                            <div className={styles.optionGroup}>
+                                <label className={styles.optionLabel}>
+                                    {t('directoryMenu:share.watermarkOpacity', 'Watermark Opacity')}: {watermarkOpacity}%
+                                </label>
+                                <input
+                                    type="range"
+                                    min="10"
+                                    max="100"
+                                    value={watermarkOpacity}
+                                    onChange={(e) => setWatermarkOpacity(Number(e.target.value))}
+                                    className={styles.slider}
+                                />
+                            </div>
+                        </>
                     )}
                 </div>
             )}

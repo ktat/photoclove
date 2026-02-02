@@ -96,6 +96,8 @@
     "corners": "Eckenradius",
     "addPhotoCloveWatermark": "PhotoClove-Wasserzeichen hinzufügen",
     "addUserWatermark": "Ihr Wasserzeichen hinzufügen",
+    "watermarkColor": "Wasserzeichen-Farbe",
+    "watermarkOpacity": "Wasserzeichen-Deckkraft",
     "copy": "Kopieren",
     "save": "Speichern",
     "noPreview": "Keine Vorschau",
