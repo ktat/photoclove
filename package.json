@@ -13,7 +13,9 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "build:licenses": "pnpm dlx license-checker --json --production --out public/licenses-npm.json && cd src-tauri && cargo license --json > ../public/licenses-rust.json"
+    "build:licenses": "pnpm dlx license-checker --json --production --out public/licenses-npm.json && cd src-tauri && cargo license --json > ../public/licenses-rust.json",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",
@@ -41,6 +43,7 @@
     "recharts": "^3.7.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "@playwright/test": "^1.55.1",
     "@tauri-apps/cli": "^2.8.4",
     "@testing-library/jest-dom": "^6.8.0",
@@ -51,6 +54,9 @@
     "@vitejs/plugin-react": "^3.1.0",
     "@vitest/coverage-v8": "^3.2.4",
     "baseline-browser-mapping": "^2.9.15",
+    "eslint": "^9.39.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
     "jsdom": "^26.1.0",
     "msw": "^2.11.3",
     "vite": "^4.5.14",

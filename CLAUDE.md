@@ -1,5 +1,35 @@
 # CLAUDE.md - PhotoClove Development Guidelines
 
+## ⚠️ 最頻出の問題 TOP5（必ず最初に確認）
+
+以下は過去のセッション分析から最も頻繁に指摘される問題です：
+
+1. **CSS変数を使う** - ハードコードNG
+   - ❌ `color: '#666'` → ✅ `var(--color-text-muted)`
+   - ❌ `fontSize: '14px'` → ✅ `var(--font-size-base)`
+   - ❌ `padding: '8px'` → ✅ `var(--space-2)`
+   - **ESLint設定済み**: `pnpm lint` で自動検出
+   - **pre-file-writeフック**: ファイル保存時に自動チェック
+
+2. **600行制限を守る** - ファイルが大きくなったら分割
+   - 機能ごとにモジュール分割を検討
+   - 大きなコンポーネントはサブコンポーネントに分解
+
+3. **ログは構造化** - console.log / println! は使わない
+   - ❌ `console.log('error', data)` → ✅ `logger.error('Component', 'event', 'msg', data)`
+   - ❌ `println!("error: {}", msg)` → ✅ `log::error!(target: "module", "event; msg={}", msg)`
+
+4. **既存utilsを使う** - 実装前に必ず確認
+   - FileUtils, DateUtils, StringUtils, PathUtils を確認
+   - Unified Search API があるなら個別検索実装しない
+   - 共通コンポーネント（Modal, Loading等）を再作成しない
+
+5. **状態は不変に** - Reactの基本原則
+   - ❌ `config.items.push(item)` → ✅ `setConfig(prev => ({...prev, items: [...prev.items, item]}))`
+   - ❌ 関数内で `let lock = false` → ✅ `const lockRef = useRef(false)`
+
+詳細な問題リスト（TOP20）は `docs/common-mistakes.md` を参照してください。
+
 ## 📋 General Development Rules (Apply to ALL Tasks)
 
 ### 1. Logging Standards
@@ -112,6 +142,11 @@ style={{ fontSize: '14px', color: '#666', backgroundColor: '#374151' }}
 style={{ fontSize: 'var(--font-size-base)', color: 'var(--color-text-muted)', backgroundColor: 'var(--color-bg-muted)' }}
 ```
 
+**Enforcement:**
+- **ESLint**: Run `pnpm lint` to detect all hardcoded pixel values
+- **Pre-write Hook**: Automatic detection when files are saved via Claude
+- **Documentation**: See `docs/eslint-hardcoded-pixels.md` for full mapping guide
+
 #### CSS Modules Guidelines
 PhotoClove uses CSS Modules for component-specific styling. Follow these guidelines:
 
@@ -136,6 +171,21 @@ PhotoClove uses CSS Modules for component-specific styling. Follow these guideli
   - Styles are shared across multiple components
   - Migration cost outweighs benefits
 - **Migration priority**: Existing unmigrated files (search/, modals, utilities) are low priority - migrate only when actively modifying those components
+
+#### Opening External URLs (Tauri)
+In Tauri apps, standard `<a href="..." target="_blank">` links do NOT open in the browser. Use `openUrl` from the opener plugin:
+
+```javascript
+import { openUrl } from '@tauri-apps/plugin-opener';
+
+// Open external URL in system default browser
+openUrl('https://example.com');
+
+// In onClick handler
+<span onClick={() => openUrl('https://example.com')}>Link</span>
+```
+
+**Important**: Never use `target="_blank"` for external links - it won't work in Tauri.
 
 ### 3. Testing & Validation
 - Run `cargo check` for Rust changes in `src-tauri/src/`
