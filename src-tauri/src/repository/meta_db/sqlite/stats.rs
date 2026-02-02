@@ -11,23 +11,23 @@
 
 use crate::entity::config::Config;
 use crate::repository::meta_db::sqlite::SQLite;
-use chrono::{Duration, Local, NaiveDate};
+use chrono::{Datelike, Duration, NaiveDate};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
 /// Time period for filtering statistics
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(tag = "type", rename_all = "lowercase")]
 pub enum TimePeriod {
     /// All time (no filtering)
     All,
-    /// Last 7 days
-    Weekly,
-    /// Last 30 days
-    Monthly,
-    /// Last 365 days
-    Yearly,
+    /// Specific year (e.g., 2023)
+    Yearly { year: i32 },
+    /// Specific month (e.g., 2023-04)
+    Monthly { year: i32, month: u32 },
+    /// Specific week starting from a date (7 days from start_date)
+    Weekly { start_date: NaiveDate },
 }
 
 impl Default for TimePeriod {
@@ -37,45 +37,116 @@ impl Default for TimePeriod {
 }
 
 impl TimePeriod {
-    /// Get the start date for this period (None means no filtering)
-    pub fn start_date(&self) -> Option<NaiveDate> {
-        let today = Local::now().date_naive();
-        match self {
-            TimePeriod::All => None,
-            TimePeriod::Weekly => Some(today - Duration::days(7)),
-            TimePeriod::Monthly => Some(today - Duration::days(30)),
-            TimePeriod::Yearly => Some(today - Duration::days(365)),
-        }
-    }
-
     /// Get SQL date condition for this period
     pub fn date_condition(&self) -> String {
-        match self.start_date() {
-            Some(date) => format!(
-                " AND date(COALESCE(exif_date_time_original, photo_date)) >= '{}'",
-                date.format("%Y-%m-%d")
+        match self {
+            TimePeriod::All => String::new(),
+            TimePeriod::Yearly { year } => format!(
+                " AND strftime('%Y', date(COALESCE(exif_date_time_original, photo_date))) = '{}'",
+                year
             ),
-            None => String::new(),
+            TimePeriod::Monthly { year, month } => format!(
+                " AND strftime('%Y-%m', date(COALESCE(exif_date_time_original, photo_date))) = '{}-{:02}'",
+                year, month
+            ),
+            TimePeriod::Weekly { start_date } => {
+                let end_date = *start_date + Duration::days(7);
+                format!(
+                    " AND date(COALESCE(exif_date_time_original, photo_date)) >= '{}' AND date(COALESCE(exif_date_time_original, photo_date)) < '{}'",
+                    start_date.format("%Y-%m-%d"),
+                    end_date.format("%Y-%m-%d")
+                )
+            }
         }
     }
 
-    /// Parse from string
+    /// Parse from string format:
+    /// - "all" -> All
+    /// - "yearly:2023" -> Yearly { year: 2023 }
+    /// - "monthly:2023-04" -> Monthly { year: 2023, month: 4 }
+    /// - "weekly:2023-04-10" -> Weekly { start_date: 2023-04-10 }
     pub fn from_str(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
-            "weekly" => TimePeriod::Weekly,
-            "monthly" => TimePeriod::Monthly,
-            "yearly" => TimePeriod::Yearly,
+        let s = s.to_lowercase();
+        if s == "all" {
+            return TimePeriod::All;
+        }
+
+        let parts: Vec<&str> = s.splitn(2, ':').collect();
+        if parts.len() != 2 {
+            return TimePeriod::All;
+        }
+
+        let (period_type, value) = (parts[0], parts[1]);
+
+        match period_type {
+            "yearly" => {
+                if let Ok(year) = value.parse::<i32>() {
+                    TimePeriod::Yearly { year }
+                } else {
+                    TimePeriod::All
+                }
+            }
+            "monthly" => {
+                let date_parts: Vec<&str> = value.split('-').collect();
+                if date_parts.len() >= 2 {
+                    if let (Ok(year), Ok(month)) = (
+                        date_parts[0].parse::<i32>(),
+                        date_parts[1].parse::<u32>(),
+                    ) {
+                        if month >= 1 && month <= 12 {
+                            return TimePeriod::Monthly { year, month };
+                        }
+                    }
+                }
+                TimePeriod::All
+            }
+            "weekly" => {
+                if let Ok(start_date) = NaiveDate::parse_from_str(value, "%Y-%m-%d") {
+                    TimePeriod::Weekly { start_date }
+                } else {
+                    TimePeriod::All
+                }
+            }
             _ => TimePeriod::All,
         }
     }
 
-    /// Convert to string
-    pub fn as_str(&self) -> &'static str {
+    /// Convert to string format
+    pub fn as_str(&self) -> String {
+        match self {
+            TimePeriod::All => "all".to_string(),
+            TimePeriod::Yearly { year } => format!("yearly:{}", year),
+            TimePeriod::Monthly { year, month } => format!("monthly:{}-{:02}", year, month),
+            TimePeriod::Weekly { start_date } => {
+                format!("weekly:{}", start_date.format("%Y-%m-%d"))
+            }
+        }
+    }
+
+    /// Get the period type as a simple string (for UI display)
+    pub fn period_type(&self) -> &'static str {
         match self {
             TimePeriod::All => "all",
-            TimePeriod::Weekly => "weekly",
-            TimePeriod::Monthly => "monthly",
-            TimePeriod::Yearly => "yearly",
+            TimePeriod::Yearly { .. } => "yearly",
+            TimePeriod::Monthly { .. } => "monthly",
+            TimePeriod::Weekly { .. } => "weekly",
+        }
+    }
+
+    /// Get display label for this period
+    pub fn display_label(&self) -> String {
+        match self {
+            TimePeriod::All => "All Time".to_string(),
+            TimePeriod::Yearly { year } => format!("{}", year),
+            TimePeriod::Monthly { year, month } => format!("{}-{:02}", year, month),
+            TimePeriod::Weekly { start_date } => {
+                let end_date = *start_date + Duration::days(6);
+                format!(
+                    "{} - {}",
+                    start_date.format("%Y-%m-%d"),
+                    end_date.format("%Y-%m-%d")
+                )
+            }
         }
     }
 }
@@ -164,7 +235,7 @@ pub struct StorageStats {
 pub fn get_all_insights(
     sqlite: &SQLite,
     config: &Config,
-    period: TimePeriod,
+    period: &TimePeriod,
 ) -> Result<PhotographyInsights, String> {
     log::info!(target: "stats", "get_all_insights; status=starting; period={}", period.as_str());
 
@@ -178,7 +249,7 @@ pub fn get_all_insights(
     log::info!(target: "stats", "get_all_insights; status=complete; period={}", period.as_str());
 
     Ok(PhotographyInsights {
-        period,
+        period: period.clone(),
         shooting_time,
         camera_settings,
         equipment,
@@ -188,7 +259,7 @@ pub fn get_all_insights(
 }
 
 /// Get shooting time statistics (hour of day, day of week)
-fn get_shooting_time_stats(sqlite: &SQLite, period: TimePeriod) -> Result<ShootingTimeStats, String> {
+fn get_shooting_time_stats(sqlite: &SQLite, period: &TimePeriod) -> Result<ShootingTimeStats, String> {
     let conn = sqlite
         .get_connection()
         .map_err(|e| format!("Failed to connect: {}", e))?;
@@ -262,7 +333,7 @@ fn get_shooting_time_stats(sqlite: &SQLite, period: TimePeriod) -> Result<Shooti
 }
 
 /// Get camera settings distribution
-fn get_camera_settings_stats(sqlite: &SQLite, period: TimePeriod) -> Result<CameraSettingsStats, String> {
+fn get_camera_settings_stats(sqlite: &SQLite, period: &TimePeriod) -> Result<CameraSettingsStats, String> {
     let conn = sqlite
         .get_connection()
         .map_err(|e| format!("Failed to connect: {}", e))?;
@@ -349,7 +420,7 @@ fn query_setting_distribution(
 }
 
 /// Get equipment statistics (cameras, lenses)
-fn get_equipment_stats(sqlite: &SQLite, period: TimePeriod) -> Result<EquipmentStats, String> {
+fn get_equipment_stats(sqlite: &SQLite, period: &TimePeriod) -> Result<EquipmentStats, String> {
     let conn = sqlite
         .get_connection()
         .map_err(|e| format!("Failed to connect: {}", e))?;
@@ -416,7 +487,7 @@ fn get_equipment_stats(sqlite: &SQLite, period: TimePeriod) -> Result<EquipmentS
 }
 
 /// Get organization metrics
-fn get_organization_stats(sqlite: &SQLite, period: TimePeriod) -> Result<OrganizationStats, String> {
+fn get_organization_stats(sqlite: &SQLite, period: &TimePeriod) -> Result<OrganizationStats, String> {
     let conn = sqlite
         .get_connection()
         .map_err(|e| format!("Failed to connect: {}", e))?;
@@ -562,4 +633,131 @@ fn calculate_dir_size_recursive(path: &Path) -> u64 {
     }
 
     total_size
+}
+
+/// Available periods for filtering
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AvailablePeriods {
+    /// Available years (e.g., [2023, 2024])
+    pub years: Vec<i32>,
+    /// Available months as "YYYY-MM" strings (e.g., ["2023-04", "2023-12"])
+    pub months: Vec<String>,
+    /// Available weeks grouped by year. Key: year, Value: list of Monday dates
+    pub weeks_by_year: std::collections::HashMap<i32, Vec<String>>,
+    /// Earliest photo date
+    pub min_date: Option<String>,
+    /// Latest photo date
+    pub max_date: Option<String>,
+}
+
+/// Get available periods based on photo dates in the database
+pub fn get_available_periods(sqlite: &SQLite) -> Result<AvailablePeriods, String> {
+    let conn = sqlite
+        .get_connection()
+        .map_err(|e| format!("Failed to connect: {}", e))?;
+
+    // Get min and max dates
+    let date_range_query = "
+        SELECT
+            MIN(date(COALESCE(exif_date_time_original, photo_date))) as min_date,
+            MAX(date(COALESCE(exif_date_time_original, photo_date))) as max_date
+        FROM photo_metadata
+        WHERE (exif_date_time_original IS NOT NULL OR photo_date IS NOT NULL)
+          AND (delete_flg = 0 OR delete_flg IS NULL)
+    ";
+
+    let (min_date_str, max_date_str): (Option<String>, Option<String>) = conn
+        .query_row(date_range_query, [], |row| Ok((row.get(0)?, row.get(1)?)))
+        .map_err(|e| format!("Failed to query date range: {}", e))?;
+
+    if min_date_str.is_none() || max_date_str.is_none() {
+        return Ok(AvailablePeriods {
+            years: vec![],
+            months: vec![],
+            weeks_by_year: std::collections::HashMap::new(),
+            min_date: None,
+            max_date: None,
+        });
+    }
+
+    // Get distinct years
+    let years_query = "
+        SELECT DISTINCT CAST(strftime('%Y', date(COALESCE(exif_date_time_original, photo_date))) AS INTEGER) as year
+        FROM photo_metadata
+        WHERE (exif_date_time_original IS NOT NULL OR photo_date IS NOT NULL)
+          AND (delete_flg = 0 OR delete_flg IS NULL)
+        ORDER BY year DESC
+    ";
+
+    let mut years_stmt = conn
+        .prepare(years_query)
+        .map_err(|e| format!("Failed to prepare years query: {}", e))?;
+
+    let years: Vec<i32> = years_stmt
+        .query_map([], |row| row.get(0))
+        .map_err(|e| format!("Failed to query years: {}", e))?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    // Get distinct months
+    let months_query = "
+        SELECT DISTINCT strftime('%Y-%m', date(COALESCE(exif_date_time_original, photo_date))) as month
+        FROM photo_metadata
+        WHERE (exif_date_time_original IS NOT NULL OR photo_date IS NOT NULL)
+          AND (delete_flg = 0 OR delete_flg IS NULL)
+        ORDER BY month DESC
+    ";
+
+    let mut months_stmt = conn
+        .prepare(months_query)
+        .map_err(|e| format!("Failed to prepare months query: {}", e))?;
+
+    let months: Vec<String> = months_stmt
+        .query_map([], |row| row.get(0))
+        .map_err(|e| format!("Failed to query months: {}", e))?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    // Get weeks with photos (Monday start dates), grouped by year
+    // Calculate week start (Monday) for each photo date using SQLite
+    // strftime('%w') returns 0=Sunday, 1=Monday, ..., 6=Saturday
+    // To get Monday: subtract (weekday + 6) % 7 days
+    let weeks_query = "
+        SELECT DISTINCT
+            date(
+                COALESCE(exif_date_time_original, photo_date),
+                '-' || ((CAST(strftime('%w', date(COALESCE(exif_date_time_original, photo_date))) AS INTEGER) + 6) % 7) || ' days'
+            ) as week_start
+        FROM photo_metadata
+        WHERE (exif_date_time_original IS NOT NULL OR photo_date IS NOT NULL)
+          AND (delete_flg = 0 OR delete_flg IS NULL)
+        ORDER BY week_start DESC
+    ";
+
+    let mut weeks_stmt = conn
+        .prepare(weeks_query)
+        .map_err(|e| format!("Failed to prepare weeks query: {}", e))?;
+
+    let weeks: Vec<String> = weeks_stmt
+        .query_map([], |row| row.get(0))
+        .map_err(|e| format!("Failed to query weeks: {}", e))?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    // Group weeks by year
+    let mut weeks_by_year: std::collections::HashMap<i32, Vec<String>> = std::collections::HashMap::new();
+    for week in weeks {
+        if let Ok(date) = NaiveDate::parse_from_str(&week, "%Y-%m-%d") {
+            let year = date.year();
+            weeks_by_year.entry(year).or_insert_with(Vec::new).push(week);
+        }
+    }
+
+    Ok(AvailablePeriods {
+        years,
+        months,
+        weeks_by_year,
+        min_date: min_date_str,
+        max_date: max_date_str,
+    })
 }

@@ -3,7 +3,13 @@
  *
  * Provides methods for fetching photography statistics and insights.
  * Uses caching and job queue for background calculation.
- * Supports time period filtering: all, weekly, monthly, yearly.
+ * Supports time period filtering: all, weekly, monthly, yearly with specific values.
+ *
+ * Period string format:
+ * - "all" - All time
+ * - "yearly:2023" - Specific year
+ * - "monthly:2023-04" - Specific month
+ * - "weekly:2023-04-10" - Specific week (starting from date, must be Monday)
  */
 
 import { invoke } from "@tauri-apps/api/core";
@@ -11,14 +17,44 @@ import { listen } from "@tauri-apps/api/event";
 import { logger } from "./LoggerService.js";
 
 /**
- * Available time periods for insights filtering
+ * Period types for insights filtering
  */
-export const TIME_PERIODS = {
+export const PERIOD_TYPES = {
     ALL: 'all',
-    WEEKLY: 'weekly',
-    MONTHLY: 'monthly',
     YEARLY: 'yearly',
+    MONTHLY: 'monthly',
+    WEEKLY: 'weekly',
 };
+
+// Backward compatibility alias
+export const TIME_PERIODS = PERIOD_TYPES;
+
+/**
+ * Build period string from type and value
+ * @param {string} type - Period type (all, yearly, monthly, weekly)
+ * @param {string|number|null} value - Period value (year, month string, or week start date)
+ * @returns {string} Period string for backend
+ */
+export function buildPeriodString(type, value = null) {
+    if (type === PERIOD_TYPES.ALL || !value) {
+        return 'all';
+    }
+    return `${type}:${value}`;
+}
+
+/**
+ * Parse period string into type and value
+ * @param {string} periodStr - Period string (e.g., "yearly:2023")
+ * @returns {{ type: string, value: string|null }} Parsed period
+ */
+export function parsePeriodString(periodStr) {
+    if (!periodStr || periodStr === 'all') {
+        return { type: PERIOD_TYPES.ALL, value: null };
+    }
+    const [type, ...valueParts] = periodStr.split(':');
+    const value = valueParts.join(':') || null;
+    return { type, value };
+}
 
 const InsightsService = {
     /**
@@ -160,6 +196,61 @@ const InsightsService = {
         if (secs < 3600) return `${Math.floor(secs / 60)} minutes ago`;
         if (secs < 86400) return `${Math.floor(secs / 3600)} hours ago`;
         return `${Math.floor(secs / 86400)} days ago`;
+    },
+
+    /**
+     * Get available periods based on photo dates in database
+     * @returns {Promise<Object>} Available periods { years, months, weeks, min_date, max_date }
+     */
+    async getAvailablePeriods() {
+        logger.info('InsightsService', 'get_available_periods', 'Fetching available periods');
+        try {
+            const result = await invoke("get_available_periods");
+            const data = JSON.parse(result);
+            logger.info('InsightsService', 'get_available_periods_success', 'Available periods retrieved', {
+                years: data.years?.length,
+                months: data.months?.length,
+                weeks: data.weeks?.length
+            });
+            return data;
+        } catch (error) {
+            const errorMsg = typeof error === 'string' ? error : (error.message || JSON.stringify(error));
+            logger.error('InsightsService', 'get_available_periods_error', 'Failed to get available periods', {
+                error: errorMsg
+            });
+            throw new Error(errorMsg);
+        }
+    },
+
+    /**
+     * Format period value for display
+     * @param {string} type - Period type
+     * @param {string|number} value - Period value
+     * @returns {string} Formatted display string
+     */
+    formatPeriodDisplay(type, value) {
+        if (type === PERIOD_TYPES.ALL) {
+            return 'All Time';
+        }
+        if (type === PERIOD_TYPES.YEARLY) {
+            return String(value);
+        }
+        if (type === PERIOD_TYPES.MONTHLY) {
+            // Format "2023-04" as "April 2023" or similar
+            const [year, month] = String(value).split('-');
+            const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+            return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
+        }
+        if (type === PERIOD_TYPES.WEEKLY) {
+            // Format as date range
+            const startDate = new Date(value);
+            const endDate = new Date(startDate);
+            endDate.setDate(endDate.getDate() + 6);
+            const options = { month: 'short', day: 'numeric' };
+            const yearOptions = { year: 'numeric' };
+            return `${startDate.toLocaleDateString(undefined, options)} - ${endDate.toLocaleDateString(undefined, { ...options, ...yearOptions })}`;
+        }
+        return String(value);
     }
 };
 

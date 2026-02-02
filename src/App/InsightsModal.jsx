@@ -15,7 +15,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from 'react-i18next';
 import BaseModal, { ModalLoading, ModalError } from "../components/BaseModal.jsx";
 import { logger } from "../services/LoggerService.js";
-import InsightsService, { TIME_PERIODS } from "../services/InsightsService.js";
+import InsightsService, { PERIOD_TYPES, buildPeriodString } from "../services/InsightsService.js";
 import ShootingTimeSection from "./Insights/ShootingTimeSection.jsx";
 import CameraSettingsSection from "./Insights/CameraSettingsSection.jsx";
 import EquipmentSection from "./Insights/EquipmentSection.jsx";
@@ -33,18 +33,46 @@ function InsightsModal({ onClose }) {
     const [activeSection, setActiveSection] = useState('shooting_time');
     const [cacheAge, setCacheAge] = useState(null);
     const [showShareDialog, setShowShareDialog] = useState(false);
-    const [selectedPeriod, setSelectedPeriod] = useState(TIME_PERIODS.ALL);
 
-    // Period options for the selector
-    const periodOptions = [
-        { value: TIME_PERIODS.ALL, label: t('insights:periods.all', 'All Time') },
-        { value: TIME_PERIODS.WEEKLY, label: t('insights:periods.weekly', 'Weekly') },
-        { value: TIME_PERIODS.MONTHLY, label: t('insights:periods.monthly', 'Monthly') },
-        { value: TIME_PERIODS.YEARLY, label: t('insights:periods.yearly', 'Yearly') },
+    // Period selection state
+    const [periodType, setPeriodType] = useState(PERIOD_TYPES.ALL);
+    const [periodValue, setPeriodValue] = useState(null);
+    const [weekYear, setWeekYear] = useState(null); // Year for weekly period
+    const [availablePeriods, setAvailablePeriods] = useState(null);
+
+    // Period type options
+    const periodTypeOptions = [
+        { value: PERIOD_TYPES.ALL, label: t('insights:periods.all', 'All Time') },
+        { value: PERIOD_TYPES.YEARLY, label: t('insights:periods.yearly', 'Yearly') },
+        { value: PERIOD_TYPES.MONTHLY, label: t('insights:periods.monthly', 'Monthly') },
+        { value: PERIOD_TYPES.WEEKLY, label: t('insights:periods.weekly', 'Weekly') },
     ];
 
+    // Build the full period string from type and value
+    const buildCurrentPeriod = useCallback(() => {
+        return buildPeriodString(periodType, periodValue);
+    }, [periodType, periodValue]);
+
+    // Load available periods on mount
+    useEffect(() => {
+        const loadAvailablePeriods = async () => {
+            try {
+                const periods = await InsightsService.getAvailablePeriods();
+                setAvailablePeriods(periods);
+                logger.info('InsightsModal', 'available_periods_loaded', 'Available periods loaded', {
+                    years: periods.years?.length,
+                    months: periods.months?.length,
+                    weekYears: Object.keys(periods.weeks_by_year || {}).length
+                });
+            } catch (err) {
+                logger.error('InsightsModal', 'available_periods_error', 'Failed to load available periods', { error: err });
+            }
+        };
+        loadAvailablePeriods();
+    }, []);
+
     // Load insights from cache or trigger refresh
-    const loadInsights = useCallback(async (period = selectedPeriod) => {
+    const loadInsights = useCallback(async (period) => {
         try {
             setLoading(true);
             setError(null);
@@ -73,10 +101,10 @@ function InsightsModal({ onClose }) {
         } finally {
             setLoading(false);
         }
-    }, [selectedPeriod]);
+    }, []);
 
     // Trigger background refresh
-    const triggerRefresh = async (period = selectedPeriod) => {
+    const triggerRefresh = async (period) => {
         try {
             setRefreshing(true);
             setError(null);
@@ -91,37 +119,88 @@ function InsightsModal({ onClose }) {
         }
     };
 
-    // Handle period change
-    const handlePeriodChange = async (newPeriod) => {
-        if (newPeriod === selectedPeriod || refreshing) return;
-        logger.info('InsightsModal', 'period_change', 'Changing period', { from: selectedPeriod, to: newPeriod });
-        setSelectedPeriod(newPeriod);
-        await loadInsights(newPeriod);
+    // Handle period type change
+    const handlePeriodTypeChange = (newType) => {
+        if (newType === periodType || refreshing) return;
+        logger.info('InsightsModal', 'period_type_change', 'Changing period type', { from: periodType, to: newType });
+        setPeriodType(newType);
+
+        // Set default value for the new type
+        let newValue = null;
+        if (newType === PERIOD_TYPES.YEARLY && availablePeriods?.years?.length > 0) {
+            newValue = availablePeriods.years[0]; // Most recent year
+        } else if (newType === PERIOD_TYPES.MONTHLY && availablePeriods?.months?.length > 0) {
+            newValue = availablePeriods.months[0]; // Most recent month
+        } else if (newType === PERIOD_TYPES.WEEKLY && availablePeriods?.weeks_by_year) {
+            // For weekly, set year first, then get first week of that year
+            const years = Object.keys(availablePeriods.weeks_by_year).map(Number).sort((a, b) => b - a);
+            if (years.length > 0) {
+                const firstYear = years[0];
+                setWeekYear(firstYear);
+                const weeksOfYear = availablePeriods.weeks_by_year[firstYear] || [];
+                newValue = weeksOfYear[0] || null;
+            }
+        }
+        setPeriodValue(newValue);
+
+        // Load insights with new period
+        const newPeriod = buildPeriodString(newType, newValue);
+        loadInsights(newPeriod);
+    };
+
+    // Handle period value change
+    const handlePeriodValueChange = (newValue) => {
+        if (newValue === periodValue || refreshing) return;
+        logger.info('InsightsModal', 'period_value_change', 'Changing period value', { from: periodValue, to: newValue });
+        setPeriodValue(newValue);
+
+        // Load insights with new period
+        const newPeriod = buildPeriodString(periodType, newValue);
+        loadInsights(newPeriod);
+    };
+
+    // Handle week year change (for weekly period)
+    const handleWeekYearChange = (newYear) => {
+        const yearNum = Number(newYear);
+        if (yearNum === weekYear || refreshing) return;
+        logger.info('InsightsModal', 'week_year_change', 'Changing week year', { from: weekYear, to: yearNum });
+        setWeekYear(yearNum);
+
+        // Set first week of the new year as default
+        const weeksOfYear = availablePeriods?.weeks_by_year?.[yearNum] || [];
+        const newValue = weeksOfYear[0] || null;
+        setPeriodValue(newValue);
+
+        // Load insights with new period
+        const newPeriod = buildPeriodString(PERIOD_TYPES.WEEKLY, newValue);
+        loadInsights(newPeriod);
     };
 
     // Handle refresh button click
     const handleRefresh = async () => {
         if (refreshing) return;
-        await triggerRefresh(selectedPeriod);
+        const currentPeriod = buildCurrentPeriod();
+        await triggerRefresh(currentPeriod);
     };
 
     // Listen for insights_updated event
     useEffect(() => {
         let unlisten;
+        const currentPeriod = buildCurrentPeriod();
 
         const setupListener = async () => {
             unlisten = await InsightsService.onInsightsUpdated(async (payload) => {
-                const updatedPeriod = payload?.period || TIME_PERIODS.ALL;
+                const updatedPeriod = payload?.period || 'all';
                 logger.info('InsightsModal', 'insights_updated', 'Received update event', {
                     updatedPeriod,
-                    selectedPeriod
+                    currentPeriod
                 });
 
                 // Only update if the period matches
-                if (updatedPeriod === selectedPeriod) {
+                if (updatedPeriod === currentPeriod) {
                     // Reload from cache
                     try {
-                        const cached = await InsightsService.getCachedInsights(selectedPeriod);
+                        const cached = await InsightsService.getCachedInsights(currentPeriod);
                         if (cached) {
                             setInsights(cached);
                             setCacheAge(0); // Just updated
@@ -141,12 +220,12 @@ function InsightsModal({ onClose }) {
         return () => {
             if (unlisten) unlisten();
         };
-    }, [selectedPeriod]);
+    }, [buildCurrentPeriod]);
 
     // Initial load
     useEffect(() => {
-        loadInsights();
-    }, [loadInsights]);
+        loadInsights(buildCurrentPeriod());
+    }, []);
 
     const sections = [
         { id: 'shooting_time', label: t('insights:sections.shootingTime', 'Shooting Time'), icon: '📅' },
@@ -175,20 +254,122 @@ function InsightsModal({ onClose }) {
         }
     };
 
+    // Format week display label
+    const formatWeekLabel = (weekStart) => {
+        const startDate = new Date(weekStart);
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 6);
+        const options = { month: 'short', day: 'numeric' };
+        return `${startDate.toLocaleDateString(undefined, options)} - ${endDate.toLocaleDateString(undefined, options)}`;
+    };
+
+    // Format month display label
+    const formatMonthLabel = (monthStr) => {
+        const [year, month] = monthStr.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+        return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
+    };
+
+    // Render value selector based on period type
+    const renderValueSelector = () => {
+        if (periodType === PERIOD_TYPES.ALL) {
+            return null;
+        }
+
+        if (periodType === PERIOD_TYPES.YEARLY) {
+            const options = availablePeriods?.years || [];
+            if (options.length === 0) {
+                return <span className={styles.noDataMessage}>{t('insights:periods.noData', 'No data available')}</span>;
+            }
+            return (
+                <select
+                    className={styles.periodValueSelect}
+                    value={periodValue || ''}
+                    onChange={(e) => handlePeriodValueChange(e.target.value)}
+                    disabled={refreshing || loading}
+                >
+                    {options.map(option => (
+                        <option key={option} value={option}>{option}</option>
+                    ))}
+                </select>
+            );
+        }
+
+        if (periodType === PERIOD_TYPES.MONTHLY) {
+            const options = availablePeriods?.months || [];
+            if (options.length === 0) {
+                return <span className={styles.noDataMessage}>{t('insights:periods.noData', 'No data available')}</span>;
+            }
+            return (
+                <select
+                    className={styles.periodValueSelect}
+                    value={periodValue || ''}
+                    onChange={(e) => handlePeriodValueChange(e.target.value)}
+                    disabled={refreshing || loading}
+                >
+                    {options.map(option => (
+                        <option key={option} value={option}>{formatMonthLabel(option)}</option>
+                    ))}
+                </select>
+            );
+        }
+
+        if (periodType === PERIOD_TYPES.WEEKLY) {
+            const weeksByYear = availablePeriods?.weeks_by_year || {};
+            const years = Object.keys(weeksByYear).map(Number).sort((a, b) => b - a);
+
+            if (years.length === 0) {
+                return <span className={styles.noDataMessage}>{t('insights:periods.noData', 'No data available')}</span>;
+            }
+
+            const weeksOfSelectedYear = weeksByYear[weekYear] || [];
+
+            return (
+                <>
+                    <select
+                        className={styles.periodValueSelect}
+                        value={weekYear || ''}
+                        onChange={(e) => handleWeekYearChange(e.target.value)}
+                        disabled={refreshing || loading}
+                    >
+                        {years.map(year => (
+                            <option key={year} value={year}>{year}</option>
+                        ))}
+                    </select>
+                    <select
+                        className={styles.periodValueSelect}
+                        value={periodValue || ''}
+                        onChange={(e) => handlePeriodValueChange(e.target.value)}
+                        disabled={refreshing || loading || weeksOfSelectedYear.length === 0}
+                    >
+                        {weeksOfSelectedYear.map(week => (
+                            <option key={week} value={week}>{formatWeekLabel(week)}</option>
+                        ))}
+                    </select>
+                </>
+            );
+        }
+
+        return null;
+    };
+
     const periodSelector = (
         <div className={styles.periodSelector}>
             <span className={styles.periodLabel}>{t('insights:periods.label', 'Period:')}</span>
-            <div className={styles.periodButtons}>
-                {periodOptions.map(option => (
-                    <button
-                        key={option.value}
-                        className={`${styles.periodBtn} ${selectedPeriod === option.value ? styles.active : ''}`}
-                        onClick={() => handlePeriodChange(option.value)}
-                        disabled={refreshing || loading}
-                    >
-                        {option.label}
-                    </button>
-                ))}
+            <div className={styles.periodControls}>
+                <div className={styles.periodButtons}>
+                    {periodTypeOptions.map(option => (
+                        <button
+                            key={option.value}
+                            className={`${styles.periodBtn} ${periodType === option.value ? styles.active : ''}`}
+                            onClick={() => handlePeriodTypeChange(option.value)}
+                            disabled={refreshing || loading}
+                        >
+                            {option.label}
+                        </button>
+                    ))}
+                </div>
+                {renderValueSelector()}
             </div>
         </div>
     );
@@ -269,7 +450,7 @@ function InsightsModal({ onClose }) {
             {showShareDialog && (
                 <ShareStatsDialog
                     insights={insights}
-                    period={selectedPeriod}
+                    period={buildCurrentPeriod()}
                     onClose={() => setShowShareDialog(false)}
                 />
             )}

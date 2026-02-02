@@ -27,9 +27,10 @@ use commands::*;
 fn queue_startup_insights(config: &entity::config::Config, app_handle: tauri::AppHandle) {
     use crate::domain_service::job_queue::handlers::insights;
     use crate::entity::job_queue::{Job, JobType, JobUnit, QueuedJob};
+    use crate::repository::meta_db::sqlite::stats::TimePeriod;
 
     // Check if cache is stale (older than 1 hour) or missing
-    let should_refresh = match insights::get_cache_metadata(config) {
+    let should_refresh = match insights::get_cache_metadata(config, &TimePeriod::All) {
         Some(metadata) => metadata.age_secs > 3600, // Older than 1 hour
         None => true, // No cache
     };
@@ -429,6 +430,7 @@ pub fn run() {
             stats_commands::get_cached_insights,
             stats_commands::get_insights_cache_status,
             stats_commands::queue_insights_refresh,
+            stats_commands::get_available_periods,
             // Achievement commands
             achievement_commands::get_achievements,
             achievement_commands::check_all_achievements,

@@ -21,7 +21,8 @@ pub(crate) fn process_insights_job(
 
     // Extract period from job targets (first element is period string)
     let period = job
-        .targets
+        .job
+        .target
         .first()
         .map(|s| TimePeriod::from_str(s))
         .unwrap_or(TimePeriod::All);
@@ -35,14 +36,14 @@ pub(crate) fn process_insights_job(
     // Calculate insights
     log::info!(target: "job_queue", "insights_job; job_id={}; status=calculating; period={}",
         job_id, period.as_str());
-    let insights = stats::get_all_insights(db, config, period)?;
+    let insights = stats::get_all_insights(db, config, &period)?;
 
     // Serialize to JSON
     let json = serde_json::to_string_pretty(&insights)
         .map_err(|e| format!("Failed to serialize insights: {}", e))?;
 
     // Get cache directory (period-specific)
-    let cache_path = get_insights_cache_path(config, period);
+    let cache_path = get_insights_cache_path(config, &period);
 
     // Ensure cache directory exists
     if let Some(parent) = Path::new(&cache_path).parent() {
@@ -81,21 +82,23 @@ pub struct InsightsUpdatedPayload {
 /// Get the cache file path for insights (period-specific)
 pub fn get_insights_cache_path(
     _config: &crate::entity::config::Config,
-    period: TimePeriod,
+    period: &TimePeriod,
 ) -> String {
     let cache_dir = dirs::data_local_dir()
         .unwrap_or_else(|| std::path::PathBuf::from("."))
         .join("photoclove")
         .join("cache");
 
-    let filename = format!("insights_{}.json", period.as_str());
+    // Replace colons with underscores for valid filename (e.g., "yearly:2023" -> "yearly_2023")
+    let period_str = period.as_str().replace(':', "_");
+    let filename = format!("insights_{}.json", period_str);
     cache_dir.join(filename).to_string_lossy().to_string()
 }
 
 /// Read cached insights if available
 pub fn read_cached_insights(
     config: &crate::entity::config::Config,
-    period: TimePeriod,
+    period: &TimePeriod,
 ) -> Option<stats::PhotographyInsights> {
     let cache_path = get_insights_cache_path(config, period);
 
@@ -121,7 +124,7 @@ pub fn read_cached_insights(
 /// Get cache file metadata (for checking age)
 pub fn get_cache_metadata(
     config: &crate::entity::config::Config,
-    period: TimePeriod,
+    period: &TimePeriod,
 ) -> Option<CacheMetadata> {
     let cache_path = get_insights_cache_path(config, period);
 
@@ -135,7 +138,7 @@ pub fn get_cache_metadata(
             let age_secs = modified.elapsed().ok()?.as_secs();
             Some(CacheMetadata {
                 path: cache_path,
-                period: period.as_str().to_string(),
+                period: period.as_str(),
                 age_secs,
                 size_bytes: metadata.len(),
             })
