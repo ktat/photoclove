@@ -16,5 +16,6 @@ run.sh
 rsync-ui.sh
 dev.sh
 .aider*
+/.claude/
 public/movie.tmp.MP4
 src-tauri/models/*.onnx
