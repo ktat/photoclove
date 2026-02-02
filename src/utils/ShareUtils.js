@@ -19,11 +19,21 @@ export function generateStatsShareText(insights, period = 'all') {
     const now = new Date();
 
     // Header based on period
-    if (period === 'weekly') {
+    if (period.startsWith('weekly:')) {
+        const weekStart = period.replace('weekly:', '');
+        const startDate = new Date(weekStart); const endDate = new Date(startDate); endDate.setDate(endDate.getDate() + 6);
+        const opts = { month: 'short', day: 'numeric' };
+        lines.push(`📊 Week of ${startDate.toLocaleDateString('en-US', opts)} - ${endDate.toLocaleDateString('en-US', { ...opts, year: 'numeric' })} Stats`);
+    } else if (period === 'weekly') {
         lines.push('📊 This Week\'s Photography Stats');
+    } else if (period.startsWith('monthly:')) {
+        const [year, month] = period.replace('monthly:', '').split('-');
+        lines.push(`📊 ${new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} Photography Stats`);
     } else if (period === 'monthly') {
         const monthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
         lines.push(`📊 ${monthName} Photography Stats`);
+    } else if (period.startsWith('yearly:')) {
+        lines.push(`📊 ${period.replace('yearly:', '')} Year in Review`);
     } else if (period === 'yearly') {
         lines.push(`📊 ${now.getFullYear()} Year in Review`);
     } else {
@@ -225,7 +235,10 @@ export async function generateStatsImage(insights, options = {}) {
     let headerText = '📊 My Photography Stats';
     const now = new Date();
     if (period.startsWith('weekly:')) {
-        headerText = '📊 This Week\'s Photography Stats';
+        const weekStart = period.replace('weekly:', '');
+        const startDate = new Date(weekStart); const endDate = new Date(startDate); endDate.setDate(endDate.getDate() + 6);
+        const opts = { month: 'short', day: 'numeric' };
+        headerText = `📊 Week of ${startDate.toLocaleDateString('en-US', opts)} - ${endDate.toLocaleDateString('en-US', { ...opts, year: 'numeric' })} Stats`;
     } else if (period === 'weekly') {
         headerText = '📊 This Week\'s Photography Stats';
     } else if (period.startsWith('monthly:')) {
