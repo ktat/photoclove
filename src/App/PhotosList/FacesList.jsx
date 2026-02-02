@@ -117,8 +117,8 @@ function FacesList({
                     <span style={{
                         backgroundColor: 'var(--color-danger)',
                         color: 'white',
-                        borderRadius: '10px',
-                        padding: '2px 8px',
+                        borderRadius: 'var(--radius-lg)',
+                        padding: 'var(--space-1) var(--space-2)',
                         fontSize: 'var(--font-size-xs)',
                         fontWeight: 'bold'
                     }}>
@@ -131,10 +131,10 @@ function FacesList({
 
     const renderSearchFilter = () => (
         <div style={{
-            marginBottom: '20px',
+            marginBottom: 'var(--space-5)',
             padding: 'var(--space-3)',
             backgroundColor: 'var(--color-bg-elevated)',
-            borderRadius: '4px',
+            borderRadius: 'var(--radius-sm)',
             border: '1px solid var(--color-border-default)'
         }}>
             <input
@@ -178,7 +178,7 @@ function FacesList({
                                     height: `${iconSize + 80}px`,
                                     cursor: 'pointer',
                                     border: '1px solid var(--color-border-default)',
-                                    borderRadius: '8px',
+                                    borderRadius: 'var(--radius-lg)',
                                     margin: 'var(--space-3)',
                                     padding: 'var(--space-3)',
                                     display: 'inline-block',
@@ -193,8 +193,8 @@ function FacesList({
                                     <div
                                         style={{
                                             position: 'absolute',
-                                            top: '8px',
-                                            right: '8px',
+                                            top: 'var(--space-2)',
+                                            right: 'var(--space-2)',
                                             zIndex: 1
                                         }}
                                         onClick={(e) => e.stopPropagation()}
@@ -214,7 +214,7 @@ function FacesList({
                                             style={{
                                                 margin: 0,
                                                 borderRadius: 'var(--radius-sm)',
-                                                padding: '2px'
+                                                padding: 'var(--space-1)'
                                             }}
                                         ></label>
                                     </div>

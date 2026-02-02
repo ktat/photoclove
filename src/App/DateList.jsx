@@ -229,7 +229,7 @@ function DateList(props) {
                            display: 'flex',
                            alignItems: 'center',
                            justifyContent: props.leftMenuCollapsed ? 'center' : 'flex-start',
-                           gap: '4px'
+                           gap: 'var(--space-1)'
                        }}
                        onClick={(e) => {
                            e.preventDefault();
@@ -257,7 +257,7 @@ function DateList(props) {
                                    display: 'flex',
                                    alignItems: 'center',
                                    justifyContent: 'center',
-                                   gap: '4px'
+                                   gap: 'var(--space-1)'
                                }}
                                onClick={(e) => {
                                    e.preventDefault();
@@ -279,7 +279,7 @@ function DateList(props) {
                                    display: 'flex',
                                    alignItems: 'center',
                                    justifyContent: 'center',
-                                   gap: '4px'
+                                   gap: 'var(--space-1)'
                                }}
                                onClick={(e) => {
                                    e.preventDefault();

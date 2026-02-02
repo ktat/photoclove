@@ -96,8 +96,8 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
                 cursor: isCreating ? 'not-allowed' : 'pointer',
                 color: 'var(--color-text-primary)',
                 padding: '0',
-                width: '30px',
-                height: '30px',
+                width: 'var(--space-6)',
+                height: 'var(--space-6)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'

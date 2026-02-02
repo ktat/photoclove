@@ -67,7 +67,7 @@ const ErrorToast = ({ error, onDismiss, autoHide = true }) => {
           position: 'absolute',
           bottom: 0,
           left: 0,
-          height: '3px',
+          height: 'var(--space-1)',
           backgroundColor: severityConfig.color,
           width: `${progress}%`,
           transition: 'width 0.05s linear',
@@ -83,8 +83,8 @@ const ErrorToast = ({ error, onDismiss, autoHide = true }) => {
         }}
         style={{
           position: 'absolute',
-          top: '8px',
-          right: '8px',
+          top: 'var(--space-2)',
+          right: 'var(--space-2)',
           background: 'none',
           border: 'none',
           fontSize: 'var(--font-size-lg)',
@@ -93,8 +93,8 @@ const ErrorToast = ({ error, onDismiss, autoHide = true }) => {
           padding: 'var(--space-1)',
           opacity: 0.7,
           borderRadius: '50%',
-          width: '20px',
-          height: '20px',
+          width: 'var(--space-5)',
+          height: 'var(--space-5)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center'

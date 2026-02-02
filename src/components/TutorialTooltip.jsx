@@ -73,7 +73,7 @@ const TutorialTooltip = ({
         <div style={{
           position: 'absolute',
           top: '-8px',
-          left: '20px',
+          left: 'var(--space-5)',
           width: 0,
           height: 0,
           borderLeft: '8px solid transparent',

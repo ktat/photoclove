@@ -28,8 +28,8 @@ const ErrorDisplay = () => {
   return (
     <div style={{
       position: 'fixed',
-      top: '10px',
-      right: '10px',
+      top: 'var(--space-3)',
+      right: 'var(--space-3)',
       zIndex: 9999,
       maxWidth: '450px'
     }}>
@@ -56,8 +56,8 @@ const ErrorDisplay = () => {
               onClick={() => removeError(error.id)}
               style={{
                 position: 'absolute',
-                top: '8px',
-                right: '8px',
+                top: 'var(--space-2)',
+                right: 'var(--space-2)',
                 background: 'none',
                 border: 'none',
                 fontSize: 'var(--font-size-xl)',
@@ -65,8 +65,8 @@ const ErrorDisplay = () => {
                 color: 'inherit',
                 padding: 'var(--space-1)',
                 borderRadius: '50%',
-                width: '24px',
-                height: '24px',
+                width: 'var(--space-6)',
+                height: 'var(--space-6)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -132,7 +132,7 @@ const ErrorDisplay = () => {
                 alignItems: 'center',
                 marginTop: '12px',
                 flexWrap: 'wrap',
-                gap: '8px'
+                gap: 'var(--space-2)'
               }}>
                 {/* Retry button for recoverable errors */}
                 {error.recoverable && (

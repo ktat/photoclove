@@ -161,7 +161,7 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
             <div className={styles.selectedTags} style={{
                 display: 'flex',
                 flexWrap: 'wrap',
-                gap: '8px',
+                gap: 'var(--space-2)',
                 alignItems: 'center'
             }}>
                 {selectedTags.map(tag => {
@@ -174,7 +174,7 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
                             style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '6px',
+                                gap: 'var(--space-2)',
                                 padding: '6px 12px',
                                 backgroundColor: isAI ? 'var(--color-bg-surface)' : 'var(--color-primary-selected)',
                                 border: isAI ? '1px solid var(--color-warning)' : '1px solid var(--color-primary)',
@@ -263,7 +263,7 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
                             <div style={{
                                 display: 'flex',
                                 flexWrap: 'wrap',
-                                gap: '8px',
+                                gap: 'var(--space-2)',
                                 padding: 'var(--space-1)'
                             }}>
                                 {filteredTags.map(tag => {
@@ -278,7 +278,7 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
                                             style={{
                                                 display: 'inline-flex',
                                                 alignItems: 'center',
-                                                gap: '6px',
+                                                gap: 'var(--space-2)',
                                                 padding: '6px 12px',
                                                 cursor: 'pointer',
                                                 backgroundColor: 'var(--color-bg-elevated)',

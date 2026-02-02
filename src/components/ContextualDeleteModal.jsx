@@ -158,7 +158,7 @@ const ContextualDeleteModal = ({
 
         <div style={{
           display: 'flex',
-          gap: '12px',
+          gap: 'var(--space-3)',
           justifyContent: 'center'
         }}>
           <button
