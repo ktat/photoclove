@@ -495,7 +495,7 @@ const descriptionStyle = {
 const sliderStyle = {
     width: '100%',
     height: '6px',
-    borderRadius: '3px',
+    borderRadius: 'var(--radius-sm)',
     cursor: 'pointer',
     accentColor: 'var(--color-primary)'
 };

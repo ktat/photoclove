@@ -39,11 +39,11 @@ const ErrorDisplay = () => {
           <div 
             key={error.id}
             style={{
-              padding: '16px',
+              padding: 'var(--space-4)',
               margin: '8px 0',
               backgroundColor: severityStyle.backgroundColor,
               border: `2px solid ${severityStyle.borderColor}`,
-              borderRadius: '8px',
+              borderRadius: 'var(--radius-lg)',
               color: severityStyle.color,
               position: 'relative',
               fontSize: 'var(--font-size-base)',
@@ -63,7 +63,7 @@ const ErrorDisplay = () => {
                 fontSize: 'var(--font-size-xl)',
                 cursor: 'pointer',
                 color: 'inherit',
-                padding: '4px',
+                padding: 'var(--space-1)',
                 borderRadius: '50%',
                 width: '24px',
                 height: '24px',
@@ -118,7 +118,7 @@ const ErrorDisplay = () => {
                   marginBottom: '8px',
                   padding: '6px 8px',
                   backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                  borderRadius: '4px',
+                  borderRadius: 'var(--radius-sm)',
                   borderLeft: '3px solid currentColor'
                 }}>
                   💡 {error.suggestion}
@@ -143,7 +143,7 @@ const ErrorDisplay = () => {
                       backgroundColor: severityStyle.borderColor,
                       color: 'white',
                       border: 'none',
-                      borderRadius: '4px',
+                      borderRadius: 'var(--radius-sm)',
                       cursor: 'pointer',
                       fontSize: 'var(--font-size-sm)',
                       fontWeight: 'bold'

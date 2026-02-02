@@ -137,7 +137,7 @@ export const metadataOverlayStyle = {
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     color: "var(--color-text-primary)",
     padding: "2px 4px",
-    borderRadius: "3px",
+    borderRadius: "var(--radius-sm)",
     fontSize: "var(--font-size-xs)",
     display: "flex",
     alignItems: "center",

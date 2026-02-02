@@ -31,12 +31,12 @@ const ErrorModal = ({ error, onClose, onRetry }) => {
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 10000,
-      padding: '20px'
+      padding: 'var(--space-5)'
     }}>
       <div style={{
         backgroundColor: 'var(--color-bg-elevated)',
-        borderRadius: '12px',
-        padding: '24px',
+        borderRadius: 'var(--radius-xl)',
+        padding: 'var(--space-6)',
         maxWidth: '500px',
         width: '100%',
         maxHeight: '80vh',

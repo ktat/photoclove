@@ -191,7 +191,7 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
   }
 
   return (
-    <div className="album-tab" style={{ padding: '16px' }}>
+    <div className="album-tab" style={{ padding: 'var(--space-4)' }}>
       {/* Album Information Section */}
       <div className="album-info-section" style={{ marginBottom: '24px' }}>
         <h3 style={{ margin: '0 0 16px 0', color: 'var(--color-text-primary)' }}>Album Information</h3>
@@ -210,9 +210,9 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
                 disabled={isLoading}
                 style={{
                   width: '100%',
-                  padding: '8px',
+                  padding: 'var(--space-2)',
                   border: '1px solid var(--color-border-default)',
-                  borderRadius: '4px',
+                  borderRadius: 'var(--radius-sm)',
                   fontSize: 'var(--font-size-base)'
                 }}
               />
@@ -229,9 +229,9 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
                 disabled={isLoading}
                 style={{
                   width: '100%',
-                  padding: '8px',
+                  padding: 'var(--space-2)',
                   border: '1px solid var(--color-border-default)',
-                  borderRadius: '4px',
+                  borderRadius: 'var(--radius-sm)',
                   fontSize: 'var(--font-size-base)',
                   resize: 'vertical'
                 }}
@@ -242,11 +242,11 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
                 onClick={saveAlbumInfo} 
                 disabled={!editedName.trim() || isLoading}
                 style={{
-                  padding: '8px 16px',
+                  padding: 'var(--space-2) var(--space-4)',
                   backgroundColor: !editedName.trim() || isLoading ? 'var(--color-bg-muted)' : 'var(--color-primary-selected)',
                   color: !editedName.trim() || isLoading ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
                   border: !editedName.trim() || isLoading ? '1px solid var(--color-border-default)' : '1px solid var(--color-primary)',
-                  borderRadius: '4px',
+                  borderRadius: 'var(--radius-sm)',
                   cursor: !editedName.trim() || isLoading ? 'not-allowed' : 'pointer'
                 }}
               >
@@ -256,11 +256,11 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
                 onClick={cancelEdit}
                 disabled={isLoading}
                 style={{
-                  padding: '8px 16px',
+                  padding: 'var(--space-2) var(--space-4)',
                   backgroundColor: 'var(--color-bg-muted)',
                   color: 'var(--color-text-primary)',
                   border: 'none',
-                  borderRadius: '4px',
+                  borderRadius: 'var(--radius-sm)',
                   cursor: isLoading ? 'not-allowed' : 'pointer'
                 }}
               >
@@ -281,10 +281,10 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
                 onClick={() => setIsEditing(true)}
                 disabled={isLoading}
                 style={{
-                  padding: '4px 8px',
+                  padding: 'var(--space-1) var(--space-2)',
                   backgroundColor: 'transparent',
                   border: '1px solid var(--color-border-default)',
-                  borderRadius: '4px',
+                  borderRadius: 'var(--radius-sm)',
                   cursor: isLoading ? 'not-allowed' : 'pointer',
                   fontSize: 'var(--font-size-xs)'
                 }}
@@ -325,11 +325,11 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
             onClick={setCoverPhoto}
             disabled={isLoading}
             style={{
-              padding: '8px 16px',
+              padding: 'var(--space-2) var(--space-4)',
               backgroundColor: isLoading ? 'var(--color-bg-muted)' : 'var(--color-success)',
               color: isLoading ? 'var(--color-text-muted)' : 'white',
               border: 'none',
-              borderRadius: '4px',
+              borderRadius: 'var(--radius-sm)',
               cursor: isLoading ? 'not-allowed' : 'pointer',
               fontSize: 'var(--font-size-base)'
             }}
@@ -390,11 +390,11 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
           onClick={deleteAlbum}
           disabled={isLoading}
           style={{
-            padding: '8px 16px',
+            padding: 'var(--space-2) var(--space-4)',
             backgroundColor: isLoading ? 'var(--color-bg-muted)' : 'var(--color-danger)',
             color: isLoading ? 'var(--color-text-muted)' : 'white',
             border: 'none',
-            borderRadius: '4px',
+            borderRadius: 'var(--radius-sm)',
             cursor: isLoading ? 'not-allowed' : 'pointer',
             fontSize: 'var(--font-size-base)'
           }}

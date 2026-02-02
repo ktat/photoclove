@@ -178,7 +178,7 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
                                 padding: '6px 12px',
                                 backgroundColor: isAI ? 'var(--color-bg-surface)' : 'var(--color-primary-selected)',
                                 border: isAI ? '1px solid var(--color-warning)' : '1px solid var(--color-primary)',
-                                borderRadius: '16px',
+                                borderRadius: 'var(--radius-xl)',
                                 fontSize: 'var(--font-size-sm)',
                                 color: 'var(--color-text-primary)',
                                 whiteSpace: 'nowrap'
@@ -194,7 +194,7 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
                                     fontSize: 'var(--font-size-xs)',
                                     padding: '1px 4px',
                                     backgroundColor: 'var(--color-bg-muted)',
-                                    borderRadius: '8px',
+                                    borderRadius: 'var(--radius-lg)',
                                     color: 'var(--color-text-muted)'
                                 }}>
                                     {tag.confidence}%
@@ -232,7 +232,7 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
                         padding: '6px 12px',
                         backgroundColor: 'var(--color-bg-elevated)',
                         border: '1px solid var(--color-border-default)',
-                        borderRadius: '16px',
+                        borderRadius: 'var(--radius-xl)',
                         color: 'var(--color-text-primary)',
                         cursor: isLoading ? 'not-allowed' : 'pointer',
                         fontSize: 'var(--font-size-lg)',
@@ -264,7 +264,7 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
                                 display: 'flex',
                                 flexWrap: 'wrap',
                                 gap: '8px',
-                                padding: '4px'
+                                padding: 'var(--space-1)'
                             }}>
                                 {filteredTags.map(tag => {
                                     const isAI = isAITag(tag.name);
@@ -283,7 +283,7 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
                                                 cursor: 'pointer',
                                                 backgroundColor: 'var(--color-bg-elevated)',
                                                 border: isAI ? '1px solid var(--color-warning)' : '1px solid var(--color-border-default)',
-                                                borderRadius: '16px',
+                                                borderRadius: 'var(--radius-xl)',
                                                 transition: 'all 0.2s',
                                                 fontSize: 'var(--font-size-sm)',
                                                 color: 'var(--color-text-primary)',

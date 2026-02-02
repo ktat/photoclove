@@ -261,7 +261,7 @@ function UnknownFacesList({
                                             htmlFor={`face-checkbox-${face.id}`}
                                             style={{
                                                 margin: 0,
-                                                borderRadius: '3px',
+                                                borderRadius: 'var(--radius-sm)',
                                                 padding: '2px'
                                             }}
                                         />

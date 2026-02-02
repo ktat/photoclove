@@ -340,7 +340,7 @@ const JobQueue = ({ onClose, ...props }) => {
                 <tbody>
                   {jobs.length === 0 ? (
                     <tr>
-                      <td colSpan="10" style={{ textAlign: "center", padding: "20px" }}>
+                      <td colSpan="10" style={{ textAlign: "center", padding: "var(--space-5)" }}>
                         No jobs in queue
                       </td>
                     </tr>
@@ -364,7 +364,7 @@ const JobQueue = ({ onClose, ...props }) => {
                               backgroundColor: getStatusColor(job.status),
                               color: "white",
                               padding: "2px 6px",
-                              borderRadius: "3px",
+                              borderRadius: "var(--radius-sm)",
                               fontSize: "0.8em"
                             }}
                           >

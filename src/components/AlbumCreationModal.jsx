@@ -70,8 +70,8 @@ const AlbumCreationModal = ({ isOpen, onClose, onConfirm, selectedPhotosCount = 
     }}>
       <div style={{
         backgroundColor: 'var(--color-bg-elevated)',
-        borderRadius: '8px',
-        padding: '24px',
+        borderRadius: 'var(--radius-lg)',
+        padding: 'var(--space-6)',
         minWidth: '400px',
         maxWidth: '500px',
         boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'

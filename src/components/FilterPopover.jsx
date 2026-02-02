@@ -33,7 +33,7 @@ const ToggleSwitch = ({ label, checked, onChange, filterType }) => (
                     right: 0,
                     bottom: 0,
                     backgroundColor: checked ? 'var(--color-primary)' : 'var(--color-bg-muted)',
-                    borderRadius: '24px',
+                    borderRadius: 'var(--radius-xl)',
                     transition: 'background-color 0.2s'
                 }}>
                     <span style={{

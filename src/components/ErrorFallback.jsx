@@ -26,10 +26,10 @@ const ErrorFallback = ({ error, errorInfo, resetError, name, level = 'component'
 
   return (
     <div style={{
-      padding: '24px',
+      padding: 'var(--space-6)',
       margin: isApplicationLevel ? '0' : '20px',
       border: '2px solid var(--color-danger)',
-      borderRadius: '12px',
+      borderRadius: 'var(--radius-xl)',
       backgroundColor: 'var(--color-danger-bg)',
       color: 'var(--color-danger-dark)',
       fontFamily: 'system-ui, -apple-system, sans-serif',

@@ -132,7 +132,7 @@ function FacesList({
     const renderSearchFilter = () => (
         <div style={{
             marginBottom: '20px',
-            padding: '10px',
+            padding: 'var(--space-3)',
             backgroundColor: 'var(--color-bg-elevated)',
             borderRadius: '4px',
             border: '1px solid var(--color-border-default)'
@@ -159,7 +159,7 @@ function FacesList({
         return (
             <Scrollable className="faces-list">
                 {filteredPersons.length === 0 ? (
-                    <div style={{ margin: '20px', color: 'var(--color-text-muted)' }}>
+                    <div style={{ margin: 'var(--space-5)', color: 'var(--color-text-muted)' }}>
                         {effectiveSearchTerm
                             ? 'No faces found matching your search.'
                             : 'No faces detected yet. Use face detection on photos to find faces.'}
@@ -179,8 +179,8 @@ function FacesList({
                                     cursor: 'pointer',
                                     border: '1px solid var(--color-border-default)',
                                     borderRadius: '8px',
-                                    margin: '10px',
-                                    padding: '10px',
+                                    margin: 'var(--space-3)',
+                                    padding: 'var(--space-3)',
                                     display: 'inline-block',
                                     verticalAlign: 'top',
                                     backgroundColor: 'var(--color-bg-elevated)',
@@ -213,7 +213,7 @@ function FacesList({
                                             htmlFor={`person-checkbox-${person.person_id}`}
                                             style={{
                                                 margin: 0,
-                                                borderRadius: '3px',
+                                                borderRadius: 'var(--radius-sm)',
                                                 padding: '2px'
                                             }}
                                         ></label>

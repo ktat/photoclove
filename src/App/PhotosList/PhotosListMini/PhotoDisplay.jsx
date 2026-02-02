@@ -593,7 +593,7 @@ function PhotoDisplay(props) {
                             title="Click to toggle face boxes (or press 'f')"
                         >
                             👤 {detectedFaces.length} face{detectedFaces.length !== 1 ? 's' : ''}
-                            <span style={{ opacity: 0.7, fontSize: '10px' }}>[F]</span>
+                            <span style={{ opacity: 0.7, fontSize: 'var(--font-size-xs)' }}>[F]</span>
                         </div>
                     )}
                     {/* Burst badge - shows when viewing burst representative in burst mode (clickable to open group) */}

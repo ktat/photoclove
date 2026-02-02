@@ -72,7 +72,7 @@ function FaceBoundingBoxOverlay({ faces, imageWidth, imageHeight, selectedFaceId
                             width: width,
                             height: height,
                             border: `${borderWidth}px solid ${borderColor}`,
-                            borderRadius: '4px',
+                            borderRadius: 'var(--radius-sm)',
                             pointerEvents: 'auto',
                             cursor: 'pointer',
                             boxSizing: 'border-box',
@@ -90,8 +90,8 @@ function FaceBoundingBoxOverlay({ faces, imageWidth, imageHeight, selectedFaceId
                                 backgroundColor: borderColor,
                                 color: 'white',
                                 padding: '1px 4px',
-                                borderRadius: '2px',
-                                fontSize: '10px',
+                                borderRadius: 'var(--radius-sm)',
+                                fontSize: 'var(--font-size-xs)',
                                 fontWeight: 'bold',
                                 whiteSpace: 'nowrap'
                             }}
@@ -108,8 +108,8 @@ function FaceBoundingBoxOverlay({ faces, imageWidth, imageHeight, selectedFaceId
                                 backgroundColor: borderColor,
                                 color: 'white',
                                 padding: '1px 4px',
-                                borderRadius: '2px',
-                                fontSize: '10px',
+                                borderRadius: 'var(--radius-sm)',
+                                fontSize: 'var(--font-size-xs)',
                                 fontWeight: 'bold'
                             }}
                         >

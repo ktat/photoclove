@@ -130,8 +130,8 @@ const ContextualDeleteModal = ({
     }} onClick={handleCancel}>
       <div style={{
         backgroundColor: 'var(--color-bg-elevated)',
-        padding: '24px',
-        borderRadius: '8px',
+        padding: 'var(--space-6)',
+        borderRadius: 'var(--radius-lg)',
         maxWidth: '400px',
         textAlign: 'center',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
@@ -166,7 +166,7 @@ const ContextualDeleteModal = ({
             style={{
               padding: '10px 20px',
               border: 'none',
-              borderRadius: '4px',
+              borderRadius: 'var(--radius-sm)',
               cursor: 'pointer',
               fontWeight: 'bold',
               backgroundColor: 'var(--color-bg-muted)',
@@ -181,7 +181,7 @@ const ContextualDeleteModal = ({
             style={{
               padding: '10px 20px',
               border: 'none',
-              borderRadius: '4px',
+              borderRadius: 'var(--radius-sm)',
               cursor: 'pointer',
               fontWeight: 'bold',
               color: 'white',
