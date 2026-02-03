@@ -4,59 +4,61 @@ import { logger } from './LoggerService.js';
  * Music mood categories for slideshow BGM
  * Each mood has associated tags and music tracks
  */
+const FREEPD_BASE_URL = 'https://archive.org/download/freepd';
+
 const MOOD_CONFIG = {
   calm: {
     name: 'Calm',
     tags: ['nature', 'landscape', 'sunset', 'sunrise', 'beach', 'ocean', 'lake', 'mountain', 'forest', 'garden', 'flower', 'zen', 'meditation', 'peaceful'],
     tracks: [
-      { id: 'calm_1', title: 'Peaceful Morning', file: 'calm_peaceful_morning.mp3', duration: 180 },
-      { id: 'calm_2', title: 'Gentle Waves', file: 'calm_gentle_waves.mp3', duration: 240 },
-      { id: 'calm_3', title: 'Forest Dreams', file: 'calm_forest_dreams.mp3', duration: 200 },
+      { id: 'calm_1', title: 'Calm Sketch for Piano', file: 'calm_peaceful_morning.mp3', duration: 63, sourcePath: 'Page2/Calm Sketch for Piano.mp3' },
+      { id: 'calm_2', title: 'Chill Breathe', file: 'calm_gentle_waves.mp3', duration: 203, sourcePath: 'Page2/Chill Breathe.mp3' },
+      { id: 'calm_3', title: 'Ambient Delicate', file: 'calm_forest_dreams.mp3', duration: 210, sourcePath: 'Page2/Ambient L Delicate.mp3' },
     ]
   },
   upbeat: {
     name: 'Upbeat',
     tags: ['travel', 'vacation', 'adventure', 'party', 'celebration', 'festival', 'sport', 'action', 'fun', 'happy', 'joy', 'summer'],
     tracks: [
-      { id: 'upbeat_1', title: 'Happy Journey', file: 'upbeat_happy_journey.mp3', duration: 150 },
-      { id: 'upbeat_2', title: 'Sunny Days', file: 'upbeat_sunny_days.mp3', duration: 180 },
-      { id: 'upbeat_3', title: 'Adventure Time', file: 'upbeat_adventure_time.mp3', duration: 160 },
+      { id: 'upbeat_1', title: 'Funshine', file: 'upbeat_happy_journey.mp3', duration: 165, sourcePath: 'upbeat/Funshine.mp3' },
+      { id: 'upbeat_2', title: 'Be Chillin', file: 'upbeat_sunny_days.mp3', duration: 202, sourcePath: 'upbeat/Be Chillin.mp3' },
+      { id: 'upbeat_3', title: 'Funkeriffic', file: 'upbeat_adventure_time.mp3', duration: 210, sourcePath: 'misc/Funkeriffic.mp3' },
     ]
   },
   romantic: {
     name: 'Romantic',
     tags: ['wedding', 'love', 'couple', 'anniversary', 'valentine', 'romantic', 'date', 'engagement', 'honeymoon'],
     tracks: [
-      { id: 'romantic_1', title: 'Love Story', file: 'romantic_love_story.mp3', duration: 210 },
-      { id: 'romantic_2', title: 'Sweet Memories', file: 'romantic_sweet_memories.mp3', duration: 195 },
-      { id: 'romantic_3', title: 'Together Forever', file: 'romantic_together_forever.mp3', duration: 220 },
+      { id: 'romantic_1', title: 'Piano Magic Motive', file: 'romantic_love_story.mp3', duration: 78, sourcePath: 'romantic/Piano Magic Motive.mp3' },
+      { id: 'romantic_2', title: 'Dreamy Piano Fantasy', file: 'romantic_sweet_memories.mp3', duration: 161, sourcePath: 'Page2/Dreamy Piano Fantasy.mp3' },
+      { id: 'romantic_3', title: 'Chill China Love', file: 'romantic_together_forever.mp3', duration: 140, sourcePath: 'Page2/Chill China Love.mp3' },
     ]
   },
   family: {
     name: 'Family',
     tags: ['family', 'kids', 'children', 'baby', 'birthday', 'christmas', 'holiday', 'home', 'portrait', 'gathering'],
     tracks: [
-      { id: 'family_1', title: 'Family Time', file: 'family_family_time.mp3', duration: 175 },
-      { id: 'family_2', title: 'Precious Moments', file: 'family_precious_moments.mp3', duration: 190 },
-      { id: 'family_3', title: 'Growing Up', file: 'family_growing_up.mp3', duration: 200 },
+      { id: 'family_1', title: 'Cartoon Pizzicato', file: 'family_family_time.mp3', duration: 72, sourcePath: 'Page2/Cartoon Pizzicato.mp3' },
+      { id: 'family_2', title: 'Hopeful', file: 'family_precious_moments.mp3', duration: 113, sourcePath: 'comedy/Hopeful.mp3' },
+      { id: 'family_3', title: 'City Sunshine', file: 'family_growing_up.mp3', duration: 184, sourcePath: 'upbeat/City Sunshine.mp3' },
     ]
   },
   nostalgic: {
     name: 'Nostalgic',
     tags: ['vintage', 'retro', 'old', 'memories', 'classic', 'historic', 'antique', 'sepia', 'blackandwhite', 'film'],
     tracks: [
-      { id: 'nostalgic_1', title: 'Memories of Yesterday', file: 'nostalgic_memories.mp3', duration: 200 },
-      { id: 'nostalgic_2', title: 'Time Gone By', file: 'nostalgic_time_gone_by.mp3', duration: 185 },
-      { id: 'nostalgic_3', title: 'Golden Days', file: 'nostalgic_golden_days.mp3', duration: 210 },
+      { id: 'nostalgic_1', title: 'Nostalgic Piano', file: 'nostalgic_memories.mp3', duration: 196, sourcePath: 'romantic/Nostalgic Piano.mp3' },
+      { id: 'nostalgic_2', title: 'Emotional Piano', file: 'nostalgic_time_gone_by.mp3', duration: 134, sourcePath: 'Page2/Emotional Piano.mp3' },
+      { id: 'nostalgic_3', title: 'Lovely Piano Song', file: 'nostalgic_golden_days.mp3', duration: 95, sourcePath: 'romantic/Lovely Piano Song.mp3' },
     ]
   },
   ambient: {
     name: 'Ambient',
     tags: ['night', 'evening', 'city', 'urban', 'street', 'architecture', 'abstract', 'minimal', 'modern'],
     tracks: [
-      { id: 'ambient_1', title: 'City Lights', file: 'ambient_city_lights.mp3', duration: 240 },
-      { id: 'ambient_2', title: 'Night Sky', file: 'ambient_night_sky.mp3', duration: 220 },
-      { id: 'ambient_3', title: 'Urban Dreams', file: 'ambient_urban_dreams.mp3', duration: 200 },
+      { id: 'ambient_1', title: 'Ambient Glowing', file: 'ambient_city_lights.mp3', duration: 158, sourcePath: 'Page2/Ambient G Glowing.mp3' },
+      { id: 'ambient_2', title: 'Ambient Spaced Out', file: 'ambient_night_sky.mp3', duration: 114, sourcePath: 'Page2/Ambient H Spaced Out.mp3' },
+      { id: 'ambient_3', title: 'Chill Urban', file: 'ambient_urban_dreams.mp3', duration: 182, sourcePath: 'Page2/Chill Urban.mp3' },
     ]
   }
 };
@@ -498,4 +500,4 @@ class SlideshowMusicService {
 export const slideshowMusic = new SlideshowMusicService();
 
 // Export config for UI
-export { MOOD_CONFIG, DEFAULT_MOOD };
+export { MOOD_CONFIG, DEFAULT_MOOD, FREEPD_BASE_URL };

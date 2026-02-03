@@ -296,6 +296,19 @@
   50% { opacity: 1; }
 }
 
+.musicSourceLink {
+  margin-left: var(--space-2);
+  text-decoration: none;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.musicSourceLink:hover {
+  opacity: 1;
+}
+
 /* Music Error Message */
 .musicError {
   position: absolute;

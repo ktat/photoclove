@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../services/LoggerService.js';
-import { slideshowMusic, MOOD_CONFIG } from '../services/SlideshowMusicService.js';
+import { slideshowMusic, MOOD_CONFIG, FREEPD_BASE_URL } from '../services/SlideshowMusicService.js';
 import { checkFirstActionAchievement } from '../services/AchievementService.js';
 import styles from './SlideShow.module.css';
 
@@ -426,6 +427,19 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
         <div className={`${styles.trackInfo} ${!isMusicPlaying ? styles.paused : ''}`}>
           <span className={styles.musicIcon}>♪</span>
           <span>{currentTrack.title}</span>
+          <span
+            className={styles.musicSourceLink}
+            title="Music source: FreePD (Public Domain)"
+            onClick={(e) => {
+              e.stopPropagation();
+              const sourceUrl = currentTrack.sourcePath
+                ? `${FREEPD_BASE_URL}/${encodeURI(currentTrack.sourcePath)}`
+                : 'https://archive.org/details/freepd';
+              openUrl(sourceUrl);
+            }}
+          >
+            🔗
+          </span>
         </div>
       )}
 

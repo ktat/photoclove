@@ -179,11 +179,13 @@ function PhotoCard({
                 const importDir = (photo.import_source === true && importState?.currentImportPath && importState.currentImportPath !== '')
                     ? importState.currentImportPath
                     : null;
+                // PNG/WebP/GIF/HEICなどはEXIFサムネイルを持たないので、リサイズフォールバックを有効にする
+                const hasExifThumbnail = /\.(jpe?g)$/i.test(photo.originalPath);
                 invoke('get_resized_image', {
                     pathStr: photo.originalPath,
                     maxSize: 200,
                     importDirectory: importDir,
-                    skipResizeFallback: photo.import_source === true  // Import modeではリサイズをスキップ
+                    skipResizeFallback: photo.import_source === true && hasExifThumbnail
                 })
                     .then(() => {
                         // Check if component is still mounted

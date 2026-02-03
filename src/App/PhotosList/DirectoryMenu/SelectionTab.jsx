@@ -112,6 +112,36 @@ function SelectionTab({
                 {/* Photo Selection (default mode) */}
                 {viewModeObj?.shouldShowPhotoSelection() && (
                     <>
+                        {/* Selection Header with count and clear button */}
+                        {photoSelection.length > 0 && (
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginBottom: 'var(--space-3)',
+                                paddingBottom: 'var(--space-2)',
+                                borderBottom: '1px solid var(--color-border-subtle)'
+                            }}>
+                                <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
+                                    <strong style={{ color: 'var(--color-primary)' }}>{photoSelection.length}</strong> {t('directoryMenu:selection.photosSelected')}
+                                </span>
+                                <button
+                                    onClick={() => clearPhotoSelection()}
+                                    style={{
+                                        background: 'transparent',
+                                        color: 'var(--color-danger)',
+                                        border: 'none',
+                                        padding: 'var(--space-1) var(--space-2)',
+                                        fontSize: 'var(--font-size-xs)',
+                                        cursor: 'pointer',
+                                        borderRadius: 'var(--radius-sm)'
+                                    }}
+                                    title={t('directoryMenu:selection.clearSelection')}
+                                >
+                                    ✕ {t('directoryMenu:selection.clear')}
+                                </button>
+                            </div>
+                        )}
                         <div style={{ marginBottom: 'var(--space-3)' }}>
                             <button onClick={() => selectAllPhotoToSelection()}>{t('directoryMenu:selection.selectAllInPage')}</button>
                         </div>
@@ -120,18 +150,29 @@ function SelectionTab({
                             <div><br />{t('directoryMenu:selection.photosNotSelected')}</div>
                             :
                             <div>
+                                {/* Import mode: Show button instead of dropdown */}
+                                {viewModeObj?.shouldShowImportOperations() ? (
+                                    <div className="operation" style={{ marginBottom: 'var(--space-3)' }}>
+                                        <button
+                                            ref={dropdownRef}
+                                            onClick={() => doOperation({ target: { value: 'importSelected' } })}
+                                            style={{
+                                                padding: 'var(--space-2) var(--space-4)',
+                                                backgroundColor: 'var(--color-primary)',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: 'var(--radius-sm)',
+                                                cursor: 'pointer',
+                                                fontSize: 'var(--font-size-base)'
+                                            }}
+                                        >
+                                            📥 {t('directoryMenu:operations.importSelected')}
+                                        </button>
+                                    </div>
+                                ) : (
                                 <div className="operation">
                                     <select ref={dropdownRef} onChange={(e) => doOperation(e)}>
                                         <option value="select">{t('directoryMenu:selection.selectOperation')}</option>
-
-                                        {/* Import-specific operations (only in import mode) */}
-                                        {viewModeObj?.shouldShowImportOperations() && (
-                                            <>
-                                                {viewModeObj?.showImportSelected() && <option value="importSelected">📥 {t('directoryMenu:operations.importSelected')}</option>}
-                                                {viewModeObj?.showSelectAllInDirectory() && <option value="selectAllInDirectory">✅ {t('directoryMenu:operations.selectAllInDirectory')}</option>}
-                                                <option value="unselectAll">❎ {t('directoryMenu:operations.unselectAll')}</option>
-                                            </>
-                                        )}
 
                                         {/* Album-specific operations (only in album mode) */}
                                         {viewModeObj?.shouldShowAlbumOperations() && (
@@ -182,12 +223,12 @@ function SelectionTab({
                                         )}
                                     </select>
                                 </div>
+                                )}
                                 <ul className="list-of-selected">
                                     {photoSelection.map((v, i) => {
                                         return <li key={v}><a href="#" onClick={() => setPhotoIndex(i)}>{v.replace(/^.+\//, "")}</a></li>
                                     })}
                                 </ul>
-                                <button style={{ marginTop: 'var(--space-3)' }} onClick={() => clearPhotoSelection()}>{t('directoryMenu:selection.clearSelection')}</button>
 
                                 {/* Import Progress Display - Import Mode Only */}
                                 {viewModeObj?.shouldShowImportProgress() && importState?.importProgress && (
@@ -221,17 +262,45 @@ function SelectionTab({
                 {/* Album Selection (album list mode) */}
                 {viewModeObj?.shouldShowAlbumSelection() && (
                     <div>
-                        <div style={{ marginBottom: 'var(--space-4)' }}>
-                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>{t('directoryMenu:album.selectedAlbums')}</h3>
-                        </div>
+                        {/* Selection Header with count and clear button */}
+                        {selectedAlbums.length > 0 && (
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginBottom: 'var(--space-3)',
+                                paddingBottom: 'var(--space-2)',
+                                borderBottom: '1px solid var(--color-border-subtle)'
+                            }}>
+                                <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
+                                    <strong style={{ color: 'var(--color-primary)' }}>{selectedAlbums.length}</strong> {t('directoryMenu:album.albumsSelected')}
+                                </span>
+                                <button
+                                    onClick={() => clearAlbumSelection()}
+                                    style={{
+                                        background: 'transparent',
+                                        color: 'var(--color-danger)',
+                                        border: 'none',
+                                        padding: 'var(--space-1) var(--space-2)',
+                                        fontSize: 'var(--font-size-xs)',
+                                        cursor: 'pointer',
+                                        borderRadius: 'var(--radius-sm)'
+                                    }}
+                                    title={t('directoryMenu:selection.clearSelection')}
+                                >
+                                    ✕ {t('directoryMenu:selection.clear')}
+                                </button>
+                            </div>
+                        )}
                         {selectedAlbums.length === 0 ? (
                             <div><br />{t('directoryMenu:album.noAlbumsSelected')}</div>
                         ) : (
                             <div>
-                                <div className="operation" style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                <div className="operation" style={{ marginBottom: 'var(--space-4)' }}>
                                     <button
                                         onClick={deleteSelectedAlbums}
                                         style={{
+                                            width: '100%',
                                             padding: 'var(--space-2) var(--space-3)',
                                             backgroundColor: 'var(--color-danger)',
                                             color: 'white',
@@ -240,20 +309,7 @@ function SelectionTab({
                                             cursor: 'pointer'
                                         }}
                                     >
-                                        {t('directoryMenu:album.deleteSelectedAlbums')}
-                                    </button>
-                                    <button
-                                        onClick={() => clearAlbumSelection()}
-                                        style={{
-                                            padding: 'var(--space-2) var(--space-3)',
-                                            backgroundColor: 'var(--color-bg-elevated)',
-                                            color: 'var(--color-text-primary)',
-                                            border: '1px solid var(--color-border-default)',
-                                            borderRadius: 'var(--radius-sm)',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        {t('directoryMenu:selection.clearSelection')}
+                                        🗑️ {t('directoryMenu:album.deleteSelectedAlbums')}
                                     </button>
                                 </div>
                                 <ul className="list-of-selected">
@@ -274,17 +330,45 @@ function SelectionTab({
                 {/* Tag Selection (tag list mode) */}
                 {viewModeObj?.shouldShowTagSelection() && (
                     <div>
-                        <div style={{ marginBottom: 'var(--space-4)' }}>
-                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>{t('directoryMenu:tag.selectedTags')}</h3>
-                        </div>
+                        {/* Selection Header with count and clear button */}
+                        {selectedTags.length > 0 && (
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginBottom: 'var(--space-3)',
+                                paddingBottom: 'var(--space-2)',
+                                borderBottom: '1px solid var(--color-border-subtle)'
+                            }}>
+                                <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
+                                    <strong style={{ color: 'var(--color-primary)' }}>{selectedTags.length}</strong> {t('directoryMenu:tag.tagsSelected')}
+                                </span>
+                                <button
+                                    onClick={() => clearTagSelection()}
+                                    style={{
+                                        background: 'transparent',
+                                        color: 'var(--color-danger)',
+                                        border: 'none',
+                                        padding: 'var(--space-1) var(--space-2)',
+                                        fontSize: 'var(--font-size-xs)',
+                                        cursor: 'pointer',
+                                        borderRadius: 'var(--radius-sm)'
+                                    }}
+                                    title={t('directoryMenu:selection.clearSelection')}
+                                >
+                                    ✕ {t('directoryMenu:selection.clear')}
+                                </button>
+                            </div>
+                        )}
                         {selectedTags.length === 0 ? (
                             <div><br />{t('directoryMenu:tag.noTagsSelected')}</div>
                         ) : (
                             <div>
-                                <div className="operation" style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                <div className="operation" style={{ marginBottom: 'var(--space-4)' }}>
                                     <button
                                         onClick={deleteSelectedTags}
                                         style={{
+                                            width: '100%',
                                             padding: 'var(--space-2) var(--space-3)',
                                             backgroundColor: 'var(--color-danger)',
                                             color: 'white',
@@ -293,20 +377,7 @@ function SelectionTab({
                                             cursor: 'pointer'
                                         }}
                                     >
-                                        {t('directoryMenu:tag.deleteSelectedTags')}
-                                    </button>
-                                    <button
-                                        onClick={() => clearTagSelection()}
-                                        style={{
-                                            padding: 'var(--space-2) var(--space-3)',
-                                            backgroundColor: 'var(--color-bg-elevated)',
-                                            color: 'var(--color-text-primary)',
-                                            border: '1px solid var(--color-border-default)',
-                                            borderRadius: 'var(--radius-sm)',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        {t('directoryMenu:selection.clearSelection')}
+                                        🗑️ {t('directoryMenu:tag.deleteSelectedTags')}
                                     </button>
                                 </div>
                                 <ul className="list-of-selected">
@@ -335,17 +406,45 @@ function SelectionTab({
                 {/* Person Selection (face list mode - Persons tab) */}
                 {viewModeObj?.shouldShowPersonSelection() && faceViewType === 'persons' && (
                     <div>
-                        <div style={{ marginBottom: 'var(--space-4)' }}>
-                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>{t('directoryMenu:person.selectedPersons')}</h3>
-                        </div>
+                        {/* Selection Header with count and clear button */}
+                        {selectedPersons.length > 0 && (
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginBottom: 'var(--space-3)',
+                                paddingBottom: 'var(--space-2)',
+                                borderBottom: '1px solid var(--color-border-subtle)'
+                            }}>
+                                <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
+                                    <strong style={{ color: 'var(--color-primary)' }}>{selectedPersons.length}</strong> {t('directoryMenu:person.personsSelected')}
+                                </span>
+                                <button
+                                    onClick={() => clearPersonSelection()}
+                                    style={{
+                                        background: 'transparent',
+                                        color: 'var(--color-danger)',
+                                        border: 'none',
+                                        padding: 'var(--space-1) var(--space-2)',
+                                        fontSize: 'var(--font-size-xs)',
+                                        cursor: 'pointer',
+                                        borderRadius: 'var(--radius-sm)'
+                                    }}
+                                    title={t('directoryMenu:selection.clearSelection')}
+                                >
+                                    ✕ {t('directoryMenu:selection.clear')}
+                                </button>
+                            </div>
+                        )}
                         {selectedPersons.length === 0 ? (
                             <div><br />{t('directoryMenu:person.noPersonsSelected')}</div>
                         ) : (
                             <div>
-                                <div className="operation" style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                <div className="operation" style={{ marginBottom: 'var(--space-4)' }}>
                                     <button
                                         onClick={deleteSelectedPersons}
                                         style={{
+                                            width: '100%',
                                             padding: 'var(--space-2) var(--space-3)',
                                             backgroundColor: 'var(--color-danger)',
                                             color: 'white',
@@ -354,20 +453,7 @@ function SelectionTab({
                                             cursor: 'pointer'
                                         }}
                                     >
-                                        {t('directoryMenu:person.deleteSelectedPersons')}
-                                    </button>
-                                    <button
-                                        onClick={() => clearPersonSelection()}
-                                        style={{
-                                            padding: 'var(--space-2) var(--space-3)',
-                                            backgroundColor: 'var(--color-bg-elevated)',
-                                            color: 'var(--color-text-primary)',
-                                            border: '1px solid var(--color-border-default)',
-                                            borderRadius: 'var(--radius-sm)',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        {t('directoryMenu:selection.clearSelection')}
+                                        🗑️ {t('directoryMenu:person.deleteSelectedPersons')}
                                     </button>
                                 </div>
                                 <ul className="list-of-selected">
@@ -388,9 +474,36 @@ function SelectionTab({
                 {/* Unknown Faces Selection (face list mode - Unknown tab) */}
                 {viewModeObj?.shouldShowPersonSelection() && faceViewType === 'unknown' && (
                     <div>
-                        <div style={{ marginBottom: 'var(--space-4)' }}>
-                            <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-lg)' }}>{t('directoryMenu:face.selectedFaces', { count: selectedUnknownFaces.length })}</h3>
-                        </div>
+                        {/* Selection Header with count and clear button */}
+                        {selectedUnknownFaces.length > 0 && (
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginBottom: 'var(--space-3)',
+                                paddingBottom: 'var(--space-2)',
+                                borderBottom: '1px solid var(--color-border-subtle)'
+                            }}>
+                                <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
+                                    <strong style={{ color: 'var(--color-primary)' }}>{selectedUnknownFaces.length}</strong> {t('directoryMenu:face.facesSelected')}
+                                </span>
+                                <button
+                                    onClick={() => clearUnknownFaceSelection()}
+                                    style={{
+                                        background: 'transparent',
+                                        color: 'var(--color-danger)',
+                                        border: 'none',
+                                        padding: 'var(--space-1) var(--space-2)',
+                                        fontSize: 'var(--font-size-xs)',
+                                        cursor: 'pointer',
+                                        borderRadius: 'var(--radius-sm)'
+                                    }}
+                                    title={t('directoryMenu:selection.clearSelection')}
+                                >
+                                    ✕ {t('directoryMenu:selection.clear')}
+                                </button>
+                            </div>
+                        )}
                         {selectedUnknownFaces.length === 0 ? (
                             <div><br />{t('directoryMenu:face.noFacesSelected')}</div>
                         ) : (
@@ -556,8 +669,6 @@ function SelectionTab({
                                         </div>
                                     </div>
                                 )}
-
-                                <button style={{ marginTop: 'var(--space-3)' }} onClick={() => clearUnknownFaceSelection()}>{t('directoryMenu:selection.clearSelection')}</button>
                             </div>
                         )}
                     </div>

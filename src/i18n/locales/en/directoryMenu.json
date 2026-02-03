@@ -25,8 +25,10 @@
   "selection": {
     "selectAllInPage": "Select all photos in page",
     "photosNotSelected": "Photos are not selected.",
+    "photosSelected": "photos selected",
     "selectOperation": "Select an Operation",
     "clearSelection": "Clear Selection",
+    "clear": "Clear",
     "importProgress": "Import Progress",
     "progress": "Progress",
     "current": "Current",
@@ -52,18 +54,21 @@
   "album": {
     "selectedAlbums": "Selected Albums",
     "noAlbumsSelected": "No albums selected.",
+    "albumsSelected": "albums selected",
     "deleteSelectedAlbums": "Delete Selected Albums",
     "photoCount": "{{count}} photos"
   },
   "tag": {
     "selectedTags": "Selected Tags",
     "noTagsSelected": "No tags selected.",
+    "tagsSelected": "tags selected",
     "deleteSelectedTags": "Delete Selected Tags",
     "photoCount": "{{count}} photos"
   },
   "person": {
     "selectedPersons": "Selected Persons",
     "noPersonsSelected": "No persons selected.",
+    "personsSelected": "persons selected",
     "deleteSelectedPersons": "Delete Selected Persons",
     "unknown": "Unknown",
     "faceCount": "{{count}} faces"
@@ -71,6 +76,7 @@
   "face": {
     "selectedFaces": "Selected Faces ({{count}})",
     "noFacesSelected": "No unknown faces selected.",
+    "facesSelected": "faces selected",
     "assignToNewPerson": "Assign to New Person",
     "assignToExistingPerson": "Assign to Existing Person",
     "delete": "Delete",

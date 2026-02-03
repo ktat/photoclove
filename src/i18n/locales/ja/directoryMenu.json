@@ -25,8 +25,10 @@
   "selection": {
     "selectAllInPage": "ページ内の全写真を選択",
     "photosNotSelected": "写真が選択されていません。",
+    "photosSelected": "枚の写真を選択中",
     "selectOperation": "操作を選択",
     "clearSelection": "選択をクリア",
+    "clear": "クリア",
     "importProgress": "インポート進捗",
     "progress": "進捗",
     "current": "現在",
@@ -52,18 +54,21 @@
   "album": {
     "selectedAlbums": "選択したアルバム",
     "noAlbumsSelected": "アルバムが選択されていません。",
+    "albumsSelected": "件のアルバムを選択中",
     "deleteSelectedAlbums": "選択したアルバムを削除",
     "photoCount": "{{count}}枚"
   },
   "tag": {
     "selectedTags": "選択したタグ",
     "noTagsSelected": "タグが選択されていません。",
+    "tagsSelected": "件のタグを選択中",
     "deleteSelectedTags": "選択したタグを削除",
     "photoCount": "{{count}}枚"
   },
   "person": {
     "selectedPersons": "選択した人物",
     "noPersonsSelected": "人物が選択されていません。",
+    "personsSelected": "人を選択中",
     "deleteSelectedPersons": "選択した人物を削除",
     "unknown": "不明",
     "faceCount": "{{count}}件の顔"
@@ -71,6 +76,7 @@
   "face": {
     "selectedFaces": "選択した顔 ({{count}})",
     "noFacesSelected": "不明な顔が選択されていません。",
+    "facesSelected": "件の顔を選択中",
     "assignToNewPerson": "新しい人物に割り当て",
     "assignToExistingPerson": "既存の人物に割り当て",
     "delete": "削除",

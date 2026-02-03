@@ -1,10 +1,21 @@
 # Slideshow Background Music
 
-This folder contains CC0 (Creative Commons Zero) licensed music for slideshow background playback.
+This folder contains Public Domain (CC0) licensed music for slideshow background playback.
 
-## Required Files
+## Current Music Source
 
-Add MP3 files with the following naming convention:
+All music files are from **FreePD** (archived at Internet Archive):
+https://archive.org/details/freepd
+
+## License
+
+**CC0 (Creative Commons Zero) - Public Domain**
+
+- No attribution required
+- Free for any use (personal, commercial, modification)
+- No restrictions
+
+## File Naming Convention
 
 ### Calm Mood
 - `calm_peaceful_morning.mp3`
@@ -36,18 +47,11 @@ Add MP3 files with the following naming convention:
 - `ambient_night_sky.mp3`
 - `ambient_urban_dreams.mp3`
 
-## Recommended Sources for CC0 Music
+## Replacing Music
 
-- [Free Music Archive](https://freemusicarchive.org/) - Filter by CC0 license
-- [Pixabay Music](https://pixabay.com/music/) - Royalty-free music
-- [Incompetech](https://incompetech.com/) - Kevin MacLeod's royalty-free music
-- [ccMixter](http://ccmixter.org/) - CC licensed music
+To replace music files, ensure new files are:
+- CC0 (Public Domain) licensed
+- MP3 format, 128-320 kbps
+- Named according to the convention above
 
-## License Requirements
-
-All music files MUST be:
-- CC0 (Public Domain) or
-- CC-BY (with attribution) or
-- Royalty-free for personal use
-
-If using CC-BY licensed music, add attribution to `MUSIC_CREDITS.md`.
+Track details should be updated in `MUSIC_CREDITS.md`.
