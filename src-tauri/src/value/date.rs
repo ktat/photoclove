@@ -1,8 +1,8 @@
-use chrono::{Datelike, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc};
+use chrono::{Datelike, Duration, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc};
 use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct Date {
     pub year: i32,
     pub month: u32,
@@ -285,6 +285,13 @@ impl Date {
         let datetime = chrono::DateTime::<Utc>::from(time);
         Date::new(datetime.year(), datetime.month(), datetime.day())
     }
+
+    /// Add days to the date (positive or negative)
+    pub fn add_days(&self, days: i64) -> Option<Date> {
+        let naive_date = NaiveDate::from_ymd_opt(self.year, self.month, self.day)?;
+        let new_date = naive_date + Duration::days(days);
+        Date::new(new_date.year(), new_date.month(), new_date.day())
+    }
 }
 
 impl Dates {
@@ -303,6 +310,147 @@ impl Dates {
 
     pub fn to_json(&self) -> String {
         serde_json::to_string(&self.dates).unwrap()
+    }
+}
+
+/// Time period for filtering statistics
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum TimePeriod {
+    /// All time (no filtering)
+    All,
+    /// Specific year (e.g., 2023)
+    Yearly { year: i32 },
+    /// Specific month (e.g., 2023-04)
+    Monthly { year: i32, month: u32 },
+    /// Specific week starting from a date (7 days from start_date)
+    Weekly { start_date: Date },
+}
+
+impl Default for TimePeriod {
+    fn default() -> Self {
+        TimePeriod::All
+    }
+}
+
+impl TimePeriod {
+    /// Parse from Option<String>, defaulting to All
+    pub fn from_option(period: Option<String>) -> Self {
+        period
+            .map(|p| Self::from_str(&p))
+            .unwrap_or_default()
+    }
+
+    /// Get SQL date condition for this period
+    pub fn date_condition(&self) -> String {
+        match self {
+            TimePeriod::All => String::new(),
+            TimePeriod::Yearly { year } => format!(
+                " AND strftime('%Y', date(COALESCE(exif_date_time_original, photo_date))) = '{}'",
+                year
+            ),
+            TimePeriod::Monthly { year, month } => format!(
+                " AND strftime('%Y-%m', date(COALESCE(exif_date_time_original, photo_date))) = '{}-{:02}'",
+                year, month
+            ),
+            TimePeriod::Weekly { start_date } => {
+                let end_date = start_date.add_days(6).unwrap_or_else(|| start_date.clone());
+                format!(
+                    " AND date(COALESCE(exif_date_time_original, photo_date)) BETWEEN '{}' AND '{}'",
+                    start_date.to_string(), end_date.to_string()
+                )
+            }
+        }
+    }
+
+    /// Parse from string format:
+    /// - "all" -> All
+    /// - "yearly:2023" -> Yearly { year: 2023 }
+    /// - "monthly:2023-04" -> Monthly { year: 2023, month: 4 }
+    /// - "weekly:2023-04-10" -> Weekly { start_date: Date }
+    pub fn from_str(s: &str) -> Self {
+        let s = s.to_lowercase();
+        if s == "all" {
+            return TimePeriod::All;
+        }
+
+        let parts: Vec<&str> = s.splitn(2, ':').collect();
+        if parts.len() != 2 {
+            return TimePeriod::All;
+        }
+
+        let (period_type, value) = (parts[0], parts[1]);
+
+        match period_type {
+            "yearly" => {
+                if let Ok(year) = value.parse::<i32>() {
+                    TimePeriod::Yearly { year }
+                } else {
+                    TimePeriod::All
+                }
+            }
+            "monthly" => {
+                let date_parts: Vec<&str> = value.split('-').collect();
+                if date_parts.len() >= 2 {
+                    if let (Ok(year), Ok(month)) = (
+                        date_parts[0].parse::<i32>(),
+                        date_parts[1].parse::<u32>(),
+                    ) {
+                        if (1..=12).contains(&month) {
+                            return TimePeriod::Monthly { year, month };
+                        }
+                    }
+                }
+                TimePeriod::All
+            }
+            "weekly" => {
+                if let Ok(start_date) = Date::try_from_db_format(value) {
+                    TimePeriod::Weekly { start_date }
+                } else {
+                    TimePeriod::All
+                }
+            }
+            _ => TimePeriod::All,
+        }
+    }
+
+    /// Convert to string format
+    pub fn as_str(&self) -> String {
+        match self {
+            TimePeriod::All => "all".to_string(),
+            TimePeriod::Yearly { year } => format!("yearly:{}", year),
+            TimePeriod::Monthly { year, month } => format!("monthly:{}-{:02}", year, month),
+            TimePeriod::Weekly { start_date } => {
+                format!("weekly:{}", start_date.to_string())
+            }
+        }
+    }
+
+    /// Get the period type as a simple string (for UI display)
+    pub fn period_type(&self) -> &'static str {
+        match self {
+            TimePeriod::All => "all",
+            TimePeriod::Yearly { .. } => "yearly",
+            TimePeriod::Monthly { .. } => "monthly",
+            TimePeriod::Weekly { .. } => "weekly",
+        }
+    }
+
+    /// Get display label for this period
+    pub fn display_label(&self) -> String {
+        match self {
+            TimePeriod::All => "All Time".to_string(),
+            TimePeriod::Yearly { year } => format!("{}", year),
+            TimePeriod::Monthly { year, month } => format!("{}-{:02}", year, month),
+            TimePeriod::Weekly { start_date } => {
+                let end_date = start_date.add_days(6).unwrap_or_else(|| start_date.clone());
+                format!(
+                    "{} - {}",
+                    start_date.to_string(),
+                    end_date.to_string()
+                )
+            }
+        }
     }
 }
 
@@ -429,5 +577,60 @@ mod tests {
         assert_eq!(d.year, 2025);
         assert_eq!(d.month, 1);
         assert_eq!(d.day, 15);
+    }
+
+    #[test]
+    fn test_add_days() {
+        let d = date::Date::new(2025, 1, 15).unwrap();
+        let future = d.add_days(6).unwrap();
+        assert_eq!(future.year, 2025);
+        assert_eq!(future.month, 1);
+        assert_eq!(future.day, 21);
+    }
+
+    #[test]
+    fn test_time_period_from_str_all() {
+        let period = date::TimePeriod::from_str("all");
+        assert_eq!(period, date::TimePeriod::All);
+    }
+
+    #[test]
+    fn test_time_period_from_str_yearly() {
+        let period = date::TimePeriod::from_str("yearly:2023");
+        assert_eq!(period, date::TimePeriod::Yearly { year: 2023 });
+    }
+
+    #[test]
+    fn test_time_period_from_str_monthly() {
+        let period = date::TimePeriod::from_str("monthly:2023-04");
+        assert_eq!(period, date::TimePeriod::Monthly { year: 2023, month: 4 });
+    }
+
+    #[test]
+    fn test_time_period_from_str_weekly() {
+        let period = date::TimePeriod::from_str("weekly:2023-04-10");
+        let expected_date = date::Date::new(2023, 4, 10).unwrap();
+        assert_eq!(period, date::TimePeriod::Weekly { start_date: expected_date });
+    }
+
+    #[test]
+    fn test_time_period_from_option_some() {
+        let period = date::TimePeriod::from_option(Some("yearly:2024".to_string()));
+        assert_eq!(period, date::TimePeriod::Yearly { year: 2024 });
+    }
+
+    #[test]
+    fn test_time_period_from_option_none() {
+        let period = date::TimePeriod::from_option(None);
+        assert_eq!(period, date::TimePeriod::All);
+    }
+
+    #[test]
+    fn test_time_period_as_str() {
+        let period = date::TimePeriod::Yearly { year: 2023 };
+        assert_eq!(period.as_str(), "yearly:2023");
+
+        let period = date::TimePeriod::Monthly { year: 2023, month: 4 };
+        assert_eq!(period.as_str(), "monthly:2023-04");
     }
 }

@@ -14,11 +14,11 @@ function ShootingTimeSection({ data }) {
 
     if (!data) return null;
 
-    const { hour_distribution, day_of_week } = data;
+    const { by_hour, by_day_of_week } = data;
 
     // Fill in missing hours (0-23)
     const hourData = Array.from({ length: 24 }, (_, i) => {
-        const found = hour_distribution?.find(h => h.hour === i);
+        const found = by_hour?.find(h => h.hour === i);
         return { hour: i, count: found?.count || 0, label: `${i}:00` };
     });
 
@@ -35,7 +35,7 @@ function ShootingTimeSection({ data }) {
 
     // Fill in missing days (0-6)
     const dayData = Array.from({ length: 7 }, (_, i) => {
-        const found = day_of_week?.find(d => d.day === i);
+        const found = by_day_of_week?.find(d => d.day === i);
         return {
             day: i,
             day_name: dayNames[i],

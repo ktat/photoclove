@@ -27,7 +27,7 @@ use commands::*;
 fn queue_startup_insights(config: &entity::config::Config, app_handle: tauri::AppHandle) {
     use crate::domain_service::job_queue::handlers::insights;
     use crate::entity::job_queue::{Job, JobType, JobUnit, QueuedJob};
-    use crate::repository::meta_db::sqlite::stats::TimePeriod;
+    use crate::value::date::TimePeriod;
 
     // Check if cache is stale (older than 1 hour) or missing
     let should_refresh = match insights::get_cache_metadata(config, &TimePeriod::All) {

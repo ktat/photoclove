@@ -58,6 +58,21 @@ function InsightsModal({ onClose }) {
         const loadAvailablePeriods = async () => {
             try {
                 const periods = await InsightsService.getAvailablePeriods();
+
+                // Convert weeks array to weeks_by_year object
+                // weeks from Rust is an array of date strings like "2023-04-10"
+                const weeksByYear = {};
+                if (periods.weeks && Array.isArray(periods.weeks)) {
+                    periods.weeks.forEach(week => {
+                        const year = parseInt(week.substring(0, 4), 10);
+                        if (!weeksByYear[year]) {
+                            weeksByYear[year] = [];
+                        }
+                        weeksByYear[year].push(week);
+                    });
+                }
+                periods.weeks_by_year = weeksByYear;
+
                 setAvailablePeriods(periods);
                 logger.info('InsightsModal', 'available_periods_loaded', 'Available periods loaded', {
                     years: periods.years?.length,
@@ -264,10 +279,24 @@ function InsightsModal({ onClose }) {
     };
 
     // Format month display label
-    const formatMonthLabel = (monthStr) => {
-        const [year, month] = monthStr.split('-');
-        const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+    // monthData can be either [year, month] array (from Rust tuple) or "YYYY-MM" string
+    const formatMonthLabel = (monthData) => {
+        let year, month;
+        if (Array.isArray(monthData)) {
+            [year, month] = monthData;
+        } else {
+            [year, month] = monthData.split('-').map(Number);
+        }
+        const date = new Date(year, month - 1, 1);
         return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
+    };
+
+    // Convert month data to string value for select
+    const monthToValue = (monthData) => {
+        if (Array.isArray(monthData)) {
+            return `${monthData[0]}-${String(monthData[1]).padStart(2, '0')}`;
+        }
+        return monthData;
     };
 
     // Render value selector based on period type
@@ -307,9 +336,12 @@ function InsightsModal({ onClose }) {
                     onChange={(e) => handlePeriodValueChange(e.target.value)}
                     disabled={refreshing || loading}
                 >
-                    {options.map(option => (
-                        <option key={option} value={option}>{formatMonthLabel(option)}</option>
-                    ))}
+                    {options.map(option => {
+                        const value = monthToValue(option);
+                        return (
+                            <option key={value} value={value}>{formatMonthLabel(option)}</option>
+                        );
+                    })}
                 </select>
             );
         }

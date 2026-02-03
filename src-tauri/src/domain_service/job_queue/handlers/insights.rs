@@ -4,7 +4,8 @@
 //! Supports time period filtering with separate cache files per period.
 
 use crate::entity::job_queue::QueuedJob;
-use crate::repository::meta_db::sqlite::stats::{self, TimePeriod};
+use crate::repository::meta_db::sqlite::stats;
+use crate::value::date::TimePeriod;
 use crate::repository::meta_db::sqlite::SQLite;
 use serde::{Deserialize, Serialize};
 use std::fs;
