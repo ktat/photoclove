@@ -29,18 +29,18 @@ pub async fn move_photos_to_exif_date(
         return Err(());
     }
     let date = date::Date::from_string(&date_str.to_string(), Option::Some("/"));
-    window.emit("move_files", "start").unwrap();
+    let _ = window.emit("move_files", "start");
     log::debug!(target: "photo", "move_photos_to_exif_date; target_date={:?}", date);
     let dates = state.repo_db.move_photos_to_exif_date(date).await;
     log::debug!(target: "photo", "move_photos_completed; dates={:?}", dates);
-    window.emit("move_files", "end_move").unwrap();
+    let _ = window.emit("move_files", "end_move");
     match state.meta_db.record_photos_all_meta_data(dates) {
         Ok(ret) => {
-            window.emit("move_files", "finish").unwrap();
-            return Ok(serde_json::to_string(&ret).unwrap());
+            let _ = window.emit("move_files", "finish");
+            return Ok(serde_json::to_string(&ret).unwrap_or_else(|_| "{}".to_string()));
         }
         Err(_) => {
-            window.emit("move_files", "faile").unwrap();
+            let _ = window.emit("move_files", "failed");
             return Ok("false".to_string());
         }
     }
@@ -66,7 +66,10 @@ pub async fn create_db(
     log::info!(target: "database_commands", "create_db; status=submitting_job");
 
     log::debug!(target: "database_commands", "acquiring_lock; target=job_queue_manager");
-    let job_queue_manager = state.job_queue_manager.lock().unwrap();
+    let job_queue_manager = state.job_queue_manager.lock().map_err(|e| {
+        log::error!(target: "database_commands", "lock_failed; error={}", e);
+        "Failed to acquire job queue lock".to_string()
+    })?;
     log::debug!(target: "database_commands", "lock_acquired; action=submitting_job");
 
     job_queue_manager
@@ -103,11 +106,11 @@ pub async fn create_db_in_date(
     let dates = date::Dates::new(&[date]);
     match state.meta_db.record_photos_all_meta_data(dates) {
         Ok(ret) => {
-            window.emit("create_db", "finish").unwrap();
-            return Ok(serde_json::to_string(&ret).unwrap());
+            let _ = window.emit("create_db", "finish");
+            return Ok(serde_json::to_string(&ret).unwrap_or_else(|_| "{}".to_string()));
         }
         Err(_) => {
-            window.emit("create_db", "failed").unwrap();
+            let _ = window.emit("create_db", "failed");
             return Ok("false".to_string());
         }
     }
@@ -148,11 +151,11 @@ pub async fn create_thumbnails(
     .await
     {
         Ok(ret) => {
-            window.emit("create_thumbnails", "finish").unwrap();
-            return Ok(serde_json::to_string(&ret).unwrap());
+            let _ = window.emit("create_thumbnails", "finish");
+            return Ok(serde_json::to_string(&ret).unwrap_or_else(|_| "{}".to_string()));
         }
         Err(_) => {
-            window.emit("create_thumbnails", "failed").unwrap();
+            let _ = window.emit("create_thumbnails", "failed");
             return Ok("false".to_string());
         }
     }
@@ -198,11 +201,11 @@ pub async fn create_thumbnails_in_date(
     .await
     {
         Ok(ret) => {
-            window.emit("create_thumbnails", "finish").unwrap();
-            return Ok(serde_json::to_string(&ret).unwrap());
+            let _ = window.emit("create_thumbnails", "finish");
+            return Ok(serde_json::to_string(&ret).unwrap_or_else(|_| "{}".to_string()));
         }
         Err(_) => {
-            window.emit("create_thumbnails", "failed").unwrap();
+            let _ = window.emit("create_thumbnails", "failed");
             return Ok("false".to_string());
         }
     }

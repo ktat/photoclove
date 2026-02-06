@@ -6,6 +6,8 @@ import { logger } from "../../../services/LoggerService.js";
 import { getCombinedTransformStyle } from "../../../utils/orientationUtils.js";
 import FaceBoundingBoxOverlay from "./FaceBoundingBoxOverlay.jsx";
 import { useFaceDetection } from "../../../context/FaceDetectionContext.jsx";
+import { usePhotoDisplayZoom } from "./hooks/usePhotoDisplayZoom.js";
+import { BurstBadge, BurstGroupIndicator, FaceCountIndicator } from "./BurstOverlays.jsx";
 
 // Layout and timing constants
 const CONTAINER_READY_DELAY_MS = 50;
@@ -25,8 +27,6 @@ let width = 0;
 let height = 0;
 
 function PhotoDisplay(props) {
-    const [dragPhotoInfo, setDragPhotoInfo] = useState([]);
-    const [scrollLock, setScrollLock] = useState(false);
     const [photoDisplayImgClass, setPhotoDisplayImgClass] = useState("");
     const [videoSource, setVideoSource] = useState("");
     const [videoClass, setVideoClass] = useState("video-off");
@@ -45,6 +45,15 @@ function PhotoDisplay(props) {
     const [imageNaturalSize, setImageNaturalSize] = useState({ width: 0, height: 0 });
     const [displayedImageSize, setDisplayedImageSize] = useState({ width: 0, height: 0 });
     const imgRef = useRef(null);
+
+    // Zoom and drag functionality
+    const { dragPhotoStart, dragPhoto, dragPhotoEnd, photoScroll } = usePhotoDisplayZoom({
+        photoZoom: props.photoZoom,
+        setPhotoZoom: props.setPhotoZoom,
+        photoZoomReady: props.photoZoomReady,
+        SetImgStyle: props.SetImgStyle,
+        setDisplayedImageSize
+    });
 
     // Function to parse CSS style string and convert to style object
     const parseCssStyle = (cssString) => {
@@ -214,11 +223,6 @@ function PhotoDisplay(props) {
         };
     }, [props.currentPhotoPath, props.thumbnailSrc, props.imgCacheMap, props.progressiveImageLoading]);
 
-    function dragPhotoStart(e) {
-        setPhotoDisplayImgClass("photo_dragging");
-        setDragPhotoInfo({ is_dragging: true, x: e.clientX, y: e.clientY });
-    }
-
     async function movie(path) {
         if (currentFile != path) {
             invoke("lock", { t: true }).then(async (r) => {
@@ -243,117 +247,6 @@ function PhotoDisplay(props) {
             })
         }
         return true;
-    }
-
-    // TODO: not correct scroll adjustment.
-    function photoScroll(e) {
-        if (scrollLock || !props.photoZoomReady) {
-            return;
-        }
-
-        setScrollLock(true);
-        let zoom = props.photoZoom === "auto" ? 100 : parseInt(props.photoZoom.replace("%", ""));
-
-        const imgTag = document.querySelector(".photo img");
-        const wrapperDiv = document.querySelector('#imageWrapper');
-        
-        if (!imgTag || !wrapperDiv) {
-            setScrollLock(false);
-            return;
-        }
-
-        // Get current zoom scale before update
-        const currentZoom = zoom;
-        
-        // Calculate dynamic zoom speed based on current zoom level
-        // Base speed increases with zoom level for more natural feel
-        const baseSpeed = 10;
-        const zoomFactor = Math.max(1, currentZoom / 100);
-        const zoomSpeed = Math.round(baseSpeed * zoomFactor);
-        
-        // Update zoom level with dynamic speed
-        if (e.deltaY > 0) {
-            zoom -= zoomSpeed;
-            if (zoom <= 100) {
-                zoom = 100;
-            }
-        } else if (e.deltaY < 0) {
-            zoom += zoomSpeed;
-        }
-
-        // If zoom hasn't changed, return
-        if (zoom === currentZoom) {
-            setScrollLock(false);
-            return;
-        }
-
-        props.setPhotoZoom(zoom + "%");
-
-        // Get wrapper base dimensions (100% size)
-        const wrapperWidth = parseFloat(wrapperDiv.style.width);
-        const wrapperHeight = parseFloat(wrapperDiv.style.height);
-        
-        // Calculate old and new dimensions
-        const oldScale = currentZoom / 100;
-        const newScale = zoom / 100;
-        
-        const oldWidth = wrapperWidth * oldScale;
-        const oldHeight = wrapperHeight * oldScale;
-        const newWidth = wrapperWidth * newScale;
-        const newHeight = wrapperHeight * newScale;
-
-        // Get mouse position relative to image
-        const rect = imgTag.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        
-        // Calculate position ratios
-        const xRatio = x / oldWidth;
-        const yRatio = y / oldHeight;
-
-        // Apply new size
-        props.SetImgStyle({
-            width: newWidth + 'px',
-            height: newHeight + 'px',
-            opacity: '100%'
-        });
-
-        // Update displayed image size for face bounding box overlay
-        setDisplayedImageSize({ width: newWidth, height: newHeight });
-
-        // Calculate scroll to keep mouse point stable
-        setTimeout(() => {
-            const newX = newWidth * xRatio;
-            const newY = newHeight * yRatio;
-            
-            const deltaX = newX - x;
-            const deltaY = newY - y;
-            
-            wrapperDiv.scrollLeft += deltaX;
-            wrapperDiv.scrollTop += deltaY;
-        }, 0);
-
-        setTimeout(() => { setScrollLock(false) }, SCROLL_LOCK_DELAY_MS);
-        window.onscroll = function () { };
-    }
-
-    function dragPhoto(e) {
-        if (dragPhotoInfo.is_dragging) {
-            let x = e.clientX - dragPhotoInfo.x;
-            let y = e.clientY - dragPhotoInfo.y;
-            // Use the wrapper div as the scrollable container
-            let display = document.querySelector('#imageWrapper') || e.currentTarget.parentElement;
-            display.scrollTop -= y / 20;
-            display.scrollLeft -= x / 20;
-        } else {
-            /*
-            */
-        }
-    }
-
-    function dragPhotoEnd(e) {
-        setPhotoDisplayImgClass("");
-        setDragPhotoInfo({});
     }
 
     const handleImgLoad = (e, retryCount = 0) => {
@@ -556,9 +449,9 @@ function PhotoDisplay(props) {
                             handleImgLoad(e.target);
                         }}
                         src={displaySrc || convertFileSrc(props.currentPhotoPath)}
-                        onMouseDown={(e) => dragPhotoStart(e)}
+                        onMouseDown={(e) => dragPhotoStart(e, setPhotoDisplayImgClass)}
                         onMouseMove={(e) => dragPhoto(e)}
-                        onMouseUp={(e) => dragPhotoEnd(e)}
+                        onMouseUp={(e) => dragPhotoEnd(setPhotoDisplayImgClass)}
                         onWheel={(e) => photoScroll(e)}
                     />
                     {/* Face bounding box overlay - only shown when Face tab is active */}
@@ -572,101 +465,25 @@ function PhotoDisplay(props) {
                     )}
                     {/* Face count indicator - only shown when Face tab is active */}
                     {isFaceTabActive && detectedFaces.length > 0 && (
-                        <div
-                            onClick={() => setShowFaceBboxes(!showFaceBboxes)}
-                            style={{
-                                position: 'absolute',
-                                bottom: '20px',
-                                left: '20px',
-                                backgroundColor: showFaceBboxes ? 'var(--color-primary)' : 'rgba(0, 0, 0, 0.6)',
-                                color: 'white',
-                                padding: '6px 12px',
-                                borderRadius: 'var(--radius-md)',
-                                fontSize: 'var(--font-size-sm)',
-                                cursor: 'pointer',
-                                zIndex: 100,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                transition: 'background-color 0.2s'
-                            }}
-                            title="Click to toggle face boxes (or press 'f')"
-                        >
-                            👤 {detectedFaces.length} face{detectedFaces.length !== 1 ? 's' : ''}
-                            <span style={{ opacity: 0.7, fontSize: 'var(--font-size-xs)' }}>[F]</span>
-                        </div>
+                        <FaceCountIndicator
+                            facesCount={detectedFaces.length}
+                            showFaceBboxes={showFaceBboxes}
+                            setShowFaceBboxes={setShowFaceBboxes}
+                        />
                     )}
                     {/* Burst badge - shows when viewing burst representative in burst mode (clickable to open group) */}
                     {props.burstModeEnabled && props.isBurstRepresentative && props.burstGroupId && !props.isInBurstGroupMode && (
-                        <div
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                logger.info('PhotoDisplay', 'burst_badge_click', 'Burst badge clicked', {
-                                    burstGroupId: props.burstGroupId,
-                                    currentViewMode: props.currentViewMode,
-                                    currentViewModeData: props.currentViewModeData,
-                                    hasOpenBurstGroup: !!props.openBurstGroup
-                                });
-                                if (props.openBurstGroup) {
-                                    // Pass current view mode and data so we can return to this photo
-                                    props.openBurstGroup(
-                                        props.burstGroupId,
-                                        props.currentViewMode,
-                                        props.currentViewModeData
-                                    );
-                                }
-                            }}
-                            style={{
-                                position: 'absolute',
-                                top: '20px',
-                                right: '20px',
-                                backgroundColor: 'var(--color-primary)',
-                                color: 'white',
-                                padding: '8px 16px',
-                                borderRadius: 'var(--radius-lg)',
-                                fontSize: 'var(--font-size-lg)',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                zIndex: 100,
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
-                            }}
-                            title="Click to view all photos in this burst group"
-                        >
-                            +{props.burstCount - 1} photos in group
-                        </div>
+                        <BurstBadge
+                            burstGroupId={props.burstGroupId}
+                            burstCount={props.burstCount}
+                            currentViewMode={props.currentViewMode}
+                            currentViewModeData={props.currentViewModeData}
+                            openBurstGroup={props.openBurstGroup}
+                        />
                     )}
                     {/* Burst group indicator - clickable button to go back to burst representative view */}
                     {props.isInBurstGroupMode && props.burstGroupId && (
-                        <div
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                if (props.goBackFromBurstGroup) {
-                                    props.goBackFromBurstGroup();
-                                }
-                            }}
-                            style={{
-                                position: 'absolute',
-                                top: '20px',
-                                right: '20px',
-                                backgroundColor: 'var(--color-primary)',
-                                color: 'white',
-                                padding: '8px 16px',
-                                borderRadius: 'var(--radius-lg)',
-                                fontSize: 'var(--font-size-lg)',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                zIndex: 100,
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                                transition: 'background-color 0.2s ease'
-                            }}
-                            onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--color-primary-hover)'}
-                            onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--color-primary)'}
-                            title="Click to exit burst group view"
-                        >
-                            Burst Group ✕
-                        </div>
+                        <BurstGroupIndicator goBackFromBurstGroup={props.goBackFromBurstGroup} />
                     )}
                 </div>
             }

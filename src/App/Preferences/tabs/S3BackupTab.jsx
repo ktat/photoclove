@@ -10,6 +10,8 @@ import {
     parseBucketUri,
     buildBucketUri
 } from './S3Constants.js';
+import { useS3BackupHandlers } from './hooks/useS3BackupHandlers.js';
+import S3AuthenticationSection from './S3AuthenticationSection.jsx';
 
 function S3BackupTab({ config, setConfig, addFooterMessage }) {
     const { t } = useTranslation('preferences');
@@ -128,117 +130,25 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
         updateS3Config({ bucket_uri });
     };
 
-    const handleTestConnection = async () => {
-        setIsTesting(true);
-        setTestResult(null);
-
-        try {
-            await invoke("save_s3_config", {
-                enabled: s3Config.enabled,
-                storageType: s3Config.storage_type,
-                bucketUri: s3Config.bucket_uri,
-                region: s3Config.region,
-                authMethod: s3Config.auth_method,
-                profile: s3Config.profile,
-                customEndpoint: s3Config.custom_endpoint,
-                autoSync: s3Config.auto_sync,
-                backupDb: s3Config.backup_db,
-                backupThumbnails: s3Config.backup_thumbnails,
-                maxFileSizeMb: s3Config.max_file_size_mb
-            });
-
-            const result = await invoke("test_s3_connection");
-            const data = JSON.parse(result);
-            setTestResult({ success: data.success, message: data.message });
-
-            if (data.success) {
-                setStatusMessage({ type: 'success', text: t('s3Backup.connectionSuccess') });
-                addFooterMessage?.("s3_test", t('s3Backup.connectionSuccess'));
-            } else {
-                setStatusMessage({ type: 'error', text: `${t('s3Backup.connectionFailed')}: ${data.message}` });
-                addFooterMessage?.("s3_test_error", `${t('s3Backup.connectionFailed')}: ${data.message}`);
-            }
-        } catch (error) {
-            setTestResult({ success: false, message: error.toString() });
-            setStatusMessage({ type: 'error', text: `${t('s3Backup.connectionFailed')}: ${error}` });
-            addFooterMessage?.("s3_test_error", `${t('s3Backup.connectionFailed')}: ${error}`);
-            logger.error('S3BackupTab', 'test_connection_error', 'Connection test failed', { error });
-        } finally {
-            setIsTesting(false);
-        }
-    };
-
-    const handleFullSync = async () => {
-        if (!window.confirm(t('s3Backup.fullSyncConfirm'))) {
-            return;
-        }
-
-        setIsSyncing(true);
-        try {
-            const result = await invoke("enqueue_s3_full_sync");
-            const data = JSON.parse(result);
-            setStatusMessage({ type: 'success', text: t('s3Backup.syncStarted', { count: data.to_sync }) });
-            addFooterMessage?.("s3_sync", t('s3Backup.syncStarted', { count: data.to_sync }));
-        } catch (error) {
-            setStatusMessage({ type: 'error', text: `${t('s3Backup.syncFailed')}: ${error}` });
-            addFooterMessage?.("s3_sync_error", `${t('s3Backup.syncFailed')}: ${error}`);
-            logger.error('S3BackupTab', 'full_sync_error', 'Failed to start full sync', { error });
-        } finally {
-            setIsSyncing(false);
-        }
-    };
-
-    const handleSaveCredentials = async () => {
-        if (!accessKeyId || !secretAccessKey) {
-            setStatusMessage({ type: 'error', text: t('s3Backup.credentialsRequired') });
-            addFooterMessage?.("s3_credentials_error", t('s3Backup.credentialsRequired'));
-            return;
-        }
-
-        try {
-            await invoke("store_s3_credentials", {
-                provider: s3Config.storage_type,
-                accessKeyId,
-                secretAccessKey
-            });
-            setHasStoredCredentials(true);
-            setAccessKeyId('');
-            setSecretAccessKey('');
-
-            const result = await invoke("get_s3_credentials_preview", { provider: s3Config.storage_type });
-            const data = JSON.parse(result);
-            setCredentialsPreview(data.access_key_preview);
-
-            setStatusMessage({ type: 'success', text: t('s3Backup.credentialsSaved', { provider: selectedProvider.label }) });
-            addFooterMessage?.("s3_credentials", t('s3Backup.credentialsSaved', { provider: selectedProvider.label }));
-            logger.info('S3BackupTab', 'credentials_saved', 'S3 credentials saved to keyring', { provider: s3Config.storage_type });
-        } catch (error) {
-            setStatusMessage({ type: 'error', text: `${t('s3Backup.credentialsSaveFailed')}: ${error}` });
-            addFooterMessage?.("s3_credentials_error", `${t('s3Backup.credentialsSaveFailed')}: ${error}`);
-            logger.error('S3BackupTab', 'credentials_save_error', 'Failed to save credentials', { error });
-        }
-    };
-
-    const handleDeleteCredentials = async () => {
-        if (!window.confirm(t('s3Backup.deleteCredentialsConfirm', { provider: selectedProvider.label }))) {
-            return;
-        }
-
-        try {
-            await invoke("delete_s3_credentials", { provider: s3Config.storage_type });
-            setHasStoredCredentials(false);
-            setCredentialsPreview(null);
-            setStatusMessage({ type: 'success', text: t('s3Backup.credentialsDeleted', { provider: selectedProvider.label }) });
-            addFooterMessage?.("s3_credentials", t('s3Backup.credentialsDeleted', { provider: selectedProvider.label }));
-            logger.info('S3BackupTab', 'credentials_deleted', 'S3 credentials deleted from keyring', { provider: s3Config.storage_type });
-        } catch (error) {
-            setStatusMessage({ type: 'error', text: `${t('s3Backup.credentialsDeleteFailed')}: ${error}` });
-            addFooterMessage?.("s3_credentials_error", `${t('s3Backup.credentialsDeleteFailed')}: ${error}`);
-            logger.error('S3BackupTab', 'credentials_delete_error', 'Failed to delete credentials', { error });
-        }
-    };
-
     const selectedProvider = STORAGE_PROVIDERS.find(p => p.id === s3Config.storage_type) || STORAGE_PROVIDERS[0];
+
+    // Handler functions from hook
+    const { handleTestConnection, handleFullSync, handleSaveCredentials, handleDeleteCredentials } = useS3BackupHandlers({
+        t,
+        s3Config,
+        addFooterMessage,
+        setTestResult,
+        setIsTesting,
+        setStatusMessage,
+        setIsSyncing,
+        accessKeyId,
+        secretAccessKey,
+        setHasStoredCredentials,
+        setAccessKeyId,
+        setSecretAccessKey,
+        setCredentialsPreview,
+        selectedProvider
+    });
     const showEndpointField = selectedProvider.hasEndpoint || s3Config.storage_type === 'custom';
     const showProfileSelector = s3Config.storage_type === 'aws_s3' && s3Config.auth_method === 'aws_credentials';
     const needsAccessKey = s3Config.storage_type !== 'aws_s3' || s3Config.auth_method === 'access_key';
@@ -367,146 +277,23 @@ function S3BackupTab({ config, setConfig, addFooterMessage }) {
                     </div>
 
                     {/* Authentication */}
-                    <div className={styles['setting-group']} style={{ marginTop: 'var(--space-4)' }}>
-                        <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-base)' }}>{t('s3Backup.authentication')}</h3>
-
-                        {s3Config.storage_type === 'aws_s3' && (
-                            <div style={{ marginBottom: 'var(--space-3)' }}>
-                                <div className={styles['setting-item']}>
-                                    <input
-                                        type="radio"
-                                        id="auth-aws-credentials"
-                                        name="auth-method"
-                                        checked={s3Config.auth_method === 'aws_credentials'}
-                                        onChange={() => updateS3Config({ auth_method: 'aws_credentials' })}
-                                    />
-                                    <label htmlFor="auth-aws-credentials">{t('s3Backup.authAwsCredentials')}</label>
-                                </div>
-                                <div className={styles['setting-item']}>
-                                    <input
-                                        type="radio"
-                                        id="auth-iam-role"
-                                        name="auth-method"
-                                        checked={s3Config.auth_method === 'iam_role'}
-                                        onChange={() => updateS3Config({ auth_method: 'iam_role' })}
-                                    />
-                                    <label htmlFor="auth-iam-role">{t('s3Backup.authIamRole')}</label>
-                                </div>
-                                <div className={styles['setting-item']}>
-                                    <input
-                                        type="radio"
-                                        id="auth-access-key"
-                                        name="auth-method"
-                                        checked={s3Config.auth_method === 'access_key'}
-                                        onChange={() => updateS3Config({ auth_method: 'access_key' })}
-                                    />
-                                    <label htmlFor="auth-access-key">{t('s3Backup.authAccessKey')}</label>
-                                </div>
-                            </div>
-                        )}
-
-                        {showProfileSelector && (
-                            <div className={styles['setting-row']}>
-                                <label>{t('s3Backup.awsProfile')}</label>
-                                <select
-                                    value={s3Config.profile || 'default'}
-                                    onChange={(e) => updateS3Config({ profile: e.target.value === 'default' ? null : e.target.value })}
-                                    style={{ width: '200px' }}
-                                >
-                                    {awsProfiles.map(profile => (
-                                        <option key={profile} value={profile}>{profile}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
-
-                        {needsAccessKey && (
-                            <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-md)' }}>
-                                <h4 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--font-size-sm)', fontWeight: 500 }}>
-                                    {t('s3Backup.accessKeyCredentials', { provider: selectedProvider.label })}
-                                </h4>
-
-                                {hasStoredCredentials ? (
-                                    <div>
-                                        <div style={{ marginBottom: 'var(--space-3)', color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
-                                            <strong style={{ color: 'var(--color-success)' }}>✓ {t('s3Backup.credentialsStored')}</strong>
-                                            {credentialsPreview && (
-                                                <div style={{ marginTop: 'var(--space-1)' }}>
-                                                    {t('s3Backup.accessKey')}: <code style={{ fontSize: 'var(--font-size-xs)' }}>{credentialsPreview}</code>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <button
-                                            onClick={handleDeleteCredentials}
-                                            style={{
-                                                padding: 'var(--space-2) var(--space-3)',
-                                                background: 'var(--color-danger)',
-                                                color: 'white',
-                                                border: 'none',
-                                                borderRadius: 'var(--radius-sm)',
-                                                cursor: 'pointer',
-                                                fontSize: 'var(--font-size-sm)'
-                                            }}
-                                        >
-                                            {t('s3Backup.deleteCredentials')}
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <div className={styles['setting-row']} style={{ marginBottom: 'var(--space-3)' }}>
-                                            <label>{t('s3Backup.accessKeyId')}</label>
-                                            <div style={{ width: '300px' }}>
-                                                <input
-                                                    type="text"
-                                                    value={accessKeyId}
-                                                    onChange={(e) => setAccessKeyId(e.target.value)}
-                                                    placeholder={t('s3Backup.accessKeyIdPlaceholder')}
-                                                    style={{ width: '100%' }}
-                                                />
-                                                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: 'var(--space-1)' }}>
-                                                    {t('s3Backup.accessKeyIdExample')}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className={styles['setting-row']} style={{ marginBottom: 'var(--space-3)' }}>
-                                            <label>{t('s3Backup.secretAccessKey')}</label>
-                                            <div style={{ width: '300px' }}>
-                                                <input
-                                                    type="password"
-                                                    value={secretAccessKey}
-                                                    onChange={(e) => setSecretAccessKey(e.target.value)}
-                                                    placeholder={t('s3Backup.secretAccessKeyPlaceholder')}
-                                                    style={{ width: '100%' }}
-                                                />
-                                                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: 'var(--space-1)' }}>
-                                                    {t('s3Backup.secretAccessKeyDescription')}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={handleSaveCredentials}
-                                            disabled={!accessKeyId || !secretAccessKey}
-                                            style={{
-                                                padding: 'var(--space-2) var(--space-4)',
-                                                background: (!accessKeyId || !secretAccessKey) ? 'var(--color-bg-muted)' : 'var(--color-primary)',
-                                                color: 'white',
-                                                border: 'none',
-                                                borderRadius: 'var(--radius-sm)',
-                                                cursor: (!accessKeyId || !secretAccessKey) ? 'not-allowed' : 'pointer',
-                                                fontSize: 'var(--font-size-sm)',
-                                                fontWeight: 500
-                                            }}
-                                        >
-                                            {t('s3Backup.saveCredentials')}
-                                        </button>
-                                        <p style={{ marginTop: 'var(--space-2)', color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)' }}>
-                                            {t('s3Backup.credentialsSecurityNote')}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                    <S3AuthenticationSection
+                        t={t}
+                        s3Config={s3Config}
+                        updateS3Config={updateS3Config}
+                        awsProfiles={awsProfiles}
+                        showProfileSelector={showProfileSelector}
+                        needsAccessKey={needsAccessKey}
+                        selectedProvider={selectedProvider}
+                        hasStoredCredentials={hasStoredCredentials}
+                        credentialsPreview={credentialsPreview}
+                        accessKeyId={accessKeyId}
+                        setAccessKeyId={setAccessKeyId}
+                        secretAccessKey={secretAccessKey}
+                        setSecretAccessKey={setSecretAccessKey}
+                        handleSaveCredentials={handleSaveCredentials}
+                        handleDeleteCredentials={handleDeleteCredentials}
+                    />
 
                     {/* Sync Options */}
                     <div className={styles['setting-group']} style={{ marginTop: 'var(--space-4)' }}>

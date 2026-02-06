@@ -55,22 +55,21 @@ impl ExifData {
     }
 
     pub fn new(file: file::File) -> ExifData {
-        let exif_data = rexif::parse_file(file.path.to_string());
         let mut data = ExifData::empty();
-        if !exif_data.is_ok() {
-            let file_created_time = file.created_datetime();
-            let re = regex::Regex::new(r"^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})").unwrap();
-            data.date_time = re.replace(&file_created_time, "$1/$2/$3").to_string();
-        } else {
-            for e in exif_data.unwrap().entries {
-                match e.tag {
-                    _ => {
-                        // Debug info available: tag, ifd.ext_data, value, value_more_readable
-                    }
+        let exif_result = rexif::parse_file(file.path.to_string());
+
+        match exif_result {
+            Err(_) => {
+                // Fall back to file creation time
+                let file_created_time = file.created_datetime();
+                if let Ok(re) = regex::Regex::new(r"^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})") {
+                    data.date_time = re.replace(&file_created_time, "$1/$2/$3").to_string();
+                } else {
+                    data.date_time = file_created_time;
                 }
             }
-            let exif_data = rexif::parse_file(file.path.to_string());
-            for e in exif_data.unwrap().entries {
+            Ok(exif_data) => {
+                for e in exif_data.entries {
                 match e.tag {
                     rexif::ExifTag::FNumber => data.fnumber = e.value_more_readable.to_string(),
                     rexif::ExifTag::ISOSpeedRatings => data.iso = e.value_more_readable.to_string(),
@@ -204,22 +203,24 @@ impl ExifData {
                     _ => {}
                 }
             }
-            let mut t = data.date_time.clone();
-            if t == "" {
-                t = data.date_time_original.clone();
-            }
-            // Convert EXIF colon format to ISO 8601 hyphen format (2025:11:23 -> 2025-11-23)
-            let re = regex::Regex::new(r"^([0-9]{4}):([0-9]{1,2}):([0-9]{1,2})").unwrap();
-            if t != "" {
-                data.date_time = re.replace(&t, "$1-$2-$3").to_string();
-            } else {
-                let file_created_time = file.created_datetime();
-                // File created time is already in hyphen format, keep it as is
-                data.date_time = file_created_time;
-            }
-            // Also convert date_time_original to hyphen format for consistency
-            if !data.date_time_original.is_empty() {
-                data.date_time_original = re.replace(&data.date_time_original, "$1-$2-$3").to_string();
+                let mut t = data.date_time.clone();
+                if t.is_empty() {
+                    t = data.date_time_original.clone();
+                }
+                // Convert EXIF colon format to ISO 8601 hyphen format (2025:11:23 -> 2025-11-23)
+                if let Ok(re) = regex::Regex::new(r"^([0-9]{4}):([0-9]{1,2}):([0-9]{1,2})") {
+                    if !t.is_empty() {
+                        data.date_time = re.replace(&t, "$1-$2-$3").to_string();
+                    } else {
+                        let file_created_time = file.created_datetime();
+                        // File created time is already in hyphen format, keep it as is
+                        data.date_time = file_created_time;
+                    }
+                    // Also convert date_time_original to hyphen format for consistency
+                    if !data.date_time_original.is_empty() {
+                        data.date_time_original = re.replace(&data.date_time_original, "$1-$2-$3").to_string();
+                    }
+                }
             }
         }
         data
@@ -228,50 +229,52 @@ impl ExifData {
 
 // currently only for Panasonic camera
 fn get_lens_from_maker_note(data: Vec<u8>) -> String {
-    if data.len() < 12 {
-        return "".to_string();
+    if data.len() < 13 {
+        return String::new();
     }
 
-    // Panasonic
+    // Panasonic signature: "Panasonic\0\0\0"
     let panasonic: [u8; 12] = [80, 97, 110, 97, 115, 111, 110, 105, 99, 0, 0, 0];
-    let first12chars = &data[0..12];
-
-    // return when first 9 char is not "Panasonic"
-    if first12chars != &panasonic {
-        return "".to_string();
+    if &data[0..12] != &panasonic {
+        return String::new();
     }
 
-    // Lens name prefix regex(I only confirmed LUMIX, LEICA, OLYNMUS, SIGMA)
-    let re = regex::Regex::new("(?i)(LUMIX|LEICA|OLYMPUS|SIGMA|TAMRON|KOWA|COSINA|VOIGT|VENUS)$")
-        .unwrap();
+    // Lens name prefix regex (LUMIX, LEICA, OLYMPUS, SIGMA, etc.)
+    let re = match regex::Regex::new("(?i)(LUMIX|LEICA|OLYMPUS|SIGMA|TAMRON|KOWA|COSINA|VOIGT|VENUS)$") {
+        Ok(r) => r,
+        Err(_) => return String::new(),
+    };
 
     // safely skip 12byte x (data[12](num of entries) + 1("Panasonic\0\0\0"))
     let mut i: usize = usize::from(data[12] + 1) * 12;
 
-    let mut str = "         ".to_string(); // dummy 9 chars
+    let mut buffer = "         ".to_string(); // dummy 9 chars
     while i < data.len() {
-        if data[i] < 32 || 126 < data[i] {
+        if data[i] < 32 || data[i] > 126 {
             i += 1;
             continue;
         }
-        // enough length for regex
-        str = str[str.len() - 9..str.len()].to_string();
-        str.push(std::char::from_u32(data[i].into()).unwrap());
+        // Keep last 9 chars for regex matching
+        buffer = buffer[buffer.len().saturating_sub(9)..].to_string();
+        if let Some(c) = std::char::from_u32(data[i].into()) {
+            buffer.push(c);
+        }
 
-        let captures = re.captures(&str);
-        if captures.is_some() {
-            let cap = captures.unwrap();
+        if let Some(cap) = re.captures(&buffer) {
             let mut lens = cap[0].to_string();
-            let mut i2 = i;
+            let mut i2 = i + 1;
             while i2 < data.len() {
-                i2 += 1;
-                if data[i2] < 32 || 126 < data[i2] {
-                    return lens.to_string();
+                if data[i2] < 32 || data[i2] > 126 {
+                    return lens;
                 }
-                lens.push(std::char::from_u32(data[i2].into()).unwrap());
+                if let Some(c) = std::char::from_u32(data[i2].into()) {
+                    lens.push(c);
+                }
+                i2 += 1;
             }
+            return lens;
         }
         i += 1;
     }
-    return "".to_string();
+    String::new()
 }

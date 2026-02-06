@@ -193,13 +193,13 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
   return (
     <div className="album-tab" style={{ padding: 'var(--space-4)' }}>
       {/* Album Information Section */}
-      <div className="album-info-section" style={{ marginBottom: '24px' }}>
-        <h3 style={{ margin: '0 0 16px 0', color: 'var(--color-text-primary)' }}>Album Information</h3>
+      <div className="album-info-section" style={{ marginBottom: 'var(--space-6)' }}>
+        <h3 style={{ margin: '0 0 var(--space-4) 0', color: 'var(--color-text-primary)' }}>Album Information</h3>
         
         {isEditing ? (
           <div className="album-edit-form">
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
+            <div style={{ marginBottom: 'var(--space-3)' }}>
+              <label style={{ display: 'block', marginBottom: 'var(--space-1)', fontWeight: 'bold' }}>
                 Album Name:
               </label>
               <input
@@ -217,8 +217,8 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
                 }}
               />
             </div>
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
+            <div style={{ marginBottom: 'var(--space-4)' }}>
+              <label style={{ display: 'block', marginBottom: 'var(--space-1)', fontWeight: 'bold' }}>
                 Description:
               </label>
               <textarea
@@ -237,7 +237,7 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
                 }}
               />
             </div>
-            <div className="edit-buttons" style={{ display: 'flex', gap: '8px' }}>
+            <div className="edit-buttons" style={{ display: 'flex', gap: 'var(--space-2)' }}>
               <button 
                 onClick={saveAlbumInfo} 
                 disabled={!editedName.trim() || isLoading}
@@ -274,7 +274,7 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'space-between',
-              marginBottom: '8px'
+              marginBottom: 'var(--space-2)'
             }}>
               <strong style={{ fontSize: 'var(--font-size-lg)' }}>{albumInfo?.name}</strong>
               <button 
@@ -294,7 +294,7 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
             </div>
             {albumInfo?.description && (
               <div className="album-description" style={{
-                marginBottom: '12px',
+                marginBottom: 'var(--space-3)',
                 color: 'var(--color-text-muted)',
                 fontStyle: 'italic'
               }}>
@@ -305,7 +305,7 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
               fontSize: 'var(--font-size-base)',
               color: 'var(--color-text-muted)'
             }}>
-              <div style={{ marginBottom: '4px' }}>
+              <div style={{ marginBottom: 'var(--space-1)' }}>
                 📸 {albumInfo?.photo_count || 0} photos
               </div>
               <div>
@@ -319,8 +319,8 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
 
       {/* Cover Photo Section */}
       {currentPhotoPath && (
-        <div className="cover-section" style={{ marginBottom: '24px' }}>
-          <h3 style={{ margin: '0 0 12px 0', color: 'var(--color-text-primary)' }}>Cover Photo</h3>
+        <div className="cover-section" style={{ marginBottom: 'var(--space-6)' }}>
+          <h3 style={{ margin: '0 0 var(--space-3) 0', color: 'var(--color-text-primary)' }}>Cover Photo</h3>
           <button 
             onClick={setCoverPhoto}
             disabled={isLoading}
@@ -340,13 +340,13 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
       )}
 
       {/* Google Photos Sync Section */}
-      <div className="sync-section" style={{ marginBottom: '24px' }}>
-        <h3 style={{ margin: '0 0 12px 0', color: 'var(--color-text-primary)' }}>Google Photos Sync</h3>
+      <div className="sync-section" style={{ marginBottom: 'var(--space-6)' }}>
+        <h3 style={{ margin: '0 0 var(--space-3) 0', color: 'var(--color-text-primary)' }}>Google Photos Sync</h3>
         <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-base)', fontStyle: 'italic' }}>
           Sync configuration will be available in a future update.
         </div>
         {/* TODO: Implement sync settings when improvement #64 is ready
-        <label style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+        <label style={{ display: 'flex', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
           <input
             type="checkbox"
             checked={syncSettings.enabled}
@@ -357,7 +357,7 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
         </label>
         {syncSettings.enabled && (
           <div className="sync-options" style={{ marginLeft: '24px' }}>
-            <label style={{ display: 'block', marginBottom: '8px' }}>
+            <label style={{ display: 'block', marginBottom: 'var(--space-2)' }}>
               Sync frequency:
               <select
                 value={syncSettings.frequency}
@@ -385,7 +385,7 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
 
       {/* Album Operations */}
       <div className="album-operations">
-        <h3 style={{ margin: '0 0 12px 0', color: 'var(--color-text-primary)' }}>Album Operations</h3>
+        <h3 style={{ margin: '0 0 var(--space-3) 0', color: 'var(--color-text-primary)' }}>Album Operations</h3>
         <button 
           onClick={deleteAlbum}
           disabled={isLoading}

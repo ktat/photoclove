@@ -29,34 +29,30 @@ pub fn show_importer(
     num: usize,
     state: tauri::State<AppState>,
 ) -> String {
-    let path: &str;
     let cp: String;
-    if path_str.is_none() || path_str.unwrap() == "" {
-        path = &state.config.export_from[0];
-    } else {
-        let p = path_str.unwrap();
-        let cpp = fs::canonicalize(path::Path::new(p));
-        if cpp.is_err() {
-            path = "/";
-        } else {
-            cp = cpp.unwrap().display().to_string();
-            path = cp.as_str();
+    let path: &str = match path_str {
+        Some(p) if !p.is_empty() => {
+            match fs::canonicalize(path::Path::new(p)) {
+                Ok(canonical) => {
+                    cp = canonical.display().to_string();
+                    cp.as_str()
+                }
+                Err(_) => "/",
+            }
         }
-    }
-    let filter: Option<date::Date>;
-    if date_str.is_none() || date_str.unwrap() == "" {
-        filter = Option::None;
-    } else {
-        let date = date::Date::from_string(&date_str.unwrap().to_string(), Option::Some("-"));
-        filter = Option::Some(date);
-    }
+        _ => &state.config.export_from[0],
+    };
+    let filter: Option<date::Date> = match date_str {
+        Some(d) if !d.is_empty() => {
+            Some(date::Date::from_string(&d.to_string(), Some("-")))
+        }
+        _ => None,
+    };
 
     let mut importer = importer::Importer::new(path.to_string(), page, num, filter);
     importer.set_importer_paths(state.config.export_from.clone());
 
-    let json = serde_json::to_string(&importer).unwrap();
-    // println!("{:?}", &json);
-    return json;
+    serde_json::to_string(&importer).unwrap_or_else(|_| "{}".to_string())
 }
 
 /// Import photos into the PhotoClove library
@@ -88,7 +84,10 @@ pub async fn import_photos(
 
     // Submit jobs to the queue
     log::debug!(target: "importer", "acquiring_lock; target=job_queue_manager");
-    let job_queue_manager = state.job_queue_manager.lock().unwrap();
+    let job_queue_manager = state.job_queue_manager.lock().map_err(|e| {
+        log::error!(target: "importer", "lock_failed; error={}", e);
+        "Failed to acquire job queue lock".to_string()
+    })?;
     log::debug!(target: "importer", "lock_acquired; action=submitting_jobs");
 
     match job_queue_manager.submit_import_jobs(file_strings, app_handle) {
@@ -116,8 +115,10 @@ pub async fn import_photos(
 #[tauri::command]
 pub fn get_import_progress(state: tauri::State<AppState>) -> String {
     let ip = &state.import_progress;
-    _ = ip.lock().unwrap().get_import_progress();
-    return serde_json::to_string(ip).unwrap();
+    if let Ok(mut progress) = ip.lock() {
+        let _ = progress.get_import_progress();
+    }
+    serde_json::to_string(ip).unwrap_or_else(|_| "{}".to_string())
 }
 
 /// Get progress for a specific job unit
@@ -137,9 +138,12 @@ pub async fn get_job_progress(
     job_unit_id: &str,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
-    let job_queue_manager = state.job_queue_manager.lock().unwrap();
+    let job_queue_manager = state.job_queue_manager.lock().map_err(|e| {
+        log::error!(target: "importer", "lock_failed; error={}", e);
+        "Failed to acquire job queue lock".to_string()
+    })?;
     match job_queue_manager.get_job_progress(job_unit_id) {
-        Ok(progress) => Ok(serde_json::to_string(&progress).unwrap()),
+        Ok(progress) => Ok(serde_json::to_string(&progress).unwrap_or_else(|_| "{}".to_string())),
         Err(e) => Err(e),
     }
 }
@@ -165,14 +169,13 @@ pub fn get_photos_to_import_under_directory(
     _state: tauri::State<AppState>,
 ) -> String {
     let d = dir::Dir::new(path_str.to_string());
-    let filter: Option<date::Date>;
-    if date_after_str.is_none() || date_after_str.unwrap() == "" {
-        filter = Option::None;
-    } else {
-        let date = date::Date::from_string(&date_after_str.unwrap().to_string(), Option::Some("-"));
-        filter = Option::Some(date);
-    }
+    let filter: Option<date::Date> = match date_after_str {
+        Some(d) if !d.is_empty() => {
+            Some(date::Date::from_string(&d.to_string(), Some("-")))
+        }
+        _ => None,
+    };
 
     let files = d.find_all_files(filter);
-    return serde_json::to_string(&files.files).unwrap();
+    serde_json::to_string(&files.files).unwrap_or_else(|_| "[]".to_string())
 }

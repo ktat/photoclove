@@ -96,6 +96,15 @@ export function usePhotoNavigation({
         const keys = Object.keys(imgCacheMap);
         keys.forEach((v) => {
             if (!thisTimeCacheMap[v]) {
+                // Revoke object URLs to prevent memory leaks
+                const cachedUrls = imgCacheMap[v];
+                if (Array.isArray(cachedUrls)) {
+                    cachedUrls.forEach(url => {
+                        if (url && typeof url === 'string' && url.startsWith('blob:')) {
+                            URL.revokeObjectURL(url);
+                        }
+                    });
+                }
                 delete imgCacheMap[v];
             }
         });

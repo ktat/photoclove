@@ -7,8 +7,6 @@ import { usePhoto } from "../context/PhotoContext.jsx";
 import { useUI } from "../context/UIContext.jsx";
 import { logger } from "../services/LoggerService.js";
 
-const unlisten = {};
-
 function DateList(props) {
     const { t } = useTranslation('common');
     const {
@@ -210,14 +208,14 @@ function DateList(props) {
             {/* Fixed Controls - Outside Scroll Area */}
             <div className="dateList-controls" style={{
                 borderBottom: '1px solid var(--color-border-default)',
-                paddingBottom: '5px',
-                marginBottom: '5px',
+                paddingBottom: 'var(--space-1)',
+                marginBottom: 'var(--space-1)',
                 display: 'flex',
                 flexDirection: props.leftMenuCollapsed ? 'column' : 'row',
                 justifyContent: props.leftMenuCollapsed ? 'center' : 'space-between',
                 alignItems: 'center',
-                gap: props.leftMenuCollapsed ? 'var(--space-4)' : '4px',
-                padding: props.leftMenuCollapsed ? 'var(--space-3) 0' : '4px var(--space-4)'
+                gap: props.leftMenuCollapsed ? 'var(--space-4)' : 'var(--space-1)',
+                padding: props.leftMenuCollapsed ? 'var(--space-3) 0' : 'var(--space-1) var(--space-4)'
             }}>
                 {/* Recent Photos */}
                 <div style={{ marginTop: props.leftMenuCollapsed ? 'var(--space-1)' : '0' }}>
@@ -298,8 +296,8 @@ function DateList(props) {
                             style={{
                                 textAlign: 'center',
                                 fontSize: 'var(--font-size-lg)',
-                                padding: '0 0 2px 0',
-                                marginTop: '-4px',
+                                padding: '0 0 var(--space-0-5) 0',
+                                marginTop: 'calc(-1 * var(--space-1))',
                                 cursor: 'pointer'
                             }}
                             onClick={() => props.setLeftMenuCollapsed(false)}
@@ -461,18 +459,18 @@ function DateList(props) {
                                 const yearPhotoCount = getYearPhotoCount(yearData);
                                 const isYearExpanded = expandedYears.has(yearData.year);
                                 return yearPhotoCount > 0 && (
-                                    <li key={`year-${yearData.year}`} style={{ listStyle: "none", marginBottom: "1px" }}>
+                                    <li key={`year-${yearData.year}`} style={{ listStyle: "none", marginBottom: "var(--space-0-5)" }}>
                                         {/* Year Header */}
                                         <div 
                                             style={{ 
                                                 cursor: "pointer",
                                                 fontSize: "inherit",
                                                 color: "var(--color-primary)",
-                                                padding: "1px 0"
+                                                padding: "var(--space-0-5) 0"
                                             }}
                                             onClick={() => toggleYearExpansion(yearData.year)}
                                         >
-                                            <span style={{ marginRight: "4px" }}>
+                                            <span style={{ marginRight: "var(--space-1)" }}>
                                                 {isYearExpanded ? '▾' : '▸'}
                                             </span>
                                             {yearData.year} ({yearPhotoCount})
@@ -480,7 +478,7 @@ function DateList(props) {
 
                                         {/* Months Container */}
                                         {isYearExpanded && (
-                                            <div style={{ marginLeft: "12px" }}>
+                                            <div style={{ marginLeft: "var(--space-3)" }}>
                                                 {yearData.months.map((monthData, monthIndex) => {
                                                     const monthPhotoCount = getMonthPhotoCount(yearData, monthData);
                                                     const monthKey = `${yearData.year}-${monthData.month}`;
@@ -494,11 +492,11 @@ function DateList(props) {
                                                                     cursor: "pointer",
                                                                     fontSize: "inherit",
                                                                     color: "var(--color-text-secondary)",
-                                                                    padding: "1px 0"
+                                                                    padding: "var(--space-0-5) 0"
                                                                 }}
                                                                 onClick={() => toggleMonthExpansion(yearData.year, monthData.month)}
                                                             >
-                                                                <span style={{ marginRight: "4px" }}>
+                                                                <span style={{ marginRight: "var(--space-1)" }}>
                                                                     {isMonthExpanded ? '▾' : '▸'}
                                                                 </span>
                                                                 {monthNames[monthData.month - 1]} ({monthPhotoCount})
@@ -506,7 +504,7 @@ function DateList(props) {
 
                                                             {/* Days */}
                                                             {isMonthExpanded && (
-                                                                <div style={{ marginLeft: "12px" }}>
+                                                                <div style={{ marginLeft: "var(--space-3)" }}>
                                                                     {monthData.days.map((day, dayIndex) => {
                                                                         const date = new Date(yearData.year + '/' + monthData.month + '/' + day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
                                                                         const photoCount = getPhotoCount(yearData.year, monthData.month, day);

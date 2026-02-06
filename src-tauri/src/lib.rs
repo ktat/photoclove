@@ -210,35 +210,35 @@ pub fn run() {
                 } else if e.id == "close" {
                     app.exit(0)
                 } else if e.id == "home" {
-                    app.emit("click_menu", "HOME").unwrap();
+                    let _ = app.emit("click_menu", "HOME");
                 } else if e.id == "show_log" {
-                    app.emit("click_menu_static", "show_log").unwrap();
+                    let _ = app.emit("click_menu_static", "show_log");
                 } else if e.id == "about" {
-                    app.emit("click_menu_static", "about").unwrap();
+                    let _ = app.emit("click_menu_static", "about");
                 } else if e.id == "github" {
-                    app.emit("click_menu_static", "github").unwrap();
+                    let _ = app.emit("click_menu_static", "github");
                 } else if e.id == "sponsor" {
-                    app.emit("click_menu_static", "sponsor").unwrap();
+                    let _ = app.emit("click_menu_static", "sponsor");
                 } else if e.id == "privacy_policy" {
-                    app.emit("click_menu_static", "privacy_policy").unwrap();
+                    let _ = app.emit("click_menu_static", "privacy_policy");
                 } else if e.id == "terms_of_use" {
-                    app.emit("click_menu_static", "terms_of_use").unwrap();
+                    let _ = app.emit("click_menu_static", "terms_of_use");
                 } else if e.id == "licenses" {
-                    app.emit("click_menu_static", "licenses").unwrap();
+                    let _ = app.emit("click_menu_static", "licenses");
                 } else if e.id == "achievements" {
-                    app.emit("click_menu_static", "achievements").unwrap();
+                    let _ = app.emit("click_menu_static", "achievements");
                 } else if e.id == "load_dates" {
-                    app.emit("click_menu", "load_dates").unwrap();
+                    let _ = app.emit("click_menu", "load_dates");
                 } else if e.id == "create_db" {
-                    app.emit("click_menu", "create_db").unwrap();
+                    let _ = app.emit("click_menu", "create_db");
                 } else if e.id == "import" {
-                    app.emit("click_menu", "import").unwrap();
+                    let _ = app.emit("click_menu", "import");
                 } else if e.id == "login" {
-                    app.emit("click_menu", "login").unwrap();
+                    let _ = app.emit("click_menu", "login");
                 } else if e.id == "job_queue" {
-                    app.emit("click_menu", "job_queue").unwrap();
+                    let _ = app.emit("click_menu", "job_queue");
                 } else if e.id == "pref" {
-                    app.emit("click_menu", "pref").unwrap();
+                    let _ = app.emit("click_menu", "pref");
                 } else {
                     log::debug!(target: "app", "unhandled_menu_event; event={:?}", e);
                 }
@@ -254,8 +254,11 @@ pub fn run() {
                 // Start background job processing
                 log::info!(target: "job_queue", "starting_background_job_processing");
                 let app_handle = app.handle().clone();
-                let job_queue_manager = state.job_queue_manager.lock().unwrap();
-                job_queue_manager.start_background_processing(app_handle.clone());
+                if let Ok(job_queue_manager) = state.job_queue_manager.lock() {
+                    job_queue_manager.start_background_processing(app_handle.clone());
+                } else {
+                    log::error!(target: "job_queue", "failed_to_acquire_lock; action=skip_background_processing");
+                }
                 log::info!(target: "job_queue", "background_job_processing_started");
 
                 // Queue insights calculation on startup if cache is stale or missing

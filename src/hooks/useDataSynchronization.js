@@ -61,18 +61,21 @@ export function useDataSynchronization({
         });
 
         if (operation === 'restore' || operation === 'permanentDelete') {
-            // Remove from trash collection
-            if (photoCollection && photoCollection.photos) {
-                const updatedPhotos = photoCollection.photos.filter(
+            // Remove from trash collection using functional update for safety
+            setPhotoCollection(prev => {
+                if (!prev || !prev.photos) return prev;
+
+                const updatedPhotos = prev.photos.filter(
                     p => !affectedPaths.includes(p.originalPath)
                 );
-                setPhotoCollection({...photoCollection, photos: updatedPhotos});
 
                 logger.debug('useDataSynchronization', 'trash_collection_updated', 'Removed photos from trash view', {
-                    beforeCount: photoCollection.photos.length,
+                    beforeCount: prev.photos.length,
                     afterCount: updatedPhotos.length
                 });
-            }
+
+                return { ...prev, photos: updatedPhotos };
+            });
         }
 
         // Note: Date counts are now updated locally in DirectoryMenu via applyDateChanges()
@@ -81,7 +84,7 @@ export function useDataSynchronization({
             operation,
             pathCount: affectedPaths.length
         });
-    }, [photoCollection, setPhotoCollection]);
+    }, [setPhotoCollection]);
 
     return {
         reloadCurrentModeData,

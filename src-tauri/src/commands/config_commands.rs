@@ -86,7 +86,7 @@ pub fn initialize_database(_state: State<AppState>, import_to: String) -> Result
 #[tauri::command]
 pub fn get_config(_state: State<AppState>) -> String {
     let new_config = Config::new();
-    serde_json::to_string(&new_config).unwrap()
+    serde_json::to_string(&new_config).unwrap_or_else(|_| "{}".to_string())
 }
 
 /// Save application configuration to disk

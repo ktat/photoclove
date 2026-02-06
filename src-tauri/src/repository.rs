@@ -47,7 +47,7 @@ impl DatesNum {
     }
 
     pub fn to_json(&self) -> String {
-        serde_json::to_string(&self.data).unwrap()
+        serde_json::to_string(&self.data).unwrap_or_else(|_| "{}".to_string())
     }
 
     #[allow(dead_code)]

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 
 import { invoke } from "@tauri-apps/api/core";
 
@@ -31,9 +31,10 @@ import { usePhotoListStateGroups } from "../hooks/usePhotoListStateGroups.js";
 import { useViewModeFactory } from "../hooks/useViewModeFactory.js";
 import { useFilteredPhotos } from "../hooks/useFilteredPhotos.js";
 import { usePhotosListHandlers } from "../hooks/usePhotosListHandlers.js";
+import { usePhotoListLoading } from "../hooks/usePhotoListLoading.js";
+import { usePhotoListFaces } from "../hooks/usePhotoListFaces.js";
 
 import { FaceDetectionProvider } from "../context/FaceDetectionContext.jsx";
-import { getAllPersonsForList, getUnknownFacesCount } from "../services/FaceDetectionService.js";
 import {
     useViewModeChangeEffect,
     usePhotoSyncEffect,
@@ -65,7 +66,6 @@ import { convertPhotosToEntities } from "../utils/PhotoProcessingUtils.js";
 import { hasActiveFilters, getFilterSummary } from "../utils/UIStateUtils.js";
 
 import { logger } from "../services/LoggerService.js";
-import { unifiedCollectionService } from "../services/UnifiedCollectionService.js";
 
 import './PhotosList.css';
 import '../scrollable.css';
@@ -258,90 +258,32 @@ function PhotosList({
         currentSearchParams
     });
 
-    // Album/Tag photo loading wrappers
-    const loadAlbumPhotos = useCallback(async (albumId) => {
-        setPhotoLoading(true);
-        try { await loadAlbumPhotosOriginal(albumId); }
-        finally { setPhotoLoading(false); }
-    }, [loadAlbumPhotosOriginal, setPhotoLoading]);
+    // Album/Tag/Person photo loading wrappers and refresh/reload functions
+    const {
+        loadAlbumPhotos, loadTagPhotos, loadPersonPhotos, loadUnknownFacesPhotos,
+        refreshPhotosOnly, reloadAlbums, reloadTags
+    } = usePhotoListLoading({
+        setPhotoLoading,
+        loadAlbumPhotosOriginal,
+        loadTagPhotosOriginal,
+        loadPersonPhotosOriginal,
+        loadUnknownFacesPhotosOriginal,
+        loadAlbums,
+        loadTags,
+        loadAllPhotosBasedOnViewMode,
+        viewModeObj,
+        appConfig,
+        viewMode
+    });
 
     const handleAlbumClick = useCallback((album) => {
         handleAlbumClickOriginal(album);
     }, [handleAlbumClickOriginal]);
 
-    const loadTagPhotos = useCallback(async (tagId) => {
-        setPhotoLoading(true);
-        try { await loadTagPhotosOriginal(tagId); }
-        finally { setPhotoLoading(false); }
-    }, [loadTagPhotosOriginal, setPhotoLoading]);
-
-    const loadPersonPhotos = useCallback(async (personId) => {
-        setPhotoLoading(true);
-        try { await loadPersonPhotosOriginal(personId); }
-        finally { setPhotoLoading(false); }
-    }, [loadPersonPhotosOriginal, setPhotoLoading]);
-
-    const loadUnknownFacesPhotos = useCallback(async () => {
-        setPhotoLoading(true);
-        try { await loadUnknownFacesPhotosOriginal(); }
-        finally { setPhotoLoading(false); }
-    }, [loadUnknownFacesPhotosOriginal, setPhotoLoading]);
-
     // Photo sync effect
     usePhotoSyncEffect({
         viewModeObj, allPhotosForCurrentFetch, updateAlbumPhotos, setTagPhotos
     });
-
-    // Minimum loading display time (ms) for better UX
-    const MIN_LOADING_TIME = 500;
-
-    // Helper to ensure minimum loading time
-    const withMinLoadingTime = useCallback(async (asyncFn) => {
-        const startTime = Date.now();
-        try {
-            await asyncFn();
-        } finally {
-            const elapsed = Date.now() - startTime;
-            if (elapsed < MIN_LOADING_TIME) {
-                await new Promise(resolve => setTimeout(resolve, MIN_LOADING_TIME - elapsed));
-            }
-        }
-    }, []);
-
-    // Refresh photos helper with loading state
-    const refreshPhotosOnly = useCallback(async () => {
-        logger.info('PhotosList', 'refresh_photos_only', 'Refreshing photos with loading indicator', { viewMode });
-        setPhotoLoading(true);
-        try {
-            await withMinLoadingTime(() => loadAllPhotosBasedOnViewMode(viewModeObj, appConfig, true));
-        } finally {
-            setPhotoLoading(false);
-        }
-    }, [loadAllPhotosBasedOnViewMode, viewModeObj, appConfig, viewMode, setPhotoLoading, withMinLoadingTime]);
-
-    // Reload albums list with loading state (clears cache first)
-    const reloadAlbums = useCallback(async () => {
-        logger.info('PhotosList', 'reload_albums', 'Reloading albums list with loading indicator');
-        setPhotoLoading(true);
-        try {
-            unifiedCollectionService.clearCache(); // Clear cache to get fresh data
-            await withMinLoadingTime(loadAlbums);
-        } finally {
-            setPhotoLoading(false);
-        }
-    }, [loadAlbums, setPhotoLoading, withMinLoadingTime]);
-
-    // Reload tags list with loading state (clears cache first)
-    const reloadTags = useCallback(async () => {
-        logger.info('PhotosList', 'reload_tags', 'Reloading tags list with loading indicator');
-        setPhotoLoading(true);
-        try {
-            unifiedCollectionService.clearCache(); // Clear cache to get fresh data
-            await withMinLoadingTime(loadTags);
-        } finally {
-            setPhotoLoading(false);
-        }
-    }, [loadTags, setPhotoLoading, withMinLoadingTime]);
 
     // Photo display hook
     const { displayPhoto, closePhotoDisplay, closeRightColumn } = usePhotoDisplay({
@@ -352,23 +294,16 @@ function PhotosList({
     });
 
     // Face handlers (defined before usePhotoOperations to avoid initialization error)
-    const reloadFaces = useCallback(async () => {
-        try {
-            logger.info('PhotosList', 'reload_faces_start', 'Loading faces list');
-            const [persons, unknownCount] = await Promise.all([
-                getAllPersonsForList(),
-                getUnknownFacesCount()
-            ]);
-            setFacesList(persons);
-            setUnknownFacesCount(unknownCount);
-            logger.info('PhotosList', 'reload_faces_complete', 'Faces loaded', {
-                personsCount: persons.length,
-                unknownCount
-            });
-        } catch (error) {
-            logger.error('PhotosList', 'reload_faces_error', 'Failed to load faces', { error: error.toString() });
-        }
-    }, [setFacesList, setUnknownFacesCount]);
+    const { reloadFaces, handlePersonClick, handleUnknownFaceClick } = usePhotoListFaces({
+        setFacesList,
+        setUnknownFacesCount,
+        setCurrentPersonId,
+        setCurrentPersonName,
+        openPerson,
+        loadPersonPhotos,
+        openUnknownFaces,
+        loadUnknownFacesPhotos
+    });
 
     // Photo operations hook
     const {
@@ -424,26 +359,6 @@ function PhotosList({
         loadAlbums, loadAlbumPhotos, loadTags, loadTagPhotos,
         openTag, openAlbum, logOperation, handleError
     });
-
-    const handlePersonClick = useCallback((person) => {
-        logger.info('PhotosList', 'person_click', 'User clicked on person', {
-            personId: person.person_id,
-            personName: person.person_name
-        });
-        setCurrentPersonId(person.person_id);
-        setCurrentPersonName(person.person_name || 'Unknown');
-        openPerson(person.person_id);
-        loadPersonPhotos(person.person_id);
-    }, [openPerson, setCurrentPersonId, setCurrentPersonName, loadPersonPhotos]);
-
-    const handleUnknownFaceClick = useCallback((face) => {
-        logger.info('PhotosList', 'unknown_face_click', 'User clicked on unknown face to view photos', {
-            faceId: face?.id,
-            photoPath: face?.photo_path
-        });
-        openUnknownFaces();
-        loadUnknownFacesPhotos();
-    }, [openUnknownFaces, loadUnknownFacesPhotos]);
 
     // Tab management
     const { tabClass, setTabClass, changeTab, clearAllTabs } = useTabManagement({ viewMode, viewModeObj });
