@@ -16,12 +16,13 @@ export { getShareUrl, shareToSocial } from './SocialMediaShare.js';
 export { generateStatsImage } from './StatsImageGenerator.js';
 
 // Image processing
-export { 
-    loadImageFromPath, 
-    addPhotoCloveWatermark, 
-    addUserWatermark, 
+export {
+    loadImageFromPath,
+    addPhotoCloveWatermark,
+    addUserWatermark,
+    addDiagonalWatermark,
     drawRoundedImage,
-    generateShareablePhoto 
+    generateShareablePhoto
 } from './ImageProcessingUtils.js';
 
 // Collage generation

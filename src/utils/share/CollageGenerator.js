@@ -3,7 +3,7 @@
  */
 
 import { logger } from '../../services/LoggerService.js';
-import { loadImageFromPath, drawRoundedImage, addPhotoCloveWatermark, addUserWatermark } from './ImageProcessingUtils.js';
+import { loadImageFromPath, drawRoundedImage, addPhotoCloveWatermark, addUserWatermark, addDiagonalWatermark } from './ImageProcessingUtils.js';
 
 /**
  * Get collage layout configuration for a given photo count
@@ -51,6 +51,7 @@ export async function generateCollage(photoPaths, options = {}) {
         userWatermarkText = '',
         watermarkColor = '#ffffff',
         watermarkOpacity = 0.7,
+        watermarkStyle = 'corner',
         maxSize = 1800,
         cellSize = 400
     } = options;
@@ -122,18 +123,30 @@ export async function generateCollage(photoPaths, options = {}) {
     }
 
     // Add watermarks
-    if (addPCWatermark) {
-        addPhotoCloveWatermark(ctx, width, height, {
-            color: watermarkColor,
-            opacity: watermarkOpacity
-        });
-    }
+    if (watermarkStyle === 'diagonal') {
+        const parts = [];
+        if (addPCWatermark) parts.push('PhotoClove');
+        if (addUWatermark && userWatermarkText) parts.push(userWatermarkText);
+        if (parts.length > 0) {
+            addDiagonalWatermark(ctx, width, height, parts.join(' / '), {
+                color: watermarkColor,
+                opacity: watermarkOpacity
+            });
+        }
+    } else {
+        if (addPCWatermark) {
+            addPhotoCloveWatermark(ctx, width, height, {
+                color: watermarkColor,
+                opacity: watermarkOpacity
+            });
+        }
 
-    if (addUWatermark && userWatermarkText) {
-        addUserWatermark(ctx, width, height, userWatermarkText, {
-            color: watermarkColor,
-            opacity: watermarkOpacity
-        });
+        if (addUWatermark && userWatermarkText) {
+            addUserWatermark(ctx, width, height, userWatermarkText, {
+                color: watermarkColor,
+                opacity: watermarkOpacity
+            });
+        }
     }
 
     logger.info('CollageGenerator', 'collage_generated', 'Collage generation complete', {

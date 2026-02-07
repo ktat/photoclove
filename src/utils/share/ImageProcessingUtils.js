@@ -168,6 +168,48 @@ export function addUserWatermark(ctx, width, height, text, options = {}) {
 }
 
 /**
+ * Add diagonal tiled watermark across entire image
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {number} width - Canvas width
+ * @param {number} height - Canvas height
+ * @param {string} text - Watermark text
+ * @param {Object} options - Watermark options
+ */
+export function addDiagonalWatermark(ctx, width, height, text, options = {}) {
+    if (!text) return;
+
+    const {
+        color = '#ffffff',
+        opacity = 0.7
+    } = options;
+
+    const fontSize = Math.max(24, Math.min(width, height) * 0.06);
+    const diagonal = Math.sqrt(width * width + height * height);
+    const spacing = fontSize * 4;
+
+    ctx.save();
+    ctx.translate(width / 2, height / 2);
+    ctx.rotate(-Math.PI / 4);
+
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = color;
+    ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const half = diagonal / 2;
+    for (let y = -half; y < half; y += spacing) {
+        for (let x = -half; x < half; x += spacing) {
+            ctx.fillText(text, x, y);
+        }
+    }
+
+    ctx.restore();
+
+    logger.debug('ImageProcessingUtils', 'diagonal_watermark_added', 'Diagonal watermark added', { text, fontSize: fontSize.toFixed(0) });
+}
+
+/**
  * Draw rounded rectangle image
  * @param {CanvasRenderingContext2D} ctx - Canvas context
  * @param {HTMLImageElement} img - Image to draw
@@ -223,7 +265,8 @@ export async function generateShareablePhoto(photoPath, options = {}) {
         addUserWatermark: addUWatermark = false,
         userWatermarkText = '',
         watermarkColor = '#ffffff',
-        watermarkOpacity = 0.7
+        watermarkOpacity = 0.7,
+        watermarkStyle = 'corner'
     } = options;
 
     try {
@@ -252,23 +295,36 @@ export async function generateShareablePhoto(photoPath, options = {}) {
         ctx.drawImage(img, 0, 0, width, height);
 
         // Add watermarks
-        if (addPCWatermark) {
-            addPhotoCloveWatermark(ctx, width, height, {
-                color: watermarkColor,
-                opacity: watermarkOpacity
-            });
-        }
+        if (watermarkStyle === 'diagonal') {
+            const parts = [];
+            if (addPCWatermark) parts.push('PhotoClove');
+            if (addUWatermark && userWatermarkText) parts.push(userWatermarkText);
+            if (parts.length > 0) {
+                addDiagonalWatermark(ctx, width, height, parts.join(' / '), {
+                    color: watermarkColor,
+                    opacity: watermarkOpacity
+                });
+            }
+        } else {
+            if (addPCWatermark) {
+                addPhotoCloveWatermark(ctx, width, height, {
+                    color: watermarkColor,
+                    opacity: watermarkOpacity
+                });
+            }
 
-        if (addUWatermark && userWatermarkText) {
-            addUserWatermark(ctx, width, height, userWatermarkText, {
-                color: watermarkColor,
-                opacity: watermarkOpacity
-            });
+            if (addUWatermark && userWatermarkText) {
+                addUserWatermark(ctx, width, height, userWatermarkText, {
+                    color: watermarkColor,
+                    opacity: watermarkOpacity
+                });
+            }
         }
 
         logger.info('ImageProcessingUtils', 'photo_processed', 'Shareable photo generated', {
             originalSize: `${img.width}x${img.height}`,
-            finalSize: `${width}x${height}`
+            finalSize: `${width}x${height}`,
+            watermarkStyle
         });
 
         // Convert to blob

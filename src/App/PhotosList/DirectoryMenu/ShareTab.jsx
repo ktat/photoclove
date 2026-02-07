@@ -60,6 +60,7 @@ function ShareTab({
     const [addUserWatermark, setAddUserWatermark] = useState(true);
     const [watermarkColor, setWatermarkColor] = useState('#ffffff');
     const [watermarkOpacity, setWatermarkOpacity] = useState(70);
+    const [watermarkStyle, setWatermarkStyle] = useState('corner');
 
     // Collage options
     const [backgroundColor, setBackgroundColor] = useState('#000000');
@@ -116,7 +117,8 @@ function ShareTab({
                         addUserWatermark: addUserWatermark && !!userWatermarkText,
                         userWatermarkText,
                         watermarkColor,
-                        watermarkOpacity: watermarkOpacity / 100
+                        watermarkOpacity: watermarkOpacity / 100,
+                        watermarkStyle
                     };
 
                     if (shareMode === 'single' && activePhotos.length >= 1) {
@@ -149,7 +151,7 @@ function ShareTab({
         }, 300);
 
         return () => clearTimeout(timeoutId);
-    }, [activePhotos, shareMode, addPhotoCloveWatermark, addUserWatermark, userWatermarkText, effectiveBackgroundColor, padding, cornerRadius, watermarkColor, watermarkOpacity]);
+    }, [activePhotos, shareMode, addPhotoCloveWatermark, addUserWatermark, userWatermarkText, effectiveBackgroundColor, padding, cornerRadius, watermarkColor, watermarkOpacity, watermarkStyle]);
 
     // Cleanup URL on unmount
     useEffect(() => {
@@ -392,6 +394,29 @@ function ShareTab({
                                 <span>{t('directoryMenu:share.addUserWatermark', 'Add your watermark')}</span>
                             </label>
                             <span className={styles.watermarkPreview}>"{userWatermarkText}"</span>
+                        </div>
+                    )}
+
+                    {/* Watermark Style (show when at least one watermark is enabled) */}
+                    {(addPhotoCloveWatermark || (addUserWatermark && userWatermarkText)) && (
+                        <div className={styles.optionGroup}>
+                            <label className={styles.optionLabel}>
+                                {t('directoryMenu:share.watermarkStyle', 'Watermark Style')}
+                            </label>
+                            <div className={styles.watermarkStyleButtons}>
+                                <button
+                                    className={`${styles.modeBtn} ${watermarkStyle === 'corner' ? styles.active : ''}`}
+                                    onClick={() => setWatermarkStyle('corner')}
+                                >
+                                    {t('directoryMenu:share.watermarkCorner', 'Corner')}
+                                </button>
+                                <button
+                                    className={`${styles.modeBtn} ${watermarkStyle === 'diagonal' ? styles.active : ''}`}
+                                    onClick={() => setWatermarkStyle('diagonal')}
+                                >
+                                    {t('directoryMenu:share.watermarkDiagonal', 'Diagonal')}
+                                </button>
+                            </div>
                         </div>
                     )}
 

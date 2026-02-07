@@ -62,6 +62,12 @@
     cursor: not-allowed;
 }
 
+/* Watermark Style Buttons */
+.watermarkStyleButtons {
+    display: flex;
+    gap: var(--space-1);
+}
+
 /* Preview */
 .preview {
     background: var(--color-bg-base);
