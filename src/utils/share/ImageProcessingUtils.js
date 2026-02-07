@@ -13,7 +13,8 @@ import { logger } from '../../services/LoggerService.js';
 export async function loadImageFromPath(filePath) {
     return new Promise((resolve, reject) => {
         const img = new Image();
-        
+        img.crossOrigin = 'anonymous';
+
         img.onload = () => {
             logger.debug('ImageProcessingUtils', 'image_loaded', 'Image loaded successfully', { 
                 path: filePath,
@@ -132,11 +133,11 @@ export function addUserWatermark(ctx, width, height, text, options = {}) {
     switch (position) {
         case 'bottom-left':
             x = padding;
-            y = height - padding - 30; // Leave space for PhotoClove watermark
+            y = height - padding;
             break;
         case 'bottom-right':
             x = width - textWidth - padding;
-            y = height - padding - 30;
+            y = height - padding;
             break;
         case 'top-left':
             x = padding;
@@ -148,7 +149,7 @@ export function addUserWatermark(ctx, width, height, text, options = {}) {
             break;
         default:
             x = padding;
-            y = height - padding - 30;
+            y = height - padding;
     }
 
     // Add subtle background
