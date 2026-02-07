@@ -78,7 +78,16 @@ export const ErrorProvider = ({ children }) => {
     }
     
     setErrors(prev => [...prev, errorData]);
-    
+
+    // Dispatch CustomEvent for notification center (cross-context communication)
+    window.dispatchEvent(new CustomEvent('notification-add', {
+      detail: {
+        category: errorData.category,
+        message: errorData.message,
+        type: 'error'
+      }
+    }));
+
     // Log the error
     logger.error('ErrorContext', 'error_added', `Error in ${operation || 'unknown operation'}`, {
       message: errorData.message,

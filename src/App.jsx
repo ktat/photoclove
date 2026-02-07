@@ -27,6 +27,8 @@ import AchievementsView from "./App/AchievementsView.jsx";
 import AchievementPopup from "./components/AchievementPopup.jsx";
 import Tooltip from "./components/Tooltip.jsx";
 import NavigationIcons from "./App/NavigationIcons.jsx";
+import NotificationBell from "./components/NotificationBell.jsx";
+import NotificationCenterModal from "./components/NotificationCenterModal.jsx";
 import { logger } from "./services/LoggerService.js";
 import { useUI } from "./context/UIContext.jsx";
 import { usePhoto } from "./context/PhotoContext.jsx";
@@ -53,7 +55,11 @@ function App() {
         openTagsList,
         openFacesList,
         openTrash,
-        addFooterMessage
+        addFooterMessage,
+        notifications,
+        unreadCount,
+        markAllAsRead,
+        clearAllNotifications
     } = useUI();
 
     const {
@@ -77,6 +83,7 @@ function App() {
     const [showRecoveryQueueModal, setShowRecoveryQueueModal] = useState(false);
     const [showInsightsModal, setShowInsightsModal] = useState(false);
     const [showAchievementsModal, setShowAchievementsModal] = useState(false);
+    const [showNotificationCenter, setShowNotificationCenter] = useState(false);
     const [achievementQueue, setAchievementQueue] = useState([]);
 
     // Tooltip state
@@ -312,6 +319,11 @@ function App() {
                         setShowInsightsModal={setShowInsightsModal}
                         setShowAchievementsModal={setShowAchievementsModal}
                     />
+                    <NotificationBell
+                        unreadCount={unreadCount}
+                        onClick={() => setShowNotificationCenter(true)}
+                        collapsed={leftMenuCollapsed}
+                    />
                 </div>
                 {renderMainContent()}
             </div>
@@ -335,6 +347,14 @@ function App() {
             )}
             {showInsightsModal && <InsightsModal onClose={() => setShowInsightsModal(false)} />}
             {showAchievementsModal && <AchievementsView onClose={() => setShowAchievementsModal(false)} />}
+            {showNotificationCenter && (
+                <NotificationCenterModal
+                    notifications={notifications}
+                    onClose={() => setShowNotificationCenter(false)}
+                    onClearAll={clearAllNotifications}
+                    markAllAsRead={markAllAsRead}
+                />
+            )}
             {achievementQueue.length > 0 && (
                 <AchievementPopup
                     achievement={achievementQueue[0]}

@@ -1,0 +1,52 @@
+.bell {
+  position: absolute;
+  bottom: var(--space-3);
+  left: var(--space-2);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  padding: 0;
+  color: var(--color-text-muted);
+  transition: background-color 0.2s ease-out;
+  z-index: 10;
+}
+
+/* When left menu is collapsed, move above the sidebar-collapse-toggle */
+.collapsed {
+  bottom: calc(var(--space-3) + 28px + var(--space-2));
+  left: 39%;
+  transform: translateX(-50%);
+}
+
+.bell:hover {
+  background-color: var(--color-bg-surface);
+  color: var(--color-primary);
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+}
+
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 var(--space-1);
+  background-color: var(--color-danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  border-radius: 8px;
+  pointer-events: none;
+}

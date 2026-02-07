@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 import { invoke } from "@tauri-apps/api/core";
 import { message } from '@tauri-apps/plugin-dialog';
 import { useViewMode } from '../hooks/useViewMode.js';
+import { useNotifications } from '../hooks/useNotifications.js';
 import { VIEW_MODES } from '../constants/viewModes.js';
 import { logger } from '../services/LoggerService.js';
 import WelcomeImage from '../WelcomeImage.jsx';
@@ -25,6 +26,11 @@ export const UIProvider = ({ children }) => {
   const [welcomeImage, setWelcomeImage] = useState(WelcomeImage());
   const [useCount, setUseCount] = useState(null);
 
+  // Notification center
+  const {
+    notifications, unreadCount, addNotification, markAllAsRead, clearAll: clearAllNotifications
+  } = useNotifications();
+
   // Burst grouping mode state
   const [burstModeEnabled, setBurstModeEnabled] = useState(false);
 
@@ -37,7 +43,10 @@ export const UIProvider = ({ children }) => {
       ...prev,
       [key]: value
     }));
-    
+
+    // Also add to notification center
+    addNotification(key, value, 'info');
+
     if (withDialog) {
       invoke("lock", { t: true }).then((e) => {
         if (e) {
@@ -47,13 +56,13 @@ export const UIProvider = ({ children }) => {
         }
       });
     }
-    
+
     if (deleteAfter) {
       setTimeout(() => {
         removeFooterMessage(k);
       }, deleteAfter);
     }
-  }, []);
+  }, [addNotification]);
 
   const removeFooterMessage = useCallback((targetKey, timeAfter = 0) => {
     setTimeout(() => {
@@ -125,7 +134,14 @@ export const UIProvider = ({ children }) => {
     // Footer message actions
     addFooterMessage,
     removeFooterMessage,
-    
+
+    // Notification center
+    notifications,
+    unreadCount,
+    addNotification,
+    markAllAsRead,
+    clearAllNotifications,
+
     // App state setters
     setWelcomeImage,
     setUseCount
