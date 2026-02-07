@@ -52,6 +52,9 @@ function ShareTab({
     const [generating, setGenerating] = useState(false);
     const [copyStatus, setCopyStatus] = useState(null);
 
+    // Big photo overlay
+    const [showBigPhoto, setShowBigPhoto] = useState(false);
+
     // Watermark options
     const [addPhotoCloveWatermark, setAddPhotoCloveWatermark] = useState(true);
     const [addUserWatermark, setAddUserWatermark] = useState(true);
@@ -265,6 +268,23 @@ function ShareTab({
                     </div>
                     {shareMode === 'collage' && layoutDescription && (
                         <div className={styles.layoutInfo}>{layoutDescription}</div>
+                    )}
+                    {imageUrl && !generating && (
+                        <a
+                            className={styles.enlargeLink}
+                            onClick={() => setShowBigPhoto(true)}
+                        >
+                            {t('directoryMenu:share.enlarge', 'Enlarge preview')}
+                        </a>
+                    )}
+                    {showBigPhoto && imageUrl && (
+                        <div
+                            className={styles.bigPhoto}
+                            onMouseLeave={() => setShowBigPhoto(false)}
+                            onClick={() => setShowBigPhoto(false)}
+                        >
+                            <img src={imageUrl} alt="Preview enlarged" />
+                        </div>
                     )}
                 </div>
             )}
