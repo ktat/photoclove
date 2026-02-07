@@ -23,7 +23,7 @@ function SelectionHeader({ count, labelKey, onClear }) {
                 <strong style={{ color: 'var(--color-primary)' }}>{count}</strong> {t(labelKey)}
             </span>
             <button
-                onClick={onClear}
+                onClick={() => onClear()}
                 style={{
                     background: 'transparent',
                     color: 'var(--color-danger)',
