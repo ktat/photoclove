@@ -42,10 +42,11 @@ function ThumbnailRenderer({
 
     const isMovie = !photo.hasThumbnail && isVideoFile(photo.originalPath);
     const hasVideoPlayIcon = isVideoFile(photo.originalPath);
+    const tags = photo.getTags ? photo.getTags() : (photo.tags || []);
 
     return (
         <div className="row2" key={`${vIndex}-${photo.originalPath}`} style={{ position: "relative" }}>
-            <a onClick={() => onThumbnailClick(vIndex)}>
+            <a onClick={() => onThumbnailClick(vIndex)} style={{ position: "relative", display: "inline-block" }}>
                 {isMovie ? (
                     <div className="photo-list-movie" style={{ border: borderStyle, maxHeight: maxHeight + "px" }}>
                         <span>🎬</span>
@@ -69,15 +70,26 @@ function ThumbnailRenderer({
                         )}
                     </>
                 )}
-            </a>
 
-            {/* Metadata overlay - stars and comments */}
-            {(photo.star > 0 || photo.comment) && (
-                <div style={{ ...metadataOverlayStyle, bottom: "2px", left: "2px" }}>
-                    {photo.star > 0 && <span>⭐{photo.star}</span>}
-                    {photo.comment && <span>💬</span>}
-                </div>
-            )}
+                {/* Metadata overlay - stars and comments (bottom-right, matching PhotoCard) */}
+                {(photo.star > 0 || photo.comment) && (
+                    <div style={{ ...metadataOverlayStyle, bottom: "2px", right: "2px" }}>
+                        {photo.star > 0 && <span>⭐{photo.star}</span>}
+                        {photo.comment && <span>💬</span>}
+                    </div>
+                )}
+
+                {/* Tags indicator (bottom-left, matching PhotoCard) */}
+                {tags.length > 0 && (
+                    <div
+                        style={{ ...metadataOverlayStyle, bottom: "2px", left: "2px" }}
+                        title={tags.map(t => t.name).join(', ')}
+                    >
+                        <span>🏷️</span>
+                        {tags.length > 1 && <span>{tags.length}</span>}
+                    </div>
+                )}
+            </a>
 
             {/* Burst group badge - shows +N when photo has burst group */}
             {photo.burst_group_id && photo.burst_count > 1 && !isInBurstGroupMode && (
