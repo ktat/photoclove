@@ -125,16 +125,28 @@ function PhotoSelectionSection({
                 </div>
             )}
             {photoIndex >= 0 && (
-                <img onMouseOver={() => setShowBigPhoto(true)} src={convertFileSrc(photoSelection[photoIndex])} />
+                <>
+                    <img
+                        src={convertFileSrc(photoSelection[photoIndex])}
+                        style={{ maxWidth: '100%', maxHeight: '150px', objectFit: 'contain' }}
+                    />
+                    <a
+                        className="enlarge-link"
+                        onClick={() => setShowBigPhoto(true)}
+                    >
+                        {t('directoryMenu:share.enlarge', 'Enlarge preview')}
+                    </a>
+                    {showBigPhoto && (
+                        <div
+                            className="big-photo-in-selection"
+                            onMouseLeave={() => setShowBigPhoto(false)}
+                            onClick={() => setShowBigPhoto(false)}
+                        >
+                            <img src={convertFileSrc(photoSelection[photoIndex])} />
+                        </div>
+                    )}
+                </>
             )}
-            <div
-                className="big-photo-in-selection"
-                style={{ display: showBigPhoto ? "block" : "none" }}
-                onMouseLeave={() => setShowBigPhoto(false)}
-                onClick={() => setShowBigPhoto(false)}
-            >
-                <img src={convertFileSrc(photoSelection[photoIndex])} />
-            </div>
         </>
     );
 }
