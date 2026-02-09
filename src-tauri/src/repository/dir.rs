@@ -39,7 +39,7 @@ impl Dir {
     }
 
     pub fn find_all_files(&self, date_after: Option<date::Date>) -> file::Files {
-        let re = Regex::new(r"(?i)\.(?:jpe?g|gif|png)$").unwrap();
+        let re = Regex::new(r"(?i)\.(?:jpe?g|gif|png|cr2|cr3|nef|arw|dng|raf|orf|rw2|3fr)$").unwrap();
         let readdir = fs::read_dir(&self.path);
         let mut files = file::Files::new();
         if readdir.is_ok() {
@@ -75,7 +75,7 @@ impl Dir {
         date_after: Option<date::Date>,
     ) -> DirsFiles {
         let mut df = DirsFiles::new(self.path.clone());
-        let re = Regex::new(r"(?i)\.(?:jpe?g|gif|png)$").unwrap();
+        let re = Regex::new(r"(?i)\.(?:jpe?g|gif|png|cr2|cr3|nef|arw|dng|raf|orf|rw2|3fr)$").unwrap();
         let readdir = fs::read_dir(&self.path);
         if readdir.is_ok() {
             let start_index: usize = (page - 1) * num;

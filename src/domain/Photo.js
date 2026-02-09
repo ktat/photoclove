@@ -114,6 +114,16 @@ export class Photo {
                 }
                 this._cachedThumbnailPath = thumbnailPath;
                 return thumbnailPath;
+            } else if (this.isRawFormat()) {
+                // RAW files: thumbnail is {name_lowercase}.jpg (e.g., photo.cr2 -> photo.cr2.jpg)
+                const rawThumbnailName = this.name.toLowerCase() + '.jpg';
+                if (uuid) {
+                    thumbnailPath = `${thumbnailStore}/${photoDate}/${uuid}/${rawThumbnailName}`;
+                } else {
+                    thumbnailPath = `${thumbnailStore}/${photoDate}/${rawThumbnailName}`;
+                }
+                this._cachedThumbnailPath = thumbnailPath;
+                return thumbnailPath;
             } else {
                 // Handle image files - convert extension to lowercase
                 const thumbnailName = this.name.replace(/\.([a-zA-Z]+)$/, (match, ext) => '.' + ext.toLowerCase());
@@ -147,6 +157,15 @@ export class Photo {
     isVideo() {
         const videoExtensions = ['mp4', 'webm', 'avi', 'mov'];
         return videoExtensions.includes(this.getExtension());
+    }
+
+    /**
+     * Check if photo is a RAW camera file
+     * @returns {boolean} True if the photo is a RAW file
+     */
+    isRawFormat() {
+        const rawExtensions = ['cr2', 'cr3', 'nef', 'arw', 'dng', 'raf', 'orf', 'rw2', '3fr'];
+        return rawExtensions.includes(this.getExtension());
     }
 
     /**

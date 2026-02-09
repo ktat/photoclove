@@ -60,6 +60,7 @@ pub(crate) fn process_thumbnail_job(
             config.thumbnail_compression_quality,
             config.thumbnail_ratio,
             config.thumbnail_ignore_file_size,
+            Some(&config.raw_processing),
         )
         .await
     });

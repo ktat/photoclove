@@ -6,7 +6,7 @@
 //! - Image caching and cache management
 //! - File linking for public directory
 
-use crate::utils;
+use crate::utils::{self, raw_file};
 use std::{fs, path};
 
 #[cfg(unix)]
@@ -208,8 +208,41 @@ pub fn get_resized_image(
     // For library mode, use EXIF thumbnail only if use_exif_thumbnail config is enabled
     let exif_start = Instant::now();
     let should_use_exif = import_directory.is_some() || state.config.use_exif_thumbnail;
+    let is_raw = raw_file::is_raw_file(path_str);
 
     if should_use_exif {
+        // For RAW files, use the dedicated exif_thumbnail extraction which handles TIFF-based formats
+        if is_raw {
+            let source_path = std::path::Path::new(path_str);
+            if let Some((thumb_img, width, height)) =
+                utils::exif_thumbnail::extract_exif_thumbnail(source_path)
+            {
+                // Encode as JPEG and save to cache
+                let mut jpeg_data = Vec::new();
+                use image::codecs::jpeg::JpegEncoder;
+                {
+                    let encoder = JpegEncoder::new_with_quality(&mut jpeg_data, 85);
+                    if thumb_img.write_with_encoder(encoder).is_ok() {
+                        if let Ok(mut cache_file) = File::create(&cache_path) {
+                            if cache_file.write_all(&jpeg_data).is_ok() {
+                                let exif_time = exif_start.elapsed();
+                                log::info!(target: "image", "raw_exif_thumbnail_cached; cache_path={}; size={}x{}; exif_ms={}; total_ms={}",
+                                    cache_path.display(), width, height, exif_time.as_millis(), start_time.elapsed().as_millis());
+                                let cache_path_str = cache_path
+                                    .to_str()
+                                    .ok_or_else(|| "Failed to convert cache path to string".to_string())?;
+                                return Ok(cache_path_str.to_string());
+                            }
+                        }
+                        // Cache write failed, return data URL
+                        let base64_string = general_purpose::STANDARD.encode(&jpeg_data);
+                        log::warn!(target: "image", "raw_cache_write_failed; returning_data_url");
+                        return Ok(format!("data:image/jpeg;base64,{}", base64_string));
+                    }
+                }
+            }
+        } else {
+        // Standard JPEG EXIF thumbnail extraction (original logic)
         if let Ok(file) = File::open(path_str) {
             let mut bufreader = BufReader::new(&file);
 
@@ -302,6 +335,7 @@ pub fn get_resized_image(
                 }
             }
         }
+        } // end else (non-RAW)
     }
 
     // EXIF thumbnail not found or disabled, log and proceed to fallback
@@ -317,6 +351,37 @@ pub fn get_resized_image(
     if skip_resize_fallback.unwrap_or(false) {
         log::info!(target: "image", "skip_resize_fallback; returning_original_path; path={}", path_str);
         return Ok(path_str.to_string());
+    }
+
+    // RAW files: use rawloader to decode, then resize and cache
+    if is_raw {
+        if let Some((raw_img, raw_w, raw_h)) =
+            utils::raw_decode::decode_raw_to_thumbnail(path_str, max_size)
+        {
+            // Encode as JPEG and cache
+            let mut jpeg_data = Vec::new();
+            use image::codecs::jpeg::JpegEncoder;
+            {
+                let encoder = JpegEncoder::new_with_quality(&mut jpeg_data, 85);
+                raw_img
+                    .write_with_encoder(encoder)
+                    .map_err(|e| format!("Failed to encode RAW image: {}", e))?;
+            }
+            if let Ok(mut cache_file) = File::create(&cache_path) {
+                if cache_file.write_all(&jpeg_data).is_ok() {
+                    log::info!(target: "image", "raw_decode_cached; cache_path={}; size={}x{}; total_ms={}",
+                        cache_path.display(), raw_w, raw_h, start_time.elapsed().as_millis());
+                    let cache_path_str = cache_path
+                        .to_str()
+                        .ok_or_else(|| "Failed to convert cache path to string".to_string())?;
+                    return Ok(cache_path_str.to_string());
+                }
+            }
+            // Cache write failed, return data URL
+            let base64_string = general_purpose::STANDARD.encode(&jpeg_data);
+            return Ok(format!("data:image/jpeg;base64,{}", base64_string));
+        }
+        return Err("Failed to decode RAW file".to_string());
     }
 
     // Fallback: Load and resize the full image
@@ -477,4 +542,117 @@ pub fn save_image_to_download_dir(
     log::info!(target: "image", "save_image_to_download_dir_success; path={}", full_path_str);
 
     Ok(full_path_str)
+}
+
+/// Gets a progressive RAW image at the specified quality level.
+///
+/// Level 1: EXIF thumbnail (fast) - returns embedded EXIF thumbnail
+/// Level 2: Full RAW decode (slow) - returns full decoded image
+///
+/// Results are cached with level suffix (e.g., `{hash}_exif`, `{hash}_full`).
+///
+/// # Arguments
+///
+/// * `path_str` - Path to the RAW file
+/// * `max_size` - Maximum dimension for the output
+/// * `quality_level` - 1 for EXIF thumbnail, 2 for full decode
+/// * `import_directory` - Optional import directory context
+///
+/// # Returns
+///
+/// File path to the cached image
+#[tauri::command]
+pub fn get_raw_progressive_image(
+    path_str: &str,
+    max_size: u32,
+    quality_level: u32,
+    import_directory: Option<&str>,
+) -> Result<String, String> {
+    use std::io::Write;
+    use std::time::Instant;
+
+    let start_time = Instant::now();
+
+    if !raw_file::is_raw_file(path_str) {
+        return Err("Not a RAW file".to_string());
+    }
+
+    // Generate cache path with quality suffix
+    let base_cache_path = utils::generate_cache_path(path_str, import_directory)?;
+    let suffix = match quality_level {
+        1 => "_exif",
+        2 => "_full",
+        _ => return Err("Invalid quality level (must be 1 or 2)".to_string()),
+    };
+    let cache_path_str = format!("{}{}", base_cache_path, suffix);
+    let cache_path = path::Path::new(&cache_path_str);
+
+    // Check cache
+    if cache_path.exists() {
+        log::info!(target: "image", "raw_progressive_cache_hit; level={}; path={}", quality_level, cache_path.display());
+        return Ok(cache_path_str);
+    }
+
+    let cache_dir = cache_path.parent().ok_or_else(|| "Invalid cache path".to_string())?;
+    if !cache_dir.exists() {
+        fs::create_dir_all(cache_dir)
+            .map_err(|e| format!("Failed to create cache directory: {}", e))?;
+    }
+
+    match quality_level {
+        1 => {
+            // Level 1: EXIF thumbnail
+            let source_path = std::path::Path::new(path_str);
+            if let Some((thumb_img, width, height)) =
+                utils::exif_thumbnail::extract_exif_thumbnail(source_path)
+            {
+                let mut jpeg_data = Vec::new();
+                use image::codecs::jpeg::JpegEncoder;
+                {
+                    let encoder = JpegEncoder::new_with_quality(&mut jpeg_data, 85);
+                    thumb_img
+                        .write_with_encoder(encoder)
+                        .map_err(|e| format!("Failed to encode EXIF thumbnail: {}", e))?;
+                }
+                let mut cache_file = fs::File::create(&cache_path)
+                    .map_err(|e| format!("Failed to create cache file: {}", e))?;
+                cache_file
+                    .write_all(&jpeg_data)
+                    .map_err(|e| format!("Failed to write cache file: {}", e))?;
+
+                log::info!(target: "image", "raw_progressive_exif; path={}; size={}x{}; ms={}",
+                    path_str, width, height, start_time.elapsed().as_millis());
+                Ok(cache_path_str)
+            } else {
+                Err("No EXIF thumbnail found in RAW file".to_string())
+            }
+        }
+        2 => {
+            // Level 2: Full RAW decode
+            if let Some((decoded_img, width, height)) =
+                utils::raw_decode::decode_raw_to_thumbnail(path_str, max_size)
+            {
+                let mut jpeg_data = Vec::new();
+                use image::codecs::jpeg::JpegEncoder;
+                {
+                    let encoder = JpegEncoder::new_with_quality(&mut jpeg_data, 90);
+                    decoded_img
+                        .write_with_encoder(encoder)
+                        .map_err(|e| format!("Failed to encode decoded RAW: {}", e))?;
+                }
+                let mut cache_file = fs::File::create(&cache_path)
+                    .map_err(|e| format!("Failed to create cache file: {}", e))?;
+                cache_file
+                    .write_all(&jpeg_data)
+                    .map_err(|e| format!("Failed to write cache file: {}", e))?;
+
+                log::info!(target: "image", "raw_progressive_full; path={}; size={}x{}; ms={}",
+                    path_str, width, height, start_time.elapsed().as_millis());
+                Ok(cache_path_str)
+            } else {
+                Err("Failed to decode RAW file".to_string())
+            }
+        }
+        _ => Err("Invalid quality level".to_string()),
+    }
 }

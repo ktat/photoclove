@@ -320,6 +320,54 @@ fn default_memories_fallback() -> String {
     "default".to_string()
 }
 
+/// RAW file processing configuration
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RawProcessingConfig {
+    /// Maximum number of concurrent RAW decodes (default 2)
+    #[serde(default = "default_max_concurrent_decodes")]
+    pub max_concurrent_decodes: u32,
+    /// Whether to enable full RAW decode (false = EXIF thumbnail only)
+    #[serde(default = "default_enable_full_decode")]
+    pub enable_full_decode: bool,
+    /// Maximum decode output size in pixels (default 1600)
+    #[serde(default = "default_max_decode_size")]
+    pub max_decode_size: u32,
+    /// Memory limit in MB for RAW processing (default 200)
+    #[serde(default = "default_raw_memory_limit_mb")]
+    pub memory_limit_mb: u32,
+}
+
+fn default_max_concurrent_decodes() -> u32 {
+    2
+}
+
+fn default_enable_full_decode() -> bool {
+    true
+}
+
+fn default_max_decode_size() -> u32 {
+    1600
+}
+
+fn default_raw_memory_limit_mb() -> u32 {
+    200
+}
+
+impl Default for RawProcessingConfig {
+    fn default() -> Self {
+        Self {
+            max_concurrent_decodes: default_max_concurrent_decodes(),
+            enable_full_decode: default_enable_full_decode(),
+            max_decode_size: default_max_decode_size(),
+            memory_limit_mb: default_raw_memory_limit_mb(),
+        }
+    }
+}
+
+fn default_raw_processing() -> RawProcessingConfig {
+    RawProcessingConfig::default()
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StartupImage {
     pub path: String,       // Image path (relative to import_to)
@@ -372,6 +420,8 @@ pub struct Config {
     pub s3: Option<S3Config>,
     #[serde(default = "default_custom_watermark")]
     pub custom_watermark: Option<String>,
+    #[serde(default = "default_raw_processing")]
+    pub raw_processing: RawProcessingConfig,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryConfig {
@@ -527,6 +577,7 @@ impl Config {
             face_detection: default_face_detection(),
             s3: default_s3(),
             custom_watermark: default_custom_watermark(),
+            raw_processing: default_raw_processing(),
         }
     }
 

@@ -180,7 +180,8 @@ function PhotoCard({
                     ? importState.currentImportPath
                     : null;
                 // PNG/WebP/GIF/HEICなどはEXIFサムネイルを持たないので、リサイズフォールバックを有効にする
-                const hasExifThumbnail = /\.(jpe?g)$/i.test(photo.originalPath);
+                // RAW files also have EXIF thumbnails
+                const hasExifThumbnail = /\.(jpe?g|cr2|cr3|nef|arw|dng|raf|orf|rw2|3fr)$/i.test(photo.originalPath);
                 invoke('get_resized_image', {
                     pathStr: photo.originalPath,
                     maxSize: 200,
@@ -227,7 +228,9 @@ function PhotoCard({
             }
 
             // Step 3: Second error - thumbnail generation failed or retry failed, try original
-            if (!e.currentTarget.dataset.triedOriginal) {
+            // Skip original fallback for RAW files (browser can't render RAW)
+            const isRaw = /\.(cr2|cr3|nef|arw|dng|raf|orf|rw2|3fr)$/i.test(photo.originalPath);
+            if (!isRaw && !e.currentTarget.dataset.triedOriginal) {
                 e.currentTarget.dataset.triedOriginal = 'true';
                 logger.warn('PhotoCard', 'thumbnail_failed_fallback_original', 'Falling back to original image', {
                     photoPath: photo.originalPath

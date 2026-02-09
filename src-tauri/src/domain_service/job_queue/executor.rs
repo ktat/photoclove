@@ -228,15 +228,7 @@ fn create_dependent_jobs(
         // Filter to only include image files (not videos)
         let image_files: Vec<String> = imported_files
             .into_iter()
-            .filter(|f| {
-                let lower = f.to_lowercase();
-                lower.ends_with(".jpg")
-                    || lower.ends_with(".jpeg")
-                    || lower.ends_with(".png")
-                    || lower.ends_with(".webp")
-                    || lower.ends_with(".heic")
-                    || lower.ends_with(".heif")
-            })
+            .filter(|f| crate::utils::raw_file::is_supported_image(f))
             .collect();
 
         if !image_files.is_empty() {

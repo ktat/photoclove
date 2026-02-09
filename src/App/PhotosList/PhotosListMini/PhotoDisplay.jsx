@@ -22,6 +22,9 @@ const FALLBACK_HEIGHT = 600;
 const SCROLL_LOCK_DELAY_MS = 100;
 const FULL_IMAGE_LOAD_DELAY_MS = 300; // Delay before loading full image after navigation stops
 
+// RAW file extensions that browsers cannot render natively
+const RAW_EXTENSION_REGEX = /\.(cr2|cr3|nef|arw|dng|raf|orf|rw2|3fr)$/i;
+
 let currentFile = "";
 let width = 0;
 let height = 0;
@@ -166,6 +169,74 @@ function PhotoDisplay(props) {
                 setVideoClass("video-off");
                 setVideoSource("");
 
+                // Check if this is a RAW file
+                const isRawFile = RAW_EXTENSION_REGEX.test(props.currentPhotoPath);
+
+                if (isRawFile) {
+                    // RAW files: use progressive loading via backend decode
+                    setIsLoadingFullImage(true);
+                    setIsShowingThumbnail(true);
+
+                    // Show thumbnail if available
+                    const thumbnailSrc = props.thumbnailSrc ? convertFileSrc(props.thumbnailSrc) : null;
+                    if (thumbnailSrc) {
+                        setDisplaySrc(thumbnailSrc);
+                    }
+
+                    const importDir = props.importState?.currentImportPath || null;
+                    const currentPath = props.currentPhotoPath;
+
+                    // Level 1: EXIF thumbnail (fast)
+                    invoke('get_raw_progressive_image', {
+                        pathStr: currentPath,
+                        maxSize: 1600,
+                        qualityLevel: 1,
+                        importDirectory: importDir
+                    }).then(exifPath => {
+                        if (props.currentPhotoPath === currentPath) {
+                            setDisplaySrc(convertFileSrc(exifPath) + '?t=' + Date.now());
+                            setIsShowingThumbnail(true);
+                            logger.debug('PhotoDisplay', 'raw_exif_loaded', 'RAW EXIF thumbnail loaded', {
+                                path: currentPath
+                            });
+                        }
+                    }).catch(() => {});
+
+                    // Level 2: Full RAW decode (slow)
+                    fullImageLoadTimeoutRef.current = setTimeout(() => {
+                        invoke('get_raw_progressive_image', {
+                            pathStr: currentPath,
+                            maxSize: 1600,
+                            qualityLevel: 2,
+                            importDirectory: importDir
+                        }).then(fullPath => {
+                            if (props.currentPhotoPath === currentPath) {
+                                const fullSrc = convertFileSrc(fullPath) + '?t=' + Date.now();
+                                const preloadImg = new Image();
+                                preloadImg.onload = () => {
+                                    setDisplaySrc(fullSrc);
+                                    setIsLoadingFullImage(false);
+                                    setIsShowingThumbnail(false);
+                                    width = preloadImg.naturalWidth;
+                                    height = preloadImg.naturalHeight;
+                                    logger.debug('PhotoDisplay', 'raw_full_loaded', 'RAW full decode loaded', {
+                                        path: currentPath, width, height
+                                    });
+                                };
+                                preloadImg.onerror = () => {
+                                    setIsLoadingFullImage(false);
+                                };
+                                preloadImg.src = fullSrc;
+                            }
+                        }).catch(err => {
+                            setIsLoadingFullImage(false);
+                            logger.debug('PhotoDisplay', 'raw_full_decode_failed', 'RAW full decode failed', {
+                                path: currentPath, error: err?.message || String(err)
+                            });
+                        });
+                    }, FULL_IMAGE_LOAD_DELAY_MS);
+                } else {
+                // Non-RAW files: original logic
                 // Get full image source
                 const fullImageSrc = (props.imgCacheMap[props.currentPhotoPath] && props.imgCacheMap[props.currentPhotoPath][0])
                     || convertFileSrc(props.currentPhotoPath);
@@ -211,6 +282,7 @@ function PhotoDisplay(props) {
                     setIsLoadingFullImage(false);
                     setIsShowingThumbnail(false);
                 }
+                } // end non-RAW
             }
         }, CONTAINER_READY_DELAY_MS);
 

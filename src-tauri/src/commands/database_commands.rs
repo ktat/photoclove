@@ -147,6 +147,7 @@ pub async fn create_thumbnails(
         c.thumbnail_compression_quality,
         c.thumbnail_ratio,
         c.thumbnail_ignore_file_size,
+        Some(&c.raw_processing),
     )
     .await
     {
@@ -197,6 +198,7 @@ pub async fn create_thumbnails_in_date(
         c.thumbnail_compression_quality,
         c.thumbnail_ratio,
         c.thumbnail_ignore_file_size,
+        Some(&c.raw_processing),
     )
     .await
     {

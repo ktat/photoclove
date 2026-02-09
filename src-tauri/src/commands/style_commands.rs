@@ -173,6 +173,7 @@ pub async fn save_styled_copy_from_frontend(
             config.thumbnail_compression_quality,
             config.thumbnail_ratio,
             config.thumbnail_ignore_file_size,
+            Some(&config.raw_processing),
         )
         .await
         {

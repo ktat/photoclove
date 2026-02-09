@@ -1,6 +1,6 @@
+use crate::utils::exif_parser::{self, ExifTagKind};
 use crate::value::file;
 use regex;
-use rexif;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -56,7 +56,7 @@ impl ExifData {
 
     pub fn new(file: file::File) -> ExifData {
         let mut data = ExifData::empty();
-        let exif_result = rexif::parse_file(file.path.to_string());
+        let exif_result = exif_parser::parse_exif(&file.path);
 
         match exif_result {
             Err(_) => {
@@ -68,141 +68,60 @@ impl ExifData {
                     data.date_time = file_created_time;
                 }
             }
-            Ok(exif_data) => {
-                for e in exif_data.entries {
-                match e.tag {
-                    rexif::ExifTag::FNumber => data.fnumber = e.value_more_readable.to_string(),
-                    rexif::ExifTag::ISOSpeedRatings => data.iso = e.value_more_readable.to_string(),
-                    rexif::ExifTag::DateTime => data.date_time = e.value_more_readable.to_string(),
-                    rexif::ExifTag::DateTimeOriginal => {
-                        data.date_time_original = e.value_more_readable.to_string()
-                    }
-                    rexif::ExifTag::LensModel => data.lens_model = e.value.to_string(),
-                    rexif::ExifTag::LensMake => {
-                        if data.lens_make != String::new() {
-                            data.lens_make = e.value.to_string();
+            Ok(parse_result) => {
+                for e in parse_result.entries {
+                    match e.tag {
+                        ExifTagKind::FNumber => data.fnumber = e.value_readable.clone(),
+                        ExifTagKind::ISOSpeedRatings => data.iso = e.value_readable.clone(),
+                        ExifTagKind::DateTime => data.date_time = e.value_readable.clone(),
+                        ExifTagKind::DateTimeOriginal => {
+                            data.date_time_original = e.value_readable.clone()
                         }
-                    }
-                    rexif::ExifTag::Make => data.make = e.value_more_readable.to_string(),
-                    rexif::ExifTag::Model => data.model = e.value_more_readable.to_string(),
-                    rexif::ExifTag::Orientation => {
-                        data.orientation = e.value_more_readable.to_string()
-                    }
-                    rexif::ExifTag::XResolution => data.xresolution = e.value.to_string(),
-                    rexif::ExifTag::YResolution => data.yresolution = e.value.to_string(),
-                    rexif::ExifTag::ResolutionUnit => data.resolution_unit = e.value.to_string(),
-                    rexif::ExifTag::Copyright => data.copyright = e.value.to_string(),
-                    rexif::ExifTag::ExposureTime => {
-                        data.exposure_time = e.value_more_readable.to_string()
-                    }
-                    rexif::ExifTag::ShutterSpeedValue => {
-                        data.shutter_speed_value = e.value.to_string()
-                    }
-                    rexif::ExifTag::FocalLength => {
-                        data.focal_length = e.value_more_readable.to_string()
-                    }
-                    rexif::ExifTag::FocalLengthIn35mmFilm => {
-                        data.focal_length_in35mm_film = e.value_more_readable.to_string()
-                    }
-                    rexif::ExifTag::MakerNote => {
-                        let d = get_lens_from_maker_note(e.ifd.ext_data);
-                        if d != "" {
-                            data.lens_model = d;
+                        ExifTagKind::LensModel => data.lens_model = e.value.clone(),
+                        ExifTagKind::LensMake => {
+                            if data.lens_make != String::new() {
+                                data.lens_make = e.value.clone();
+                            }
                         }
+                        ExifTagKind::Make => data.make = e.value_readable.clone(),
+                        ExifTagKind::Model => data.model = e.value_readable.clone(),
+                        ExifTagKind::Orientation => {
+                            data.orientation = e.value_readable.clone()
+                        }
+                        ExifTagKind::XResolution => data.xresolution = e.value.clone(),
+                        ExifTagKind::YResolution => data.yresolution = e.value.clone(),
+                        ExifTagKind::ResolutionUnit => data.resolution_unit = e.value.clone(),
+                        ExifTagKind::Copyright => data.copyright = e.value.clone(),
+                        ExifTagKind::ExposureTime => {
+                            data.exposure_time = e.value_readable.clone()
+                        }
+                        ExifTagKind::ShutterSpeedValue => {
+                            data.shutter_speed_value = e.value.clone()
+                        }
+                        ExifTagKind::FocalLength => {
+                            data.focal_length = e.value_readable.clone()
+                        }
+                        ExifTagKind::FocalLengthIn35mmFilm => {
+                            data.focal_length_in35mm_film = e.value_readable.clone()
+                        }
+                        ExifTagKind::DigitalZoomRatio => {
+                            data.digital_zoom_ratio = e.value_readable.clone()
+                        }
+                        ExifTagKind::ExposureMode => {
+                            data.exposure_mode = e.value_readable.clone()
+                        }
+                        ExifTagKind::WhiteBalanceMode => {
+                            data.white_balance_mode = e.value_readable.clone()
+                        }
+                        ExifTagKind::MakerNote => {
+                            let d = get_lens_from_maker_note(e.ext_data);
+                            if !d.is_empty() {
+                                data.lens_model = d;
+                            }
+                        }
+                        ExifTagKind::Unknown(_) => {}
                     }
-                    rexif::ExifTag::ExposureMode => {
-                        data.exposure_mode = e.value_more_readable.to_string()
-                    }
-                    rexif::ExifTag::WhiteBalanceMode => {
-                        data.white_balance_mode = e.value_more_readable.to_string()
-                    }
-                    rexif::ExifTag::DigitalZoomRatio => {
-                        data.digital_zoom_ratio = e.value_more_readable.to_string()
-                    }
-                    // rexif::ExifTag::UnknownToMe => todo!(),
-                    // rexif::ExifTag::ImageDescription => todo!(),
-                    // rexif::ExifTag::Software => todo!(),
-                    // rexif::ExifTag::HostComputer => todo!(),
-                    // rexif::ExifTag::WhitePoint => todo!(),
-                    // rexif::ExifTag::PrimaryChromaticities => todo!(),
-                    // rexif::ExifTag::YCbCrCoefficients => todo!(),
-                    // rexif::ExifTag::ReferenceBlackWhite => todo!(),
-                    // rexif::ExifTag::ExifOffset => todo!(),
-                    // rexif::ExifTag::GPSOffset => todo!(),
-                    // rexif::ExifTag::ExposureProgram => todo!(),
-                    // rexif::ExifTag::SpectralSensitivity => todo!(),
-                    // rexif::ExifTag::OECF => todo!(),
-                    // rexif::ExifTag::SensitivityType => todo!(),
-                    // rexif::ExifTag::ExifVersion => todo!(),
-                    // rexif::ExifTag::DateTimeDigitized => todo!(),
-                    // rexif::ExifTag::SubjectArea => todo!(),
-                    // rexif::ExifTag::ApertureValue => todo!(),
-                    // rexif::ExifTag::BrightnessValue => todo!(),
-                    // rexif::ExifTag::ExposureBiasValue => todo!(),
-                    // rexif::ExifTag::MaxApertureValue => todo!(),
-                    // rexif::ExifTag::SubjectDistance => todo!(),
-                    // rexif::ExifTag::MeteringMode => todo!(),
-                    // rexif::ExifTag::LightSource => todo!(),
-                    // rexif::ExifTag::Flash => todo!(),
-                    // rexif::ExifTag::UserComment => todo!(),
-                    // rexif::ExifTag::FlashPixVersion => todo!(),
-                    // rexif::ExifTag::ColorSpace => todo!(),
-                    // rexif::ExifTag::RelatedSoundFile => todo!(),
-                    // rexif::ExifTag::FlashEnergy => todo!(),
-                    // rexif::ExifTag::FocalPlaneXResolution => todo!(),
-                    // rexif::ExifTag::FocalPlaneYResolution => todo!(),
-                    // rexif::ExifTag::FocalPlaneResolutionUnit => todo!(),
-                    // rexif::ExifTag::SubjectLocation => todo!(),
-                    // rexif::ExifTag::ExposureIndex => todo!(),
-                    // rexif::ExifTag::SensingMethod => todo!(),
-                    // rexif::ExifTag::FileSource => todo!(),
-                    // rexif::ExifTag::SceneType => todo!(),
-                    // rexif::ExifTag::CFAPattern => todo!(),
-                    // rexif::ExifTag::CustomRendered => todo!(),
-                    // rexif::ExifTag::SceneCaptureType => todo!(),
-                    // rexif::ExifTag::GainControl => todo!(),
-                    // rexif::ExifTag::Contrast => todo!(),
-                    // rexif::ExifTag::Saturation => todo!(),
-                    // rexif::ExifTag::Sharpness => todo!(),
-                    // rexif::ExifTag::DeviceSettingDescription => todo!(),
-                    // rexif::ExifTag::SubjectDistanceRange => todo!(),
-                    // rexif::ExifTag::ImageUniqueID => todo!(),
-                    // rexif::ExifTag::LensSpecification => todo!(),
-                    // rexif::ExifTag::Gamma => todo!(),
-                    // rexif::ExifTag::GPSVersionID => todo!(),
-                    // rexif::ExifTag::GPSLatitudeRef => todo!(),
-                    // rexif::ExifTag::GPSLatitude => todo!(),
-                    // rexif::ExifTag::GPSLongitudeRef => todo!(),
-                    // rexif::ExifTag::GPSLongitude => todo!(),
-                    // rexif::ExifTag::GPSAltitudeRef => todo!(),
-                    // rexif::ExifTag::GPSAltitude => todo!(),
-                    // rexif::ExifTag::GPSTimeStamp => todo!(),
-                    // rexif::ExifTag::GPSSatellites => todo!(),
-                    // rexif::ExifTag::GPSStatus => todo!(),
-                    // rexif::ExifTag::GPSMeasureMode => todo!(),
-                    // rexif::ExifTag::GPSDOP => todo!(),
-                    // rexif::ExifTag::GPSSpeedRef => todo!(),
-                    // rexif::ExifTag::GPSSpeed => todo!(),
-                    // rexif::ExifTag::GPSTrackRef => todo!(),
-                    // rexif::ExifTag::GPSTrack => todo!(),
-                    // rexif::ExifTag::GPSImgDirectionRef => todo!(),
-                    // rexif::ExifTag::GPSImgDirection => todo!(),
-                    // rexif::ExifTag::GPSMapDatum => todo!(),
-                    // rexif::ExifTag::GPSDestLatitudeRef => todo!(),
-                    // rexif::ExifTag::GPSDestLatitude => todo!(),
-                    // rexif::ExifTag::GPSDestLongitudeRef => todo!(),
-                    // rexif::ExifTag::GPSDestLongitude => todo!(),
-                    // rexif::ExifTag::GPSDestBearingRef => todo!(),
-                    // rexif::ExifTag::GPSDestBearing => todo!(),
-                    // rexif::ExifTag::GPSDestDistanceRef => todo!(),
-                    // rexif::ExifTag::GPSDestDistance => todo!(),
-                    // rexif::ExifTag::GPSProcessingMethod => todo!(),
-                    // rexif::ExifTag::GPSAreaInformation => todo!(),
-                    // rexif::ExifTag::GPSDateStamp => todo!(),
-                    // rexif::ExifTag::GPSDifferential => todo!(),
-                    _ => {}
                 }
-            }
                 let mut t = data.date_time.clone();
                 if t.is_empty() {
                     t = data.date_time_original.clone();

@@ -11,15 +11,9 @@ use crate::repository::meta_db::sqlite::SQLite;
 use std::sync::Arc;
 use tauri::AppHandle;
 
-/// Check if a file path is an image file
+/// Check if a file path is an image file (standard + RAW formats)
 pub fn is_image_file(path: &str) -> bool {
-    let lower = path.to_lowercase();
-    lower.ends_with(".jpg")
-        || lower.ends_with(".jpeg")
-        || lower.ends_with(".png")
-        || lower.ends_with(".webp")
-        || lower.ends_with(".heic")
-        || lower.ends_with(".heif")
+    crate::utils::raw_file::is_supported_image(path)
 }
 
 /// Filter photos to only include image files

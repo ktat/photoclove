@@ -103,8 +103,9 @@ export const handleThumbnailError = async (e, photo, importState, componentName 
             }
         }
 
-        // Step 2: Try original image
-        if (!imgElement.dataset.triedOriginal) {
+        // Step 2: Try original image (skip for RAW files - browser can't render RAW)
+        const isRaw = /\.(cr2|cr3|nef|arw|dng|raf|orf|rw2|3fr)$/i.test(photo.originalPath);
+        if (!isRaw && !imgElement.dataset.triedOriginal) {
             imgElement.dataset.triedOriginal = 'true';
             imgElement.src = convertFileSrc(photo.originalPath);
             return;

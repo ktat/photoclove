@@ -131,6 +131,13 @@ impl Photo {
         let import_path = &self.import_to;
         let thumbnail_store = &self.thumbnail_store;
         let thumbnail_path = self.file.path.replace(import_path, thumbnail_store);
+
+        // RAW files: thumbnail is {filename_lowercase}.jpg
+        if crate::utils::raw_file::is_raw_file(&self.file.path) {
+            let lowercase_path = thumbnail_path.to_lowercase();
+            return Some(format!("{}.jpg", lowercase_path));
+        }
+
         let ext_regex = regex::Regex::new(r"\.(?i)jpe?g$").unwrap();
         let thumbnail_path_ext_changed = ext_regex.replace(&thumbnail_path, ".jpg").to_string();
 
@@ -147,6 +154,16 @@ impl Photo {
             let import_path = self.import_to.clone();
             let thumbnail_store = self.thumbnail_store.clone();
             let thumbnail_path = self.file.path.replace(&import_path, &thumbnail_store);
+
+            // RAW files: thumbnail is {filename_lowercase}.jpg
+            if crate::utils::raw_file::is_raw_file(&self.file.path) {
+                let raw_thumbnail_path = format!("{}.jpg", thumbnail_path.to_lowercase());
+                let p = std::path::Path::new(&raw_thumbnail_path);
+                self.has_thumbnail = p.exists();
+                log::debug!(target: "photo", "thumbnail_check_raw; thumbnail_path={}; exists={}",
+                    raw_thumbnail_path, self.has_thumbnail);
+            } else {
+
             let ext_regex = regex::Regex::new(r"\.(?i)jpe?g$").unwrap();
             let thumbnail_path_ext_changed = ext_regex.replace(&thumbnail_path, ".jpg").to_string();
 
@@ -166,6 +183,8 @@ impl Photo {
                 log::debug!(target: "photo", "thumbnail_check_photo; thumbnail_path={}; exists={}",
                     thumbnail_path_ext_changed, self.has_thumbnail);
             }
+
+            } // end else (non-RAW)
         } else {
             log::error!(target: "photo", "thumbnail_check_without_config; photo_path={:?}", self.file.path);
         }
