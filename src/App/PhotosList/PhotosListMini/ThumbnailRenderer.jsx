@@ -47,7 +47,14 @@ function ThumbnailRenderer({
     return (
         <div className="row2" key={`${vIndex}-${photo.originalPath}`} style={{ position: "relative" }}>
             <a onClick={() => onThumbnailClick(vIndex)} style={{ position: "relative", display: "inline-block" }}>
-                {isMovie ? (
+                {photo.isUnsupportedFormat && photo.isUnsupportedFormat() ? (
+                    <div style={{ border: borderStyle, maxHeight: maxHeight + "px", height: maxHeight + "px", width: maxHeight + "px", display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+                        <span style={{ fontSize: (maxHeight / 3) + 'px' }}>&#128247;</span>
+                        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
+                            {photo.getExtension().toUpperCase()}
+                        </div>
+                    </div>
+                ) : isMovie ? (
                     <div className="photo-list-movie" style={{ border: borderStyle, maxHeight: maxHeight + "px" }}>
                         <span>🎬</span>
                     </div>

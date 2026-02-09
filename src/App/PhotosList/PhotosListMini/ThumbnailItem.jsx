@@ -48,7 +48,14 @@ function ThumbnailItem({
     return (
         <div className="row2" key={`${index}-${photo?.originalPath}`} style={{ position: "relative" }}>
             <a onClick={() => onClick(photo, index)}>
-                {!photo?.hasThumbnail && isVideo ? (
+                {photo?.isUnsupportedFormat && photo.isUnsupportedFormat() ? (
+                    <div style={{ border: borderStyle, maxHeight: maxHeight + "px", height: maxHeight + "px", width: maxHeight + "px", display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+                        <span style={{ fontSize: (maxHeight / 3) + 'px' }}>&#128247;</span>
+                        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
+                            {photo.getExtension().toUpperCase()}
+                        </div>
+                    </div>
+                ) : !photo?.hasThumbnail && isVideo ? (
                     <div className="photo-list-movie" style={{ border: borderStyle, maxHeight: maxHeight + "px" }}>
                         <span>🎬</span>
                     </div>

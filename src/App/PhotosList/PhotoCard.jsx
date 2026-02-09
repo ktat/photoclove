@@ -363,7 +363,14 @@ function PhotoCard({
         >
             <div className={styles.thumbnailContainer} style={{ width: iconSize + 'px', height: iconSize + 'px' }}>
                 <a href="#" onClick={() => onDisplayPhoto(photo.originalPath, index)}>
-                    {!photo.hasThumbnail && photo.originalPath?.match(/\.(mp4|webm)$/i)
+                    {photo.isUnsupportedFormat && photo.isUnsupportedFormat()
+                        ? <div className={styles.imageWrapper} style={{ flexDirection: 'column' }}>
+                            <span style={{ fontSize: (iconSize / 4) + 'px' }}>&#128247;</span>
+                            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: 'var(--space-1)' }}>
+                                {photo.getExtension().toUpperCase()}
+                            </div>
+                        </div>
+                        : !photo.hasThumbnail && photo.originalPath?.match(/\.(mp4|webm)$/i)
                         ? <div className="photo-list-movie" style={{ minWidth: (iconSize - 20) + 'px', marginTop: (iconSize / 7) + "px" }}>
                             <span style={{ fontSize: (iconSize / 3) + 'px' }}>&#127909;</span>
                         </div>

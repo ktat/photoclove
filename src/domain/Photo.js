@@ -169,6 +169,15 @@ export class Photo {
     }
 
     /**
+     * Check if photo is an unsupported format (imported but cannot be decoded/displayed)
+     * @returns {boolean} True if the format is unsupported for display
+     */
+    isUnsupportedFormat() {
+        const unsupportedExtensions = ['nev'];
+        return unsupportedExtensions.includes(this.getExtension());
+    }
+
+    /**
      * Get tags associated with this photo
      * @returns {Array} Array of tag objects: [{id, name, color}]
      */

@@ -490,7 +490,18 @@ function PhotoDisplay(props) {
                 </div>
                 Open with other software: <a href="#" onClick={(e) => openUrl(fileUrl(props.currentPhotoPath))}>{props.currentPhotoPath}</a>
             </div>
-            {props.currentPhotoPath && !props.currentPhotoPath.match(/\.(mp4|webm)$/i) &&
+            {props.currentPhotoPath && /\.nev$/i.test(props.currentPhotoPath) &&
+                <div id="imageWrapper" style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '96px' }}>&#128247;</span>
+                    <div style={{ fontSize: 'var(--font-size-lg)', color: 'var(--color-text-secondary)', marginTop: 'var(--space-2)' }}>
+                        Unsupported Format: {props.currentPhotoPath.split('.').pop().toUpperCase()}
+                    </div>
+                    <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', marginTop: 'var(--space-1)' }}>
+                        {props.currentPhotoPath.split('/').pop()}
+                    </div>
+                </div>
+            }
+            {props.currentPhotoPath && !props.currentPhotoPath.match(/\.(mp4|webm)$/i) && !/\.nev$/i.test(props.currentPhotoPath) &&
                 <div id="imageWrapper" style={{ overflow: 'auto', alignItems: 'center', justifyContent: 'center', maxWidth: '100%', maxHeight: '100%', position: 'relative' }}>
                     <img ref={imgRef} id="photoImgTag" className={photoDisplayImgClass + (isLoadingFullImage ? " loading-thumbnail" : "")}
                         loading="eager"

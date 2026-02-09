@@ -21,6 +21,11 @@ export const getImportDir = (photo, importState) => {
 export const initializeImageSource = async (photo, importState, cache, setCache, setLocalSrc) => {
     if (!photo?.originalPath) return '';
 
+    // Skip thumbnail loading for unsupported formats
+    if (photo.isUnsupportedFormat && photo.isUnsupportedFormat()) {
+        return '';
+    }
+
     // Use cached source if available
     if (cache[photo.originalPath]) {
         setLocalSrc(cache[photo.originalPath]);
@@ -72,6 +77,9 @@ export const initializeImageSource = async (photo, importState, cache, setCache,
 export const handleThumbnailError = async (e, photo, importState, componentName = 'Thumbnail') => {
     // Prevent handling if already showing error image
     if (e.target.src.includes('/img_error.png')) return;
+
+    // Skip error handling for unsupported formats
+    if (photo.isUnsupportedFormat && photo.isUnsupportedFormat()) return;
 
     const imgElement = e.target;
 
