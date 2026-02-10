@@ -7,7 +7,6 @@ import { useEffect, useRef } from 'react';
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-shell";
 import { listen } from "@tauri-apps/api/event";
-import { ask, message } from '@tauri-apps/plugin-dialog';
 import { logger } from '../services/LoggerService.js';
 import { checkAllAchievements } from '../services/AchievementService.js';
 import WelcomeImage, { getMemoriesStartupImage } from '../WelcomeImage.jsx';
@@ -34,6 +33,7 @@ export function useAppEventListeners({
     setWelcomeImage,
     toggleImporter,
     togglePreferences,
+    dialog,
 }) {
     // Use ref to access current config in event listeners (avoids stale closure)
     const configRef = useRef(config);
@@ -69,6 +69,7 @@ export function useAppEventListeners({
                             setShowTermsOfUse,
                             setShowLicenses,
                             setShowAchievementsModal,
+                            dialog,
                         });
                         setTimeout(() => invoke("lock", { t: false }), 1000);
                     }
@@ -111,10 +112,11 @@ export function useAppEventListeners({
                 const pendingCount = e.payload;
                 logger.info('App', 'pending_jobs_found', 'Pending jobs found at startup', { count: pendingCount });
 
-                const shouldOpen = await ask(
-                    `${pendingCount} pending job(s) found from previous session.\nWould you like to open the Job Queue to manage them?`,
-                    { title: 'Pending Jobs Found', kind: 'info' }
-                );
+                const shouldOpen = await dialog.confirm({
+                    title: 'Pending Jobs Found',
+                    message: `${pendingCount} pending job(s) found from previous session.\nWould you like to open the Job Queue to manage them?`,
+                    kind: 'info',
+                });
 
                 if (shouldOpen) {
                     setShowJobQueueModal(true);
@@ -142,9 +144,9 @@ export function useAppEventListeners({
                 }
             });
 
-            // Achievement unlocked events
+            // Achievement unlocked events (Tauri event from backend)
             unlistenAchievement = await listen(MENU_EVENTS.ACHIEVEMENT_UNLOCKED, (e) => {
-                logger.info('App', 'achievement_unlocked', 'Achievement unlocked from backend', {
+                logger.info('App', 'achievement_unlocked', 'Achievement unlocked from backend Tauri event', {
                     achievement: e.payload?.id,
                 });
                 if (e.payload) {
@@ -168,6 +170,7 @@ export function useAppEventListeners({
                             toggleImporter,
                             togglePreferences,
                             setShowJobQueueModal,
+                            dialog,
                         });
                         setTimeout(() => invoke("lock", { t: false }), 1000);
                     }
@@ -181,6 +184,25 @@ export function useAppEventListeners({
         const handleRefreshDates = () => getDates();
         window.addEventListener('refreshDates', handleRefreshDates);
 
+        // Listen for achievement unlocked via window event (from AchievementService.js)
+        // Window events are synchronous, avoiding race condition where Tauri event listeners
+        // may not be registered yet during early initialization (e.g., Quick View mode)
+        const achievedIds = new Set();
+        const handleAchievementUnlocked = (e) => {
+            const achievements = e.detail;
+            if (Array.isArray(achievements)) {
+                const newAchievements = achievements.filter(a => !achievedIds.has(a.id));
+                newAchievements.forEach(a => achievedIds.add(a.id));
+                if (newAchievements.length > 0) {
+                    logger.info('App', 'achievement_unlocked_window', 'Achievement unlocked via window event', {
+                        achievements: newAchievements.map(a => a.id),
+                    });
+                    setAchievementQueue((prev) => [...prev, ...newAchievements]);
+                }
+            }
+        };
+        window.addEventListener('achievementUnlocked', handleAchievementUnlocked);
+
         // Cleanup
         return () => {
             if (menuUnlisten) menuUnlisten();
@@ -193,6 +215,7 @@ export function useAppEventListeners({
             if (unlistenImport) unlistenImport();
             if (unlistenAchievement) unlistenAchievement();
             window.removeEventListener('refreshDates', handleRefreshDates);
+            window.removeEventListener('achievementUnlocked', handleAchievementUnlocked);
         };
     }, []);
 
@@ -203,14 +226,14 @@ export function useAppEventListeners({
  * Handle static menu actions (Help menu items)
  */
 function handleStaticMenuAction(payload, handlers) {
-    const { setShowLogViewer, setShowPrivacyPolicy, setShowTermsOfUse, setShowLicenses, setShowAchievementsModal } = handlers;
+    const { setShowLogViewer, setShowPrivacyPolicy, setShowTermsOfUse, setShowLicenses, setShowAchievementsModal, dialog } = handlers;
 
     switch (payload) {
         case MENU_ACTIONS.SHOW_LOG:
             setShowLogViewer(true);
             break;
         case MENU_ACTIONS.ABOUT:
-            message("PhotoClove is an application to manage photos.\n (c)ktat");
+            dialog.message({ title: 'About', message: "PhotoClove is an application to manage photos.\n (c)ktat", kind: 'info' });
             break;
         case MENU_ACTIONS.GITHUB:
             open("https://github.com/ktat/photoclove/");
@@ -250,6 +273,7 @@ function handleDynamicMenuAction(payload, handlers) {
         toggleImporter,
         togglePreferences,
         setShowJobQueueModal,
+        dialog,
     } = handlers;
 
     switch (payload) {
@@ -281,7 +305,7 @@ function handleDynamicMenuAction(payload, handlers) {
             break;
 
         case MENU_ACTIONS.CREATE_DB:
-            handleCreateDb(inDbCreationRef);
+            handleCreateDb(inDbCreationRef, dialog);
             break;
 
         default:
@@ -315,13 +339,17 @@ function handleHomeWelcomeImage(config, setWelcomeImage) {
 /**
  * Handle database creation with double-click prevention
  */
-function handleCreateDb(inDbCreationRef) {
+function handleCreateDb(inDbCreationRef, dialog) {
     if (inDbCreationRef.current) {
-        message("DB creation in progress");
+        dialog.message({ title: 'Create DB', message: 'DB creation in progress', kind: 'warning' });
         return;
     }
 
-    ask("It may cost long time.\nAre you OK?", "Create DB?").then((confirmed) => {
+    dialog.confirm({
+        title: 'Create DB?',
+        message: 'It may cost long time.\nAre you OK?',
+        kind: 'warning',
+    }).then((confirmed) => {
         if (confirmed) {
             inDbCreationRef.current = true;
             invoke("create_db").then(() => {

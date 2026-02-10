@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { confirm } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from 'react-i18next';
+import { useDialog } from '../../../context/DialogContext.jsx';
 import FaceThumbnail from "../../../components/FaceThumbnail.jsx";
 import SelectionHeader from "./SelectionHeader.jsx";
 
@@ -9,6 +9,7 @@ import SelectionHeader from "./SelectionHeader.jsx";
  */
 function UnknownFaceSelectionSection({ selectedUnknownFaces, facesList, handlers }) {
     const { t } = useTranslation(['directoryMenu']);
+    const dialog = useDialog();
     const [showPersonSelector, setShowPersonSelector] = useState(false);
     const [newPersonName, setNewPersonName] = useState('');
     const [showNewPersonInput, setShowNewPersonInput] = useState(false);
@@ -24,10 +25,11 @@ function UnknownFaceSelectionSection({ selectedUnknownFaces, facesList, handlers
         e.target.value = 'select';
 
         if (operation === 'delete') {
-            const confirmed = await confirm(
-                t('directoryMenu:face.confirmDelete', { count: selectedUnknownFaces.length }),
-                { title: t('directoryMenu:face.delete') }
-            );
+            const confirmed = await dialog.confirm({
+                title: t('directoryMenu:face.delete'),
+                message: t('directoryMenu:face.confirmDelete', { count: selectedUnknownFaces.length }),
+                kind: 'warning',
+            });
             if (confirmed) {
                 deleteUnknownFacesBatch(selectedUnknownFaces);
             }

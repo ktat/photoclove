@@ -22,7 +22,9 @@ export const VIEW_MODES = {
   JOB_QUEUE: 'job_queue',
   LOGIN: 'login',
   // Burst grouping mode - shows all photos within a burst group
-  IN_BURST_GROUP: 'in_burst_group'
+  IN_BURST_GROUP: 'in_burst_group',
+  // CLI quick view mode - lightweight UI for browsing & importing from CLI path
+  QUICK_VIEW: 'quick_view'
 };
 
 // Helper functions for common mode checks
@@ -58,5 +60,5 @@ export const isListMode = (mode) => {
 };
 
 export const usesPhotosList = (mode) => {
-  return isPhotoViewingMode(mode) || isListMode(mode) || mode === VIEW_MODES.IMPORT;
+  return isPhotoViewingMode(mode) || isListMode(mode) || mode === VIEW_MODES.IMPORT || mode === VIEW_MODES.QUICK_VIEW;
 };

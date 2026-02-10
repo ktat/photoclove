@@ -29,7 +29,8 @@ export function usePhotoOptionOperations({
     removePhotoFromList,
     appConfig,
     saveConfigWithStartupImages,
-    setShowJobQueueModal
+    setShowJobQueueModal,
+    dialog
 }) {
     // Delete confirmation modal state
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -41,7 +42,7 @@ export function usePhotoOptionOperations({
 
     // Google Photos upload
     const { uploadToGooglePhotos } = useGooglePhotosUpload({
-        photoSelection, clearPhotoSelection, addFooterMessage, setShowJobQueue: setShowJobQueueModal
+        photoSelection, clearPhotoSelection, addFooterMessage, setShowJobQueue: setShowJobQueueModal, dialog
     });
 
     // Trash operations
@@ -64,7 +65,7 @@ export function usePhotoOptionOperations({
         removeFromCurrentAlbum
     } = useAlbumOperations({
         photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError,
-        viewModeObj, removePhotoFromList
+        viewModeObj, removePhotoFromList, dialog
     });
 
     // Tag operations
@@ -76,7 +77,7 @@ export function usePhotoOptionOperations({
         removeFromCurrentTag
     } = useTagOperations({
         photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError,
-        onPhotosRefresh: refreshPhotosOnly, viewModeObj, removePhotoFromList
+        onPhotosRefresh: refreshPhotosOnly, viewModeObj, removePhotoFromList, dialog
     });
 
     // Startup image operations
@@ -88,7 +89,7 @@ export function usePhotoOptionOperations({
     // Burst group operations
     const { createBurstGroup, removeFromBurstGroup } = useGroupOperations({
         photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError,
-        reloadPhotos: refreshPhotosOnly
+        reloadPhotos: refreshPhotosOnly, dialog
     });
 
     // Operations object for PhotoOption and DirectoryMenu

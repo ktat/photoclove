@@ -18,9 +18,11 @@ import { invoke } from '@tauri-apps/api/core';
 import { VIEW_MODES } from '../constants/viewModes.js';
 import { ImportState } from '../domain/ImportState.js';
 import { logger } from '../services/LoggerService.js';
+import { checkFirstActionAchievement } from '../services/AchievementService.js';
 
 export function useImportModeLifecycle({
     viewMode,
+    modeData,
     viewModeObj,
     importState,
     setImportState,
@@ -30,8 +32,10 @@ export function useImportModeLifecycle({
     setPhotosListMiniAllPhotos,
     setPhotosList
 }) {
+    const isImportLike = viewMode === VIEW_MODES.IMPORT || viewMode === VIEW_MODES.QUICK_VIEW;
+
     useEffect(() => {
-        if (viewMode === VIEW_MODES.IMPORT) {
+        if (isImportLike) {
             // Set tab state for import mode
             setTabClass({
                 'directory': true,  // Default to directory tab in import mode
@@ -51,7 +55,14 @@ export function useImportModeLifecycle({
 
             // Initialize ImportState if not already initialized
             if (!importState) {
-                ImportState.create().then((newImportState) => {
+                const initialPath = viewMode === VIEW_MODES.QUICK_VIEW ? modeData?.quickViewPath : undefined;
+                ImportState.create(initialPath).then((newImportState) => {
+                    // Check Quick View achievement after ImportState is created
+                    // (delayed to ensure event listeners in App.jsx are registered)
+                    if (viewMode === VIEW_MODES.QUICK_VIEW) {
+                        checkFirstActionAchievement('first_quick_view');
+                    }
+
                     // Set up callbacks for directory changes
                     newImportState.onDirectoryChange = (updatedState) => {
                         logger.info('useImportModeLifecycle', 'import_directory_changed', 'Directory changed in import mode', {
@@ -110,8 +121,8 @@ export function useImportModeLifecycle({
             });
             setShowSideMenu(false);  // Close side menu for other modes
 
-            // Clean up ImportState when leaving import mode
-            if (importState && viewMode !== VIEW_MODES.IMPORT) {
+            // Clean up ImportState when leaving import/quick-view mode
+            if (importState && !isImportLike) {
                 logger.info('useImportModeLifecycle', 'import_mode_exited', 'Cleaning up ImportState');
                 importState.cleanup();
                 setImportState(null);
@@ -133,7 +144,9 @@ export function useImportModeLifecycle({
     }, [
         viewMode,
         viewModeObj,
-        importState
+        importState,
+        isImportLike,
+        modeData
         // Note: Intentionally excluding setter functions to prevent infinite loops
         // These functions are stable and don't need to trigger re-runs
     ]);

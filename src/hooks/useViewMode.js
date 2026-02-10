@@ -19,7 +19,8 @@ const BASE_TRANSITIONS = {
   TO_TRASH: VIEW_MODES.TRASH,
   TO_IMPORT: VIEW_MODES.IMPORT,
   TO_PREFERENCES: VIEW_MODES.PREFERENCES,
-  TO_JOB_QUEUE: VIEW_MODES.JOB_QUEUE
+  TO_JOB_QUEUE: VIEW_MODES.JOB_QUEUE,
+  TO_QUICK_VIEW: VIEW_MODES.QUICK_VIEW
 };
 
 // Helper to create transitions: base + additions, minus exclusions
@@ -47,7 +48,8 @@ const TRANSITIONS = {
   [VIEW_MODES.IN_BURST_GROUP]: createTransitions({ TO_ALBUM: VIEW_MODES.ALBUM, TO_TAG: VIEW_MODES.TAG }, ['TO_IN_BURST_GROUP']),
   [VIEW_MODES.FACE_LIST]: createTransitions({ TO_PERSON: VIEW_MODES.PERSON, TO_UNKNOWN_FACES: VIEW_MODES.UNKNOWN_FACES }, ['TO_FACE_LIST']),
   [VIEW_MODES.PERSON]: createTransitions({}, ['TO_PERSON']),
-  [VIEW_MODES.UNKNOWN_FACES]: createTransitions({}, ['TO_UNKNOWN_FACES'])
+  [VIEW_MODES.UNKNOWN_FACES]: createTransitions({}, ['TO_UNKNOWN_FACES']),
+  [VIEW_MODES.QUICK_VIEW]: createTransitions({}, ['TO_QUICK_VIEW'])
 };
 
 export const useViewMode = (initialMode = VIEW_MODES.HOME) => {
@@ -136,7 +138,8 @@ export const useViewMode = (initialMode = VIEW_MODES.HOME) => {
 
   // Screen visibility state computed from current mode
   const screenVisibility = useMemo(() => ({
-    showImporter: currentMode === VIEW_MODES.IMPORT,
+    showImporter: currentMode === VIEW_MODES.IMPORT || currentMode === VIEW_MODES.QUICK_VIEW,
+    showQuickView: currentMode === VIEW_MODES.QUICK_VIEW,
     showPhotosList: [VIEW_MODES.DATE, VIEW_MODES.RECENT, VIEW_MODES.ALBUM, VIEW_MODES.ALBUM_LIST, VIEW_MODES.TAG, VIEW_MODES.TAG_LIST, VIEW_MODES.FACE_LIST, VIEW_MODES.PERSON, VIEW_MODES.UNKNOWN_FACES, VIEW_MODES.TRASH, VIEW_MODES.IN_BURST_GROUP].includes(currentMode),
     showSearchPage: currentMode === VIEW_MODES.SEARCH,
     showAlbumsList: currentMode === VIEW_MODES.ALBUM_LIST,

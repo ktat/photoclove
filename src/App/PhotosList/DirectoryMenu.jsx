@@ -13,10 +13,12 @@ import ShareTab from "./DirectoryMenu/ShareTab.jsx";
 import { getTutorialContent } from "./DirectoryMenu/tutorialContent.jsx";
 import { usePhotoImport } from "./DirectoryMenu/photoOperations.js";
 import { useDateOperations } from "./DirectoryMenu/dateOperations.js";
+import { useDialog } from "../../context/DialogContext.jsx";
 
 function DirectoryMenu(props) {
     const { t } = useTranslation(['directoryMenu']);
     const { handleTauriError } = useError();
+    const dialog = useDialog();
 
     // Photo import (DirectoryMenu-specific for IMPORT mode)
     const { importSelectedPhotos } = usePhotoImport({
@@ -24,7 +26,8 @@ function DirectoryMenu(props) {
         photoSelection: props.photoSelection,
         clearPhotoSelection: props.clearPhotoSelection,
         addFooterMessage: props.addFooterMessage,
-        handleTauriError
+        handleTauriError,
+        dialog
     });
 
     // Date operations (DirectoryMenu-specific for maintenance tab)
@@ -35,7 +38,8 @@ function DirectoryMenu(props) {
         setDateNum: props.setDateNum,
         dateList: props.dateList,
         setDateList: props.setDateList,
-        config: props.config
+        config: props.config,
+        dialog
     });
 
     // Tutorial state

@@ -1,6 +1,5 @@
 import { useCallback, useMemo } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { confirm } from '@tauri-apps/plugin-dialog';
 import { logger } from '../services/LoggerService.js';
 import { unifiedCollectionService } from '../services/UnifiedCollectionService.js';
 import { deleteFacesBatch, assignFacesToPersonBatch, createPerson } from '../services/FaceDetectionService.js';
@@ -70,7 +69,8 @@ export function usePhotoOperations({
     dateList,
     setDateList,
     sortOfPhotos,
-    triggerUnknownFacesRefresh
+    triggerUnknownFacesRefresh,
+    dialog
 }) {
     /**
      * Shared helper: Handle photo removal from list and navigation adjustment
@@ -233,8 +233,11 @@ export function usePhotoOperations({
 
         try {
             const count = selectedAlbums.length;
-            const confirmMessage = `Are you sure you want to delete ${count} album${count > 1 ? 's' : ''}?\n\nThis will remove ${count > 1 ? 'them' : 'it'} but keep all photos in your library.`;
-            const confirmed = await confirm(confirmMessage, 'Delete Albums');
+            const confirmed = await dialog.confirm({
+                title: 'Delete Albums',
+                message: `Are you sure you want to delete ${count} album${count > 1 ? 's' : ''}?\n\nThis will remove ${count > 1 ? 'them' : 'it'} but keep all photos in your library.`,
+                kind: 'warning',
+            });
             if (!confirmed) return;
 
             for (const albumId of selectedAlbums) {
@@ -247,7 +250,7 @@ export function usePhotoOperations({
         } catch (error) {
             handleError(error, 'Delete albums', { albumIds: selectedAlbums });
         }
-    }, [selectedAlbums, loadAlbums, clearAlbumSelection, addFooterMessage, handleError]);
+    }, [selectedAlbums, loadAlbums, clearAlbumSelection, addFooterMessage, handleError, dialog]);
 
     // Delete selected tags
     const deleteSelectedTags = useCallback(async () => {
@@ -255,8 +258,11 @@ export function usePhotoOperations({
 
         try {
             const count = selectedTags.length;
-            const confirmMessage = `Are you sure you want to delete ${count} tag${count > 1 ? 's' : ''}?\n\nThis will remove ${count > 1 ? 'them' : 'it'} from all photos.`;
-            const confirmed = await confirm(confirmMessage, 'Delete Tags');
+            const confirmed = await dialog.confirm({
+                title: 'Delete Tags',
+                message: `Are you sure you want to delete ${count} tag${count > 1 ? 's' : ''}?\n\nThis will remove ${count > 1 ? 'them' : 'it'} from all photos.`,
+                kind: 'warning',
+            });
             if (!confirmed) return;
 
             for (const tagId of selectedTags) {
@@ -269,7 +275,7 @@ export function usePhotoOperations({
         } catch (error) {
             handleError(error, 'Delete tags', { tagIds: selectedTags });
         }
-    }, [selectedTags, loadTags, clearTagSelection, addFooterMessage, handleError]);
+    }, [selectedTags, loadTags, clearTagSelection, addFooterMessage, handleError, dialog]);
 
     // Delete selected persons (clear person names)
     const deleteSelectedPersons = useCallback(async () => {
@@ -277,8 +283,11 @@ export function usePhotoOperations({
 
         try {
             const count = selectedPersons.length;
-            const confirmMessage = `Are you sure you want to delete ${count} person${count > 1 ? 's' : ''}?\n\nThis will remove the name${count > 1 ? 's' : ''} but keep all face detections.`;
-            const confirmed = await confirm(confirmMessage, 'Delete Persons');
+            const confirmed = await dialog.confirm({
+                title: 'Delete Persons',
+                message: `Are you sure you want to delete ${count} person${count > 1 ? 's' : ''}?\n\nThis will remove the name${count > 1 ? 's' : ''} but keep all face detections.`,
+                kind: 'warning',
+            });
             if (!confirmed) return;
 
             for (const personId of selectedPersons) {
@@ -291,7 +300,7 @@ export function usePhotoOperations({
         } catch (error) {
             handleError(error, 'Delete persons', { personIds: selectedPersons });
         }
-    }, [selectedPersons, loadFaces, clearPersonSelection, addFooterMessage, handleError]);
+    }, [selectedPersons, loadFaces, clearPersonSelection, addFooterMessage, handleError, dialog]);
 
     // Handle album deletion (navigation logic)
     const handleAlbumDelete = useCallback((deletedAlbumId) => {

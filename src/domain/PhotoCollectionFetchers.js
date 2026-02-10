@@ -372,14 +372,25 @@ export async function fetchTrashPhotos(collection, page, pageSize, filters) {
  * Fetch photos for import mode
  */
 export async function fetchImportPhotos(collection, page, pageSize, filters) {
-    const result = await invoke('show_importer', {
-        pathStr: collection.metadata.currentImportPath,
-        page: page,
-        num: pageSize,
-        dateStr: collection.metadata.importFilter
-    });
+    // Try to use cached data from ImportState.changeDirectory() to avoid duplicate backend call
+    const importState = collection.metadata.importState;
+    let importerData = null;
+    if (importState && page === 1) {
+        importerData = importState.consumeCachedImporterData(
+            collection.metadata.currentImportPath,
+            collection.metadata.importFilter
+        );
+    }
 
-    const importerData = JSON.parse(result);
+    if (!importerData) {
+        const result = await invoke('show_importer', {
+            pathStr: collection.metadata.currentImportPath,
+            page: page,
+            num: pageSize,
+            dateStr: collection.metadata.importFilter
+        });
+        importerData = JSON.parse(result);
+    }
     logger.debug('PhotoCollectionFetchers', 'fetchImportPhotos_parsed', 'Import mode JSON parsed', {
         dataType: typeof importerData,
         hasDirsFiles: !!importerData?.dirs_files,

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { confirm } from '@tauri-apps/plugin-dialog';
 import { logger } from '../../services/LoggerService.js';
 import { useError } from '../../context/ErrorContext.jsx';
+import { useDialog } from '../../context/DialogContext.jsx';
 import { unifiedCollectionService } from '../../services/UnifiedCollectionService.js';
 
 const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) => {
   const { handleTauriError } = useError();
+  const dialog = useDialog();
   const [albumInfo, setAlbumInfo] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState('');
@@ -139,10 +140,11 @@ const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) =
   const deleteAlbum = async () => {
     if (!albumInfo) return;
     
-    const confirmed = await confirm(
-      `Delete album "${albumInfo.name}"?\n\nThis will remove the album but keep all ${albumInfo.photo_count || 0} photos in your library.`,
-      'Delete Album'
-    );
+    const confirmed = await dialog.confirm({
+      title: 'Delete Album',
+      message: `Delete album "${albumInfo.name}"?\n\nThis will remove the album but keep all ${albumInfo.photo_count || 0} photos in your library.`,
+      kind: 'warning',
+    });
     
     if (confirmed) {
       setIsLoading(true);

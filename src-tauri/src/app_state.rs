@@ -35,6 +35,9 @@ pub struct AppState {
 
     /// Whether initial setup is needed (no config or no DB)
     pub needs_setup: bool,
+
+    /// CLI quick view path (consumed once by frontend)
+    pub quickview_path: Arc<Mutex<Option<String>>>,
 }
 
 /// Result of a batch operation on multiple photos.

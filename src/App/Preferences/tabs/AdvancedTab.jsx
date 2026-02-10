@@ -1,10 +1,11 @@
 import React from 'react';
-import { message } from '@tauri-apps/plugin-dialog';
 import { useTranslation } from 'react-i18next';
+import { useDialog } from '../../../context/DialogContext.jsx';
 import styles from '../Preferences.module.css';
 
 const AdvancedTab = ({ config, setConfig, useCount }) => {
     const { t } = useTranslation(['preferences', 'common']);
+    const dialog = useDialog();
 
     return (
         <div className={styles['preferences-section']}>
@@ -128,7 +129,7 @@ const AdvancedTab = ({ config, setConfig, useCount }) => {
                         className={styles['btn-secondary']}
                         onClick={() => {
                             localStorage.removeItem('photoclove_tutorials');
-                            message(t('preferences:advanced.resetTutorialsDescription'));
+                            dialog.message({ title: 'Reset', message: t('preferences:advanced.resetTutorialsDescription'), kind: 'success' });
                         }}
                     >
                         🔄 {t('common:button.reset')}

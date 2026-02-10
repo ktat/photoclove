@@ -151,6 +151,26 @@ pub fn run() {
             .init();
     }
 
+    // Pre-parse CLI args for Quick View mode (before Tauri builder)
+    let quickview_path_arc = Arc::new(Mutex::new(None));
+    let is_quickview = if !needs_setup {
+        if let Some(path) = std::env::args().nth(1) {
+            if !path.starts_with('-') {
+                let p = std::path::Path::new(&path);
+                if p.exists() {
+                    log::info!(target: "app", "cli_quickview; path={}", path);
+                    if let Ok(mut qv) = quickview_path_arc.lock() {
+                        *qv = Some(path);
+                    }
+                    true
+                } else {
+                    log::warn!(target: "app", "cli_quickview_path_not_found; path={}", path);
+                    false
+                }
+            } else { false }
+        } else { false }
+    } else { false };
+
     let state = AppState {
         repo_db: repository::RepoDB::new(c.import_to.to_string()),
         meta_db: repository::MetaDB::new(c.import_to.to_string()),
@@ -159,6 +179,7 @@ pub fn run() {
         logging_service: Arc::new(logging_service),
         config: c,
         needs_setup,
+        quickview_path: quickview_path_arc,
     };
 
     if !needs_setup {
@@ -171,18 +192,27 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_cli::init())
         .plugin(tauri_plugin_oauth::init())
-        .setup(|app| {
-            let submenu = SubmenuBuilder::new(app, "File")
-                .text("home", "HOME")
-                .text("load_dates", "Load Date List")
-                .text("import", "Import")
-                .text("create_db", "Create DB")
-                .text("login", "Login to Google")
-                .text("job_queue", "Job Queue")
-                .text("pref", "Preferences")
-                .text("quit", "Quit")
-                .build()?;
+        .setup(move |app| {
+            // Build menu - simplified for Quick View mode
+            let submenu = if is_quickview {
+                SubmenuBuilder::new(app, "File")
+                    .text("home", "Open Normal Mode")
+                    .text("quit", "Quit")
+                    .build()?
+            } else {
+                SubmenuBuilder::new(app, "File")
+                    .text("home", "HOME")
+                    .text("load_dates", "Load Date List")
+                    .text("import", "Import")
+                    .text("create_db", "Create DB")
+                    .text("login", "Login to Google")
+                    .text("job_queue", "Job Queue")
+                    .text("pref", "Preferences")
+                    .text("quit", "Quit")
+                    .build()?
+            };
 
             let help_submenu = SubmenuBuilder::new(app, "?")
                 .text("show_log", "Show log")
@@ -326,6 +356,7 @@ pub fn run() {
             config_commands::check_setup_status,
             config_commands::check_db_exists,
             config_commands::initialize_database,
+            config_commands::get_quickview_path,
             save_star,
             save_comment,
             link_file_to_public,

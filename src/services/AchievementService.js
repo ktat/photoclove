@@ -68,6 +68,9 @@ export async function checkFirstActionAchievement(achievementId) {
       logger.info('AchievementService', 'first_action_achieved', 'First action achievement unlocked', {
         achievementId,
       });
+      window.dispatchEvent(new CustomEvent('achievementUnlocked', {
+        detail: result.newly_achieved
+      }));
     }
     return result;
   } catch (error) {

@@ -73,6 +73,16 @@ pub fn initialize_database(_state: State<AppState>, import_to: String) -> Result
     Ok(true)
 }
 
+/// Get and consume CLI quickview path (returns once, then clears)
+#[tauri::command]
+pub fn get_quickview_path(state: State<AppState>) -> Option<String> {
+    if let Ok(mut qv) = state.quickview_path.lock() {
+        qv.take()
+    } else {
+        None
+    }
+}
+
 /// Get the current application configuration
 ///
 /// This function retrieves the current configuration by creating a new Config instance

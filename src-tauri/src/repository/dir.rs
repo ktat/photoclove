@@ -1,8 +1,41 @@
 use crate::value::file;
 use crate::{repository, value::date};
+use chrono::{Local, TimeZone};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs;
+
+fn get_created_time_from_metadata(metadata: &fs::Metadata) -> String {
+    #[cfg(unix)]
+    {
+        use std::os::unix::prelude::MetadataExt;
+        let epoch = metadata.ctime();
+        Local
+            .timestamp_opt(epoch, 0)
+            .single()
+            .unwrap_or_else(|| Local::now())
+            .format("%Y-%m-%d %T")
+            .to_string()
+    }
+    #[cfg(windows)]
+    {
+        match metadata.created() {
+            Ok(created) => match created.duration_since(std::time::UNIX_EPOCH) {
+                Ok(duration) => {
+                    let epoch = duration.as_secs() as i64;
+                    Local
+                        .timestamp_opt(epoch, 0)
+                        .single()
+                        .unwrap_or_else(|| Local::now())
+                        .format("%Y-%m-%d %T")
+                        .to_string()
+                }
+                Err(_) => Local::now().format("%Y-%m-%d %T").to_string(),
+            },
+            Err(_) => Local::now().format("%Y-%m-%d %T").to_string(),
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Dir {
@@ -39,32 +72,56 @@ impl Dir {
     }
 
     pub fn find_all_files(&self, date_after: Option<date::Date>) -> file::Files {
-        let re = Regex::new(r"(?i)\.(?:jpe?g|gif|png|cr2|cr3|nef|nev|arw|dng|raf|orf|rw2|3fr)$").unwrap();
-        let readdir = fs::read_dir(&self.path);
-        let mut files = file::Files::new();
-        if readdir.is_ok() {
-            for entry in readdir.unwrap() {
-                let entry = entry.unwrap();
-                let entry_path = entry.path();
-                if entry_path.display().to_string() != ".".to_string() {
-                    let has_filter = date_after.is_some();
-                    if entry_path.is_file()
-                        && re.is_match(entry_path.display().to_string().as_str())
-                    {
-                        let f = file::File::new(entry_path.display().to_string());
+        let re = Regex::new(
+            r"(?i)\.(?:jpe?g|gif|png|cr2|cr3|nef|nev|arw|dng|raf|orf|rw2|3fr)$",
+        )
+        .unwrap();
+        let readdir = match fs::read_dir(&self.path) {
+            Ok(rd) => rd,
+            Err(e) => {
+                log::error!(target: "repository", "readdir_failed; path={}; error={}", self.path, e);
+                return file::Files::new();
+            }
+        };
 
-                        if has_filter && f.created_date() < date_after.unwrap().to_string() {
-                            continue;
-                        }
-                        files.files.push(f);
+        let mut files = file::Files::new();
+        for entry in readdir.filter_map(|e| e.ok()) {
+            let entry_path = entry.path();
+            let path_str = entry_path.display().to_string();
+            if path_str == "." {
+                continue;
+            }
+
+            let file_type = match entry.file_type() {
+                Ok(ft) => ft,
+                Err(_) => continue,
+            };
+
+            if (file_type.is_file() || file_type.is_symlink())
+                && re.is_match(&path_str)
+            {
+                let metadata = match entry.metadata() {
+                    Ok(m) => m,
+                    Err(_) => continue,
+                };
+
+                let created_at = get_created_time_from_metadata(&metadata);
+
+                if let Some(ref filter_date) = date_after {
+                    if created_at < filter_date.to_string() {
+                        continue;
                     }
                 }
+
+                files.files.push(file::File::new_from_dir_entry(
+                    path_str,
+                    &metadata,
+                    &file_type,
+                ));
             }
-        } else {
-            panic!("Cannot readdir: {}\n", self.path.to_string())
         }
         files.files.sort_by(|a, b| a.created_at.cmp(&b.created_at));
-        return files;
+        files
     }
 
     pub fn find_files_and_dirs(
@@ -75,57 +132,116 @@ impl Dir {
         date_after: Option<date::Date>,
     ) -> DirsFiles {
         let mut df = DirsFiles::new(self.path.clone());
-        let re = Regex::new(r"(?i)\.(?:jpe?g|gif|png|cr2|cr3|nef|nev|arw|dng|raf|orf|rw2|3fr)$").unwrap();
-        let readdir = fs::read_dir(&self.path);
-        if readdir.is_ok() {
-            let start_index: usize = (page - 1) * num;
-            let mut last_index: usize = page * num;
-            for entry in readdir.unwrap() {
-                let entry = entry.unwrap();
-                let entry_path = entry.path();
-                if entry_path.display().to_string() != ".".to_string() {
-                    if entry_path.is_file()
-                        && re.is_match(entry_path.display().to_string().as_str())
-                    {
-                        let f = file::File::new(entry_path.display().to_string());
-                        if date_after.is_some() {
-                            let date_after = date_after.unwrap();
-                            if f.is_created_before(date_after) {
-                                continue;
-                            }
-                        }
-                        df.files.files.push(f);
-                    } else if entry_path.is_dir() {
-                        df.dirs
-                            .dirs
-                            .push(file::Dir::new(entry_path.display().to_string()));
-                    } else {
-                        // print!("not target: {:?}", entry_path);
+        let re = Regex::new(
+            r"(?i)\.(?:jpe?g|gif|png|cr2|cr3|nef|nev|arw|dng|raf|orf|rw2|3fr)$",
+        )
+        .unwrap();
+        let readdir = match fs::read_dir(&self.path) {
+            Ok(rd) => rd,
+            Err(_) => return DirsFiles::new(self.path.clone()),
+        };
+
+        let start_index: usize = (page - 1) * num;
+        let mut last_index: usize = page * num;
+
+        // Collect lightweight entries (path + metadata + file_type) without File::new()
+        struct FileEntry {
+            path: String,
+            created_at: String,
+            metadata: fs::Metadata,
+            file_type: fs::FileType,
+        }
+        let mut file_entries: Vec<FileEntry> = Vec::new();
+        let t_scan_start = std::time::Instant::now();
+
+        for entry in readdir.filter_map(|e| e.ok()) {
+            let entry_path = entry.path();
+            let path_str = entry_path.display().to_string();
+            if path_str == "." {
+                continue;
+            }
+
+            let file_type = match entry.file_type() {
+                Ok(ft) => ft,
+                Err(_) => continue,
+            };
+
+            if file_type.is_file() || file_type.is_symlink() {
+                if !re.is_match(&path_str) {
+                    continue;
+                }
+
+                let metadata = match entry.metadata() {
+                    Ok(m) => m,
+                    Err(_) => continue,
+                };
+
+                let created_at = get_created_time_from_metadata(&metadata);
+
+                if let Some(ref filter_date) = date_after {
+                    if created_at < filter_date.to_string() {
+                        continue;
                     }
                 }
-            }
-            df.files
-                .files
-                .sort_by(|a, b| a.created_at.cmp(&b.created_at));
-            let len = df.files.files.len();
-            if len > 0 {
-                df.has_prev_file = start_index != 0 && len > start_index;
 
-                if (len - 1) > last_index {
-                    df.has_next_file = true;
-                } else {
-                    df.has_next_file = false;
-                    last_index = len;
-                }
-                if last_index > start_index {
-                    df.files.files = df.files.files[start_index..last_index].to_vec()
-                } else {
-                    log::error!(target: "repository", "invalid_index_range; start_index={}; last_index={}", start_index, last_index);
-                }
+                file_entries.push(FileEntry {
+                    path: path_str,
+                    created_at,
+                    metadata,
+                    file_type,
+                });
+            } else if file_type.is_dir() {
+                df.dirs
+                    .dirs
+                    .push(file::Dir::new(path_str));
             }
-            return df;
-        } else {
-            return DirsFiles::new(self.path.clone());
         }
+
+        let t_scan_end = std::time::Instant::now();
+
+        // Sort lightweight entries
+        file_entries.sort_by(|a, b| a.created_at.cmp(&b.created_at));
+        let t_sort_end = std::time::Instant::now();
+
+        // Build File objects only for the requested page
+        let len = file_entries.len();
+        if len > 0 {
+            df.has_prev_file = start_index != 0 && len > start_index;
+
+            if (len - 1) > last_index {
+                df.has_next_file = true;
+            } else {
+                df.has_next_file = false;
+                last_index = len;
+            }
+            if last_index > start_index {
+                df.files.files = file_entries[start_index..last_index]
+                    .iter()
+                    .map(|e| {
+                        file::File::new_from_dir_entry(
+                            e.path.clone(),
+                            &e.metadata,
+                            &e.file_type,
+                        )
+                    })
+                    .collect();
+            } else {
+                log::error!(target: "repository", "invalid_index_range; start_index={}; last_index={}", start_index, last_index);
+            }
+        }
+        let t_build_end = std::time::Instant::now();
+        log::info!(
+            target: "repository",
+            "find_files_and_dirs_timing; path={}; scan={}ms; sort={}ms; build_page={}ms; total={}ms; total_files={}; page_files={}; dirs={}",
+            self.path,
+            t_scan_end.duration_since(t_scan_start).as_millis(),
+            t_sort_end.duration_since(t_scan_end).as_millis(),
+            t_build_end.duration_since(t_sort_end).as_millis(),
+            t_build_end.duration_since(t_scan_start).as_millis(),
+            file_entries.len(),
+            df.files.files.len(),
+            df.dirs.dirs.len(),
+        );
+        df
     }
 }

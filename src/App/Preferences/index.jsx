@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { message } from '@tauri-apps/plugin-dialog';
+import { useDialog } from '../../context/DialogContext.jsx';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 import { logger } from "../../services/LoggerService.js";
@@ -20,6 +20,7 @@ import styles from './Preferences.module.css';
 
 function Preferences(props) {
     const { t } = useTranslation(['preferences', 'common']);
+    const dialog = useDialog();
     const [config, setConfig] = useState({
         export_from: [],
         copy_parallel: '',
@@ -169,20 +170,20 @@ function Preferences(props) {
                 try {
                     await invoke("initialize_database", { importTo: updatedConfig.import_to });
                     logger.info('Preferences', 'database_initialized', 'Database initialized successfully');
-                    await message(t('preferences:firstSetup.restartRequired'));
+                    await dialog.message({ title: 'Setup Complete', message: t('preferences:firstSetup.restartRequired'), kind: 'info' });
                 } catch (error) {
                     logger.error('Preferences', 'database_init_failed', 'Failed to initialize database', { error: error.message });
-                    await message(t('preferences:firstSetup.dbInitFailed', { error: error.message || error }));
+                    await dialog.message({ title: 'Error', message: t('preferences:firstSetup.dbInitFailed', { error: error.message || error }), kind: 'error' });
                 }
                 props.togglePreferences(false);
             } else {
-                message(t('preferences:messages.restartMayBeRequired')).then(() => {
+                dialog.message({ title: 'Info', message: t('preferences:messages.restartMayBeRequired'), kind: 'info' }).then(() => {
                     props.addFooterMessage("configSaved", t('preferences:messages.configSaved'));
                 });
             }
         }).catch((error) => {
             logger.error('Preferences', 'config_save_failed', 'Failed to save configuration', { error: error.message });
-            message(t('preferences:messages.saveFailed'));
+            dialog.message({ title: 'Error', message: t('preferences:messages.saveFailed'), kind: 'error' });
         });
     }
 

@@ -15,7 +15,15 @@ export class ImportState {
         this.importProgress = null;
         this.isImporting = false;
         this.selectedPhotos = [];
-        
+
+        // Quick View: target file to auto-open in PhotoViewer after photos load
+        this.targetFile = null;
+
+        // Cached show_importer response to avoid duplicate backend calls
+        this._cachedImporterData = null;
+        this._cachedImporterPath = null;
+        this._cachedImporterFilter = null;
+
         // Event callbacks
         this.onDirectoryChange = null;
         this.onImportPhotos = null;
@@ -154,31 +162,47 @@ export class ImportState {
     /**
      * Initialize import state with initial data
      */
-    async initialize() {
+    async initialize(initialPath) {
         try {
-            logger.info('ImportState', 'initialize', 'Initializing import state');
-            
-            // Get initial import paths using show_importer with empty path
-            const result = await invoke('show_importer', {
-                pathStr: "",
-                page: 1,
-                num: 1
-            });
-            const data = JSON.parse(result);
-            
-            this.importPaths = data.paths || [];
-            if (this.importPaths.length > 0) {
-                await this.changeDirectory(this.importPaths[0]);
+            logger.info('ImportState', 'initialize', 'Initializing import state', { initialPath });
+
+            if (initialPath) {
+                // CLI Quick View mode: go directly to the specified path
+                // If initialPath is a file, store it for auto-open and use parent directory
+                if (this._isFilePath(initialPath)) {
+                    this.targetFile = initialPath;
+                    logger.info('ImportState', 'target_file_detected', 'Initial path is a file, will auto-open in viewer', {
+                        targetFile: initialPath
+                    });
+                }
+                await this.changeDirectory(initialPath);
+                // Use resolved currentImportPath (parent dir if file was passed)
+                this.importPaths = [this.currentImportPath];
+            } else {
+                // Normal mode: get initial import paths using show_importer with empty path
+                const result = await invoke('show_importer', {
+                    pathStr: "",
+                    page: 1,
+                    num: 1
+                });
+                const data = JSON.parse(result);
+
+                this.importPaths = data.paths || [];
+                if (this.importPaths.length > 0) {
+                    await this.changeDirectory(this.importPaths[0]);
+                }
             }
-            
+
             logger.info('ImportState', 'initialized', 'Import state initialized', {
                 pathsCount: this.importPaths.length,
-                currentPath: this.currentImportPath
+                currentPath: this.currentImportPath,
+                initialPath
             });
-            
+
         } catch (error) {
             logger.error('ImportState', 'initialize_failed', 'Failed to initialize import state', {
-                error: error.message
+                error: error.message,
+                initialPath
             });
             throw error;
         }
@@ -203,12 +227,17 @@ export class ImportState {
             });
             
             const importerData = JSON.parse(result);
-            
+
             // Use the normalized path from the API response if available, otherwise normalize the input path
             const normalizedPath = importerData.dirs_files?.dir?.path || this.normalizePath(newPath);
             this.currentImportPath = normalizedPath;
             this.directories = importerData.dirs_files?.dirs?.dirs || [];
-            
+
+            // Cache full response to avoid duplicate show_importer call from fetchImportPhotos
+            this._cachedImporterData = importerData;
+            this._cachedImporterPath = normalizedPath;
+            this._cachedImporterFilter = this.importFilter;
+
             // Debug: Log full structure for troubleshooting
             logger.debug('ImportState', 'directory_structure_debug', 'Full directory structure from show_importer', {
                 rawImporterData: importerData,
@@ -363,6 +392,26 @@ export class ImportState {
     }
 
     /**
+     * Consume cached show_importer response if it matches the requested path/filter.
+     * Returns cached data and clears the cache (one-time use).
+     */
+    consumeCachedImporterData(path, filter) {
+        if (
+            this._cachedImporterData &&
+            this._cachedImporterPath === path &&
+            this._cachedImporterFilter === (filter || '')
+        ) {
+            const data = this._cachedImporterData;
+            this._cachedImporterData = null;
+            this._cachedImporterPath = null;
+            this._cachedImporterFilter = null;
+            logger.debug('ImportState', 'cache_hit', 'Using cached show_importer response');
+            return data;
+        }
+        return null;
+    }
+
+    /**
      * Get current state as plain object (for props passing)
      */
     getState() {
@@ -427,11 +476,19 @@ export class ImportState {
     }
 
     /**
+     * Check if a path looks like a file (has an image extension)
+     */
+    _isFilePath(path) {
+        if (!path) return false;
+        return /\.(jpe?g|png|gif|webp|heic|heif|cr2|cr3|nef|arw|dng|raf|orf|rw2|3fr|tiff?)$/i.test(path);
+    }
+
+    /**
      * Factory method to create initialized ImportState
      */
-    static async create() {
+    static async create(initialPath) {
         const importState = new ImportState();
-        await importState.initialize();
+        await importState.initialize(initialPath);
         return importState;
     }
 }

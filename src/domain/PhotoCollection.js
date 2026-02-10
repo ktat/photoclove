@@ -242,7 +242,7 @@ export class PhotoCollection {
         return new PhotoCollection(photos, 'tag', { tagIds, tagName, config, sortValue });
     }
 
-    static createImportCollection(photos, currentImportPath, importPaths = [], importFilter = '', config, sortValue = 0) {
+    static createImportCollection(photos, currentImportPath, importPaths = [], importFilter = '', config, sortValue = 0, importState = null) {
         return new PhotoCollection(photos, 'import', {
             currentImportPath,
             importPaths,
@@ -250,7 +250,8 @@ export class PhotoCollection {
             config,
             sortValue,
             importProgress: null,
-            isImporting: false
+            isImporting: false,
+            importState
         });
     }
 

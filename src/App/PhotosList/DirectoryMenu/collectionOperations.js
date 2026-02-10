@@ -3,7 +3,6 @@
  * Handles album and tag operations
  */
 import { useState, useCallback } from 'react';
-import { confirm } from "@tauri-apps/plugin-dialog";
 import { logger } from "../../../services/LoggerService.js";
 import { invokeWithErrorHandling } from "../../../services/TauriService.js";
 import { UnifiedPhotoCollection } from "../../../domain/UnifiedPhotoCollection.js";
@@ -26,7 +25,8 @@ async function removePhotosFromCollection({
     clearPhotoSelection,
     addFooterMessage,
     handleTauriError,
-    removePhotoFromList
+    removePhotoFromList,
+    dialog
 }) {
     logger.info('collectionOperations', 'remove_photos_start', 'Starting remove photos from collection', {
         collectionId,
@@ -45,10 +45,13 @@ async function removePhotosFromCollection({
 
     const count = photoSelection.length;
     const typeName = collectionType === 'album' ? 'album' : 'tag';
-    const confirmed = await confirm(
-        `Remove ${count} photo${count > 1 ? 's' : ''} from this ${typeName}?\n\nPhotos will remain in your library.`,
-        `Remove from ${typeName.charAt(0).toUpperCase() + typeName.slice(1)}`
-    );
+    const confirmed = await dialog.confirm({
+        title: `Remove from ${typeName.charAt(0).toUpperCase() + typeName.slice(1)}`,
+        message: `Remove ${count} photo${count > 1 ? 's' : ''} from this ${typeName}?`,
+        description: 'Photos will remain in your library.',
+        confirmText: 'Remove',
+        kind: 'warning',
+    });
 
     if (confirmed) {
         try {
@@ -85,7 +88,8 @@ export function useAlbumOperations({
     addFooterMessage,
     handleTauriError,
     viewModeObj,
-    removePhotoFromList
+    removePhotoFromList,
+    dialog
 }) {
     const [showAlbumCreationModal, setShowAlbumCreationModal] = useState(false);
     const [showAlbumSelectorModal, setShowAlbumSelectorModal] = useState(false);
@@ -198,9 +202,10 @@ export function useAlbumOperations({
             clearPhotoSelection,
             addFooterMessage,
             handleTauriError,
-            removePhotoFromList
+            removePhotoFromList,
+            dialog
         });
-    }, [photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError, viewModeObj, removePhotoFromList]);
+    }, [photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError, viewModeObj, removePhotoFromList, dialog]);
 
     return {
         showAlbumCreationModal,
@@ -225,7 +230,8 @@ export function useTagOperations({
     handleTauriError,
     onPhotosRefresh,
     viewModeObj,
-    removePhotoFromList
+    removePhotoFromList,
+    dialog
 }) {
     const [showBulkTagModal, setShowBulkTagModal] = useState(false);
 
@@ -286,9 +292,10 @@ export function useTagOperations({
             clearPhotoSelection,
             addFooterMessage,
             handleTauriError,
-            removePhotoFromList
+            removePhotoFromList,
+            dialog
         });
-    }, [photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError, viewModeObj, removePhotoFromList]);
+    }, [photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError, viewModeObj, removePhotoFromList, dialog]);
 
     return {
         showBulkTagModal,

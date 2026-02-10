@@ -48,7 +48,17 @@
   "mainBinaryName": "PhotoClove",
   "version": "0.0.1",
   "identifier": "ktat.photoclove",
-  "plugins": {},
+  "plugins": {
+    "cli": {
+      "args": [
+        {
+          "name": "path",
+          "index": 1,
+          "takesValue": true
+        }
+      ]
+    }
+  },
   "app": {
     "withGlobalTauri": true,
     "windows": [

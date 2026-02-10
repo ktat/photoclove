@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import classNames from 'classnames';
-import { confirm } from "@tauri-apps/plugin-dialog";
+import { useDialog } from "../../context/DialogContext.jsx";
 import PhotoInfo from "./PhotoOption/PhotoInfo.jsx";
 import PhotoEditor from "./PhotoOption/PhotoEditor.jsx";
 import PhotoTags from "./PhotoOption/PhotoTags.jsx";
@@ -21,6 +21,7 @@ import styles from './PhotoOption.module.css';
 function PhotoOption(props) {
     const [activeTab, setActiveTab] = useState("info");
     const { viewMode, currentAlbumId, burstModeEnabled } = useUI();
+    const dialog = useDialog();
     const { setIsFaceTabActive, clearFaceState } = useFaceDetection();
 
     // Get current tag ID from viewModeObj
@@ -173,10 +174,11 @@ function PhotoOption(props) {
         const totalPhotos = props.totalPhotosCount || 0;
         const willBeEmpty = count >= totalPhotos;
         const typeName = collectionType === 'album' ? 'album' : 'tag';
-        const confirmed = await confirm(
-            `Remove ${count} photo${count > 1 ? 's' : ''} from this ${typeName}?\n\nPhotos will remain in your library.`,
-            `Remove from ${typeName.charAt(0).toUpperCase() + typeName.slice(1)}`
-        );
+        const confirmed = await dialog.confirm({
+            title: `Remove from ${typeName.charAt(0).toUpperCase() + typeName.slice(1)}`,
+            message: `Remove ${count} photo${count > 1 ? 's' : ''} from this ${typeName}?\n\nPhotos will remain in your library.`,
+            kind: 'warning',
+        });
 
         if (confirmed) {
             try {

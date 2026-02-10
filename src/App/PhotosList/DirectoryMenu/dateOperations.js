@@ -3,7 +3,6 @@
  * Handles date maintenance operations
  */
 import { useCallback, useRef } from 'react';
-import { message, confirm } from "@tauri-apps/plugin-dialog";
 import { logger } from "../../../services/LoggerService.js";
 import { invokeWithErrorHandling } from "../../../services/TauriService.js";
 
@@ -17,7 +16,8 @@ export function useDateOperations({
     setDateNum,
     dateList,
     setDateList,
-    config
+    config,
+    dialog
 }) {
     const lockRef = useRef(false);
     const lockThumbnailRef = useRef(false);
@@ -27,11 +27,11 @@ export function useDateOperations({
      */
     const createDbInDate = useCallback(async () => {
         if (lockRef.current) {
-            message("Currently, this operation is locked. Please wait for a while", "This operation is locked");
+            await dialog.message({ title: 'This operation is locked', message: 'Currently, this operation is locked. Please wait for a while', kind: 'warning' });
             return;
         }
 
-        const answer = await confirm("This takes long time if you have many photos.", "Warning");
+        const answer = await dialog.confirm({ title: 'Warning', message: 'This takes long time if you have many photos.', kind: 'warning' });
         if (answer) {
             lockRef.current = true;
             try {
@@ -48,18 +48,18 @@ export function useDateOperations({
                 throw error;
             }
         }
-    }, [currentDate, setCurrentDateNum]);
+    }, [currentDate, setCurrentDateNum, dialog]);
 
     /**
      * Move photos to directories based on their EXIF dates
      */
     const movePhotosToExifDate = useCallback(async () => {
         if (lockRef.current) {
-            message("Currently, this operation is locked. Please wait for a while", "This operation is locked");
+            await dialog.message({ title: 'This operation is locked', message: 'Currently, this operation is locked. Please wait for a while', kind: 'warning' });
             return;
         }
 
-        const answer = await confirm("This takes long time if you have many photos.", "Warning");
+        const answer = await dialog.confirm({ title: 'Warning', message: 'This takes long time if you have many photos.', kind: 'warning' });
         if (answer) {
             lockRef.current = true;
             try {
@@ -74,18 +74,18 @@ export function useDateOperations({
                 throw error;
             }
         }
-    }, [currentDate]);
+    }, [currentDate, dialog]);
 
     /**
      * Create thumbnails for photos in the current date
      */
     const createThumbnails = useCallback(async () => {
         if (lockThumbnailRef.current) {
-            message("Currently, this operation is locked. Please wait for a while", "This operation is locked");
+            await dialog.message({ title: 'This operation is locked', message: 'Currently, this operation is locked. Please wait for a while', kind: 'warning' });
             return;
         }
 
-        const answer = await confirm("This takes long time if you have many photos.", "Warning");
+        const answer = await dialog.confirm({ title: 'Warning', message: 'This takes long time if you have many photos.', kind: 'warning' });
         if (answer) {
             lockThumbnailRef.current = true;
             try {
@@ -100,14 +100,14 @@ export function useDateOperations({
                 throw error;
             }
         }
-    }, [currentDate]);
+    }, [currentDate, dialog]);
 
     /**
      * Recalculate burst groups for photos in the current date
      */
     const recalculateGroupsInDate = useCallback(async () => {
         if (lockRef.current) {
-            message("Currently, this operation is locked. Please wait for a while", "This operation is locked");
+            await dialog.message({ title: 'This operation is locked', message: 'Currently, this operation is locked. Please wait for a while', kind: 'warning' });
             return;
         }
 
@@ -115,12 +115,11 @@ export function useDateOperations({
         const thresholdSeconds = config?.grouping?.burst_threshold_seconds ?? 2;
         const minGroupSize = config?.grouping?.min_group_size ?? 2;
 
-        const answer = await confirm(
-            `This will recalculate auto burst groups for photos in this date.\n` +
-            `Threshold: ${thresholdSeconds} seconds, Min group size: ${minGroupSize}\n` +
-            `Manual groups will be preserved.`,
-            "Recalculate Groups"
-        );
+        const answer = await dialog.confirm({
+            title: 'Recalculate Groups',
+            message: `This will recalculate auto burst groups for photos in this date.\nThreshold: ${thresholdSeconds} seconds, Min group size: ${minGroupSize}\nManual groups will be preserved.`,
+            kind: 'info',
+        });
         if (answer) {
             lockRef.current = true;
             try {
@@ -140,20 +139,20 @@ export function useDateOperations({
                     minGroupSize,
                     newGroups
                 });
-                message(`Created ${newGroups} burst group(s)`, "Groups Recalculated");
+                await dialog.message({ title: 'Groups Recalculated', message: `Created ${newGroups} burst group(s)`, kind: 'success' });
             } catch (error) {
                 lockRef.current = false;
                 throw error;
             }
         }
-    }, [currentDate, config]);
+    }, [currentDate, config, dialog]);
 
     /**
      * Run face detection for photos in the current date
      */
     const runFaceDetectionInDate = useCallback(async () => {
         if (lockRef.current) {
-            message("Currently, this operation is locked. Please wait for a while", "This operation is locked");
+            await dialog.message({ title: 'This operation is locked', message: 'Currently, this operation is locked. Please wait for a while', kind: 'warning' });
             return;
         }
 
@@ -167,27 +166,23 @@ export function useDateOperations({
             );
 
             if (!statusJson.is_ready) {
-                message(
-                    "Face detection models are not available.\n\n" +
-                    "To use this feature:\n" +
-                    "1. Go to Preferences (File menu → Preferences)\n" +
-                    "2. Select the 'Face Detection' tab\n" +
-                    "3. Download the required models\n" +
-                    "4. Try again",
-                    "Face Detection Not Ready"
-                );
+                await dialog.message({
+                    title: 'Face Detection Not Ready',
+                    message: "Face detection models are not available.\n\nTo use this feature:\n1. Go to Preferences (File menu \u2192 Preferences)\n2. Select the 'Face Detection' tab\n3. Download the required models\n4. Try again",
+                    kind: 'warning',
+                });
                 return;
             }
         } catch (error) {
-            message("Failed to check face detection model status: " + error, "Error");
+            await dialog.message({ title: 'Error', message: 'Failed to check face detection model status: ' + error, kind: 'error' });
             return;
         }
 
-        const answer = await confirm(
-            "This will run face detection for photos in this date.\n" +
-            "Detected faces will be stored for person recognition.",
-            "Run Face Detection"
-        );
+        const answer = await dialog.confirm({
+            title: 'Run Face Detection',
+            message: "This will run face detection for photos in this date.\nDetected faces will be stored for person recognition.",
+            kind: 'info',
+        });
         if (answer) {
             lockRef.current = true;
             try {
@@ -200,50 +195,46 @@ export function useDateOperations({
                 lockRef.current = false;
 
                 if (result.result === "no_photos" || result.result === "no_images") {
-                    message("No photos found for face detection in this date.", "Face Detection");
+                    await dialog.message({ title: 'Face Detection', message: 'No photos found for face detection in this date.', kind: 'info' });
                 } else {
                     logger.info('dateOperations', 'face_detection_started', 'Face detection job started for date', {
                         date: currentDate,
                         jobUnitId: result.job_unit_id,
                         photoCount: result.photo_count
                     });
-                    message(`Face detection started for ${result.photo_count} photos. Check progress in footer.`, "Face Detection Started");
+                    await dialog.message({ title: 'Face Detection Started', message: `Face detection started for ${result.photo_count} photos. Check progress in footer.`, kind: 'success' });
                 }
             } catch (error) {
                 lockRef.current = false;
                 throw error;
             }
         }
-    }, [currentDate]);
+    }, [currentDate, dialog]);
 
     /**
      * Run AI tagging for photos in the current date
      */
     const runAiTaggingInDate = useCallback(async () => {
         if (lockRef.current) {
-            message("Currently, this operation is locked. Please wait for a while", "This operation is locked");
+            await dialog.message({ title: 'This operation is locked', message: 'Currently, this operation is locked. Please wait for a while', kind: 'warning' });
             return;
         }
 
         // Check if AI tagging is enabled
         if (!config?.ai_tagging?.enabled) {
-            message(
-                "AI Auto-Tagging is not enabled.\n\n" +
-                "To use this feature:\n" +
-                "1. Go to Preferences (File menu → Preferences)\n" +
-                "2. Select the 'AI Tagging' tab\n" +
-                "3. Enable 'AI Auto-Tagging'\n" +
-                "4. Save your settings",
-                "AI Tagging Not Enabled"
-            );
+            await dialog.message({
+                title: 'AI Tagging Not Enabled',
+                message: "AI Auto-Tagging is not enabled.\n\nTo use this feature:\n1. Go to Preferences (File menu \u2192 Preferences)\n2. Select the 'AI Tagging' tab\n3. Enable 'AI Auto-Tagging'\n4. Save your settings",
+                kind: 'warning',
+            });
             return;
         }
 
-        const answer = await confirm(
-            "This will run AI auto-tagging for photos in this date.\n" +
-            "Tags will be prefixed with 'ai:' (e.g., ai:dog, ai:beach).",
-            "Run AI Tagging"
-        );
+        const answer = await dialog.confirm({
+            title: 'Run AI Tagging',
+            message: "This will run AI auto-tagging for photos in this date.\nTags will be prefixed with 'ai:' (e.g., ai:dog, ai:beach).",
+            kind: 'info',
+        });
         if (answer) {
             lockRef.current = true;
             try {
@@ -256,50 +247,46 @@ export function useDateOperations({
                 lockRef.current = false;
 
                 if (result.result === "no_photos" || result.result === "no_images") {
-                    message("No photos found for AI tagging in this date.", "AI Tagging");
+                    await dialog.message({ title: 'AI Tagging', message: 'No photos found for AI tagging in this date.', kind: 'info' });
                 } else {
                     logger.info('dateOperations', 'ai_tagging_started', 'AI tagging job started for date', {
                         date: currentDate,
                         jobUnitId: result.job_unit_id,
                         photoCount: result.photo_count
                     });
-                    message(`AI tagging started for ${result.photo_count} photos. Check progress in footer.`, "AI Tagging Started");
+                    await dialog.message({ title: 'AI Tagging Started', message: `AI tagging started for ${result.photo_count} photos. Check progress in footer.`, kind: 'success' });
                 }
             } catch (error) {
                 lockRef.current = false;
                 throw error;
             }
         }
-    }, [currentDate, config]);
+    }, [currentDate, config, dialog]);
 
     /**
      * Sync photos in the current date to S3
      */
     const syncToS3InDate = useCallback(async () => {
         if (lockRef.current) {
-            message("Currently, this operation is locked. Please wait for a while", "This operation is locked");
+            await dialog.message({ title: 'This operation is locked', message: 'Currently, this operation is locked. Please wait for a while', kind: 'warning' });
             return;
         }
 
         // Check if S3 backup is enabled
         if (!config?.s3?.enabled) {
-            message(
-                "S3 Backup is not enabled.\n\n" +
-                "To use this feature:\n" +
-                "1. Go to Preferences (File menu → Preferences)\n" +
-                "2. Select the 'S3 Backup' tab\n" +
-                "3. Enable and configure S3 backup\n" +
-                "4. Save your settings",
-                "S3 Backup Not Enabled"
-            );
+            await dialog.message({
+                title: 'S3 Backup Not Enabled',
+                message: "S3 Backup is not enabled.\n\nTo use this feature:\n1. Go to Preferences (File menu \u2192 Preferences)\n2. Select the 'S3 Backup' tab\n3. Enable and configure S3 backup\n4. Save your settings",
+                kind: 'warning',
+            });
             return;
         }
 
-        const answer = await confirm(
-            "This will sync all photos in this date to S3.\n" +
-            "Photos will be uploaded to your configured S3 bucket.",
-            "Sync to S3"
-        );
+        const answer = await dialog.confirm({
+            title: 'Sync to S3',
+            message: "This will sync all photos in this date to S3.\nPhotos will be uploaded to your configured S3 bucket.",
+            kind: 'info',
+        });
         if (answer) {
             lockRef.current = true;
             try {
@@ -312,21 +299,21 @@ export function useDateOperations({
                 lockRef.current = false;
 
                 if (result.result === "no_photos_to_sync") {
-                    message("No photos to sync in this date (all photos are already synced).", "S3 Sync");
+                    await dialog.message({ title: 'S3 Sync', message: 'No photos to sync in this date (all photos are already synced).', kind: 'info' });
                 } else if (result.result === "started") {
                     logger.info('dateOperations', 's3_sync_started', 'S3 sync job started for date', {
                         date: currentDate,
                         jobUnitId: result.job_unit_id,
                         toSync: result.to_sync
                     });
-                    message(`S3 sync started for ${result.to_sync} photos. Check progress in footer.`, "S3 Sync Started");
+                    await dialog.message({ title: 'S3 Sync Started', message: `S3 sync started for ${result.to_sync} photos. Check progress in footer.`, kind: 'success' });
                 }
             } catch (error) {
                 lockRef.current = false;
                 throw error;
             }
         }
-    }, [currentDate, config]);
+    }, [currentDate, config, dialog]);
 
     /**
      * Apply date count changes from batch operation result to local state

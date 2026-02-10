@@ -11,10 +11,7 @@ pub fn find_files(dir: &file::Dir) -> file::Files {
         return f;
     };
 
-    for entry_result in readdir {
-        let Ok(entry) = entry_result else {
-            continue;
-        };
+    for entry in readdir.filter_map(|e| e.ok()) {
         let entry_path = entry.path();
         let Some(file_name) = entry_path.file_name() else {
             continue;
@@ -25,10 +22,22 @@ pub fn find_files(dir: &file::Dir) -> file::Files {
             continue;
         }
 
-        if entry_path.display().to_string() != "." && entry_path.is_file() {
-            f.files
-                .push(file::File::new(entry_path.display().to_string()));
-        } else if entry_path.is_dir() {
+        let file_type = match entry.file_type() {
+            Ok(ft) => ft,
+            Err(_) => continue,
+        };
+
+        if entry_path.display().to_string() != "." && (file_type.is_file() || file_type.is_symlink()) {
+            let metadata = match entry.metadata() {
+                Ok(m) => m,
+                Err(_) => continue,
+            };
+            f.files.push(file::File::new_from_dir_entry(
+                entry_path.display().to_string(),
+                &metadata,
+                &file_type,
+            ));
+        } else if file_type.is_dir() {
             // Check if this is a UUID directory (UUID-like format)
             let dir_name = file_name.to_string_lossy();
             if Uuid::parse_str(&dir_name).is_ok() {

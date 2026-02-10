@@ -32,7 +32,8 @@ export class ViewMode {
     isDateMode() { return this._mode === VIEW_MODES.DATE; }
     isRecentMode() { return this._mode === VIEW_MODES.RECENT; }
     isHomeMode() { return this._mode === VIEW_MODES.HOME; }
-    isImportMode() { return this._mode === VIEW_MODES.IMPORT; }
+    isImportMode() { return this._mode === VIEW_MODES.IMPORT || this._mode === VIEW_MODES.QUICK_VIEW; }
+    isQuickViewMode() { return this._mode === VIEW_MODES.QUICK_VIEW; }
     isPreferencesMode() { return this._mode === VIEW_MODES.PREFERENCES; }
     isJobQueueMode() { return this._mode === VIEW_MODES.JOB_QUEUE; }
     isLoginMode() { return this._mode === VIEW_MODES.LOGIN; }
@@ -227,7 +228,8 @@ export class ViewMode {
             case VIEW_MODES.TRASH:
                 return { ...baseParams, search_type: "trash" };
             case VIEW_MODES.IMPORT:
-                throw new Error(`IMPORT mode uses ImportState.changeDirectory(), not get_photos_unified`);
+            case VIEW_MODES.QUICK_VIEW:
+                throw new Error(`IMPORT/QUICK_VIEW mode uses ImportState.changeDirectory(), not get_photos_unified`);
             case VIEW_MODES.IN_BURST_GROUP:
                 return { ...baseParams, search_type: "burst_group", query: this._data.burstGroupId };
             default:
@@ -347,6 +349,7 @@ export class ViewMode {
             case VIEW_MODES.SEARCH:
                 return 'SEARCH';
             case VIEW_MODES.IMPORT:
+            case VIEW_MODES.QUICK_VIEW:
                 return 'IMPORT';
             default:
                 return this._mode;
@@ -409,7 +412,8 @@ export class ViewMode {
             case VIEW_MODES.TRASH: return "Trash is empty";
             case VIEW_MODES.DATE: return "No photos found for this date";
             case VIEW_MODES.RECENT: return "No recent photos";
-            case VIEW_MODES.IMPORT: return "No photos to import";
+            case VIEW_MODES.IMPORT:
+            case VIEW_MODES.QUICK_VIEW: return "No photos to import";
             default: return "No Photo Found!";
         }
     }

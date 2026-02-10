@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { confirm } from '@tauri-apps/plugin-dialog';
 import { logger } from '../../../services/LoggerService.js';
+import { useDialog } from '../../../context/DialogContext.jsx';
 import FaceDetectionService from '../../../services/FaceDetectionService.js';
 import { useFaceDetection } from '../../../context/FaceDetectionContext.jsx';
 import FaceThumbnail from '../../../components/FaceThumbnail.jsx';
 import styles from './PhotoFaces.module.css';
 
 function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
+    const dialog = useDialog();
     const [faces, setFaces] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isDetecting, setIsDetecting] = useState(false);
@@ -95,7 +96,11 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
         }
 
         // Ask for confirmation
-        const confirmed = await confirm('Delete this face detection? This cannot be undone.', { title: 'Delete Face' });
+        const confirmed = await dialog.confirm({
+            title: 'Delete Face',
+            message: 'Delete this face detection? This cannot be undone.',
+            kind: 'warning',
+        });
         if (!confirmed) return;
 
         try {

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { invoke } from "@tauri-apps/api/core";
-import { message } from '@tauri-apps/plugin-dialog';
+import { useDialog } from './DialogContext.jsx';
 import { useViewMode } from '../hooks/useViewMode.js';
 import { useNotifications } from '../hooks/useNotifications.js';
 import { VIEW_MODES } from '../constants/viewModes.js';
@@ -20,6 +20,7 @@ export const useUI = () => {
 export const UIProvider = ({ children }) => {
   // Use the new view mode state machine
   const viewMode = useViewMode(VIEW_MODES.HOME);
+  const dialog = useDialog();
 
   // Keep non-view-related state
   const [footerMessages, setFooterMessages] = useState({});
@@ -50,7 +51,7 @@ export const UIProvider = ({ children }) => {
     if (withDialog) {
       invoke("lock", { t: true }).then((e) => {
         if (e) {
-          message(v).then((e) => {
+          dialog.message({ title: 'Info', message: value, kind: 'info' }).then(() => {
             invoke("lock", { t: false });
           });
         }
@@ -62,7 +63,7 @@ export const UIProvider = ({ children }) => {
         removeFooterMessage(k);
       }, deleteAfter);
     }
-  }, [addNotification]);
+  }, [addNotification, dialog]);
 
   const removeFooterMessage = useCallback((targetKey, timeAfter = 0) => {
     setTimeout(() => {

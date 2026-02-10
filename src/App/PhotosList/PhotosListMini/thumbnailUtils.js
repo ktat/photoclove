@@ -33,6 +33,15 @@ export const initializeImageSource = async (photo, importState, cache, setCache,
     }
 
     if (photo.import_source === true) {
+        // PNG/GIF: use original image directly (browser can render natively, skip thumbnail generation)
+        const isPngOrGif = /\.(png|gif)$/i.test(photo.originalPath);
+        if (isPngOrGif) {
+            const src = convertFileSrc(photo.originalPath);
+            setCache(prev => ({ ...prev, [photo.originalPath]: src }));
+            setLocalSrc(src);
+            return src;
+        }
+
         // Import mode: Get cache thumbnail path
         if (!photo._cachedThumbnailPath) {
             const importDir = getImportDir(photo, importState);
@@ -85,6 +94,13 @@ export const handleThumbnailError = async (e, photo, importState, componentName 
 
     // Import mode fallback chain
     if (photo.import_source === true) {
+        // PNG/GIF: browser can render natively, skip thumbnail generation entirely
+        const isPngOrGif = /\.(png|gif)$/i.test(photo.originalPath);
+        if (isPngOrGif) {
+            imgElement.src = "/img_error.png";
+            return;
+        }
+
         // Step 1: Generate thumbnail on demand
         if (!imgElement.dataset.thumbnailGenerated) {
             imgElement.dataset.thumbnailGenerated = 'true';
@@ -95,7 +111,7 @@ export const handleThumbnailError = async (e, photo, importState, componentName 
                     pathStr: photo.originalPath,
                     maxSize: 200,
                     importDirectory: importDir,
-                    skipResizeFallback: true
+                    skipResizeFallback: false
                 });
                 const cachePath = await invoke('get_thumbnail_path', {
                     photoPath: photo.originalPath,

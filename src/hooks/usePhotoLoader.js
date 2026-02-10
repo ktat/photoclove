@@ -210,7 +210,8 @@ export function usePhotoLoader({
                         importState.importPaths || [],
                         importState.importFilter || '',
                         config,
-                        parseInt(sortOfPhotos)
+                        parseInt(sortOfPhotos),
+                        importState
                     );
                 } else if (viewMode.isTrashMode()) {
                     collection = PhotoCollection.createTrashCollection([], config, parseInt(sortOfPhotos));

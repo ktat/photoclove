@@ -95,22 +95,24 @@ export function useImportStateSync({
     importState,
     loadPhotosWithCollection
 }) {
+    const isImportLike = viewMode === VIEW_MODES.IMPORT || viewMode === VIEW_MODES.QUICK_VIEW;
+
     useEffect(() => {
-        if (viewMode === VIEW_MODES.IMPORT && importState) {
+        if (isImportLike && importState) {
             logger.info('useImportStateSync', 'import_state_changed', 'Import state changed, reloading photos', {
                 currentPath: importState.currentImportPath,
                 filter: importState.importFilter,
                 importStateId: importState._stateId
             });
 
-            const viewModeObj = new ViewMode(VIEW_MODES.IMPORT, {
+            const viewModeObj = new ViewMode(viewMode, {
                 currentImportPath: importState.currentImportPath,
                 importFilter: importState.importFilter
             });
 
             loadPhotosWithCollection(viewModeObj);
         }
-    }, [importState, viewMode]);
+    }, [importState, viewMode, isImportLike]);
 }
 
 export default useViewModeSync;

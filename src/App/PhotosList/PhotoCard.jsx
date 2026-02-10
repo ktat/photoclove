@@ -64,9 +64,13 @@ function PhotoCard({
     }, []);
 
     if (photo.import_source === true) {
-        // For import photos: Get thumbnail cache path and set it directly in src
-        // This will trigger onError if the file doesn't exist yet
-        if (!photo._cachedThumbnailPath) {
+        // PNG/GIF: skip thumbnail generation, use original image directly (browser can render natively)
+        const isPngOrGif = /\.(png|gif)$/i.test(photo.originalPath);
+        if (isPngOrGif) {
+            imgSrc = convertFileSrc(photo.originalPath);
+        } else if (!photo._cachedThumbnailPath) {
+            // For import photos: Get thumbnail cache path and set it directly in src
+            // This will trigger onError if the file doesn't exist yet
             // Get deterministic cache path and cache it on the photo object
             // Include import directory for import mode to avoid cache collisions
             // Only pass importDirectory if it's a non-empty string
@@ -99,9 +103,11 @@ function PhotoCard({
                         error: err.message
                     });
                 });
+            // Use cached thumbnail path, or empty placeholder that will be updated async
+            imgSrc = "";
+        } else {
+            imgSrc = photo._cachedThumbnailPath;
         }
-        // Use cached thumbnail path, or empty placeholder that will be updated async
-        imgSrc = photo._cachedThumbnailPath || "";
     } else if (photo.inTrashBin && !photo.hasThumbnail) {
         // For trash photos without library thumbnails: Use EXIF thumbnail cache
         // On error (cache miss), generate EXIF thumbnail from trash file
@@ -168,6 +174,17 @@ function PhotoCard({
 
         // For import mode photos: implement onError-based thumbnail generation chain
         if (photo.import_source === true) {
+            // PNG/GIF: browser can render natively, skip thumbnail generation entirely
+            const isPngOrGif = /\.(png|gif)$/i.test(photo.originalPath);
+            if (isPngOrGif) {
+                // Original was already set as imgSrc; if it failed, show error image
+                logger.warn('PhotoCard', 'png_gif_load_failed', 'PNG/GIF original load failed', {
+                    photoPath: photo.originalPath
+                });
+                e.currentTarget.src = image_for_not_found;
+                return;
+            }
+
             // Step 1: First error - thumbnail doesn't exist, generate it
             if (!e.currentTarget.dataset.thumbnailGenerated) {
                 e.currentTarget.dataset.thumbnailGenerated = 'true';
@@ -179,14 +196,14 @@ function PhotoCard({
                 const importDir = (photo.import_source === true && importState?.currentImportPath && importState.currentImportPath !== '')
                     ? importState.currentImportPath
                     : null;
-                // PNG/WebP/GIF/HEICなどはEXIFサムネイルを持たないので、リサイズフォールバックを有効にする
-                // RAW files also have EXIF thumbnails
-                const hasExifThumbnail = /\.(jpe?g|cr2|cr3|nef|arw|dng|raf|orf|rw2|3fr)$/i.test(photo.originalPath);
+                // PNG/GIF are already handled above (use original directly),
+                // so remaining formats (JPEG/WebP/HEIC) should always try resize fallback
+                // when EXIF extraction fails (JPEG resize is fast unlike PNG)
                 invoke('get_resized_image', {
                     pathStr: photo.originalPath,
                     maxSize: 200,
                     importDirectory: importDir,
-                    skipResizeFallback: photo.import_source === true && hasExifThumbnail
+                    skipResizeFallback: false
                 })
                     .then(() => {
                         // Check if component is still mounted

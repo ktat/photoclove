@@ -152,6 +152,64 @@ impl Dir {
 }
 
 impl File {
+    /// DirEntry から取得済みの Metadata と FileType で構築（追加I/Oなし）
+    /// リポジトリ層でのディレクトリ走査用
+    pub fn new_from_dir_entry(
+        path: String,
+        metadata: &fs::Metadata,
+        file_type: &fs::FileType,
+    ) -> File {
+        let p = Path::new(&path);
+        let dir = p
+            .parent()
+            .unwrap_or(Path::new("/"))
+            .display()
+            .to_string();
+        let file_name = p
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("unknown")
+            .to_string();
+
+        #[cfg(unix)]
+        let created_at = {
+            use std::os::unix::prelude::MetadataExt;
+            let epoch = metadata.ctime();
+            Local
+                .timestamp_opt(epoch, 0)
+                .single()
+                .unwrap_or_else(|| Local::now())
+                .format("%Y-%m-%d %T")
+                .to_string()
+        };
+        #[cfg(windows)]
+        let created_at = {
+            match metadata.created() {
+                Ok(created) => match created.duration_since(std::time::UNIX_EPOCH) {
+                    Ok(duration) => {
+                        let epoch = duration.as_secs() as i64;
+                        Local
+                            .timestamp_opt(epoch, 0)
+                            .single()
+                            .unwrap_or_else(|| Local::now())
+                            .format("%Y-%m-%d %T")
+                            .to_string()
+                    }
+                    Err(_) => Local::now().format("%Y-%m-%d %T").to_string(),
+                },
+                Err(_) => Local::now().format("%Y-%m-%d %T").to_string(),
+            }
+        };
+
+        File {
+            path,
+            name: file_name,
+            dir,
+            created_at,
+            is_link: file_type.is_symlink(),
+        }
+    }
+
     pub fn new(path: String) -> File {
         let link = fs::read_link(Path::new(&path));
         let p = Path::new(&path);

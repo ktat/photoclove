@@ -141,6 +141,14 @@ pub const ACHIEVEMENTS: &[AchievementDefinition] = &[
         category: AchievementCategory::First,
         threshold: 1,
     },
+    AchievementDefinition {
+        id: "first_quick_view",
+        name: "Quick Glance",
+        description: "Open a photo via Quick View from the command line",
+        icon: "⚡",
+        category: AchievementCategory::First,
+        threshold: 1,
+    },
 
     // === Monthly Pioneer Achievements ===
     AchievementDefinition {

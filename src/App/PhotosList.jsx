@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 
 import { invoke } from "@tauri-apps/api/core";
 
 import { usePhoto } from "../context/PhotoContext.jsx";
 import { useUI } from "../context/UIContext.jsx";
 import { useError } from "../context/ErrorContext.jsx";
+import { useDialog } from "../context/DialogContext.jsx";
 
 import { VIEW_MODES } from "../constants/viewModes.js";
 
@@ -93,13 +94,14 @@ function PhotosList({
 
     const {
         toggleSearchPage, searchInitialQuery, currentAlbumId, currentTagId,
-        viewMode, openAlbum, toggleAlbumListMode, openTag, openTagsList, toggleHome,
+        viewMode, modeData, openAlbum, toggleAlbumListMode, openTag, openTagsList, toggleHome,
         openPerson, openFacesList, openUnknownFaces,
         openBurstGroup, goBackFromBurstGroup, currentBurstGroupId, burstModeEnabled,
         burstReturnMode, burstReturnModeData
     } = useUI();
 
     const { handleTauriError, addError } = useError();
+    const dialog = useDialog();
 
     // Search and filters
     const {
@@ -325,7 +327,8 @@ function PhotosList({
         setCurrentPhotoPath, setCurrentPhotoIndex, currentPhotoIndex, closePhotoDisplay,
         setTrashPhotos, setPhotosListMiniReread, photosListMiniReread,
         dateNum, setDateNum: updateDateNum, dateList, setDateList: updateDateList, sortOfPhotos,
-        triggerUnknownFacesRefresh: () => setUnknownFacesRefreshTrigger(prev => prev + 1)
+        triggerUnknownFacesRefresh: () => setUnknownFacesRefreshTrigger(prev => prev + 1),
+        dialog
     });
 
     // Side menu visibility effect
@@ -424,9 +427,48 @@ function PhotosList({
     });
 
     useImportModeLifecycle({
-        viewMode, viewModeObj, importState, setImportState, setTabClass,
+        viewMode, modeData, viewModeObj, importState, setImportState, setTabClass,
         setShowSideMenu, setAllPhotosForCurrentFetch, setPhotosListMiniAllPhotos, setPhotosList
     });
+
+    // Quick View: auto-open target file in PhotoViewer after photos load
+    const quickViewOpenedRef = useRef(null);
+    useEffect(() => {
+        if (viewMode !== VIEW_MODES.QUICK_VIEW) {
+            quickViewOpenedRef.current = null;
+            return;
+        }
+        const targetPath = importState?.targetFile;
+        if (!targetPath || photosListMiniAllPhotos.length === 0 || quickViewOpenedRef.current === targetPath) {
+            return;
+        }
+
+        // Match by full path or fallback to filename
+        let targetIndex = photosListMiniAllPhotos.findIndex(
+            photo => photo.originalPath === targetPath
+        );
+        if (targetIndex === -1) {
+            const targetName = targetPath.split('/').pop()?.toLowerCase();
+            targetIndex = photosListMiniAllPhotos.findIndex(
+                photo => photo.name?.toLowerCase() === targetName
+            );
+        }
+
+        quickViewOpenedRef.current = targetPath;
+
+        if (targetIndex !== -1) {
+            const matchedPhoto = photosListMiniAllPhotos[targetIndex];
+            const matchedPath = matchedPhoto.originalPath || targetPath;
+            logger.info('PhotosList', 'quickview_auto_open', 'Auto-opening target file in viewer', {
+                targetPath, matchedPath, targetIndex
+            });
+            displayPhoto(matchedPath, targetIndex);
+        } else {
+            logger.warn('PhotosList', 'quickview_target_not_found', 'Target file not found in loaded photos', {
+                targetPath, photoCount: photosListMiniAllPhotos.length
+            });
+        }
+    }, [viewMode, importState, photosListMiniAllPhotos, displayPhoto]);
 
     // Load faces when switching to FACE_LIST mode
     useEffect(() => {
@@ -484,7 +526,7 @@ function PhotosList({
         deletePhotos: deletePhotosHandler, restorePhotos: restorePhotosHandler,
         updatePhotosAfterTrashOperation, reloadCurrentModeData,
         refreshPhotosOnly, viewModeObj, removePhotoFromList,
-        appConfig, saveConfigWithStartupImages, setShowJobQueueModal
+        appConfig, saveConfigWithStartupImages, setShowJobQueueModal, dialog
     });
 
     // Auto-close photo display effect

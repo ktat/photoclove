@@ -4,7 +4,6 @@
  */
 import { useCallback } from 'react';
 import { invoke } from "@tauri-apps/api/core";
-import { confirm } from "@tauri-apps/plugin-dialog";
 import { logger } from "../../../services/LoggerService.js";
 
 /**
@@ -22,7 +21,8 @@ export function useGroupOperations({
     clearPhotoSelection,
     addFooterMessage,
     handleTauriError,
-    reloadPhotos
+    reloadPhotos,
+    dialog
 }) {
     /**
      * Creates a burst group from selected photos
@@ -34,10 +34,11 @@ export function useGroupOperations({
         }
 
         const count = photoSelection.length;
-        const confirmed = await confirm(
-            `Create a burst group with ${count} photos?\nGrouped photos will display as a single item in Burst mode.`,
-            "Create Burst Group"
-        );
+        const confirmed = await dialog.confirm({
+            title: 'Create Burst Group',
+            message: `Create a burst group with ${count} photos?\nGrouped photos will display as a single item in Burst mode.`,
+            kind: 'info',
+        });
 
         if (!confirmed) return;
 
@@ -69,7 +70,7 @@ export function useGroupOperations({
             });
             handleTauriError(error, 'Create burst group');
         }
-    }, [photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError, reloadPhotos]);
+    }, [photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError, reloadPhotos, dialog]);
 
     /**
      * Removes selected photos from their burst groups
@@ -82,11 +83,11 @@ export function useGroupOperations({
         }
 
         const count = photoSelection.length;
-        const confirmed = await confirm(
-            `Remove ${count} photo${count > 1 ? 's' : ''} from burst group${count > 1 ? 's' : ''}?\n` +
-            `Groups with fewer than 2 photos will be automatically dissolved.`,
-            "Remove from Burst Group"
-        );
+        const confirmed = await dialog.confirm({
+            title: 'Remove from Burst Group',
+            message: `Remove ${count} photo${count > 1 ? 's' : ''} from burst group${count > 1 ? 's' : ''}?\nGroups with fewer than 2 photos will be automatically dissolved.`,
+            kind: 'warning',
+        });
 
         if (!confirmed) return;
 
@@ -117,7 +118,7 @@ export function useGroupOperations({
             });
             handleTauriError(error, 'Remove from burst group');
         }
-    }, [photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError, reloadPhotos]);
+    }, [photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError, reloadPhotos, dialog]);
 
     return {
         createBurstGroup,

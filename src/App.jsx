@@ -36,6 +36,8 @@ import { useDateNavigation } from "./hooks/useDateNavigation.js";
 import { useAppConfig } from "./hooks/useAppConfig.js";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts.js";
 import { useAppEventListeners } from "./hooks/useAppEventListeners.js";
+import { useDialog } from "./context/DialogContext.jsx";
+import { VIEW_MODES } from "./constants/viewModes.js";
 
 function App() {
     const {
@@ -44,6 +46,7 @@ function App() {
         showPreferences,
         showLogin,
         showSearchPage,
+        showQuickView,
         isAdvancedSearchMode,
         welcomeImage,
         setWelcomeImage,
@@ -56,6 +59,7 @@ function App() {
         openFacesList,
         openTrash,
         addFooterMessage,
+        transitionTo,
         notifications,
         unreadCount,
         markAllAsRead,
@@ -71,6 +75,7 @@ function App() {
 
     const { getDates } = useDateNavigation();
     const { useCount, setUseCount, config, loadConfig } = useAppConfig();
+    const dialog = useDialog();
 
     // Modal states
     const [rightMenuOpen, setRightMenuOpen] = useState(true);
@@ -133,6 +138,7 @@ function App() {
         setWelcomeImage,
         toggleImporter,
         togglePreferences,
+        dialog,
     });
 
     // Initialize logger and cleanup on startup
@@ -161,6 +167,17 @@ function App() {
                 }
             } catch (error) {
                 logger.warn('App', 'recovery_queue_cleanup_failed', 'Failed to cleanup recovery queue', { error: error.message });
+            }
+
+            // Check for CLI quick view path
+            try {
+                const quickviewPath = await invoke('get_quickview_path');
+                if (quickviewPath) {
+                    logger.info('App', 'cli_quickview', 'CLI quick view mode activated', { path: quickviewPath });
+                    transitionTo(VIEW_MODES.QUICK_VIEW, { quickViewPath: quickviewPath });
+                }
+            } catch (error) {
+                logger.debug('App', 'quickview_check_skip', 'No quickview path', { error: error.message });
             }
         };
 
@@ -203,6 +220,20 @@ function App() {
 
     // Render main content area
     const renderMainContent = () => {
+        if (showQuickView) {
+            return (
+                <PhotosList
+                    config={config}
+                    addFooterMessage={addFooterMessage}
+                    onRightMenuToggle={setRightMenuOpen}
+                    searchMode={false}
+                    isAdvancedSearchMode={false}
+                    setShowJobQueueModal={setShowJobQueueModal}
+                    getDatesNum={getDates}
+                />
+            );
+        }
+
         const shouldShowPhotosList = showPhotosList || showImporter || showSearchPage;
 
         if (shouldShowPhotosList) {
@@ -281,6 +312,40 @@ function App() {
                     <RecoveryQueueModal onClose={() => setShowRecoveryQueueModal(false)} addFooterMessage={addFooterMessage} />
                 )}
                 <Tooltip show={leftMenuCollapsed && showTooltip} text={tooltipText} position={tooltipPosition} />
+            </div>
+        );
+    }
+
+    // Quick View layout (no left sidebar)
+    if (showQuickView) {
+        return (
+            <div className="container">
+                <div className={`inner-container ${rightMenuOpen ? 'menu-open' : 'menu-closed'} left-menu-collapsed`}>
+                    {renderMainContent()}
+                </div>
+                <Footer onRecoveryQueueClick={() => setShowRecoveryQueueModal(true)} />
+                <ErrorDisplay />
+                {showLogViewer && <LogViewer onClose={() => setShowLogViewer(false)} />}
+                {showJobQueueModal && (
+                    <JobQueue onClose={() => setShowJobQueueModal(false)} addFooterMessage={addFooterMessage} />
+                )}
+                {showRecoveryQueueModal && (
+                    <RecoveryQueueModal onClose={() => setShowRecoveryQueueModal(false)} addFooterMessage={addFooterMessage} />
+                )}
+                {showPrivacyPolicy && (
+                    <DocumentViewer title="Privacy Policy" fileName="privacy-policy" onClose={() => setShowPrivacyPolicy(false)} />
+                )}
+                {showTermsOfUse && (
+                    <DocumentViewer title="Terms of Use" fileName="terms-of-use" onClose={() => setShowTermsOfUse(false)} />
+                )}
+                {showLicenses && <LicensesView onClose={() => setShowLicenses(false)} />}
+                {showAchievementsModal && <AchievementsView onClose={() => setShowAchievementsModal(false)} />}
+                {achievementQueue.length > 0 && (
+                    <AchievementPopup
+                        achievement={achievementQueue[0]}
+                        onClose={() => setAchievementQueue((prev) => prev.slice(1))}
+                    />
+                )}
             </div>
         );
     }

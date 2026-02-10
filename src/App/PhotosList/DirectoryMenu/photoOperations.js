@@ -4,7 +4,6 @@
  */
 import { useCallback, useRef } from 'react';
 import { invoke } from "@tauri-apps/api/core";
-import { message, confirm } from "@tauri-apps/plugin-dialog";
 import { localForage } from "../../../storage/forage";
 import { logger } from "../../../services/LoggerService.js";
 import { invokeWithErrorHandling } from "../../../services/TauriService.js";
@@ -12,7 +11,7 @@ import { invokeWithErrorHandling } from "../../../services/TauriService.js";
 /**
  * Hook for photo import operations
  */
-export function usePhotoImport({ importState, photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError }) {
+export function usePhotoImport({ importState, photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError, dialog }) {
     const importSelectedPhotos = useCallback(async () => {
         if (!importState || photoSelection.length === 0) {
             addFooterMessage('import', 'Please select photos first');
@@ -20,10 +19,12 @@ export function usePhotoImport({ importState, photoSelection, clearPhotoSelectio
         }
 
         const count = photoSelection.length;
-        const confirmed = await confirm(
-            `Import ${count} photo${count > 1 ? 's' : ''} to your library?`,
-            "Confirm Import"
-        );
+        const confirmed = await dialog.confirm({
+            title: 'Confirm Import',
+            message: `Import ${count} photo${count > 1 ? 's' : ''} to your library?`,
+            confirmText: 'Import',
+            kind: 'info',
+        });
 
         if (confirmed) {
             try {
@@ -48,7 +49,7 @@ export function usePhotoImport({ importState, photoSelection, clearPhotoSelectio
                 handleTauriError(error, 'Import photos');
             }
         }
-    }, [importState, photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError]);
+    }, [importState, photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError, dialog]);
 
     return { importSelectedPhotos };
 }
@@ -56,12 +57,12 @@ export function usePhotoImport({ importState, photoSelection, clearPhotoSelectio
 /**
  * Hook for Google Photos upload operations
  */
-export function useGooglePhotosUpload({ photoSelection, clearPhotoSelection, addFooterMessage, setShowJobQueue }) {
+export function useGooglePhotosUpload({ photoSelection, clearPhotoSelection, addFooterMessage, setShowJobQueue, dialog }) {
     const lockUploadRef = useRef(false);
 
     const uploadToGooglePhotos = useCallback(async () => {
         if (lockUploadRef.current) {
-            message("Currently uploading. Please wait for the current upload to complete.", "Upload in Progress");
+            await dialog.message({ title: 'Upload in Progress', message: 'Currently uploading. Please wait for the current upload to complete.', kind: 'warning' });
             return;
         }
 
@@ -69,25 +70,17 @@ export function useGooglePhotosUpload({ photoSelection, clearPhotoSelection, add
         const BATCH_SIZE = 50;
         const numBatches = Math.ceil(files.length / BATCH_SIZE);
 
-        let answer = true;
+        let msg = `Upload ${files.length} photos to Google Photos?`;
         if (files.length > BATCH_SIZE) {
-            answer = await confirm(
-                `Upload ${files.length} photos to Google Photos?\n` +
-                `This will create ${numBatches} upload jobs (max ${BATCH_SIZE} photos per job).`,
-                "Confirm Upload"
-            );
-        } else {
-            answer = await confirm(
-                `Upload ${files.length} photos to Google Photos?`,
-                "Confirm Upload"
-            );
+            msg += `\nThis will create ${numBatches} upload jobs (max ${BATCH_SIZE} photos per job).`;
         }
+        const answer = await dialog.confirm({ title: 'Confirm Upload', message: msg, confirmText: 'Upload', kind: 'info' });
 
         if (answer) {
             try {
                 const tokens = await localForage.getItem("GoogleOAuthTokens");
                 if (!tokens) {
-                    message("Please sign in to Google Photos first", "Authentication Required");
+                    await dialog.message({ title: 'Authentication Required', message: 'Please sign in to Google Photos first', kind: 'warning' });
                     return;
                 }
 
@@ -107,11 +100,11 @@ export function useGooglePhotosUpload({ photoSelection, clearPhotoSelection, add
                 clearPhotoSelection();
                 lockUploadRef.current = false;
 
-                message(
-                    `Created ${jobUnitIds.length} upload job${jobUnitIds.length > 1 ? 's' : ''}. ` +
-                    `Check Job Queue for progress.`,
-                    "Upload Started"
-                );
+                await dialog.message({
+                    title: 'Upload Started',
+                    message: `Created ${jobUnitIds.length} upload job${jobUnitIds.length > 1 ? 's' : ''}. Check Job Queue for progress.`,
+                    kind: 'success',
+                });
 
                 logger.info('photoOperations', 'google_photos_jobs_created', 'Google Photos upload jobs created', {
                     jobUnitsCreated: jobUnitIds.length,
@@ -126,10 +119,10 @@ export function useGooglePhotosUpload({ photoSelection, clearPhotoSelection, add
                     error: e.toString(),
                     filesCount: files.length
                 });
-                message("Failed to start upload: " + e.toString(), "Upload Error");
+                await dialog.message({ title: 'Upload Error', message: 'Failed to start upload: ' + e.toString(), kind: 'error' });
             }
         }
-    }, [photoSelection, clearPhotoSelection, addFooterMessage, setShowJobQueue]);
+    }, [photoSelection, clearPhotoSelection, addFooterMessage, setShowJobQueue, dialog]);
 
     return { uploadToGooglePhotos };
 }

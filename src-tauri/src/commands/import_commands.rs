@@ -34,7 +34,16 @@ pub fn show_importer(
         Some(p) if !p.is_empty() => {
             match fs::canonicalize(path::Path::new(p)) {
                 Ok(canonical) => {
-                    cp = canonical.display().to_string();
+                    // If a file path is given instead of a directory, use its parent directory
+                    let resolved = if canonical.is_file() {
+                        canonical
+                            .parent()
+                            .map(|p| p.to_path_buf())
+                            .unwrap_or(canonical)
+                    } else {
+                        canonical
+                    };
+                    cp = resolved.display().to_string();
                     cp.as_str()
                 }
                 Err(_) => "/",
@@ -49,10 +58,25 @@ pub fn show_importer(
         _ => None,
     };
 
+    let t0 = std::time::Instant::now();
     let mut importer = importer::Importer::new(path.to_string(), page, num, filter);
+    let t1 = std::time::Instant::now();
     importer.set_importer_paths(state.config.export_from.clone());
-
-    serde_json::to_string(&importer).unwrap_or_else(|_| "{}".to_string())
+    let t2 = std::time::Instant::now();
+    let result = serde_json::to_string(&importer).unwrap_or_else(|_| "{}".to_string());
+    let t3 = std::time::Instant::now();
+    log::info!(
+        target: "importer",
+        "show_importer_timing; path={}; page={}; num={}; importer_new={}ms; set_paths={}ms; serialize={}ms; total={}ms; files={}; dirs={}",
+        path, page, num,
+        t1.duration_since(t0).as_millis(),
+        t2.duration_since(t1).as_millis(),
+        t3.duration_since(t2).as_millis(),
+        t3.duration_since(t0).as_millis(),
+        importer.dirs_files.files.files.len(),
+        importer.dirs_files.dirs.dirs.len(),
+    );
+    result
 }
 
 /// Import photos into the PhotoClove library
