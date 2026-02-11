@@ -283,8 +283,7 @@ export class ViewMode {
     }
 
     shouldShowSideMenuByDefault() {
-        const config = this.getModeConfig();
-        return config.canEdit && (this.isSearchMode() || this.isImportMode());
+        return this.isSearchMode() || this.isImportMode();
     }
 
     getFilterParams(appConfig = null) {
