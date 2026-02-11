@@ -261,6 +261,7 @@
   },
   "photoInfo": {
     "fileName": "File Name",
+    "fileSize": "File Size",
     "iso": "ISO",
     "fNumber": "FNumber",
     "shutterSpeed": "Shutter Speed",
@@ -317,6 +318,13 @@
     "createCopyFailed": "Failed to create styled copy: {{error}}",
     "noStylesToDownload": "No styles to download",
     "downloadFailed": "Download failed: {{error}}",
+    "rotationTooltip": "Rotate the photo (0–360 degrees)",
+    "brightnessTooltip": "Adjust photo brightness (0–200%)",
+    "contrastTooltip": "Adjust light and dark difference (0–200%)",
+    "saturationTooltip": "Adjust color intensity (0–200%)",
+    "hueTooltip": "Shift color hue (0–360 degrees)",
+    "scaleTooltip": "Zoom in or out (50–200%)",
+    "cropTooltip": "Crop a rectangular area of the photo",
     "cropInstruction": "Click and drag on the photo to select crop area",
     "resetValue": "Reset {{label}}"
   },

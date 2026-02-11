@@ -81,23 +81,24 @@ pub(crate) fn get_all_collections(
             let mut photo = photo::Photo::new(file, Some(config_for_closure.clone()));
             photo.set_has_thumbnail();
 
-            // Get thumbnail path for the cover photo
-            let thumbnail_path = if photo.has_thumbnail {
-                photo.get_thumbnail_path()
-            } else {
-                None
-            };
+            // Get absolute path and thumbnail path for the cover photo
+            let absolute_path = photo.absolute_path();
+            let thumbnail_path = photo.get_thumbnail_path();
 
-            log::debug!(target: "photo_collections", "cover_photo_created; id={}; has_thumbnail={}; thumbnail_path={:?}",
-                collection_id, photo.has_thumbnail, thumbnail_path);
+            log::debug!(target: "photo_collections", "cover_photo_created; id={}; has_thumbnail={}; absolute_path={}; thumbnail_path={:?}",
+                collection_id, photo.has_thumbnail, absolute_path, thumbnail_path);
 
-            // Create JSON with thumbnail_path field
+            // Create JSON with absolute paths
             let mut photo_json = serde_json::to_value(&photo).unwrap_or_else(|e| {
                 log::error!(target: "photo_collections", "photo_json_serialize_failed; id={}; error={}", collection_id, e);
                 serde_json::json!({})
             });
             if let Some(obj) = photo_json.as_object_mut() {
                 obj.insert("thumbnail_path".to_string(), serde_json::json!(thumbnail_path));
+                // Override file.path with absolute path so frontend can resolve it
+                if let Some(file_obj) = obj.get_mut("file").and_then(|f| f.as_object_mut()) {
+                    file_obj.insert("path".to_string(), serde_json::json!(absolute_path));
+                }
             }
 
             Some(photo_json)

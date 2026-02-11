@@ -153,13 +153,12 @@ impl Photo {
         }
 
         let ext_regex = regex::Regex::new(r"\.(?i)jpe?g$").unwrap();
-        let thumbnail_path_ext_changed = ext_regex.replace(&thumbnail_path, ".jpg").to_string();
-
-        if thumbnail_path == thumbnail_path_ext_changed {
-            // maybe movie files
-            Some(format!("{}.jpg", thumbnail_path))
+        if ext_regex.is_match(&thumbnail_path) {
+            // JPEG file: normalize extension to .jpg
+            Some(ext_regex.replace(&thumbnail_path, ".jpg").to_string())
         } else {
-            Some(thumbnail_path_ext_changed)
+            // Non-JPEG file (movie, etc.): append .jpg
+            Some(format!("{}.jpg", thumbnail_path))
         }
     }
 
@@ -183,23 +182,21 @@ impl Photo {
             } else {
 
             let ext_regex = regex::Regex::new(r"\.(?i)jpe?g$").unwrap();
-            let thumbnail_path_ext_changed = ext_regex.replace(&thumbnail_path, ".jpg").to_string();
 
-            log::debug!(target: "photo", "thumbnail_check; original_path={}; thumbnail_store={}; thumbnail_path={}",
-                self.file.path, thumbnail_store, thumbnail_path_ext_changed);
-
-            if thumbnail_path == thumbnail_path_ext_changed {
-                // maybe movie files
+            if ext_regex.is_match(&thumbnail_path) {
+                // JPEG file: normalize extension to .jpg
+                let thumbnail_path_normalized = ext_regex.replace(&thumbnail_path, ".jpg").to_string();
+                let p = std::path::Path::new(&thumbnail_path_normalized);
+                self.has_thumbnail = p.exists();
+                log::debug!(target: "photo", "thumbnail_check_photo; thumbnail_path={}; exists={}",
+                    thumbnail_path_normalized, self.has_thumbnail);
+            } else {
+                // Non-JPEG file (movie, etc.): append .jpg
                 let thumbnail_path_for_movie = format!("{}.jpg", thumbnail_path);
                 let p = std::path::Path::new(&thumbnail_path_for_movie);
                 self.has_thumbnail = p.exists();
                 log::debug!(target: "photo", "thumbnail_check_movie; thumbnail_path={}; exists={}",
                     thumbnail_path_for_movie, self.has_thumbnail);
-            } else {
-                let p = std::path::Path::new(&thumbnail_path_ext_changed);
-                self.has_thumbnail = p.exists();
-                log::debug!(target: "photo", "thumbnail_check_photo; thumbnail_path={}; exists={}",
-                    thumbnail_path_ext_changed, self.has_thumbnail);
             }
 
             } // end else (non-RAW)

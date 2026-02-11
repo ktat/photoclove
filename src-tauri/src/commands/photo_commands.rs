@@ -37,6 +37,9 @@ pub struct PhotoInfoResponse {
     /// Whether the photo is in trash
     pub is_trashed: bool,
 
+    /// File size in bytes
+    pub file_size: Option<u64>,
+
     /// Photo metadata from database
     pub meta: Option<serde_json::Value>,
 
@@ -256,10 +259,13 @@ pub fn get_photo_info(
             let meta_value = full_json.get("meta").cloned();
             let exif_value = full_json.get("exif").cloned();
 
+            let file_size = std::fs::metadata(&actual_path).ok().map(|m| m.len());
+
             let response = PhotoInfoResponse {
                 original_path: path_str.to_string(),
                 current_path: actual_path,
                 is_trashed,
+                file_size,
                 meta: meta_value,
                 exif: exif_value,
             };
@@ -278,6 +284,7 @@ pub fn get_photo_info(
                 original_path: path_str.to_string(),
                 current_path: actual_path,
                 is_trashed,
+                file_size: None,
                 meta: meta_json,
                 exif: None,
             };

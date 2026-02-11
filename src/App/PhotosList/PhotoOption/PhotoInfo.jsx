@@ -7,6 +7,14 @@ import fileUrl from "../../../PathUtil.jsx";
 import { logger } from '../../../services/LoggerService.js';
 import styles from '../PhotoOption.module.css';
 
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    const value = bytes / Math.pow(1024, i);
+    return `${value.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+}
+
 function PhotoInfo(props) {
     const { t } = useTranslation('common');
     const [photoInfo, setPhotoInfo] = useState({});
@@ -229,6 +237,9 @@ function PhotoInfo(props) {
                                     openUrl(fileUrl(pathToOpen));
                                 }}>🚀</a>
                             </td></tr>
+                        {photoInfo.file_size != null && (
+                            <tr><th>{t('photoInfo.fileSize')}</th><td>{formatFileSize(photoInfo.file_size)}</td></tr>
+                        )}
                         <tr><th>{t('photoInfo.iso')}</th><td>{photoInfo.exif ? photoInfo.exif.iso : ""}</td></tr>
                         <tr><th>{t('photoInfo.fNumber')}</th><td>{photoInfo.exif ? photoInfo.exif.fnumber : ""}</td></tr>
                         <tr><th>{t('photoInfo.shutterSpeed')}</th><td>{photoInfo.exif ? photoInfo.exif.exposure_time : ""}</td></tr>

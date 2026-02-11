@@ -19,6 +19,7 @@ import styles from '../PhotoEditor.module.css';
  */
 function AdjustmentSlider({
     label,
+    tooltip,
     value,
     onChange,
     onReset,
@@ -34,7 +35,7 @@ function AdjustmentSlider({
     return (
         <>
             <tr>
-                <td rowSpan={extraRow ? 2 : 1} className={styles['label-cell']}>{label}:</td>
+                <td rowSpan={extraRow ? 2 : 1} className={styles['label-cell']} title={tooltip}>{label}</td>
                 <td rowSpan={extraRow ? 2 : 1}>
                     <input
                         type="range"

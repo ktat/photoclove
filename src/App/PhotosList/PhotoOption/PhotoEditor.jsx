@@ -417,7 +417,8 @@ function PhotoEditor(props) {
                         <table className={styles['editor-table']}>
                             <tbody>
                                 <AdjustmentSlider
-                                    label={<>{t('photoEditor.rotation')}<br />{t('photoEditor.deg')}</>}
+                                    label="🔄"
+                                    tooltip={t('photoEditor.rotationTooltip')}
                                     value={editorStyles.rotate}
                                     onChange={(val) => updateStyle('rotate', val)}
                                     onReset={() => resetSingleControl('rotate')}
@@ -431,7 +432,8 @@ function PhotoEditor(props) {
                                     }
                                 />
                                 <AdjustmentSlider
-                                    label={t('photoEditor.brightness')}
+                                    label="☀️"
+                                    tooltip={t('photoEditor.brightnessTooltip')}
                                     value={editorStyles.brightness}
                                     onChange={(val) => updateStyle('brightness', val)}
                                     onReset={() => resetSingleControl('brightness')}
@@ -439,7 +441,8 @@ function PhotoEditor(props) {
                                     max={200}
                                 />
                                 <AdjustmentSlider
-                                    label={t('photoEditor.contrast')}
+                                    label="🌓"
+                                    tooltip={t('photoEditor.contrastTooltip')}
                                     value={editorStyles.contrast}
                                     onChange={(val) => updateStyle('contrast', val)}
                                     onReset={() => resetSingleControl('contrast')}
@@ -447,7 +450,8 @@ function PhotoEditor(props) {
                                     max={200}
                                 />
                                 <AdjustmentSlider
-                                    label={t('photoEditor.saturation')}
+                                    label="🎨"
+                                    tooltip={t('photoEditor.saturationTooltip')}
                                     value={editorStyles.saturation}
                                     onChange={(val) => updateStyle('saturation', val)}
                                     onReset={() => resetSingleControl('saturation')}
@@ -455,7 +459,8 @@ function PhotoEditor(props) {
                                     max={200}
                                 />
                                 <AdjustmentSlider
-                                    label={t('photoEditor.hue')}
+                                    label="🌈"
+                                    tooltip={t('photoEditor.hueTooltip')}
                                     value={editorStyles.hue}
                                     onChange={(val) => updateStyle('hue', val)}
                                     onReset={() => resetSingleControl('hue')}
@@ -463,7 +468,8 @@ function PhotoEditor(props) {
                                     max={360}
                                 />
                                 <AdjustmentSlider
-                                    label={t('photoEditor.scale')}
+                                    label="🔍"
+                                    tooltip={t('photoEditor.scaleTooltip')}
                                     value={editorStyles.scale}
                                     onChange={(val) => updateStyle('scale', val)}
                                     onReset={() => resetSingleControl('scale')}
@@ -474,7 +480,7 @@ function PhotoEditor(props) {
                         </table>
                         <div className={styles['editor-control-crop']}>
                             <div className={styles['control-row']}>
-                                <label>{t('photoEditor.crop')}:</label>
+                                <label title={t('photoEditor.cropTooltip')}>✂️:</label>
                                 {!cropMode ? (
                                     <button className={styles['action-btn']} onClick={enterCropMode}>{t('photoEditor.crop')}</button>
                                 ) : (
