@@ -5,7 +5,7 @@ use crate::entity::importer;
 use crate::repository::*;
 use std::sync::{Arc, Mutex};
 use tauri::{
-    menu::{MenuBuilder, SubmenuBuilder},
+    menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder},
     Emitter, Manager,
 };
 
@@ -195,42 +195,71 @@ pub fn run() {
         .plugin(tauri_plugin_cli::init())
         .plugin(tauri_plugin_oauth::init())
         .setup(move |app| {
+            // Build menu items with accelerators
+            let search_item = MenuItemBuilder::new("🔍 Search")
+                .id("search")
+                .accelerator("CmdOrCtrl+F")
+                .build(app)?;
+            let import_item = MenuItemBuilder::new("📥 Import")
+                .id("import")
+                .accelerator("CmdOrCtrl+I")
+                .build(app)?;
+            let pref_item = MenuItemBuilder::new("⚙\u{fe0f} Preferences")
+                .id("pref")
+                .accelerator("CmdOrCtrl+,")
+                .build(app)?;
+            let job_queue_item = MenuItemBuilder::new("📋 Job Queue")
+                .id("job_queue")
+                .accelerator("CmdOrCtrl+J")
+                .build(app)?;
+
             // Build menu - simplified for Quick View mode
             let submenu = if is_quickview {
                 SubmenuBuilder::new(app, "File")
                     .text("home", "Open Normal Mode")
-                    .text("quit", "Quit")
+                    .text("quit", "🚪 Quit")
                     .build()?
             } else {
                 SubmenuBuilder::new(app, "File")
-                    .text("home", "HOME")
-                    .text("load_dates", "Load Date List")
-                    .text("import", "Import")
-                    .text("create_db", "Create DB")
-                    .text("login", "Login to Google")
-                    .text("job_queue", "Job Queue")
-                    .text("pref", "Preferences")
-                    .text("quit", "Quit")
+                    .text("home", "🏠 HOME")
+                    .item(&search_item)
+                    .item(&import_item)
+                    .text("login", "🔑 Login to Google")
+                    .separator()
+                    .item(&pref_item)
+                    .text("quit", "🚪 Quit")
                     .build()?
             };
 
-            let help_submenu = SubmenuBuilder::new(app, "?")
-                .text("show_log", "Show log")
-                .text("achievements", "Achievements")
-                .text("github", "GitHub")
-                .text("sponsor", "Sponsor")
-                .separator()
-                .text("privacy_policy", "Privacy Policy")
-                .text("terms_of_use", "Terms of Use")
-                .text("licenses", "Licenses & Credits")
-                .separator()
-                .text("about", "About")
+            let system_submenu = SubmenuBuilder::new(app, "System")
+                .item(&job_queue_item)
+                .text("show_log", "📝 Show Log")
+                .text("notification", "🔔 Notification")
                 .build()?;
 
-            let menu = MenuBuilder::new(app)
-                .item(&submenu)
-                .item(&help_submenu)
+            let help_submenu = SubmenuBuilder::new(app, "?")
+                .text("achievements", "🏆 Achievements")
+                .text("github", "🔗 GitHub")
+                .text("sponsor", "❤\u{fe0f} Sponsor")
+                .separator()
+                .text("privacy_policy", "🔒 Privacy Policy")
+                .text("terms_of_use", "📄 Terms of Use")
+                .text("licenses", "📜 Licenses & Credits")
+                .separator()
+                .text("about", "ℹ\u{fe0f} About")
                 .build()?;
+
+            let menu = if is_quickview {
+                MenuBuilder::new(app)
+                    .item(&submenu)
+                    .build()?
+            } else {
+                MenuBuilder::new(app)
+                    .item(&submenu)
+                    .item(&system_submenu)
+                    .item(&help_submenu)
+                    .build()?
+            };
 
             app.set_menu(menu)?;
 
@@ -257,10 +286,10 @@ pub fn run() {
                     let _ = app.emit("click_menu_static", "licenses");
                 } else if e.id == "achievements" {
                     let _ = app.emit("click_menu_static", "achievements");
-                } else if e.id == "load_dates" {
-                    let _ = app.emit("click_menu", "load_dates");
-                } else if e.id == "create_db" {
-                    let _ = app.emit("click_menu", "create_db");
+                } else if e.id == "search" {
+                    let _ = app.emit("click_menu", "search");
+                } else if e.id == "notification" {
+                    let _ = app.emit("click_menu_static", "notification");
                 } else if e.id == "import" {
                     let _ = app.emit("click_menu", "import");
                 } else if e.id == "login" {

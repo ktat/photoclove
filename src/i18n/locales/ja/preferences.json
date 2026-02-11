@@ -304,7 +304,12 @@
     "resetAll": "すべての設定をリセット",
     "resetAllWarning": "すべての設定がデフォルト値にリセットされます",
     "googlePhotos": "Google フォト",
-    "autoReauth": "起動時にGoogle フォトの再認証を自動的にプロンプト"
+    "autoReauth": "起動時にGoogle フォトの再認証を自動的にプロンプト",
+    "database": "データベース",
+    "createDb": "DB作成",
+    "createDbDescription": "写真データベースを再作成します。写真の数によっては時間がかかる場合があります。",
+    "createDbConfirm": "時間がかかる可能性があります。\nよろしいですか？",
+    "createDbInProgress": "DB作成中です"
   },
   "firstSetup": {
     "restartRequired": "データベースの初期化が完了しました。セットアップを完了するためにアプリケーションを再起動してください。",

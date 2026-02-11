@@ -12,15 +12,15 @@ export const MENU_ACTIONS = {
     TERMS_OF_USE: "terms_of_use",
     LICENSES: "licenses",
     ACHIEVEMENTS: "achievements",
+    NOTIFICATION: "notification",
 
     // Dynamic menu actions
-    LOAD_DATES: "load_dates",
     HOME: "HOME",
+    SEARCH: "search",
     IMPORT: "import",
     PREFERENCES: "pref",
     JOB_QUEUE: "job_queue",
     LOGIN: "login",
-    CREATE_DB: "create_db",
 };
 
 export const MENU_EVENTS = {

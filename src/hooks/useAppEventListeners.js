@@ -24,6 +24,7 @@ export function useAppEventListeners({
     setShowLicenses,
     setShowAchievementsModal,
     setShowJobQueueModal,
+    setShowNotificationCenter,
     setAchievementQueue,
     addFooterMessage,
     getDates,
@@ -33,14 +34,12 @@ export function useAppEventListeners({
     setWelcomeImage,
     toggleImporter,
     togglePreferences,
+    toggleSearchPage,
     dialog,
 }) {
     // Use ref to access current config in event listeners (avoids stale closure)
     const configRef = useRef(config);
     configRef.current = config;
-
-    // Track DB creation state
-    const inDbCreationRef = useRef(false);
 
     useEffect(() => {
         let menuUnlisten, unlisten0, unlisten1, unlisten2, unlisten3, unlisten4, unlisten5, unlistenImport, unlistenAchievement;
@@ -69,6 +68,7 @@ export function useAppEventListeners({
                             setShowTermsOfUse,
                             setShowLicenses,
                             setShowAchievementsModal,
+                            setShowNotificationCenter,
                             dialog,
                         });
                         setTimeout(() => invoke("lock", { t: false }), 1000);
@@ -161,7 +161,6 @@ export function useAppEventListeners({
                     if (le) {
                         handleDynamicMenuAction(e.payload, {
                             configRef,
-                            inDbCreationRef,
                             getDates,
                             updateCurrentDate,
                             resetPhotoState,
@@ -169,8 +168,8 @@ export function useAppEventListeners({
                             setWelcomeImage,
                             toggleImporter,
                             togglePreferences,
+                            toggleSearchPage,
                             setShowJobQueueModal,
-                            dialog,
                         });
                         setTimeout(() => invoke("lock", { t: false }), 1000);
                     }
@@ -226,7 +225,7 @@ export function useAppEventListeners({
  * Handle static menu actions (Help menu items)
  */
 function handleStaticMenuAction(payload, handlers) {
-    const { setShowLogViewer, setShowPrivacyPolicy, setShowTermsOfUse, setShowLicenses, setShowAchievementsModal, dialog } = handlers;
+    const { setShowLogViewer, setShowPrivacyPolicy, setShowTermsOfUse, setShowLicenses, setShowAchievementsModal, setShowNotificationCenter, dialog } = handlers;
 
     switch (payload) {
         case MENU_ACTIONS.SHOW_LOG:
@@ -253,6 +252,9 @@ function handleStaticMenuAction(payload, handlers) {
         case MENU_ACTIONS.ACHIEVEMENTS:
             setShowAchievementsModal(true);
             break;
+        case MENU_ACTIONS.NOTIFICATION:
+            setShowNotificationCenter(true);
+            break;
         default:
             logger.warn('App', 'unhandled_menu_event', 'Unmatched menu payload', { payload });
     }
@@ -264,7 +266,6 @@ function handleStaticMenuAction(payload, handlers) {
 function handleDynamicMenuAction(payload, handlers) {
     const {
         configRef,
-        inDbCreationRef,
         getDates,
         updateCurrentDate,
         resetPhotoState,
@@ -272,20 +273,20 @@ function handleDynamicMenuAction(payload, handlers) {
         setWelcomeImage,
         toggleImporter,
         togglePreferences,
+        toggleSearchPage,
         setShowJobQueueModal,
-        dialog,
     } = handlers;
 
     switch (payload) {
-        case MENU_ACTIONS.LOAD_DATES:
-            getDates();
-            break;
-
         case MENU_ACTIONS.HOME:
             updateCurrentDate("");
             resetPhotoState();
             toggleHome();
             handleHomeWelcomeImage(configRef.current, setWelcomeImage);
+            break;
+
+        case MENU_ACTIONS.SEARCH:
+            toggleSearchPage(true, "", true);
             break;
 
         case MENU_ACTIONS.IMPORT:
@@ -302,10 +303,6 @@ function handleDynamicMenuAction(payload, handlers) {
 
         case MENU_ACTIONS.LOGIN:
             loginGoogle();
-            break;
-
-        case MENU_ACTIONS.CREATE_DB:
-            handleCreateDb(inDbCreationRef, dialog);
             break;
 
         default:
@@ -334,31 +331,6 @@ function handleHomeWelcomeImage(config, setWelcomeImage) {
     } else {
         setWelcomeImage(WelcomeImage(config));
     }
-}
-
-/**
- * Handle database creation with double-click prevention
- */
-function handleCreateDb(inDbCreationRef, dialog) {
-    if (inDbCreationRef.current) {
-        dialog.message({ title: 'Create DB', message: 'DB creation in progress', kind: 'warning' });
-        return;
-    }
-
-    dialog.confirm({
-        title: 'Create DB?',
-        message: 'It may cost long time.\nAre you OK?',
-        kind: 'warning',
-    }).then((confirmed) => {
-        if (confirmed) {
-            inDbCreationRef.current = true;
-            invoke("create_db").then(() => {
-                inDbCreationRef.current = false;
-            });
-        }
-    }).catch((e) => {
-        logger.error('App', 'create_db_error', 'Create DB error', { error: e });
-    });
 }
 
 export default useAppEventListeners;

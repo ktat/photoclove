@@ -304,7 +304,12 @@
     "resetAll": "Reset All Settings",
     "resetAllWarning": "This will reset all settings to default values",
     "googlePhotos": "Google Photos",
-    "autoReauth": "Automatically prompt for Google Photos re-authentication on startup"
+    "autoReauth": "Automatically prompt for Google Photos re-authentication on startup",
+    "database": "Database",
+    "createDb": "Create DB",
+    "createDbDescription": "Recreate the photo database. This may take a long time depending on the number of photos.",
+    "createDbConfirm": "It may cost long time.\nAre you OK?",
+    "createDbInProgress": "DB creation in progress"
   },
   "firstSetup": {
     "restartRequired": "Database initialized successfully. Please restart the application to complete setup.",

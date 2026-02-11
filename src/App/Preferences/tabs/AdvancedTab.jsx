@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { invoke } from "@tauri-apps/api/core";
 import { useDialog } from '../../../context/DialogContext.jsx';
+import { logger } from '../../../services/LoggerService.js';
 import styles from '../Preferences.module.css';
 
 const AdvancedTab = ({ config, setConfig, useCount }) => {
     const { t } = useTranslation(['preferences', 'common']);
     const dialog = useDialog();
+    const inDbCreationRef = useRef(false);
 
     return (
         <div className={styles['preferences-section']}>
@@ -106,6 +109,41 @@ const AdvancedTab = ({ config, setConfig, useCount }) => {
                     <label htmlFor="google-auth-auto-reauth-check">
                         🔄 {t('preferences:advanced.autoReauth')}
                     </label>
+                </div>
+            </div>
+
+            {/* Database Section */}
+            <h2 className={styles['section-title']}>🗄️ {t('preferences:advanced.database')}</h2>
+            <div className={styles['setting-group']}>
+                <p className={styles['setting-description']}>
+                    {t('preferences:advanced.createDbDescription')}
+                </p>
+                <div className={styles['setting-row']}>
+                    <button
+                        className={styles['btn-secondary']}
+                        onClick={() => {
+                            if (inDbCreationRef.current) {
+                                dialog.message({ title: t('preferences:advanced.createDb'), message: t('preferences:advanced.createDbInProgress'), kind: 'warning' });
+                                return;
+                            }
+                            dialog.confirm({
+                                title: t('preferences:advanced.createDb'),
+                                message: t('preferences:advanced.createDbConfirm'),
+                                kind: 'warning',
+                            }).then((confirmed) => {
+                                if (confirmed) {
+                                    inDbCreationRef.current = true;
+                                    invoke("create_db").then(() => {
+                                        inDbCreationRef.current = false;
+                                    });
+                                }
+                            }).catch((e) => {
+                                logger.error('AdvancedTab', 'create_db_error', 'Create DB error', { error: e });
+                            });
+                        }}
+                    >
+                        🗄️ {t('preferences:advanced.createDb')}
+                    </button>
                 </div>
             </div>
 

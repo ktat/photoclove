@@ -97,18 +97,14 @@ function App() {
     const [tooltipPosition, setTooltipPosition] = useState({ top: 0 });
 
     // Keyboard shortcuts (consolidated into single hook)
+    // Note: Ctrl+F (Search), Ctrl+I (Import), Ctrl+J (Job Queue), Ctrl+, (Preferences)
+    // are handled by native menu accelerators in lib.rs
     const shortcuts = useMemo(() => ({
         logViewer: {
             ctrl: true,
             shift: true,
             key: 'L',
             action: () => setShowLogViewer(prev => !prev)
-        },
-        jobQueue: {
-            ctrl: true,
-            shift: true,
-            key: 'J',
-            action: () => setShowJobQueueModal(prev => !prev)
         },
         recoveryQueue: {
             ctrl: true,
@@ -129,6 +125,7 @@ function App() {
         setShowLicenses,
         setShowAchievementsModal,
         setShowJobQueueModal,
+        setShowNotificationCenter,
         setAchievementQueue,
         addFooterMessage,
         getDates,
@@ -138,6 +135,7 @@ function App() {
         setWelcomeImage,
         toggleImporter,
         togglePreferences,
+        toggleSearchPage,
         dialog,
     });
 
