@@ -90,65 +90,62 @@ pub async fn save_styled_copy_from_frontend(
     let css_hash = format!("{:x}", hasher.finalize());
     let short_hash = &css_hash[..12]; // Use first 12 chars
 
-    // 2. Parse original photo path
-    let original_path = Path::new(original_photo_path);
-    let parent_dir = original_path
+    // 2. Parse original photo path (relative after #194 migration)
+    let original_rel_path = Path::new(original_photo_path);
+    let rel_parent_dir = original_rel_path
         .parent()
         .ok_or_else(|| "Cannot get parent directory".to_string())?;
-    let original_name = original_path
+    let original_name = original_rel_path
         .file_stem()
         .ok_or_else(|| "Cannot get file name".to_string())?
         .to_string_lossy();
 
     // 3. Create new filename with hash
     let new_filename = format!("{}-{}.jpg", original_name, short_hash);
-    let new_path = parent_dir.join(&new_filename);
-    let new_path_str = new_path.to_string_lossy().to_string();
+    // Relative path for DB storage
+    let new_rel_path = rel_parent_dir.join(&new_filename);
+    let new_rel_path_str = new_rel_path.to_string_lossy().to_string();
+    // Absolute path for file I/O
+    let new_abs_path_str = file::to_absolute_path(&new_rel_path_str, &state.config.import_to);
+    let new_abs_path = Path::new(&new_abs_path_str);
 
-    // 4. Check if styled copy already exists
-    if new_path.exists() {
-        return Ok(new_path_str);
+    // 4. Check if styled copy already exists (use absolute path for filesystem check)
+    if new_abs_path.exists() {
+        return Ok(new_rel_path_str);
     }
 
-    // 5. Decode base64 image data and save
+    // 5. Decode base64 image data and save (use absolute path for filesystem write)
     let image_bytes = general_purpose::STANDARD
         .decode(image_data)
         .map_err(|e| format!("Failed to decode image data: {}", e))?;
 
-    fs::write(&new_path, image_bytes).map_err(|e| format!("Failed to write image file: {}", e))?;
+    fs::write(&new_abs_path, image_bytes).map_err(|e| format!("Failed to write image file: {}", e))?;
 
-    // TODO: Copy EXIF metadata from original photo to styled copy
-    // Canvas.toBlob() loses all EXIF data. To preserve EXIF:
-    // 1. Add rexiv2 crate (requires system gexiv2 library)
-    // 2. Read EXIF from original_photo_path
-    // 3. Write EXIF to new_path (except Orientation which may need updating)
-    // See improvement/165-4-exif-format.md for details
-
-    // 6. Create Photo object and add to database
-    let new_file = file::File::new(new_path_str.clone());
-    let mut new_photo = photo::Photo::new(new_file, Some(state.config.clone()));
-    new_photo.load_exif();
+    // 6. Create Photo object with relative path for DB storage
+    // record_photos_meta_data handles absolute path resolution for EXIF loading internally
+    let new_file = file::File::from_relative(new_rel_path_str.clone());
+    let new_photo = photo::Photo::new(new_file, Some(state.config.clone()));
 
     // 7. Set initial metadata (copy from original photo if exists)
     let meta_db = &state.meta_db;
-    let original_photo = photo::Photo::new(file::File::new(original_photo_path.to_string()), None);
+    let original_photo = photo::Photo::new(file::File::from_relative(original_photo_path.to_string()), None);
     let original_meta = meta_db.get_photo_meta(original_photo);
 
     // Extract date for thumbnail generation before consuming new_photo
     let photo_dir_date = new_photo.get_imported_dir_date();
 
-    // 8. Record the new photo in database
+    // 8. Record the new photo in database (uses relative path)
     match meta_db.record_photos_meta_data(vec![new_photo]) {
         Ok(_) => {
-            // Copy star rating and comment from original
+            // Copy star rating and comment from original (use relative paths for DB)
             if original_meta.star.star() > 0 {
                 let new_photo_for_star =
-                    photo::Photo::new(file::File::new(new_path_str.clone()), None);
+                    photo::Photo::new(file::File::from_relative(new_rel_path_str.clone()), None);
                 meta_db.save_star(&new_photo_for_star, original_meta.star);
             }
             if !original_meta.comment.comment().is_empty() {
                 let new_photo_for_comment =
-                    photo::Photo::new(file::File::new(new_path_str.clone()), None);
+                    photo::Photo::new(file::File::from_relative(new_rel_path_str.clone()), None);
                 meta_db.save_comment(&new_photo_for_comment, original_meta.comment);
             }
         }
@@ -188,7 +185,7 @@ pub async fn save_styled_copy_from_frontend(
         "first_edit",
     );
 
-    Ok(new_path_str)
+    Ok(new_rel_path_str)
 }
 
 /// Normalizes CSS style string for consistent hashing
