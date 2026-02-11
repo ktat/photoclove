@@ -71,8 +71,8 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-    - name: Create models directory for resource glob
-      run: mkdir -p src-tauri/models && touch src-tauri/models/.gitkeep
+    - name: Create dummy model file for Tauri resource glob
+      run: mkdir -p src-tauri/models && touch src-tauri/models/dummy.onnx
 
     - name: Run backend tests
       run: cd src-tauri && cargo test
