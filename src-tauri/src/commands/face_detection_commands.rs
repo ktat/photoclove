@@ -12,6 +12,7 @@ use crate::domain_service::face_thumbnail_service;
 use crate::entity::job_queue::JobType;
 use crate::repository::meta_db::sqlite::face_detection::DetectedFaceInput;
 use crate::repository::meta_db::sqlite::face_detection::NamedFaceEmbedding;
+use crate::value::file;
 use serde::Serialize;
 use tauri::{Manager, State};
 
@@ -236,7 +237,14 @@ pub fn get_all_persons(state: State<AppState>) -> Result<String, String> {
 #[tauri::command]
 pub fn get_all_persons_for_list(state: State<AppState>) -> Result<String, String> {
     log::info!(target: "face_detection", "get_all_persons_for_list; request");
-    let persons = state.meta_db.get_all_persons_for_list()?;
+    let mut persons = state.meta_db.get_all_persons_for_list()?;
+    // Resolve relative photo_path to absolute for frontend display (convertFileSrc)
+    let import_to = &state.config.import_to;
+    for person in &mut persons {
+        if let Some(ref path) = person.photo_path {
+            person.photo_path = Some(file::to_absolute_path(path, import_to));
+        }
+    }
     log::info!(target: "face_detection", "get_all_persons_for_list; count={}", persons.len());
     serde_json::to_string(&persons).map_err(|e| format!("Serialization error: {}", e))
 }
@@ -254,9 +262,14 @@ pub fn get_persons_with_faces(
         None
     };
 
-    let persons = state
+    let mut persons = state
         .meta_db
         .get_persons_with_faces(target_embedding.as_deref())?;
+    // Resolve relative photo_path to absolute for frontend display (convertFileSrc)
+    let import_to = &state.config.import_to;
+    for person in &mut persons {
+        person.photo_path = file::to_absolute_path(&person.photo_path, import_to);
+    }
 
     serde_json::to_string(&persons).map_err(|e| format!("Serialization error: {}", e))
 }
@@ -499,7 +512,12 @@ pub fn get_unknown_faces(
 ) -> Result<String, String> {
     let limit = limit.unwrap_or(50);
     let offset = offset.unwrap_or(0);
-    let faces = state.meta_db.get_unknown_faces(limit, offset)?;
+    let mut faces = state.meta_db.get_unknown_faces(limit, offset)?;
+    // Resolve relative photo_path to absolute for frontend display (convertFileSrc)
+    let import_to = &state.config.import_to;
+    for face in &mut faces {
+        face.photo_path = file::to_absolute_path(&face.photo_path, import_to);
+    }
     serde_json::to_string(&faces).map_err(|e| format!("Serialization error: {}", e))
 }
 
