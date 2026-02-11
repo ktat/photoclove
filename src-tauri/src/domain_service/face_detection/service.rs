@@ -4,7 +4,7 @@
 
 use image::DynamicImage;
 use std::io::Read;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use super::detector::FaceDetector;
@@ -290,7 +290,7 @@ impl FaceDetectionService {
     }
 
     /// Check if models are available
-    pub fn check_models_available(models_dir: &PathBuf) -> ModelsStatus {
+    pub fn check_models_available(models_dir: &Path) -> ModelsStatus {
         let detector_path = models_dir.join("det_10g.onnx");
         let embedder_path = models_dir.join("w600k_r50.onnx");
 

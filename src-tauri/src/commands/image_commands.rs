@@ -36,17 +36,17 @@ pub async fn link_file_to_public(
     _state: tauri::State<'_, crate::AppState>,
 ) -> Result<String, ()> {
     let from = path::Path::new(from_file_path);
-    let to = path::Path::new("../public/").join(to_file_name.to_string());
+    let to = path::Path::new("../public/").join(to_file_name);
     log::debug!(target: "file_service", "create_symlink; from={:?}; to={:?}", from, to);
 
     if cfg!(target_os = "windows") {
-        return match std::fs::copy(from, to.clone()) {
+        match std::fs::copy(from, to.clone()) {
             Ok(_) => Ok("true".to_string()),
             Err(e) => {
                 log::error!(target: "file_service", "copy_file_failed; from={:?}; to={:?}; error={:?}", from, to, e);
                 Ok("false".to_string())
             }
-        };
+        }
     } else {
         match fs::remove_file(to.as_path()) {
             Ok(_) => {}
@@ -181,7 +181,7 @@ pub fn get_resized_image(
 
     // Check if cached file exists and is newer than source
     if cache_path.exists() {
-        if let Ok(cache_metadata) = fs::metadata(&cache_path) {
+        if let Ok(cache_metadata) = fs::metadata(cache_path) {
             if let Ok(source_metadata) = fs::metadata(path_str) {
                 if let (Ok(cache_modified), Ok(source_modified)) =
                     (cache_metadata.modified(), source_metadata.modified())
@@ -223,7 +223,7 @@ pub fn get_resized_image(
                 {
                     let encoder = JpegEncoder::new_with_quality(&mut jpeg_data, 85);
                     if thumb_img.write_with_encoder(encoder).is_ok() {
-                        if let Ok(mut cache_file) = File::create(&cache_path) {
+                        if let Ok(mut cache_file) = File::create(cache_path) {
                             if cache_file.write_all(&jpeg_data).is_ok() {
                                 let exif_time = exif_start.elapsed();
                                 log::info!(target: "image", "raw_exif_thumbnail_cached; cache_path={}; size={}x{}; exif_ms={}; total_ms={}",
@@ -261,7 +261,7 @@ pub fn get_resized_image(
                         ) = (&thumbnail_field.value, &length_field.value)
                         {
                             if let (Some(&offset), Some(&length)) =
-                                (offset_vec.get(0), length_vec.get(0))
+                                (offset_vec.first(), length_vec.first())
                             {
                                 // Read the thumbnail data
                                 use std::io::{Read, Seek, SeekFrom};
@@ -302,7 +302,7 @@ pub fn get_resized_image(
                                             let exif_time = exif_start.elapsed();
 
                                             // Save to cache file
-                                            if let Ok(mut cache_file) = File::create(&cache_path) {
+                                            if let Ok(mut cache_file) = File::create(cache_path) {
                                                 if cache_file.write_all(&jpeg_data).is_ok() {
                                                     log::info!(target: "image", "exif_thumbnail_cached; cache_path={}; jpeg_start_offset={}; exif_ms={}; total_ms={}",
                                                     cache_path.display(), jpeg_start.unwrap_or(0), exif_time.as_millis(), start_time.elapsed().as_millis());
@@ -367,7 +367,7 @@ pub fn get_resized_image(
                     .write_with_encoder(encoder)
                     .map_err(|e| format!("Failed to encode RAW image: {}", e))?;
             }
-            if let Ok(mut cache_file) = File::create(&cache_path) {
+            if let Ok(mut cache_file) = File::create(cache_path) {
                 if cache_file.write_all(&jpeg_data).is_ok() {
                     log::info!(target: "image", "raw_decode_cached; cache_path={}; size={}x{}; total_ms={}",
                         cache_path.display(), raw_w, raw_h, start_time.elapsed().as_millis());
@@ -403,13 +403,11 @@ pub fn get_resized_image(
         } else {
             (width, height)
         }
+    } else if height > max_size {
+        let ratio = max_size as f32 / height as f32;
+        ((width as f32 * ratio) as u32, max_size)
     } else {
-        if height > max_size {
-            let ratio = max_size as f32 / height as f32;
-            ((width as f32 * ratio) as u32, max_size)
-        } else {
-            (width, height)
-        }
+        (width, height)
     };
 
     log::debug!(target: "image", "resizing; new_width={}; new_height={}", new_width, new_height);
@@ -436,7 +434,7 @@ pub fn get_resized_image(
     let encode_time = encode_start.elapsed();
 
     // Save to cache file
-    if let Ok(mut cache_file) = File::create(&cache_path) {
+    if let Ok(mut cache_file) = File::create(cache_path) {
         if cache_file.write_all(&jpeg_data).is_ok() {
             let total_time = start_time.elapsed();
             log::info!(target: "image", "resize_cached; cache_path={}; exif_ms={}; load_ms={}; resize_ms={}; encode_ms={}; total_ms={}",
@@ -614,7 +612,7 @@ pub fn get_raw_progressive_image(
                         .write_with_encoder(encoder)
                         .map_err(|e| format!("Failed to encode EXIF thumbnail: {}", e))?;
                 }
-                let mut cache_file = fs::File::create(&cache_path)
+                let mut cache_file = fs::File::create(cache_path)
                     .map_err(|e| format!("Failed to create cache file: {}", e))?;
                 cache_file
                     .write_all(&jpeg_data)
@@ -640,7 +638,7 @@ pub fn get_raw_progressive_image(
                         .write_with_encoder(encoder)
                         .map_err(|e| format!("Failed to encode decoded RAW: {}", e))?;
                 }
-                let mut cache_file = fs::File::create(&cache_path)
+                let mut cache_file = fs::File::create(cache_path)
                     .map_err(|e| format!("Failed to create cache file: {}", e))?;
                 cache_file
                     .write_all(&jpeg_data)

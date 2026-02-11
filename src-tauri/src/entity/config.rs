@@ -475,6 +475,7 @@ impl Config {
         if !config_file.exists() {
             let file = std::fs::OpenOptions::new()
                 .create(true)
+                .truncate(true)
                 .write(true)
                 .open(config_file.display().to_string())
                 .unwrap();
@@ -501,10 +502,8 @@ impl Config {
     fn prepare_directory_if_required(&self) {
         for f in [&self.import_to, &self.trash_path] {
             let result = fs::DirBuilder::new().recursive(true).create(f);
-            if !result.is_err() {
-                result.unwrap();
-            } else {
-                log::error!(target: "config", "directory_creation_failed; error={:?}", result.err());
+            if let Err(e) = result {
+                log::error!(target: "config", "directory_creation_failed; error={:?}", e);
             }
         }
     }
@@ -587,6 +586,6 @@ impl Config {
         let reader = BufReader::new(file);
         let config: Config = serde_yaml::from_reader(reader).unwrap();
         config.prepare_directory_if_required();
-        return config;
+        config
     }
 }

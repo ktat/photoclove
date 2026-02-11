@@ -138,6 +138,7 @@ pub(crate) trait RepositoryDB {
         sort: Sort,
         conifg: Option<config::Config>,
     ) -> Option<photo::Photo>;
+    #[allow(clippy::too_many_arguments)]
     async fn get_photos_in_date(
         &self,
         meta_data: &photo_meta::PhotoMetas,
@@ -151,6 +152,7 @@ pub(crate) trait RepositoryDB {
         extension: &str,
         conifg: Option<config::Config>,
     ) -> photo::Photos;
+    #[allow(clippy::too_many_arguments)]
     async fn get_recent_photos(
         &self,
         meta_data: &photo_meta::PhotoMetas,

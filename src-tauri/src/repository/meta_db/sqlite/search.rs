@@ -227,7 +227,7 @@ pub fn search_photos(
     let param_strings: Vec<String> = params
         .iter()
         .enumerate()
-        .map(|(i, param)| format_param_for_debug(i, param))
+        .map(|(i, param)| format_param_for_debug(i, param.as_ref()))
         .collect();
 
     let embedded_sql = create_embedded_sql(&sql_query, &params);
@@ -255,7 +255,7 @@ pub fn search_photos(
 
     // Add ORDER BY clause with primary and secondary sort fields
     let sort_value = crate::repository::sort_field_to_value(sort_field, sort_order);
-    sql_query.push_str(" ");
+    sql_query.push(' ');
     sql_query.push_str(&crate::repository::sort_to_order_by_clause(sort_value, "pm"));
 
     // Add LIMIT clause

@@ -124,7 +124,7 @@ fn extract_jpeg_exif_thumbnail(path: &Path) -> Option<(DynamicImage, u32, u32)> 
             target: "exif_thumbnail",
             "exif_thumbnail_invalid_jpeg; path={}; first_bytes={:02X}{:02X}",
             path.display(),
-            thumb_data.get(0).unwrap_or(&0),
+            thumb_data.first().unwrap_or(&0),
             thumb_data.get(1).unwrap_or(&0)
         );
         return None;
@@ -221,7 +221,7 @@ fn read_jpeg_at_offset(path: &Path, offset: u64, length: usize) -> Option<(Dynam
             target: "exif_thumbnail",
             "raw_exif_thumbnail_invalid_jpeg; path={}; first_bytes={:02X}{:02X}",
             path.display(),
-            thumb_data.get(0).unwrap_or(&0),
+            thumb_data.first().unwrap_or(&0),
             thumb_data.get(1).unwrap_or(&0)
         );
         return None;

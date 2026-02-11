@@ -154,7 +154,7 @@ fn get_lens_from_maker_note(data: Vec<u8>) -> String {
 
     // Panasonic signature: "Panasonic\0\0\0"
     let panasonic: [u8; 12] = [80, 97, 110, 97, 115, 111, 110, 105, 99, 0, 0, 0];
-    if &data[0..12] != &panasonic {
+    if data[0..12] != panasonic {
         return String::new();
     }
 

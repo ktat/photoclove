@@ -4,6 +4,7 @@ use super::SQLite;
 ///
 /// This is an internal optimization function used by collections.rs
 /// to efficiently load tags for multiple photos at once.
+#[allow(clippy::type_complexity)]
 pub(super) fn get_tags_for_photos_bulk(
     db: &SQLite,
     photo_paths: &[String],
@@ -57,7 +58,7 @@ pub(super) fn get_tags_for_photos_bulk(
 
         tags_map
             .entry(photo_path)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push((tag_id, tag_name, tag_color));
     }
 
@@ -72,6 +73,7 @@ pub(super) fn get_tags_for_photos_bulk(
 ///
 /// # Returns
 /// Vector of (id, name, color, metadata) tuples where metadata contains AI tag info
+#[allow(clippy::type_complexity)]
 pub(super) fn get_tags_for_photo_with_metadata(
     db: &SQLite,
     photo_path: &str,

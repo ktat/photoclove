@@ -115,10 +115,8 @@ fn get_memories_photos(
         .map_err(|e| format!("Failed to execute query: {}", e))?;
 
     let mut photos = Vec::new();
-    for row in rows {
-        if let Ok(photo) = row {
-            photos.push(photo);
-        }
+    for photo in rows.flatten() {
+        photos.push(photo);
     }
 
     Ok(photos)
@@ -175,10 +173,8 @@ fn get_memories_photos_grouped(
 
     // Group by year
     let mut grouped: std::collections::HashMap<String, Vec<photo::Photo>> = std::collections::HashMap::new();
-    for row in rows {
-        if let Ok((year, photo)) = row {
-            grouped.entry(year).or_insert_with(Vec::new).push(photo);
-        }
+    for (year, photo) in rows.flatten() {
+        grouped.entry(year).or_default().push(photo);
     }
 
     // Convert to sorted vector with years_ago calculation

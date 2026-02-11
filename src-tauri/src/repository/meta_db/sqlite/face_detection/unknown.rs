@@ -112,6 +112,7 @@ pub fn get_photos_for_unknown_faces_full(
         .prepare(&query)
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
 
+    #[allow(clippy::type_complexity)]
     let photos_data: Vec<(String, String, i32, Option<String>, Option<String>, Option<String>, Option<String>)> = stmt
         .query_map([], |row| {
             let path: String = row.get(0)?;

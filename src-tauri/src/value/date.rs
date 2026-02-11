@@ -1,5 +1,6 @@
 use chrono::{Datelike, Duration, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc};
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::time::SystemTime;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -160,7 +161,7 @@ pub struct Dates {
 impl Copy for Date {}
 impl Clone for Date {
     fn clone(&self) -> Date {
-        Date::new(self.year, self.month, self.day).unwrap()
+        *self
     }
 }
 
@@ -190,7 +191,7 @@ impl Date {
 
     pub fn new(year: i32, month: u32, day: u32) -> Option<Date> {
         let result = {
-            let ref this = Utc;
+            let this = &Utc;
             match NaiveDate::from_ymd_opt(year, month, day).and_then(|d| d.and_hms_opt(0, 0, 0)) {
                 Some(dt) => this.from_local_datetime(&dt),
                 None => LocalResult::None,
@@ -201,14 +202,10 @@ impl Date {
         }
 
         Some(Date {
-            year: year,
-            month: month,
-            day: day,
+            year,
+            month,
+            day,
         })
-    }
-
-    pub fn to_string(&self) -> String {
-        format!("{}-{:02}-{:02}", self.year, self.month, self.day)
     }
 
     /// Safe version that returns Result instead of panicking
@@ -218,10 +215,7 @@ impl Date {
             return Err("empty date string".to_string());
         }
 
-        let mut del = "/";
-        if delimitor.is_some() {
-            del = delimitor.unwrap();
-        }
+        let del = delimitor.unwrap_or("/");
 
         // Validate basic date format before processing
         if !Self::is_valid_date_format(date_str, delimitor) {
@@ -232,7 +226,7 @@ impl Date {
         }
 
         let re = regex::Regex::new(r" .+$").unwrap();
-        let replaced = re.replace(&date_str, "").to_string();
+        let replaced = re.replace(date_str, "").to_string();
         let mut splitted = replaced.split(del);
 
         let year = match splitted.next().unwrap().parse::<i32>() {
@@ -294,11 +288,17 @@ impl Date {
     }
 }
 
+impl fmt::Display for Date {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}-{:02}-{:02}", self.year, self.month, self.day)
+    }
+}
+
 impl Dates {
     pub fn new(dates: &[Date]) -> Dates {
         let mut d = Dates { dates: Vec::new() };
         for date in dates {
-            let d2 = date.clone();
+            let d2 = *date;
             d.dates.push(d2)
         }
         d
@@ -316,8 +316,10 @@ impl Dates {
 /// Time period for filtering statistics
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "type", rename_all = "lowercase")]
+#[derive(Default)]
 pub enum TimePeriod {
     /// All time (no filtering)
+    #[default]
     All,
     /// Specific year (e.g., 2023)
     Yearly { year: i32 },
@@ -327,11 +329,6 @@ pub enum TimePeriod {
     Weekly { start_date: Date },
 }
 
-impl Default for TimePeriod {
-    fn default() -> Self {
-        TimePeriod::All
-    }
-}
 
 impl TimePeriod {
     /// Parse from Option<String>, defaulting to All
@@ -354,10 +351,10 @@ impl TimePeriod {
                 year, month
             ),
             TimePeriod::Weekly { start_date } => {
-                let end_date = start_date.add_days(6).unwrap_or_else(|| start_date.clone());
+                let end_date = start_date.add_days(6).unwrap_or(*start_date);
                 format!(
                     " AND date(COALESCE(exif_date_time_original, photo_date)) BETWEEN '{}' AND '{}'",
-                    start_date.to_string(), end_date.to_string()
+                    start_date, end_date
                 )
             }
         }
@@ -421,12 +418,13 @@ impl TimePeriod {
             TimePeriod::Yearly { year } => format!("yearly:{}", year),
             TimePeriod::Monthly { year, month } => format!("monthly:{}-{:02}", year, month),
             TimePeriod::Weekly { start_date } => {
-                format!("weekly:{}", start_date.to_string())
+                format!("weekly:{}", start_date)
             }
         }
     }
 
     /// Get the period type as a simple string (for UI display)
+    #[allow(dead_code)]
     pub fn period_type(&self) -> &'static str {
         match self {
             TimePeriod::All => "all",
@@ -437,17 +435,18 @@ impl TimePeriod {
     }
 
     /// Get display label for this period
+    #[allow(dead_code)]
     pub fn display_label(&self) -> String {
         match self {
             TimePeriod::All => "All Time".to_string(),
             TimePeriod::Yearly { year } => format!("{}", year),
             TimePeriod::Monthly { year, month } => format!("{}-{:02}", year, month),
             TimePeriod::Weekly { start_date } => {
-                let end_date = start_date.add_days(6).unwrap_or_else(|| start_date.clone());
+                let end_date = start_date.add_days(6).unwrap_or(*start_date);
                 format!(
                     "{} - {}",
-                    start_date.to_string(),
-                    end_date.to_string()
+                    start_date,
+                    end_date
                 )
             }
         }

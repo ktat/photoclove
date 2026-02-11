@@ -60,7 +60,7 @@ impl SQLite {
         }
 
         // Validate date_summary currency on startup
-        if let Err(_) = date_summary::check_date_summary_currency(&sqlite) {
+        if date_summary::check_date_summary_currency(&sqlite).is_err() {
             log::info!(target: "date_summary", "startup_validation; status=failed; action=rebuilding");
             let _ = date_summary::rebuild_date_summary(&sqlite);
         }
@@ -578,6 +578,7 @@ impl SQLite {
     }
 
     /// Get tags for a photo with metadata (for AI tag confidence display)
+    #[allow(clippy::type_complexity)]
     pub fn get_tags_for_photo_with_metadata(
         &self,
         photo_path: &str,
@@ -586,6 +587,7 @@ impl SQLite {
     }
 
     /// Get tags for multiple photos in bulk (optimized for burst detection)
+    #[allow(clippy::type_complexity)]
     pub fn get_tags_for_photos_bulk(
         &self,
         photo_paths: &[String],

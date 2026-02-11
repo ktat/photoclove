@@ -277,7 +277,7 @@ pub fn similarities_to_results(
 
 /// ImageNet normalization constants (used by CLIP models)
 pub const CLIP_MEAN: [f32; 3] = [0.48145466, 0.4578275, 0.40821073];
-pub const CLIP_STD: [f32; 3] = [0.26862954, 0.26130258, 0.27577711];
+pub const CLIP_STD: [f32; 3] = [0.26862954, 0.261_302_6, 0.275_777_1];
 
 /// Preprocess image for CLIP models
 /// Returns tensor in NCHW format (batch=1, channels=3, height, width)

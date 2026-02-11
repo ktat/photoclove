@@ -59,6 +59,7 @@ pub async fn test_s3_connection(state: State<'_, AppState>) -> Result<String, St
 
 /// Save S3 configuration
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub fn save_s3_config(
     state: State<'_, AppState>,
     enabled: bool,
@@ -432,7 +433,7 @@ fn create_s3_sync_job(
     // Trigger job processing
     let db = Arc::new(SQLite::new(state.config.import_to.clone()));
     let app_handle = window.app_handle().clone();
-    process_new_jobs(db, state.config.copy_parallel as usize, app_handle);
+    process_new_jobs(db, state.config.copy_parallel, app_handle);
 
     Ok(format!(
         r#"{{"result": "started", "job_unit_id": "{}", "job_id": {}, "to_sync": {}}}"#,

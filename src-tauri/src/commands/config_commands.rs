@@ -119,9 +119,9 @@ pub fn save_config(_state: State<AppState>, config: Config) -> String {
     );
     if config.save() {
         log::info!(target: "config", "save_config_success; status=saved");
-        return "{result: true}".to_string();
+        "{result: true}".to_string()
     } else {
         log::error!(target: "config", "save_config_failed; status=error");
-        return "{result: false}".to_string();
+        "{result: false}".to_string()
     }
 }

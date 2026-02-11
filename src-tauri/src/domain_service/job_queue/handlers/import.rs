@@ -100,7 +100,7 @@ pub(crate) fn process_import_job(
                 .ok_or_else(|| "Failed to create date from file modification time".to_string())?
         };
 
-        log::debug!(target: "import_job", "date; final_date={}", date.to_string());
+        log::debug!(target: "import_job", "date; final_date={}", date);
 
         let filename = std::path::Path::new(file_path)
             .file_name()
@@ -160,7 +160,7 @@ pub(crate) fn process_import_job(
                 // Build relative path for DB storage: "YYYY-MM-DD/UUID/filename"
                 let relative_path = format!(
                     "{}/{}/{}",
-                    date.to_string(),
+                    date,
                     uuid,
                     filename
                 );

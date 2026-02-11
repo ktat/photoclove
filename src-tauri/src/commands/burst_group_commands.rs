@@ -50,7 +50,7 @@ pub async fn create_burst_group(
                 log::warn!(target: "burst_groups", "create_burst_group_rejected; correlation_id={}; reason=photo_already_grouped; path={}; existing_group={}",
                     correlation_id, path, existing_group_id);
                 return Err(format!("Photo '{}' is already in a burst group. Remove it from the existing group first.",
-                    path.split('/').last().unwrap_or(path)));
+                    path.split('/').next_back().unwrap_or(path)));
             }
             Ok(None) => {}
             Err(e) => {

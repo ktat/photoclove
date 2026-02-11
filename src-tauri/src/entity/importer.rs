@@ -45,14 +45,14 @@ pub struct ImportProgress {
 
 impl ImportProgress {
     pub fn new() -> ImportProgress {
-        return ImportProgress {
+        ImportProgress {
             start_time: time::SystemTime::now(),
             current_time: 0,
             now_importing: false,
             num: 0,
             progress: 0,
             num_per_sec: 0.0,
-        };
+        }
     }
 
     pub fn get_import_progress(&mut self) -> usize {
@@ -71,7 +71,7 @@ impl ImportProgress {
                 self.num_per_sec = (progress as f32) / t;
             }
         }
-        return self.progress;
+        self.progress
     }
 
     pub fn reset_import_progress(&mut self) {
@@ -272,6 +272,7 @@ impl ImporterSelectedFiles {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn import_photos(
         &self,
         window: &tauri::Window,
@@ -280,7 +281,7 @@ impl ImporterSelectedFiles {
         destination_dir: Arc<path::PathBuf>,
         trash_dir: Arc<path::PathBuf>,
         copy_parallel: usize,
-        progress: Arc<&Mutex<ImportProgress>>,
+        progress: &Mutex<ImportProgress>,
     ) -> Result<date::Dates, ()> {
         progress.lock().unwrap().start_time = time::SystemTime::now();
         progress.lock().unwrap().now_importing = true;
@@ -318,7 +319,7 @@ impl ImporterSelectedFiles {
                 files = Vec::new();
             }
         }
-        if files.len() > 0 {
+        if !files.is_empty() {
             photos_file_chunks.push(files);
         }
 
@@ -433,7 +434,7 @@ impl ImporterSelectedFiles {
         }
 
         progress.lock().unwrap().reset_import_progress();
-        drop(progress);
+        let _ = progress;
 
         let mut dates: date::Dates = date::Dates::empty();
         for key in arc_date_list.read().unwrap().keys() {
@@ -445,7 +446,7 @@ impl ImporterSelectedFiles {
             }
         }
 
-        return Result::Ok(dates);
+        Result::Ok(dates)
     }
 
     pub fn add_photo_file(&mut self, file: file::File) {
@@ -462,12 +463,12 @@ impl Importer {
     ) -> Importer {
         let sort = repository::Sort::Time;
         let dir = dir::Dir::new(directory);
-        return Importer {
+        Importer {
             dirs_files: dir.find_files_and_dirs(sort, page, num, date_after),
-            page: page,
-            num: num,
+            page,
+            num,
             paths: vec![],
-        };
+        }
     }
 
     pub fn set_importer_paths(&mut self, paths: Vec<String>) {

@@ -115,7 +115,7 @@ pub fn restore_from_trash(
             format!("Cannot get parent directory for restore: {:?}", restore_to),
         )
     })?;
-    fs::create_dir_all(&restore_dir)?;
+    fs::create_dir_all(restore_dir)?;
 
     let file_name = restore_to.file_name().ok_or_else(|| {
         std::io::Error::new(

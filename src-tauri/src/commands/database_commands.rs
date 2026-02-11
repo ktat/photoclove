@@ -37,11 +37,11 @@ pub async fn move_photos_to_exif_date(
     match state.meta_db.record_photos_all_meta_data(dates) {
         Ok(ret) => {
             let _ = window.emit("move_files", "finish");
-            return Ok(serde_json::to_string(&ret).unwrap_or_else(|_| "{}".to_string()));
+            Ok(serde_json::to_string(&ret).unwrap_or_else(|_| "{}".to_string()))
         }
         Err(_) => {
             let _ = window.emit("move_files", "failed");
-            return Ok("false".to_string());
+            Ok("false".to_string())
         }
     }
 }
@@ -107,11 +107,11 @@ pub async fn create_db_in_date(
     match state.meta_db.record_photos_all_meta_data(dates) {
         Ok(ret) => {
             let _ = window.emit("create_db", "finish");
-            return Ok(serde_json::to_string(&ret).unwrap_or_else(|_| "{}".to_string()));
+            Ok(serde_json::to_string(&ret).unwrap_or_else(|_| "{}".to_string()))
         }
         Err(_) => {
             let _ = window.emit("create_db", "failed");
-            return Ok("false".to_string());
+            Ok("false".to_string())
         }
     }
 }
@@ -153,11 +153,11 @@ pub async fn create_thumbnails(
     {
         Ok(ret) => {
             let _ = window.emit("create_thumbnails", "finish");
-            return Ok(serde_json::to_string(&ret).unwrap_or_else(|_| "{}".to_string()));
+            Ok(serde_json::to_string(&ret).unwrap_or_else(|_| "{}".to_string()))
         }
         Err(_) => {
             let _ = window.emit("create_thumbnails", "failed");
-            return Ok("false".to_string());
+            Ok("false".to_string())
         }
     }
 }
@@ -204,11 +204,11 @@ pub async fn create_thumbnails_in_date(
     {
         Ok(ret) => {
             let _ = window.emit("create_thumbnails", "finish");
-            return Ok(serde_json::to_string(&ret).unwrap_or_else(|_| "{}".to_string()));
+            Ok(serde_json::to_string(&ret).unwrap_or_else(|_| "{}".to_string()))
         }
         Err(_) => {
             let _ = window.emit("create_thumbnails", "failed");
-            return Ok("false".to_string());
+            Ok("false".to_string())
         }
     }
 }

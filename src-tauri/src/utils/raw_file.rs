@@ -25,6 +25,7 @@ pub fn is_supported_image(path: &str) -> bool {
 }
 
 /// Get RAW extensions as a regex alternation pattern (e.g., "cr2|cr3|nef|arw|dng|raf|orf|rw2")
+#[allow(dead_code)]
 pub fn raw_extensions_regex_pattern() -> &'static str {
     "cr2|cr3|nef|arw|dng|raf|orf|rw2"
 }

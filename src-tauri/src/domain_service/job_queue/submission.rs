@@ -19,7 +19,7 @@ pub fn submit_google_photos_upload_jobs(
         GOOGLE_PHOTOS_BATCH_SIZE
     );
 
-    let total_chunks = (photos.len() + GOOGLE_PHOTOS_BATCH_SIZE - 1) / GOOGLE_PHOTOS_BATCH_SIZE;
+    let total_chunks = photos.len().div_ceil(GOOGLE_PHOTOS_BATCH_SIZE);
 
     // Create single job unit for all Google Photos upload jobs
     let job_types = vec!["google_photos_upload".to_string()];

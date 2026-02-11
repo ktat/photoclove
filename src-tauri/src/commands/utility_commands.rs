@@ -32,14 +32,12 @@ pub fn greet(name: &str) -> String {
 pub fn lock(t: bool) -> bool {
     if !t {
         IN_LOCKING.store(false, Ordering::SeqCst);
-        return true;
+        true
+    } else if IN_LOCKING.load(Ordering::SeqCst) {
+        false
     } else {
-        if IN_LOCKING.load(Ordering::SeqCst) {
-            return false;
-        } else {
-            IN_LOCKING.store(true, Ordering::SeqCst);
-            return true;
-        }
+        IN_LOCKING.store(true, Ordering::SeqCst);
+        true
     }
 }
 

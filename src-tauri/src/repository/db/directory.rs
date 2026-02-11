@@ -27,7 +27,7 @@ fn matches_extension_filter(path: &str, filters: &[String]) -> bool {
     if filters.is_empty() {
         return true;
     }
-    let file_ext = path.split('.').last().unwrap_or("").to_lowercase();
+    let file_ext = path.split('.').next_back().unwrap_or("").to_lowercase();
     filters.iter().any(|ext| ext == &file_ext)
 }
 
@@ -103,15 +103,15 @@ impl RepositoryDB for Directory {
     fn get_dates(&self) -> date::Dates {
         let mut dates = date::Dates::empty();
         let dirs = dir_service::find_date_like_directories(&self.path);
-        for mut dir in dirs.dirs {
+        for dir in dirs.dirs {
             let d = dir.to_date();
-            if d.is_some() {
-                dates.dates.push(d.unwrap())
+            if let Some(date) = d {
+                dates.dates.push(date)
             }
         }
         dates
             .dates
-            .sort_by(|a, b| b.to_string().cmp(&a.to_string()));
+            .sort_by_key(|b| std::cmp::Reverse(b.to_string()));
         dates
     }
 
@@ -133,14 +133,14 @@ impl RepositoryDB for Directory {
                 }
             }
         }
-        return dates_num;
+        dates_num
     }
 
     fn get_photo_count_in_date(&self, date: date::Date) -> i32 {
         let dir = self.path.child(date.to_string());
         log::debug!(target: "directory", "photo_count_check; dir={:?}", dir);
         let files = dir_service::find_files(&dir);
-        return files.files.iter().count() as i32;
+        files.files.len() as i32
     }
 
     async fn get_photos_in_date(
@@ -186,21 +186,20 @@ impl RepositoryDB for Directory {
                 }
                 let mut meta = exif::ExifData::empty();
                 let result = meta_data.get(&relative_path);
-                if result.is_none() {
-                    log::debug!(target: "directory", "photo_meta_missing; file={:?}", &relative_path);
-                    meta.date_time = f.created_datetime();
-                    log::debug!(target: "directory", "photo_meta_fallback; date_time={}", meta.date_time);
-                    // No metadata available, use defaults
-                    p.set_star(0);
-                    p.set_comment("".to_string());
-                } else {
-                    let photo_meta = result.unwrap();
+                if let Some(photo_meta) = result {
                     meta.date_time = photo_meta.photo_time();
                     // Set orientation from photo_meta
                     meta.orientation = photo_meta.photo().meta_data.orientation.clone();
                     // Set star and comment from metadata
                     p.set_star(photo_meta.star.star());
                     p.set_comment(photo_meta.comment.comment());
+                } else {
+                    log::debug!(target: "directory", "photo_meta_missing; file={:?}", &relative_path);
+                    meta.date_time = f.created_datetime();
+                    log::debug!(target: "directory", "photo_meta_fallback; date_time={}", meta.date_time);
+                    // No metadata available, use defaults
+                    p.set_star(0);
+                    p.set_comment("".to_string());
                 }
                 p.embed_exif(meta);
                 photos.photos.push(p)
@@ -212,7 +211,7 @@ impl RepositoryDB for Directory {
                 if star > 0 && md.star.star() < star {
                     continue;
                 }
-                if has_comment && md.comment.comment().len() == 0 {
+                if has_comment && md.comment.comment().is_empty() {
                     continue;
                 }
 
@@ -260,7 +259,7 @@ impl RepositoryDB for Directory {
             Sort::PhotoTimeDesc | Sort::PhotoTime => {
                 log::debug!(target: "sorting", "applying_photo_time_desc_sort");
                 // Log first 3 photos' time values for debugging
-                if photos.photos.len() > 0 {
+                if !photos.photos.is_empty() {
                     let sample_size = std::cmp::min(3, photos.photos.len());
                     for i in 0..sample_size {
                         log::debug!(target: "sorting", "before_sort_sample; index={}; time={}; path={}",
@@ -273,7 +272,7 @@ impl RepositoryDB for Directory {
                     other => other,
                 });
                 // Log after sorting
-                if photos.photos.len() > 0 {
+                if !photos.photos.is_empty() {
                     let sample_size = std::cmp::min(3, photos.photos.len());
                     for i in 0..sample_size {
                         log::debug!(target: "sorting", "after_sort_sample; index={}; time={}; path={}",
@@ -383,7 +382,7 @@ impl RepositoryDB for Directory {
             if star > 0 && md.star.star() < star {
                 continue;
             }
-            if has_comment && md.comment.comment().len() == 0 {
+            if has_comment && md.comment.comment().is_empty() {
                 continue;
             }
 
@@ -430,7 +429,7 @@ impl RepositoryDB for Directory {
             let photos = self
                 .get_photos_in_date(
                     meta_data,
-                    date.clone(),
+                    date,
                     sort,
                     100,
                     page,
@@ -441,14 +440,14 @@ impl RepositoryDB for Directory {
                     Option::None,
                 )
                 .await;
-            if photos.photos.len() == 0 {
+            if photos.photos.is_empty() {
                 break 'outer;
             }
             for photo in photos.photos {
                 if next_is_target {
                     return Option::Some(photo);
                 }
-                if photo.file.path == path.to_string() {
+                if photo.file.path == path {
                     next_is_target = true;
                 }
             }
@@ -473,7 +472,7 @@ impl RepositoryDB for Directory {
             let photos = self
                 .get_photos_in_date(
                     meta_data,
-                    date.clone(),
+                    date,
                     sort,
                     100,
                     page,
@@ -484,11 +483,11 @@ impl RepositoryDB for Directory {
                     Option::None,
                 )
                 .await;
-            if photos.photos.len() == 0 {
+            if photos.photos.is_empty() {
                 break 'outer;
             }
             for photo in photos.photos {
-                if photo.file.path == path.to_string() {
+                if photo.file.path == path {
                     prev_is_target = true;
                 }
                 if prev_is_target {
@@ -531,9 +530,9 @@ impl RepositoryDB for Directory {
                 }
 
                 // file.path is absolute here (from filesystem scan)
-                match fs::rename(&file.path, &new_path.display().to_string()) {
-                    Ok(_) => log::info!(target: "directory", "file_moved; from={}; to={}", file.path, new_path.display().to_string()),
-                    Err(e) => log::error!(target: "directory", "file_move_failed; from={}; to={}; error={}", file.path, new_path.display().to_string(), e),
+                match fs::rename(&file.path, new_path.display().to_string()) {
+                    Ok(_) => log::info!(target: "directory", "file_moved; from={}; to={}", file.path, new_path.display()),
+                    Err(e) => log::error!(target: "directory", "file_move_failed; from={}; to={}; error={}", file.path, new_path.display(), e),
                 }
             }
         }

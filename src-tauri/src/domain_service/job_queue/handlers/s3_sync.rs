@@ -148,7 +148,7 @@ pub(crate) async fn process_s3_sync_job(
             if let Ok(entries) = std::fs::read_dir(&faces_dir) {
                 for entry in entries.flatten() {
                     let path = entry.path();
-                    if path.extension().map_or(false, |e| e == "jpg") {
+                    if path.extension().is_some_and(|e| e == "jpg") {
                         let path_str = path.to_string_lossy().to_string();
                         match s3_service.upload_thumbnail(&path_str, &thumbnail_store).await {
                             Ok(_) => {

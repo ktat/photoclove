@@ -147,7 +147,7 @@ pub(crate) fn update_collection(
     if let Some(n) = name {
         conn.execute(
             "UPDATE photo_collections SET name = ?, updated_at = ? WHERE id = ?",
-            &[&n as &dyn rusqlite::ToSql, &now, &id],
+            [&n as &dyn rusqlite::ToSql, &now, &id],
         )
         .map_err(|e| format!("Failed to update collection name: {}", e))?;
     }
@@ -155,7 +155,7 @@ pub(crate) fn update_collection(
     if let Some(d) = description {
         conn.execute(
             "UPDATE photo_collections SET description = ?, updated_at = ? WHERE id = ?",
-            &[&d as &dyn rusqlite::ToSql, &now, &id],
+            [&d as &dyn rusqlite::ToSql, &now, &id],
         )
         .map_err(|e| format!("Failed to update collection description: {}", e))?;
     }
@@ -163,7 +163,7 @@ pub(crate) fn update_collection(
     if let Some(c) = color {
         conn.execute(
             "UPDATE photo_collections SET color = ?, updated_at = ? WHERE id = ?",
-            &[&c as &dyn rusqlite::ToSql, &now, &id],
+            [&c as &dyn rusqlite::ToSql, &now, &id],
         )
         .map_err(|e| format!("Failed to update collection color: {}", e))?;
     }
@@ -171,7 +171,7 @@ pub(crate) fn update_collection(
     if let Some(cp) = cover_photo_path {
         conn.execute(
             "UPDATE photo_collections SET cover_photo_path = ?, updated_at = ? WHERE id = ?",
-            &[&cp as &dyn rusqlite::ToSql, &now, &id],
+            [&cp as &dyn rusqlite::ToSql, &now, &id],
         )
         .map_err(|e| format!("Failed to update collection cover photo: {}", e))?;
     }

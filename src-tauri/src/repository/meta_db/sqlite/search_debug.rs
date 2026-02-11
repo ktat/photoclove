@@ -6,7 +6,7 @@
 use rusqlite::Connection;
 
 /// Format parameter for debug logging
-pub fn format_param_for_debug(i: usize, param: &Box<dyn rusqlite::ToSql>) -> String {
+pub fn format_param_for_debug(i: usize, param: &dyn rusqlite::ToSql) -> String {
     match param.to_sql() {
         Ok(rusqlite::types::ToSqlOutput::Owned(rusqlite::types::Value::Text(text))) => {
             format!("${}: '{}'", i + 1, text)

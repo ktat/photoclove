@@ -107,7 +107,7 @@ pub async fn move_to_trash_batch(
         message: format!("Moved {} photos to trash, {} failed", succeeded, failed),
     };
 
-    Ok(serde_json::to_string(&result).map_err(|e| format!("Failed to serialize result: {}", e))?)
+    serde_json::to_string(&result).map_err(|e| format!("Failed to serialize result: {}", e))
 }
 
 /// Restores multiple photos from trash in a batch operation.
@@ -199,7 +199,7 @@ pub async fn restore_from_trash_batch(
         ),
     };
 
-    Ok(serde_json::to_string(&result).map_err(|e| format!("Failed to serialize result: {}", e))?)
+    serde_json::to_string(&result).map_err(|e| format!("Failed to serialize result: {}", e))
 }
 
 /// Permanently deletes multiple photos from trash in a batch operation.
@@ -272,7 +272,7 @@ pub async fn delete_permanently_batch(
         ),
     };
 
-    Ok(serde_json::to_string(&result).map_err(|e| format!("Failed to serialize result: {}", e))?)
+    serde_json::to_string(&result).map_err(|e| format!("Failed to serialize result: {}", e))
 }
 
 /// Empties the entire trash by permanently deleting all photos in it.
@@ -309,21 +309,19 @@ pub async fn empty_trash(state: tauri::State<'_, AppState>) -> Result<String, St
 
     let mut deleted_count = 0;
 
-    for row in rows {
-        if let Ok(path) = row {
-            // path is relative from DB (e.g., "2024-01-15/uuid/photo.jpg")
-            let photo = photo::Photo::new(file::File::from_relative(path.clone()), Option::Some(state.config.clone()));
-            // Resolve to absolute path (for old structure fallback in file_service)
-            let abs_import_path = file::to_absolute_path(&path, &state.config.import_to);
-            let abs_file = file::File::new(abs_import_path);
-            let trash = trash::Trash::new(state.config.trash_path.to_string());
+    for path in rows.flatten() {
+        // path is relative from DB (e.g., "2024-01-15/uuid/photo.jpg")
+        let photo = photo::Photo::new(file::File::from_relative(path.clone()), Option::Some(state.config.clone()));
+        // Resolve to absolute path (for old structure fallback in file_service)
+        let abs_import_path = file::to_absolute_path(&path, &state.config.import_to);
+        let abs_file = file::File::new(abs_import_path);
+        let trash = trash::Trash::new(state.config.trash_path.to_string());
 
-            // Remove file from trash permanently (pass relative path for trash lookup)
-            if file_service::remove_from_trash_permanently(abs_file, trash, &path).is_ok() {
-                // Permanently delete from database
-                meta_db.delete_photo_permanently(&photo);
-                deleted_count += 1;
-            }
+        // Remove file from trash permanently (pass relative path for trash lookup)
+        if file_service::remove_from_trash_permanently(abs_file, trash, &path).is_ok() {
+            // Permanently delete from database
+            meta_db.delete_photo_permanently(&photo);
+            deleted_count += 1;
         }
     }
 

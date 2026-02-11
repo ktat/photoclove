@@ -57,16 +57,16 @@ impl Photo {
         }
 
         Photo {
-            file: file,
+            file,
             time: created_time,
             dir: file::Dir::new(dir),
             meta_data: exif::ExifData::empty(),
             is_exif_not_loaded: true,
             is_meta_not_loaded: true,
             has_thumbnail: false,
-            import_to: import_to,
-            thumbnail_store: thumbnail_store,
-            has_config: has_config,
+            import_to,
+            thumbnail_store,
+            has_config,
             css_style: None,
             star: None,
             comment: None,
@@ -228,7 +228,7 @@ impl Photo {
             panic!("Invalid date string extracted from relative path: {}", self.file.path);
         }
 
-        return date::Date::from_string(&date_only.to_string(), Option::Some("-"));
+        date::Date::from_string(&date_only.to_string(), Option::Some("-"))
     }
 
     pub fn set_time(&mut self, time: String) {

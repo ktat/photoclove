@@ -20,14 +20,14 @@ pub enum OperationType {
     S3Sync,
 }
 
-impl ToString for OperationType {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for OperationType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            OperationType::MoveToTrash => "move_to_trash".to_string(),
-            OperationType::Restore => "restore".to_string(),
-            OperationType::Import => "import".to_string(),
-            OperationType::PermanentlyDelete => "permanently_delete".to_string(),
-            OperationType::S3Sync => "s3_sync".to_string(),
+            OperationType::MoveToTrash => write!(f, "move_to_trash"),
+            OperationType::Restore => write!(f, "restore"),
+            OperationType::Import => write!(f, "import"),
+            OperationType::PermanentlyDelete => write!(f, "permanently_delete"),
+            OperationType::S3Sync => write!(f, "s3_sync"),
         }
     }
 }
@@ -58,13 +58,13 @@ pub enum RecoveryStatus {
     Discarded,
 }
 
-impl ToString for RecoveryStatus {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for RecoveryStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RecoveryStatus::Pending => "pending".to_string(),
-            RecoveryStatus::Unrecoverable => "unrecoverable".to_string(),
-            RecoveryStatus::Resolved => "resolved".to_string(),
-            RecoveryStatus::Discarded => "discarded".to_string(),
+            RecoveryStatus::Pending => write!(f, "pending"),
+            RecoveryStatus::Unrecoverable => write!(f, "unrecoverable"),
+            RecoveryStatus::Resolved => write!(f, "resolved"),
+            RecoveryStatus::Discarded => write!(f, "discarded"),
         }
     }
 }

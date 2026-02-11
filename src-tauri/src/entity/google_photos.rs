@@ -102,7 +102,7 @@ static API_END_POINT_URL: &str = "https://photoslibrary.googleapis.com/v1/";
 impl GooglePhotos {
     pub fn new(access_token: String, refresh_token: String, db_path: String) -> GooglePhotos {
         GooglePhotos {
-            access_token: access_token,
+            access_token,
             refresh_token,
             db_path,
         }
@@ -132,7 +132,7 @@ impl GooglePhotos {
         let item = GooglePhotosAlbumItemForWrite { title: album_title };
         let data = GooglePhotosAlbumForWrite { album: item };
         let data_string = serde_json::to_string(&data).unwrap();
-        let response = self.post_request(&path, data_string).await;
+        let response = self.post_request(path, data_string).await;
 
         let album_response: GooglePhotosAlbumResponse = match response {
             Ok(response_text) => serde_json::from_str(&response_text).unwrap(),
@@ -141,7 +141,7 @@ impl GooglePhotos {
                 panic!("Failed to create Google Photos album: {}", e);
             }
         };
-        return album_response;
+        album_response
     }
 
     pub async fn upload_photo(&self, files: Vec<&str>) -> Result<(), String> {
@@ -327,7 +327,7 @@ impl GooglePhotos {
             return response.text().await;
         }
 
-        return response.text().await;
+        response.text().await
     }
 
     #[allow(dead_code)]

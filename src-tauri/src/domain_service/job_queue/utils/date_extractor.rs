@@ -6,6 +6,7 @@ use std::sync::Arc;
 /// Returns a set of date strings in YYYY-MM-DD format
 pub(crate) fn extract_dates_from_paths(file_paths: &[String]) -> HashSet<String> {
     let mut dates_set = HashSet::new();
+    let date_re = regex::Regex::new(r"^\d{4}-\d{2}-\d{2}$").unwrap();
 
     for file_path in file_paths {
         let path = std::path::Path::new(file_path);
@@ -17,9 +18,7 @@ pub(crate) fn extract_dates_from_paths(file_paths: &[String]) -> HashSet<String>
                     if let Some(date_str) = date_dir.file_name() {
                         let date_string = date_str.to_string_lossy().to_string();
                         // Only add if it looks like a date (YYYY-MM-DD format)
-                        if regex::Regex::new(r"^\d{4}-\d{2}-\d{2}$")
-                            .unwrap()
-                            .is_match(&date_string)
+                        if date_re.is_match(&date_string)
                         {
                             dates_set.insert(date_string);
                         }

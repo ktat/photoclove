@@ -229,26 +229,24 @@ impl LoggingService {
         // Remove all log files in the log directory
         match std::fs::read_dir(&self.log_directory) {
             Ok(entries) => {
-                for entry in entries {
-                    if let Ok(entry) = entry {
-                        let path = entry.path();
-                        if path.is_file() && path.extension().map_or(false, |ext| ext == "log") {
-                            match std::fs::remove_file(&path) {
-                                Ok(()) => {
-                                    info!(
-                                        target: "logging",
-                                        "log_file_removed; file={}",
-                                        path.display()
-                                    );
-                                }
-                                Err(e) => {
-                                    warn!(
-                                        target: "logging",
-                                        "failed_to_remove_log_file; file={}; error={}",
-                                        path.display(),
-                                        e
-                                    );
-                                }
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_file() && path.extension().is_some_and(|ext| ext == "log") {
+                        match std::fs::remove_file(&path) {
+                            Ok(()) => {
+                                info!(
+                                    target: "logging",
+                                    "log_file_removed; file={}",
+                                    path.display()
+                                );
+                            }
+                            Err(e) => {
+                                warn!(
+                                    target: "logging",
+                                    "failed_to_remove_log_file; file={}; error={}",
+                                    path.display(),
+                                    e
+                                );
                             }
                         }
                     }
@@ -281,33 +279,31 @@ impl LoggingService {
         // Remove all backend log files in the log directory
         match std::fs::read_dir(&self.log_directory) {
             Ok(entries) => {
-                for entry in entries {
-                    if let Ok(entry) = entry {
-                        let path = entry.path();
-                        if path.is_file()
-                            && path.extension().map_or(false, |ext| ext == "log")
-                            && path.file_name().map_or(false, |name| {
-                                let name_str = name.to_string_lossy();
-                                name_str.starts_with("photoclove-")
-                                    && !name_str.contains("frontend")
-                            })
-                        {
-                            match std::fs::remove_file(&path) {
-                                Ok(()) => {
-                                    info!(
-                                        target: "logging",
-                                        "backend_log_file_cleared; file={}",
-                                        path.display()
-                                    );
-                                }
-                                Err(e) => {
-                                    warn!(
-                                        target: "logging",
-                                        "failed_to_clear_backend_log_file; file={}; error={}",
-                                        path.display(),
-                                        e
-                                    );
-                                }
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_file()
+                        && path.extension().is_some_and(|ext| ext == "log")
+                        && path.file_name().is_some_and(|name| {
+                            let name_str = name.to_string_lossy();
+                            name_str.starts_with("photoclove-")
+                                && !name_str.contains("frontend")
+                        })
+                    {
+                        match std::fs::remove_file(&path) {
+                            Ok(()) => {
+                                info!(
+                                    target: "logging",
+                                    "backend_log_file_cleared; file={}",
+                                    path.display()
+                                );
+                            }
+                            Err(e) => {
+                                warn!(
+                                    target: "logging",
+                                    "failed_to_clear_backend_log_file; file={}; error={}",
+                                    path.display(),
+                                    e
+                                );
                             }
                         }
                     }
@@ -341,31 +337,29 @@ impl LoggingService {
         // Remove frontend log files
         match std::fs::read_dir(&self.log_directory) {
             Ok(entries) => {
-                for entry in entries {
-                    if let Ok(entry) = entry {
-                        let path = entry.path();
-                        if path.is_file()
-                            && path.extension().map_or(false, |ext| ext == "log")
-                            && path
-                                .file_name()
-                                .map_or(false, |name| name.to_string_lossy().contains("frontend"))
-                        {
-                            match std::fs::remove_file(&path) {
-                                Ok(()) => {
-                                    info!(
-                                        target: "logging",
-                                        "frontend_log_file_cleared; file={}",
-                                        path.display()
-                                    );
-                                }
-                                Err(e) => {
-                                    warn!(
-                                        target: "logging",
-                                        "failed_to_clear_frontend_log_file; file={}; error={}",
-                                        path.display(),
-                                        e
-                                    );
-                                }
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_file()
+                        && path.extension().is_some_and(|ext| ext == "log")
+                        && path
+                            .file_name()
+                            .is_some_and(|name| name.to_string_lossy().contains("frontend"))
+                    {
+                        match std::fs::remove_file(&path) {
+                            Ok(()) => {
+                                info!(
+                                    target: "logging",
+                                    "frontend_log_file_cleared; file={}",
+                                    path.display()
+                                );
+                            }
+                            Err(e) => {
+                                warn!(
+                                    target: "logging",
+                                    "failed_to_clear_frontend_log_file; file={}; error={}",
+                                    path.display(),
+                                    e
+                                );
                             }
                         }
                     }

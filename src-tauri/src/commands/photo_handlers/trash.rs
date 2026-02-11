@@ -114,7 +114,7 @@ pub async fn handle(ctx: &HandlerContext<'_>) -> Result<String, ()> {
 
     log::info!(target: "get_photos", "trash_complete; count={}; first_photo_debug={:?}",
                photos.photos.len(),
-               photos.photos.get(0).map(|p| format!("path={}, has_thumbnail={}", p.file.path, p.has_thumbnail)));
+               photos.photos.first().map(|p| format!("path={}, has_thumbnail={}", p.file.path, p.has_thumbnail)));
     let json_result = photos.to_json();
     log::debug!(target: "get_photos", "trash_json_response; response_length={}", json_result.len());
     Ok(json_result)

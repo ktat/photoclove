@@ -1,6 +1,5 @@
 use chrono::{DateTime, Utc};
 use keyring::Entry;
-use serde_json;
 
 fn main() {
     println!("🔍 Testing PhotoClove Keyring Storage...\n");

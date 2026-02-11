@@ -214,8 +214,8 @@ fn retry_move_to_trash(
 
     // Compute relative path by stripping import_to prefix
     let import_to = config.import_to.trim_end_matches('/');
-    let relative_path = if target_path.starts_with(import_to) {
-        target_path[import_to.len()..].trim_start_matches('/').to_string()
+    let relative_path = if let Some(stripped) = target_path.strip_prefix(import_to) {
+        stripped.trim_start_matches('/').to_string()
     } else {
         target_path.trim_start_matches('/').to_string()
     };
@@ -257,8 +257,8 @@ fn retry_restore(
 
     // Compute relative path by stripping import_to prefix
     let import_to = config.import_to.trim_end_matches('/');
-    let relative_path = if actual_path.starts_with(import_to) {
-        actual_path[import_to.len()..].trim_start_matches('/').to_string()
+    let relative_path = if let Some(stripped) = actual_path.strip_prefix(import_to) {
+        stripped.trim_start_matches('/').to_string()
     } else {
         actual_path.trim_start_matches('/').to_string()
     };
@@ -297,8 +297,8 @@ fn retry_permanently_delete(
 
     // Compute relative path by stripping import_to prefix
     let import_to = config.import_to.trim_end_matches('/');
-    let relative_path = if actual_path.starts_with(import_to) {
-        actual_path[import_to.len()..].trim_start_matches('/').to_string()
+    let relative_path = if let Some(stripped) = actual_path.strip_prefix(import_to) {
+        stripped.trim_start_matches('/').to_string()
     } else {
         actual_path.trim_start_matches('/').to_string()
     };

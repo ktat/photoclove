@@ -29,7 +29,7 @@ impl PhotoMetaWithExif {
     pub fn new(photo_meta: PhotoMeta, exif: exif::ExifData) -> PhotoMetaWithExif {
         PhotoMetaWithExif {
             meta: photo_meta,
-            exif: exif,
+            exif,
         }
     }
 }
@@ -37,7 +37,7 @@ impl PhotoMetaWithExif {
 impl PhotoMeta {
     pub fn new(photo: photo::Photo) -> PhotoMeta {
         PhotoMeta {
-            photo: photo,
+            photo,
             star: star::Star::new(0),
             comment: comment::Comment::new(""),
             google_photo_url: None,
@@ -77,7 +77,7 @@ impl PhotoMetas {
     }
 
     pub fn get(&self, key: &str) -> Option<&PhotoMeta> {
-        return self.data.get(key);
+        self.data.get(key)
     }
 
     pub fn insert(&mut self, key: &str, value: PhotoMeta) {
@@ -91,7 +91,7 @@ impl PhotoMetas {
 
     #[allow(dead_code)]
     pub fn get_with_photo(&self, photo: photo::Photo) -> Option<&PhotoMeta> {
-        return self.get(&photo.file.path);
+        self.get(&photo.file.path)
     }
 }
 
@@ -119,14 +119,14 @@ impl PhotoMeta {
         if let Some(ref orientation) = record.orientation {
             photo.meta_data.orientation = orientation.clone();
         }
-        return Some(PhotoMeta {
-            photo: photo,
+        Some(PhotoMeta {
+            photo,
             star: star::Star::new(record.star),
             comment: comment::Comment::new(&record.comment),
             google_photo_url: record.google_photo_url.clone(),
             tags: record.tags.clone(),
             storage_sync: record.storage_sync.clone(),
-        });
+        })
     }
 
     /// Create PhotoMeta from DB record for photos in trash
@@ -147,7 +147,7 @@ impl PhotoMeta {
             photo.meta_data.orientation = orientation.clone();
         }
         Some(PhotoMeta {
-            photo: photo,
+            photo,
             star: star::Star::new(record.star),
             comment: comment::Comment::new(&record.comment),
             google_photo_url: record.google_photo_url.clone(),
@@ -195,13 +195,13 @@ impl PhotoMeta {
         if self.photo.is_exif_empty() && self.photo.is_meta_empty() {
             let mut photo = self.photo.clone();
             photo.load_exif();
-            return photo.time();
+            photo.time()
         } else {
-            return self.photo.time();
+            self.photo.time()
         }
     }
 
     pub fn date_key(&self) -> String {
-        return self.photo.get_imported_dir_date().to_string();
+        self.photo.get_imported_dir_date().to_string()
     }
 }

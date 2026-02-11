@@ -170,15 +170,13 @@ pub fn get_photo_count_per_dates(sqlite: &SQLite, dates: date::Dates) -> DatesNu
     }) {
         Ok(rows) => {
             let mut counts = std::collections::HashMap::new();
-            for row in rows {
-                if let Ok((date_str, count)) = row {
-                    log::trace!(
-                        target: "counts",
-                        "get_photo_count_per_dates; db_date={}; photo_count={}",
-                        date_str, count
-                    );
-                    counts.insert(date_str, count);
-                }
+            for (date_str, count) in rows.flatten() {
+                log::trace!(
+                    target: "counts",
+                    "get_photo_count_per_dates; db_date={}; photo_count={}",
+                    date_str, count
+                );
+                counts.insert(date_str, count);
             }
             counts
         }

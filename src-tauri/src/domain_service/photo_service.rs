@@ -6,7 +6,7 @@ use crate::value::{comment, date, file, star};
 use image_compressor::{Factor, FolderCompressor};
 use regex::Regex;
 use std::error::Error;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::mpsc;
 
@@ -160,10 +160,11 @@ pub fn process_raw_thumbnails(
     Ok(count)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn create_thumbnails(
     dates: date::Dates,
-    origin: &PathBuf,
-    dest: &PathBuf,
+    origin: &Path,
+    dest: &Path,
     thread_count: u32,
     quolity: f32,
     size_ratio: f32,
@@ -171,8 +172,9 @@ pub async fn create_thumbnails(
     raw_config: Option<&RawProcessingConfig>,
 ) -> Result<(), Box<dyn Error>> {
     let mut last_result: Result<(), Box<dyn Error>> = Result::Ok(());
+    let re = Regex::new(r"\.(?i:jpe?g)$").unwrap();
     for date in dates.dates {
-        log::info!(target: "photo_service", "thumbnail_creation; date={}", date.to_string());
+        log::info!(target: "photo_service", "thumbnail_creation; date={}", date);
         let (tx, _tr) = mpsc::channel(); // Sender and Receiver. for more info, check mpsc and message passing.
         let from = origin.join(date.to_string());
         let to = dest.join(date.to_string());
@@ -183,16 +185,16 @@ pub async fn create_thumbnails(
         match process_raw_thumbnails(&from, &to, raw_cfg) {
             Ok(count) => {
                 if count > 0 {
-                    log::info!(target: "photo_service", "raw_thumbnails_processed; date={}; count={}", date.to_string(), count);
+                    log::info!(target: "photo_service", "raw_thumbnails_processed; date={}; count={}", date, count);
                 }
             }
             Err(e) => {
-                log::warn!(target: "photo_service", "raw_thumbnail_processing_error; date={}; error={}", date.to_string(), e);
+                log::warn!(target: "photo_service", "raw_thumbnail_processing_error; date={}; error={}", date, e);
             }
         }
 
         let mut comp = FolderCompressor::new(from.clone(), to.clone());
-        let factor = Factor::new(quolity * 100 as f32, size_ratio);
+        let factor = Factor::new(quolity * 100_f32, size_ratio);
         comp.set_factor(factor);
         comp.set_thread_count(thread_count);
         comp.set_sender(tx);
@@ -203,7 +205,6 @@ pub async fn create_thumbnails(
                 let ignore_file_size = ignore_file_size as u64;
                 log::info!(target: "photo_service", "thumbnail_processing; from={:?}; to={:?}", from, to);
                 let entries = std::fs::read_dir(&from)?;
-
                 for entry in entries {
                     let entry = entry?;
                     let file_name = entry.file_name();
@@ -215,7 +216,6 @@ pub async fn create_thumbnails(
                         if ext == "jpg" || ext == "jpeg" {
                             let file_size = entry.metadata()?.len();
                             let file_name_str = file_name.to_string_lossy();
-                            let re = Regex::new(r"\.(?i:jpe?g)$").unwrap();
                             let ext_with_dot = format!(".{}", ext);
                             let new_file_name = re.replace(&file_name_str, &ext_with_dot);
                             let new_file_path = to.join(new_file_name.as_ref());
@@ -248,15 +248,17 @@ pub async fn create_thumbnails(
                                 .arg("1")
                                 .arg(thumbnail_path.clone())
                                 .output();
-                            if output.is_ok() {
-                                let o = output.unwrap();
-                                if o.status.success() {
-                                    log::info!(target: "photo_service", "video_thumbnail; status=success; path={:?}", thumbnail_path);
-                                } else {
-                                    log::error!(target: "photo_service", "video_thumbnail_error; source={:?}; target={:?}; stderr={:?}", entry.path(), thumbnail_path, o.stderr);
+                            match output {
+                                Ok(o) => {
+                                    if o.status.success() {
+                                        log::info!(target: "photo_service", "video_thumbnail; status=success; path={:?}", thumbnail_path);
+                                    } else {
+                                        log::error!(target: "photo_service", "video_thumbnail_error; source={:?}; target={:?}; stderr={:?}", entry.path(), thumbnail_path, o.stderr);
+                                    }
                                 }
-                            } else {
-                                log::error!(target: "photo_service", "ffmpeg_error; error={:?}", output.err());
+                                Err(e) => {
+                                    log::error!(target: "photo_service", "ffmpeg_error; error={:?}", e);
+                                }
                             }
                         }
                     }
@@ -282,13 +284,13 @@ pub async fn create_thumbnails(
                 log::info!(target: "photo_service", "thumbnail_creation; status=success");
             }
             Err(ref e) => {
-                log::error!(target: "photo_service", "thumbnail_creation_error; error={}", e.to_string());
+                log::error!(target: "photo_service", "thumbnail_creation_error; error={}", e);
                 return r;
             }
         }
     }
 
-    return last_result;
+    last_result
 }
 
 #[cfg(test)]

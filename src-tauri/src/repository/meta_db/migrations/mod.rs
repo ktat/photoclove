@@ -216,11 +216,9 @@ fn has_column(conn: &Connection, column_name: &str) -> bool {
                 let name: String = row.get(1)?;
                 Ok(name)
             })?;
-            for row in rows {
-                if let Ok(name) = row {
-                    if name == column_name {
-                        return Ok(true);
-                    }
+            for name in rows.flatten() {
+                if name == column_name {
+                    return Ok(true);
                 }
             }
             Ok(false)
@@ -260,17 +258,15 @@ fn handle_legacy_migrations(conn: &Connection) -> Result<()> {
             let column_name: String = row.get(1)?;
             Ok(column_name)
         }) {
-            for row in rows {
-                if let Ok(column_name) = row {
-                    match column_name.as_str() {
-                        "date" => has_old_date_column = true,
-                        "photo_date" => has_new_photo_date_column = true,
-                        "created_at" => has_created_at = true,
-                        "exif_iso" => has_exif_iso = true,
-                        "css_style" => has_css_style = true,
-                        "delete_flg" => has_delete_flg = true,
-                        _ => {}
-                    }
+            for column_name in rows.flatten() {
+                match column_name.as_str() {
+                    "date" => has_old_date_column = true,
+                    "photo_date" => has_new_photo_date_column = true,
+                    "created_at" => has_created_at = true,
+                    "exif_iso" => has_exif_iso = true,
+                    "css_style" => has_css_style = true,
+                    "delete_flg" => has_delete_flg = true,
+                    _ => {}
                 }
             }
         }
@@ -379,6 +375,7 @@ fn migrate_legacy_schema(
             "exif_orientation",
         ]);
     } else {
+        #[allow(clippy::same_item_push)]
         for _ in 0..21 {
             select_cols.push("NULL");
         }

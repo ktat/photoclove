@@ -28,6 +28,7 @@ pub fn update_exif_if_changed(
         )
         .map_err(|e| format!("Failed to prepare statement: {}", e))?;
 
+    #[allow(clippy::type_complexity)]
     let db_exif: Option<(
         Option<String>, Option<String>, Option<String>, Option<String>,
         Option<String>, Option<String>, Option<String>, Option<String>,

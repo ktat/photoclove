@@ -44,8 +44,8 @@ pub fn get_available_dates(sqlite: &SQLite) -> Result<Vec<date::Date>, String> {
         Ok(date_strings) if !date_strings.is_empty() => {
             log::info!(target: "date_summary", "get_available_dates; using_optimized_table=true; count={}", date_strings.len());
             // Convert strings back to MappedRows format for process_date_rows
-            let simulated_rows = date_strings.into_iter().map(|s| Ok(s));
-            return process_date_rows_from_iter(simulated_rows);
+            let simulated_rows = date_strings.into_iter().map(Ok);
+            process_date_rows_from_iter(simulated_rows)
         }
         _ => {
             // No data or error, fall back to GROUP BY

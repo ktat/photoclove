@@ -17,11 +17,13 @@ impl CollectionType {
             _ => Err(format!("Unknown collection type: {}", s)),
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
+impl std::fmt::Display for CollectionType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CollectionType::Album => "album".to_string(),
-            CollectionType::Tag => "tag".to_string(),
+            CollectionType::Album => write!(f, "album"),
+            CollectionType::Tag => write!(f, "tag"),
         }
     }
 }
@@ -42,6 +44,7 @@ pub struct PhotoCollection {
 
 #[allow(dead_code)]
 impl PhotoCollection {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: i64,
         collection_type: CollectionType,

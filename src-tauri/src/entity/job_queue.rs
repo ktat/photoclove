@@ -22,13 +22,13 @@ pub enum JobUnitStatus {
     Failed,
 }
 
-impl ToString for JobUnitStatus {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for JobUnitStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            JobUnitStatus::Pending => "pending".to_string(),
-            JobUnitStatus::InProgress => "in_progress".to_string(),
-            JobUnitStatus::Completed => "completed".to_string(),
-            JobUnitStatus::Failed => "failed".to_string(),
+            JobUnitStatus::Pending => write!(f, "pending"),
+            JobUnitStatus::InProgress => write!(f, "in_progress"),
+            JobUnitStatus::Completed => write!(f, "completed"),
+            JobUnitStatus::Failed => write!(f, "failed"),
         }
     }
 }
@@ -77,19 +77,19 @@ pub enum JobType {
     InsightsCalculation,
 }
 
-impl ToString for JobType {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for JobType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            JobType::Import => "import".to_string(),
-            JobType::Thumbnail => "thumbnail".to_string(),
-            JobType::CreateDb => "create_db".to_string(),
-            JobType::GooglePhotosUpload => "google_photos_upload".to_string(),
-            JobType::RecalculateGrouping => "recalculate_grouping".to_string(),
-            JobType::AiTagging => "ai_tagging".to_string(),
-            JobType::S3Sync => "s3_sync".to_string(),
-            JobType::FaceDetection => "face_detection".to_string(),
-            JobType::FaceThumbnailRegenerate => "face_thumbnail_regenerate".to_string(),
-            JobType::InsightsCalculation => "insights_calculation".to_string(),
+            JobType::Import => write!(f, "import"),
+            JobType::Thumbnail => write!(f, "thumbnail"),
+            JobType::CreateDb => write!(f, "create_db"),
+            JobType::GooglePhotosUpload => write!(f, "google_photos_upload"),
+            JobType::RecalculateGrouping => write!(f, "recalculate_grouping"),
+            JobType::AiTagging => write!(f, "ai_tagging"),
+            JobType::S3Sync => write!(f, "s3_sync"),
+            JobType::FaceDetection => write!(f, "face_detection"),
+            JobType::FaceThumbnailRegenerate => write!(f, "face_thumbnail_regenerate"),
+            JobType::InsightsCalculation => write!(f, "insights_calculation"),
         }
     }
 }
@@ -121,13 +121,13 @@ pub enum JobStatus {
     Failed,
 }
 
-impl ToString for JobStatus {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for JobStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            JobStatus::Pending => "pending".to_string(),
-            JobStatus::Running => "running".to_string(),
-            JobStatus::Completed => "completed".to_string(),
-            JobStatus::Failed => "failed".to_string(),
+            JobStatus::Pending => write!(f, "pending"),
+            JobStatus::Running => write!(f, "running"),
+            JobStatus::Completed => write!(f, "completed"),
+            JobStatus::Failed => write!(f, "failed"),
         }
     }
 }

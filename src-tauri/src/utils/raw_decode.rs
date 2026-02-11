@@ -107,6 +107,7 @@ pub fn decode_raw_to_thumbnail_with_limit(
 }
 
 /// Demosaic multi-component data (3+ channels already available)
+#[allow(clippy::too_many_arguments)]
 fn demosaic_multi_component(
     data: &[f32],
     width: usize,

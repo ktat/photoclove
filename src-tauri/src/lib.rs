@@ -76,7 +76,6 @@ fn queue_startup_insights(config: &entity::config::Config, app_handle: tauri::Ap
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
-
 pub fn run() {
     use crate::entity::config;
     use crate::repository::*;
@@ -124,7 +123,7 @@ pub fn run() {
     }
 
     let job_queue_manager =
-        job_queue_service::JobQueueManager::new(sqlite_db, c.copy_parallel as usize);
+        job_queue_service::JobQueueManager::new(sqlite_db, c.copy_parallel);
 
     // Initialize logging service
     let logging_service =

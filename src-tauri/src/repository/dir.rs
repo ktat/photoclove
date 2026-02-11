@@ -13,7 +13,7 @@ fn get_created_time_from_metadata(metadata: &fs::Metadata) -> String {
         Local
             .timestamp_opt(epoch, 0)
             .single()
-            .unwrap_or_else(|| Local::now())
+            .unwrap_or_else(Local::now)
             .format("%Y-%m-%d %T")
             .to_string()
     }
@@ -54,7 +54,7 @@ pub struct DirsFiles {
 impl DirsFiles {
     pub fn new(path: String) -> DirsFiles {
         DirsFiles {
-            dir: Dir { path: path },
+            dir: Dir { path },
             dirs: file::Dirs::new(),
             files: file::Files::new(),
             has_next_file: false,
@@ -65,10 +65,10 @@ impl DirsFiles {
 
 impl Dir {
     pub fn new(path: String) -> Dir {
-        if path == "" {
+        if path.is_empty() {
             panic!("empty path is given!");
         }
-        Dir { path: path }
+        Dir { path }
     }
 
     pub fn find_all_files(&self, date_after: Option<date::Date>) -> file::Files {

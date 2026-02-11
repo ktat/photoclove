@@ -79,6 +79,7 @@ pub fn record_photos_meta_data(sqlite: &SQLite, photos: Vec<photo::Photo>) -> Re
 
     let now = date::DateTime::now().to_db_string();
     let import_to = sqlite.db_path().replace("/photoclove.db", "");
+    let date_re = regex::Regex::new(r"^(\d{4})-(0?[1-9]|1[012])-(0?[1-9]|[12][0-9]|30|31)$").unwrap();
     for mut photo in photos {
         // Load EXIF from absolute path on disk
         let abs_path = file::to_absolute_path(&photo.file.path, &import_to);
@@ -89,7 +90,6 @@ pub fn record_photos_meta_data(sqlite: &SQLite, photos: Vec<photo::Photo>) -> Re
         // Extract date from relative path (first component is the date directory)
         let date = {
             let first_component = photo.file.path.trim_start_matches('/').split('/').next().unwrap_or("");
-            let date_re = regex::Regex::new(r"^(\d{4})-(0?[1-9]|1[012])-(0?[1-9]|[12][0-9]|30|31)$").unwrap();
             if date_re.is_match(first_component) {
                 format!("{} 00:00:00", first_component)
             } else {
@@ -173,7 +173,7 @@ pub fn record_photos_all_meta_data(
         let date_dir = file::Dir::new(format!(
             "{}/{}",
             import_to,
-            date.to_string()
+            date
         ));
         let files = crate::domain_service::dir_service::find_files(&date_dir);
 
@@ -190,10 +190,7 @@ pub fn record_photos_all_meta_data(
 
         // Get existing photo paths from database by relative directory pattern
         let relative_date_dir = date.to_string();
-        let existing_photos = match sqlite.get_photo_paths_in_directory(&relative_date_dir) {
-            Ok(paths) => paths,
-            Err(_) => Vec::new(),
-        };
+        let existing_photos = sqlite.get_photo_paths_in_directory(&relative_date_dir).unwrap_or_default();
 
         // Create a set of current relative file paths from filesystem
         let current_paths: std::collections::HashSet<String> =
@@ -209,7 +206,7 @@ pub fn record_photos_all_meta_data(
 
         let result = record_photos_meta_data(sqlite, photos.photos);
         if result.is_err() {
-            log::error!(target: "sqlite", "photo_recording_error; date={}; error={:?}", date.to_string(), result.err()
+            log::error!(target: "sqlite", "photo_recording_error; date={}; error={:?}", date, result.err()
             );
         }
     }

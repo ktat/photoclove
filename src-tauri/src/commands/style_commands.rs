@@ -119,7 +119,7 @@ pub async fn save_styled_copy_from_frontend(
         .decode(image_data)
         .map_err(|e| format!("Failed to decode image data: {}", e))?;
 
-    fs::write(&new_abs_path, image_bytes).map_err(|e| format!("Failed to write image file: {}", e))?;
+    fs::write(new_abs_path, image_bytes).map_err(|e| format!("Failed to write image file: {}", e))?;
 
     // 6. Create Photo object with relative path for DB storage
     // record_photos_meta_data handles absolute path resolution for EXIF loading internally

@@ -61,6 +61,7 @@ pub(super) fn row_to_queued_job(row: &Row) -> rusqlite::Result<QueuedJob> {
 }
 
 /// Create PhotoInfo from database row data without tags
+#[allow(clippy::too_many_arguments)]
 pub(super) fn photo_info_from_row(
     path: String,
     date: String,
@@ -85,6 +86,7 @@ pub(super) fn photo_info_from_row(
 }
 
 /// Create PhotoInfo from database row data with tags
+#[allow(clippy::too_many_arguments)]
 pub(super) fn photo_info_from_row_with_tags(
     path: String,
     date: String,
@@ -133,7 +135,9 @@ pub(super) fn photo_info_from_row_with_tags(
         None
     };
 
-    let photo_info = meta_db::PhotoInfo {
+    
+
+    meta_db::PhotoInfo {
         path: path.clone(),
         date,
         star,
@@ -143,9 +147,7 @@ pub(super) fn photo_info_from_row_with_tags(
         tags: tags.clone(),
         orientation,
         storage_sync,
-    };
-
-    photo_info
+    }
 }
 
 /// Convert a database row to a Photo entity for grouping operations.
@@ -159,11 +161,11 @@ pub(super) fn row_to_photo_for_grouping(row: &Row) -> photo::Photo {
     let burst_group_id: Option<String> = row.get(4).unwrap_or_default();
 
     // Extract file name from path
-    let file_name = path.split('/').last().unwrap_or(&path).to_string();
+    let file_name = path.split('/').next_back().unwrap_or(&path).to_string();
 
     let file_obj = file::File {
         name: file_name,
-        path: path,
+        path,
         dir: String::new(),
         created_at: String::new(),
         is_link: false,

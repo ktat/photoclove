@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 use crate::AppState;
 use crate::repository::MetaInfoDB;
 
@@ -195,6 +197,7 @@ pub async fn get_tags_for_photo(
 ///
 /// # Returns
 /// Vector of tuples containing (tag_id, tag_name, tag_color, metadata_json)
+#[allow(clippy::type_complexity)]
 #[tauri::command]
 pub async fn get_tags_for_photo_with_metadata(
     photo_path: String,

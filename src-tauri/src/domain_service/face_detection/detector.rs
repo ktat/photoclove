@@ -187,6 +187,7 @@ impl FaceDetector {
 
     /// Parse SCRFD model outputs to extract face bounding boxes
     /// SCRFD outputs 9 tensors: 3 score maps, 3 bbox maps, 3 keypoint maps (for strides 8, 16, 32)
+    #[allow(clippy::too_many_arguments)]
     fn parse_scrfd_outputs(
         outputs: &[(String, Vec<usize>, Vec<f32>)],
         orig_width: u32,

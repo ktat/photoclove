@@ -169,10 +169,8 @@ pub fn get_photo_paths_in_directory(sqlite: &SQLite, dir_path: &str) -> Result<V
         .map_err(|e| format!("Failed to execute query: {}", e))?;
 
     let mut paths = Vec::new();
-    for row in rows {
-        if let Ok(path) = row {
-            paths.push(path);
-        }
+    for path in rows.flatten() {
+        paths.push(path);
     }
 
     log::debug!(target: "sqlite", "get_photo_paths_in_directory; dir={}; count={}", dir_path, paths.len());
@@ -365,10 +363,7 @@ pub fn get_css_style(sqlite: &SQLite, photo_path: &str) -> Option<String> {
         Ok(css_style)
     });
 
-    match result {
-        Ok(css_style) => css_style,
-        Err(_) => None,
-    }
+    result.unwrap_or_default()
 }
 
 /// Get created_at timestamp for a photo

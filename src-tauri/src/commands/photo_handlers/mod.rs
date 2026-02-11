@@ -52,6 +52,7 @@ pub struct SearchParams {
 }
 
 impl SearchParams {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         query: Option<String>,
         star: Option<i32>,

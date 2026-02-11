@@ -82,27 +82,33 @@ impl Dir {
         let p = Path::new(&path);
         let cp = PathAbs::new(p);
         let result = p.try_exists();
-        if !result.is_ok() || cp.is_err() {
-            if cp.is_err() {
-                log::error!(target: "file", "invalid_abs_path; path={:?}; error={:?}", p, cp.err());
-            } else {
+        match (result.is_err(), cp) {
+            (_, Err(e)) => {
+                log::error!(target: "file", "invalid_abs_path; path={:?}; error={:?}", p, e);
+                Dir {
+                    path: "/".to_string(),
+                    created_at: get_created_time("/".to_string()),
+                }
+            }
+            (true, Ok(abs_path)) => {
                 log::error!(
                     target: "file",
                     "invalid_path_for_dir; path={:?}; canonical_path={:?}",
                     p,
-                    cp.unwrap().as_path()
+                    abs_path.as_path()
                 );
+                Dir {
+                    path: "/".to_string(),
+                    created_at: get_created_time("/".to_string()),
+                }
             }
-            return Dir {
-                path: "/".to_string(),
-                created_at: get_created_time("/".to_string()),
-            };
-        } else {
-            let ap = PathAbs::new(p).unwrap().as_path().display().to_string();
-            return Dir {
-                path: ap.clone(),
-                created_at: get_created_time(ap),
-            };
+            (false, Ok(_)) => {
+                let ap = PathAbs::new(p).unwrap().as_path().display().to_string();
+                Dir {
+                    path: ap.clone(),
+                    created_at: get_created_time(ap),
+                }
+            }
         }
     }
 
@@ -110,7 +116,7 @@ impl Dir {
         PathBuf::from(self.path.clone())
     }
 
-    pub fn to_date(&mut self) -> Option<date::Date> {
+    pub fn to_date(&self) -> Option<date::Date> {
         // Helper function to safely parse date from regex captures
         fn parse_date_from_captures(cap: &regex::Captures) -> Option<date::Date> {
             let year: i32 = cap.get(1)?.as_str().parse().ok()?;
@@ -158,8 +164,7 @@ pub fn to_relative_path(absolute: &str, base: &str) -> String {
     let normalized_base = base.replace('\\', "/");
     let trimmed_base = normalized_base.trim_end_matches('/');
 
-    if normalized_abs.starts_with(trimmed_base) {
-        let relative = &normalized_abs[trimmed_base.len()..];
+    if let Some(relative) = normalized_abs.strip_prefix(trimmed_base) {
         let relative = relative.trim_start_matches('/');
         relative.to_string()
     } else {
@@ -229,7 +234,7 @@ impl File {
             Local
                 .timestamp_opt(epoch, 0)
                 .single()
-                .unwrap_or_else(|| Local::now())
+                .unwrap_or_else(Local::now)
                 .format("%Y-%m-%d %T")
                 .to_string()
         };
@@ -271,7 +276,7 @@ impl File {
 
         let cp = PathAbs::new(p);
 
-        if !p.exists() || cp.is_err() {
+        if !p.exists() {
             log::warn!(target: "file", "file_not_found; path={:?}; error={:?}", path, cp.err());
             // Return a default File object instead of panicking
             return File {
@@ -289,13 +294,18 @@ impl File {
                 created_at: "".to_string(),
                 is_link: false,
             };
-        } else {
-            let ap = cp.unwrap().as_path().display().to_string();
-            if p.file_name().is_none() || p.file_name().and_then(|n| n.to_str()).is_none() {
-                log::warn!(target: "file", "invalid_filename; path={:?}", path);
-                return File {
+        }
+
+        match cp {
+            Err(e) => {
+                log::warn!(target: "file", "file_not_found; path={:?}; error={:?}", path, e);
+                File {
                     path: path.to_string(),
-                    name: "invalid".to_string(),
+                    name: Path::new(&path)
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("unknown")
+                        .to_string(),
                     dir: Path::new(&path)
                         .parent()
                         .and_then(|p| p.to_str())
@@ -303,52 +313,83 @@ impl File {
                         .to_string(),
                     created_at: "".to_string(),
                     is_link: false,
-                };
+                }
             }
-            let file_name = p
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("unknown")
-                .to_string();
-            return File {
-                path: ap.clone(),
-                name: file_name,
-                dir: parent_path.display().to_string(),
-                created_at: get_created_time(ap),
-                is_link: !link.is_err(),
-            };
+            Ok(abs_path) => {
+                let ap = abs_path.as_path().display().to_string();
+                if p.file_name().is_none()
+                    || p.file_name().and_then(|n| n.to_str()).is_none()
+                {
+                    log::warn!(target: "file", "invalid_filename; path={:?}", path);
+                    return File {
+                        path: path.to_string(),
+                        name: "invalid".to_string(),
+                        dir: Path::new(&path)
+                            .parent()
+                            .and_then(|p| p.to_str())
+                            .unwrap_or("/")
+                            .to_string(),
+                        created_at: "".to_string(),
+                        is_link: false,
+                    };
+                }
+                let file_name = p
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("unknown")
+                    .to_string();
+                File {
+                    path: ap.clone(),
+                    name: file_name,
+                    dir: parent_path.display().to_string(),
+                    created_at: get_created_time(ap),
+                    is_link: link.is_ok(),
+                }
+            }
         }
     }
 
     pub fn new_if_exists(path: String) -> Option<File> {
         let p = Path::new(&path);
         let cp = PathAbs::new(p);
-        if !p.exists() || cp.is_err() {
+        if !p.exists() {
             log::warn!(
                 target: "file",
-                "invalid_path_for_file; path={:?}; error={:?}",
+                "invalid_path_for_file; path={:?}; error=file does not exist",
                 path,
-                cp.err()
             );
             return Option::None;
-        } else {
-            let ap = cp.unwrap().as_path().display().to_string();
-            return Option::Some(File::new(ap));
+        }
+        match cp {
+            Err(e) => {
+                log::warn!(
+                    target: "file",
+                    "invalid_path_for_file; path={:?}; error={:?}",
+                    path,
+                    e
+                );
+                Option::None
+            }
+            Ok(abs_path) => {
+                let ap = abs_path.as_path().display().to_string();
+                Option::Some(File::new(ap))
+            }
         }
     }
 
+    #[allow(dead_code)]
     pub fn is_created_before(&self, filter_date: date::Date) -> bool {
-        return self.created_date() < filter_date.to_string();
+        self.created_date() < filter_date.to_string()
     }
 
     pub fn created_date(&self) -> String {
         let t = self.get_created_time();
-        return t.format("%Y-%m-%d").to_string();
+        t.format("%Y-%m-%d").to_string()
     }
 
     pub fn created_datetime(&self) -> String {
         let t = self.get_created_time();
-        return t.format("%Y-%m-%d %T").to_string();
+        t.format("%Y-%m-%d %T").to_string()
     }
 
     fn get_created_time(&self) -> chrono::DateTime<Local> {
@@ -398,7 +439,7 @@ impl File {
             }
         };
         let filename = remove_path.replace(&self.path, "");
-        return filename.to_string();
+        filename.to_string()
     }
 
     #[allow(dead_code)]
@@ -409,7 +450,7 @@ impl File {
             created = true;
             std::fs::File::create(&self.path).expect("create failed");
         }
-        return created;
+        created
     }
 }
 
