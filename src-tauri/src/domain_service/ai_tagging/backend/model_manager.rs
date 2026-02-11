@@ -184,8 +184,8 @@ impl ModelManager {
     /// Download a model (synchronous, blocking)
     /// For async download with progress, use download_model_async
     pub fn download_model(&self, model_id: &str) -> Result<(), String> {
-        let model_info = Self::get_model_info(model_id)
-            .ok_or_else(|| format!("Unknown model: {}", model_id))?;
+        let model_info =
+            Self::get_model_info(model_id).ok_or_else(|| format!("Unknown model: {}", model_id))?;
 
         self.ensure_models_dir()?;
 
@@ -245,8 +245,8 @@ impl ModelManager {
 
     /// Delete a downloaded model
     pub fn delete_model(&self, model_id: &str) -> Result<(), String> {
-        let model_info = Self::get_model_info(model_id)
-            .ok_or_else(|| format!("Unknown model: {}", model_id))?;
+        let model_info =
+            Self::get_model_info(model_id).ok_or_else(|| format!("Unknown model: {}", model_id))?;
 
         for file in &model_info.files {
             let file_path = self.get_model_file_path(&file.filename);

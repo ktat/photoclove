@@ -9,11 +9,11 @@
 //!
 //! Supports time period filtering: all, weekly, monthly, yearly.
 
-pub mod stats_types;
 pub mod stats_queries;
+pub mod stats_types;
 
-pub use stats_types::*;
 use stats_queries::*;
+pub use stats_types::*;
 
 use crate::entity::config::Config;
 use crate::repository::meta_db::sqlite::SQLite;

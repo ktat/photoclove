@@ -94,7 +94,13 @@ pub(crate) fn add_photos_to_collection_bulk(
             .enumerate()
             .map(|(i, _)| {
                 let base = i * 4;
-                format!("(?{}, ?{}, ?{}, ?{})", base + 1, base + 2, base + 3, base + 4)
+                format!(
+                    "(?{}, ?{}, ?{}, ?{})",
+                    base + 1,
+                    base + 2,
+                    base + 3,
+                    base + 4
+                )
             })
             .collect();
 
@@ -115,7 +121,8 @@ pub(crate) fn add_photos_to_collection_bulk(
 
         let param_refs: Vec<&dyn rusqlite::ToSql> = params_vec.iter().map(|p| p.as_ref()).collect();
 
-        let rows_affected = conn.execute(&sql, param_refs.as_slice())
+        let rows_affected = conn
+            .execute(&sql, param_refs.as_slice())
             .map_err(|e| format!("Failed to bulk insert photos: {}", e))?;
 
         total_inserted += rows_affected;

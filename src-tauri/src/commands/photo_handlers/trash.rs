@@ -55,7 +55,8 @@ pub async fn handle(ctx: &HandlerContext<'_>) -> Result<String, ()> {
                     new_path
                 } else {
                     // Fallback to old structure: trash_path/abs_path_without_leading_slash
-                    let abs_path = crate::value::file::to_absolute_path(&photo_path, &config.import_to);
+                    let abs_path =
+                        crate::value::file::to_absolute_path(&photo_path, &config.import_to);
                     let old_path = format!("{}/{}", trash_path, abs_path.trim_start_matches('/'));
                     old_path
                 }

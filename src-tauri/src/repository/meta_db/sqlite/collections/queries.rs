@@ -1,8 +1,8 @@
 //! Collection query operations (get photos, search collections)
 
 use crate::entity::{config, photo};
-use crate::repository::meta_db::sqlite::SQLite;
 use crate::repository::meta_db::sqlite::tags;
+use crate::repository::meta_db::sqlite::SQLite;
 use crate::value::file;
 use rusqlite::params;
 
@@ -102,7 +102,8 @@ pub(crate) fn get_collection_photos(
         if let Some(photo_tags) = tags_map.get(&path) {
             if !photo_tags.is_empty() {
                 // Convert tuple format to PhotoTag objects
-                let tags: Vec<photo::PhotoTag> = photo_tags.iter()
+                let tags: Vec<photo::PhotoTag> = photo_tags
+                    .iter()
                     .map(|(id, name, color)| photo::PhotoTag::new(*id, name.clone(), color.clone()))
                     .collect();
                 photo.tags = Some(tags);
@@ -143,7 +144,11 @@ pub(crate) fn get_photos_by_collection_ids(
 
     let order_clause = crate::repository::sort_to_order_by_clause(sort_value, "pm");
 
-    let placeholders = collection_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+    let placeholders = collection_ids
+        .iter()
+        .map(|_| "?")
+        .collect::<Vec<_>>()
+        .join(",");
     let collection_count = collection_ids.len() as i32;
 
     // Query: get photos that are in ALL specified collections (AND logic)
@@ -185,7 +190,15 @@ pub(crate) fn get_photos_by_collection_ids(
             let exif_orientation: Option<String> = row.get("exif_orientation")?;
             let burst_group_id: Option<String> = row.get("burst_group_id")?;
 
-            Ok((path, photo_date, star, comment, css_style, exif_orientation, burst_group_id))
+            Ok((
+                path,
+                photo_date,
+                star,
+                comment,
+                css_style,
+                exif_orientation,
+                burst_group_id,
+            ))
         })
         .map_err(|e| format!("Failed to query photos: {}", e))?
         .collect::<Result<Vec<_>, _>>()
@@ -198,7 +211,9 @@ pub(crate) fn get_photos_by_collection_ids(
 
     // Build Photo entities
     let mut photos = Vec::new();
-    for (path, photo_date, star, comment, css_style, exif_orientation, burst_group_id) in photos_data {
+    for (path, photo_date, star, comment, css_style, exif_orientation, burst_group_id) in
+        photos_data
+    {
         let file = file::File::from_relative(path.clone());
         let mut photo = photo::Photo::new(file, config.clone());
 
@@ -216,7 +231,8 @@ pub(crate) fn get_photos_by_collection_ids(
 
         if let Some(photo_tags) = tags_map.get(&path) {
             if !photo_tags.is_empty() {
-                let tags: Vec<photo::PhotoTag> = photo_tags.iter()
+                let tags: Vec<photo::PhotoTag> = photo_tags
+                    .iter()
                     .map(|(id, name, color)| photo::PhotoTag::new(*id, name.clone(), color.clone()))
                     .collect();
                 photo.tags = Some(tags);
@@ -261,12 +277,13 @@ pub(crate) fn get_collections_for_photo(
                 )
                 .map_err(|e| format!("Failed to prepare query: {}", e))?;
 
-            let result = stmt.query_map(params![photo_path, t], |row| {
-                Ok((row.get(0)?, row.get(1)?, row.get(2)?))
-            })
-            .map_err(|e| format!("Failed to query collections: {}", e))?
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| format!("Failed to collect results: {}", e))?;
+            let result = stmt
+                .query_map(params![photo_path, t], |row| {
+                    Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+                })
+                .map_err(|e| format!("Failed to query collections: {}", e))?
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|e| format!("Failed to collect results: {}", e))?;
             result
         }
         None => {
@@ -279,12 +296,13 @@ pub(crate) fn get_collections_for_photo(
                 )
                 .map_err(|e| format!("Failed to prepare query: {}", e))?;
 
-            let result = stmt.query_map(params![photo_path], |row| {
-                Ok((row.get(0)?, row.get(1)?, row.get(2)?))
-            })
-            .map_err(|e| format!("Failed to query collections: {}", e))?
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| format!("Failed to collect results: {}", e))?;
+            let result = stmt
+                .query_map(params![photo_path], |row| {
+                    Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+                })
+                .map_err(|e| format!("Failed to query collections: {}", e))?
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|e| format!("Failed to collect results: {}", e))?;
             result
         }
     };

@@ -177,8 +177,10 @@ impl FaceDetector {
 
                 // SCRFD uses RGB format: (pixel - 127.5) / 128.0
                 tensor[idx] = (pixel[0] as f32 - 127.5) / 128.0; // R channel
-                tensor[(INPUT_SIZE * INPUT_SIZE) as usize + idx] = (pixel[1] as f32 - 127.5) / 128.0; // G channel
-                tensor[(2 * INPUT_SIZE * INPUT_SIZE) as usize + idx] = (pixel[2] as f32 - 127.5) / 128.0; // B channel
+                tensor[(INPUT_SIZE * INPUT_SIZE) as usize + idx] =
+                    (pixel[1] as f32 - 127.5) / 128.0; // G channel
+                tensor[(2 * INPUT_SIZE * INPUT_SIZE) as usize + idx] =
+                    (pixel[2] as f32 - 127.5) / 128.0; // B channel
             }
         }
 

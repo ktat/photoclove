@@ -2,8 +2,8 @@
 //!
 //! Provides helper functions to check achievements and emit events to frontend.
 
-use crate::repository::meta_db::sqlite::SQLite;
 use super::service::{AchievementService, AchievementWithProgress};
+use crate::repository::meta_db::sqlite::SQLite;
 use tauri::Emitter;
 
 /// Check a first-action achievement and emit event if newly achieved.

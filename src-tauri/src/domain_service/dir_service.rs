@@ -27,7 +27,9 @@ pub fn find_files(dir: &file::Dir) -> file::Files {
             Err(_) => continue,
         };
 
-        if entry_path.display().to_string() != "." && (file_type.is_file() || file_type.is_symlink()) {
+        if entry_path.display().to_string() != "."
+            && (file_type.is_file() || file_type.is_symlink())
+        {
             let metadata = match entry.metadata() {
                 Ok(m) => m,
                 Err(_) => continue,

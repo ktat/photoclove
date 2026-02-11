@@ -131,7 +131,8 @@ fn extract_jpeg_exif_thumbnail(path: &Path) -> Option<(DynamicImage, u32, u32)> 
     }
 
     // Parse thumbnail as JPEG
-    let thumb_image = image::load_from_memory_with_format(&thumb_data, image::ImageFormat::Jpeg).ok()?;
+    let thumb_image =
+        image::load_from_memory_with_format(&thumb_data, image::ImageFormat::Jpeg).ok()?;
     let (width, height) = (thumb_image.width(), thumb_image.height());
 
     log::debug!(
@@ -208,7 +209,11 @@ fn extract_raw_exif_thumbnail(path: &Path) -> Option<(DynamicImage, u32, u32)> {
 }
 
 /// Read JPEG data at a specific file offset and decode it
-fn read_jpeg_at_offset(path: &Path, offset: u64, length: usize) -> Option<(DynamicImage, u32, u32)> {
+fn read_jpeg_at_offset(
+    path: &Path,
+    offset: u64,
+    length: usize,
+) -> Option<(DynamicImage, u32, u32)> {
     let mut file = File::open(path).ok()?;
     file.seek(SeekFrom::Start(offset)).ok()?;
 
@@ -227,7 +232,8 @@ fn read_jpeg_at_offset(path: &Path, offset: u64, length: usize) -> Option<(Dynam
         return None;
     }
 
-    let thumb_image = image::load_from_memory_with_format(&thumb_data, image::ImageFormat::Jpeg).ok()?;
+    let thumb_image =
+        image::load_from_memory_with_format(&thumb_data, image::ImageFormat::Jpeg).ok()?;
     let (width, height) = (thumb_image.width(), thumb_image.height());
 
     log::debug!(
@@ -290,7 +296,9 @@ fn extract_raw_embedded_jpeg(path: &Path) -> Option<(DynamicImage, u32, u32)> {
             None => continue,
         };
 
-        if let Ok(img) = image::load_from_memory_with_format(&jpeg_data[..eoi], image::ImageFormat::Jpeg) {
+        if let Ok(img) =
+            image::load_from_memory_with_format(&jpeg_data[..eoi], image::ImageFormat::Jpeg)
+        {
             let (w, h) = (img.width(), img.height());
             log::debug!(
                 target: "exif_thumbnail",

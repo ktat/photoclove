@@ -21,7 +21,10 @@ pub(crate) async fn process_s3_sync_job(
 
     // Get app state for S3 config
     let state = app_handle.state::<crate::AppState>();
-    let s3_config = state.config.s3.clone()
+    let s3_config = state
+        .config
+        .s3
+        .clone()
         .ok_or("S3 backup is not configured")?;
 
     if !s3_config.enabled {
@@ -78,7 +81,11 @@ pub(crate) async fn process_s3_sync_job(
         let progress = ((idx as f32 / total as f32) * 100.0) as u32;
         if let Err(e) = app_handle.emit(
             "s3_sync_progress",
-            (&job.job_unit_id, format!("Uploading {}/{}", idx + 1, total), progress),
+            (
+                &job.job_unit_id,
+                format!("Uploading {}/{}", idx + 1, total),
+                progress,
+            ),
         ) {
             log::error!(target: "s3_sync", "emit_error; error={}", e);
         }
@@ -102,7 +109,10 @@ pub(crate) async fn process_s3_sync_job(
                     let thumbnail_path = change_extension_to_jpg(&thumbnail_path);
 
                     if Path::new(&thumbnail_path).exists() {
-                        match s3_service.upload_thumbnail(&thumbnail_path, &thumbnail_store).await {
+                        match s3_service
+                            .upload_thumbnail(&thumbnail_path, &thumbnail_store)
+                            .await
+                        {
                             Ok(thumb_url) => {
                                 log::debug!(target: "s3_sync", "thumbnail_upload_success; path={}; s3_url={}", thumbnail_path, thumb_url);
                             }
@@ -120,11 +130,9 @@ pub(crate) async fn process_s3_sync_job(
 
                 // Add to recovery queue for retry
                 let error_reason = format!("provider={};error={}", provider, e);
-                if let Err(re) = db.add_to_recovery_queue(
-                    OperationType::S3Sync,
-                    photo_path,
-                    &error_reason,
-                ) {
+                if let Err(re) =
+                    db.add_to_recovery_queue(OperationType::S3Sync, photo_path, &error_reason)
+                {
                     log::error!(target: "s3_sync", "recovery_queue_error; path={}; error={}", photo_path, re);
                 }
             }
@@ -134,7 +142,14 @@ pub(crate) async fn process_s3_sync_job(
     // Emit completion event
     if let Err(e) = app_handle.emit(
         "s3_sync_progress",
-        (&job.job_unit_id, format!("Completed: {} success, {} failed", success_count, fail_count), 100),
+        (
+            &job.job_unit_id,
+            format!(
+                "Completed: {} success, {} failed",
+                success_count, fail_count
+            ),
+            100,
+        ),
     ) {
         log::error!(target: "s3_sync", "emit_error; error={}", e);
     }
@@ -150,7 +165,10 @@ pub(crate) async fn process_s3_sync_job(
                     let path = entry.path();
                     if path.extension().is_some_and(|e| e == "jpg") {
                         let path_str = path.to_string_lossy().to_string();
-                        match s3_service.upload_thumbnail(&path_str, &thumbnail_store).await {
+                        match s3_service
+                            .upload_thumbnail(&path_str, &thumbnail_store)
+                            .await
+                        {
                             Ok(_) => {
                                 face_thumb_count += 1;
                             }
@@ -198,7 +216,8 @@ fn update_storage_sync(
     provider: &str,
     s3_url: &str,
 ) -> Result<(), String> {
-    let conn = db.get_connection()
+    let conn = db
+        .get_connection()
         .map_err(|e| format!("Failed to get database connection: {}", e))?;
 
     // Get existing storage_sync value
@@ -229,7 +248,8 @@ fn update_storage_sync(
     conn.execute(
         "UPDATE photo_metadata SET storage_sync = ?1 WHERE path = ?2",
         rusqlite::params![sync_json, photo_path],
-    ).map_err(|e| format!("Failed to update storage_sync: {}", e))?;
+    )
+    .map_err(|e| format!("Failed to update storage_sync: {}", e))?;
 
     Ok(())
 }
@@ -239,7 +259,10 @@ fn change_extension_to_jpg(path: &str) -> String {
     let path_buf = Path::new(path);
     if let Some(stem) = path_buf.file_stem() {
         if let Some(parent) = path_buf.parent() {
-            return parent.join(format!("{}.jpg", stem.to_string_lossy())).to_string_lossy().to_string();
+            return parent
+                .join(format!("{}.jpg", stem.to_string_lossy()))
+                .to_string_lossy()
+                .to_string();
         }
     }
     // Fallback: just append .jpg

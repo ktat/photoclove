@@ -21,7 +21,8 @@ pub async fn handle(ctx: &HandlerContext<'_>, params: &SearchParams) -> Result<S
     log::info!(target: "get_photos", "unknown_faces_request");
 
     // Get full photo objects for unknown faces
-    let mut photos_vec = ctx.meta_db
+    let mut photos_vec = ctx
+        .meta_db
         .get_photos_for_unknown_faces_full(params.sort_value, Some(ctx.config.clone()))
         .map_err(|e| {
             log::error!(target: "get_photos", "unknown_faces_photos_query_failed; error={}", e);

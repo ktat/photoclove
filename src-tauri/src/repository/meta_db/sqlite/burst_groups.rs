@@ -114,7 +114,10 @@ pub(super) fn count_photos_in_group(db: &SQLite, group_id: &str) -> Result<usize
 }
 
 /// Get the burst_group_id for a photo.
-pub(super) fn get_photo_burst_group_id(db: &SQLite, photo_path: &str) -> Result<Option<String>, String> {
+pub(super) fn get_photo_burst_group_id(
+    db: &SQLite,
+    photo_path: &str,
+) -> Result<Option<String>, String> {
     let conn = db
         .get_connection()
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
@@ -133,7 +136,9 @@ pub(super) fn get_photo_burst_group_id(db: &SQLite, photo_path: &str) -> Result<
 }
 
 /// Get all photo paths that belong to manual burst groups.
-pub(super) fn get_manual_group_photo_paths(db: &SQLite) -> Result<std::collections::HashSet<String>, String> {
+pub(super) fn get_manual_group_photo_paths(
+    db: &SQLite,
+) -> Result<std::collections::HashSet<String>, String> {
     let conn = db
         .get_connection()
         .map_err(|e| format!("Failed to connect to database: {}", e))?;

@@ -65,7 +65,10 @@ pub fn record_photo_metas(
 }
 
 /// Record photo metadata from Photos collection (with EXIF data)
-pub fn record_photos_meta_data(sqlite: &SQLite, photos: Vec<photo::Photo>) -> Result<bool, &'static str> {
+pub fn record_photos_meta_data(
+    sqlite: &SQLite,
+    photos: Vec<photo::Photo>,
+) -> Result<bool, &'static str> {
     let conn = sqlite
         .get_connection()
         .map_err(|_| "Failed to connect to database")?;
@@ -79,7 +82,8 @@ pub fn record_photos_meta_data(sqlite: &SQLite, photos: Vec<photo::Photo>) -> Re
 
     let now = date::DateTime::now().to_db_string();
     let import_to = sqlite.db_path().replace("/photoclove.db", "");
-    let date_re = regex::Regex::new(r"^(\d{4})-(0?[1-9]|1[012])-(0?[1-9]|[12][0-9]|30|31)$").unwrap();
+    let date_re =
+        regex::Regex::new(r"^(\d{4})-(0?[1-9]|1[012])-(0?[1-9]|[12][0-9]|30|31)$").unwrap();
     for mut photo in photos {
         // Load EXIF from absolute path on disk
         let abs_path = file::to_absolute_path(&photo.file.path, &import_to);
@@ -89,7 +93,13 @@ pub fn record_photos_meta_data(sqlite: &SQLite, photos: Vec<photo::Photo>) -> Re
         }
         // Extract date from relative path (first component is the date directory)
         let date = {
-            let first_component = photo.file.path.trim_start_matches('/').split('/').next().unwrap_or("");
+            let first_component = photo
+                .file
+                .path
+                .trim_start_matches('/')
+                .split('/')
+                .next()
+                .unwrap_or("");
             if date_re.is_match(first_component) {
                 format!("{} 00:00:00", first_component)
             } else {
@@ -97,7 +107,11 @@ pub fn record_photos_meta_data(sqlite: &SQLite, photos: Vec<photo::Photo>) -> Re
                 match photo.dir.to_date() {
                     Some(d) => {
                         let date_str = d.to_string();
-                        if date_str.contains(' ') { date_str } else { format!("{} 00:00:00", date_str) }
+                        if date_str.contains(' ') {
+                            date_str
+                        } else {
+                            format!("{} 00:00:00", date_str)
+                        }
                     }
                     None => {
                         log::warn!(target: "sqlite", "photo_skip; reason=missing_date; file={}; dir={}", photo.file.path, photo.dir.path);
@@ -170,18 +184,16 @@ pub fn record_photos_all_meta_data(
     let import_to = db_path.replace("/photoclove.db", "");
 
     for date in dates.dates {
-        let date_dir = file::Dir::new(format!(
-            "{}/{}",
-            import_to,
-            date
-        ));
+        let date_dir = file::Dir::new(format!("{}/{}", import_to, date));
         let files = crate::domain_service::dir_service::find_files(&date_dir);
 
         // Convert absolute file paths to relative paths for DB storage
         let mut relative_files = file::Files::new();
         for f in files.files {
             let relative_path = file::to_relative_path(&f.path, &import_to);
-            relative_files.files.push(file::File::from_relative(relative_path));
+            relative_files
+                .files
+                .push(file::File::from_relative(relative_path));
         }
 
         let photos = crate::domain_service::photo_service::photos_from_dir(relative_files);
@@ -190,7 +202,9 @@ pub fn record_photos_all_meta_data(
 
         // Get existing photo paths from database by relative directory pattern
         let relative_date_dir = date.to_string();
-        let existing_photos = sqlite.get_photo_paths_in_directory(&relative_date_dir).unwrap_or_default();
+        let existing_photos = sqlite
+            .get_photo_paths_in_directory(&relative_date_dir)
+            .unwrap_or_default();
 
         // Create a set of current relative file paths from filesystem
         let current_paths: std::collections::HashSet<String> =
@@ -317,10 +331,12 @@ pub fn get_photo_meta_from_trash(
     library_path: String,
 ) -> photo_meta::PhotoMeta {
     match fetch_photo_info(sqlite, &photo.file.path) {
-        Some(record) => {
-            photo_meta::PhotoMeta::new_from_photo_info_from_trash(&record, &trash_path, &library_path)
-                .unwrap_or_else(|| photo_meta::PhotoMeta::new(photo.clone()))
-        }
+        Some(record) => photo_meta::PhotoMeta::new_from_photo_info_from_trash(
+            &record,
+            &trash_path,
+            &library_path,
+        )
+        .unwrap_or_else(|| photo_meta::PhotoMeta::new(photo.clone())),
         None => photo_meta::PhotoMeta::new(photo.clone()),
     }
 }
@@ -334,7 +350,8 @@ pub fn get_recent_photos_metadata(
         .get_connection()
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
 
-    let query = "SELECT pm.*, GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags
+    let query =
+        "SELECT pm.*, GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags
     FROM photo_metadata pm
     LEFT JOIN photo_collection_items pt ON pm.path = pt.photo_path
     LEFT JOIN photo_collections t ON pt.collection_id = t.id
@@ -350,8 +367,7 @@ pub fn get_recent_photos_metadata(
         .query_map([limit], |row| {
             let path: String = row.get("path")?;
             let photo_date: String = row.get("photo_date")?;
-            let exif_date_time_original: Option<String> =
-                row.get("exif_date_time_original").ok();
+            let exif_date_time_original: Option<String> = row.get("exif_date_time_original").ok();
             let exif_date_time: Option<String> = row.get("exif_date_time").ok();
             let exif_orientation: Option<String> = row.get("exif_orientation").ok();
             let star_val: i32 = row.get("star")?;

@@ -2,8 +2,8 @@
 //!
 //! Database operations for managing unknown (unassigned) faces.
 
-use super::types::UnknownFaceRecord;
 use super::super::SQLite;
+use super::types::UnknownFaceRecord;
 use crate::entity::{config, photo};
 use crate::value::file;
 
@@ -113,7 +113,15 @@ pub fn get_photos_for_unknown_faces_full(
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
 
     #[allow(clippy::type_complexity)]
-    let photos_data: Vec<(String, String, i32, Option<String>, Option<String>, Option<String>, Option<String>)> = stmt
+    let photos_data: Vec<(
+        String,
+        String,
+        i32,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+    )> = stmt
         .query_map([], |row| {
             let path: String = row.get(0)?;
             let photo_date: String = row.get(1)?;
@@ -123,18 +131,28 @@ pub fn get_photos_for_unknown_faces_full(
             let exif_orientation: Option<String> = row.get(6)?;
             let burst_group_id: Option<String> = row.get(7)?;
 
-            Ok((path, photo_date, star, comment, css_style, exif_orientation, burst_group_id))
+            Ok((
+                path,
+                photo_date,
+                star,
+                comment,
+                css_style,
+                exif_orientation,
+                burst_group_id,
+            ))
         })
         .map_err(|e| format!("Failed to query photos: {}", e))?
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| format!("Failed to collect photos: {}", e))?;
 
     let photo_paths: Vec<String> = photos_data.iter().map(|(path, ..)| path.clone()).collect();
-    let tags_map = super::super::tags::get_tags_for_photos_bulk(sqlite, &photo_paths)
-        .unwrap_or_default();
+    let tags_map =
+        super::super::tags::get_tags_for_photos_bulk(sqlite, &photo_paths).unwrap_or_default();
 
     let mut photos = Vec::new();
-    for (path, photo_date, star, comment, css_style, exif_orientation, burst_group_id) in photos_data {
+    for (path, photo_date, star, comment, css_style, exif_orientation, burst_group_id) in
+        photos_data
+    {
         let file_entity = file::File::from_relative(path.clone());
         let mut photo_entity = photo::Photo::new(file_entity, config.clone());
 
@@ -152,7 +170,8 @@ pub fn get_photos_for_unknown_faces_full(
 
         if let Some(photo_tags) = tags_map.get(&path) {
             if !photo_tags.is_empty() {
-                let tags: Vec<photo::PhotoTag> = photo_tags.iter()
+                let tags: Vec<photo::PhotoTag> = photo_tags
+                    .iter()
                     .map(|(id, name, color)| photo::PhotoTag::new(*id, name.clone(), color.clone()))
                     .collect();
                 photo_entity.tags = Some(tags);

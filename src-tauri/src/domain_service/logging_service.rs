@@ -285,8 +285,7 @@ impl LoggingService {
                         && path.extension().is_some_and(|ext| ext == "log")
                         && path.file_name().is_some_and(|name| {
                             let name_str = name.to_string_lossy();
-                            name_str.starts_with("photoclove-")
-                                && !name_str.contains("frontend")
+                            name_str.starts_with("photoclove-") && !name_str.contains("frontend")
                         })
                     {
                         match std::fs::remove_file(&path) {

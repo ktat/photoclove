@@ -4,7 +4,9 @@
 //! and check for all supported image types (standard + RAW).
 
 /// RAW file extensions supported by PhotoClove
-const RAW_EXTENSIONS: &[&str] = &["cr2", "cr3", "nef", "arw", "dng", "raf", "orf", "rw2", "3fr"];
+const RAW_EXTENSIONS: &[&str] = &[
+    "cr2", "cr3", "nef", "arw", "dng", "raf", "orf", "rw2", "3fr",
+];
 
 /// Standard image extensions
 const STANDARD_IMAGE_EXTENSIONS: &[&str] = &["jpg", "jpeg", "png", "gif", "webp", "heic", "heif"];
@@ -12,7 +14,9 @@ const STANDARD_IMAGE_EXTENSIONS: &[&str] = &["jpg", "jpeg", "png", "gif", "webp"
 /// Check if a file path has a RAW file extension
 pub fn is_raw_file(path: &str) -> bool {
     let lower = path.to_lowercase();
-    RAW_EXTENSIONS.iter().any(|ext| lower.ends_with(&format!(".{}", ext)))
+    RAW_EXTENSIONS
+        .iter()
+        .any(|ext| lower.ends_with(&format!(".{}", ext)))
 }
 
 /// Check if a file path is a supported image (standard + RAW)

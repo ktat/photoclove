@@ -49,9 +49,7 @@ fn get_items_with_filter(
 
         let mut result = Vec::new();
         for item in items {
-            result.push(
-                item.map_err(|e| format!("Failed to parse recovery item: {}", e))?,
-            );
+            result.push(item.map_err(|e| format!("Failed to parse recovery item: {}", e))?);
         }
 
         Ok(result)

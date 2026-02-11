@@ -46,7 +46,7 @@ pub async fn handle(ctx: &HandlerContext<'_>, params: &SearchParams) -> Result<S
         Err(e) => {
             log::error!(target: "get_photos", "metadata_load_error; date={}; error={}", date_str, e);
             photo_meta::PhotoMetas::new()
-        },
+        }
     };
 
     let photos = ctx

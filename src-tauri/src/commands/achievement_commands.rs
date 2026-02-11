@@ -70,7 +70,10 @@ pub async fn get_achievements(
     }
 
     let total = achievements.len();
-    let achieved = achievements.iter().filter(|a| a.achieved_at.is_some()).count();
+    let achieved = achievements
+        .iter()
+        .filter(|a| a.achieved_at.is_some())
+        .count();
 
     log::info!(
         target: "achievements",

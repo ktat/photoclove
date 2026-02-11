@@ -213,7 +213,8 @@ pub fn similarities_to_results(
     // Cosine similarities are already in [-1, 1] range, normalized embeddings give [0, 1]
 
     // Create (label, similarity) pairs and sort by similarity
-    let mut label_sims: Vec<(&String, f32)> = labels.iter().zip(similarities.iter().cloned()).collect();
+    let mut label_sims: Vec<(&String, f32)> =
+        labels.iter().zip(similarities.iter().cloned()).collect();
     label_sims.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
     // Log top 5 similarities for debugging
@@ -296,7 +297,7 @@ pub fn preprocess_clip_image(
         if let Some((thumbnail_img, width, height)) =
             crate::utils::exif_thumbnail::extract_exif_thumbnail_with_min_size(
                 image_path,
-                min_thumbnail_size
+                min_thumbnail_size,
             )
         {
             log::debug!(
@@ -314,7 +315,7 @@ pub fn preprocess_clip_image(
     if img.is_none() {
         img = Some(
             image::open(image_path)
-                .map_err(|e| format!("Failed to load image {}: {}", image_path.display(), e))?
+                .map_err(|e| format!("Failed to load image {}: {}", image_path.display(), e))?,
         );
 
         if use_exif_thumbnail {
@@ -338,7 +339,11 @@ pub fn preprocess_clip_image(
     let cropped = img.crop_imm(crop_x, crop_y, min_dim, min_dim);
 
     // Resize to target size
-    let resized = cropped.resize_exact(target_size, target_size, image::imageops::FilterType::Triangle);
+    let resized = cropped.resize_exact(
+        target_size,
+        target_size,
+        image::imageops::FilterType::Triangle,
+    );
 
     // Convert to RGB
     let rgb = resized.to_rgb8();
@@ -457,8 +462,12 @@ impl<C: ClipModelConfig> BaseClipClassifier<C> {
             .as_mut()
             .ok_or("Visual encoder not initialized")?;
 
-        let input_data =
-            preprocess_clip_image(image_path, C::INPUT_SIZE, use_exif_thumbnail, min_thumbnail_size)?;
+        let input_data = preprocess_clip_image(
+            image_path,
+            C::INPUT_SIZE,
+            use_exif_thumbnail,
+            min_thumbnail_size,
+        )?;
 
         let input_tensor = Tensor::from_array((
             [1_usize, 3, C::INPUT_SIZE as usize, C::INPUT_SIZE as usize],
@@ -599,7 +608,10 @@ impl<C: ClipModelConfig> AIClassifierBackend for BaseClipClassifier<C> {
         // Set ORT_DYLIB_PATH if needed
         if std::env::var("ORT_DYLIB_PATH").is_err() {
             if let Some(data_dir) = dirs::data_local_dir() {
-                let lib_path = data_dir.join("photoclove").join("lib").join("libonnxruntime.so");
+                let lib_path = data_dir
+                    .join("photoclove")
+                    .join("lib")
+                    .join("libonnxruntime.so");
                 if lib_path.exists() {
                     std::env::set_var("ORT_DYLIB_PATH", &lib_path);
                 }
@@ -711,8 +723,11 @@ impl<C: ClipModelConfig> AIClassifierBackend for BaseClipClassifier<C> {
             config.use_exif_thumbnail
         );
 
-        let image_embedding =
-            self.encode_image(image_path, config.use_exif_thumbnail, config.min_thumbnail_size)?;
+        let image_embedding = self.encode_image(
+            image_path,
+            config.use_exif_thumbnail,
+            config.min_thumbnail_size,
+        )?;
 
         if !self.text_embeddings.is_empty() {
             let mut similarities = Vec::new();

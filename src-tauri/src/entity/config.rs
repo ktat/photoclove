@@ -304,12 +304,12 @@ fn default_face_detection() -> FaceDetectionConfig {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StartupImageConfig {
-    pub mode: String,  // "default", "custom", or "memories"
+    pub mode: String, // "default", "custom", or "memories"
     pub images: Vec<StartupImage>,
     #[serde(default = "default_show_memories_on_home")]
     pub show_memories_on_home: bool,
     #[serde(default = "default_memories_fallback")]
-    pub memories_fallback: String,  // "default" or "custom"
+    pub memories_fallback: String, // "default" or "custom"
 }
 
 fn default_show_memories_on_home() -> bool {
@@ -513,13 +513,14 @@ impl Config {
         let file = match fs::OpenOptions::new()
             .write(true)
             .truncate(true)
-            .open(&path) {
-                Ok(f) => f,
-                Err(e) => {
-                    log::error!(target: "config", "config_file_open_failed; path={}; error={:?}", path, e);
-                    return false;
-                }
-            };
+            .open(&path)
+        {
+            Ok(f) => f,
+            Err(e) => {
+                log::error!(target: "config", "config_file_open_failed; path={}; error={:?}", path, e);
+                return false;
+            }
+        };
         let mut writer = BufWriter::new(file);
         let result = serde_yaml::to_writer(&mut writer, self);
         if let Err(ref error) = result {

@@ -134,7 +134,11 @@ pub fn restore_photo_from_trash_no_summary(sqlite: &SQLite, photo: &photo::Photo
 
 /// Update photo path in database
 #[allow(dead_code)]
-pub fn update_photo_path(sqlite: &SQLite, old_path: &str, new_path: &str) -> Result<bool, &'static str> {
+pub fn update_photo_path(
+    sqlite: &SQLite,
+    old_path: &str,
+    new_path: &str,
+) -> Result<bool, &'static str> {
     let conn = sqlite
         .get_connection()
         .map_err(|_| "Failed to connect to database")?;
@@ -150,7 +154,10 @@ pub fn update_photo_path(sqlite: &SQLite, old_path: &str, new_path: &str) -> Res
 }
 
 /// Get all photo paths in a directory from database (by path pattern, not photo_date)
-pub fn get_photo_paths_in_directory(sqlite: &SQLite, dir_path: &str) -> Result<Vec<String>, String> {
+pub fn get_photo_paths_in_directory(
+    sqlite: &SQLite,
+    dir_path: &str,
+) -> Result<Vec<String>, String> {
     let conn = sqlite
         .get_connection()
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
@@ -217,10 +224,7 @@ pub fn delete_photo_by_path(sqlite: &SQLite, path: &str) {
         );
 
         // Delete the old record (the new one was already created by record_photos_meta_data)
-        let _ = conn.execute(
-            "DELETE FROM photo_metadata WHERE path = ?1",
-            params![path],
-        );
+        let _ = conn.execute("DELETE FROM photo_metadata WHERE path = ?1", params![path]);
 
         log::info!(target: "sqlite", "photo_moved_associations_preserved; old_path={}; new_path={}", path, new_path_str);
     } else {
@@ -235,10 +239,7 @@ pub fn delete_photo_by_path(sqlite: &SQLite, path: &str) {
             .ok();
 
         // Hard delete
-        let _ = conn.execute(
-            "DELETE FROM photo_metadata WHERE path = ?1",
-            params![path],
-        );
+        let _ = conn.execute("DELETE FROM photo_metadata WHERE path = ?1", params![path]);
 
         // Update date_summary
         if let Some(date_str) = photo_date {
@@ -274,11 +275,7 @@ pub fn get_trash_path_for_photo(
     if is_trashed == 1 {
         // Try new structure first: trash_base_path/relative_path
         let trimmed_path = original_path.trim_start_matches('/');
-        let new_trash_path = format!(
-            "{}/{}",
-            trash_base_path.trim_end_matches('/'),
-            trimmed_path
-        );
+        let new_trash_path = format!("{}/{}", trash_base_path.trim_end_matches('/'), trimmed_path);
 
         // Check if file exists at new location
         if std::path::Path::new(&new_trash_path).exists() {

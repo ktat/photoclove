@@ -4,7 +4,8 @@
 
 use crate::app_state::AppState;
 use crate::commands::job_helpers::{
-    create_and_start_job, filter_image_paths, normalize_date, NO_IMAGES_RESPONSE, NO_PHOTOS_RESPONSE,
+    create_and_start_job, filter_image_paths, normalize_date, NO_IMAGES_RESPONSE,
+    NO_PHOTOS_RESPONSE,
 };
 use crate::domain_service::face_detection::embedder::cosine_similarity;
 use crate::domain_service::face_detection::service::FaceDetectionService;
@@ -22,10 +23,7 @@ const FACE_MATCH_THRESHOLD: f32 = 0.5;
 
 /// Find a matching person for a face embedding
 /// Returns the person_id if a match is found above the threshold
-fn find_matching_person(
-    new_embedding: &[f32],
-    named_faces: &[NamedFaceEmbedding],
-) -> Option<i64> {
+fn find_matching_person(new_embedding: &[f32], named_faces: &[NamedFaceEmbedding]) -> Option<i64> {
     let mut best_match: Option<(i64, f32)> = None;
 
     for named_face in named_faces {
@@ -152,10 +150,17 @@ pub fn detect_faces_in_photo(
 
     let mut service = FaceDetectionService::with_config(models_dir, service_config);
     service.init()?;
-    let faces = service.detect_faces_in_file_with_options(&abs_path, use_full, face_config.min_thumbnail_size)?;
+    let faces = service.detect_faces_in_file_with_options(
+        &abs_path,
+        use_full,
+        face_config.min_thumbnail_size,
+    )?;
 
     if save_to_db && !faces.is_empty() {
-        let named_faces = state.meta_db.get_named_face_embeddings().unwrap_or_default();
+        let named_faces = state
+            .meta_db
+            .get_named_face_embeddings()
+            .unwrap_or_default();
         log::debug!(target: "face_detection", "face_matching; named_faces_count={}", named_faces.len());
 
         let face_inputs: Vec<DetectedFaceInput> = faces
@@ -172,8 +177,10 @@ pub fn detect_faces_in_photo(
                 }
                 DetectedFaceInput {
                     photo_path: photo_path.clone(),
-                    bbox_x: f.bbox.x, bbox_y: f.bbox.y,
-                    bbox_width: f.bbox.width, bbox_height: f.bbox.height,
+                    bbox_x: f.bbox.x,
+                    bbox_y: f.bbox.y,
+                    bbox_width: f.bbox.width,
+                    bbox_height: f.bbox.height,
                     confidence: f.confidence,
                     embedding: f.embedding.clone(),
                     person_id: matched_person_id,
@@ -181,7 +188,9 @@ pub fn detect_faces_in_photo(
             })
             .collect();
 
-        state.meta_db.save_detected_faces(&photo_path, &face_inputs)?;
+        state
+            .meta_db
+            .save_detected_faces(&photo_path, &face_inputs)?;
         let saved_faces = state.meta_db.get_detected_faces(&photo_path)?;
         log::info!(target: "face_detection",
             "detect_faces_complete; photo_path={}; face_count={}", photo_path, saved_faces.len());
@@ -191,11 +200,13 @@ pub fn detect_faces_in_photo(
 
     let response: Vec<serde_json::Value> = faces
         .iter()
-        .map(|f| serde_json::json!({
-            "bbox_x": f.bbox.x, "bbox_y": f.bbox.y,
-            "bbox_width": f.bbox.width, "bbox_height": f.bbox.height,
-            "confidence": f.confidence, "has_embedding": f.embedding.is_some()
-        }))
+        .map(|f| {
+            serde_json::json!({
+                "bbox_x": f.bbox.x, "bbox_y": f.bbox.y,
+                "bbox_width": f.bbox.width, "bbox_height": f.bbox.height,
+                "confidence": f.confidence, "has_embedding": f.embedding.is_some()
+            })
+        })
         .collect();
     log::info!(target: "face_detection",
         "detect_faces_complete; photo_path={}; face_count={}", photo_path, response.len());
@@ -257,7 +268,8 @@ pub fn get_persons_with_faces(
 ) -> Result<String, String> {
     let target_embedding: Option<Vec<f32>> = if let Some(id) = face_id {
         let face = state.meta_db.get_detected_face(id)?;
-        face.embedding.and_then(|json| serde_json::from_str(&json).ok())
+        face.embedding
+            .and_then(|json| serde_json::from_str(&json).ok())
     } else {
         None
     };
@@ -303,10 +315,7 @@ pub fn assign_face_to_person(
 
 /// Get photos containing a specific person
 #[tauri::command]
-pub fn get_photos_for_person(
-    state: State<AppState>,
-    person_id: i64,
-) -> Result<String, String> {
+pub fn get_photos_for_person(state: State<AppState>, person_id: i64) -> Result<String, String> {
     let paths = state.meta_db.get_photos_for_person(person_id)?;
     serde_json::to_string(&paths).map_err(|e| format!("Serialization error: {}", e))
 }
@@ -382,7 +391,8 @@ pub fn download_face_detection_model(
         return Ok(serde_json::json!({
             "result": "already_exists",
             "filename": model.filename
-        }).to_string());
+        })
+        .to_string());
     }
 
     log::info!(target: "face_detection",
@@ -404,7 +414,8 @@ pub fn download_face_detection_model(
     Ok(serde_json::json!({
         "result": "success",
         "filename": model.filename
-    }).to_string())
+    })
+    .to_string())
 }
 
 /// Delete a face detection model
@@ -442,7 +453,8 @@ pub fn delete_face_detection_model(
     Ok(serde_json::json!({
         "result": "success",
         "filename": model.filename
-    }).to_string())
+    })
+    .to_string())
 }
 
 /// Run face detection for all photos in a date

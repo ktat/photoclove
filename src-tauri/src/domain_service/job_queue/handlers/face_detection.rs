@@ -17,10 +17,7 @@ use tauri::{Emitter, Manager};
 const FACE_MATCH_THRESHOLD: f32 = 0.5;
 
 /// Find a matching person for a face embedding
-fn find_matching_person(
-    new_embedding: &[f32],
-    named_faces: &[NamedFaceEmbedding],
-) -> Option<i64> {
+fn find_matching_person(new_embedding: &[f32], named_faces: &[NamedFaceEmbedding]) -> Option<i64> {
     let mut best_match: Option<(i64, f32)> = None;
 
     for named_face in named_faces {

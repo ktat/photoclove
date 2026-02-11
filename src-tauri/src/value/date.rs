@@ -1,4 +1,6 @@
-use chrono::{Datelike, Duration, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc};
+use chrono::{
+    Datelike, Duration, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc,
+};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::time::SystemTime;
@@ -35,7 +37,14 @@ impl Clone for DateTime {
 }
 
 impl DateTime {
-    pub fn new(year: i32, month: u32, day: u32, hour: u32, minute: u32, second: u32) -> Option<DateTime> {
+    pub fn new(
+        year: i32,
+        month: u32,
+        day: u32,
+        hour: u32,
+        minute: u32,
+        second: u32,
+    ) -> Option<DateTime> {
         // Validate using chrono
         let date = NaiveDate::from_ymd_opt(year, month, day)?;
         let time = NaiveTime::from_hms_opt(hour, minute, second)?;
@@ -201,11 +210,7 @@ impl Date {
             return None;
         }
 
-        Some(Date {
-            year,
-            month,
-            day,
-        })
+        Some(Date { year, month, day })
     }
 
     /// Safe version that returns Result instead of panicking
@@ -329,13 +334,10 @@ pub enum TimePeriod {
     Weekly { start_date: Date },
 }
 
-
 impl TimePeriod {
     /// Parse from Option<String>, defaulting to All
     pub fn from_option(period: Option<String>) -> Self {
-        period
-            .map(|p| Self::from_str(&p))
-            .unwrap_or_default()
+        period.map(|p| Self::from_str(&p)).unwrap_or_default()
     }
 
     /// Get SQL date condition for this period
@@ -389,10 +391,9 @@ impl TimePeriod {
             "monthly" => {
                 let date_parts: Vec<&str> = value.split('-').collect();
                 if date_parts.len() >= 2 {
-                    if let (Ok(year), Ok(month)) = (
-                        date_parts[0].parse::<i32>(),
-                        date_parts[1].parse::<u32>(),
-                    ) {
+                    if let (Ok(year), Ok(month)) =
+                        (date_parts[0].parse::<i32>(), date_parts[1].parse::<u32>())
+                    {
                         if (1..=12).contains(&month) {
                             return TimePeriod::Monthly { year, month };
                         }
@@ -443,11 +444,7 @@ impl TimePeriod {
             TimePeriod::Monthly { year, month } => format!("{}-{:02}", year, month),
             TimePeriod::Weekly { start_date } => {
                 let end_date = start_date.add_days(6).unwrap_or(*start_date);
-                format!(
-                    "{} - {}",
-                    start_date,
-                    end_date
-                )
+                format!("{} - {}", start_date, end_date)
             }
         }
     }
@@ -602,14 +599,25 @@ mod tests {
     #[test]
     fn test_time_period_from_str_monthly() {
         let period = date::TimePeriod::from_str("monthly:2023-04");
-        assert_eq!(period, date::TimePeriod::Monthly { year: 2023, month: 4 });
+        assert_eq!(
+            period,
+            date::TimePeriod::Monthly {
+                year: 2023,
+                month: 4
+            }
+        );
     }
 
     #[test]
     fn test_time_period_from_str_weekly() {
         let period = date::TimePeriod::from_str("weekly:2023-04-10");
         let expected_date = date::Date::new(2023, 4, 10).unwrap();
-        assert_eq!(period, date::TimePeriod::Weekly { start_date: expected_date });
+        assert_eq!(
+            period,
+            date::TimePeriod::Weekly {
+                start_date: expected_date
+            }
+        );
     }
 
     #[test]
@@ -629,7 +637,10 @@ mod tests {
         let period = date::TimePeriod::Yearly { year: 2023 };
         assert_eq!(period.as_str(), "yearly:2023");
 
-        let period = date::TimePeriod::Monthly { year: 2023, month: 4 };
+        let period = date::TimePeriod::Monthly {
+            year: 2023,
+            month: 4,
+        };
         assert_eq!(period.as_str(), "monthly:2023-04");
     }
 }

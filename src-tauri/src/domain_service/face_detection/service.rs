@@ -39,7 +39,9 @@ fn apply_exif_orientation(image: DynamicImage, orientation: &str) -> DynamicImag
         }
         // 8 = Rotate 90 CCW (or 270 CW, camera rotated CW)
         // "Rotated to right" means the image appears rotated to the right, fix by rotating 90 CCW
-        "Rotate 270 CW" | "Rotate 90 CCW" | "Rotate 270° CW" | "Rotated to right" => image.rotate270(),
+        "Rotate 270 CW" | "Rotate 90 CCW" | "Rotate 270° CW" | "Rotated to right" => {
+            image.rotate270()
+        }
         // Unknown or empty - no rotation
         _ => {
             log::debug!(
@@ -107,7 +109,10 @@ impl FaceDetectionService {
         // Set ORT_DYLIB_PATH if not already set and library exists in app data
         if std::env::var("ORT_DYLIB_PATH").is_err() {
             if let Some(data_dir) = dirs::data_local_dir() {
-                let lib_path = data_dir.join("photoclove").join("lib").join("libonnxruntime.so");
+                let lib_path = data_dir
+                    .join("photoclove")
+                    .join("lib")
+                    .join("libonnxruntime.so");
                 if lib_path.exists() {
                     log::info!(
                         target: "face_detection",
@@ -178,45 +183,45 @@ impl FaceDetectionService {
             if let Some((mut thumb_image, thumb_width, thumb_height)) =
                 exif_thumbnail::extract_exif_thumbnail_with_min_size(
                     std::path::Path::new(path),
-                    effective_min_size
+                    effective_min_size,
                 )
             {
-                    log::info!(
-                        target: "face_detection",
-                        "using_exif_thumbnail; path={}; thumb_size={}x{}",
-                        path,
-                        thumb_width,
-                        thumb_height
-                    );
+                log::info!(
+                    target: "face_detection",
+                    "using_exif_thumbnail; path={}; thumb_size={}x{}",
+                    path,
+                    thumb_width,
+                    thumb_height
+                );
 
-                    // Apply EXIF orientation to thumbnail (same as main image)
-                    if let Some(ref orient) = orientation {
-                        thumb_image = apply_exif_orientation(thumb_image, orient);
+                // Apply EXIF orientation to thumbnail (same as main image)
+                if let Some(ref orient) = orientation {
+                    thumb_image = apply_exif_orientation(thumb_image, orient);
+                }
+
+                // Detect faces in thumbnail
+                let faces_result = self.detect_faces(&thumb_image);
+
+                if let Ok(faces) = faces_result {
+                    if !faces.is_empty() {
+                        // Faces detected in thumbnail - coordinates are already normalized (0-1)
+                        // so they directly apply to the full image
+                        log::info!(
+                            target: "face_detection",
+                            "faces_detected_in_thumbnail; path={}; count={}",
+                            path,
+                            faces.len()
+                        );
+                        return Ok(faces);
                     }
+                }
 
-                    // Detect faces in thumbnail
-                    let faces_result = self.detect_faces(&thumb_image);
-
-                    if let Ok(faces) = faces_result {
-                        if !faces.is_empty() {
-                            // Faces detected in thumbnail - coordinates are already normalized (0-1)
-                            // so they directly apply to the full image
-                            log::info!(
-                                target: "face_detection",
-                                "faces_detected_in_thumbnail; path={}; count={}",
-                                path,
-                                faces.len()
-                            );
-                            return Ok(faces);
-                        }
-                    }
-
-                    // If no faces found in thumbnail, fall back to full image
-                    log::debug!(
-                        target: "face_detection",
-                        "no_faces_in_thumbnail_fallback_to_full; path={}",
-                        path
-                    );
+                // If no faces found in thumbnail, fall back to full image
+                log::debug!(
+                    target: "face_detection",
+                    "no_faces_in_thumbnail_fallback_to_full; path={}",
+                    path
+                );
             }
         }
 
@@ -228,8 +233,8 @@ impl FaceDetectionService {
         );
 
         // Load full image
-        let mut image = image::open(path)
-            .map_err(|e| format!("Failed to load image {}: {}", path, e))?;
+        let mut image =
+            image::open(path).map_err(|e| format!("Failed to load image {}: {}", path, e))?;
 
         // Apply EXIF orientation if available
         if let Some(orient) = orientation {

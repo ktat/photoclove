@@ -1,15 +1,15 @@
 //! Search and filter operations for SQLite repository
 
-use super::SQLite;
 use super::filter_options;
-use super::search_debug::{format_param_for_debug, create_embedded_sql, log_date_range_debug};
+use super::search_debug::{create_embedded_sql, format_param_for_debug, log_date_range_debug};
+use super::SQLite;
 use crate::entity::photo::Photo;
 use crate::entity::photo::Photos;
 use crate::value::exif::ExifData;
 use crate::value::file::File;
 
 // Re-export filter options functions
-pub use filter_options::{get_camera_options, get_lens_options, get_extension_options};
+pub use filter_options::{get_camera_options, get_extension_options, get_lens_options};
 
 /// Add advanced filter conditions to SQL query
 pub fn add_advanced_filters(
@@ -206,12 +206,14 @@ pub fn search_photos(
     );
 
     // Build search query based on search_type with tags
-    let mut sql_query = String::from("
+    let mut sql_query = String::from(
+        "
     SELECT pm.*, GROUP_CONCAT(pc.id || ':' || pc.name || ':' || COALESCE(pc.color, '')) as tags -- 2
     FROM photo_metadata pm
     LEFT JOIN photo_collection_items pci ON pm.path = pci.photo_path
     LEFT JOIN photo_collections pc ON pc.id = pci.collection_id AND pc.type = 'tag'
-    WHERE (pm.delete_flg = 0 OR pm.delete_flg IS NULL)");
+    WHERE (pm.delete_flg = 0 OR pm.delete_flg IS NULL)",
+    );
 
     let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
 
@@ -256,7 +258,9 @@ pub fn search_photos(
     // Add ORDER BY clause with primary and secondary sort fields
     let sort_value = crate::repository::sort_field_to_value(sort_field, sort_order);
     sql_query.push(' ');
-    sql_query.push_str(&crate::repository::sort_to_order_by_clause(sort_value, "pm"));
+    sql_query.push_str(&crate::repository::sort_to_order_by_clause(
+        sort_value, "pm",
+    ));
 
     // Add LIMIT clause
     sql_query.push_str(&format!(" LIMIT {}", max_photos_per_fetch));
@@ -275,9 +279,9 @@ pub fn search_photos(
     log::info!(target: "database", "search_photos_final_query; query={}; param_count={}", sql_query, param_refs.len());
 
     let mut stmt = conn.prepare(&sql_query).map_err(|e| e.to_string())?;
-    let photo_iter = stmt.query_map(&param_refs[..], |row| {
-        map_row_to_photo(row)
-    }).map_err(|e| e.to_string())?;
+    let photo_iter = stmt
+        .query_map(&param_refs[..], map_row_to_photo)
+        .map_err(|e| e.to_string())?;
 
     let mut photos = Photos::new();
     for photo_result in photo_iter {
@@ -408,15 +412,24 @@ fn map_row_to_photo(row: &rusqlite::Row) -> Result<Photo, rusqlite::Error> {
     let star = row.get::<_, i32>("star").unwrap_or(0);
     photo.set_star(star);
 
-    let comment = row.get::<_, Option<String>>("comment").unwrap_or_default().unwrap_or_default();
+    let comment = row
+        .get::<_, Option<String>>("comment")
+        .unwrap_or_default()
+        .unwrap_or_default();
     photo.set_comment(comment);
 
     // Set EXIF data
     let mut exif_data = ExifData::empty();
-    if let Some(date_time) = row.get::<_, Option<String>>("exif_date_time_original").unwrap_or_default() {
+    if let Some(date_time) = row
+        .get::<_, Option<String>>("exif_date_time_original")
+        .unwrap_or_default()
+    {
         exif_data.date_time = date_time;
     }
-    if let Some(orientation) = row.get::<_, Option<String>>("exif_orientation").unwrap_or_default() {
+    if let Some(orientation) = row
+        .get::<_, Option<String>>("exif_orientation")
+        .unwrap_or_default()
+    {
         exif_data.orientation = orientation;
     }
     photo.embed_exif(exif_data);

@@ -24,10 +24,13 @@ fn apply_burst_grouping(photos: Vec<photo::Photo>) -> photo::Photos {
 
     // Group photos by burst_group_id (or path if no group)
     let mut groups: HashMap<String, Vec<photo::Photo>> = HashMap::new();
-    let mut order: Vec<String> = Vec::new();  // Preserve original order
+    let mut order: Vec<String> = Vec::new(); // Preserve original order
 
     for p in photos {
-        let key = p.burst_group_id.clone().unwrap_or_else(|| p.file.path.clone());
+        let key = p
+            .burst_group_id
+            .clone()
+            .unwrap_or_else(|| p.file.path.clone());
         if !groups.contains_key(&key) {
             order.push(key.clone());
         }
@@ -65,16 +68,24 @@ fn apply_burst_grouping(photos: Vec<photo::Photo>) -> photo::Photos {
 ///
 /// # Returns
 /// JSON string containing photos array with burst_count set for grouped photos
-pub async fn handle_burst_date(ctx: &HandlerContext<'_>, params: &SearchParams) -> Result<String, ()> {
+pub async fn handle_burst_date(
+    ctx: &HandlerContext<'_>,
+    params: &SearchParams,
+) -> Result<String, ()> {
     let date_str = params.query.as_ref().ok_or_else(|| {
         log::error!(target: "get_photos", "burst_date; error=missing_date_query");
     })?;
 
     // Normalize date format to YYYY-MM-DD (same as database storage)
-    let delimiter = if date_str.contains('/') { Some("/") } else { Some("-") };
-    let date = date_value::Date::try_from_string(&date_str.to_string(), delimiter).map_err(|e| {
-        log::error!(target: "get_photos", "burst_date; error=date_parse_error; details={}", e);
-    })?;
+    let delimiter = if date_str.contains('/') {
+        Some("/")
+    } else {
+        Some("-")
+    };
+    let date =
+        date_value::Date::try_from_string(&date_str.to_string(), delimiter).map_err(|e| {
+            log::error!(target: "get_photos", "burst_date; error=date_parse_error; details={}", e);
+        })?;
     let normalized_date = date.to_string(); // Returns YYYY-MM-DD format
 
     log::info!(target: "get_photos", "burst_date; date={}; normalized={}", date_str, normalized_date);
@@ -87,7 +98,8 @@ pub async fn handle_burst_date(ctx: &HandlerContext<'_>, params: &SearchParams) 
     // Representative = oldest photo in each group (by exif_date_time_original, then path)
     // Use date() function to extract date part from photo_date (format: YYYY-MM-DD HH:MM:SS)
     let order_by = sort_to_order_by_clause(params.sort_value, "r");
-    let query_sql = format!(r#"
+    let query_sql = format!(
+        r#"
         WITH ranked AS (
             SELECT
                 pm.*,
@@ -110,8 +122,16 @@ pub async fn handle_burst_date(ctx: &HandlerContext<'_>, params: &SearchParams) 
         GROUP BY r.path
         {order_by}
     "#,
-        star_filter = if params.star >= 0 { " AND pm.star >= ?2" } else { "" },
-        comment_filter = if params.has_comment { " AND pm.comment IS NOT NULL AND pm.comment != ''" } else { "" },
+        star_filter = if params.star >= 0 {
+            " AND pm.star >= ?2"
+        } else {
+            ""
+        },
+        comment_filter = if params.has_comment {
+            " AND pm.comment IS NOT NULL AND pm.comment != ''"
+        } else {
+            ""
+        },
         order_by = order_by
     );
 
@@ -130,11 +150,13 @@ pub async fn handle_burst_date(ctx: &HandlerContext<'_>, params: &SearchParams) 
 
     let params_refs: Vec<&dyn rusqlite::ToSql> = query_params.iter().map(|p| p.as_ref()).collect();
 
-    let photo_iter = stmt.query_map(params_refs.as_slice(), |row| {
-        map_burst_photo_row(row, &config)
-    }).map_err(|e| {
-        log::error!(target: "get_photos", "burst_date; error=query_failed; details={}", e);
-    })?;
+    let photo_iter = stmt
+        .query_map(params_refs.as_slice(), |row| {
+            map_burst_photo_row(row, &config)
+        })
+        .map_err(|e| {
+            log::error!(target: "get_photos", "burst_date; error=query_failed; details={}", e);
+        })?;
 
     let photos = collect_photos(photo_iter);
 
@@ -151,7 +173,10 @@ pub async fn handle_burst_date(ctx: &HandlerContext<'_>, params: &SearchParams) 
 ///
 /// # Returns
 /// JSON string containing photos array with burst_count set for grouped photos
-pub async fn handle_burst_album(ctx: &HandlerContext<'_>, params: &SearchParams) -> Result<String, ()> {
+pub async fn handle_burst_album(
+    ctx: &HandlerContext<'_>,
+    params: &SearchParams,
+) -> Result<String, ()> {
     let album_id = if let Some(ref p) = params.params {
         p.get("album_id")
             .and_then(|v| v.as_i64())
@@ -167,7 +192,8 @@ pub async fn handle_burst_album(ctx: &HandlerContext<'_>, params: &SearchParams)
     log::info!(target: "get_photos", "burst_album; album_id={}; sort_value={}", album_id, params.sort_value);
 
     // Use unified collection search, then apply burst grouping
-    let photos_vec = ctx.meta_db
+    let photos_vec = ctx
+        .meta_db
         .get_photos_by_collection_ids(&[album_id], params.sort_value, Some(ctx.config.clone()))
         .map_err(|e| {
             log::error!(target: "get_photos", "burst_album; error=query_failed; details={}", e);
@@ -189,7 +215,10 @@ pub async fn handle_burst_album(ctx: &HandlerContext<'_>, params: &SearchParams)
 ///
 /// # Returns
 /// JSON string containing photos array with burst_count set for grouped photos
-pub async fn handle_burst_tag(ctx: &HandlerContext<'_>, params: &SearchParams) -> Result<String, ()> {
+pub async fn handle_burst_tag(
+    ctx: &HandlerContext<'_>,
+    params: &SearchParams,
+) -> Result<String, ()> {
     // Parse tag IDs from query parameter (comma-separated)
     let tag_ids_str = params.query.as_ref().ok_or_else(|| {
         log::error!(target: "get_photos", "burst_tag; error=missing_tag_ids");
@@ -213,7 +242,8 @@ pub async fn handle_burst_tag(ctx: &HandlerContext<'_>, params: &SearchParams) -
     log::info!(target: "get_photos", "burst_tag; tag_ids={:?}; sort_value={}", tag_ids, params.sort_value);
 
     // Use unified collection search, then apply burst grouping
-    let photos_vec = ctx.meta_db
+    let photos_vec = ctx
+        .meta_db
         .get_photos_by_collection_ids(&tag_ids, params.sort_value, Some(ctx.config.clone()))
         .map_err(|e| {
             log::error!(target: "get_photos", "burst_tag; error=query_failed; details={}", e);
@@ -233,7 +263,10 @@ pub async fn handle_burst_tag(ctx: &HandlerContext<'_>, params: &SearchParams) -
 ///
 /// # Returns
 /// JSON string containing all photos in the burst group, ordered by time
-pub async fn handle_burst_group(ctx: &HandlerContext<'_>, params: &SearchParams) -> Result<String, ()> {
+pub async fn handle_burst_group(
+    ctx: &HandlerContext<'_>,
+    params: &SearchParams,
+) -> Result<String, ()> {
     let burst_group_id = params.query.as_ref().ok_or_else(|| {
         log::error!(target: "get_photos", "burst_group; error=missing_burst_group_id");
     })?;
@@ -246,7 +279,8 @@ pub async fn handle_burst_group(ctx: &HandlerContext<'_>, params: &SearchParams)
 
     // Simple query to get all photos in the burst group
     let order_by = sort_to_order_by_clause(params.sort_value, "pm");
-    let query_sql = format!(r#"
+    let query_sql = format!(
+        r#"
         SELECT pm.path, pm.photo_date, pm.star, pm.comment, pm.css_style, pm.google_photos_url,
                pm.exif_orientation, pm.burst_group_id,
                (SELECT COUNT(*) FROM photo_metadata WHERE burst_group_id = ?1 AND (delete_flg = 0 OR delete_flg IS NULL)) as burst_count,
@@ -257,7 +291,8 @@ pub async fn handle_burst_group(ctx: &HandlerContext<'_>, params: &SearchParams)
         WHERE pm.burst_group_id = ?1 AND (pm.delete_flg = 0 OR pm.delete_flg IS NULL)
         GROUP BY pm.path
         {order_by}
-    "#);
+    "#
+    );
 
     let mut stmt = conn.prepare(&query_sql).map_err(|e| {
         log::error!(target: "get_photos", "burst_group; error=prepare_failed; details={}", e);
@@ -265,9 +300,7 @@ pub async fn handle_burst_group(ctx: &HandlerContext<'_>, params: &SearchParams)
 
     let config = ctx.config.clone();
     let photo_iter = stmt
-        .query_map([burst_group_id], |row| {
-            map_burst_photo_row(row, &config)
-        })
+        .query_map([burst_group_id], |row| map_burst_photo_row(row, &config))
         .map_err(|e| {
             log::error!(target: "get_photos", "burst_group; error=query_failed; details={}", e);
         })?;
@@ -279,7 +312,10 @@ pub async fn handle_burst_group(ctx: &HandlerContext<'_>, params: &SearchParams)
 }
 
 /// Map a database row to a Photo entity with burst information.
-fn map_burst_photo_row(row: &rusqlite::Row, config: &crate::entity::config::Config) -> rusqlite::Result<photo::Photo> {
+fn map_burst_photo_row(
+    row: &rusqlite::Row,
+    config: &crate::entity::config::Config,
+) -> rusqlite::Result<photo::Photo> {
     let photo_path = row.get::<_, String>("path")?;
 
     // Create Photo entity from file path
@@ -296,7 +332,10 @@ fn map_burst_photo_row(row: &rusqlite::Row, config: &crate::entity::config::Conf
     let star = row.get::<_, i32>("star").unwrap_or(0);
     p.set_star(star);
 
-    let comment = row.get::<_, Option<String>>("comment").unwrap_or_default().unwrap_or_default();
+    let comment = row
+        .get::<_, Option<String>>("comment")
+        .unwrap_or_default()
+        .unwrap_or_default();
     p.set_comment(comment);
 
     if let Ok(css_style) = row.get::<_, Option<String>>("css_style") {

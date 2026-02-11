@@ -2,8 +2,8 @@
 //!
 //! Database operations for face detection statistics.
 
-use super::types::FaceDetectionStats;
 use super::super::SQLite;
+use super::types::FaceDetectionStats;
 
 /// Get face detection statistics
 pub fn get_face_detection_stats(sqlite: &SQLite) -> Result<FaceDetectionStats, String> {

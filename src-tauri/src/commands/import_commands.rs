@@ -52,9 +52,7 @@ pub fn show_importer(
         _ => &state.config.export_from[0],
     };
     let filter: Option<date::Date> = match date_str {
-        Some(d) if !d.is_empty() => {
-            Some(date::Date::from_string(&d.to_string(), Some("-")))
-        }
+        Some(d) if !d.is_empty() => Some(date::Date::from_string(&d.to_string(), Some("-"))),
         _ => None,
     };
 
@@ -194,9 +192,7 @@ pub fn get_photos_to_import_under_directory(
 ) -> String {
     let d = dir::Dir::new(path_str.to_string());
     let filter: Option<date::Date> = match date_after_str {
-        Some(d) if !d.is_empty() => {
-            Some(date::Date::from_string(&d.to_string(), Some("-")))
-        }
+        Some(d) if !d.is_empty() => Some(date::Date::from_string(&d.to_string(), Some("-"))),
         _ => None,
     };
 

@@ -119,7 +119,8 @@ pub async fn save_styled_copy_from_frontend(
         .decode(image_data)
         .map_err(|e| format!("Failed to decode image data: {}", e))?;
 
-    fs::write(new_abs_path, image_bytes).map_err(|e| format!("Failed to write image file: {}", e))?;
+    fs::write(new_abs_path, image_bytes)
+        .map_err(|e| format!("Failed to write image file: {}", e))?;
 
     // 6. Create Photo object with relative path for DB storage
     // record_photos_meta_data handles absolute path resolution for EXIF loading internally
@@ -128,7 +129,10 @@ pub async fn save_styled_copy_from_frontend(
 
     // 7. Set initial metadata (copy from original photo if exists)
     let meta_db = &state.meta_db;
-    let original_photo = photo::Photo::new(file::File::from_relative(original_photo_path.to_string()), None);
+    let original_photo = photo::Photo::new(
+        file::File::from_relative(original_photo_path.to_string()),
+        None,
+    );
     let original_meta = meta_db.get_photo_meta(original_photo);
 
     // Extract date for thumbnail generation before consuming new_photo

@@ -226,7 +226,6 @@ fn has_column(conn: &Connection, column_name: &str) -> bool {
         .unwrap_or(false)
 }
 
-
 /// Handle legacy database migrations (from old schema without migrations table)
 fn handle_legacy_migrations(conn: &Connection) -> Result<()> {
     // Check if photo_metadata table exists with old schema

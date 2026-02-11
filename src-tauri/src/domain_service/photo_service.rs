@@ -1,6 +1,6 @@
+use crate::entity::config::RawProcessingConfig;
 use crate::entity::photo;
 use crate::repository::{MetaDB, MetaInfoDB};
-use crate::entity::config::RawProcessingConfig;
 use crate::utils::{exif_thumbnail, raw_decode, raw_file};
 use crate::value::{comment, date, file, star};
 use image_compressor::{Factor, FolderCompressor};
@@ -71,90 +71,94 @@ pub fn process_raw_thumbnails(
         }
 
         let dir_entries = std::fs::read_dir(dir_from)?;
-    for entry in dir_entries {
-        let entry = entry?;
-        let file_name = entry.file_name();
-        let file_name_str = file_name.to_string_lossy();
-        let file_path = entry.path();
+        for entry in dir_entries {
+            let entry = entry?;
+            let file_name = entry.file_name();
+            let file_name_str = file_name.to_string_lossy();
+            let file_path = entry.path();
 
-        if !file_path.is_file() || !raw_file::is_raw_file(&file_name_str) {
-            continue;
-        }
+            if !file_path.is_file() || !raw_file::is_raw_file(&file_name_str) {
+                continue;
+            }
 
-        // RAW thumbnail naming: photo.CR2 -> photo.cr2.jpg (lowercase + .jpg)
-        let thumbnail_name = format!("{}.jpg", file_name_str.to_lowercase());
-        let thumbnail_path = dir_to.join(&thumbnail_name);
+            // RAW thumbnail naming: photo.CR2 -> photo.cr2.jpg (lowercase + .jpg)
+            let thumbnail_name = format!("{}.jpg", file_name_str.to_lowercase());
+            let thumbnail_path = dir_to.join(&thumbnail_name);
 
-        if thumbnail_path.exists() {
-            log::debug!(
-                target: "photo_service",
-                "raw_thumbnail_exists; file={}; thumbnail={}",
-                file_name_str, thumbnail_path.display()
-            );
-            continue;
-        }
-
-        // Try EXIF thumbnail extraction
-        if let Some((img, width, height)) = exif_thumbnail::extract_exif_thumbnail(&file_path) {
-            // Save as JPEG
-            if img.save_with_format(&thumbnail_path, image::ImageFormat::Jpeg).is_ok() {
-                count += 1;
-                log::info!(
+            if thumbnail_path.exists() {
+                log::debug!(
                     target: "photo_service",
-                    "raw_thumbnail_created; file={}; thumbnail={}; size={}x{}",
-                    file_name_str, thumbnail_path.display(), width, height
-                );
-            } else {
-                log::warn!(
-                    target: "photo_service",
-                    "raw_thumbnail_save_failed; file={}; thumbnail={}",
+                    "raw_thumbnail_exists; file={}; thumbnail={}",
                     file_name_str, thumbnail_path.display()
                 );
+                continue;
             }
-        } else if raw_config.enable_full_decode {
-            // EXIF thumbnail not found, try full RAW decode as fallback
-            log::info!(
-                target: "photo_service",
-                "raw_exif_thumbnail_not_found; trying_raw_decode; file={}",
-                file_name_str
-            );
-            let max_size = raw_config.max_decode_size;
-            if let Some((img, width, height)) =
-                raw_decode::decode_raw_to_thumbnail_with_limit(
-                    file_path.to_str().unwrap_or(""),
-                    max_size,
-                    raw_config.memory_limit_mb,
-                )
-            {
-                if img.save_with_format(&thumbnail_path, image::ImageFormat::Jpeg).is_ok() {
+
+            // Try EXIF thumbnail extraction
+            if let Some((img, width, height)) = exif_thumbnail::extract_exif_thumbnail(&file_path) {
+                // Save as JPEG
+                if img
+                    .save_with_format(&thumbnail_path, image::ImageFormat::Jpeg)
+                    .is_ok()
+                {
                     count += 1;
                     log::info!(
                         target: "photo_service",
-                        "raw_decode_thumbnail_created; file={}; thumbnail={}; size={}x{}",
+                        "raw_thumbnail_created; file={}; thumbnail={}; size={}x{}",
                         file_name_str, thumbnail_path.display(), width, height
                     );
                 } else {
                     log::warn!(
                         target: "photo_service",
-                        "raw_decode_thumbnail_save_failed; file={}",
+                        "raw_thumbnail_save_failed; file={}; thumbnail={}",
+                        file_name_str, thumbnail_path.display()
+                    );
+                }
+            } else if raw_config.enable_full_decode {
+                // EXIF thumbnail not found, try full RAW decode as fallback
+                log::info!(
+                    target: "photo_service",
+                    "raw_exif_thumbnail_not_found; trying_raw_decode; file={}",
+                    file_name_str
+                );
+                let max_size = raw_config.max_decode_size;
+                if let Some((img, width, height)) = raw_decode::decode_raw_to_thumbnail_with_limit(
+                    file_path.to_str().unwrap_or(""),
+                    max_size,
+                    raw_config.memory_limit_mb,
+                ) {
+                    if img
+                        .save_with_format(&thumbnail_path, image::ImageFormat::Jpeg)
+                        .is_ok()
+                    {
+                        count += 1;
+                        log::info!(
+                            target: "photo_service",
+                            "raw_decode_thumbnail_created; file={}; thumbnail={}; size={}x{}",
+                            file_name_str, thumbnail_path.display(), width, height
+                        );
+                    } else {
+                        log::warn!(
+                            target: "photo_service",
+                            "raw_decode_thumbnail_save_failed; file={}",
+                            file_name_str
+                        );
+                    }
+                } else {
+                    log::warn!(
+                        target: "photo_service",
+                        "raw_decode_failed; file={}",
                         file_name_str
                     );
                 }
             } else {
-                log::warn!(
+                log::info!(
                     target: "photo_service",
-                    "raw_decode_failed; file={}",
+                    "raw_full_decode_disabled; file={}",
                     file_name_str
                 );
             }
-        } else {
-            log::info!(
-                target: "photo_service",
-                "raw_full_decode_disabled; file={}",
-                file_name_str
-            );
         }
-    }
     } // end dirs_to_process loop
 
     Ok(count)

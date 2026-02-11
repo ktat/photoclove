@@ -228,9 +228,9 @@ pub fn get_resized_image(
                                 let exif_time = exif_start.elapsed();
                                 log::info!(target: "image", "raw_exif_thumbnail_cached; cache_path={}; size={}x{}; exif_ms={}; total_ms={}",
                                     cache_path.display(), width, height, exif_time.as_millis(), start_time.elapsed().as_millis());
-                                let cache_path_str = cache_path
-                                    .to_str()
-                                    .ok_or_else(|| "Failed to convert cache path to string".to_string())?;
+                                let cache_path_str = cache_path.to_str().ok_or_else(|| {
+                                    "Failed to convert cache path to string".to_string()
+                                })?;
                                 return Ok(cache_path_str.to_string());
                             }
                         }
@@ -242,90 +242,94 @@ pub fn get_resized_image(
                 }
             }
         } else {
-        // Standard JPEG EXIF thumbnail extraction (original logic)
-        if let Ok(file) = File::open(path_str) {
-            let mut bufreader = BufReader::new(&file);
+            // Standard JPEG EXIF thumbnail extraction (original logic)
+            if let Ok(file) = File::open(path_str) {
+                let mut bufreader = BufReader::new(&file);
 
-            if let Ok(exif_reader) = kexif::Reader::new().read_from_container(&mut bufreader) {
-                // Try to get the thumbnail
-                if let Some(thumbnail_field) =
-                    exif_reader.get_field(kexif::Tag::JPEGInterchangeFormat, kexif::In::THUMBNAIL)
-                {
-                    if let Some(length_field) = exif_reader.get_field(
-                        kexif::Tag::JPEGInterchangeFormatLength,
-                        kexif::In::THUMBNAIL,
-                    ) {
-                        if let (
-                            kexif::Value::Long(ref offset_vec),
-                            kexif::Value::Long(ref length_vec),
-                        ) = (&thumbnail_field.value, &length_field.value)
-                        {
-                            if let (Some(&offset), Some(&length)) =
-                                (offset_vec.first(), length_vec.first())
+                if let Ok(exif_reader) = kexif::Reader::new().read_from_container(&mut bufreader) {
+                    // Try to get the thumbnail
+                    if let Some(thumbnail_field) = exif_reader
+                        .get_field(kexif::Tag::JPEGInterchangeFormat, kexif::In::THUMBNAIL)
+                    {
+                        if let Some(length_field) = exif_reader.get_field(
+                            kexif::Tag::JPEGInterchangeFormatLength,
+                            kexif::In::THUMBNAIL,
+                        ) {
+                            if let (
+                                kexif::Value::Long(ref offset_vec),
+                                kexif::Value::Long(ref length_vec),
+                            ) = (&thumbnail_field.value, &length_field.value)
                             {
-                                // Read the thumbnail data
-                                use std::io::{Read, Seek, SeekFrom};
-                                drop(bufreader);
-                                if let Ok(mut file) = File::open(path_str) {
-                                    if file.seek(SeekFrom::Start(offset as u64)).is_ok() {
-                                        let mut thumbnail_data = vec![0u8; length as usize];
-                                        if file.read_exact(&mut thumbnail_data).is_ok() {
-                                            // Find JPEG start marker (FFD8) and trim any leading data
-                                            let jpeg_start = thumbnail_data
-                                                .windows(2)
-                                                .position(|w| w[0] == 0xFF && w[1] == 0xD8);
-                                            let jpeg_data_slice =
-                                                if let Some(start_pos) = jpeg_start {
-                                                    &thumbnail_data[start_pos..]
+                                if let (Some(&offset), Some(&length)) =
+                                    (offset_vec.first(), length_vec.first())
+                                {
+                                    // Read the thumbnail data
+                                    use std::io::{Read, Seek, SeekFrom};
+                                    drop(bufreader);
+                                    if let Ok(mut file) = File::open(path_str) {
+                                        if file.seek(SeekFrom::Start(offset as u64)).is_ok() {
+                                            let mut thumbnail_data = vec![0u8; length as usize];
+                                            if file.read_exact(&mut thumbnail_data).is_ok() {
+                                                // Find JPEG start marker (FFD8) and trim any leading data
+                                                let jpeg_start = thumbnail_data
+                                                    .windows(2)
+                                                    .position(|w| w[0] == 0xFF && w[1] == 0xD8);
+                                                let jpeg_data_slice =
+                                                    if let Some(start_pos) = jpeg_start {
+                                                        &thumbnail_data[start_pos..]
+                                                    } else {
+                                                        &thumbnail_data[..]
+                                                    };
+
+                                                // Find JPEG end marker (FFD9) and trim any trailing data
+                                                let jpeg_end = jpeg_data_slice
+                                                    .windows(2)
+                                                    .rposition(|w| w[0] == 0xFF && w[1] == 0xD9);
+
+                                                let jpeg_data: Vec<u8> = if let Some(end_pos) =
+                                                    jpeg_end
+                                                {
+                                                    // EOI marker found - extract valid JPEG data including the marker
+                                                    jpeg_data_slice[..end_pos + 2].to_vec()
                                                 } else {
-                                                    &thumbnail_data[..]
+                                                    // No EOI marker found - append it
+                                                    log::debug!(target: "image", "exif_thumbnail_missing_eoi; appending_marker");
+                                                    let mut complete_jpeg =
+                                                        jpeg_data_slice.to_vec();
+                                                    complete_jpeg.push(0xFF);
+                                                    complete_jpeg.push(0xD9);
+                                                    complete_jpeg
                                                 };
 
-                                            // Find JPEG end marker (FFD9) and trim any trailing data
-                                            let jpeg_end = jpeg_data_slice
-                                                .windows(2)
-                                                .rposition(|w| w[0] == 0xFF && w[1] == 0xD9);
+                                                let exif_time = exif_start.elapsed();
 
-                                            let jpeg_data: Vec<u8> = if let Some(end_pos) = jpeg_end
-                                            {
-                                                // EOI marker found - extract valid JPEG data including the marker
-                                                jpeg_data_slice[..end_pos + 2].to_vec()
-                                            } else {
-                                                // No EOI marker found - append it
-                                                log::debug!(target: "image", "exif_thumbnail_missing_eoi; appending_marker");
-                                                let mut complete_jpeg = jpeg_data_slice.to_vec();
-                                                complete_jpeg.push(0xFF);
-                                                complete_jpeg.push(0xD9);
-                                                complete_jpeg
-                                            };
-
-                                            let exif_time = exif_start.elapsed();
-
-                                            // Save to cache file
-                                            if let Ok(mut cache_file) = File::create(cache_path) {
-                                                if cache_file.write_all(&jpeg_data).is_ok() {
-                                                    log::info!(target: "image", "exif_thumbnail_cached; cache_path={}; jpeg_start_offset={}; exif_ms={}; total_ms={}",
+                                                // Save to cache file
+                                                if let Ok(mut cache_file) = File::create(cache_path)
+                                                {
+                                                    if cache_file.write_all(&jpeg_data).is_ok() {
+                                                        log::info!(target: "image", "exif_thumbnail_cached; cache_path={}; jpeg_start_offset={}; exif_ms={}; total_ms={}",
                                                     cache_path.display(), jpeg_start.unwrap_or(0), exif_time.as_millis(), start_time.elapsed().as_millis());
 
-                                                    // Return cache file path
-                                                    let cache_path_str = cache_path
+                                                        // Return cache file path
+                                                        let cache_path_str = cache_path
                                                         .to_str()
                                                         .ok_or_else(|| {
                                                             "Failed to convert cache path to string"
                                                                 .to_string()
                                                         })?;
-                                                    return Ok(cache_path_str.to_string());
+                                                        return Ok(cache_path_str.to_string());
+                                                    }
                                                 }
-                                            }
 
-                                            // If cache write failed, fall through to return data URL
-                                            let base64_string =
-                                                general_purpose::STANDARD.encode(&jpeg_data);
-                                            log::warn!(target: "image", "cache_write_failed; returning_data_url");
-                                            return Ok(format!(
-                                                "data:image/jpeg;base64,{}",
-                                                base64_string
-                                            ));
+                                                // If cache write failed, fall through to return data URL
+                                                let base64_string =
+                                                    general_purpose::STANDARD.encode(&jpeg_data);
+                                                log::warn!(target: "image", "cache_write_failed; returning_data_url");
+                                                return Ok(format!(
+                                                    "data:image/jpeg;base64,{}",
+                                                    base64_string
+                                                ));
+                                            }
                                         }
                                     }
                                 }
@@ -334,7 +338,6 @@ pub fn get_resized_image(
                     }
                 }
             }
-        }
         } // end else (non-RAW)
     }
 
@@ -513,7 +516,7 @@ pub fn save_image_to_download_dir(
     filename: &str,
     state: tauri::State<'_, crate::AppState>,
 ) -> Result<String, String> {
-    use base64::{Engine as _, engine::general_purpose::STANDARD};
+    use base64::{engine::general_purpose::STANDARD, Engine as _};
 
     log::info!(target: "image", "save_image_to_download_dir; filename={}", filename);
 
@@ -534,8 +537,7 @@ pub fn save_image_to_download_dir(
     let full_path_str = full_path.to_string_lossy().to_string();
 
     // Write file
-    fs::write(&full_path, decoded)
-        .map_err(|e| format!("Failed to write image file: {}", e))?;
+    fs::write(&full_path, decoded).map_err(|e| format!("Failed to write image file: {}", e))?;
 
     log::info!(target: "image", "save_image_to_download_dir_success; path={}", full_path_str);
 
@@ -591,7 +593,9 @@ pub fn get_raw_progressive_image(
         return Ok(cache_path_str);
     }
 
-    let cache_dir = cache_path.parent().ok_or_else(|| "Invalid cache path".to_string())?;
+    let cache_dir = cache_path
+        .parent()
+        .ok_or_else(|| "Invalid cache path".to_string())?;
     if !cache_dir.exists() {
         fs::create_dir_all(cache_dir)
             .map_err(|e| format!("Failed to create cache directory: {}", e))?;

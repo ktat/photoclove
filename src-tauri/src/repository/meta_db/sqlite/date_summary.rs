@@ -75,13 +75,18 @@ pub(super) fn rebuild_date_summary(db: &SQLite) -> Result<(), String> {
          WHERE (delete_flg = 0 OR delete_flg IS NULL)
          GROUP BY date(photo_date)",
         params![now, now],
-    ).map_err(|e| format!("Failed to populate date_summary: {}", e))?;
+    )
+    .map_err(|e| format!("Failed to populate date_summary: {}", e))?;
 
     Ok(())
 }
 
 /// Update date_summary for a specific photo date with delta count
-pub(super) fn update_date_summary_for_photo(db: &SQLite, photo_date: &str, delta: i32) -> Result<(), String> {
+pub(super) fn update_date_summary_for_photo(
+    db: &SQLite,
+    photo_date: &str,
+    delta: i32,
+) -> Result<(), String> {
     let conn = db
         .get_connection()
         .map_err(|e| format!("Connection failed: {}", e))?;
@@ -111,8 +116,9 @@ pub(super) fn update_date_summary_for_photo(db: &SQLite, photo_date: &str, delta
         "INSERT OR REPLACE INTO date_summary (date, photo_count, updated_at, created_at)
          VALUES (?1, COALESCE((SELECT photo_count FROM date_summary WHERE date = ?1), 0) + ?2, ?3,
                  COALESCE((SELECT created_at FROM date_summary WHERE date = ?1), ?3))",
-        params![date_str, delta, now]
-    ).map_err(|e| format!("Summary update failed: {}", e))?;
+        params![date_str, delta, now],
+    )
+    .map_err(|e| format!("Summary update failed: {}", e))?;
 
     // Remove entries with zero or negative counts
     tx.execute("DELETE FROM date_summary WHERE photo_count <= 0", [])
@@ -123,7 +129,11 @@ pub(super) fn update_date_summary_for_photo(db: &SQLite, photo_date: &str, delta
 }
 
 /// Update date_summary for a specific date by recounting actual photos
-pub(super) fn update_date_summary_for_date(db: &SQLite, date: &str, _delta: i32) -> Result<(), String> {
+pub(super) fn update_date_summary_for_date(
+    db: &SQLite,
+    date: &str,
+    _delta: i32,
+) -> Result<(), String> {
     let conn = db
         .get_connection()
         .map_err(|e| format!("Connection failed: {}", e))?;

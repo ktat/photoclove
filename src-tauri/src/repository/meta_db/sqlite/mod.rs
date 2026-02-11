@@ -25,24 +25,24 @@ use rusqlite::{params, Connection, Result};
 use std::collections::HashMap;
 use std::path;
 
-mod utils;
+pub mod achievements;
+mod burst_groups;
+mod collections;
+mod counts;
 mod date_summary;
 mod dates;
-mod photo_metadata;
-mod photo_crud;
-mod filter_options;
-mod search_debug;
-mod search;
 mod exif;
-mod counts;
-mod tags;
-mod collections;
-mod job_queue;
-mod recovery_queue;
-mod burst_groups;
 pub mod face_detection;
+mod filter_options;
+mod job_queue;
+mod photo_crud;
+mod photo_metadata;
+mod recovery_queue;
+mod search;
+mod search_debug;
 pub mod stats;
-pub mod achievements;
+mod tags;
+mod utils;
 
 #[derive(Clone)]
 pub struct SQLite {
@@ -101,7 +101,11 @@ impl SQLite {
                 std::fs::create_dir_all(parent).map_err(|e| {
                     rusqlite::Error::SqliteFailure(
                         rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_CANTOPEN),
-                        Some(format!("Failed to create directory '{}': {}", parent.display(), e)),
+                        Some(format!(
+                            "Failed to create directory '{}': {}",
+                            parent.display(),
+                            e
+                        )),
                     )
                 })?;
             }
@@ -149,7 +153,15 @@ impl SQLite {
         sort_order: &str,
         max_photos_per_fetch: u32,
     ) -> Result<String, String> {
-        search::search_photos(self, query, search_type, filters, sort_field, sort_order, max_photos_per_fetch)
+        search::search_photos(
+            self,
+            query,
+            search_type,
+            filters,
+            sort_field,
+            sort_order,
+            max_photos_per_fetch,
+        )
     }
 
     // ==================== Photo CRUD Operations ====================
@@ -175,7 +187,12 @@ impl SQLite {
     }
 
     /// Get trash path for photo
-    pub fn get_trash_path_for_photo(&self, original_path: &str, trash_base_path: &str, import_to: &str) -> Option<String> {
+    pub fn get_trash_path_for_photo(
+        &self,
+        original_path: &str,
+        trash_base_path: &str,
+        import_to: &str,
+    ) -> Option<String> {
         photo_crud::get_trash_path_for_photo(self, original_path, trash_base_path, import_to)
     }
 
@@ -184,7 +201,11 @@ impl SQLite {
         photo_crud::get_photo_created_at(self, photo)
     }
 
-    pub fn save_google_photos_url(&self, photo_path: &str, google_photos_url: &str) -> Result<(), String> {
+    pub fn save_google_photos_url(
+        &self,
+        photo_path: &str,
+        google_photos_url: &str,
+    ) -> Result<(), String> {
         photo_crud::save_google_photos_url(self, photo_path, google_photos_url)
     }
 
@@ -198,7 +219,11 @@ impl SQLite {
 
     // ==================== EXIF Operations ====================
 
-    pub fn update_exif_if_changed(&self, path: &str, exif_data: &crate::value::exif::ExifData) -> Result<bool, String> {
+    pub fn update_exif_if_changed(
+        &self,
+        path: &str,
+        exif_data: &crate::value::exif::ExifData,
+    ) -> Result<bool, String> {
         exif::update_exif_if_changed(self, path, exif_data)
     }
 
@@ -220,11 +245,17 @@ impl SQLite {
 
     // ==================== Job Queue Operations ====================
 
-    pub fn create_job_unit(&self, job_unit: &crate::entity::job_queue::JobUnit) -> Result<(), String> {
+    pub fn create_job_unit(
+        &self,
+        job_unit: &crate::entity::job_queue::JobUnit,
+    ) -> Result<(), String> {
         job_queue::create_job_unit(self, job_unit)
     }
 
-    pub fn create_job(&self, queued_job: &crate::entity::job_queue::QueuedJob) -> Result<i64, String> {
+    pub fn create_job(
+        &self,
+        queued_job: &crate::entity::job_queue::QueuedJob,
+    ) -> Result<i64, String> {
         job_queue::create_job(self, queued_job)
     }
 
@@ -251,14 +282,25 @@ impl SQLite {
         processed_count: i64,
         last_processed_id: i64,
     ) -> Result<(), String> {
-        job_queue::update_job_progress_with_last_id(self, job_id, processed_count, last_processed_id)
+        job_queue::update_job_progress_with_last_id(
+            self,
+            job_id,
+            processed_count,
+            last_processed_id,
+        )
     }
 
-    pub fn get_job_by_id(&self, job_id: i64) -> Result<Option<crate::entity::job_queue::QueuedJob>, String> {
+    pub fn get_job_by_id(
+        &self,
+        job_id: i64,
+    ) -> Result<Option<crate::entity::job_queue::QueuedJob>, String> {
         job_queue::get_job_by_id(self, job_id)
     }
 
-    pub fn get_job_unit_progress(&self, job_unit_id: &str) -> Result<crate::entity::job_queue::JobProgress, String> {
+    pub fn get_job_unit_progress(
+        &self,
+        job_unit_id: &str,
+    ) -> Result<crate::entity::job_queue::JobProgress, String> {
         job_queue::get_job_unit_progress(self, job_unit_id)
     }
 
@@ -270,7 +312,10 @@ impl SQLite {
         job_queue::cleanup_completed_jobs(self)
     }
 
-    pub fn get_jobs_for_unit(&self, job_unit_id: &str) -> Result<Vec<crate::entity::job_queue::QueuedJob>, String> {
+    pub fn get_jobs_for_unit(
+        &self,
+        job_unit_id: &str,
+    ) -> Result<Vec<crate::entity::job_queue::QueuedJob>, String> {
         job_queue::get_jobs_for_unit(self, job_unit_id)
     }
 
@@ -306,11 +351,15 @@ impl SQLite {
         recovery_queue::get_pending_count(self)
     }
 
-    pub fn get_recovery_pending_items(&self) -> Result<Vec<crate::entity::recovery_queue::RecoveryItem>, String> {
+    pub fn get_recovery_pending_items(
+        &self,
+    ) -> Result<Vec<crate::entity::recovery_queue::RecoveryItem>, String> {
         recovery_queue::get_pending_items(self)
     }
 
-    pub fn get_recovery_all_items(&self) -> Result<Vec<crate::entity::recovery_queue::RecoveryItem>, String> {
+    pub fn get_recovery_all_items(
+        &self,
+    ) -> Result<Vec<crate::entity::recovery_queue::RecoveryItem>, String> {
         recovery_queue::get_all_items(self)
     }
 
@@ -334,13 +383,19 @@ impl SQLite {
         recovery_queue::cleanup_old_items(self)
     }
 
-    pub fn get_recovery_item(&self, id: i64) -> Result<Option<crate::entity::recovery_queue::RecoveryItem>, String> {
+    pub fn get_recovery_item(
+        &self,
+        id: i64,
+    ) -> Result<Option<crate::entity::recovery_queue::RecoveryItem>, String> {
         recovery_queue::get_item(self, id)
     }
 
     // ==================== Burst Group Operations ====================
 
-    pub fn save_burst_group(&self, group: &crate::entity::burst_group::BurstGroup) -> Result<(), String> {
+    pub fn save_burst_group(
+        &self,
+        group: &crate::entity::burst_group::BurstGroup,
+    ) -> Result<(), String> {
         burst_groups::save_burst_group(self, group)
     }
 
@@ -368,7 +423,9 @@ impl SQLite {
         burst_groups::get_photo_burst_group_id(self, photo_path)
     }
 
-    pub fn get_manual_group_photo_paths(&self) -> Result<std::collections::HashSet<String>, String> {
+    pub fn get_manual_group_photo_paths(
+        &self,
+    ) -> Result<std::collections::HashSet<String>, String> {
         burst_groups::get_manual_group_photo_paths(self)
     }
 
@@ -384,14 +441,19 @@ impl SQLite {
         burst_groups::get_all_photos_for_grouping(self)
     }
 
-    pub fn get_photos_for_grouping_in_date(&self, date_str: &str) -> Result<Vec<photo::Photo>, String> {
+    pub fn get_photos_for_grouping_in_date(
+        &self,
+        date_str: &str,
+    ) -> Result<Vec<photo::Photo>, String> {
         burst_groups::get_photos_for_grouping_in_date(self, date_str)
     }
 
-    pub fn get_manual_group_photo_paths_in_date(&self, date_str: &str) -> Result<std::collections::HashSet<String>, String> {
+    pub fn get_manual_group_photo_paths_in_date(
+        &self,
+        date_str: &str,
+    ) -> Result<std::collections::HashSet<String>, String> {
         burst_groups::get_manual_group_photo_paths_in_date(self, date_str)
     }
-
 }
 
 // ==================== MetaInfoDB Trait Implementation ====================
@@ -417,11 +479,17 @@ impl MetaInfoDB for SQLite {
         photo_metadata::record_photos_meta_data(self, photos)
     }
 
-    fn record_photos_all_meta_data(&self, dates: date::Dates) -> Result<HashMap<String, usize>, &str> {
+    fn record_photos_all_meta_data(
+        &self,
+        dates: date::Dates,
+    ) -> Result<HashMap<String, usize>, &str> {
         photo_metadata::record_photos_all_meta_data(self, dates)
     }
 
-    fn get_photo_meta_data_in_date(&self, date: date::Date) -> Result<photo_meta::PhotoMetas, String> {
+    fn get_photo_meta_data_in_date(
+        &self,
+        date: date::Date,
+    ) -> Result<photo_meta::PhotoMetas, String> {
         photo_metadata::get_photo_meta_data_in_date(self, date)
     }
 
@@ -525,11 +593,19 @@ impl MetaInfoDB for SQLite {
         collections::add_photo_to_collection(self, collection_id, photo_path)
     }
 
-    fn add_photos_to_collection_bulk(&self, collection_id: i32, photo_paths: &[String]) -> Result<usize, String> {
+    fn add_photos_to_collection_bulk(
+        &self,
+        collection_id: i32,
+        photo_paths: &[String],
+    ) -> Result<usize, String> {
         collections::add_photos_to_collection_bulk(self, collection_id, photo_paths)
     }
 
-    fn remove_photo_from_collection(&self, collection_id: i32, photo_path: &str) -> Result<(), String> {
+    fn remove_photo_from_collection(
+        &self,
+        collection_id: i32,
+        photo_path: &str,
+    ) -> Result<(), String> {
         collections::remove_photo_from_collection(self, collection_id, photo_path)
     }
 
@@ -574,7 +650,12 @@ impl SQLite {
         photo_path: &str,
         metadata: Option<String>,
     ) -> Result<(), String> {
-        collections::add_photo_to_collection_with_metadata(self, collection_id, photo_path, metadata)
+        collections::add_photo_to_collection_with_metadata(
+            self,
+            collection_id,
+            photo_path,
+            metadata,
+        )
     }
 
     /// Get tags for a photo with metadata (for AI tag confidence display)
@@ -655,9 +736,7 @@ impl SQLite {
     }
 
     /// Get all persons with face count and thumbnail for list display
-    pub fn get_all_persons_for_list(
-        &self,
-    ) -> Result<Vec<face_detection::PersonListItem>, String> {
+    pub fn get_all_persons_for_list(&self) -> Result<Vec<face_detection::PersonListItem>, String> {
         face_detection::get_all_persons_for_list(self)
     }
 

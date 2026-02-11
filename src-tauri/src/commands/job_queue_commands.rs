@@ -1,5 +1,6 @@
 use crate::commands::job_helpers::{
-    create_and_start_job, filter_image_paths, normalize_date, NO_IMAGES_RESPONSE, NO_PHOTOS_RESPONSE,
+    create_and_start_job, filter_image_paths, normalize_date, NO_IMAGES_RESPONSE,
+    NO_PHOTOS_RESPONSE,
 };
 use crate::entity::config::Config;
 use crate::entity::job_queue::JobType;
@@ -11,12 +12,13 @@ use tauri::Manager;
 pub fn get_all_job_units(state: tauri::State<'_, AppState>) -> Result<String, String> {
     let job_queue_manager = state.job_queue_manager.clone();
     let job_units = {
-        let manager = job_queue_manager.lock().map_err(|e| format!("Failed to acquire lock: {}", e))?;
+        let manager = job_queue_manager
+            .lock()
+            .map_err(|e| format!("Failed to acquire lock: {}", e))?;
         manager.get_all_job_units()
     };
 
-    serde_json::to_string(&job_units)
-        .map_err(|e| format!("Failed to serialize job units: {}", e))
+    serde_json::to_string(&job_units).map_err(|e| format!("Failed to serialize job units: {}", e))
 }
 
 /// Retrieves all jobs from the job queue manager
@@ -24,12 +26,13 @@ pub fn get_all_job_units(state: tauri::State<'_, AppState>) -> Result<String, St
 pub fn get_all_jobs(state: tauri::State<'_, AppState>) -> Result<String, String> {
     let job_queue_manager = state.job_queue_manager.clone();
     let jobs = {
-        let manager = job_queue_manager.lock().map_err(|e| format!("Failed to acquire lock: {}", e))?;
+        let manager = job_queue_manager
+            .lock()
+            .map_err(|e| format!("Failed to acquire lock: {}", e))?;
         manager.get_all_jobs()
     };
 
-    serde_json::to_string(&jobs)
-        .map_err(|e| format!("Failed to serialize jobs: {}", e))
+    serde_json::to_string(&jobs).map_err(|e| format!("Failed to serialize jobs: {}", e))
 }
 
 /// Retries a failed job
@@ -52,7 +55,9 @@ pub fn retry_job(
     let job_queue_manager = state.job_queue_manager.clone();
     let app_handle = window.app_handle().clone();
     let result = {
-        let manager = job_queue_manager.lock().map_err(|e| format!("Failed to acquire lock: {}", e))?;
+        let manager = job_queue_manager
+            .lock()
+            .map_err(|e| format!("Failed to acquire lock: {}", e))?;
         manager.retry_job(job_id, app_handle)
     };
 
@@ -85,7 +90,9 @@ pub fn retry_job(
 pub fn delete_job(job_id: i64, state: tauri::State<'_, AppState>) -> Result<String, String> {
     let job_queue_manager = state.job_queue_manager.clone();
     let result = {
-        let manager = job_queue_manager.lock().map_err(|e| format!("Failed to acquire lock: {}", e))?;
+        let manager = job_queue_manager
+            .lock()
+            .map_err(|e| format!("Failed to acquire lock: {}", e))?;
         manager.delete_job(job_id)
     };
 
@@ -103,7 +110,9 @@ pub fn delete_job_unit(
 ) -> Result<String, String> {
     let job_queue_manager = state.job_queue_manager.clone();
     let result = {
-        let manager = job_queue_manager.lock().map_err(|e| format!("Failed to acquire lock: {}", e))?;
+        let manager = job_queue_manager
+            .lock()
+            .map_err(|e| format!("Failed to acquire lock: {}", e))?;
         manager.delete_job_unit(job_unit_id)
     };
 
@@ -118,7 +127,9 @@ pub fn delete_job_unit(
 pub fn cleanup_completed_jobs(state: tauri::State<'_, AppState>) -> Result<String, String> {
     let job_queue_manager = state.job_queue_manager.clone();
     let result = {
-        let manager = job_queue_manager.lock().map_err(|e| format!("Failed to acquire lock: {}", e))?;
+        let manager = job_queue_manager
+            .lock()
+            .map_err(|e| format!("Failed to acquire lock: {}", e))?;
         manager.cleanup_completed_jobs()
     };
 
@@ -185,7 +196,9 @@ pub fn resume_job(
     let job_queue_manager = state.job_queue_manager.clone();
     let app_handle = window.app_handle().clone();
     let result = {
-        let manager = job_queue_manager.lock().map_err(|e| format!("Failed to acquire lock: {}", e))?;
+        let manager = job_queue_manager
+            .lock()
+            .map_err(|e| format!("Failed to acquire lock: {}", e))?;
         manager.resume_job(job_id, app_handle)
     };
 
@@ -233,7 +246,9 @@ pub fn restart_job(
     let job_queue_manager = state.job_queue_manager.clone();
     let app_handle = window.app_handle().clone();
     let result = {
-        let manager = job_queue_manager.lock().map_err(|e| format!("Failed to acquire lock: {}", e))?;
+        let manager = job_queue_manager
+            .lock()
+            .map_err(|e| format!("Failed to acquire lock: {}", e))?;
         manager.restart_job(job_id, app_handle)
     };
 
@@ -263,13 +278,12 @@ pub fn restart_job(
 
 /// Get job type configuration for UI display
 #[tauri::command]
-pub fn get_job_config(
-    job_id: i64,
-    state: tauri::State<'_, AppState>,
-) -> Result<String, String> {
+pub fn get_job_config(job_id: i64, state: tauri::State<'_, AppState>) -> Result<String, String> {
     let job_queue_manager = state.job_queue_manager.clone();
     let result = {
-        let manager = job_queue_manager.lock().map_err(|e| format!("Failed to acquire lock: {}", e))?;
+        let manager = job_queue_manager
+            .lock()
+            .map_err(|e| format!("Failed to acquire lock: {}", e))?;
         manager.get_job_config(job_id)
     };
 

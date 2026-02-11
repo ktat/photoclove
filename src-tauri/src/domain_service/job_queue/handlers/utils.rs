@@ -8,7 +8,9 @@ use std::path::PathBuf;
 /// If last_processed_id is None, returns 0 (start from beginning).
 /// If last_processed_id is Some(n), returns n+1 (skip already processed items).
 pub fn get_resume_start_index(job: &QueuedJob) -> usize {
-    job.last_processed_id.map(|id| (id + 1) as usize).unwrap_or(0)
+    job.last_processed_id
+        .map(|id| (id + 1) as usize)
+        .unwrap_or(0)
 }
 
 /// Log resume information if resuming from a previous position.
@@ -50,8 +52,7 @@ pub fn create_kill_file(job_id: i64) -> Result<(), String> {
         .map_err(|e| format!("Failed to create kill directory: {}", e))?;
 
     let kill_file = get_kill_file_path(job_id);
-    std::fs::write(&kill_file, "")
-        .map_err(|e| format!("Failed to create kill file: {}", e))?;
+    std::fs::write(&kill_file, "").map_err(|e| format!("Failed to create kill file: {}", e))?;
 
     log::info!(target: "job_queue", "kill_file_created; job_id={}", job_id);
     Ok(())

@@ -253,7 +253,11 @@ pub async fn get_collection_photos(
     let correlation_id = logging_service.generate_correlation_id();
     log::info!(target: "photo_collections", "get_collection_photos_request; correlation_id={}; collection_id={}; ordered={:?}", correlation_id, collection_id, ordered);
 
-    match meta_db.get_collection_photos(collection_id, ordered.unwrap_or(false), Some(state.config.clone())) {
+    match meta_db.get_collection_photos(
+        collection_id,
+        ordered.unwrap_or(false),
+        Some(state.config.clone()),
+    ) {
         Ok(mut photos) => {
             // Set has_thumbnail flag for each photo
             for photo in photos.iter_mut() {

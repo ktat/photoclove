@@ -174,10 +174,7 @@ pub(super) fn update_job_progress_with_last_id(
 /// Get a job by ID
 pub(super) fn get_job_by_id(sqlite: &SQLite, job_id: i64) -> Result<Option<QueuedJob>, String> {
     with_connection(sqlite, |conn| {
-        let query = format!(
-            "SELECT {} FROM job_queue WHERE id = ?1",
-            JOB_COLUMNS
-        );
+        let query = format!("SELECT {} FROM job_queue WHERE id = ?1", JOB_COLUMNS);
 
         let result = conn
             .query_row(&query, params![job_id], row_to_queued_job)

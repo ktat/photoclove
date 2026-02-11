@@ -213,9 +213,12 @@ impl TokenStorageService {
         let entry = Entry::new("photoclove", &key_name)
             .map_err(|e| format!("Failed to create S3 credentials entry: {}", e))?;
 
-        let json_data = entry
-            .get_password()
-            .map_err(|e| format!("No stored S3 credentials found for provider {}: {}", provider, e))?;
+        let json_data = entry.get_password().map_err(|e| {
+            format!(
+                "No stored S3 credentials found for provider {}: {}",
+                provider, e
+            )
+        })?;
 
         let credentials: serde_json::Value = serde_json::from_str(&json_data)
             .map_err(|e| format!("Failed to parse S3 credentials: {}", e))?;

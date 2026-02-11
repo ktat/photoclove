@@ -83,12 +83,8 @@ pub(crate) fn process_face_thumbnail_regenerate_job(
         // Get face data
         match db.get_detected_face(*face_id) {
             Ok(face) => {
-                let bbox = BoundingBox::new(
-                    face.bbox_x,
-                    face.bbox_y,
-                    face.bbox_width,
-                    face.bbox_height,
-                );
+                let bbox =
+                    BoundingBox::new(face.bbox_x, face.bbox_y, face.bbox_width, face.bbox_height);
 
                 match face_thumbnail_service::generate_face_thumbnail_from_file(
                     &face.photo_path,

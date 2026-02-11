@@ -18,7 +18,8 @@ pub(crate) fn process_recalculate_grouping_job(
     // Deserialize job data from target field
     let job_data_json = job
         .job
-        .target.first()
+        .target
+        .first()
         .ok_or_else(|| "No job data found in target field".to_string())?;
 
     let job_data: job_queue::RecalculateGroupingJob = serde_json::from_str(job_data_json)
@@ -45,7 +46,12 @@ pub(crate) fn process_recalculate_grouping_job(
         "preserve_manual; manual_photo_count={}",
         manual_group_photos.len()
     );
-    emit_progress(app_handle, &job.job_unit_id, "Preserving manual groups...", 10);
+    emit_progress(
+        app_handle,
+        &job.job_unit_id,
+        "Preserving manual groups...",
+        10,
+    );
 
     // Step 2: Clear all auto burst groups
     meta_db.clear_auto_burst_groups()?;
@@ -158,7 +164,10 @@ pub(crate) fn process_recalculate_grouping_job(
         emit_progress(
             app_handle,
             &job.job_unit_id,
-            &format!("Processing camera {} of {}...", processed_cameras, camera_count),
+            &format!(
+                "Processing camera {} of {}...",
+                processed_cameras, camera_count
+            ),
             progress,
         );
 

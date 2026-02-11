@@ -19,8 +19,7 @@ pub fn get_recovery_pending_items(state: tauri::State<'_, AppState>) -> Result<S
     let meta_db = &state.meta_db;
     let items = meta_db.get_recovery_pending_items()?;
 
-    serde_json::to_string(&items)
-        .map_err(|e| format!("Failed to serialize recovery items: {}", e))
+    serde_json::to_string(&items).map_err(|e| format!("Failed to serialize recovery items: {}", e))
 }
 
 /// Get all recovery items (including resolved and discarded)
@@ -29,8 +28,7 @@ pub fn get_recovery_all_items(state: tauri::State<'_, AppState>) -> Result<Strin
     let meta_db = &state.meta_db;
     let items = meta_db.get_recovery_all_items()?;
 
-    serde_json::to_string(&items)
-        .map_err(|e| format!("Failed to serialize recovery items: {}", e))
+    serde_json::to_string(&items).map_err(|e| format!("Failed to serialize recovery items: {}", e))
 }
 
 /// Discard a recovery item (mark as discarded)
@@ -55,17 +53,15 @@ pub fn delete_recovery_item(id: i64, state: tauri::State<'_, AppState>) -> Resul
 
 /// Retry a single recovery item
 #[tauri::command]
-pub fn retry_recovery_item(
-    id: i64,
-    state: tauri::State<'_, AppState>,
-) -> Result<String, String> {
+pub fn retry_recovery_item(id: i64, state: tauri::State<'_, AppState>) -> Result<String, String> {
     let meta_db = &state.meta_db;
     let config = &state.config;
 
     log::info!(target: "recovery_queue", "retry_item; id={}", id);
 
     // Get the recovery item
-    let item = meta_db.get_recovery_item(id)?
+    let item = meta_db
+        .get_recovery_item(id)?
         .ok_or_else(|| format!("Recovery item not found: {}", id))?;
 
     // Increment retry count
@@ -73,24 +69,21 @@ pub fn retry_recovery_item(
 
     // Execute the operation based on type
     let result = match item.operation_type {
-        OperationType::MoveToTrash => {
-            retry_move_to_trash(&item.target_path, config)
-        }
-        OperationType::Restore => {
-            retry_restore(&item.target_path, config)
-        }
+        OperationType::MoveToTrash => retry_move_to_trash(&item.target_path, config),
+        OperationType::Restore => retry_restore(&item.target_path, config),
         OperationType::Import => {
             // Import retry would need the original import parameters
             // For now, we just indicate it needs manual intervention
             Err("Import operations need to be re-initiated manually".to_string())
         }
-        OperationType::PermanentlyDelete => {
-            retry_permanently_delete(&item.target_path, config)
-        }
+        OperationType::PermanentlyDelete => retry_permanently_delete(&item.target_path, config),
         OperationType::S3Sync => {
             // S3 sync retry would need the S3 service to be initialized
             // For now, we indicate it needs manual intervention via Preferences
-            Err("S3 sync operations need to be re-initiated via Preferences > S3 Backup".to_string())
+            Err(
+                "S3 sync operations need to be re-initiated via Preferences > S3 Backup"
+                    .to_string(),
+            )
         }
     };
 
@@ -120,9 +113,7 @@ pub fn retry_recovery_item(
 
 /// Retry all pending recovery items
 #[tauri::command]
-pub fn retry_all_recovery_items(
-    state: tauri::State<'_, AppState>,
-) -> Result<String, String> {
+pub fn retry_all_recovery_items(state: tauri::State<'_, AppState>) -> Result<String, String> {
     let meta_db = &state.meta_db;
     let config = &state.config;
 
@@ -143,21 +134,16 @@ pub fn retry_all_recovery_items(
         let _ = meta_db.increment_recovery_retry(item.id);
 
         let result = match item.operation_type {
-            OperationType::MoveToTrash => {
-                retry_move_to_trash(&item.target_path, config)
-            }
-            OperationType::Restore => {
-                retry_restore(&item.target_path, config)
-            }
+            OperationType::MoveToTrash => retry_move_to_trash(&item.target_path, config),
+            OperationType::Restore => retry_restore(&item.target_path, config),
             OperationType::Import => {
                 Err("Import operations need to be re-initiated manually".to_string())
             }
-            OperationType::PermanentlyDelete => {
-                retry_permanently_delete(&item.target_path, config)
-            }
-            OperationType::S3Sync => {
-                Err("S3 sync operations need to be re-initiated via Preferences > S3 Backup".to_string())
-            }
+            OperationType::PermanentlyDelete => retry_permanently_delete(&item.target_path, config),
+            OperationType::S3Sync => Err(
+                "S3 sync operations need to be re-initiated via Preferences > S3 Backup"
+                    .to_string(),
+            ),
         };
 
         match result {
@@ -189,7 +175,8 @@ pub fn retry_all_recovery_items(
         "total": total,
         "succeeded": succeeded,
         "failed": failed
-    }).to_string())
+    })
+    .to_string())
 }
 
 /// Cleanup old resolved/discarded items
@@ -224,10 +211,7 @@ fn retry_move_to_trash(
         .map_err(|e| format!("Failed to move to trash: {}", e))
 }
 
-fn retry_restore(
-    target_path: &str,
-    config: &crate::entity::config::Config,
-) -> Result<(), String> {
+fn retry_restore(target_path: &str, config: &crate::entity::config::Config) -> Result<(), String> {
     use crate::domain_service::file_service;
     use crate::entity::trash::Trash;
     use crate::value::file::File;

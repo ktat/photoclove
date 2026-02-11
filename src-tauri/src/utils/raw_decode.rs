@@ -3,7 +3,7 @@
 //! Decodes RAW camera files (CR2, NEF, ARW, DNG, etc.) using rawloader
 //! and converts sensor data to displayable RGB images.
 
-use image::{DynamicImage, ImageBuffer, Rgb, imageops::FilterType};
+use image::{imageops::FilterType, DynamicImage, ImageBuffer, Rgb};
 
 /// Decode a RAW file and produce a resized thumbnail image.
 ///
@@ -30,9 +30,21 @@ pub fn decode_raw_to_thumbnail(path: &str, max_size: u32) -> Option<(DynamicImag
 
     // Get white balance coefficients
     let wb = &raw_image.wb_coeffs;
-    let wb_r = if wb[0].is_finite() && wb[0] > 0.0 { wb[0] } else { 1.0 };
-    let wb_g = if wb[1].is_finite() && wb[1] > 0.0 { wb[1] } else { 1.0 };
-    let wb_b = if wb[2].is_finite() && wb[2] > 0.0 { wb[2] } else { 1.0 };
+    let wb_r = if wb[0].is_finite() && wb[0] > 0.0 {
+        wb[0]
+    } else {
+        1.0
+    };
+    let wb_g = if wb[1].is_finite() && wb[1] > 0.0 {
+        wb[1]
+    } else {
+        1.0
+    };
+    let wb_b = if wb[2].is_finite() && wb[2] > 0.0 {
+        wb[2]
+    } else {
+        1.0
+    };
 
     // Normalize WB so green = 1.0
     let wb_min = wb_r.min(wb_g).min(wb_b);
@@ -140,11 +152,11 @@ fn demosaic_multi_component(
             let g = gamma_srgb(g);
             let b = gamma_srgb(b);
 
-            img_buf.put_pixel(x as u32, y as u32, Rgb([
-                (r * 255.0) as u8,
-                (g * 255.0) as u8,
-                (b * 255.0) as u8,
-            ]));
+            img_buf.put_pixel(
+                x as u32,
+                y as u32,
+                Rgb([(r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8]),
+            );
         }
     }
 
@@ -190,11 +202,11 @@ fn demosaic_bayer(
             let g = gamma_srgb(g);
             let b = gamma_srgb(b);
 
-            img_buf.put_pixel(x as u32, y as u32, Rgb([
-                (r * 255.0) as u8,
-                (g * 255.0) as u8,
-                (b * 255.0) as u8,
-            ]));
+            img_buf.put_pixel(
+                x as u32,
+                y as u32,
+                Rgb([(r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8]),
+            );
         }
     }
 
@@ -213,16 +225,16 @@ fn demosaic_pixel(
 ) -> (f32, f32, f32) {
     let color = cfa.color_at(y, x);
 
-    let val = |px: usize, py: usize| -> f32 {
-        ((data[py * width + px] - black) / range).clamp(0.0, 1.0)
-    };
+    let val =
+        |px: usize, py: usize| -> f32 { ((data[py * width + px] - black) / range).clamp(0.0, 1.0) };
 
     match color {
         // Red pixel
         0 => {
             let r = val(x, y);
             let g = (val(x - 1, y) + val(x + 1, y) + val(x, y - 1) + val(x, y + 1)) / 4.0;
-            let b = (val(x - 1, y - 1) + val(x + 1, y - 1) + val(x - 1, y + 1) + val(x + 1, y + 1)) / 4.0;
+            let b = (val(x - 1, y - 1) + val(x + 1, y - 1) + val(x - 1, y + 1) + val(x + 1, y + 1))
+                / 4.0;
             (r, g, b)
         }
         // Green pixel (on red row or blue row)
@@ -246,7 +258,8 @@ fn demosaic_pixel(
         2 => {
             let b = val(x, y);
             let g = (val(x - 1, y) + val(x + 1, y) + val(x, y - 1) + val(x, y + 1)) / 4.0;
-            let r = (val(x - 1, y - 1) + val(x + 1, y - 1) + val(x - 1, y + 1) + val(x + 1, y + 1)) / 4.0;
+            let r = (val(x - 1, y - 1) + val(x + 1, y - 1) + val(x - 1, y + 1) + val(x + 1, y + 1))
+                / 4.0;
             (r, g, b)
         }
         // Fallback (shouldn't happen with standard Bayer patterns)

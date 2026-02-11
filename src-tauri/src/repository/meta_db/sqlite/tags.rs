@@ -20,7 +20,11 @@ pub(super) fn get_tags_for_photos_bulk(
         .map_err(|_| "Failed to connect to database".to_string())?;
 
     // Build IN clause with placeholders
-    let placeholders = photo_paths.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+    let placeholders = photo_paths
+        .iter()
+        .map(|_| "?")
+        .collect::<Vec<_>>()
+        .join(",");
     let query = format!(
         "SELECT pci.photo_path, pc.id, pc.name, pc.color
          FROM photo_collection_items pci
@@ -53,8 +57,8 @@ pub(super) fn get_tags_for_photos_bulk(
         .map_err(|e| format!("Failed to query bulk tags: {}", e))?;
 
     for row_result in rows {
-        let (photo_path, tag_id, tag_name, tag_color) = row_result
-            .map_err(|e| format!("Failed to process tag row: {}", e))?;
+        let (photo_path, tag_id, tag_name, tag_color) =
+            row_result.map_err(|e| format!("Failed to process tag row: {}", e))?;
 
         tags_map
             .entry(photo_path)

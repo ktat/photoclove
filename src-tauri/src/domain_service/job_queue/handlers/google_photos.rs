@@ -15,7 +15,8 @@ pub(crate) async fn process_google_photos_upload_job(
     // Deserialize job data from target field
     let job_data_json = job
         .job
-        .target.first()
+        .target
+        .first()
         .ok_or_else(|| "No job data found in target field".to_string())?;
 
     let job_data: job_queue::GooglePhotosUploadJob = serde_json::from_str(job_data_json)

@@ -9,7 +9,10 @@ use std::fs;
 use std::path::Path;
 
 /// Get shooting time statistics (hour of day, day of week)
-pub fn get_shooting_time_stats(sqlite: &SQLite, period: &TimePeriod) -> Result<ShootingTimeStats, String> {
+pub fn get_shooting_time_stats(
+    sqlite: &SQLite,
+    period: &TimePeriod,
+) -> Result<ShootingTimeStats, String> {
     let conn = sqlite
         .get_connection()
         .map_err(|e| format!("Failed to connect: {}", e))?;
@@ -61,14 +64,25 @@ pub fn get_shooting_time_stats(sqlite: &SQLite, period: &TimePeriod) -> Result<S
         .prepare(&day_query)
         .map_err(|e| format!("Failed to prepare day query: {}", e))?;
 
-    let day_names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    let day_names = [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+    ];
 
     let by_day_of_week: Vec<DayOfWeekCount> = day_stmt
         .query_map([], |row| {
             let day: u32 = row.get(0)?;
             Ok(DayOfWeekCount {
                 day,
-                day_name: day_names.get(day as usize).unwrap_or(&"Unknown").to_string(),
+                day_name: day_names
+                    .get(day as usize)
+                    .unwrap_or(&"Unknown")
+                    .to_string(),
                 count: row.get(1)?,
             })
         })
@@ -83,7 +97,10 @@ pub fn get_shooting_time_stats(sqlite: &SQLite, period: &TimePeriod) -> Result<S
 }
 
 /// Get camera settings distribution
-pub fn get_camera_settings_stats(sqlite: &SQLite, period: &TimePeriod) -> Result<CameraSettingsStats, String> {
+pub fn get_camera_settings_stats(
+    sqlite: &SQLite,
+    period: &TimePeriod,
+) -> Result<CameraSettingsStats, String> {
     let conn = sqlite
         .get_connection()
         .map_err(|e| format!("Failed to connect: {}", e))?;
@@ -195,7 +212,10 @@ pub fn get_equipment_stats(sqlite: &SQLite, period: &TimePeriod) -> Result<Equip
 }
 
 /// Get organization metrics
-pub fn get_organization_stats(sqlite: &SQLite, period: &TimePeriod) -> Result<OrganizationStats, String> {
+pub fn get_organization_stats(
+    sqlite: &SQLite,
+    period: &TimePeriod,
+) -> Result<OrganizationStats, String> {
     let conn = sqlite
         .get_connection()
         .map_err(|e| format!("Failed to connect: {}", e))?;
@@ -299,7 +319,12 @@ pub fn get_storage_stats(config: &Config) -> Result<StorageStats, String> {
     let mut largest_size: u64 = 0;
 
     if photo_path.exists() {
-        calculate_directory_stats(photo_path, &mut total_size, &mut file_count, &mut largest_size)?;
+        calculate_directory_stats(
+            photo_path,
+            &mut total_size,
+            &mut file_count,
+            &mut largest_size,
+        )?;
     }
 
     // Calculate thumbnail cache size
@@ -309,7 +334,12 @@ pub fn get_storage_stats(config: &Config) -> Result<StorageStats, String> {
     let mut thumb_largest: u64 = 0;
 
     if thumbnail_path.exists() {
-        calculate_directory_stats(thumbnail_path, &mut thumbnail_size, &mut thumb_count, &mut thumb_largest)?;
+        calculate_directory_stats(
+            thumbnail_path,
+            &mut thumbnail_size,
+            &mut thumb_count,
+            &mut thumb_largest,
+        )?;
     }
 
     // Calculate face thumbnail size (in thumbnail_store/faces/)
@@ -319,7 +349,12 @@ pub fn get_storage_stats(config: &Config) -> Result<StorageStats, String> {
     let mut face_largest: u64 = 0;
 
     if face_path.exists() {
-        calculate_directory_stats(&face_path, &mut face_size, &mut face_count, &mut face_largest)?;
+        calculate_directory_stats(
+            &face_path,
+            &mut face_size,
+            &mut face_count,
+            &mut face_largest,
+        )?;
     }
 
     // Subtract face size from thumbnail size (since faces are inside thumbnail_store)
@@ -375,7 +410,10 @@ fn format_shutter_speed(value: &str) -> String {
     }
 }
 
-fn query_equipment_distribution(conn: &Connection, query: &str) -> Result<Vec<EquipmentCount>, String> {
+fn query_equipment_distribution(
+    conn: &Connection,
+    query: &str,
+) -> Result<Vec<EquipmentCount>, String> {
     let mut stmt = conn
         .prepare(query)
         .map_err(|e| format!("Failed to prepare equipment query: {}", e))?;

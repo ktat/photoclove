@@ -2,8 +2,8 @@
 //!
 //! Database operations for managing persons and face assignments.
 
-use super::types::{PersonListItem, PersonRecord, PersonWithFace};
 use super::super::SQLite;
+use super::types::{PersonListItem, PersonRecord, PersonWithFace};
 use crate::entity::{config, photo};
 use crate::value::file;
 use rusqlite::params;
@@ -14,11 +14,8 @@ pub fn create_person(sqlite: &SQLite, name: Option<&str>) -> Result<i64, String>
         .get_connection()
         .map_err(|e| format!("Database error: {}", e))?;
 
-    conn.execute(
-        "INSERT INTO persons (name) VALUES (?)",
-        params![name],
-    )
-    .map_err(|e| format!("Failed to create person: {}", e))?;
+    conn.execute("INSERT INTO persons (name) VALUES (?)", params![name])
+        .map_err(|e| format!("Failed to create person: {}", e))?;
 
     Ok(conn.last_insert_rowid())
 }
@@ -125,11 +122,7 @@ pub fn get_all_persons_for_list(sqlite: &SQLite) -> Result<Vec<PersonListItem>, 
 }
 
 /// Assign a face to a person
-pub fn assign_face_to_person(
-    sqlite: &SQLite,
-    face_id: i64,
-    person_id: i64,
-) -> Result<(), String> {
+pub fn assign_face_to_person(sqlite: &SQLite, face_id: i64, person_id: i64) -> Result<(), String> {
     let conn = sqlite
         .get_connection()
         .map_err(|e| format!("Database error: {}", e))?;
@@ -213,10 +206,7 @@ pub fn assign_faces_to_person_batch(
 }
 
 /// Get photos containing a specific person (paths only)
-pub fn get_photos_for_person(
-    sqlite: &SQLite,
-    person_id: i64,
-) -> Result<Vec<String>, String> {
+pub fn get_photos_for_person(sqlite: &SQLite, person_id: i64) -> Result<Vec<String>, String> {
     let conn = sqlite
         .get_connection()
         .map_err(|e| format!("Database error: {}", e))?;
@@ -273,7 +263,15 @@ pub fn get_photos_for_person_full(
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
 
     #[allow(clippy::type_complexity)]
-    let photos_data: Vec<(String, String, i32, Option<String>, Option<String>, Option<String>, Option<String>)> = stmt
+    let photos_data: Vec<(
+        String,
+        String,
+        i32,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+    )> = stmt
         .query_map(params![person_id], |row| {
             let path: String = row.get(0)?;
             let photo_date: String = row.get(1)?;
@@ -283,18 +281,28 @@ pub fn get_photos_for_person_full(
             let exif_orientation: Option<String> = row.get(6)?;
             let burst_group_id: Option<String> = row.get(7)?;
 
-            Ok((path, photo_date, star, comment, css_style, exif_orientation, burst_group_id))
+            Ok((
+                path,
+                photo_date,
+                star,
+                comment,
+                css_style,
+                exif_orientation,
+                burst_group_id,
+            ))
         })
         .map_err(|e| format!("Failed to query photos: {}", e))?
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| format!("Failed to collect photos: {}", e))?;
 
     let photo_paths: Vec<String> = photos_data.iter().map(|(path, ..)| path.clone()).collect();
-    let tags_map = super::super::tags::get_tags_for_photos_bulk(sqlite, &photo_paths)
-        .unwrap_or_default();
+    let tags_map =
+        super::super::tags::get_tags_for_photos_bulk(sqlite, &photo_paths).unwrap_or_default();
 
     let mut photos = Vec::new();
-    for (path, photo_date, star, comment, css_style, exif_orientation, burst_group_id) in photos_data {
+    for (path, photo_date, star, comment, css_style, exif_orientation, burst_group_id) in
+        photos_data
+    {
         let file_entity = file::File::from_relative(path.clone());
         let mut photo_entity = photo::Photo::new(file_entity, config.clone());
 
@@ -312,7 +320,8 @@ pub fn get_photos_for_person_full(
 
         if let Some(photo_tags) = tags_map.get(&path) {
             if !photo_tags.is_empty() {
-                let tags: Vec<photo::PhotoTag> = photo_tags.iter()
+                let tags: Vec<photo::PhotoTag> = photo_tags
+                    .iter()
                     .map(|(id, name, color)| photo::PhotoTag::new(*id, name.clone(), color.clone()))
                     .collect();
                 photo_entity.tags = Some(tags);
@@ -387,8 +396,17 @@ pub fn get_persons_with_faces(
     let mut persons: Vec<PersonWithFace> = Vec::new();
 
     for row in rows {
-        let (person_id, person_name, photo_path, bbox_x, bbox_y, bbox_width, bbox_height, embedding_json, representative_face_id) =
-            row.map_err(|e| format!("Failed to read row: {}", e))?;
+        let (
+            person_id,
+            person_name,
+            photo_path,
+            bbox_x,
+            bbox_y,
+            bbox_width,
+            bbox_height,
+            embedding_json,
+            representative_face_id,
+        ) = row.map_err(|e| format!("Failed to read row: {}", e))?;
 
         let similarity = match (target_embedding, &embedding_json) {
             (Some(target), Some(json)) => {
@@ -417,7 +435,11 @@ pub fn get_persons_with_faces(
         });
     }
 
-    persons.sort_by(|a, b| b.similarity.partial_cmp(&a.similarity).unwrap_or(std::cmp::Ordering::Equal));
+    persons.sort_by(|a, b| {
+        b.similarity
+            .partial_cmp(&a.similarity)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     Ok(persons)
 }

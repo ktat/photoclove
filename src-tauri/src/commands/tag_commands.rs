@@ -1,7 +1,7 @@
 #![allow(clippy::type_complexity)]
 
-use crate::AppState;
 use crate::repository::MetaInfoDB;
+use crate::AppState;
 
 /// Creates a new tag in the metadata database
 ///

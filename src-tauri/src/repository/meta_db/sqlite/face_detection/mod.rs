@@ -15,8 +15,7 @@ pub use types::*;
 // Re-export all functions
 pub use faces::{
     delete_detected_face, delete_detected_faces_batch, get_all_face_ids, get_detected_face,
-    get_detected_faces, get_named_face_embeddings, has_detected_faces,
-    save_detected_faces,
+    get_detected_faces, get_named_face_embeddings, has_detected_faces, save_detected_faces,
 };
 
 pub use persons::{
@@ -27,4 +26,4 @@ pub use persons::{
 
 pub use stats::get_face_detection_stats;
 
-pub use unknown::{get_unknown_faces, get_unknown_faces_count, get_photos_for_unknown_faces_full};
+pub use unknown::{get_photos_for_unknown_faces_full, get_unknown_faces, get_unknown_faces_count};

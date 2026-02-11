@@ -188,11 +188,7 @@ impl File {
         // Normalize path separators to forward slash
         let normalized = path.replace('\\', "/");
         let p = Path::new(&normalized);
-        let dir = p
-            .parent()
-            .unwrap_or(Path::new(""))
-            .display()
-            .to_string();
+        let dir = p.parent().unwrap_or(Path::new("")).display().to_string();
         let file_name = p
             .file_name()
             .and_then(|n| n.to_str())
@@ -216,11 +212,7 @@ impl File {
         file_type: &fs::FileType,
     ) -> File {
         let p = Path::new(&path);
-        let dir = p
-            .parent()
-            .unwrap_or(Path::new("/"))
-            .display()
-            .to_string();
+        let dir = p.parent().unwrap_or(Path::new("/")).display().to_string();
         let file_name = p
             .file_name()
             .and_then(|n| n.to_str())
@@ -317,9 +309,7 @@ impl File {
             }
             Ok(abs_path) => {
                 let ap = abs_path.as_path().display().to_string();
-                if p.file_name().is_none()
-                    || p.file_name().and_then(|n| n.to_str()).is_none()
-                {
+                if p.file_name().is_none() || p.file_name().and_then(|n| n.to_str()).is_none() {
                     log::warn!(target: "file", "invalid_filename; path={:?}", path);
                     return File {
                         path: path.to_string(),
@@ -476,11 +466,17 @@ mod tests {
     #[test]
     fn test_to_relative_path() {
         assert_eq!(
-            file::to_relative_path("/mnt/nas/photos/2024-01-15/uuid/photo.jpg", "/mnt/nas/photos"),
+            file::to_relative_path(
+                "/mnt/nas/photos/2024-01-15/uuid/photo.jpg",
+                "/mnt/nas/photos"
+            ),
             "2024-01-15/uuid/photo.jpg"
         );
         assert_eq!(
-            file::to_relative_path("/mnt/nas/photos/2024-01-15/uuid/photo.jpg", "/mnt/nas/photos/"),
+            file::to_relative_path(
+                "/mnt/nas/photos/2024-01-15/uuid/photo.jpg",
+                "/mnt/nas/photos/"
+            ),
             "2024-01-15/uuid/photo.jpg"
         );
         // Already relative

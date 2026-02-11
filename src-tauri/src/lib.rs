@@ -32,7 +32,7 @@ fn queue_startup_insights(config: &entity::config::Config, app_handle: tauri::Ap
     // Check if cache is stale (older than 1 hour) or missing
     let should_refresh = match insights::get_cache_metadata(config, &TimePeriod::All) {
         Some(metadata) => metadata.age_secs > 3600, // Older than 1 hour
-        None => true, // No cache
+        None => true,                               // No cache
     };
 
     if !should_refresh {
@@ -85,7 +85,10 @@ pub fn run() {
     // This is required for face detection and AI tagging to find the library
     if std::env::var("ORT_DYLIB_PATH").is_err() {
         if let Some(data_dir) = dirs::data_local_dir() {
-            let lib_path = data_dir.join("photoclove").join("lib").join("libonnxruntime.so");
+            let lib_path = data_dir
+                .join("photoclove")
+                .join("lib")
+                .join("libonnxruntime.so");
             if lib_path.exists() {
                 std::env::set_var("ORT_DYLIB_PATH", &lib_path);
             }
@@ -122,8 +125,7 @@ pub fn run() {
         log::info!(target: "app", "app_starting_in_setup_mode; is_first_run={}; db_exists={}", is_first_run, db_exists);
     }
 
-    let job_queue_manager =
-        job_queue_service::JobQueueManager::new(sqlite_db, c.copy_parallel);
+    let job_queue_manager = job_queue_service::JobQueueManager::new(sqlite_db, c.copy_parallel);
 
     // Initialize logging service
     let logging_service =
@@ -166,9 +168,15 @@ pub fn run() {
                     log::warn!(target: "app", "cli_quickview_path_not_found; path={}", path);
                     false
                 }
-            } else { false }
-        } else { false }
-    } else { false };
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    } else {
+        false
+    };
 
     let state = AppState {
         repo_db: repository::RepoDB::new(c.import_to.to_string()),

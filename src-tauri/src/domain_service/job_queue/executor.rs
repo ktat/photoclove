@@ -237,7 +237,8 @@ fn create_dependent_jobs(
                 job_queue::JobType::AiTagging,
                 image_files,
             );
-            let ai_tagging_queued = job_queue::QueuedJob::new(job_unit_id.to_string(), ai_tagging_job);
+            let ai_tagging_queued =
+                job_queue::QueuedJob::new(job_unit_id.to_string(), ai_tagging_job);
             let ai_tagging_id = db.create_job(&ai_tagging_queued)?;
 
             log::info!(target: "job_queue", "dependent_jobs; ai_tagging_id={}", ai_tagging_id);
@@ -333,9 +334,9 @@ fn process_job(db: Arc<SQLite>, job: job_queue::QueuedJob, app_handle: tauri::Ap
         job_queue::JobType::S3Sync => {
             log::info!(target: "job_queue", "s3_sync_job; job_id={}; status=calling_process", job_id);
             // Use a blocking runtime for async S3 sync handler
-            tokio::runtime::Runtime::new().unwrap().block_on(
-                handlers::process_s3_sync_job(&job, &app_handle, &db),
-            )
+            tokio::runtime::Runtime::new()
+                .unwrap()
+                .block_on(handlers::process_s3_sync_job(&job, &app_handle, &db))
         }
         job_queue::JobType::FaceDetection => {
             log::info!(target: "job_queue", "face_detection_job; job_id={}; status=calling_process", job_id);

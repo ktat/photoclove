@@ -2,8 +2,8 @@
 //!
 //! Database operations for storing and retrieving detected faces.
 
-use super::types::{DetectedFaceInput, DetectedFaceRecord, NamedFaceEmbedding};
 use super::super::SQLite;
+use super::types::{DetectedFaceInput, DetectedFaceRecord, NamedFaceEmbedding};
 use rusqlite::params;
 use std::collections::HashMap;
 
@@ -59,9 +59,10 @@ pub fn save_detected_faces(
     let mut inserted_ids = Vec::new();
 
     for face in faces {
-        let embedding_json = face.embedding.as_ref().map(|e| {
-            serde_json::to_string(e).unwrap_or_else(|_| "[]".to_string())
-        });
+        let embedding_json = face
+            .embedding
+            .as_ref()
+            .map(|e| serde_json::to_string(e).unwrap_or_else(|_| "[]".to_string()));
 
         conn.execute(
             "INSERT INTO detected_faces (bbox_x, bbox_y, bbox_width, bbox_height, confidence, embedding, person_id)
@@ -310,13 +311,19 @@ pub fn delete_detected_faces_batch(sqlite: &SQLite, face_ids: &[i64]) -> Result<
         "DELETE FROM photo_detected_faces WHERE detected_face_id IN ({})",
         placeholders
     );
-    let params: Vec<&dyn rusqlite::ToSql> = face_ids.iter().map(|id| id as &dyn rusqlite::ToSql).collect();
+    let params: Vec<&dyn rusqlite::ToSql> = face_ids
+        .iter()
+        .map(|id| id as &dyn rusqlite::ToSql)
+        .collect();
     conn.execute(&sql_mapping, params.as_slice())
         .map_err(|e| format!("Failed to delete face mappings: {}", e))?;
 
     // Delete from detected_faces table
     let sql_faces = format!("DELETE FROM detected_faces WHERE id IN ({})", placeholders);
-    let params: Vec<&dyn rusqlite::ToSql> = face_ids.iter().map(|id| id as &dyn rusqlite::ToSql).collect();
+    let params: Vec<&dyn rusqlite::ToSql> = face_ids
+        .iter()
+        .map(|id| id as &dyn rusqlite::ToSql)
+        .collect();
     let rows_affected = conn
         .execute(&sql_faces, params.as_slice())
         .map_err(|e| format!("Failed to delete faces: {}", e))?;

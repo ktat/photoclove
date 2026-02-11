@@ -180,25 +180,24 @@ impl Photo {
                 log::debug!(target: "photo", "thumbnail_check_raw; thumbnail_path={}; exists={}",
                     raw_thumbnail_path, self.has_thumbnail);
             } else {
+                let ext_regex = regex::Regex::new(r"\.(?i)jpe?g$").unwrap();
 
-            let ext_regex = regex::Regex::new(r"\.(?i)jpe?g$").unwrap();
-
-            if ext_regex.is_match(&thumbnail_path) {
-                // JPEG file: normalize extension to .jpg
-                let thumbnail_path_normalized = ext_regex.replace(&thumbnail_path, ".jpg").to_string();
-                let p = std::path::Path::new(&thumbnail_path_normalized);
-                self.has_thumbnail = p.exists();
-                log::debug!(target: "photo", "thumbnail_check_photo; thumbnail_path={}; exists={}",
+                if ext_regex.is_match(&thumbnail_path) {
+                    // JPEG file: normalize extension to .jpg
+                    let thumbnail_path_normalized =
+                        ext_regex.replace(&thumbnail_path, ".jpg").to_string();
+                    let p = std::path::Path::new(&thumbnail_path_normalized);
+                    self.has_thumbnail = p.exists();
+                    log::debug!(target: "photo", "thumbnail_check_photo; thumbnail_path={}; exists={}",
                     thumbnail_path_normalized, self.has_thumbnail);
-            } else {
-                // Non-JPEG file (movie, etc.): append .jpg
-                let thumbnail_path_for_movie = format!("{}.jpg", thumbnail_path);
-                let p = std::path::Path::new(&thumbnail_path_for_movie);
-                self.has_thumbnail = p.exists();
-                log::debug!(target: "photo", "thumbnail_check_movie; thumbnail_path={}; exists={}",
+                } else {
+                    // Non-JPEG file (movie, etc.): append .jpg
+                    let thumbnail_path_for_movie = format!("{}.jpg", thumbnail_path);
+                    let p = std::path::Path::new(&thumbnail_path_for_movie);
+                    self.has_thumbnail = p.exists();
+                    log::debug!(target: "photo", "thumbnail_check_movie; thumbnail_path={}; exists={}",
                     thumbnail_path_for_movie, self.has_thumbnail);
-            }
-
+                }
             } // end else (non-RAW)
         } else {
             log::error!(target: "photo", "thumbnail_check_without_config; photo_path={:?}", self.file.path);
@@ -218,14 +217,14 @@ impl Photo {
         // The first path component is the date directory
         let path = self.file.path.trim_start_matches('/');
 
-        let date_only = path
-            .split('/')
-            .next()
-            .unwrap_or("");
+        let date_only = path.split('/').next().unwrap_or("");
 
         if date_only.trim().is_empty() {
             log::error!(target: "photo", "get_imported_dir_date_error; path={}", self.file.path);
-            panic!("Invalid date string extracted from relative path: {}", self.file.path);
+            panic!(
+                "Invalid date string extracted from relative path: {}",
+                self.file.path
+            );
         }
 
         date::Date::from_string(&date_only.to_string(), Option::Some("-"))
@@ -322,7 +321,8 @@ impl Photo {
         }
 
         // Parse format: "YYYY:MM:DD HH:MM:SS" or "YYYY-MM-DD HH:MM:SS"
-        let re = regex::Regex::new(r"^(\d{4})[:\-](\d{2})[:\-](\d{2})\s+(\d{2}):(\d{2}):(\d{2})").ok()?;
+        let re = regex::Regex::new(r"^(\d{4})[:\-](\d{2})[:\-](\d{2})\s+(\d{2}):(\d{2}):(\d{2})")
+            .ok()?;
         let caps = re.captures(datetime_str)?;
 
         let year: i32 = caps.get(1)?.as_str().parse().ok()?;

@@ -31,9 +31,9 @@ pub enum Sort {
     // Legacy variants for backwards compatibility
     #[allow(dead_code)]
     PhotoTime, // Fallback to PhotoTimeDesc
-    Time,      // File created time (for import mode)
+    Time, // File created time (for import mode)
     #[allow(dead_code)]
-    Name,      // Fallback to NameAsc
+    Name, // Fallback to NameAsc
 }
 pub struct DatesNum {
     data: HashMap<String, i32>,
@@ -85,11 +85,41 @@ pub fn sort_from_int(i: i32) -> Sort {
 pub fn sort_field_to_value(sort_field: &str, sort_order: &str) -> i32 {
     let is_asc = sort_order.to_lowercase() == "asc";
     match sort_field {
-        "exif_date_time_original" => if is_asc { 1 } else { 0 },
-        "photo_date" => if is_asc { 3 } else { 2 },
-        "star" => if is_asc { 5 } else { 4 },
-        "path" => if is_asc { 7 } else { 6 },
-        _ => if is_asc { 1 } else { 0 }, // Default to PhotoTime
+        "exif_date_time_original" => {
+            if is_asc {
+                1
+            } else {
+                0
+            }
+        }
+        "photo_date" => {
+            if is_asc {
+                3
+            } else {
+                2
+            }
+        }
+        "star" => {
+            if is_asc {
+                5
+            } else {
+                4
+            }
+        }
+        "path" => {
+            if is_asc {
+                7
+            } else {
+                6
+            }
+        }
+        _ => {
+            if is_asc {
+                1
+            } else {
+                0
+            }
+        } // Default to PhotoTime
     }
 }
 
@@ -243,7 +273,11 @@ pub(crate) trait MetaInfoDB {
     ) -> Result<(), String>;
     fn delete_collection(&self, id: i32) -> Result<bool, String>;
     fn add_photo_to_collection(&self, collection_id: i32, photo_path: &str) -> Result<(), String>;
-    fn add_photos_to_collection_bulk(&self, collection_id: i32, photo_paths: &[String]) -> Result<usize, String>;
+    fn add_photos_to_collection_bulk(
+        &self,
+        collection_id: i32,
+        photo_paths: &[String],
+    ) -> Result<usize, String>;
     fn remove_photo_from_collection(
         &self,
         collection_id: i32,

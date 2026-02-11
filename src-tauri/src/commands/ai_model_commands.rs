@@ -94,7 +94,10 @@ pub fn download_ai_model(model_id: String) -> Result<String, String> {
     let manager = ModelManager::new();
     manager.download_model(&model_id)?;
 
-    Ok(format!(r#"{{"result": "success", "model_id": "{}"}}"#, model_id))
+    Ok(format!(
+        r#"{{"result": "success", "model_id": "{}"}}"#,
+        model_id
+    ))
 }
 
 /// Delete a downloaded AI model
@@ -109,7 +112,10 @@ pub fn delete_ai_model(model_id: String) -> Result<String, String> {
     let manager = ModelManager::new();
     manager.delete_model(&model_id)?;
 
-    Ok(format!(r#"{{"result": "success", "model_id": "{}"}}"#, model_id))
+    Ok(format!(
+        r#"{{"result": "success", "model_id": "{}"}}"#,
+        model_id
+    ))
 }
 
 /// Get the models directory path
@@ -180,7 +186,10 @@ pub fn run_ai_tagging_for_photo(
     let (use_exif_thumbnail, min_thumbnail_size) = if use_full {
         (false, 0)
     } else {
-        (config.ai_tagging.use_exif_thumbnail, config.ai_tagging.min_thumbnail_size)
+        (
+            config.ai_tagging.use_exif_thumbnail,
+            config.ai_tagging.min_thumbnail_size,
+        )
     };
 
     let service_config = AITaggingConfig {
@@ -306,7 +315,9 @@ pub fn run_ai_tagging_for_photo(
 }
 
 /// Parse a string to AutoTagCategory
-fn parse_category(s: &str) -> Option<crate::domain_service::ai_tagging::categories::AutoTagCategory> {
+fn parse_category(
+    s: &str,
+) -> Option<crate::domain_service::ai_tagging::categories::AutoTagCategory> {
     use crate::domain_service::ai_tagging::categories::AutoTagCategory;
 
     match s.to_lowercase().as_str() {

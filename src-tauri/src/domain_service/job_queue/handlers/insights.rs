@@ -5,8 +5,8 @@
 
 use crate::entity::job_queue::QueuedJob;
 use crate::repository::meta_db::sqlite::stats;
-use crate::value::date::TimePeriod;
 use crate::repository::meta_db::sqlite::SQLite;
+use crate::value::date::TimePeriod;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
@@ -55,8 +55,7 @@ pub(crate) fn process_insights_job(
     }
 
     // Write to cache file
-    fs::write(&cache_path, &json)
-        .map_err(|e| format!("Failed to write insights cache: {}", e))?;
+    fs::write(&cache_path, &json).map_err(|e| format!("Failed to write insights cache: {}", e))?;
 
     log::info!(target: "job_queue", "insights_job; job_id={}; status=complete; cache_path={}; period={}",
         job_id, cache_path, period.as_str());

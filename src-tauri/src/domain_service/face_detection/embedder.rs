@@ -156,7 +156,8 @@ impl FaceEmbedder {
                 // ArcFace normalization: (pixel - 127.5) / 127.5
                 tensor[idx] = (pixel[0] as f32 - 127.5) / 127.5; // R channel
                 tensor[(height * width) as usize + idx] = (pixel[1] as f32 - 127.5) / 127.5; // G channel
-                tensor[(2 * height * width) as usize + idx] = (pixel[2] as f32 - 127.5) / 127.5; // B channel
+                tensor[(2 * height * width) as usize + idx] = (pixel[2] as f32 - 127.5) / 127.5;
+                // B channel
             }
         }
 

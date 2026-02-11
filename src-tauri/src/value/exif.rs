@@ -85,31 +85,23 @@ impl ExifData {
                         }
                         ExifTagKind::Make => data.make = e.value_readable.clone(),
                         ExifTagKind::Model => data.model = e.value_readable.clone(),
-                        ExifTagKind::Orientation => {
-                            data.orientation = e.value_readable.clone()
-                        }
+                        ExifTagKind::Orientation => data.orientation = e.value_readable.clone(),
                         ExifTagKind::XResolution => data.xresolution = e.value.clone(),
                         ExifTagKind::YResolution => data.yresolution = e.value.clone(),
                         ExifTagKind::ResolutionUnit => data.resolution_unit = e.value.clone(),
                         ExifTagKind::Copyright => data.copyright = e.value.clone(),
-                        ExifTagKind::ExposureTime => {
-                            data.exposure_time = e.value_readable.clone()
-                        }
+                        ExifTagKind::ExposureTime => data.exposure_time = e.value_readable.clone(),
                         ExifTagKind::ShutterSpeedValue => {
                             data.shutter_speed_value = e.value.clone()
                         }
-                        ExifTagKind::FocalLength => {
-                            data.focal_length = e.value_readable.clone()
-                        }
+                        ExifTagKind::FocalLength => data.focal_length = e.value_readable.clone(),
                         ExifTagKind::FocalLengthIn35mmFilm => {
                             data.focal_length_in35mm_film = e.value_readable.clone()
                         }
                         ExifTagKind::DigitalZoomRatio => {
                             data.digital_zoom_ratio = e.value_readable.clone()
                         }
-                        ExifTagKind::ExposureMode => {
-                            data.exposure_mode = e.value_readable.clone()
-                        }
+                        ExifTagKind::ExposureMode => data.exposure_mode = e.value_readable.clone(),
                         ExifTagKind::WhiteBalanceMode => {
                             data.white_balance_mode = e.value_readable.clone()
                         }
@@ -137,7 +129,8 @@ impl ExifData {
                     }
                     // Also convert date_time_original to hyphen format for consistency
                     if !data.date_time_original.is_empty() {
-                        data.date_time_original = re.replace(&data.date_time_original, "$1-$2-$3").to_string();
+                        data.date_time_original =
+                            re.replace(&data.date_time_original, "$1-$2-$3").to_string();
                     }
                 }
             }
@@ -159,7 +152,9 @@ fn get_lens_from_maker_note(data: Vec<u8>) -> String {
     }
 
     // Lens name prefix regex (LUMIX, LEICA, OLYMPUS, SIGMA, etc.)
-    let re = match regex::Regex::new("(?i)(LUMIX|LEICA|OLYMPUS|SIGMA|TAMRON|KOWA|COSINA|VOIGT|VENUS)$") {
+    let re = match regex::Regex::new(
+        "(?i)(LUMIX|LEICA|OLYMPUS|SIGMA|TAMRON|KOWA|COSINA|VOIGT|VENUS)$",
+    ) {
         Ok(r) => r,
         Err(_) => return String::new(),
     };

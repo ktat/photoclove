@@ -185,8 +185,7 @@ pub fn generate_face_thumbnail_from_file(
 pub fn delete_face_thumbnail(thumbnail_store: &str, face_id: i64) -> Result<(), String> {
     let path = get_face_thumbnail_path(thumbnail_store, face_id);
     if path.exists() {
-        fs::remove_file(&path)
-            .map_err(|e| format!("Failed to delete face thumbnail: {}", e))?;
+        fs::remove_file(&path).map_err(|e| format!("Failed to delete face thumbnail: {}", e))?;
         log::info!(
             target: "face_thumbnail",
             "thumbnail_deleted; face_id={}; path={}",

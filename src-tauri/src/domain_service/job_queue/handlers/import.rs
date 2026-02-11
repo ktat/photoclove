@@ -158,12 +158,7 @@ pub(crate) fn process_import_job(
                 log::debug!(target: "import_job", "file_copy; destination={}", destination_path.display());
 
                 // Build relative path for DB storage: "YYYY-MM-DD/UUID/filename"
-                let relative_path = format!(
-                    "{}/{}/{}",
-                    date,
-                    uuid,
-                    filename
-                );
+                let relative_path = format!("{}/{}/{}", date, uuid, filename);
                 let destination_path_str = destination_path.display().to_string();
                 imported_file_paths.push(destination_path_str.clone());
                 log::debug!(target: "import_job", "imported_files; added={}; relative={}", destination_path_str, relative_path);
@@ -186,7 +181,9 @@ pub(crate) fn process_import_job(
 
         // Update progress in database and emit event (with last_processed_id for resume)
         let processed = (i + 1) as i64;
-        let _ = state.meta_db.update_job_progress_with_last_id(job_id, processed, i as i64);
+        let _ = state
+            .meta_db
+            .update_job_progress_with_last_id(job_id, processed, i as i64);
 
         let progress = (processed as f64 / job.job.target.len() as f64) * 100.0;
         if let Err(e) = app_handle.emit("import_progress", (&job.job_unit_id, file_path, progress))

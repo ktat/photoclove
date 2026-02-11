@@ -87,7 +87,10 @@ impl OnnxClassifier {
 
         // 1. Check in app data directory
         if let Some(data_dir) = dirs::data_local_dir() {
-            let path = data_dir.join("photoclove").join("models").join(model_filename);
+            let path = data_dir
+                .join("photoclove")
+                .join("models")
+                .join(model_filename);
             if path.exists() {
                 log::debug!(target: "ai_tagging", "model_found; location=app_data; path={}", path.display());
                 return Ok(path);
@@ -101,7 +104,9 @@ impl OnnxClassifier {
                 let resource_paths = [
                     exe_dir.join("models").join(model_filename),
                     exe_dir.join("../Resources/models").join(model_filename),
-                    exe_dir.join("../share/photoclove/models").join(model_filename),
+                    exe_dir
+                        .join("../share/photoclove/models")
+                        .join(model_filename),
                 ];
                 for path in &resource_paths {
                     if path.exists() {
@@ -138,7 +143,12 @@ impl OnnxClassifier {
 
     /// Preprocess image for model input
     /// Returns tensor in NCHW format (batch=1, channels=3, height, width)
-    fn preprocess_image(&self, image_path: &Path, use_exif_thumbnail: bool, min_thumbnail_size: u32) -> Result<Vec<f32>, String> {
+    fn preprocess_image(
+        &self,
+        image_path: &Path,
+        use_exif_thumbnail: bool,
+        min_thumbnail_size: u32,
+    ) -> Result<Vec<f32>, String> {
         use image::DynamicImage;
 
         let (width, height) = self.model_preset.input_size();
@@ -149,7 +159,7 @@ impl OnnxClassifier {
             if let Some((thumbnail_img, thumb_width, thumb_height)) =
                 crate::utils::exif_thumbnail::extract_exif_thumbnail_with_min_size(
                     image_path,
-                    min_thumbnail_size
+                    min_thumbnail_size,
                 )
             {
                 log::debug!(
@@ -165,10 +175,10 @@ impl OnnxClassifier {
 
         // Fallback: Load full image if EXIF thumbnail not found or disabled
         if img.is_none() {
-            img = Some(
-                image::open(image_path)
-                    .map_err(|e| format!("Failed to load image {}: {}", image_path.display(), e))?
-            );
+            img =
+                Some(image::open(image_path).map_err(|e| {
+                    format!("Failed to load image {}: {}", image_path.display(), e)
+                })?);
 
             if use_exif_thumbnail {
                 log::debug!(
@@ -200,7 +210,8 @@ impl OnnxClassifier {
                 tensor[(height * width) as usize + idx] =
                     ((pixel[1] as f32 / 255.0) - IMAGENET_MEAN[1]) / IMAGENET_STD[1]; // G
                 tensor[(2 * height * width) as usize + idx] =
-                    ((pixel[2] as f32 / 255.0) - IMAGENET_MEAN[2]) / IMAGENET_STD[2]; // B
+                    ((pixel[2] as f32 / 255.0) - IMAGENET_MEAN[2]) / IMAGENET_STD[2];
+                // B
             }
         }
 
@@ -265,7 +276,10 @@ impl OnnxClassifier {
                 }
 
                 // Avoid duplicates (multiple ImageNet classes may map to same category)
-                if results.iter().any(|r: &ClassificationResult| r.category == category) {
+                if results
+                    .iter()
+                    .any(|r: &ClassificationResult| r.category == category)
+                {
                     continue;
                 }
 
@@ -294,7 +308,10 @@ impl AIClassifierBackend for OnnxClassifier {
         // Set ORT_DYLIB_PATH if not already set and library exists in app data
         if std::env::var("ORT_DYLIB_PATH").is_err() {
             if let Some(data_dir) = dirs::data_local_dir() {
-                let lib_path = data_dir.join("photoclove").join("lib").join("libonnxruntime.so");
+                let lib_path = data_dir
+                    .join("photoclove")
+                    .join("lib")
+                    .join("libonnxruntime.so");
                 if lib_path.exists() {
                     log::info!(
                         target: "ai_tagging",
@@ -364,7 +381,11 @@ impl AIClassifierBackend for OnnxClassifier {
         );
 
         // Preprocess image (before mutable session borrow)
-        let input_data = self.preprocess_image(image_path, config.use_exif_thumbnail, config.min_thumbnail_size)?;
+        let input_data = self.preprocess_image(
+            image_path,
+            config.use_exif_thumbnail,
+            config.min_thumbnail_size,
+        )?;
         let (width, height) = self.model_preset.input_size();
 
         // Create input tensor with shape [1, 3, height, width] (NCHW format)
@@ -385,10 +406,7 @@ impl AIClassifierBackend for OnnxClassifier {
                 .map_err(|e| format!("Inference failed: {}", e))?;
 
             // Get first output tensor using iterator (ort 2.0 API)
-            let (_, output_value) = outputs
-                .iter()
-                .next()
-                .ok_or("No output from model")?;
+            let (_, output_value) = outputs.iter().next().ok_or("No output from model")?;
 
             // Extract output as tensor data - returns (shape, data_slice)
             let (_, output_data) = output_value

@@ -19,30 +19,30 @@ pub async fn handle(ctx: &HandlerContext<'_>, params: &SearchParams) -> Result<S
     let search_query = params.query.clone().unwrap_or_default();
 
     // Get search parameters from params or use defaults
-    let (search_type_param, filters_str, sort_field, sort_order) = if let Some(ref p) = params.params
-    {
-        let search_type_param = p
-            .get("search_type")
-            .and_then(|v| v.as_str())
-            .unwrap_or("text")
-            .to_string();
-        let filters_str = p
-            .get("filters")
-            .and_then(|v| v.as_str())
-            .unwrap_or("{}")
-            .to_string();
-        let sort_field = p
-            .get("sort_field")
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string());
-        let sort_order = p
-            .get("sort_order")
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string());
-        (search_type_param, filters_str, sort_field, sort_order)
-    } else {
-        ("text".to_string(), "{}".to_string(), None, None)
-    };
+    let (search_type_param, filters_str, sort_field, sort_order) =
+        if let Some(ref p) = params.params {
+            let search_type_param = p
+                .get("search_type")
+                .and_then(|v| v.as_str())
+                .unwrap_or("text")
+                .to_string();
+            let filters_str = p
+                .get("filters")
+                .and_then(|v| v.as_str())
+                .unwrap_or("{}")
+                .to_string();
+            let sort_field = p
+                .get("sort_field")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let sort_order = p
+                .get("sort_order")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            (search_type_param, filters_str, sort_field, sort_order)
+        } else {
+            ("text".to_string(), "{}".to_string(), None, None)
+        };
 
     log::info!(target: "get_photos", "search_request; query={}; search_type={}", search_query, search_type_param);
 

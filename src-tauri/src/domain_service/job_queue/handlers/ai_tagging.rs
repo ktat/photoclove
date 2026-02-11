@@ -245,7 +245,9 @@ pub(crate) fn process_ai_tagging_job(
 }
 
 /// Parse a string to AutoTagCategory
-fn parse_category(s: &str) -> Option<crate::domain_service::ai_tagging::categories::AutoTagCategory> {
+fn parse_category(
+    s: &str,
+) -> Option<crate::domain_service::ai_tagging::categories::AutoTagCategory> {
     use crate::domain_service::ai_tagging::categories::AutoTagCategory;
 
     match s.to_lowercase().as_str() {

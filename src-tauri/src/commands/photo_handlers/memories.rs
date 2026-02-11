@@ -31,7 +31,10 @@ pub async fn handle(ctx: &HandlerContext<'_>, _params: &SearchParams) -> Result<
 }
 
 /// Handle memories request for startup image - get random photo from past
-pub async fn handle_startup(ctx: &HandlerContext<'_>, _params: &SearchParams) -> Result<String, ()> {
+pub async fn handle_startup(
+    ctx: &HandlerContext<'_>,
+    _params: &SearchParams,
+) -> Result<String, ()> {
     let now = chrono::Local::now();
     let month = now.format("%m").to_string().parse::<u32>().unwrap_or(1);
     let day = now.format("%d").to_string().parse::<u32>().unwrap_or(1);
@@ -50,7 +53,8 @@ pub async fn handle_startup(ctx: &HandlerContext<'_>, _params: &SearchParams) ->
             let seed = (now.timestamp_millis() as usize) % photos.len();
             let photo = &photos[seed];
             // Return absolute path for frontend convertFileSrc
-            let abs_path = crate::value::file::to_absolute_path(&photo.file.path, &ctx.config.import_to);
+            let abs_path =
+                crate::value::file::to_absolute_path(&photo.file.path, &ctx.config.import_to);
             let response = StartupMemoryResponse {
                 path: abs_path,
                 has_memories: true,
@@ -98,20 +102,23 @@ fn get_memories_photos(
         .map_err(|e| format!("Failed to prepare statement: {}", e))?;
 
     let rows = stmt
-        .query_map(params![month_day_pattern, current_year_pattern, limit], |row| {
-            let path: String = row.get(0)?;
-            let photo_time: String = row.get(1)?;
-            let exif_orientation: Option<String> = row.get(2)?;
+        .query_map(
+            params![month_day_pattern, current_year_pattern, limit],
+            |row| {
+                let path: String = row.get(0)?;
+                let photo_time: String = row.get(1)?;
+                let exif_orientation: Option<String> = row.get(2)?;
 
-            // path is relative from DB
-            let mut photo = photo::Photo::new(file::File::from_relative(path), None);
-            photo.set_time(photo_time);
-            if let Some(ref orientation) = exif_orientation {
-                photo.meta_data.orientation = orientation.clone();
-            }
+                // path is relative from DB
+                let mut photo = photo::Photo::new(file::File::from_relative(path), None);
+                photo.set_time(photo_time);
+                if let Some(ref orientation) = exif_orientation {
+                    photo.meta_data.orientation = orientation.clone();
+                }
 
-            Ok(photo)
-        })
+                Ok(photo)
+            },
+        )
         .map_err(|e| format!("Failed to execute query: {}", e))?;
 
     let mut photos = Vec::new();
@@ -134,7 +141,11 @@ fn get_memories_photos_grouped(
 
     // Use LIKE pattern for matching month-day
     let month_day_pattern = format!("%-{:02}-{:02} %", month, day);
-    let current_year: i32 = chrono::Local::now().format("%Y").to_string().parse().unwrap_or(2024);
+    let current_year: i32 = chrono::Local::now()
+        .format("%Y")
+        .to_string()
+        .parse()
+        .unwrap_or(2024);
     let current_year_pattern = format!("{}-%", current_year);
 
     log::info!(target: "memories", "get_memories_photos_grouped; month_day_pattern={}; current_year_pattern={}", month_day_pattern, current_year_pattern);
@@ -172,7 +183,8 @@ fn get_memories_photos_grouped(
         .map_err(|e| format!("Failed to execute query: {}", e))?;
 
     // Group by year
-    let mut grouped: std::collections::HashMap<String, Vec<photo::Photo>> = std::collections::HashMap::new();
+    let mut grouped: std::collections::HashMap<String, Vec<photo::Photo>> =
+        std::collections::HashMap::new();
     for (year, photo) in rows.flatten() {
         grouped.entry(year).or_default().push(photo);
     }

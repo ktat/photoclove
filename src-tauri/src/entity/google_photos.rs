@@ -156,10 +156,10 @@ impl GooglePhotos {
             let upload_uri = upload_uri.clone();
             let auth = auth.clone();
             let file_path = file_path.to_string();
-            
+
             tokio::spawn(async move {
                 log::info!(target: "google_photos", "uploading_file; file={}", file_path);
-                
+
                 let mut file = File::open(&file_path).unwrap();
                 let mut buffer = Vec::new();
                 file.read_to_end(&mut buffer).unwrap();
@@ -175,7 +175,7 @@ impl GooglePhotos {
                     .body(buffer)
                     .send()
                     .await;
-                    
+
                 match response {
                     Ok(response) => {
                         let upload_token = response.text().await.unwrap();

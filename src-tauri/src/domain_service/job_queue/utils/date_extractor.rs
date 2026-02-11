@@ -18,8 +18,7 @@ pub(crate) fn extract_dates_from_paths(file_paths: &[String]) -> HashSet<String>
                     if let Some(date_str) = date_dir.file_name() {
                         let date_string = date_str.to_string_lossy().to_string();
                         // Only add if it looks like a date (YYYY-MM-DD format)
-                        if date_re.is_match(&date_string)
-                        {
+                        if date_re.is_match(&date_string) {
                             dates_set.insert(date_string);
                         }
                     }

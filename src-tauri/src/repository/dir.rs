@@ -72,10 +72,8 @@ impl Dir {
     }
 
     pub fn find_all_files(&self, date_after: Option<date::Date>) -> file::Files {
-        let re = Regex::new(
-            r"(?i)\.(?:jpe?g|gif|png|cr2|cr3|nef|nev|arw|dng|raf|orf|rw2|3fr)$",
-        )
-        .unwrap();
+        let re = Regex::new(r"(?i)\.(?:jpe?g|gif|png|cr2|cr3|nef|nev|arw|dng|raf|orf|rw2|3fr)$")
+            .unwrap();
         let readdir = match fs::read_dir(&self.path) {
             Ok(rd) => rd,
             Err(e) => {
@@ -97,9 +95,7 @@ impl Dir {
                 Err(_) => continue,
             };
 
-            if (file_type.is_file() || file_type.is_symlink())
-                && re.is_match(&path_str)
-            {
+            if (file_type.is_file() || file_type.is_symlink()) && re.is_match(&path_str) {
                 let metadata = match entry.metadata() {
                     Ok(m) => m,
                     Err(_) => continue,
@@ -114,9 +110,7 @@ impl Dir {
                 }
 
                 files.files.push(file::File::new_from_dir_entry(
-                    path_str,
-                    &metadata,
-                    &file_type,
+                    path_str, &metadata, &file_type,
                 ));
             }
         }
@@ -132,10 +126,8 @@ impl Dir {
         date_after: Option<date::Date>,
     ) -> DirsFiles {
         let mut df = DirsFiles::new(self.path.clone());
-        let re = Regex::new(
-            r"(?i)\.(?:jpe?g|gif|png|cr2|cr3|nef|nev|arw|dng|raf|orf|rw2|3fr)$",
-        )
-        .unwrap();
+        let re = Regex::new(r"(?i)\.(?:jpe?g|gif|png|cr2|cr3|nef|nev|arw|dng|raf|orf|rw2|3fr)$")
+            .unwrap();
         let readdir = match fs::read_dir(&self.path) {
             Ok(rd) => rd,
             Err(_) => return DirsFiles::new(self.path.clone()),
@@ -191,9 +183,7 @@ impl Dir {
                     file_type,
                 });
             } else if file_type.is_dir() {
-                df.dirs
-                    .dirs
-                    .push(file::Dir::new(path_str));
+                df.dirs.dirs.push(file::Dir::new(path_str));
             }
         }
 
@@ -218,11 +208,7 @@ impl Dir {
                 df.files.files = file_entries[start_index..last_index]
                     .iter()
                     .map(|e| {
-                        file::File::new_from_dir_entry(
-                            e.path.clone(),
-                            &e.metadata,
-                            &e.file_type,
-                        )
+                        file::File::new_from_dir_entry(e.path.clone(), &e.metadata, &e.file_type)
                     })
                     .collect();
             } else {

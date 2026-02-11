@@ -26,7 +26,11 @@ fn get_relative_parent(target_file: &path::Path) -> Result<path::PathBuf, std::i
     }
 }
 
-pub fn move_to_trash(file: file::File, trash: trash::Trash, relative_path: &str) -> Result<(), std::io::Error> {
+pub fn move_to_trash(
+    file: file::File,
+    trash: trash::Trash,
+    relative_path: &str,
+) -> Result<(), std::io::Error> {
     let trash_path = path::Path::new(&trash.dir.path);
     let source_file = path::Path::new(&file.path);
 
@@ -104,7 +108,10 @@ pub fn restore_from_trash(
     } else {
         return Err(std::io::Error::new(
             std::io::ErrorKind::NotFound,
-            format!("File not found in trash: tried {:?} and {:?}", new_trash_file, old_trash_file),
+            format!(
+                "File not found in trash: tried {:?} and {:?}",
+                new_trash_file, old_trash_file
+            ),
         ));
     };
 
@@ -167,7 +174,10 @@ pub fn remove_from_trash_permanently(
     } else {
         return Err(std::io::Error::new(
             std::io::ErrorKind::NotFound,
-            format!("File not found in trash: tried {:?} and {:?}", new_trash_file, old_trash_file),
+            format!(
+                "File not found in trash: tried {:?} and {:?}",
+                new_trash_file, old_trash_file
+            ),
         ));
     };
 

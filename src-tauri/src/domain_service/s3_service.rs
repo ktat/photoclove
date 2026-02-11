@@ -40,8 +40,8 @@ impl S3Service {
         let sdk_config = match self.config.auth_method {
             S3AuthMethod::AwsCredentials => {
                 // Use AWS CLI credentials with optional profile
-                let mut config_loader = aws_config::defaults(BehaviorVersion::latest())
-                    .region(region);
+                let mut config_loader =
+                    aws_config::defaults(BehaviorVersion::latest()).region(region);
 
                 if let Some(profile) = &self.config.profile {
                     config_loader = config_loader.profile_name(profile);
@@ -111,9 +111,10 @@ impl S3Service {
             }
             S3StorageType::MinIO => None, // MinIO requires custom endpoint
             S3StorageType::CloudflareR2 => None, // R2 requires custom endpoint with account ID
-            S3StorageType::DigitalOcean => {
-                Some(format!("https://{}.digitaloceanspaces.com", self.config.region))
-            }
+            S3StorageType::DigitalOcean => Some(format!(
+                "https://{}.digitaloceanspaces.com",
+                self.config.region
+            )),
             S3StorageType::IDriveE2 => {
                 // iDrive e2 uses AWS-compatible region names (e.g., ap-southeast-1)
                 Some(format!("https://s3.{}.idrivee2.com", self.config.region))
@@ -173,8 +174,7 @@ impl S3Service {
 
     /// Test connection to S3 by listing objects (limit 1)
     pub async fn test_connection(&self) -> Result<bool, String> {
-        let client = self.client.as_ref()
-            .ok_or("S3 client not initialized")?;
+        let client = self.client.as_ref().ok_or("S3 client not initialized")?;
 
         let (bucket, prefix) = self.parse_bucket_uri()?;
 
@@ -199,13 +199,8 @@ impl S3Service {
     }
 
     /// Upload a single file to S3
-    pub async fn upload_file(
-        &self,
-        local_path: &str,
-        import_to: &str,
-    ) -> Result<String, String> {
-        let client = self.client.as_ref()
-            .ok_or("S3 client not initialized")?;
+    pub async fn upload_file(&self, local_path: &str, import_to: &str) -> Result<String, String> {
+        let client = self.client.as_ref().ok_or("S3 client not initialized")?;
 
         let (bucket, _) = self.parse_bucket_uri()?;
         let s3_key = self.generate_s3_key(local_path, import_to)?;
@@ -225,11 +220,13 @@ impl S3Service {
 
         // Read file content
         let path = Path::new(local_path);
-        let mut file = File::open(path).await
+        let mut file = File::open(path)
+            .await
             .map_err(|e| format!("Failed to open file: {}", e))?;
 
         let mut contents = Vec::new();
-        file.read_to_end(&mut contents).await
+        file.read_to_end(&mut contents)
+            .await
             .map_err(|e| format!("Failed to read file: {}", e))?;
 
         // Determine content type from extension
@@ -277,8 +274,7 @@ impl S3Service {
         thumbnail_path: &str,
         thumbnail_store: &str,
     ) -> Result<String, String> {
-        let client = self.client.as_ref()
-            .ok_or("S3 client not initialized")?;
+        let client = self.client.as_ref().ok_or("S3 client not initialized")?;
 
         let (bucket, prefix) = self.parse_bucket_uri()?;
 
@@ -289,7 +285,9 @@ impl S3Service {
 
         // Get relative path from thumbnail_store
         let relative_path = if thumbnail_path.starts_with(thumbnail_store) {
-            thumbnail_path.strip_prefix(thumbnail_store).unwrap_or(thumbnail_path)
+            thumbnail_path
+                .strip_prefix(thumbnail_store)
+                .unwrap_or(thumbnail_path)
         } else {
             thumbnail_path
         };
@@ -304,11 +302,13 @@ impl S3Service {
 
         // Read file content
         let path = Path::new(thumbnail_path);
-        let mut file = File::open(path).await
+        let mut file = File::open(path)
+            .await
             .map_err(|e| format!("Failed to open thumbnail: {}", e))?;
 
         let mut contents = Vec::new();
-        file.read_to_end(&mut contents).await
+        file.read_to_end(&mut contents)
+            .await
             .map_err(|e| format!("Failed to read thumbnail: {}", e))?;
 
         // Upload to S3
@@ -339,8 +339,7 @@ impl S3Service {
     /// Check if a file exists in S3
     #[allow(dead_code)]
     pub async fn file_exists(&self, s3_key: &str) -> Result<bool, String> {
-        let client = self.client.as_ref()
-            .ok_or("S3 client not initialized")?;
+        let client = self.client.as_ref().ok_or("S3 client not initialized")?;
 
         let (bucket, _) = self.parse_bucket_uri()?;
 
@@ -359,19 +358,18 @@ impl S3Service {
                 if service_error.is_not_found() {
                     Ok(false)
                 } else {
-                    Err(format!("Failed to check file existence: {:?}", service_error))
+                    Err(format!(
+                        "Failed to check file existence: {:?}",
+                        service_error
+                    ))
                 }
             }
         }
     }
 
     /// Backup the SQLite database to S3
-    pub async fn backup_database(
-        &self,
-        db_path: &str,
-    ) -> Result<String, String> {
-        let client = self.client.as_ref()
-            .ok_or("S3 client not initialized")?;
+    pub async fn backup_database(&self, db_path: &str) -> Result<String, String> {
+        let client = self.client.as_ref().ok_or("S3 client not initialized")?;
 
         let (bucket, prefix) = self.parse_bucket_uri()?;
 
@@ -388,11 +386,13 @@ impl S3Service {
             .map_err(|e| format!("Failed to backup database: {}", e))?;
 
         // Read the backup file
-        let mut file = File::open(&backup_path).await
+        let mut file = File::open(&backup_path)
+            .await
             .map_err(|e| format!("Failed to open backup file: {}", e))?;
 
         let mut contents = Vec::new();
-        file.read_to_end(&mut contents).await
+        file.read_to_end(&mut contents)
+            .await
             .map_err(|e| format!("Failed to read backup file: {}", e))?;
 
         // Upload to S3
@@ -443,8 +443,7 @@ impl S3Service {
 
 /// List available AWS profiles from ~/.aws/credentials
 pub fn list_aws_profiles() -> Result<Vec<String>, String> {
-    let home = dirs::home_dir()
-        .ok_or("Cannot find home directory")?;
+    let home = dirs::home_dir().ok_or("Cannot find home directory")?;
 
     let credentials_path = home.join(".aws").join("credentials");
 
@@ -500,10 +499,12 @@ mod tests {
         };
         let service = S3Service::new(config);
 
-        let key = service.generate_s3_key(
-            "/home/user/.photoclove/import/2024-01-15/abc123/photo.jpg",
-            "/home/user/.photoclove/import"
-        ).unwrap();
+        let key = service
+            .generate_s3_key(
+                "/home/user/.photoclove/import/2024-01-15/abc123/photo.jpg",
+                "/home/user/.photoclove/import",
+            )
+            .unwrap();
 
         assert_eq!(key, "backup/2024-01-15/abc123/photo.jpg");
     }

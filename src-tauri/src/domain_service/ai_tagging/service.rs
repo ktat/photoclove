@@ -3,9 +3,7 @@
 //! This module provides the main service for AI-powered photo tagging.
 //! It coordinates between the classifier backend and the tag storage.
 
-use super::backend::{
-    create_backend, AIClassifierBackend, ClassificationResult, ClassifierConfig,
-};
+use super::backend::{create_backend, AIClassifierBackend, ClassificationResult, ClassifierConfig};
 use super::categories::AutoTagCategory;
 use std::path::Path;
 use std::sync::{Arc, Mutex, OnceLock};
@@ -95,10 +93,7 @@ impl AITaggingService {
     }
 
     /// Create a new AI Tagging Service with a custom backend
-    pub fn with_backend(
-        backend: Box<dyn AIClassifierBackend>,
-        config: AITaggingConfig,
-    ) -> Self {
+    pub fn with_backend(backend: Box<dyn AIClassifierBackend>, config: AITaggingConfig) -> Self {
         Self {
             backend: Arc::new(Mutex::new(backend)),
             config,

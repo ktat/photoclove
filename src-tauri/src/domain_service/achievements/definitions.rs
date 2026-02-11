@@ -8,11 +8,11 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AchievementCategory {
-    First,     // First time actions
-    Monthly,   // Monthly pioneer
-    Count,     // Photo count milestones
-    Date,      // Date completion
-    Special,   // Special achievements
+    First,   // First time actions
+    Monthly, // Monthly pioneer
+    Count,   // Photo count milestones
+    Date,    // Date completion
+    Special, // Special achievements
 }
 
 /// Achievement definition
@@ -149,7 +149,6 @@ pub const ACHIEVEMENTS: &[AchievementDefinition] = &[
         category: AchievementCategory::First,
         threshold: 1,
     },
-
     // === Monthly Pioneer Achievements ===
     AchievementDefinition {
         id: "monthly_jan",
@@ -255,7 +254,6 @@ pub const ACHIEVEMENTS: &[AchievementDefinition] = &[
         category: AchievementCategory::Monthly,
         threshold: 12,
     },
-
     // === Photo Count Milestones ===
     AchievementDefinition {
         id: "photos_100",
@@ -313,7 +311,6 @@ pub const ACHIEVEMENTS: &[AchievementDefinition] = &[
         category: AchievementCategory::Count,
         threshold: 100000,
     },
-
     // === Star Count Milestones ===
     AchievementDefinition {
         id: "stars_10",
@@ -339,7 +336,6 @@ pub const ACHIEVEMENTS: &[AchievementDefinition] = &[
         category: AchievementCategory::Count,
         threshold: 100,
     },
-
     // === Date Completion ===
     AchievementDefinition {
         id: "days_7",
@@ -381,7 +377,6 @@ pub const ACHIEVEMENTS: &[AchievementDefinition] = &[
         category: AchievementCategory::Date,
         threshold: 366,
     },
-
     // === Special Achievements ===
     AchievementDefinition {
         id: "time_traveler",
@@ -485,15 +480,7 @@ pub const PHOTO_COUNT_ACHIEVEMENTS: &[&str] = &[
 ];
 
 /// Days achievement IDs
-pub const DAYS_ACHIEVEMENTS: &[&str] = &[
-    "days_7",
-    "days_100",
-    "days_365",
-];
+pub const DAYS_ACHIEVEMENTS: &[&str] = &["days_7", "days_100", "days_365"];
 
 /// Star count achievement IDs in order
-pub const STAR_COUNT_ACHIEVEMENTS: &[&str] = &[
-    "stars_10",
-    "stars_50",
-    "stars_100",
-];
+pub const STAR_COUNT_ACHIEVEMENTS: &[&str] = &["stars_10", "stars_50", "stars_100"];

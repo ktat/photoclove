@@ -1,5 +1,7 @@
 use super::executor::process_specific_jobs_immediately;
-use super::submission::{submit_create_db_job, submit_google_photos_upload_jobs, submit_import_jobs};
+use super::submission::{
+    submit_create_db_job, submit_google_photos_upload_jobs, submit_import_jobs,
+};
 use crate::entity::job_queue;
 use crate::repository::meta_db::sqlite::SQLite;
 use std::sync::{Arc, Mutex};
@@ -121,14 +123,8 @@ impl JobQueueManager {
     }
 
     /// Submit create database job for all photos
-    pub fn submit_create_db_job(
-        &self,
-        app_handle: tauri::AppHandle,
-    ) -> Result<String, String> {
-        submit_create_db_job(
-            Arc::clone(&self.db),
-            app_handle,
-        )
+    pub fn submit_create_db_job(&self, app_handle: tauri::AppHandle) -> Result<String, String> {
+        submit_create_db_job(Arc::clone(&self.db), app_handle)
     }
 
     /// Get progress for a specific job unit
@@ -203,7 +199,9 @@ impl JobQueueManager {
         log::info!(target: "job_queue", "resume_job; job_id={}; status=starting", job_id);
 
         // Get the job to check its current state
-        let job = self.db.get_job_by_id(job_id)?
+        let job = self
+            .db
+            .get_job_by_id(job_id)?
             .ok_or_else(|| format!("Job {} not found", job_id))?;
 
         // Only allow resume for pending or failed jobs
@@ -213,7 +211,8 @@ impl JobQueueManager {
         }
 
         // Reset job status to pending (keep last_processed_id for resume)
-        self.db.update_job_status(job_id, &job_queue::JobStatus::Pending, None)?;
+        self.db
+            .update_job_status(job_id, &job_queue::JobStatus::Pending, None)?;
 
         log::info!(target: "job_queue", "resume_job; job_id={}; last_processed_id={:?}; status=processing",
             job_id, job.last_processed_id);
@@ -229,7 +228,9 @@ impl JobQueueManager {
         log::info!(target: "job_queue", "restart_job; job_id={}; status=starting", job_id);
 
         // Get the job to check its current state
-        let job = self.db.get_job_by_id(job_id)?
+        let job = self
+            .db
+            .get_job_by_id(job_id)?
             .ok_or_else(|| format!("Job {} not found", job_id))?;
 
         // Only allow restart for pending or failed jobs
@@ -239,7 +240,8 @@ impl JobQueueManager {
         }
 
         // Reset job status to pending AND clear progress
-        self.db.update_job_status(job_id, &job_queue::JobStatus::Pending, None)?;
+        self.db
+            .update_job_status(job_id, &job_queue::JobStatus::Pending, None)?;
         // Reset processed_count and last_processed_id to start from beginning
         self.db.update_job_progress_with_last_id(job_id, 0, 0)?;
 
@@ -252,10 +254,17 @@ impl JobQueueManager {
     }
 
     /// Get job type configuration for a job
-    pub fn get_job_config(&self, job_id: i64) -> Result<crate::entity::job_type_config::JobTypeConfig, String> {
-        let job = self.db.get_job_by_id(job_id)?
+    pub fn get_job_config(
+        &self,
+        job_id: i64,
+    ) -> Result<crate::entity::job_type_config::JobTypeConfig, String> {
+        let job = self
+            .db
+            .get_job_by_id(job_id)?
             .ok_or_else(|| format!("Job {} not found", job_id))?;
 
-        Ok(crate::entity::job_type_config::get_job_type_config(&job.job.job_type))
+        Ok(crate::entity::job_type_config::get_job_type_config(
+            &job.job.job_type,
+        ))
     }
 }

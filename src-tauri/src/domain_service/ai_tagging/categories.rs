@@ -277,12 +277,12 @@ impl ImageNetMapping {
     pub fn map_class_index(class_index: usize) -> Option<AutoTagCategory> {
         match class_index {
             // ===== FISH (0-6, 389-397) =====
-            0..=6 => Some(AutoTagCategory::Fish),     // tench, goldfish, shark, stingray, etc.
+            0..=6 => Some(AutoTagCategory::Fish), // tench, goldfish, shark, stingray, etc.
             389..=397 => Some(AutoTagCategory::Fish), // barracouta, eel, coho, etc.
 
             // ===== BIRDS (7-24, 80-100, 126-146) =====
-            7..=24 => Some(AutoTagCategory::Bird),    // cock, hen, ostrich, brambling, etc.
-            80..=100 => Some(AutoTagCategory::Bird),  // black grouse, ptarmigan, ruffed grouse, etc.
+            7..=24 => Some(AutoTagCategory::Bird), // cock, hen, ostrich, brambling, etc.
+            80..=100 => Some(AutoTagCategory::Bird), // black grouse, ptarmigan, ruffed grouse, etc.
             126..=146 => Some(AutoTagCategory::Bird), // flamingo, pelican, albatross, etc.
 
             // ===== DOGS (151-268) =====
@@ -309,7 +309,7 @@ impl ImageNetMapping {
             353..=354 => Some(AutoTagCategory::Horse), // gazelle, impala can look horse-like
 
             // ===== WILDLIFE & FARM ANIMALS (339-352) =====
-            345..=347 => Some(AutoTagCategory::Cow),      // ox, water buffalo, bison
+            345..=347 => Some(AutoTagCategory::Cow), // ox, water buffalo, bison
             339..=344 => Some(AutoTagCategory::Wildlife), // lesser panda, giant panda, etc.
             348..=352 => Some(AutoTagCategory::Wildlife), // badger, skunk, otter, etc.
 
@@ -324,21 +324,21 @@ impl ImageNetMapping {
             497 => Some(AutoTagCategory::Building), // church
 
             // ===== INDOOR ITEMS =====
-            423 => Some(AutoTagCategory::Indoor),       // barber chair
-            487 => Some(AutoTagCategory::Indoor),       // cellular telephone
+            423 => Some(AutoTagCategory::Indoor), // barber chair
+            487 => Some(AutoTagCategory::Indoor), // cellular telephone
             508 | 509 => Some(AutoTagCategory::Indoor), // computer keyboard, computer mouse
-            510 => Some(AutoTagCategory::Travel),       // container ship
+            510 => Some(AutoTagCategory::Travel), // container ship
             511..=530 => Some(AutoTagCategory::Indoor), // confectionery, console, etc.
-            534 => Some(AutoTagCategory::Indoor),       // desk
-            559 => Some(AutoTagCategory::Indoor),       // folding chair
+            534 => Some(AutoTagCategory::Indoor), // desk
+            559 => Some(AutoTagCategory::Indoor), // folding chair
             607..=620 => Some(AutoTagCategory::Indoor), // jigsaw puzzle, joystick, etc.
-            765 => Some(AutoTagCategory::Indoor),       // rocking chair
+            765 => Some(AutoTagCategory::Indoor), // rocking chair
 
             // ===== MORE BUILDINGS =====
-            536 => Some(AutoTagCategory::Building),       // dock
-            538 => Some(AutoTagCategory::Building),       // dome
+            536 => Some(AutoTagCategory::Building), // dock
+            538 => Some(AutoTagCategory::Building), // dome
             562..=574 => Some(AutoTagCategory::Building), // fountain, greenhouse, etc.
-            576 => Some(AutoTagCategory::Building),       // grille
+            576 => Some(AutoTagCategory::Building), // grille
 
             // ===== OUTDOOR INDICATORS =====
             575 => Some(AutoTagCategory::Outdoor), // garbage truck
@@ -378,7 +378,7 @@ impl ImageNetMapping {
 
             // ===== NATURE - LANDSCAPES (970-980) =====
             // Lakes and water
-            972 => Some(AutoTagCategory::Lake),     // lakeside
+            972 => Some(AutoTagCategory::Lake), // lakeside
 
             // Mountains and valleys
             970 => Some(AutoTagCategory::Mountain), // alp
@@ -393,7 +393,7 @@ impl ImageNetMapping {
             980 => Some(AutoTagCategory::Mountain), // cliff
 
             // Sky-related (sunset, sunrise often have these)
-            981 => Some(AutoTagCategory::Sky),      // balloons (often sky background)
+            981 => Some(AutoTagCategory::Sky), // balloons (often sky background)
 
             // ===== PLANTS & FLOWERS =====
             985..=992 => Some(AutoTagCategory::Flower), // daisy, yellow lady's slipper, corn
@@ -410,12 +410,20 @@ impl ImageNetMapping {
     /// Get a description of what ImageNet classes map to a category
     pub fn category_description(category: &AutoTagCategory) -> &'static str {
         match category {
-            AutoTagCategory::Person => "Use OpenCLIP/SigLIP for person detection (not supported by MobileNet)",
-            AutoTagCategory::Face => "Use OpenCLIP/SigLIP for face detection (not supported by MobileNet)",
-            AutoTagCategory::Group => "Use OpenCLIP/SigLIP for group detection (not supported by MobileNet)",
+            AutoTagCategory::Person => {
+                "Use OpenCLIP/SigLIP for person detection (not supported by MobileNet)"
+            }
+            AutoTagCategory::Face => {
+                "Use OpenCLIP/SigLIP for face detection (not supported by MobileNet)"
+            }
+            AutoTagCategory::Group => {
+                "Use OpenCLIP/SigLIP for group detection (not supported by MobileNet)"
+            }
             AutoTagCategory::Dog => "ImageNet classes 151-268 (all dog breeds)",
             AutoTagCategory::Cat => "ImageNet classes 281-285 (cat breeds)",
-            AutoTagCategory::Bird => "ImageNet classes 7-24, 80-100, 126-146 (various bird species)",
+            AutoTagCategory::Bird => {
+                "ImageNet classes 7-24, 80-100, 126-146 (various bird species)"
+            }
             AutoTagCategory::Fish => "ImageNet classes 0-6, 389-397 (fish and aquatic animals)",
             AutoTagCategory::Horse => "ImageNet classes 269-275, 353-354 (equine-related)",
             AutoTagCategory::Cow => "ImageNet classes 345-347 (ox, water buffalo, bison)",
@@ -434,7 +442,9 @@ impl ImageNetMapping {
             AutoTagCategory::Plant => "Limited support in ImageNet - use OpenCLIP/SigLIP",
             AutoTagCategory::Garden => "Limited support in ImageNet - use OpenCLIP/SigLIP",
             AutoTagCategory::Food => "ImageNet classes 924-969 (various food items)",
-            AutoTagCategory::Building => "ImageNet architecture classes (castle, church, mosque, etc.)",
+            AutoTagCategory::Building => {
+                "ImageNet architecture classes (castle, church, mosque, etc.)"
+            }
             AutoTagCategory::Street => "ImageNet classes 699-710, 722 (street scenes)",
             AutoTagCategory::Indoor => "ImageNet indoor object classes",
             AutoTagCategory::Outdoor => "ImageNet outdoor object classes",

@@ -94,10 +94,9 @@ pub async fn get_dates_num(
     for date_tupple in splitted.enumerate() {
         let date_str = date_tupple.1;
         if !date_str.trim().is_empty() {
-            dates.dates.push(date::Date::from_string(
-                &date_str.to_string(),
-                Some("-"),
-            ));
+            dates
+                .dates
+                .push(date::Date::from_string(&date_str.to_string(), Some("-")));
         }
     }
     log::debug!(target: "sqlite", "get_dates_num; parsed_dates_count={}", dates.dates.len());
@@ -188,20 +187,30 @@ pub async fn get_photos_unified(
                 "album_photos" => photo_handlers::album::handle(&ctx, &search_params).await,
                 "tag" => photo_handlers::tag::handle(&ctx, &search_params).await,
                 "person" => photo_handlers::person::handle(&ctx, &search_params).await,
-                "unknown_faces" => photo_handlers::unknown_faces::handle(&ctx, &search_params).await,
+                "unknown_faces" => {
+                    photo_handlers::unknown_faces::handle(&ctx, &search_params).await
+                }
                 "all" => photo_handlers::search::handle_all(&ctx, &search_params).await,
                 "search" => photo_handlers::search::handle(&ctx, &search_params).await,
                 "trash" => photo_handlers::trash::handle(&ctx).await,
                 "all_albums" => photo_handlers::collections::handle_albums(&ctx).await,
                 "all_tags" => photo_handlers::collections::handle_tags(&ctx).await,
                 // Burst grouping handlers
-                "burst_date" => photo_handlers::burst::handle_burst_date(&ctx, &search_params).await,
-                "burst_album" => photo_handlers::burst::handle_burst_album(&ctx, &search_params).await,
+                "burst_date" => {
+                    photo_handlers::burst::handle_burst_date(&ctx, &search_params).await
+                }
+                "burst_album" => {
+                    photo_handlers::burst::handle_burst_album(&ctx, &search_params).await
+                }
                 "burst_tag" => photo_handlers::burst::handle_burst_tag(&ctx, &search_params).await,
-                "burst_group" => photo_handlers::burst::handle_burst_group(&ctx, &search_params).await,
+                "burst_group" => {
+                    photo_handlers::burst::handle_burst_group(&ctx, &search_params).await
+                }
                 // Memories ("On This Day") handlers
                 "memories" => photo_handlers::memories::handle(&ctx, &search_params).await,
-                "memories_startup" => photo_handlers::memories::handle_startup(&ctx, &search_params).await,
+                "memories_startup" => {
+                    photo_handlers::memories::handle_startup(&ctx, &search_params).await
+                }
                 _ => {
                     log::error!(target: "get_photos", "unsupported_search_type; search_type={}", search_type);
                     Err(())
@@ -225,9 +234,11 @@ pub fn get_photo_info(
 
     // path_str is relative (e.g., "2024-01-15/uuid/photo.jpg")
     // Check if photo is in trash
-    let trash_path_opt = state
-        .meta_db
-        .get_trash_path_for_photo(path_str, &state.config.trash_path, &state.config.import_to);
+    let trash_path_opt = state.meta_db.get_trash_path_for_photo(
+        path_str,
+        &state.config.trash_path,
+        &state.config.import_to,
+    );
     let is_trashed = trash_path_opt.is_some();
 
     // Determine the actual file path to read (absolute)
@@ -303,7 +314,14 @@ pub async fn get_next_photo(
     _window: tauri::Window,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, ()> {
-    photo_handlers::navigation::handle_next(&state.repo_db, &state.meta_db, path, date_str, sort_value).await
+    photo_handlers::navigation::handle_next(
+        &state.repo_db,
+        &state.meta_db,
+        path,
+        date_str,
+        sort_value,
+    )
+    .await
 }
 
 /// Get the previous photo in a date's photo list.
@@ -315,7 +333,14 @@ pub async fn get_prev_photo(
     _window: tauri::Window,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, ()> {
-    photo_handlers::navigation::handle_prev(&state.repo_db, &state.meta_db, path, date_str, sort_value).await
+    photo_handlers::navigation::handle_prev(
+        &state.repo_db,
+        &state.meta_db,
+        path,
+        date_str,
+        sort_value,
+    )
+    .await
 }
 
 /// Save or update a photo's star rating.

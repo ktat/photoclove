@@ -8,7 +8,6 @@ pub mod achievement_commands;
 pub mod ai_model_commands;
 
 // Internal helpers (not re-exported)
-pub(crate) mod job_helpers;
 pub mod album_commands;
 pub mod burst_group_commands;
 pub mod collection_commands;
@@ -19,17 +18,18 @@ pub mod face_detection_commands;
 pub mod google_commands;
 pub mod image_commands;
 pub mod import_commands;
+pub(crate) mod job_helpers;
 pub mod job_queue_commands;
 pub mod logging_commands;
-pub mod recovery_queue_commands;
 pub mod photo_commands;
-pub mod s3_commands;
 pub mod photo_handlers;
+pub mod recovery_queue_commands;
+pub mod s3_commands;
 pub mod search_commands;
+pub mod stats_commands;
 pub mod style_commands;
 pub mod tag_commands;
 pub mod trash_commands;
-pub mod stats_commands;
 pub mod utility_commands;
 
 // Re-export all commands for convenient access

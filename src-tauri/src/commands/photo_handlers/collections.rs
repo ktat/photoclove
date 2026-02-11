@@ -50,4 +50,3 @@ pub async fn handle_tags(ctx: &HandlerContext<'_>) -> Result<String, ()> {
         }
     }
 }
-

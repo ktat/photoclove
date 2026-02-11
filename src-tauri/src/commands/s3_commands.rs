@@ -40,7 +40,11 @@ pub fn list_aws_profiles() -> Result<String, String> {
 /// Test S3 connection with current configuration
 #[tauri::command]
 pub async fn test_s3_connection(state: State<'_, AppState>) -> Result<String, String> {
-    let s3_config = state.config.s3.clone().ok_or("S3 backup is not configured")?;
+    let s3_config = state
+        .config
+        .s3
+        .clone()
+        .ok_or("S3 backup is not configured")?;
 
     if !s3_config.enabled {
         return Err("S3 backup is not enabled".to_string());
@@ -54,7 +58,8 @@ pub async fn test_s3_connection(state: State<'_, AppState>) -> Result<String, St
     Ok(json!({
         "success": result,
         "message": if result { "Connection successful" } else { "Connection failed" }
-    }).to_string())
+    })
+    .to_string())
 }
 
 /// Save S3 configuration
@@ -93,7 +98,11 @@ pub fn save_s3_config(
     };
 
     // Preserve existing last_sync_at if present
-    let last_sync_at = state.config.s3.as_ref().and_then(|s| s.last_sync_at.clone());
+    let last_sync_at = state
+        .config
+        .s3
+        .as_ref()
+        .and_then(|s| s.last_sync_at.clone());
 
     let s3_config = S3Config {
         enabled,
@@ -184,7 +193,8 @@ pub fn get_s3_sync_stats(state: State<'_, AppState>) -> Result<String, String> {
                 "synced": 0,
                 "not_synced": 0,
                 "last_sync_at": null
-            }).to_string());
+            })
+            .to_string());
         }
     };
 
@@ -200,7 +210,9 @@ pub fn get_s3_sync_stats(state: State<'_, AppState>) -> Result<String, String> {
     };
 
     // Query counts from database
-    let conn = state.meta_db.get_connection()
+    let conn = state
+        .meta_db
+        .get_connection()
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
 
     // Total photos (not deleted)
@@ -244,7 +256,10 @@ pub fn enqueue_s3_incremental_sync(
     window: tauri::Window,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
-    let s3_config = state.config.s3.clone()
+    let s3_config = state
+        .config
+        .s3
+        .clone()
         .ok_or("S3 backup is not configured")?;
 
     if !s3_config.enabled {
@@ -252,22 +267,29 @@ pub fn enqueue_s3_incremental_sync(
     }
 
     let provider = get_provider_name(&s3_config.storage_type);
-    let last_sync_at = s3_config.last_sync_at.clone()
+    let last_sync_at = s3_config
+        .last_sync_at
+        .clone()
         .ok_or("No previous sync found. Use Full Sync instead.")?;
 
     // Get photos imported after last_sync_at that are not synced
-    let conn = state.meta_db.get_connection()
+    let conn = state
+        .meta_db
+        .get_connection()
         .map_err(|e| format!("Database error: {}", e))?;
 
-    let mut stmt = conn.prepare(&format!(
-        "SELECT file_path FROM photo_metadata
+    let mut stmt = conn
+        .prepare(&format!(
+            "SELECT file_path FROM photo_metadata
          WHERE (delete_flg = 0 OR delete_flg IS NULL)
            AND created_at > ?1
            AND (storage_sync IS NULL OR storage_sync NOT LIKE '%\"{}\":%')",
-        provider
-    )).map_err(|e| format!("Query error: {}", e))?;
+            provider
+        ))
+        .map_err(|e| format!("Query error: {}", e))?;
 
-    let photo_paths: Vec<String> = stmt.query_map([&last_sync_at], |row| row.get(0))
+    let photo_paths: Vec<String> = stmt
+        .query_map([&last_sync_at], |row| row.get(0))
         .map_err(|e| format!("Query error: {}", e))?
         .filter_map(|r| r.ok())
         .collect();
@@ -285,7 +307,10 @@ pub fn enqueue_s3_full_sync(
     window: tauri::Window,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
-    let s3_config = state.config.s3.clone()
+    let s3_config = state
+        .config
+        .s3
+        .clone()
         .ok_or("S3 backup is not configured")?;
 
     if !s3_config.enabled {
@@ -295,17 +320,22 @@ pub fn enqueue_s3_full_sync(
     let provider = get_provider_name(&s3_config.storage_type);
 
     // Get all photos that are not synced to this provider
-    let conn = state.meta_db.get_connection()
+    let conn = state
+        .meta_db
+        .get_connection()
         .map_err(|e| format!("Database error: {}", e))?;
 
-    let mut stmt = conn.prepare(&format!(
-        "SELECT file_path FROM photo_metadata
+    let mut stmt = conn
+        .prepare(&format!(
+            "SELECT file_path FROM photo_metadata
          WHERE (delete_flg = 0 OR delete_flg IS NULL)
            AND (storage_sync IS NULL OR storage_sync NOT LIKE '%\"{}\":%')",
-        provider
-    )).map_err(|e| format!("Query error: {}", e))?;
+            provider
+        ))
+        .map_err(|e| format!("Query error: {}", e))?;
 
-    let photo_paths: Vec<String> = stmt.query_map([], |row| row.get(0))
+    let photo_paths: Vec<String> = stmt
+        .query_map([], |row| row.get(0))
         .map_err(|e| format!("Query error: {}", e))?
         .filter_map(|r| r.ok())
         .collect();
@@ -326,7 +356,10 @@ pub fn enqueue_s3_sync_by_date(
 ) -> Result<String, String> {
     log::info!(target: "s3_commands", "enqueue_s3_sync_by_date; date={}", date);
 
-    let s3_config = state.config.s3.clone()
+    let s3_config = state
+        .config
+        .s3
+        .clone()
         .ok_or("S3 backup is not configured")?;
 
     if !s3_config.enabled {
@@ -337,7 +370,9 @@ pub fn enqueue_s3_sync_by_date(
     let provider = get_provider_name(&s3_config.storage_type);
 
     // Get photos for the specified date that are not synced
-    let conn = state.meta_db.get_connection()
+    let conn = state
+        .meta_db
+        .get_connection()
         .map_err(|e| format!("Database error: {}", e))?;
 
     // Parse date using Date value object (supports both YYYY-MM-DD and YYYY/MM/DD formats)
@@ -356,15 +391,18 @@ pub fn enqueue_s3_sync_by_date(
     let next_date = format!("{} 00:00:00", next_date_str);
     let date_start = format!("{} 00:00:00", date_str);
 
-    let mut stmt = conn.prepare(&format!(
-        "SELECT path FROM photo_metadata
+    let mut stmt = conn
+        .prepare(&format!(
+            "SELECT path FROM photo_metadata
          WHERE (delete_flg = 0 OR delete_flg IS NULL)
            AND photo_date >= ?1 AND photo_date < ?2
            AND (storage_sync IS NULL OR storage_sync NOT LIKE '%\"{}\":%')",
-        provider
-    )).map_err(|e| format!("Query error: {}", e))?;
+            provider
+        ))
+        .map_err(|e| format!("Query error: {}", e))?;
 
-    let photo_paths: Vec<String> = stmt.query_map([&date_start, &next_date], |row| row.get(0))
+    let photo_paths: Vec<String> = stmt
+        .query_map([&date_start, &next_date], |row| row.get(0))
         .map_err(|e| format!("Query error: {}", e))?
         .filter_map(|r| r.ok())
         .collect();
@@ -477,22 +515,24 @@ pub fn get_s3_credentials_preview(provider: String) -> Result<String, String> {
         Ok((access_key_id, _secret_access_key)) => {
             // Only show preview of Access Key ID (not the secret)
             let preview = if access_key_id.len() > 8 {
-                format!("{}...{}",
+                format!(
+                    "{}...{}",
                     &access_key_id[..4],
-                    &access_key_id[access_key_id.len()-4..])
+                    &access_key_id[access_key_id.len() - 4..]
+                )
             } else {
                 "****".to_string()
             };
             Ok(json!({
                 "has_credentials": true,
                 "access_key_preview": preview
-            }).to_string())
+            })
+            .to_string())
         }
-        Err(_) => {
-            Ok(json!({
-                "has_credentials": false,
-                "access_key_preview": null
-            }).to_string())
-        }
+        Err(_) => Ok(json!({
+            "has_credentials": false,
+            "access_key_preview": null
+        })
+        .to_string()),
     }
 }

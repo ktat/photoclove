@@ -173,12 +173,8 @@ pub async fn recalculate_grouping(
     let db = Arc::new(SQLite::new(config.import_to.clone()));
 
     // Submit job to queue
-    let job_unit_id = submit_recalculate_grouping_job(
-        db,
-        threshold_seconds,
-        min_group_size,
-        app_handle,
-    )?;
+    let job_unit_id =
+        submit_recalculate_grouping_job(db, threshold_seconds, min_group_size, app_handle)?;
 
     log::info!(
         target: "burst_groups",
@@ -265,7 +261,10 @@ pub async fn recalculate_grouping_in_date(
 
     // Step 4: Load AI tags if enabled
     let photo_tags: HashMap<String, Vec<String>> = if use_ai && !photos_to_group.is_empty() {
-        let photo_paths: Vec<String> = photos_to_group.iter().map(|p| p.file.path.clone()).collect();
+        let photo_paths: Vec<String> = photos_to_group
+            .iter()
+            .map(|p| p.file.path.clone())
+            .collect();
         let tags_map = meta_db.get_tags_for_photos_bulk(&photo_paths)?;
         // Convert to simple tag name map
         tags_map
@@ -330,12 +329,7 @@ pub async fn recalculate_grouping_in_date(
             )?;
         } else {
             // Traditional grouping: time-based only
-            new_groups += group_photos_by_time(
-                &camera_photos,
-                threshold_ms,
-                min_size,
-                meta_db,
-            )?;
+            new_groups += group_photos_by_time(&camera_photos, threshold_ms, min_size, meta_db)?;
         }
     }
 
@@ -452,7 +446,9 @@ fn group_photos_with_ai(
             let mut found_group = false;
             for sub_group in &mut tag_sub_groups {
                 if let Some(first_photo) = sub_group.first() {
-                    let first_tags = photo_tags.get(&first_photo.file.path).unwrap_or(&empty_tags);
+                    let first_tags = photo_tags
+                        .get(&first_photo.file.path)
+                        .unwrap_or(&empty_tags);
 
                     // If both have tags and they match >= min_tags, add to this group
                     // If either has no tags, fall back to time-only grouping (add to group)

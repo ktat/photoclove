@@ -5,7 +5,7 @@
 
 use rusqlite::{params, Result};
 use serde::{Deserialize, Serialize};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 
 use super::SQLite;
 use crate::value::date;
@@ -138,12 +138,7 @@ impl SQLite {
 
     /// Update or insert achievement progress
     /// Returns true if the achievement was newly achieved (was not achieved before, now is)
-    pub fn upsert_achievement(
-        &self,
-        id: &str,
-        current_value: i64,
-        threshold: i64,
-    ) -> Result<bool> {
+    pub fn upsert_achievement(&self, id: &str, current_value: i64, threshold: i64) -> Result<bool> {
         let conn = self.get_connection()?;
         let now = date::DateTime::now().to_db_string();
 

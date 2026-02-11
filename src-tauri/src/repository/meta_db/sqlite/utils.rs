@@ -135,8 +135,6 @@ pub(super) fn photo_info_from_row_with_tags(
         None
     };
 
-    
-
     meta_db::PhotoInfo {
         path: path.clone(),
         date,
@@ -195,11 +193,5 @@ pub(super) fn row_to_photo_for_grouping(row: &Row) -> photo::Photo {
         orientation: String::new(),
     };
 
-    photo::Photo::from_db_row(
-        file_obj,
-        exif_data,
-        None,
-        None,
-        burst_group_id,
-    )
+    photo::Photo::from_db_row(file_obj, exif_data, None, None, burst_group_id)
 }

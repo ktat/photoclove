@@ -27,7 +27,8 @@ pub async fn handle(ctx: &HandlerContext<'_>, params: &SearchParams) -> Result<S
     log::info!(target: "get_photos", "person_request; person_id={}", person_id);
 
     // Get full photo objects for this person
-    let mut photos_vec = ctx.meta_db
+    let mut photos_vec = ctx
+        .meta_db
         .get_photos_for_person_full(person_id, params.sort_value, Some(ctx.config.clone()))
         .map_err(|e| {
             log::error!(target: "get_photos", "person_photos_query_failed; error={}", e);

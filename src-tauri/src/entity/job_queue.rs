@@ -249,4 +249,3 @@ pub struct AiTaggingJob {
     /// Optional: specific date to process (for maintenance tab)
     pub target_date: Option<String>,
 }
-

@@ -7,8 +7,8 @@
 use crate::app_state::AppState;
 use crate::domain_service::job_queue::handlers::insights;
 use crate::entity::job_queue::{Job, JobType, JobUnit, QueuedJob};
-use crate::value::date::TimePeriod;
 use crate::repository::meta_db::sqlite::SQLite;
+use crate::value::date::TimePeriod;
 use serde::Serialize;
 use std::sync::Arc;
 
@@ -164,9 +164,7 @@ pub async fn get_photography_insights(
 ///
 /// Returns lists of available years, months, and week start dates (Mondays).
 #[tauri::command]
-pub async fn get_available_periods(
-    state: tauri::State<'_, AppState>,
-) -> Result<String, String> {
+pub async fn get_available_periods(state: tauri::State<'_, AppState>) -> Result<String, String> {
     log::info!(target: "stats", "get_available_periods; status=starting");
 
     let sqlite = SQLite::new(state.config.import_to.clone());

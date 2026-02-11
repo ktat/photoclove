@@ -531,8 +531,12 @@ impl RepositoryDB for Directory {
 
                 // file.path is absolute here (from filesystem scan)
                 match fs::rename(&file.path, new_path.display().to_string()) {
-                    Ok(_) => log::info!(target: "directory", "file_moved; from={}; to={}", file.path, new_path.display()),
-                    Err(e) => log::error!(target: "directory", "file_move_failed; from={}; to={}; error={}", file.path, new_path.display(), e),
+                    Ok(_) => {
+                        log::info!(target: "directory", "file_moved; from={}; to={}", file.path, new_path.display())
+                    }
+                    Err(e) => {
+                        log::error!(target: "directory", "file_move_failed; from={}; to={}; error={}", file.path, new_path.display(), e)
+                    }
                 }
             }
         }

@@ -152,7 +152,12 @@ pub async fn restore_from_trash_batch(
         let abs_file = file::File::new(abs_path);
 
         // Restore file from trash to library (pass relative path for trash lookup)
-        match file_service::restore_from_trash(abs_file, trash.clone(), library_path.clone(), &path_str) {
+        match file_service::restore_from_trash(
+            abs_file,
+            trash.clone(),
+            library_path.clone(),
+            &path_str,
+        ) {
             Ok(_) => {
                 // Update database (set delete_flg = 0) without updating date_summary yet
                 meta_db.restore_photo_from_trash_no_summary(&photo);
@@ -235,7 +240,10 @@ pub async fn delete_permanently_batch(
 
     for path_str in paths {
         // path_str is relative (e.g., "2024-01-15/uuid/photo.jpg")
-        let photo = photo::Photo::new(file::File::from_relative(path_str.clone()), Option::Some(state.config.clone()));
+        let photo = photo::Photo::new(
+            file::File::from_relative(path_str.clone()),
+            Option::Some(state.config.clone()),
+        );
         // Resolve to absolute path (for old structure fallback in file_service)
         let abs_import_path = file::to_absolute_path(&path_str, &state.config.import_to);
         let abs_file = file::File::new(abs_import_path);
@@ -311,7 +319,10 @@ pub async fn empty_trash(state: tauri::State<'_, AppState>) -> Result<String, St
 
     for path in rows.flatten() {
         // path is relative from DB (e.g., "2024-01-15/uuid/photo.jpg")
-        let photo = photo::Photo::new(file::File::from_relative(path.clone()), Option::Some(state.config.clone()));
+        let photo = photo::Photo::new(
+            file::File::from_relative(path.clone()),
+            Option::Some(state.config.clone()),
+        );
         // Resolve to absolute path (for old structure fallback in file_service)
         let abs_import_path = file::to_absolute_path(&path, &state.config.import_to);
         let abs_file = file::File::new(abs_import_path);

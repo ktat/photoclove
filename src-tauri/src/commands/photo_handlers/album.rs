@@ -34,7 +34,8 @@ pub async fn handle(ctx: &HandlerContext<'_>, params: &SearchParams) -> Result<S
     log::info!(target: "get_photos", "album_photos_request; album_id={}; sort_value={}", album_id, params.sort_value);
 
     // Use unified collection search function
-    let mut photos_vec = ctx.meta_db
+    let mut photos_vec = ctx
+        .meta_db
         .get_photos_by_collection_ids(&[album_id], params.sort_value, Some(ctx.config.clone()))
         .map_err(|e| {
             log::error!(target: "get_photos", "album_photos_failed; error={}", e);
