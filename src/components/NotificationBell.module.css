@@ -7,7 +7,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--color-bg-elevated);
+  background-color: var(--color-bg-film);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -25,7 +25,7 @@
 }
 
 .bell:hover {
-  background-color: var(--color-bg-surface);
+  background-color: var(--color-bg-muted);
   color: var(--color-primary);
 }
 

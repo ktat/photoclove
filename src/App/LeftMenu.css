@@ -12,9 +12,18 @@
   max-width: 230px;
   min-width: 230px;
   border: none;
-  background-color: var(--color-bg-film);
+  background-color: var(--color-bg-film-light, var(--color-bg-film));
+  color: var(--color-film-text);
   flex-shrink: 0;
   position: relative;
+}
+
+.leftMenu a {
+  color: var(--color-film-link);
+}
+
+.leftMenu a:hover {
+  color: var(--color-film-text);
 }
 
 .leftMenu .navigation-icons {
@@ -29,6 +38,7 @@
 .leftMenu .navigation-icons a {
   font-size: var(--font-size-lg);
   text-decoration: none;
+  color: var(--color-film-link);
   padding: 3px;
   border-radius: var(--radius-sm);
   transition: background-color 0.2s;
@@ -40,7 +50,7 @@
 }
 
 .leftMenu .navigation-icons a:hover {
-  background-color: var(--color-bg-elevated);
+  background-color: var(--color-bg-film);
 }
 
 .leftMenu .dateList {
@@ -64,6 +74,7 @@ p.dateListTitle {
 .dateList-title {
   font-size: var(--font-size-base);
   font-weight: 500;
+  color: var(--color-film-text);
   margin: var(--space-3) var(--space-2) var(--space-2) var(--space-2);
   display: flex;
   align-items: center;
@@ -71,7 +82,7 @@ p.dateListTitle {
 }
 
 .dateList-refresh {
-  color: var(--color-text-muted);
+  color: var(--color-film-link, var(--color-text-muted));
   text-decoration: none;
   font-size: var(--font-size-sm);
   transition: color 0.15s;
@@ -81,7 +92,7 @@ p.dateListTitle {
 }
 
 .dateList-refresh:hover {
-  color: var(--color-text-primary);
+  color: var(--color-film-text, var(--color-text-primary));
 }
 
 .dateList-refresh .refresh-icon {
@@ -154,7 +165,7 @@ p.dateListTitle {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  background: var(--color-bg-surface);
+  background: var(--color-bg-film);
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border-subtle);
@@ -227,7 +238,7 @@ div.dateList ul {
 
 /* Date List Filter Controls */
 .dateListFilters select {
-  background-color: var(--color-bg-elevated);
+  background-color: var(--color-bg-film);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-sm);
@@ -241,7 +252,7 @@ div.dateList ul {
 }
 
 .dateListFilters button {
-  background-color: var(--color-bg-elevated);
+  background-color: var(--color-bg-film);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-sm);
@@ -257,13 +268,13 @@ div.dateList ul {
 /* Hierarchical date view styling */
 .dateList .hierarchical-year {
   font-weight: bold;
-  color: var(--color-text-muted);
+  color: var(--color-film-text, var(--color-text-muted));
   margin-bottom: var(--space-1);
 }
 
 .dateList .hierarchical-month {
   font-weight: 600;
-  color: var(--color-text-secondary);
+  color: var(--color-film-text, var(--color-text-secondary));
   font-size: var(--font-size-sm);
   margin-bottom: 3px;
 }
@@ -286,7 +297,7 @@ div.dateList ul {
 }
 
 .dateList .hierarchical-day:hover {
-  background-color: var(--color-bg-elevated);
+  background-color: var(--color-bg-film);
 }
 
 /* Sidebar collapse toggle button */
@@ -298,8 +309,8 @@ div.dateList ul {
   height: 28px;
   padding: 0;
   margin: 0;
-  background-color: var(--color-bg-elevated);
-  color: var(--color-text-primary);
+  background-color: var(--color-bg-film);
+  color: var(--color-film-text, var(--color-text-primary));
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -312,7 +323,7 @@ div.dateList ul {
 }
 
 .sidebar-collapse-toggle:hover {
-  background-color: var(--color-bg-surface);
+  background-color: var(--color-bg-muted);
   transform: scale(1.1);
 }
 

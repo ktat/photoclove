@@ -283,6 +283,18 @@
   z-index: 1000;
 }
 
+.rightMenu {
+  color: var(--color-film-text);
+}
+
+.rightMenu a {
+  color: var(--color-film-link);
+}
+
+.rightMenu a:hover {
+  color: var(--color-film-text);
+}
+
 .rightMenu-close {
   transform: translateX(100%);
   transition: transform 0.3s ease-out;
@@ -401,7 +413,21 @@
 
 /* Film strip - navigation arrows */
 [data-grid-theme="filmstrip"] #photos-list-mini div.row1 a {
-  color: var(--color-text-secondary);
+  color: var(--color-film-link, var(--color-text-secondary));
+}
+
+/* Film strip - photo menu icons (checkbox, star, etc.) */
+[data-grid-theme="filmstrip"] .photo-list-menu a {
+  color: var(--color-film-link, var(--color-text-secondary));
+}
+
+[data-grid-theme="filmstrip"] .photo-list-menu label.checkbox:after {
+  border-color: var(--color-film-text, var(--color-text-secondary));
+}
+
+[data-grid-theme="filmstrip"] .photo-list-menu label.checkbox:before {
+  border-right-color: var(--color-film-text, var(--color-text-secondary));
+  border-bottom-color: var(--color-film-text, var(--color-text-secondary));
 }
 
 /* Film strip - photo containers */

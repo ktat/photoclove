@@ -6,7 +6,9 @@
     transform: translateY(-50%);
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 1px;
+    background: var(--color-bg-muted);
+    border-radius: 5px 0 0 5px;
     /* z-index: 1001; */
     transition: right 0.3s ease-out;
 }
@@ -29,8 +31,8 @@
     writing-mode: initial;
     text-orientation: initial;
     padding: 12px 4px;
-    background: var(--color-bg-elevated);
-    color: var(--color-text-primary);
+    background: var(--color-bg-film);
+    color: var(--color-film-text, var(--color-text-primary));
     border: none;
     cursor: pointer;
     font-size: var(--font-size-sm);
@@ -51,21 +53,21 @@
 }
 
 .directory-vertical-tab-button:hover {
-    background: var(--color-bg-surface);
+    background: var(--color-bg-muted);
     color: var(--color-primary);
     border-left: 3px solid var(--color-primary);
 }
 
 /* Default active tab color (green) */
 .directory-vertical-tab-button.active {
-    background: var(--color-bg-surface);
+    background: var(--color-bg-muted);
     color: var(--color-success);
     border-left: 3px solid var(--color-success);
 }
 
 /* Tab with active selections but not currently open - show orange (Feature #152) */
 .directory-vertical-tab-button.has-selection:not(.active) {
-    background: var(--color-bg-surface);
+    background: var(--color-bg-muted);
     color: var(--color-warning);
     border-left: 3px solid var(--color-warning);
 }
@@ -84,7 +86,7 @@
 }
 
 .directory-vertical-tab-button.directory-close-tab {
-    background-color: var(--color-bg-elevated);
+    background-color: var(--color-bg-film);
     color: var(--color-danger);
     font-size: var(--font-size-lg);
     font-weight: bold;
@@ -96,6 +98,6 @@
 }
 
 .directory-vertical-tab-button.directory-close-tab:hover {
-    background-color: var(--color-bg-surface);
+    background-color: var(--color-bg-muted);
     color: var(--color-danger);
 }

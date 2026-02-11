@@ -222,7 +222,7 @@ function DateList(props) {
                     <a href="#"
                        className="recent-photos-link"
                        style={{
-                           color: recentPhotosMode ? "var(--color-text-primary)" : "var(--color-primary)",
+                           color: recentPhotosMode ? "var(--color-film-text, var(--color-text-primary))" : "var(--color-film-link, var(--color-primary))",
                            textDecoration: "none",
                            display: 'flex',
                            alignItems: 'center',
@@ -250,7 +250,7 @@ function DateList(props) {
                         <div className="dateList-insights-link">
                             <a href="#"
                                style={{
-                                   color: 'var(--color-primary)',
+                                   color: 'var(--color-film-link, var(--color-primary))',
                                    textDecoration: 'none',
                                    display: 'flex',
                                    alignItems: 'center',
@@ -272,7 +272,7 @@ function DateList(props) {
                         <div className="dateList-achievements-link">
                             <a href="#"
                                style={{
-                                   color: 'var(--color-primary)',
+                                   color: 'var(--color-film-link, var(--color-primary))',
                                    textDecoration: 'none',
                                    display: 'flex',
                                    alignItems: 'center',
@@ -313,7 +313,7 @@ function DateList(props) {
                         {/* Insights */}
                         <a href="#"
                            style={{
-                               color: 'var(--color-primary)',
+                               color: 'var(--color-film-link, var(--color-primary))',
                                textDecoration: 'none',
                                fontSize: 'var(--font-size-lg)'
                            }}
@@ -329,7 +329,7 @@ function DateList(props) {
                         {/* Achievements */}
                         <a href="#"
                            style={{
-                               color: 'var(--color-primary)',
+                               color: 'var(--color-film-link, var(--color-primary))',
                                textDecoration: 'none',
                                fontSize: 'var(--font-size-lg)'
                            }}
@@ -436,7 +436,7 @@ function DateList(props) {
                                     <li key={i} style={{ listStyle: selectedStyle["li-" + date] || "none" }}>
                                         <a href="#"
                                            style={{
-                                               color: selectedStyle["a-" + date] ? getSelectedDateColor() : "var(--color-primary)",
+                                               color: selectedStyle["a-" + date] ? getSelectedDateColor() : "var(--color-film-link, var(--color-primary))",
                                                fontSize: "inherit"
                                            }} 
                                            onClick={(e) => {
@@ -465,7 +465,7 @@ function DateList(props) {
                                             style={{ 
                                                 cursor: "pointer",
                                                 fontSize: "inherit",
-                                                color: "var(--color-primary)",
+                                                color: "var(--color-film-link, var(--color-primary))",
                                                 padding: "var(--space-0-5) 0"
                                             }}
                                             onClick={() => toggleYearExpansion(yearData.year)}
@@ -491,7 +491,7 @@ function DateList(props) {
                                                                 style={{ 
                                                                     cursor: "pointer",
                                                                     fontSize: "inherit",
-                                                                    color: "var(--color-text-secondary)",
+                                                                    color: "var(--color-film-text, var(--color-text-secondary))",
                                                                     padding: "var(--space-0-5) 0"
                                                                 }}
                                                                 onClick={() => toggleMonthExpansion(yearData.year, monthData.month)}
@@ -513,7 +513,7 @@ function DateList(props) {
                                                                             <div key={`day-${yearData.year}-${monthData.month}-${day}`} style={{ listStyle: isSelected ? "square" : "none" }}>
                                                                                 <a href="#"
                                                                                    style={{
-                                                                                       color: isSelected ? getSelectedDateColor() : "var(--color-primary)",
+                                                                                       color: isSelected ? getSelectedDateColor() : "var(--color-film-link, var(--color-primary))",
                                                                                        fontSize: "inherit",
                                                                                        textDecoration: "none"
                                                                                    }} 

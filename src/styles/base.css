@@ -191,6 +191,11 @@ body {
   --color-text-secondary: #525252;
   --color-text-muted: #737373;
 
+  /* --- Film Background Colors & Text/Link Colors --- */
+  --color-bg-film-light: #b5a79a;
+  --color-film-text: #2a1c10;
+  --color-film-link: #1a3460;
+
   /* --- Border Colors (Warm tone) --- */
   --color-border-default: #c8beb4;
   --color-border-subtle: #e0d8d0;

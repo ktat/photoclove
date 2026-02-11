@@ -46,6 +46,7 @@
 
 .tab-content {
   background-color: var(--color-bg-film);
+  color: var(--color-film-text);
   border: none;
   border-radius: 0;
   padding: var(--space-4);
@@ -60,6 +61,15 @@
   bottom: 30px;
   width: 310px;
   overflow-y: auto;
+}
+
+.tab-content :global(a) {
+  color: var(--color-film-link);
+}
+
+.tab-content :global(label),
+.tab-content :global(.section-header) {
+  color: var(--color-film-text);
 }
 
 @keyframes slideInRight {
@@ -207,7 +217,9 @@
     transform: translateY(-50%);
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 1px;
+    background: var(--color-bg-muted);
+    border-radius: 5px 0 0 5px;
     z-index: 1000;
     transition: right 0.3s ease-out;
 }
@@ -224,8 +236,8 @@
     writing-mode: initial;
     text-orientation: initial;
     padding: 12px 4px;
-    background: var(--color-bg-elevated);
-    color: var(--color-text-primary);
+    background: var(--color-bg-film);
+    color: var(--color-film-text, var(--color-text-primary));
     border: none;
     cursor: pointer;
     font-size: var(--font-size-sm);
@@ -246,21 +258,21 @@
 }
 
 .vertical-tab-button:hover {
-    background: var(--color-bg-surface);
+    background: var(--color-bg-muted);
     color: var(--color-primary);
     border-left: 3px solid var(--color-primary);
 }
 
 /* Default active tab color (green) - matches GridView VerticalTabBar */
 .vertical-tab-button.active {
-    background: var(--color-bg-surface);
+    background: var(--color-bg-muted);
     color: var(--color-success);
     border-left: 3px solid var(--color-success);
 }
 
 /* Tab with active selections but not currently open - show orange (Feature #152) */
 .vertical-tab-button.has-selection:not(.active) {
-    background: var(--color-bg-surface);
+    background: var(--color-bg-muted);
     color: var(--color-warning);
     border-left: 3px solid var(--color-warning);
 }
@@ -282,7 +294,7 @@
 }
 
 .vertical-tab-button.close-tab {
-    background-color: var(--color-bg-elevated);
+    background-color: var(--color-bg-film);
     color: var(--color-danger);
     font-size: var(--font-size-lg);
     font-weight: bold;
@@ -294,7 +306,7 @@
 }
 
 .vertical-tab-button.close-tab:hover {
-    background-color: var(--color-bg-surface);
+    background-color: var(--color-bg-muted);
     color: var(--color-danger);
 }
 

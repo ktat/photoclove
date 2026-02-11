@@ -380,7 +380,7 @@ function PhotoOption(props) {
                     top: '0px',
                     width: '320px',
                     height: 'calc(100vh - 25px)',
-                    backgroundColor: 'var(--color-bg-elevated)',
+                    backgroundColor: 'var(--color-bg-film)',
                     paddingLeft: '20px',
                     paddingTop: '10px',
                     zIndex: 1001
