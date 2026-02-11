@@ -46,14 +46,17 @@ pub async fn move_to_trash_batch(
     let mut failed_paths = Vec::new();
 
     for path_str in paths {
+        // path_str is relative (e.g., "2024-01-15/uuid/photo.jpg")
         let photo = photo::Photo::new(
-            file::File::new(path_str.clone()),
+            file::File::from_relative(path_str.clone()),
             Option::Some(state.config.clone()),
         );
-        let file = file::File::new(path_str.clone());
+        // Resolve to absolute path for file system operation
+        let abs_path = file::to_absolute_path(&path_str, &state.config.import_to);
+        let abs_file = file::File::new(abs_path);
 
         // Move file to trash
-        match file_service::move_to_trash(file, trash.clone()) {
+        match file_service::move_to_trash(abs_file, trash.clone()) {
             Ok(_) => {
                 // Mark as deleted in DB (set delete_flg = 1)
                 meta_db.delete_photo(&photo);
@@ -139,14 +142,17 @@ pub async fn restore_from_trash_batch(
     let mut failed_paths = Vec::new();
 
     for path_str in paths {
+        // path_str is relative (e.g., "2024-01-15/uuid/photo.jpg")
         let photo = photo::Photo::new(
-            file::File::new(path_str.clone()),
+            file::File::from_relative(path_str.clone()),
             Option::Some(state.config.clone()),
         );
-        let file = file::File::new(path_str.clone());
+        // Resolve to absolute path for file system operation
+        let abs_path = file::to_absolute_path(&path_str, &library_path);
+        let abs_file = file::File::new(abs_path);
 
         // Restore file from trash to library
-        match file_service::restore_from_trash(file, trash.clone(), library_path.clone()) {
+        match file_service::restore_from_trash(abs_file, trash.clone(), library_path.clone()) {
             Ok(_) => {
                 // Update database (set delete_flg = 0) without updating date_summary yet
                 meta_db.restore_photo_from_trash_no_summary(&photo);
@@ -228,11 +234,14 @@ pub async fn delete_permanently_batch(
     let mut failed_paths = Vec::new();
 
     for path_str in paths {
-        let photo = photo::Photo::new(file::File::new(path_str.clone()), Option::None);
-        let file = file::File::new(path_str.clone());
+        // path_str is relative (e.g., "2024-01-15/uuid/photo.jpg")
+        let photo = photo::Photo::new(file::File::from_relative(path_str.clone()), Option::Some(state.config.clone()));
+        // Resolve to absolute path for trash file operation
+        let trash_abs_path = file::to_absolute_path(&path_str, &state.config.trash_path);
+        let trash_file = file::File::new(trash_abs_path);
 
         // Remove file from trash permanently
-        match file_service::remove_from_trash_permanently(file, trash.clone()) {
+        match file_service::remove_from_trash_permanently(trash_file, trash.clone()) {
             Ok(_) => {
                 // Delete thumbnail if it exists
                 let _ = thumbnail_service::delete_thumbnail(&photo, &state.config);
@@ -302,12 +311,15 @@ pub async fn empty_trash(state: tauri::State<'_, AppState>) -> Result<String, St
 
     for row in rows {
         if let Ok(path) = row {
-            let photo = photo::Photo::new(file::File::new(path.clone()), Option::None);
-            let file = file::File::new(path);
+            // path is relative from DB
+            let photo = photo::Photo::new(file::File::from_relative(path.clone()), Option::Some(state.config.clone()));
+            // Resolve to absolute for trash file operation
+            let trash_abs_path = file::to_absolute_path(&path, &state.config.trash_path);
+            let trash_file = file::File::new(trash_abs_path);
             let trash = trash::Trash::new(state.config.trash_path.to_string());
 
             // Remove file from trash permanently
-            if file_service::remove_from_trash_permanently(file, trash).is_ok() {
+            if file_service::remove_from_trash_permanently(trash_file, trash).is_ok() {
                 // Permanently delete from database
                 meta_db.delete_photo_permanently(&photo);
                 deleted_count += 1;

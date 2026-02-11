@@ -77,7 +77,7 @@ pub(crate) fn get_all_collections(
         let cover_photo_json = if let Some(path) = cover_photo_path {
             log::debug!(target: "photo_collections", "creating_cover_photo; id={}; path={}", collection_id, path);
 
-            let file = file::File::new(path.clone());
+            let file = file::File::from_relative(path.clone());
             let mut photo = photo::Photo::new(file, Some(config_for_closure.clone()));
             photo.set_has_thumbnail();
 

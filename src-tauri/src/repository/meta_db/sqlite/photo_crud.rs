@@ -273,12 +273,13 @@ pub fn get_trash_path_for_photo(
         .unwrap_or(0);
 
     if is_trashed == 1 {
-        // Calculate trash path: trash_base_path + original_path (without leading /)
-        let path_without_slash = original_path.strip_prefix('/').unwrap_or(original_path);
+        // original_path is relative (e.g., "2024-01-15/uuid/photo.jpg")
+        // Calculate trash path: trash_base_path + "/" + relative_path
+        let trimmed_path = original_path.trim_start_matches('/');
         let trash_path = format!(
             "{}/{}",
             trash_base_path.trim_end_matches('/'),
-            path_without_slash
+            trimmed_path
         );
         log::debug!(target: "sqlite", "get_trash_path_for_photo; original_path={}; trash_path={}", original_path, trash_path);
         Some(trash_path)

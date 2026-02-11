@@ -80,6 +80,15 @@ impl Photo {
         self.time.clone()
     }
 
+    /// Get absolute path by combining import_to + relative file.path
+    pub fn absolute_path(&self) -> String {
+        if self.import_to.is_empty() {
+            // No import_to set, return path as-is (may already be absolute)
+            return self.file.path.clone();
+        }
+        file::to_absolute_path(&self.file.path, &self.import_to)
+    }
+
     pub fn new_with_exif(file: file::File) -> Photo {
         let mut photo = Photo::new(file.clone(), Option::None);
         let meta = exif::ExifData::new(file);
@@ -128,9 +137,14 @@ impl Photo {
             return None;
         }
 
-        let import_path = &self.import_to;
         let thumbnail_store = &self.thumbnail_store;
-        let thumbnail_path = self.file.path.replace(import_path, thumbnail_store);
+        // file.path is relative (e.g., "2024-01-15/uuid/photo.jpg")
+        // Construct thumbnail path: thumbnail_store + "/" + relative_path
+        let thumbnail_path = format!(
+            "{}/{}",
+            thumbnail_store.trim_end_matches('/'),
+            self.file.path.trim_start_matches('/')
+        );
 
         // RAW files: thumbnail is {filename_lowercase}.jpg
         if crate::utils::raw_file::is_raw_file(&self.file.path) {
@@ -151,9 +165,13 @@ impl Photo {
 
     pub fn set_has_thumbnail(&mut self) {
         if self.has_config {
-            let import_path = self.import_to.clone();
             let thumbnail_store = self.thumbnail_store.clone();
-            let thumbnail_path = self.file.path.replace(&import_path, &thumbnail_store);
+            // file.path is relative; construct thumbnail path: thumbnail_store + "/" + relative_path
+            let thumbnail_path = format!(
+                "{}/{}",
+                thumbnail_store.trim_end_matches('/'),
+                self.file.path.trim_start_matches('/')
+            );
 
             // RAW files: thumbnail is {filename_lowercase}.jpg
             if crate::utils::raw_file::is_raw_file(&self.file.path) {
@@ -167,8 +185,8 @@ impl Photo {
             let ext_regex = regex::Regex::new(r"\.(?i)jpe?g$").unwrap();
             let thumbnail_path_ext_changed = ext_regex.replace(&thumbnail_path, ".jpg").to_string();
 
-            log::debug!(target: "photo", "thumbnail_check; original_path={}; import_path={}; thumbnail_store={}; thumbnail_path={}",
-                self.file.path, import_path, thumbnail_store, thumbnail_path_ext_changed);
+            log::debug!(target: "photo", "thumbnail_check; original_path={}; thumbnail_store={}; thumbnail_path={}",
+                self.file.path, thumbnail_store, thumbnail_path_ext_changed);
 
             if thumbnail_path == thumbnail_path_ext_changed {
                 // maybe movie files
@@ -199,39 +217,21 @@ impl Photo {
     }
 
     pub fn get_imported_dir_date(&self) -> date::Date {
-        let import_path = self.import_to.clone();
-        if import_path.is_empty() {
-            log::error!(target: "photo", "get_imported_dir_date_error_no_import_path; path={}, import_path={}", self.file.path, import_path);
-            panic!("Import path is not set in Photo entity");
-        }
-        let path = self.file.path.clone();
-        let reg = regex::Regex::new(r"/?[^/]+$").unwrap();
-        let date_file_string = path.replace(&import_path, "");
-        let date_string_with_slash = reg.replace(&date_file_string, "");
-        let reg2 = regex::Regex::new(r"^/").unwrap();
-        let date_string = reg2.replace(&date_string_with_slash, "");
+        // file.path is relative: "2024-01-15/uuid/filename.jpg" or "2024-01-15/filename.jpg"
+        // The first path component is the date directory
+        let path = self.file.path.trim_start_matches('/');
 
-        // Handle UUID-based directory structure: extract only the date part
-        // For paths like "2025-06-20/cb06329f-01ad-4895-842e-dea81d3eaac4", we want just "2025-06-20"
-        let date_only = if date_string.contains("/") {
-            // Split by "/" and take the first part (the date)
-            date_string
-                .split("/")
-                .next()
-                .unwrap_or(&date_string)
-                .to_string()
-        } else {
-            date_string.to_string()
-        };
+        let date_only = path
+            .split('/')
+            .next()
+            .unwrap_or("");
 
-        // Check if date_only is empty before parsing
         if date_only.trim().is_empty() {
-            log::error!(target: "photo", "get_imported_dir_date_error; path={}; import_path={}; date_string={}; date_only={}", 
-                path, import_path, date_string, date_only);
-            panic!("Invalid date string extracted from path: empty date_only");
+            log::error!(target: "photo", "get_imported_dir_date_error; path={}", self.file.path);
+            panic!("Invalid date string extracted from relative path: {}", self.file.path);
         }
 
-        return date::Date::from_string(&date_only, Option::Some("-"));
+        return date::Date::from_string(&date_only.to_string(), Option::Some("-"));
     }
 
     pub fn set_time(&mut self, time: String) {

@@ -168,22 +168,26 @@ impl RepositoryDB for Directory {
         if meta_data.keys().len() == 0 {
             let files = dir_service::find_files(&dir);
             for f in files.files {
+                // Convert absolute path to relative for consistent Photo entities
+                let relative_path = file::to_relative_path(&f.path, &self.path.path);
+                let relative_file = file::File::from_relative(relative_path.clone());
+
                 // Apply extension filter using helper
-                if !matches_extension_filter(&f.path, &extension_filters) {
+                if !matches_extension_filter(&relative_path, &extension_filters) {
                     continue;
                 }
 
                 let mut p: photo::Photo;
                 if has_opt {
-                    p = photo::Photo::new(f.clone(), Option::Some(conf.clone()));
+                    p = photo::Photo::new(relative_file.clone(), Option::Some(conf.clone()));
                     p.set_has_thumbnail();
                 } else {
-                    p = photo::Photo::new(f.clone(), Option::None);
+                    p = photo::Photo::new(relative_file.clone(), Option::None);
                 }
                 let mut meta = exif::ExifData::empty();
-                let result = meta_data.get(&f.path);
+                let result = meta_data.get(&relative_path);
                 if result.is_none() {
-                    log::debug!(target: "directory", "photo_meta_missing; file={:?}", &f);
+                    log::debug!(target: "directory", "photo_meta_missing; file={:?}", &relative_path);
                     meta.date_time = f.created_datetime();
                     log::debug!(target: "directory", "photo_meta_fallback; date_time={}", meta.date_time);
                     // No metadata available, use defaults
@@ -202,6 +206,7 @@ impl RepositoryDB for Directory {
                 photos.photos.push(p)
             }
         } else {
+            // meta_data keys are relative paths
             for f in meta_data.keys() {
                 let md = meta_data.get(f).unwrap();
                 if star > 0 && md.star.star() < star {
@@ -216,17 +221,20 @@ impl RepositoryDB for Directory {
                     continue;
                 }
 
-                let file_result = file::File::new_if_exists(f.to_string());
+                // f is relative path; resolve to absolute for existence check
+                let abs_path = file::to_absolute_path(f, &self.path.path);
+                let file_result = file::File::new_if_exists(abs_path);
                 if file_result.is_none() {
                     continue;
                 }
-                let file = file_result.unwrap();
+                // Use relative path for Photo entity
+                let relative_file = file::File::from_relative(f.to_string());
                 let mut p: photo::Photo;
                 if has_opt {
-                    p = photo::Photo::new(file, Option::Some(conf.clone()));
+                    p = photo::Photo::new(relative_file, Option::Some(conf.clone()));
                     p.set_has_thumbnail();
                 } else {
-                    p = photo::Photo::new(file, Option::None);
+                    p = photo::Photo::new(relative_file, Option::None);
                 }
                 let mut meta = exif::ExifData::empty();
                 let photo_meta = meta_data.get(f).unwrap();
@@ -384,15 +392,18 @@ impl RepositoryDB for Directory {
                 continue;
             }
 
-            let file_result = file::File::new_if_exists(f.to_string());
+            // f is relative path; resolve to absolute for existence check
+            let abs_path = file::to_absolute_path(f, &self.path.path);
+            let file_result = file::File::new_if_exists(abs_path);
             if file_result.is_none() {
                 continue;
             }
-            let file = file_result.unwrap();
+            // Use relative path for Photo entity
+            let relative_file = file::File::from_relative(f.to_string());
             let photo_meta = meta_data.get(f).unwrap();
 
             // Create photo from metadata using helper
-            let p = create_photo_from_metadata(file, photo_meta, conf);
+            let p = create_photo_from_metadata(relative_file, photo_meta, conf);
             photos.photos.push(p)
         }
 
@@ -496,6 +507,7 @@ impl RepositoryDB for Directory {
         log::info!(target: "directory", "move_photos_to_exif_date; date={}; dir={}; file_count={}", date.to_string(), dir.path, files.files.len());
         let mut dates_to_be_changed: HashMap<String, bool> = HashMap::new();
         for file in files.files {
+            // file has absolute path from filesystem scan
             let photo = photo::Photo::new_with_exif(file.clone());
             let created_date_str = photo.created_date_string();
             let new_dir = self.path.child(created_date_str.clone());
@@ -518,9 +530,10 @@ impl RepositoryDB for Directory {
                     log::info!(target: "directory", "created_dir; dir={}", new_dir.path);
                 }
 
-                match fs::rename(&photo.file.path, &new_path.display().to_string()) {
-                    Ok(_) => log::info!(target: "directory", "file_moved; from={}; to={}", photo.file.path, new_path.display().to_string()),
-                    Err(e) => log::error!(target: "directory", "file_move_failed; from={}; to={}; error={}", photo.file.path, new_path.display().to_string(), e),
+                // file.path is absolute here (from filesystem scan)
+                match fs::rename(&file.path, &new_path.display().to_string()) {
+                    Ok(_) => log::info!(target: "directory", "file_moved; from={}; to={}", file.path, new_path.display().to_string()),
+                    Err(e) => log::error!(target: "directory", "file_move_failed; from={}; to={}; error={}", file.path, new_path.display().to_string(), e),
                 }
             }
         }

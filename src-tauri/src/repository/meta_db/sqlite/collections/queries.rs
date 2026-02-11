@@ -51,8 +51,8 @@ pub(crate) fn get_collection_photos(
             let exif_orientation: Option<String> = row.get("exif_orientation")?;
             let css_style: Option<String> = row.get("css_style")?;
 
-            // Create a file from the path
-            let file = file::File::new(path.clone());
+            // Create a file from the relative path (from DB)
+            let file = file::File::from_relative(path.clone());
 
             // Create photo with the file and config
             let mut photo = photo::Photo::new(file, config.clone());
@@ -199,7 +199,7 @@ pub(crate) fn get_photos_by_collection_ids(
     // Build Photo entities
     let mut photos = Vec::new();
     for (path, photo_date, star, comment, css_style, exif_orientation, burst_group_id) in photos_data {
-        let file = file::File::new(path.clone());
+        let file = file::File::from_relative(path.clone());
         let mut photo = photo::Photo::new(file, config.clone());
 
         photo.set_time(photo_date);

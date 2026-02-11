@@ -387,15 +387,18 @@ fn add_search_condition(
 fn map_row_to_photo(row: &rusqlite::Row) -> Result<Photo, rusqlite::Error> {
     let photo_path = row.get::<_, String>("path").unwrap_or_default();
 
-    // Create Photo entity from file path
-    let file_result = File::new_if_exists(photo_path.clone());
+    // Get config for path resolution and thumbnail checking
+    let config = crate::entity::config::Config::new();
+
+    // photo_path is relative in DB; resolve to absolute for filesystem check
+    let abs_path = crate::value::file::to_absolute_path(&photo_path, &config.import_to);
+    let file_result = File::new_if_exists(abs_path);
     if file_result.is_none() {
         return Err(rusqlite::Error::InvalidPath(photo_path.into()));
     }
-    let file = file_result.unwrap();
 
-    // Get config for thumbnail checking
-    let config = crate::entity::config::Config::new();
+    // Create Photo with relative path (for DB consistency)
+    let file = File::from_relative(photo_path.clone());
     let mut photo = Photo::new(file, Some(config));
 
     // Set thumbnail status

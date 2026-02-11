@@ -220,17 +220,18 @@ pub fn get_photo_info(
 ) -> String {
     log::debug!(target: "photo_info", "get_photo_info; path={}", path_str);
 
+    // path_str is relative (e.g., "2024-01-15/uuid/photo.jpg")
     // Check if photo is in trash
     let trash_path_opt = state
         .meta_db
         .get_trash_path_for_photo(path_str, &state.config.trash_path);
     let is_trashed = trash_path_opt.is_some();
 
-    // Determine the actual file path to read
+    // Determine the actual file path to read (absolute)
     let actual_path = if let Some(ref trash_path) = trash_path_opt {
         trash_path.clone()
     } else {
-        path_str.to_string()
+        file::to_absolute_path(path_str, &state.config.import_to)
     };
 
     log::debug!(target: "photo_info", "get_photo_info; is_trashed={}; actual_path={}", is_trashed, actual_path);
@@ -239,7 +240,7 @@ pub fn get_photo_info(
     match file::File::new_if_exists(actual_path.clone()) {
         Some(f) => {
             // File exists, read EXIF from file
-            let p = photo::Photo::new(file::File::new(path_str.to_string()), None);
+            let p = photo::Photo::new(file::File::from_relative(path_str.to_string()), None);
             let exif_data = exif::ExifData::new(f);
 
             // Sync EXIF data to database if there are differences
@@ -269,7 +270,7 @@ pub fn get_photo_info(
             // File doesn't exist, try to get metadata from database
             log::warn!(target: "photo_info", "get_photo_info; file_not_found={}; attempting_db_lookup", actual_path);
 
-            let p = photo::Photo::new(file::File::new(path_str.to_string()), None);
+            let p = photo::Photo::new(file::File::from_relative(path_str.to_string()), None);
             let photo_meta = photo_meta::PhotoMeta::new_with_data(p, &state.meta_db);
             let meta_json = serde_json::to_value(&photo_meta).ok();
 
@@ -320,7 +321,7 @@ pub fn save_star(
     star_num: i32,
 ) {
     let db = &state.meta_db;
-    let p = photo::Photo::new(file::File::new(path_str.to_string()), None);
+    let p = photo::Photo::new(file::File::from_relative(path_str.to_string()), None);
     let s = star::Star::new(star_num);
     photo_service::save_photo_star(db, &p, s);
 
@@ -344,6 +345,6 @@ pub fn save_comment(
 ) {
     let db = &state.meta_db;
     let c = comment::Comment::new(comment_str);
-    let p = photo::Photo::new(file::File::new(path_str.to_string()), None);
+    let p = photo::Photo::new(file::File::from_relative(path_str.to_string()), None);
     photo_service::save_photo_comment(db, &p, c);
 }

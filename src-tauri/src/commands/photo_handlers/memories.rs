@@ -49,8 +49,10 @@ pub async fn handle_startup(ctx: &HandlerContext<'_>, _params: &SearchParams) ->
             let now = chrono::Local::now();
             let seed = (now.timestamp_millis() as usize) % photos.len();
             let photo = &photos[seed];
+            // Return absolute path for frontend convertFileSrc
+            let abs_path = crate::value::file::to_absolute_path(&photo.file.path, &ctx.config.import_to);
             let response = StartupMemoryResponse {
-                path: photo.file.path.clone(),
+                path: abs_path,
                 has_memories: true,
             };
             Ok(serde_json::to_string(&response).unwrap_or_else(|_| "{}".to_string()))
@@ -101,7 +103,8 @@ fn get_memories_photos(
             let photo_time: String = row.get(1)?;
             let exif_orientation: Option<String> = row.get(2)?;
 
-            let mut photo = photo::Photo::new(file::File::new(path), None);
+            // path is relative from DB
+            let mut photo = photo::Photo::new(file::File::from_relative(path), None);
             photo.set_time(photo_time);
             if let Some(ref orientation) = exif_orientation {
                 photo.meta_data.orientation = orientation.clone();
@@ -159,7 +162,8 @@ fn get_memories_photos_grouped(
             let exif_orientation: Option<String> = row.get(2)?;
             let photo_year: String = row.get(3)?;
 
-            let mut photo = photo::Photo::new(file::File::new(path), None);
+            // path is relative from DB
+            let mut photo = photo::Photo::new(file::File::from_relative(path), None);
             photo.set_time(photo_time);
             if let Some(ref orientation) = exif_orientation {
                 photo.meta_data.orientation = orientation.clone();

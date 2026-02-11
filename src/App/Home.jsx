@@ -13,6 +13,14 @@ function Home(props) {
     const { toggleSearchPage, showDatePhotos } = useUI();
     const { updateCurrentDate } = usePhoto();
 
+    // Resolve relative photo path to absolute using import_to config
+    const resolvePhotoPath = (relativePath) => {
+        if (!props.config?.import_to || !relativePath) return relativePath;
+        const base = props.config.import_to.replace(/\/$/, '');
+        const rel = relativePath.replace(/^\//, '');
+        return `${base}/${rel}`;
+    };
+
     // Memories state
     const [memoriesGroups, setMemoriesGroups] = useState([]);
     const [memoriesLoading, setMemoriesLoading] = useState(false);
@@ -181,7 +189,7 @@ function Home(props) {
                                                         title={t('memories.viewPhoto', 'View photo')}
                                                     >
                                                         <img
-                                                            src={convertFileSrc(photo.file.path)}
+                                                            src={convertFileSrc(resolvePhotoPath(photo.file.path))}
                                                             alt=""
                                                             onError={(e) => {
                                                                 e.target.style.display = 'none';

@@ -22,6 +22,14 @@ const StartupImageManager = ({ config, setConfig }) => {
     const showMemoriesOnHome = startupImages.show_memories_on_home !== false;
     const memoriesFallback = startupImages.memories_fallback || 'default';
 
+    // Resolve relative photo path to absolute using import_to config
+    const resolvePhotoPath = (relativePath) => {
+        if (!config?.import_to || !relativePath) return relativePath;
+        const base = config.import_to.replace(/\/$/, '');
+        const rel = relativePath.replace(/^\//, '');
+        return `${base}/${rel}`;
+    };
+
     // State for memories preview
     const [memoriesPreview, setMemoriesPreview] = useState([]);
     const [memoriesLoading, setMemoriesLoading] = useState(false);
@@ -334,7 +342,7 @@ const StartupImageManager = ({ config, setConfig }) => {
                                             {group.photos.slice(0, 4).map((photo) => (
                                                 <div key={photo.file.path} className={styles.memoryThumbnail}>
                                                     <img
-                                                        src={convertFileSrc(photo.file.path)}
+                                                        src={convertFileSrc(resolvePhotoPath(photo.file.path))}
                                                         alt=""
                                                         onError={(e) => {
                                                             e.target.style.display = 'none';

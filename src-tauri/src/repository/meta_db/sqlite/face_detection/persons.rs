@@ -294,7 +294,7 @@ pub fn get_photos_for_person_full(
 
     let mut photos = Vec::new();
     for (path, photo_date, star, comment, css_style, exif_orientation, burst_group_id) in photos_data {
-        let file_entity = file::File::new(path.clone());
+        let file_entity = file::File::from_relative(path.clone());
         let mut photo_entity = photo::Photo::new(file_entity, config.clone());
 
         photo_entity.set_time(photo_date);

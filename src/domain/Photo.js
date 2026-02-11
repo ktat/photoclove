@@ -34,6 +34,22 @@ export class Photo {
     }
 
     /**
+     * Get the absolute path for the photo (import_to + relative path)
+     * For library photos, resolves relative path to absolute using config.import_to.
+     * For import source photos, returns originalPath as-is (already absolute).
+     * @returns {string} The absolute file path
+     */
+    absolutePath() {
+        if (this.import_source) {
+            return this.originalPath;
+        }
+        if (!this.config?.import_to) return this.originalPath;
+        const base = this.config.import_to.replace(/\/$/, '');
+        const relative = this.originalPath.startsWith('/') ? this.originalPath : '/' + this.originalPath;
+        return base + relative;
+    }
+
+    /**
      * Get the display path for the photo (considering trash state)
      * @returns {string} The path to use for displaying the photo
      */
@@ -45,15 +61,15 @@ export class Photo {
 
         if (this.inTrashBin && this.config?.trash_path) {
             const trashPath = this.config.trash_path.replace(/\/$/, '');
-            // originalPath for trash photos is already the relative path (e.g., "2024-05-13/P1012881.jpg")
-            // so we need to add it directly to trash_path
+            // originalPath is relative (e.g., "2024-05-13/uuid/photo.jpg")
             const normalizedPath = this.originalPath.startsWith('/') ? this.originalPath : '/' + this.originalPath;
 
             this._cachedDisplayPath = trashPath + normalizedPath;
             return this._cachedDisplayPath;
         }
 
-        this._cachedDisplayPath = this.originalPath;
+        // Library photos: resolve relative to absolute using import_to
+        this._cachedDisplayPath = this.absolutePath();
         return this._cachedDisplayPath;
     }
 
@@ -307,6 +323,7 @@ export class Photo {
             burst_count: this.burst_count,
             // Store config data needed for path generation
             configData: this.config ? {
+                import_to: this.config.import_to,
                 thumbnail_store: this.config.thumbnail_store,
                 trash_path: this.config.trash_path
             } : null

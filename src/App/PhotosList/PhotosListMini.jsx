@@ -373,9 +373,9 @@ function PhotosListMini(props) {
                             setPhotoZoom={setPhotoZoom}
                             photoZoom={photoZoom}
                             photoZoomReady={photoZoomReady}
-                            currentPhotoPath={isTrashMode && photosWithMethods[props.currentIndex]
+                            currentPhotoPath={photosWithMethods[props.currentIndex]
                                 ? photosWithMethods[props.currentIndex].displayPath()
-                                : (props.currentPhotoPath || (photosWithMethods[props.currentIndex] && photosWithMethods[props.currentIndex].displayPath()))}
+                                : props.currentPhotoPath}
                             currentPhotoSize={currentPhotoSize}
                             imgCacheMap={imgCacheMap}
                             thumbnailSrc={photosWithMethods[props.currentIndex]?.hasThumbnail

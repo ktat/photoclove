@@ -6,10 +6,13 @@ pub fn delete_thumbnail(
     photo: &photo::Photo,
     config: &config::Config,
 ) -> Result<(), std::io::Error> {
-    // Construct thumbnail path similar to how it's done in photo.rs
-    let import_path = &config.import_to;
+    // Construct thumbnail path: thumbnail_store + "/" + relative_path
     let thumbnail_store = &config.thumbnail_store;
-    let thumbnail_path = photo.file.path.replace(import_path, thumbnail_store);
+    let thumbnail_path = format!(
+        "{}/{}",
+        thumbnail_store.trim_end_matches('/'),
+        photo.file.path.trim_start_matches('/')
+    );
 
     // Handle different file extensions (similar to photo.rs logic)
     let ext_regex = regex::Regex::new(r"\.JPG$").unwrap();

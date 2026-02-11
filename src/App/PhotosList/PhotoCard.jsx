@@ -473,7 +473,7 @@ function PhotoCard({
                 <a
                     href="#"
                     className="run-app"
-                    onClick={(e) => openUrl(fileUrl(photo.originalPath))}
+                    onClick={(e) => openUrl(fileUrl(typeof photo.displayPath === 'function' ? photo.displayPath() : photo.originalPath))}
                 >&#128640;</a>
             </div>
         </div>

@@ -44,11 +44,12 @@ pub async fn handle(ctx: &HandlerContext<'_>) -> Result<String, ()> {
         .query_map([], |row| {
             let photo_path = row.get::<_, String>("path").unwrap_or_default();
 
+            // photo_path is relative (e.g., "2024-01-15/uuid/photo.jpg")
             // For trash photos, check if file exists in trash path
             let trash_file_path = if !config.trash_path.is_empty() {
-                // Construct trash path: trash_path + original_path
                 let trash_path = config.trash_path.trim_end_matches('/');
-                format!("{}{}", trash_path, photo_path)
+                let trimmed_path = photo_path.trim_start_matches('/');
+                format!("{}/{}", trash_path, trimmed_path)
             } else {
                 photo_path.clone()
             };
@@ -60,17 +61,9 @@ pub async fn handle(ctx: &HandlerContext<'_>) -> Result<String, ()> {
                 return Err(rusqlite::Error::InvalidPath(trash_file_path.into()));
             }
 
-            // Create Photo entity from original path (DB path), not trash path
-            let mut p = if let Some(file) =
-                crate::value::file::File::new_if_exists(photo_path.clone())
-            {
-                // Original file exists, use it
-                photo::Photo::new(file, Some(config.clone()))
-            } else {
-                // Original file doesn't exist, create File object manually with original path
-                let file = crate::value::file::File::new(photo_path.clone());
-                photo::Photo::new(file, Some(config.clone()))
-            };
+            // Create Photo entity from relative path (DB path)
+            let file = crate::value::file::File::from_relative(photo_path.clone());
+            let mut p = photo::Photo::new(file, Some(config.clone()));
 
             // Set thumbnail status
             p.set_has_thumbnail();

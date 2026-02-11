@@ -151,7 +151,58 @@ impl Dir {
     }
 }
 
+/// Convert an absolute path to a relative path by removing the base prefix.
+/// Always uses `/` as separator (even on Windows).
+pub fn to_relative_path(absolute: &str, base: &str) -> String {
+    let normalized_abs = absolute.replace('\\', "/");
+    let normalized_base = base.replace('\\', "/");
+    let trimmed_base = normalized_base.trim_end_matches('/');
+
+    if normalized_abs.starts_with(trimmed_base) {
+        let relative = &normalized_abs[trimmed_base.len()..];
+        let relative = relative.trim_start_matches('/');
+        relative.to_string()
+    } else {
+        // If the path doesn't start with base, return as-is (already relative or different base)
+        normalized_abs
+    }
+}
+
+/// Convert a relative path to an absolute path by prepending the base.
+/// Uses the platform's native separator for the result.
+pub fn to_absolute_path(relative: &str, base: &str) -> String {
+    let trimmed_base = base.trim_end_matches('/').trim_end_matches('\\');
+    let trimmed_relative = relative.trim_start_matches('/').trim_start_matches('\\');
+    format!("{}/{}", trimmed_base, trimmed_relative)
+}
+
 impl File {
+    /// Create a File from a relative path (DB read use case).
+    /// Does NOT perform filesystem validation - suitable for paths stored in DB.
+    pub fn from_relative(path: String) -> File {
+        // Normalize path separators to forward slash
+        let normalized = path.replace('\\', "/");
+        let p = Path::new(&normalized);
+        let dir = p
+            .parent()
+            .unwrap_or(Path::new(""))
+            .display()
+            .to_string();
+        let file_name = p
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("unknown")
+            .to_string();
+
+        File {
+            path: normalized,
+            name: file_name,
+            dir,
+            created_at: String::new(),
+            is_link: false,
+        }
+    }
+
     /// DirEntry から取得済みの Metadata と FileType で構築（追加I/Oなし）
     /// リポジトリ層でのディレクトリ走査用
     pub fn new_from_dir_entry(
@@ -379,5 +430,42 @@ mod tests {
         assert_eq!(r, expected_created);
         let r2 = fo.create_file_if_not_exists();
         assert_eq!(r2, false);
+    }
+
+    #[test]
+    fn test_to_relative_path() {
+        assert_eq!(
+            file::to_relative_path("/mnt/nas/photos/2024-01-15/uuid/photo.jpg", "/mnt/nas/photos"),
+            "2024-01-15/uuid/photo.jpg"
+        );
+        assert_eq!(
+            file::to_relative_path("/mnt/nas/photos/2024-01-15/uuid/photo.jpg", "/mnt/nas/photos/"),
+            "2024-01-15/uuid/photo.jpg"
+        );
+        // Already relative
+        assert_eq!(
+            file::to_relative_path("2024-01-15/uuid/photo.jpg", "/mnt/nas/photos"),
+            "2024-01-15/uuid/photo.jpg"
+        );
+    }
+
+    #[test]
+    fn test_to_absolute_path() {
+        assert_eq!(
+            file::to_absolute_path("2024-01-15/uuid/photo.jpg", "/mnt/nas/photos"),
+            "/mnt/nas/photos/2024-01-15/uuid/photo.jpg"
+        );
+        assert_eq!(
+            file::to_absolute_path("2024-01-15/uuid/photo.jpg", "/mnt/nas/photos/"),
+            "/mnt/nas/photos/2024-01-15/uuid/photo.jpg"
+        );
+    }
+
+    #[test]
+    fn test_from_relative() {
+        let f = file::File::from_relative("2024-01-15/uuid/photo.jpg".to_string());
+        assert_eq!(f.path, "2024-01-15/uuid/photo.jpg");
+        assert_eq!(f.name, "photo.jpg");
+        assert_eq!(f.dir, "2024-01-15/uuid");
     }
 }

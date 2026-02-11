@@ -157,14 +157,20 @@ pub(crate) fn process_import_job(
                 log::debug!(target: "import_job", "file_copy; source={}", file_path);
                 log::debug!(target: "import_job", "file_copy; destination={}", destination_path.display());
 
-                // Add destination path to imported files list
+                // Build relative path for DB storage: "YYYY-MM-DD/UUID/filename"
+                let relative_path = format!(
+                    "{}/{}/{}",
+                    date.to_string(),
+                    uuid,
+                    filename
+                );
                 let destination_path_str = destination_path.display().to_string();
                 imported_file_paths.push(destination_path_str.clone());
-                log::debug!(target: "import_job", "imported_files; added={}", destination_path_str);
+                log::debug!(target: "import_job", "imported_files; added={}; relative={}", destination_path_str, relative_path);
 
-                // Create photo object for the copied file
+                // Create photo object with relative path for DB storage
                 log::debug!(target: "import_job", "photo_object; status=creating");
-                let destination_file = file::File::new(destination_path_str);
+                let destination_file = file::File::from_relative(relative_path);
                 let mut destination_photo =
                     crate::entity::photo::Photo::new(destination_file, Some(config.clone()));
                 destination_photo.embed_exif(photo.meta_data);
