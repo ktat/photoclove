@@ -109,11 +109,10 @@ impl PhotoMeta {
     }
 
     pub fn new_from_photo_info(record: &meta_db::PhotoInfo) -> Option<PhotoMeta> {
-        let f = file::File::new_if_exists(record.path.clone());
-        if f.is_none() {
-            return None;
-        }
-        let mut photo = photo::Photo::new(f.unwrap(), Option::None);
+        // Use from_relative since DB stores relative paths after #194 migration.
+        // File::new_if_exists would fail because relative paths don't resolve from process CWD.
+        let f = file::File::from_relative(record.path.clone());
+        let mut photo = photo::Photo::new(f, Option::None);
         photo.set_time(record.date.clone());
         photo.set_css_style(record.css_style.clone());
         // Set orientation from database record
@@ -134,20 +133,13 @@ impl PhotoMeta {
     /// Uses DB info for photo date/metadata since file is in trash, not at original path
     pub fn new_from_photo_info_from_trash(
         record: &meta_db::PhotoInfo,
-        trash_path: &str,
+        _trash_path: &str,
         _library_path: &str,
     ) -> Option<PhotoMeta> {
-        // Photo is in trash with full path preserved
-        // Trash structure: trash_path + full_original_path
-        let original_path = &record.path;
-        let trash_file_path = format!("{}{}", trash_path.trim_end_matches('/'), original_path);
-
-        let f = file::File::new_if_exists(trash_file_path.clone());
-        if f.is_none() {
-            return None;
-        }
-
-        let mut photo = photo::Photo::new(f.unwrap(), Option::None);
+        // DB stores relative paths after #194 migration
+        // Use from_relative since metadata doesn't need the file to physically exist
+        let f = file::File::from_relative(record.path.clone());
+        let mut photo = photo::Photo::new(f, Option::None);
         photo.set_time(record.date.clone());
         photo.set_css_style(record.css_style.clone());
         // Set orientation from database record

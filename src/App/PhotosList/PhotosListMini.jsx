@@ -81,14 +81,14 @@ function PhotosListMini(props) {
 
     // Check if current photo is a burst representative (has burst badge)
     // Selection/edit/tag operations are disabled for burst representatives when burst mode is ON
-    const currentPhoto = useMemo(() => {
+    const currentIndexPhoto = useMemo(() => {
         if (props.currentIndex >= 0 && props.currentIndex < photosWithMethods.length) {
             return photosWithMethods[props.currentIndex];
         }
         return null;
     }, [photosWithMethods, props.currentIndex]);
 
-    const isBurstRepresentative = currentPhoto?.burst_group_id && currentPhoto?.burst_count > 1;
+    const isBurstRepresentative = currentIndexPhoto?.burst_group_id && currentIndexPhoto?.burst_count > 1;
     const burstRestrictionsActive = burstModeEnabled && isBurstRepresentative && !isInBurstGroupMode;
 
     // Reset currentIndex when in Burst Group mode and index is out of bounds
@@ -98,7 +98,7 @@ function PhotosListMini(props) {
         if (isInBurstGroupMode && photosWithMethods.length > 0 &&
             (props.currentIndex >= photosWithMethods.length || props.currentIndex < 0)) {
             // Find the current photo's position in the burst group
-            const currentPath = props.currentPhotoPath;
+            const currentPath = props.currentPhoto?.originalPath;
             let newIndex = 0;
 
             if (currentPath) {
@@ -119,7 +119,7 @@ function PhotosListMini(props) {
             // Also reset viewStartIndex to auto-center on the selected photo
             setViewStartIndex(null);
         }
-    }, [isInBurstGroupMode, photosWithMethods.length, props.currentPhotoPath, props.currentIndex]);
+    }, [isInBurstGroupMode, photosWithMethods.length, props.currentPhoto, props.currentIndex]);
 
     // Helper function to get the correct date key for pagination
     const getDateKey = useCallback(() => {
@@ -146,7 +146,7 @@ function PhotosListMini(props) {
         photos: photosWithMethods,
         currentIndex: props.currentIndex,
         setCurrentIndex: props.setCurrentIndex,
-        setCurrentPhotoPath: props.setCurrentPhotoPath,
+        setCurrentPhoto: props.setCurrentPhoto,
         setImgStyle: SetImgStyle,
         currentPhotoSize,
         datePage: props.datePage,
@@ -170,7 +170,7 @@ function PhotosListMini(props) {
         selectedContent,
         unselectedContent
     } = useStarOperations({
-        currentPhotoPath: props.currentPhotoPath,
+        currentPhotoPath: props.currentPhoto?.originalPath,
         setStar: props.setStar,
         toggleSelection: props.toggleSelection,
         isSelected: props.isSelected
@@ -200,7 +200,7 @@ function PhotosListMini(props) {
         deletePhotos: props.deletePhotos,
         updatePhotosAfterTrashOperation: props.updatePhotosAfterTrashOperation,
         setCurrentIndex: props.setCurrentIndex,
-        setCurrentPhotoPath: props.setCurrentPhotoPath,
+        setCurrentPhoto: props.setCurrentPhoto,
         setCurrentPhotoIndex: props.setCurrentPhotoIndex,
         closePhotoDisplay: props.closePhotoDisplay,
         addFooterMessage: props.addFooterMessage,
@@ -252,7 +252,7 @@ function PhotosListMini(props) {
             isTagMode,
             albumId: props.albumId,
             tagId: props.tagId,
-            currentPhotoPath: props.currentPhotoPath,
+            currentPhotoPath: props.currentPhoto?.originalPath,
             showSideMenu: props.showSideMenu,
             showHelp,
             photoZoomReady,
@@ -373,9 +373,10 @@ function PhotosListMini(props) {
                             setPhotoZoom={setPhotoZoom}
                             photoZoom={photoZoom}
                             photoZoomReady={photoZoomReady}
-                            currentPhotoPath={photosWithMethods[props.currentIndex]
+                            currentDisplayPath={photosWithMethods[props.currentIndex]
                                 ? photosWithMethods[props.currentIndex].displayPath()
-                                : props.currentPhotoPath}
+                                : props.currentPhoto?.displayPath()}
+                            currentPhoto={props.currentPhoto}
                             currentPhotoSize={currentPhotoSize}
                             imgCacheMap={imgCacheMap}
                             thumbnailSrc={photosWithMethods[props.currentIndex]?.hasThumbnail
@@ -394,8 +395,8 @@ function PhotosListMini(props) {
                             burstRestrictionsActive={burstRestrictionsActive}
                             burstModeEnabled={burstModeEnabled}
                             isBurstRepresentative={isBurstRepresentative}
-                            burstGroupId={currentPhoto?.burst_group_id}
-                            burstCount={currentPhoto?.burst_count}
+                            burstGroupId={currentIndexPhoto?.burst_group_id}
+                            burstCount={currentIndexPhoto?.burst_count}
                             openBurstGroup={props.openBurstGroup}
                             goBackFromBurstGroup={handleGoBackFromBurstGroup}
                             isInBurstGroupMode={isInBurstGroupMode}
@@ -404,7 +405,7 @@ function PhotosListMini(props) {
                                 date: props.currentDate,
                                 albumId: props.albumId,
                                 albumName: props.albumName,
-                                currentPhotoPath: props.currentPhotoPath,
+                                currentPhotoPath: props.currentPhoto?.originalPath,
                                 currentPhotoIndex: props.currentIndex
                             }}
                         />

@@ -78,7 +78,7 @@ export function usePhotosListHandlers({
     setIconSize,
     setSort,
     setImportSort,
-    setCurrentPhotoPath,
+    setCurrentPhoto,
     setCurrentPhotoIndex,
     setShowFilterPopover,
     setAlbumSearchTerm,
@@ -161,7 +161,7 @@ export function usePhotosListHandlers({
         setIconSize,
         setSort,
         setImportSort,
-        setCurrentPhotoPath,
+        setCurrentPhoto,
         setCurrentPhotoIndex,
         setShowFilterPopover,
         setAlbumSearchTerm,
@@ -187,7 +187,7 @@ export function usePhotosListHandlers({
         handlePersonClick, handlePersonSelection, clearPersonSelection, deleteSelectedPersons, handleUnknownFaceClick, handleUnknownFaceSelection, clearUnknownFaceSelection, deleteUnknownFacesBatch, assignUnknownFacesToPerson, setFaceSearchTerm, setFaceViewType, openFacesList, reloadFaces,
         handleSearch, clearSearch, handleFiltersChange, handleSavedSearchSelect,
         clearAllFilters,
-        setShowSideMenu, setIconSize, setSort, setImportSort, setCurrentPhotoPath, setCurrentPhotoIndex, setShowFilterPopover, setAlbumSearchTerm, setTagSearchTerm,
+        setShowSideMenu, setIconSize, setSort, setImportSort, setCurrentPhoto, setCurrentPhotoIndex, setShowFilterPopover, setAlbumSearchTerm, setTagSearchTerm,
         changeTab, closeRightColumn, toggleAlbumListMode, openTagsList, toggleHome,
         addFooterMessage, handleTauriError
     ]);

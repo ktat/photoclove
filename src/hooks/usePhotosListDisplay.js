@@ -9,7 +9,7 @@ import { photoCacheService } from '../services/PhotoCacheService.js';
 export const usePhotosListDisplay = () => {
   // Photo display state
   const [photos, setPhotosList] = useState({ "photos": [] });
-  const [currentPhotoPath, setCurrentPhotoPath] = useState("");
+  const [currentPhoto, setCurrentPhoto] = useState(null);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(undefined);
   const [photoLoading, setPhotoLoading] = useState(false);
   
@@ -80,7 +80,7 @@ export const usePhotosListDisplay = () => {
   // Reset photo display state
   const resetPhotoDisplay = useCallback(() => {
     setPhotosList({ "photos": [] });
-    setCurrentPhotoPath("");
+    setCurrentPhoto(null);
     setCurrentPhotoIndex(undefined);
     setPhotosListMiniAllPhotos([]);
     setPhotosListMiniCurrentIndex(0);
@@ -91,12 +91,12 @@ export const usePhotosListDisplay = () => {
   }, []);
   
   // Update current photo
-  const updateCurrentPhoto = useCallback((photoPath, index) => {
-    setCurrentPhotoPath(photoPath);
+  const updateCurrentPhoto = useCallback((photo, index) => {
+    setCurrentPhoto(photo);
     setCurrentPhotoIndex(index);
-    
+
     logger.debug('usePhotosListDisplay', 'update_current_photo', 'Current photo updated', {
-      photoPath,
+      photoPath: photo?.originalPath,
       index
     });
   }, []);
@@ -104,7 +104,7 @@ export const usePhotosListDisplay = () => {
   return {
     // State
     photos,
-    currentPhotoPath,
+    currentPhoto,
     currentPhotoIndex,
     photoLoading,
     photosListMiniAllPhotos,
@@ -120,7 +120,7 @@ export const usePhotosListDisplay = () => {
     
     // Setters
     setPhotosList,
-    setCurrentPhotoPath,
+    setCurrentPhoto,
     setCurrentPhotoIndex,
     setPhotoLoading,
     setPhotosListMiniAllPhotos,

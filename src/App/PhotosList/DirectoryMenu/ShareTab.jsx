@@ -21,6 +21,7 @@ import {
     saveImageAsFile,
     shareToSocial
 } from '../../../utils/ShareUtils.js';
+import { Photo } from '../../../domain/Photo.js';
 import { logger } from '../../../services/LoggerService.js';
 import { checkFirstActionAchievement } from '../../../services/AchievementService.js';
 import styles from './ShareTab.module.css';
@@ -36,7 +37,8 @@ function ShareTab({
     currentPhotoPath,
     photoSelection = [],
     isPhotoViewer = false,
-    userWatermarkText = ''
+    userWatermarkText = '',
+    appConfig
 }) {
     const { t } = useTranslation(['directoryMenu', 'common']);
 
@@ -69,13 +71,28 @@ function ShareTab({
     const [padding, setPadding] = useState(10);
     const [cornerRadius, setCornerRadius] = useState(8);
 
-    // Determine active photos based on source
+    // Resolve relative paths to absolute via Photo entity for image loading
+    const resolveToDisplayPath = useCallback((path) => {
+        if (!path || path.startsWith('/')) return path;
+        const photo = Photo.fromJSON({
+            originalPath: path,
+            name: path.replace(/^.+\//, ''),
+            configData: {
+                import_to: appConfig?.import_to,
+                thumbnail_store: appConfig?.thumbnail_store,
+                trash_path: appConfig?.trash_path
+            }
+        });
+        return photo?.displayPath() || path;
+    }, [appConfig]);
+
+    // Determine active photos based on source (resolved to absolute paths for image loading)
     const activePhotos = useMemo(() => {
         if (isPhotoViewer && photoSource === 'current' && currentPhotoPath) {
             return [currentPhotoPath];
         }
-        return photoSelection;
-    }, [isPhotoViewer, photoSource, currentPhotoPath, photoSelection]);
+        return photoSelection.map(resolveToDisplayPath);
+    }, [isPhotoViewer, photoSource, currentPhotoPath, photoSelection, resolveToDisplayPath]);
 
     // Auto-select mode based on photo count
     useEffect(() => {

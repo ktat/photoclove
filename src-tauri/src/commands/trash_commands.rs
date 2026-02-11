@@ -55,8 +55,8 @@ pub async fn move_to_trash_batch(
         let abs_path = file::to_absolute_path(&path_str, &state.config.import_to);
         let abs_file = file::File::new(abs_path);
 
-        // Move file to trash
-        match file_service::move_to_trash(abs_file, trash.clone()) {
+        // Move file to trash (use relative DB path for simple trash directory structure)
+        match file_service::move_to_trash(abs_file, trash.clone(), &path_str) {
             Ok(_) => {
                 // Mark as deleted in DB (set delete_flg = 1)
                 meta_db.delete_photo(&photo);
@@ -151,8 +151,8 @@ pub async fn restore_from_trash_batch(
         let abs_path = file::to_absolute_path(&path_str, &library_path);
         let abs_file = file::File::new(abs_path);
 
-        // Restore file from trash to library
-        match file_service::restore_from_trash(abs_file, trash.clone(), library_path.clone()) {
+        // Restore file from trash to library (pass relative path for trash lookup)
+        match file_service::restore_from_trash(abs_file, trash.clone(), library_path.clone(), &path_str) {
             Ok(_) => {
                 // Update database (set delete_flg = 0) without updating date_summary yet
                 meta_db.restore_photo_from_trash_no_summary(&photo);
@@ -236,12 +236,12 @@ pub async fn delete_permanently_batch(
     for path_str in paths {
         // path_str is relative (e.g., "2024-01-15/uuid/photo.jpg")
         let photo = photo::Photo::new(file::File::from_relative(path_str.clone()), Option::Some(state.config.clone()));
-        // Resolve to absolute path for trash file operation
-        let trash_abs_path = file::to_absolute_path(&path_str, &state.config.trash_path);
-        let trash_file = file::File::new(trash_abs_path);
+        // Resolve to absolute path (for old structure fallback in file_service)
+        let abs_import_path = file::to_absolute_path(&path_str, &state.config.import_to);
+        let abs_file = file::File::new(abs_import_path);
 
-        // Remove file from trash permanently
-        match file_service::remove_from_trash_permanently(trash_file, trash.clone()) {
+        // Remove file from trash permanently (pass relative path for trash lookup)
+        match file_service::remove_from_trash_permanently(abs_file, trash.clone(), &path_str) {
             Ok(_) => {
                 // Delete thumbnail if it exists
                 let _ = thumbnail_service::delete_thumbnail(&photo, &state.config);
@@ -311,15 +311,15 @@ pub async fn empty_trash(state: tauri::State<'_, AppState>) -> Result<String, St
 
     for row in rows {
         if let Ok(path) = row {
-            // path is relative from DB
+            // path is relative from DB (e.g., "2024-01-15/uuid/photo.jpg")
             let photo = photo::Photo::new(file::File::from_relative(path.clone()), Option::Some(state.config.clone()));
-            // Resolve to absolute for trash file operation
-            let trash_abs_path = file::to_absolute_path(&path, &state.config.trash_path);
-            let trash_file = file::File::new(trash_abs_path);
+            // Resolve to absolute path (for old structure fallback in file_service)
+            let abs_import_path = file::to_absolute_path(&path, &state.config.import_to);
+            let abs_file = file::File::new(abs_import_path);
             let trash = trash::Trash::new(state.config.trash_path.to_string());
 
-            // Remove file from trash permanently
-            if file_service::remove_from_trash_permanently(trash_file, trash).is_ok() {
+            // Remove file from trash permanently (pass relative path for trash lookup)
+            if file_service::remove_from_trash_permanently(abs_file, trash, &path).is_ok() {
                 // Permanently delete from database
                 meta_db.delete_photo_permanently(&photo);
                 deleted_count += 1;

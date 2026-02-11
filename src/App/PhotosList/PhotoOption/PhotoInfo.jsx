@@ -10,12 +10,17 @@ function PhotoInfo(props) {
     const [photoInfo, setPhotoInfo] = useState({});
     const [comment, setComment] = useState("");
 
+    // Derive paths from Photo entity
+    const currentPhotoPath = props.currentPhoto?.originalPath;
+    const currentDisplayPath = props.currentPhoto?.displayPath();
+    const currentPhotoName = props.currentPhoto?.name;
+
     useEffect((e) => {
-        if (props.currentPhotoPath && props.currentPhotoPath !== "" && props.showSideMenu) {
-            getPhotoInfo(props.currentPhotoPath).then((photoInfo) => {
+        if (currentPhotoPath && props.showSideMenu) {
+            getPhotoInfo(currentPhotoPath).then((photoInfo) => {
             });
         }
-    }, [props.currentPhotoPath, props.showSideMenu])
+    }, [currentPhotoPath, props.showSideMenu])
 
     async function getPhotoInfo(path) {
         if (props.imgCacheMap[path] && props.imgCacheMap[path][1]) {
@@ -97,16 +102,16 @@ function PhotoInfo(props) {
             newRate: newStarRate
         });
 
-        invoke("save_star", { pathStr: props.currentPhotoPath, starNum: newStarRate });
+        invoke("save_star", { pathStr: currentPhotoPath, starNum: newStarRate });
         props.setStar(newStar);
     }
 
     function saveComment() {
-        invoke("save_comment", { pathStr: props.currentPhotoPath, commentStr: comment });
+        invoke("save_comment", { pathStr: currentPhotoPath, commentStr: comment });
 
         // Notify parent component about comment update
         if (props.onCommentUpdate) {
-            props.onCommentUpdate(props.currentPhotoPath, comment && comment.trim() !== "");
+            props.onCommentUpdate(currentPhotoPath, comment && comment.trim() !== "");
         }
     }
 
@@ -197,10 +202,10 @@ function PhotoInfo(props) {
                         <tr><th>File Name</th>
                             <td>
                                 <a href="#" onClick={() => {
-                                    // Copy trash path if trashed, otherwise original path
+                                    // Copy trash path if trashed, otherwise display path
                                     const pathToCopy = photoInfo.is_trashed
                                         ? photoInfo.current_path
-                                        : props.currentPhotoPath;
+                                        : currentDisplayPath;
                                     writeText(pathToCopy);
                                     props.addFooterMessage("clipboard", "Copy file path to clipboard", false, 5000);
                                 }}>📋</a>
@@ -208,17 +213,17 @@ function PhotoInfo(props) {
                                     onMouseEnter={() => {
                                         const displayPath = photoInfo.is_trashed
                                             ? `${photoInfo.current_path} (trashed)`
-                                            : props.currentPhotoPath;
+                                            : currentDisplayPath;
                                         props.addFooterMessage("current_phtoo_path", "File Path: " + displayPath, false, 10000)
                                     }}>
-                                    {props.currentPhotoPath.replace(/^.+\//, '')}
+                                    {currentPhotoName}
                                 </a>
                                 <a href="#" onClick={(e) => {
                                     e.preventDefault();
-                                    // Open trash path if trashed, otherwise original path
+                                    // Open trash path if trashed, otherwise display path
                                     const pathToOpen = photoInfo.is_trashed
                                         ? photoInfo.current_path
-                                        : props.currentPhotoPath;
+                                        : currentDisplayPath;
                                     openUrl(fileUrl(pathToOpen));
                                 }}>🚀</a>
                             </td></tr>

@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { logger } from '../services/LoggerService.js';
 import { checkFirstActionAchievement } from '../services/AchievementService.js';
+import { Photo } from '../domain/Photo.js';
 
 /**
  * Custom hook for photo display management
@@ -13,7 +14,7 @@ import { checkFirstActionAchievement } from '../services/AchievementService.js';
  * @param {Object} params
  * @param {Array} params.photosListMiniAllPhotos - All photos for mini display
  * @param {Object} params.viewModeObj - ViewMode object for mode detection
- * @param {Function} params.setCurrentPhotoPath - Setter for current photo path
+ * @param {Function} params.setCurrentPhoto - Setter for current photo entity
  * @param {Function} params.setCurrentPhotoIndex - Setter for current photo index
  * @param {Function} params.setPhotosListMiniCurrentIndex - Setter for mini list index
  * @param {Function} params.setPhotosListMiniReread - Setter to trigger thumbnail re-read
@@ -28,7 +29,7 @@ import { checkFirstActionAchievement } from '../services/AchievementService.js';
 export function usePhotoDisplay({
     photosListMiniAllPhotos,
     viewModeObj,
-    setCurrentPhotoPath,
+    setCurrentPhoto,
     setCurrentPhotoIndex,
     setPhotosListMiniCurrentIndex,
     setPhotosListMiniReread,
@@ -53,9 +54,9 @@ export function usePhotoDisplay({
         });
 
         const photoToFind = photosListMiniAllPhotos[i];
-        const displayPath = photoToFind ? (photoToFind.file?.path || photoToFind.path || f) : f;
+        const photoEntity = photoToFind ? Photo.fromJSON(photoToFind) : null;
 
-        setCurrentPhotoPath(displayPath);
+        setCurrentPhoto(photoEntity);
         setCurrentPhotoIndex(i);
 
         // Find the global index in the all photos array
@@ -71,7 +72,7 @@ export function usePhotoDisplay({
         setPhotosListMiniReread(!photosListMiniReread);
 
         logger.debug('usePhotoDisplay', 'display_photo_complete', 'Photo display initialized', {
-            displayPath,
+            displayPath: photoEntity?.displayPath(),
             globalIndex
         });
 
@@ -80,7 +81,7 @@ export function usePhotoDisplay({
     }, [
         photosListMiniAllPhotos,
         viewModeObj,
-        setCurrentPhotoPath,
+        setCurrentPhoto,
         setCurrentPhotoIndex,
         setPhotosListMiniCurrentIndex,
         setPhotosListMiniReread,
@@ -96,7 +97,7 @@ export function usePhotoDisplay({
         });
 
         setShowSideMenu(false);
-        setCurrentPhotoPath("");
+        setCurrentPhoto(null);
 
         // Cancel any existing photo loading before starting new request
         if (currentPhotoLoadingController) {
@@ -111,7 +112,7 @@ export function usePhotoDisplay({
     }, [
         setShowSideMenu,
         viewModeObj,
-        setCurrentPhotoPath,
+        setCurrentPhoto,
         currentPhotoLoadingController,
         setCurrentPhotoLoadingController,
         refreshPhotos,

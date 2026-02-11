@@ -323,6 +323,7 @@ function DirectoryMenu(props) {
                         photoSelection={props.photoSelection}
                         isPhotoViewer={false}
                         userWatermarkText={props.config?.custom_watermark || ''}
+                        appConfig={props.config}
                     />
                 </div>
             )}

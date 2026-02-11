@@ -12,7 +12,7 @@ import { calculateSimpleThumbnailDisplay, calculateThumbnailDisplayWithViewOffse
  * @param {Array} options.photos - Array of Photo entities
  * @param {number} options.currentIndex - Current photo index
  * @param {Function} options.setCurrentIndex - Set current photo index
- * @param {Function} options.setCurrentPhotoPath - Set current photo path
+ * @param {Function} options.setCurrentPhoto - Set current photo entity
  * @param {Function} options.setImgStyle - Set image style
  * @param {Array} options.currentPhotoSize - Current photo dimensions [width, height]
  * @param {Object} options.datePage - Date page mapping
@@ -29,7 +29,7 @@ export function usePhotoNavigation({
     photos,
     currentIndex,
     setCurrentIndex,
-    setCurrentPhotoPath,
+    setCurrentPhoto,
     setImgStyle,
     currentPhotoSize,
     datePage,
@@ -126,13 +126,13 @@ export function usePhotoNavigation({
         }
 
         if (photos[index]) {
-            setCurrentPhotoPath(photos[index].originalPath);
+            setCurrentPhoto(photos[index]);
             if (datePage && getDateKey) {
                 datePage[getDateKey()] = Math.trunc(index / num) + 1;
             }
             setCurrentIndex(index);
         }
-    }, [photos, currentPhotoSize, setImgStyle, setCurrentPhotoPath, datePage, getDateKey, num, setCurrentIndex]);
+    }, [photos, currentPhotoSize, setImgStyle, setCurrentPhoto, datePage, getDateKey, num, setCurrentIndex]);
 
     /**
      * Navigate to next photo
@@ -210,7 +210,7 @@ export function usePhotoNavigation({
         }
         if (index >= 0 && index < photos.length && photos[index]) {
             setCurrentIndex(index);
-            setCurrentPhotoPath(photos[index].originalPath);
+            setCurrentPhoto(photos[index]);
             if (datePage && getDateKey) {
                 datePage[getDateKey()] = Math.trunc(index / num) + 1;
             }
@@ -218,7 +218,7 @@ export function usePhotoNavigation({
             // Reset view offset to auto-center on selected photo
             setViewStartIndex(null);
         }
-    }, [photos, setCurrentIndex, setCurrentPhotoPath, datePage, getDateKey, num, setImageCache, setViewStartIndex, beforeNavigate]);
+    }, [photos, setCurrentIndex, setCurrentPhoto, datePage, getDateKey, num, setImageCache, setViewStartIndex, beforeNavigate]);
 
     return {
         nextPhoto,

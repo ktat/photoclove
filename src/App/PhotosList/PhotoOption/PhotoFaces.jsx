@@ -6,7 +6,9 @@ import { useFaceDetection } from '../../../context/FaceDetectionContext.jsx';
 import FaceThumbnail from '../../../components/FaceThumbnail.jsx';
 import styles from './PhotoFaces.module.css';
 
-function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
+function PhotoFaces({ currentPhoto, addFooterMessage }) {
+    const currentPhotoPath = currentPhoto?.originalPath;
+    const currentDisplayPath = currentPhoto?.displayPath();
     const dialog = useDialog();
     const [faces, setFaces] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -333,7 +335,7 @@ function PhotoFaces({ currentPhotoPath, addFooterMessage }) {
                                     <div className={styles['face-preview']}>
                                         <FaceThumbnail
                                             faceId={face.id}
-                                            photoPath={currentPhotoPath}
+                                            photoPath={currentDisplayPath}
                                             bbox={face}
                                             size={50}
                                         />

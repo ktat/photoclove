@@ -137,6 +137,7 @@ pub fn run_ai_tagging_for_photo(
 ) -> Result<String, String> {
     let use_full = use_full_image.unwrap_or(false);
     use crate::domain_service::ai_tagging::service::{get_service, AITaggingConfig};
+    use crate::value::file;
     use std::path::Path;
 
     log::info!(
@@ -147,6 +148,13 @@ pub fn run_ai_tagging_for_photo(
     );
 
     let config = &state.config;
+
+    // Resolve relative path to absolute for file I/O
+    let abs_path = if photo_path.starts_with('/') {
+        photo_path.clone()
+    } else {
+        file::to_absolute_path(&photo_path, &config.import_to)
+    };
 
     // Check if AI tagging is enabled
     if !config.ai_tagging.enabled {
@@ -217,7 +225,7 @@ pub fn run_ai_tagging_for_photo(
             );
             poisoned.into_inner()
         });
-        svc.tag_photo(Path::new(&photo_path))
+        svc.tag_photo(Path::new(&abs_path))
     };
 
     if result.success {

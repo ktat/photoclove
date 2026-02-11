@@ -47,10 +47,13 @@ function PhotoEditor(props) {
     const [savedCssStyle, setSavedCssStyle] = useState('');
     const [cssPreview, setCssPreview] = useState('');
 
+    // Derive path from Photo entity (all backend invoke calls use relative path)
+    const currentPhotoPath = props.currentPhoto?.originalPath;
+
     // Refs for checking unsaved changes (to avoid stale closure in useEffect)
     const editorStylesRef = useRef(editorStyles);
     const savedCssStyleRef = useRef(savedCssStyle);
-    const currentPhotoPathRef = useRef(props.currentPhotoPath);
+    const currentPhotoPathRef = useRef(currentPhotoPath);
 
     // Keep refs in sync with state
     useEffect(() => {
@@ -62,8 +65,8 @@ function PhotoEditor(props) {
     }, [savedCssStyle]);
 
     useEffect(() => {
-        currentPhotoPathRef.current = props.currentPhotoPath;
-    }, [props.currentPhotoPath]);
+        currentPhotoPathRef.current = currentPhotoPath;
+    }, [currentPhotoPath]);
 
     // Reset visual styles on image elements
     function resetVisualStyles() {
@@ -101,10 +104,10 @@ function PhotoEditor(props) {
         // Reset parent state - no unsaved changes when photo changes
         props.setEditorHasUnsavedChanges?.(false);
 
-        if (props.currentPhotoPath) {
-            const loadingPhotoPath = props.currentPhotoPath;
+        if (currentPhotoPath) {
+            const loadingPhotoPath = currentPhotoPath;
             // Load saved CSS style for this photo
-            invoke("get_css_style", { photoPath: props.currentPhotoPath })
+            invoke("get_css_style", { photoPath: currentPhotoPath })
                 .then((loadedCssStyle) => {
                     // Check if photo hasn't changed during async load
                     if (currentPhotoPathRef.current !== loadingPhotoPath) {
@@ -125,11 +128,11 @@ function PhotoEditor(props) {
                     if (currentPhotoPathRef.current !== loadingPhotoPath) {
                         return;
                     }
-                    logger.error('PhotoEditor', 'css_load_failed', 'Failed to load CSS style', { photoPath: props.currentPhotoPath, error: error.message });
+                    logger.error('PhotoEditor', 'css_load_failed', 'Failed to load CSS style', { photoPath: currentPhotoPath, error: error.message });
                     // Defaults already set at start of useEffect
                 });
         }
-    }, [props.currentPhotoPath])
+    }, [currentPhotoPath])
 
     // Cleanup effect to reset crop mode when component unmounts
     useEffect(() => {
@@ -141,7 +144,7 @@ function PhotoEditor(props) {
 
     // Update CSS preview when editor styles change
     useEffect(() => {
-        if (props.currentPhotoPath) {
+        if (currentPhotoPath) {
             const css = generateCSSFromValues(editorStyles);
             setCssPreview(css);
             // Update parent about unsaved changes
@@ -149,7 +152,7 @@ function PhotoEditor(props) {
             props.setEditorHasUnsavedChanges?.(hasChanges);
             logger.debug('PhotoEditor', 'css_preview_updated', 'CSS preview updated', { css, hasChanges });
         }
-    }, [editorStyles, props.currentPhotoPath, savedCssStyle])
+    }, [editorStyles, currentPhotoPath, savedCssStyle])
 
     // Editor functions
     function updateStyle(property, value) {
@@ -163,7 +166,7 @@ function PhotoEditor(props) {
                 [property]: parseInt(value)
             };
 
-            applyTempStyles(newStyles, originalStyles, setOriginalStyles, props.currentPhotoPath);
+            applyTempStyles(newStyles, originalStyles, setOriginalStyles, currentPhotoPath);
             return newStyles;
         });
     }
@@ -182,7 +185,7 @@ function PhotoEditor(props) {
     }
 
     async function applyStyle() {
-        if (!props.currentPhotoPath) {
+        if (!currentPhotoPath) {
             props.addFooterMessage('editor', 'Please select a photo first', false, 3000);
             return;
         }
@@ -195,7 +198,7 @@ function PhotoEditor(props) {
 
         try {
             await invoke('save_css_style', {
-                photoPath: props.currentPhotoPath,
+                photoPath: currentPhotoPath,
                 cssStyle: css
             });
             setSavedCssStyle(css);
@@ -209,7 +212,7 @@ function PhotoEditor(props) {
     }
 
     async function saveAsCopy() {
-        if (!props.currentPhotoPath) {
+        if (!currentPhotoPath) {
             props.addFooterMessage('editor', 'Please select a photo first', false, 3000);
             return;
         }
@@ -232,7 +235,7 @@ function PhotoEditor(props) {
             await saveStyledCopy({
                 mainImage,
                 editorStyles,
-                photoPath: props.currentPhotoPath,
+                photoPath: currentPhotoPath,
                 cssStyle: css,
                 addFooterMessage: props.addFooterMessage,
                 onPhotosRefresh: props.onPhotosRefresh
@@ -288,7 +291,7 @@ function PhotoEditor(props) {
     }
 
     async function downloadStyled() {
-        if (!props.currentPhotoPath) {
+        if (!currentPhotoPath) {
             props.addFooterMessage('editor', 'Please select a photo first', false, 3000);
             return;
         }
@@ -309,7 +312,7 @@ function PhotoEditor(props) {
             await downloadStyledImage({
                 mainImage,
                 editorStyles,
-                photoPath: props.currentPhotoPath,
+                photoPath: currentPhotoPath,
                 addFooterMessage: props.addFooterMessage
             });
         } catch (error) {
@@ -344,7 +347,7 @@ function PhotoEditor(props) {
             ...editorStyles,
             crop: { ...cropSelection }
         };
-        applyTempStyles(newStyles, originalStyles, setOriginalStyles, props.currentPhotoPath);
+        applyTempStyles(newStyles, originalStyles, setOriginalStyles, currentPhotoPath);
     }
 
     function setCropPreset(preset) {

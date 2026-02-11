@@ -88,6 +88,7 @@ export function convertJSONToPhotoEntities(photosJSON, appConfig) {
             return Photo.fromJSON ? Photo.fromJSON({
                 ...photo,
                 configData: {
+                    import_to: appConfig.import_to,
                     thumbnail_store: appConfig.thumbnail_store,
                     trash_path: appConfig.trash_path
                 }

@@ -155,8 +155,8 @@ function PhotoDisplay(props) {
 
         // Small delay to ensure container is ready when transitioning from thumbnail view
         setTimeout(() => {
-            if (props.currentPhotoPath && props.currentPhotoPath.match(/(mp4|webm)$/i)) {
-                movie(props.currentPhotoPath);
+            if (props.currentDisplayPath && props.currentDisplayPath.match(/(mp4|webm)$/i)) {
+                movie(props.currentDisplayPath);
                 let photoDisplayDiv = document.querySelector('.photoDisplay');
                 let width = photoDisplayDiv.clientWidth;
                 let height = photoDisplayDiv.clientHeight - VIDEO_HEIGHT_OFFSET;
@@ -170,7 +170,7 @@ function PhotoDisplay(props) {
                 setVideoSource("");
 
                 // Check if this is a RAW file
-                const isRawFile = RAW_EXTENSION_REGEX.test(props.currentPhotoPath);
+                const isRawFile = RAW_EXTENSION_REGEX.test(props.currentDisplayPath);
 
                 if (isRawFile) {
                     // RAW files: use progressive loading via backend decode
@@ -184,7 +184,7 @@ function PhotoDisplay(props) {
                     }
 
                     const importDir = props.importState?.currentImportPath || null;
-                    const currentPath = props.currentPhotoPath;
+                    const currentPath = props.currentDisplayPath;
 
                     // Level 1: EXIF thumbnail (fast)
                     invoke('get_raw_progressive_image', {
@@ -193,7 +193,7 @@ function PhotoDisplay(props) {
                         qualityLevel: 1,
                         importDirectory: importDir
                     }).then(exifPath => {
-                        if (props.currentPhotoPath === currentPath) {
+                        if (props.currentDisplayPath === currentPath) {
                             setDisplaySrc(convertFileSrc(exifPath) + '?t=' + Date.now());
                             setIsShowingThumbnail(true);
                             logger.debug('PhotoDisplay', 'raw_exif_loaded', 'RAW EXIF thumbnail loaded', {
@@ -210,7 +210,7 @@ function PhotoDisplay(props) {
                             qualityLevel: 2,
                             importDirectory: importDir
                         }).then(fullPath => {
-                            if (props.currentPhotoPath === currentPath) {
+                            if (props.currentDisplayPath === currentPath) {
                                 const fullSrc = convertFileSrc(fullPath) + '?t=' + Date.now();
                                 const preloadImg = new Image();
                                 preloadImg.onload = () => {
@@ -238,8 +238,8 @@ function PhotoDisplay(props) {
                 } else {
                 // Non-RAW files: original logic
                 // Get full image source
-                const fullImageSrc = (props.imgCacheMap[props.currentPhotoPath] && props.imgCacheMap[props.currentPhotoPath][0])
-                    || convertFileSrc(props.currentPhotoPath);
+                const fullImageSrc = (props.imgCacheMap[props.currentDisplayPath] && props.imgCacheMap[props.currentDisplayPath][0])
+                    || convertFileSrc(props.currentDisplayPath);
                 const thumbnailSrc = props.thumbnailSrc ? convertFileSrc(props.thumbnailSrc) : null;
 
                 // Progressive loading: Show thumbnail first if enabled and available
@@ -262,7 +262,7 @@ function PhotoDisplay(props) {
                             width = preloadImg.naturalWidth;
                             height = preloadImg.naturalHeight;
                             logger.debug('PhotoDisplay', 'full_image_loaded', 'Switched to full image', {
-                                path: props.currentPhotoPath,
+                                path: props.currentDisplayPath,
                                 width,
                                 height
                             });
@@ -271,7 +271,7 @@ function PhotoDisplay(props) {
                             // Keep thumbnail on error
                             setIsLoadingFullImage(false);
                             logger.warn('PhotoDisplay', 'full_image_error', 'Failed to load full image', {
-                                path: props.currentPhotoPath
+                                path: props.currentDisplayPath
                             });
                         };
                         preloadImg.src = fullImageSrc;
@@ -293,7 +293,7 @@ function PhotoDisplay(props) {
                 fullImageLoadTimeoutRef.current = null;
             }
         };
-    }, [props.currentPhotoPath, props.thumbnailSrc, props.imgCacheMap, props.progressiveImageLoading]);
+    }, [props.currentDisplayPath, props.thumbnailSrc, props.imgCacheMap, props.progressiveImageLoading]);
 
     async function movie(path) {
         if (currentFile != path) {
@@ -488,20 +488,20 @@ function PhotoDisplay(props) {
                     >
                     </video>
                 </div>
-                Open with other software: <a href="#" onClick={(e) => openUrl(fileUrl(props.currentPhotoPath))}>{props.currentPhotoPath}</a>
+                Open with other software: <a href="#" onClick={(e) => openUrl(fileUrl(props.currentDisplayPath))}>{props.currentDisplayPath}</a>
             </div>
-            {props.currentPhotoPath && /\.nev$/i.test(props.currentPhotoPath) &&
+            {props.currentDisplayPath && /\.nev$/i.test(props.currentDisplayPath) &&
                 <div id="imageWrapper" style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative', flexDirection: 'column' }}>
                     <span style={{ fontSize: '96px' }}>&#128247;</span>
                     <div style={{ fontSize: 'var(--font-size-lg)', color: 'var(--color-text-secondary)', marginTop: 'var(--space-2)' }}>
-                        Unsupported Format: {props.currentPhotoPath.split('.').pop().toUpperCase()}
+                        Unsupported Format: {props.currentDisplayPath.split('.').pop().toUpperCase()}
                     </div>
                     <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', marginTop: 'var(--space-1)' }}>
-                        {props.currentPhotoPath.split('/').pop()}
+                        {props.currentDisplayPath.split('/').pop()}
                     </div>
                 </div>
             }
-            {props.currentPhotoPath && !props.currentPhotoPath.match(/\.(mp4|webm)$/i) && !/\.nev$/i.test(props.currentPhotoPath) &&
+            {props.currentDisplayPath && !props.currentDisplayPath.match(/\.(mp4|webm)$/i) && !/\.nev$/i.test(props.currentDisplayPath) &&
                 <div id="imageWrapper" style={{ overflow: 'auto', alignItems: 'center', justifyContent: 'center', maxWidth: '100%', maxHeight: '100%', position: 'relative' }}>
                     <img ref={imgRef} id="photoImgTag" className={photoDisplayImgClass + (isLoadingFullImage ? " loading-thumbnail" : "")}
                         loading="eager"
@@ -531,7 +531,7 @@ function PhotoDisplay(props) {
                         onLoad={(e) => {
                             handleImgLoad(e.target);
                         }}
-                        src={displaySrc || convertFileSrc(props.currentPhotoPath)}
+                        src={displaySrc || convertFileSrc(props.currentDisplayPath)}
                         onMouseDown={(e) => dragPhotoStart(e, setPhotoDisplayImgClass)}
                         onMouseMove={(e) => dragPhoto(e)}
                         onMouseUp={(e) => dragPhotoEnd(setPhotoDisplayImgClass)}

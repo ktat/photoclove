@@ -390,13 +390,13 @@ export class Photo {
             return null; // Return null for data without path
         }
 
-        // Process tags from backend format: Array<(i32, String, Option<String>)> -> Array<{id, name, color}>
+        // Process tags from backend format: Array<{id, name, color}> -> Array<{id, name, color}>
         let tags = [];
         if (backendData.tags && Array.isArray(backendData.tags)) {
-            tags = backendData.tags.map(tagTuple => ({
-                id: tagTuple[0],
-                name: tagTuple[1],
-                color: tagTuple[2] || null
+            tags = backendData.tags.map(tag => ({
+                id: tag.id ?? tag[0],
+                name: tag.name ?? tag[1],
+                color: tag.color ?? tag[2] ?? null
             }));
         }
 

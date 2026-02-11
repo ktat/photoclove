@@ -28,7 +28,7 @@ export const usePhotosState = () => {
     const [photos, setPhotosList] = useState({ "photos": [] });
     const [photoCollection, setPhotoCollection] = useState(null);
     const [allPhotosForCurrentFetch, setAllPhotosForCurrentFetch] = useState([]);
-    const [currentPhotoPath, setCurrentPhotoPath] = useState("");
+    const [currentPhoto, setCurrentPhoto] = useState(null);
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(undefined);
 
     // UI state
@@ -125,8 +125,8 @@ export const usePhotosState = () => {
         setPhotoCollection,
         allPhotosForCurrentFetch,
         setAllPhotosForCurrentFetch,
-        currentPhotoPath,
-        setCurrentPhotoPath,
+        currentPhoto,
+        setCurrentPhoto,
         currentPhotoIndex,
         setCurrentPhotoIndex,
 

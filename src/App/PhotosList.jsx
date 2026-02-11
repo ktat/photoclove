@@ -114,7 +114,7 @@ function PhotosList({
     const {
         photos, setPhotosList, photoCollection, setPhotoCollection,
         allPhotosForCurrentFetch, setAllPhotosForCurrentFetch,
-        currentPhotoPath, setCurrentPhotoPath, currentPhotoIndex, setCurrentPhotoIndex,
+        currentPhoto, setCurrentPhoto, currentPhotoIndex, setCurrentPhotoIndex,
         iconSize, setIconSize, numOfPhoto, setNumOfPhoto,
         showSideMenu, setShowSideMenu, isLimitedByConfig, setIsLimitedByConfig,
         configLimit, setConfigLimit, star, setStar,
@@ -253,7 +253,7 @@ function PhotosList({
         extensionFilter, filteredPhotos, numOfPhoto, importState,
         setPhotosList, setAllPhotosForCurrentFetch, setIsLimitedByConfig, setConfigLimit,
         setPhotosListMiniAllPhotos, setPhotoCollection, setPhotosListImgSrc,
-        setCurrentPhotoPath, setCurrentPhotoIndex,
+        setCurrentPhoto, setCurrentPhotoIndex,
         convertPhotosToEntities: convertPhotosWithConfig, handleError,
         datePage: datePage || {}, updateDatePage, addFooterMessage,
         burstModeEnabled,
@@ -289,7 +289,7 @@ function PhotosList({
 
     // Photo display hook
     const { displayPhoto, closePhotoDisplay, closeRightColumn } = usePhotoDisplay({
-        photosListMiniAllPhotos, viewModeObj, setCurrentPhotoPath, setCurrentPhotoIndex,
+        photosListMiniAllPhotos, viewModeObj, setCurrentPhoto, setCurrentPhotoIndex,
         setPhotosListMiniCurrentIndex, setPhotosListMiniReread, setShowSideMenu,
         currentPhotoLoadingController, setCurrentPhotoLoadingController,
         handleError, refreshPhotos: refreshPhotosOnly, photosListMiniReread
@@ -324,7 +324,7 @@ function PhotosList({
         viewModeObj, photosListMiniAllPhotos, setPhotosListMiniAllPhotos,
         allPhotosForCurrentFetch, setAllPhotosForCurrentFetch,
         photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex,
-        setCurrentPhotoPath, setCurrentPhotoIndex, currentPhotoIndex, closePhotoDisplay,
+        setCurrentPhoto, setCurrentPhotoIndex, currentPhotoIndex, closePhotoDisplay,
         setTrashPhotos, setPhotosListMiniReread, photosListMiniReread,
         dateNum, setDateNum: updateDateNum, dateList, setDateList: updateDateList, sortOfPhotos,
         triggerUnknownFacesRefresh: () => setUnknownFacesRefreshTrigger(prev => prev + 1),
@@ -368,7 +368,7 @@ function PhotosList({
 
     // Selection tab auto-open effect
     useSelectionTabEffect({
-        photoSelection, selectedAlbums, selectedTags, selectedPersons, selectedUnknownFaces, faceViewType, changeTab, setShowSideMenu, viewModeObj, tabClass, currentPhotoPath
+        photoSelection, selectedAlbums, selectedTags, selectedPersons, selectedUnknownFaces, faceViewType, changeTab, setShowSideMenu, viewModeObj, tabClass, currentPhoto
     });
 
     // Data synchronization
@@ -395,7 +395,7 @@ function PhotosList({
         setStarWithUpdate, updatePhotoComment, handleAlbumUpdate,
         addSelection, toggleSelection, selectAllPhotoToSelection
     } = usePhotoListHelpers({
-        setStar, photosListMiniAllPhotos, setPhotosListMiniAllPhotos, currentPhotoPath,
+        setStar, photosListMiniAllPhotos, setPhotosListMiniAllPhotos, currentPhoto,
         allPhotosForCurrentFetch, setAllPhotosForCurrentFetch, viewMode,
         loadAlbums, currentAlbumId, loadAlbumPhotos, photoSelectionDict,
         togglePhotoSelection, changeTab, infiniteScrollEnabled, displayedPhotos,
@@ -415,7 +415,7 @@ function PhotosList({
         viewMode, viewModeObj, currentDate, currentAlbumId, currentTagId, currentBurstGroupId, searchQuery,
         currentSearchParams, photoLoading, currentPhotoLoadingController,
         setCurrentPhotoLoadingController, setShowSideMenu, setPhotosList,
-        setCurrentPhotoIndex, setPhotosListMiniCurrentIndex, setCurrentPhotoPath,
+        setCurrentPhotoIndex, setPhotosListMiniCurrentIndex, setCurrentPhoto,
         loadPhotosWithCollection, appConfig, sortOfPhotos
     });
 
@@ -488,7 +488,7 @@ function PhotosList({
         viewMode, currentDate, viewModeObj,
         starFilter, hasCommentFilter, hasTagFilter, extensionFilter, importExtensionFilter, showFilterPopover, hasActiveFiltersState,
         photoSelectionDict, photoSelection, selectedAlbums, selectedTags, selectedPersons, selectedUnknownFaces,
-        currentPhotoPath, currentPhotoIndex, showSideMenu, iconSize, sortOfPhotos, importSortOfPhotos, datePage, numOfPhoto,
+        currentPhoto, currentPhotoIndex, showSideMenu, iconSize, sortOfPhotos, importSortOfPhotos, datePage, numOfPhoto,
         searchQuery, searchInitialQuery, searchFilters, searchResults, currentSearchParams,
         displayedPhotos, filteredPhotos, displayedPhotoCount, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch,
         photosListMiniAllPhotos, setPhotosListMiniAllPhotos, photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex, photosListMiniReread, setPhotosListMiniReread,
@@ -514,7 +514,7 @@ function PhotosList({
         deleteUnknownFacesBatch, assignUnknownFacesToPerson,
         setFaceSearchTerm, setFaceViewType, openFacesList, reloadFaces,
         handleSearch, clearSearch, handleFiltersChange, handleSavedSearchSelect, clearAllFilters,
-        setShowSideMenu, setIconSize, setSort, setImportSort, setCurrentPhotoPath, setCurrentPhotoIndex,
+        setShowSideMenu, setIconSize, setSort, setImportSort, setCurrentPhoto, setCurrentPhotoIndex,
         setShowFilterPopover, setAlbumSearchTerm, setTagSearchTerm,
         changeTab, closeRightColumn, toggleAlbumListMode, openTagsList, toggleHome,
         addFooterMessage, handleTauriError
@@ -530,7 +530,7 @@ function PhotosList({
     });
 
     // Auto-close photo display effect
-    useAutoClosePhotoDisplayEffect({ viewMode, currentPhotoPath, closePhotoDisplay });
+    useAutoClosePhotoDisplayEffect({ viewMode, currentPhoto, closePhotoDisplay });
 
     return (
         <ErrorBoundary name="PhotosList" level="component">
@@ -560,7 +560,7 @@ function PhotosList({
                     </>
                 )}
 
-                {!currentPhotoPath && (
+                {!currentPhoto && (
                     <VerticalTabBar
                         viewMode={viewMode} viewModeObj={viewModeObj} showSideMenu={showSideMenu}
                         tabClass={tabClass} changeTab={changeTab} setShowSideMenu={setShowSideMenu}
@@ -573,12 +573,11 @@ function PhotosList({
                     />
                 )}
 
-                {currentPhotoPath && (
+                {currentPhoto && (
                     <PhotoOption
                         setShowSideMenu={setShowSideMenu} showSideMenu={showSideMenu}
-                        currentPhotoPath={currentPhotoPath} closePhotoDisplay={closePhotoDisplay}
-                        currentPhoto={photosListMiniAllPhotos[currentPhotoIndex]}
-                        path={currentPhotoPath} viewModeObj={viewModeObj} searchQuery={searchQuery}
+                        currentPhoto={currentPhoto} closePhotoDisplay={closePhotoDisplay}
+                        viewModeObj={viewModeObj} searchQuery={searchQuery}
                         searchResultsCount={displayedPhotos.length} onClearSearch={clearSearch}
                         searchTools={searchTools} addFooterMessage={handlers.addFooterMessage}
                         imgCacheMap={imgCacheMap} setStar={setStarWithUpdate} star={star}

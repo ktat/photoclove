@@ -36,7 +36,7 @@ import { useAsyncCancellation } from './useAsyncCancellation.js';
  * @param {Function} params.setPhotosListMiniAllPhotos - Set mini photos function
  * @param {Function} params.setPhotoCollection - Set photo collection function
  * @param {Function} params.setPhotosListImgSrc - Set image source function
- * @param {Function} params.setCurrentPhotoPath - Set current photo path function
+ * @param {Function} params.setCurrentPhoto - Set current photo entity function
  * @param {Function} params.setCurrentPhotoIndex - Set current photo index function
  * @param {Function} params.convertPhotosToEntities - Convert photos function
  * @param {Function} params.handleError - Error handler function
@@ -64,7 +64,7 @@ export function usePhotoLoader({
     setPhotosListMiniAllPhotos,
     setPhotoCollection,
     setPhotosListImgSrc,
-    setCurrentPhotoPath,
+    setCurrentPhoto,
     setCurrentPhotoIndex,
     convertPhotosToEntities,
     handleError,
@@ -244,7 +244,7 @@ export function usePhotoLoader({
 
                     // Clear related states
                     setPhotosListImgSrc({});
-                    setCurrentPhotoPath("");
+                    setCurrentPhoto(null);
                     setCurrentPhotoIndex(undefined);
                 }
             }
@@ -280,7 +280,7 @@ export function usePhotoLoader({
         setAllPhotosForCurrentFetch,
         setPhotosListMiniAllPhotos,
         setPhotosListImgSrc,
-        setCurrentPhotoPath,
+        setCurrentPhoto,
         setCurrentPhotoIndex,
         setIsLimitedByConfig,
         setConfigLimit,

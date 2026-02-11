@@ -5,7 +5,8 @@ import { useError } from '../../context/ErrorContext.jsx';
 import { useDialog } from '../../context/DialogContext.jsx';
 import { unifiedCollectionService } from '../../services/UnifiedCollectionService.js';
 
-const AlbumTab = ({ albumId, currentPhotoPath, onAlbumUpdate, onAlbumDelete }) => {
+const AlbumTab = ({ albumId, currentPhoto, onAlbumUpdate, onAlbumDelete }) => {
+  const currentPhotoPath = currentPhoto?.originalPath;
   const { handleTauriError } = useError();
   const dialog = useDialog();
   const [albumInfo, setAlbumInfo] = useState(null);

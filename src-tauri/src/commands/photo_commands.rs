@@ -224,7 +224,7 @@ pub fn get_photo_info(
     // Check if photo is in trash
     let trash_path_opt = state
         .meta_db
-        .get_trash_path_for_photo(path_str, &state.config.trash_path);
+        .get_trash_path_for_photo(path_str, &state.config.trash_path, &state.config.import_to);
     let is_trashed = trash_path_opt.is_some();
 
     // Determine the actual file path to read (absolute)

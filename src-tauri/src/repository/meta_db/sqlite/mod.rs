@@ -175,8 +175,8 @@ impl SQLite {
     }
 
     /// Get trash path for photo
-    pub fn get_trash_path_for_photo(&self, original_path: &str, trash_base_path: &str) -> Option<String> {
-        photo_crud::get_trash_path_for_photo(self, original_path, trash_base_path)
+    pub fn get_trash_path_for_photo(&self, original_path: &str, trash_base_path: &str, import_to: &str) -> Option<String> {
+        photo_crud::get_trash_path_for_photo(self, original_path, trash_base_path, import_to)
     }
 
     #[allow(dead_code)]

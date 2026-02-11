@@ -21,7 +21,7 @@ import { logger } from '../services/LoggerService.js';
  * @param {Function} params.setStar - Set star rating state
  * @param {Array} params.photosListMiniAllPhotos - All photos for mini display
  * @param {Function} params.setPhotosListMiniAllPhotos - Update mini photos
- * @param {string} params.currentPhotoPath - Current photo path
+ * @param {Photo|null} params.currentPhoto - Current photo entity
  * @param {Array} params.allPhotosForCurrentFetch - All current photos
  * @param {Function} params.setAllPhotosForCurrentFetch - Update all photos
  * @param {string} params.viewMode - Current view mode
@@ -41,7 +41,7 @@ export function usePhotoListHelpers({
     setStar,
     photosListMiniAllPhotos,
     setPhotosListMiniAllPhotos,
-    currentPhotoPath,
+    currentPhoto,
     allPhotosForCurrentFetch,
     setAllPhotosForCurrentFetch,
     viewMode,
@@ -76,7 +76,7 @@ export function usePhotoListHelpers({
 
         // Update the star value in photosListMiniAllPhotos
         const updatedPhotos = photosListMiniAllPhotos.map(photoJSON => {
-            if (photoJSON.originalPath === currentPhotoPath) {
+            if (photoJSON.originalPath === currentPhoto?.originalPath) {
                 return { ...photoJSON, star: starValue };
             }
             return photoJSON;
@@ -85,13 +85,13 @@ export function usePhotoListHelpers({
 
         // Also update allPhotosForCurrentFetch to trigger re-filtering
         const updatedAllPhotos = allPhotosForCurrentFetch.map(photo => {
-            if (photo.originalPath === currentPhotoPath) {
+            if (photo.originalPath === currentPhoto?.originalPath) {
                 return { ...photo, star: starValue };
             }
             return photo;
         });
         setAllPhotosForCurrentFetch(updatedAllPhotos);
-    }, [setStar, photosListMiniAllPhotos, setPhotosListMiniAllPhotos, currentPhotoPath, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch]);
+    }, [setStar, photosListMiniAllPhotos, setPhotosListMiniAllPhotos, currentPhoto, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch]);
 
     /**
      * Update comment in photo lists

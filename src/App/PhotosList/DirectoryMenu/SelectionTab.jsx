@@ -17,6 +17,7 @@ function SelectionTab({
     selectionState,
     handlers,
     importState,
+    appConfig,
     albumsList,
     tagsList,
     facesList = [],
@@ -43,6 +44,7 @@ function SelectionTab({
                     viewModeObj={viewModeObj}
                     handlers={handlers}
                     importState={importState}
+                    appConfig={appConfig}
                     dropdownRef={dropdownRef}
                 />
             )}

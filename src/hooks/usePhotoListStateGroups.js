@@ -40,7 +40,7 @@ export function usePhotoListStateGroups({
     selectedUnknownFaces,
 
     // DisplayState params
-    currentPhotoPath,
+    currentPhoto,
     currentPhotoIndex,
     showSideMenu,
     iconSize,
@@ -131,7 +131,7 @@ export function usePhotoListStateGroups({
 
     /** @type {import('../types/PageState.js').DisplayState} */
     const displayState = useMemo(() => ({
-        currentPhotoPath: currentPhotoPath,
+        currentPhoto: currentPhoto,
         currentPhotoIndex: currentPhotoIndex,
         showSideMenu: showSideMenu,
         iconSize: iconSize,
@@ -140,7 +140,7 @@ export function usePhotoListStateGroups({
         scrollPosition: 0, // Will be managed in Phase 2
         datePage: datePage || {},
         numOfPhoto: numOfPhoto
-    }), [currentPhotoPath, currentPhotoIndex, showSideMenu, iconSize, sortOfPhotos, importSortOfPhotos, datePage, numOfPhoto]);
+    }), [currentPhoto, currentPhotoIndex, showSideMenu, iconSize, sortOfPhotos, importSortOfPhotos, datePage, numOfPhoto]);
 
     /** @type {import('../types/PageState.js').SearchState} */
     // isSearchMode and isAdvancedSearchMode are derived from viewModeObj

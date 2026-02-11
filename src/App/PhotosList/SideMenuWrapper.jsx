@@ -68,7 +68,7 @@ function SideMenuWrapper({
     const { star: starFilter, extension: extensionFilter } = filterState;
     const { allForCurrentFetch: allPhotosForCurrentFetch, setAllForCurrentFetch: setAllPhotosForCurrentFetch } = photoDataState;
     const { photoList: photoSelection, albums: selectedAlbums, tags: selectedTags, persons: selectedPersons, unknownFaces: selectedUnknownFaces } = selectionState;
-    const { currentPhotoPath, showSideMenu } = displayState;
+    const { currentPhoto, showSideMenu } = displayState;
     const { query: searchQuery, initialQuery: searchInitialQuery, filters: searchFilters, results: searchResults, currentParams: currentSearchParams } = searchState;
     const isAdvancedSearchMode = viewModeObj.isAdvancedSearchMode();
     const {
@@ -108,7 +108,7 @@ function SideMenuWrapper({
 
     return (
         <div className="rightMenu">
-            <div style={{ display: !currentPhotoPath ? "block" : "none" }}>
+            <div style={{ display: !currentPhoto ? "block" : "none" }}>
                 <DirectoryMenu
                     viewModeObj={viewModeObj}
                     addFooterMessage={addFooterMessage}

@@ -23,7 +23,8 @@ const parseConfidence = (metadata) => {
     }
 };
 
-function PhotoTags({ currentPhotoPath, addFooterMessage, onPhotosRefresh }) {
+function PhotoTags({ currentPhoto, addFooterMessage, onPhotosRefresh }) {
+    const currentPhotoPath = currentPhoto?.originalPath;
     const [photoTags, setPhotoTags] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAiTagging, setIsAiTagging] = useState(false);

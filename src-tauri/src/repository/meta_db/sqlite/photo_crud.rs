@@ -257,6 +257,7 @@ pub fn get_trash_path_for_photo(
     sqlite: &SQLite,
     original_path: &str,
     trash_base_path: &str,
+    import_to: &str,
 ) -> Option<String> {
     let conn = match sqlite.get_connection() {
         Ok(conn) => conn,
@@ -273,16 +274,29 @@ pub fn get_trash_path_for_photo(
         .unwrap_or(0);
 
     if is_trashed == 1 {
-        // original_path is relative (e.g., "2024-01-15/uuid/photo.jpg")
-        // Calculate trash path: trash_base_path + "/" + relative_path
+        // Try new structure first: trash_base_path/relative_path
         let trimmed_path = original_path.trim_start_matches('/');
-        let trash_path = format!(
+        let new_trash_path = format!(
             "{}/{}",
             trash_base_path.trim_end_matches('/'),
             trimmed_path
         );
-        log::debug!(target: "sqlite", "get_trash_path_for_photo; original_path={}; trash_path={}", original_path, trash_path);
-        Some(trash_path)
+
+        // Check if file exists at new location
+        if std::path::Path::new(&new_trash_path).exists() {
+            log::debug!(target: "sqlite", "get_trash_path_for_photo; original_path={}; trash_path={}", original_path, new_trash_path);
+            return Some(new_trash_path);
+        }
+
+        // Fallback to old structure: trash_base_path/abs_path_without_leading_slash
+        let abs_import_path = crate::value::file::to_absolute_path(original_path, import_to);
+        let old_trash_path = format!(
+            "{}/{}",
+            trash_base_path.trim_end_matches('/'),
+            abs_import_path.trim_start_matches('/')
+        );
+        log::debug!(target: "sqlite", "get_trash_path_for_photo; original_path={}; trash_path={}; fallback=old_structure", original_path, old_trash_path);
+        Some(old_trash_path)
     } else {
         None
     }

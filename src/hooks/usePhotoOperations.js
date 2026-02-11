@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { logger } from '../services/LoggerService.js';
 import { unifiedCollectionService } from '../services/UnifiedCollectionService.js';
 import { deleteFacesBatch, assignFacesToPersonBatch, createPerson } from '../services/FaceDetectionService.js';
+import { Photo } from '../domain/Photo.js';
 
 const STORAGE_KEY_ALBUMS = 'selectedAlbums';
 const STORAGE_KEY_TAGS = 'selectedTags';
@@ -55,7 +56,7 @@ export function usePhotoOperations({
     setAllPhotosForCurrentFetch,
     photosListMiniCurrentIndex,
     setPhotosListMiniCurrentIndex,
-    setCurrentPhotoPath,
+    setCurrentPhoto,
     setCurrentPhotoIndex,
     currentPhotoIndex,
     closePhotoDisplay,
@@ -107,15 +108,15 @@ export function usePhotoOperations({
             : removedIndex;            // Stay at same index (now shows next photo)
 
         const newPhoto = newAllPhotos[newIndex];
-        const newPath = getPhotoPath(newPhoto);
 
-        if (newPath) {
+        if (newPhoto) {
+            const newPhotoEntity = newPhoto instanceof Photo ? newPhoto : Photo.fromJSON(newPhoto);
             if (setPhotosListMiniCurrentIndex) {
                 setPhotosListMiniCurrentIndex(removedIndex >= newAllPhotos.length
                     ? photosListMiniCurrentIndex - 1
                     : photosListMiniCurrentIndex);
             }
-            if (setCurrentPhotoPath) setCurrentPhotoPath(newPath);
+            if (setCurrentPhoto) setCurrentPhoto(newPhotoEntity);
             if (setCurrentPhotoIndex) setCurrentPhotoIndex(newIndex);
         }
     }, [
@@ -125,7 +126,7 @@ export function usePhotoOperations({
         setAllPhotosForCurrentFetch,
         photosListMiniCurrentIndex,
         setPhotosListMiniCurrentIndex,
-        setCurrentPhotoPath,
+        setCurrentPhoto,
         setCurrentPhotoIndex,
         closePhotoDisplay
     ]);

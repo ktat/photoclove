@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { useTranslation } from 'react-i18next';
+import { Photo } from '../../../domain/Photo.js';
 import SelectionHeader from "./SelectionHeader.jsx";
 
 /**
@@ -11,11 +12,28 @@ function PhotoSelectionSection({
     viewModeObj,
     handlers,
     importState,
+    appConfig,
     dropdownRef
 }) {
     const { t } = useTranslation(['directoryMenu']);
     const [photoIndex, setPhotoIndex] = useState(-1);
     const [showBigPhoto, setShowBigPhoto] = useState(false);
+
+    // Resolve relative paths to absolute via Photo entity for image display
+    const resolveDisplayPath = useCallback((path) => {
+        if (!path || path.startsWith('/')) return path;
+        const photo = Photo.fromJSON({
+            originalPath: path,
+            name: path.replace(/^.+\//, ''),
+            inTrashBin: viewModeObj?.isTrashMode() || false,
+            configData: {
+                import_to: appConfig?.import_to,
+                thumbnail_store: appConfig?.thumbnail_store,
+                trash_path: appConfig?.trash_path
+            }
+        });
+        return photo?.displayPath() || path;
+    }, [appConfig, viewModeObj]);
 
     const { doOperation, selectAllPhotoToSelection, clearPhotoSelection } = handlers;
 
@@ -127,7 +145,7 @@ function PhotoSelectionSection({
             {photoIndex >= 0 && (
                 <>
                     <img
-                        src={convertFileSrc(photoSelection[photoIndex])}
+                        src={convertFileSrc(resolveDisplayPath(photoSelection[photoIndex]))}
                         style={{ maxWidth: '100%', maxHeight: '150px', objectFit: 'contain' }}
                     />
                     <a
@@ -142,7 +160,7 @@ function PhotoSelectionSection({
                             onMouseLeave={() => setShowBigPhoto(false)}
                             onClick={() => setShowBigPhoto(false)}
                         >
-                            <img src={convertFileSrc(photoSelection[photoIndex])} />
+                            <img src={convertFileSrc(resolveDisplayPath(photoSelection[photoIndex]))} />
                         </div>
                     )}
                 </>

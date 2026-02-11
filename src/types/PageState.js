@@ -41,7 +41,7 @@
 
 /**
  * @typedef {Object} DisplayState
- * @property {string} currentPhotoPath - 現在表示中の写真パス
+ * @property {import('../domain/Photo.js').Photo|null} currentPhoto - 現在表示中の写真エンティティ
  * @property {number} currentPhotoIndex - 現在の写真インデックス
  * @property {boolean} showSideMenu - サイドメニュー表示
  * @property {string} iconSize - アイコンサイズ ('small' | 'medium' | 'large')

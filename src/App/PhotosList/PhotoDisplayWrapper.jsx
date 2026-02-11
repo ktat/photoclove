@@ -61,7 +61,7 @@ function PhotoDisplayWrapper({
     const recentPhotosMode = viewModeObj.isRecentMode();
     const isSearchMode = viewModeObj.isSearchMode();
     const { star: starFilter, comment: hasCommentFilter, extension: extensionFilter } = filterState;
-    const { currentPhotoPath, currentPhotoIndex, showSideMenu, sort: sortOfPhotos, datePage, numOfPhoto } = displayState;
+    const { currentPhoto, currentPhotoIndex, showSideMenu, sort: sortOfPhotos, datePage, numOfPhoto } = displayState;
     const { query: searchQuery } = searchState;
     const {
         moveToTrashCan,
@@ -70,7 +70,7 @@ function PhotoDisplayWrapper({
         toggleSelection,
         isSelected,
         getPhotos,
-        setCurrentPhotoPath,
+        setCurrentPhoto,
         setCurrentPhotoIndex,
         setStarWithUpdate,
         removePhotoFromList,
@@ -128,7 +128,7 @@ function PhotoDisplayWrapper({
     }, [viewModeObj, currentPhotoIndex, openBurstGroup]);
 
     // Compute derived values
-    const shouldDisplay = !photoLoading && currentPhotoPath;
+    const shouldDisplay = !photoLoading && currentPhoto;
 
     if (!shouldDisplay) return null;
 
@@ -146,8 +146,8 @@ function PhotoDisplayWrapper({
                             setShortCutNavigation={setShortCutNavigation}
                             shortCutNavigation={shortCutNavigation}
                             getPhotos={getPhotos}
-                            currentPhotoPath={currentPhotoPath}
-                            setCurrentPhotoPath={setCurrentPhotoPath}
+                            currentPhoto={currentPhoto}
+                            setCurrentPhoto={setCurrentPhoto}
                             sortOfPhotos={sortOfPhotos}
                             currentDate={currentDate}
                             datePage={datePage}

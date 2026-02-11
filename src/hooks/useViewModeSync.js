@@ -33,7 +33,7 @@ export function useViewModeSync({
     setPhotosList,
     setCurrentPhotoIndex,
     setPhotosListMiniCurrentIndex,
-    setCurrentPhotoPath,
+    setCurrentPhoto,
     loadPhotosWithCollection,
     appConfig,
     sortOfPhotos

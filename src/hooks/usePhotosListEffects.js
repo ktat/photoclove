@@ -61,13 +61,13 @@ export function useSelectionTabEffect({
     setShowSideMenu,
     viewModeObj,
     tabClass,
-    currentPhotoPath
+    currentPhoto
 }) {
     const prevSelectionCount = useRef(0);
 
     useEffect(() => {
         // Skip if PhotoViewer is open - PhotoOption handles tab switching there
-        if (currentPhotoPath) {
+        if (currentPhoto) {
             return;
         }
 
@@ -107,7 +107,7 @@ export function useSelectionTabEffect({
             });
         }
         prevSelectionCount.current = relevantSelectionCount;
-    }, [photoSelection.length, selectedAlbums.length, selectedTags.length, selectedPersons.length, selectedUnknownFaces.length, faceViewType, viewModeObj, changeTab, setShowSideMenu, tabClass, currentPhotoPath]);
+    }, [photoSelection.length, selectedAlbums.length, selectedTags.length, selectedPersons.length, selectedUnknownFaces.length, faceViewType, viewModeObj, changeTab, setShowSideMenu, tabClass, currentPhoto]);
 }
 
 /**
@@ -189,18 +189,18 @@ export function useBurstModeChangeEffect({
  */
 export function useAutoClosePhotoDisplayEffect({
     viewMode,
-    currentPhotoPath,
+    currentPhoto,
     closePhotoDisplay
 }) {
     useEffect(() => {
         // Close photo display when switching to modes that show lists instead of photos
         if (viewMode === VIEW_MODES.ALBUM_LIST || viewMode === VIEW_MODES.TAG_LIST || viewMode === VIEW_MODES.FACE_LIST || viewMode === VIEW_MODES.HOME) {
-            if (currentPhotoPath) {
+            if (currentPhoto) {
                 logger.info('usePhotosListEffects', 'auto_close', 'Auto-closing photo display for list mode', { viewMode });
                 closePhotoDisplay();
             }
         }
-    }, [viewMode, currentPhotoPath, closePhotoDisplay]);
+    }, [viewMode, currentPhoto, closePhotoDisplay]);
 }
 
 /**

@@ -212,7 +212,15 @@ fn retry_move_to_trash(
     let file = File::new(target_path.to_string());
     let trash = Trash::new(config.trash_path.clone());
 
-    file_service::move_to_trash(file, trash)
+    // Compute relative path by stripping import_to prefix
+    let import_to = config.import_to.trim_end_matches('/');
+    let relative_path = if target_path.starts_with(import_to) {
+        target_path[import_to.len()..].trim_start_matches('/').to_string()
+    } else {
+        target_path.trim_start_matches('/').to_string()
+    };
+
+    file_service::move_to_trash(file, trash, &relative_path)
         .map_err(|e| format!("Failed to move to trash: {}", e))
 }
 
@@ -243,11 +251,19 @@ fn retry_restore(
         }
     };
 
-    let file = File::new(actual_path);
+    let file = File::new(actual_path.clone());
     let trash = Trash::new(config.trash_path.clone());
     let library_path = config.repository.store.clone();
 
-    file_service::restore_from_trash(file, trash, library_path)
+    // Compute relative path by stripping import_to prefix
+    let import_to = config.import_to.trim_end_matches('/');
+    let relative_path = if actual_path.starts_with(import_to) {
+        actual_path[import_to.len()..].trim_start_matches('/').to_string()
+    } else {
+        actual_path.trim_start_matches('/').to_string()
+    };
+
+    file_service::restore_from_trash(file, trash, library_path, &relative_path)
         .map_err(|e| format!("Failed to restore from trash: {}", e))
 }
 
@@ -276,9 +292,17 @@ fn retry_permanently_delete(
         }
     };
 
-    let file = File::new(actual_path);
+    let file = File::new(actual_path.clone());
     let trash = Trash::new(config.trash_path.clone());
 
-    file_service::remove_from_trash_permanently(file, trash)
+    // Compute relative path by stripping import_to prefix
+    let import_to = config.import_to.trim_end_matches('/');
+    let relative_path = if actual_path.starts_with(import_to) {
+        actual_path[import_to.len()..].trim_start_matches('/').to_string()
+    } else {
+        actual_path.trim_start_matches('/').to_string()
+    };
+
+    file_service::remove_from_trash_permanently(file, trash, &relative_path)
         .map_err(|e| format!("Failed to permanently delete: {}", e))
 }

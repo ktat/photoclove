@@ -5,6 +5,7 @@
 import { useState, useCallback } from 'react';
 import { invoke } from "@tauri-apps/api/core";
 import { logger } from "../../../services/LoggerService.js";
+import { Photo } from "../../../domain/Photo.js";
 
 /**
  * Hook for managing photo deletion operations
@@ -19,7 +20,7 @@ import { logger } from "../../../services/LoggerService.js";
  * @param {Function} options.deletePhotos - Callback to delete photos
  * @param {Function} options.updatePhotosAfterTrashOperation - Callback after trash operation
  * @param {Function} options.setCurrentIndex - Set current photo index
- * @param {Function} options.setCurrentPhotoPath - Set current photo path
+ * @param {Function} options.setCurrentPhoto - Set current photo entity
  * @param {Function} options.setCurrentPhotoIndex - Set current photo index (alternative)
  * @param {Function} options.closePhotoDisplay - Close photo display
  * @param {Function} options.addFooterMessage - Show footer message
@@ -39,7 +40,7 @@ export function useDeletionOperations({
     deletePhotos,
     updatePhotosAfterTrashOperation,
     setCurrentIndex,
-    setCurrentPhotoPath,
+    setCurrentPhoto,
     setCurrentPhotoIndex,
     closePhotoDisplay,
     addFooterMessage,
@@ -123,11 +124,11 @@ export function useDeletionOperations({
                     }
 
                     const nextPhoto = newAllPhotos[newIndex];
-                    const nextPhotoPath = nextPhoto?.originalPath || nextPhoto?.file?.path;
 
-                    if (nextPhotoPath) {
+                    if (nextPhoto) {
+                        const nextPhotoEntity = nextPhoto instanceof Photo ? nextPhoto : Photo.fromJSON(nextPhoto);
                         setCurrentIndex?.(newIndex);
-                        setCurrentPhotoPath?.(nextPhotoPath);
+                        setCurrentPhoto?.(nextPhotoEntity);
                         setCurrentPhotoIndex?.(newIndex);
                     }
                 } else {
@@ -181,7 +182,7 @@ export function useDeletionOperations({
         deletePhotos,
         updatePhotosAfterTrashOperation,
         setCurrentIndex,
-        setCurrentPhotoPath,
+        setCurrentPhoto,
         setCurrentPhotoIndex,
         closePhotoDisplay,
         addFooterMessage,

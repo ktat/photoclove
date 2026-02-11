@@ -61,7 +61,7 @@ function PhotoOption(props) {
     // Clear face state when photo changes
     useEffect(() => {
         clearFaceState();
-    }, [props.currentPhotoPath, clearFaceState]);
+    }, [props.currentPhoto?.originalPath, clearFaceState]);
 
     // Tutorial state (Feature #152/#153)
     const [showTutorial, setShowTutorial] = useState(false);
@@ -373,7 +373,7 @@ function PhotoOption(props) {
             </div>
 
             {/* Content area */}
-            {props.currentPhotoPath && props.showSideMenu && (
+            {props.currentPhoto && props.showSideMenu && (
                 <div className={styles['tab-content']} style={{
                     position: 'fixed',
                     right: '0px',
@@ -387,7 +387,7 @@ function PhotoOption(props) {
                 }}>
                     {activeTab === "info" && (
                         <PhotoInfo
-                            currentPhotoPath={props.currentPhotoPath}
+                            currentPhoto={props.currentPhoto}
                             showSideMenu={props.showSideMenu}
                             imgCacheMap={props.imgCacheMap}
                             star={props.star}
@@ -400,7 +400,7 @@ function PhotoOption(props) {
                     )}
                     {activeTab === "editor" && (
                         <PhotoEditor
-                            currentPhotoPath={props.currentPhotoPath}
+                            currentPhoto={props.currentPhoto}
                             showSideMenu={props.showSideMenu}
                             addFooterMessage={props.addFooterMessage}
                             onPhotosRefresh={props.onPhotosRefresh}
@@ -409,7 +409,7 @@ function PhotoOption(props) {
                     )}
                     {activeTab === "tags" && (
                         <PhotoTags
-                            currentPhotoPath={props.currentPhotoPath}
+                            currentPhoto={props.currentPhoto}
                             showSideMenu={props.showSideMenu}
                             addFooterMessage={props.addFooterMessage}
                             onPhotosRefresh={props.onPhotosRefresh}
@@ -417,24 +417,25 @@ function PhotoOption(props) {
                     )}
                     {activeTab === "faces" && (
                         <PhotoFaces
-                            currentPhotoPath={props.currentPhotoPath}
+                            currentPhoto={props.currentPhoto}
                             addFooterMessage={props.addFooterMessage}
                         />
                     )}
                     {activeTab === "album" && isAlbumMode && (
                         <AlbumTab
                             albumId={currentAlbumId}
-                            currentPhotoPath={props.currentPhotoPath}
+                            currentPhoto={props.currentPhoto}
                             onAlbumUpdate={props.onAlbumUpdate}
                             onAlbumDelete={props.onAlbumDelete}
                         />
                     )}
                     {activeTab === "share" && (
                         <ShareTab
-                            currentPhotoPath={props.currentPhotoPath}
+                            currentPhotoPath={props.currentPhoto?.displayPath()}
                             photoSelection={props.photoSelection || []}
                             isPhotoViewer={true}
                             userWatermarkText={props.config?.custom_watermark || ''}
+                            appConfig={props.config}
                         />
                     )}
                     {activeTab === "selection" && (
@@ -458,6 +459,7 @@ function PhotoOption(props) {
                                 clearPersonSelection: props.clearPersonSelection
                             }}
                             importState={props.importState}
+                            appConfig={props.config}
                             albumsList={props.albumsList || []}
                             tagsList={props.tagsList || []}
                             facesList={props.facesList || []}

@@ -121,7 +121,7 @@ function PhotoListContent({
     } = selectionState;
 
     const {
-        currentPhotoPath,
+        currentPhoto,
         currentPhotoIndex,
         showSideMenu,
         iconSize,
@@ -259,9 +259,9 @@ function PhotoListContent({
     };
 
     return (
-        <div className={(showSideMenu || !currentPhotoPath) ? "centerDisplay" : "centerDisplayMax"}
+        <div className={(showSideMenu || !currentPhoto) ? "centerDisplay" : "centerDisplayMax"}
              id="photoList"
-             style={{ display: (!photoLoading && !currentPhotoPath) ? "block" : "none" }}
+             style={{ display: (!photoLoading && !currentPhoto) ? "block" : "none" }}
              data-date={viewModeObj.isRecentMode() ? "recent" : viewModeObj.getDataAttribute()}
              data-page={recentPhotosMode ? (datePage["recent"] || 1) : (isSearchMode ? (datePage["search_results"] || 1) : 1)}>
             <div>

@@ -46,10 +46,19 @@ pub async fn handle(ctx: &HandlerContext<'_>) -> Result<String, ()> {
 
             // photo_path is relative (e.g., "2024-01-15/uuid/photo.jpg")
             // For trash photos, check if file exists in trash path
+            // Try new structure first (trash_path/relative_path), fall back to old deep structure
             let trash_file_path = if !config.trash_path.is_empty() {
                 let trash_path = config.trash_path.trim_end_matches('/');
                 let trimmed_path = photo_path.trim_start_matches('/');
-                format!("{}/{}", trash_path, trimmed_path)
+                let new_path = format!("{}/{}", trash_path, trimmed_path);
+                if std::path::Path::new(&new_path).exists() {
+                    new_path
+                } else {
+                    // Fallback to old structure: trash_path/abs_path_without_leading_slash
+                    let abs_path = crate::value::file::to_absolute_path(&photo_path, &config.import_to);
+                    let old_path = format!("{}/{}", trash_path, abs_path.trim_start_matches('/'));
+                    old_path
+                }
             } else {
                 photo_path.clone()
             };
