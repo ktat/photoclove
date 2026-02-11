@@ -62,16 +62,21 @@ export function useAppEventListeners({
                 logger.debug('App', 'static_menu_event', 'Static menu event received', { event: e });
                 invoke("lock", { t: true }).then((le) => {
                     if (le) {
-                        handleStaticMenuAction(e.payload, {
-                            setShowLogViewer,
-                            setShowPrivacyPolicy,
-                            setShowTermsOfUse,
-                            setShowLicenses,
-                            setShowAchievementsModal,
-                            setShowNotificationCenter,
-                            dialog,
-                        });
-                        setTimeout(() => invoke("lock", { t: false }), 1000);
+                        try {
+                            handleStaticMenuAction(e.payload, {
+                                setShowLogViewer,
+                                setShowPrivacyPolicy,
+                                setShowTermsOfUse,
+                                setShowLicenses,
+                                setShowAchievementsModal,
+                                setShowNotificationCenter,
+                                dialog,
+                            });
+                        } catch (err) {
+                            logger.error('App', 'static_menu_error', 'Static menu handler error', { error: err.toString() });
+                        } finally {
+                            setTimeout(() => invoke("lock", { t: false }), 1000);
+                        }
                     }
                 });
             });
@@ -159,19 +164,24 @@ export function useAppEventListeners({
                 logger.debug('App', 'menu_click_event', 'Menu click event received', { event: e });
                 invoke("lock", { t: true }).then((le) => {
                     if (le) {
-                        handleDynamicMenuAction(e.payload, {
-                            configRef,
-                            getDates,
-                            updateCurrentDate,
-                            resetPhotoState,
-                            toggleHome,
-                            setWelcomeImage,
-                            toggleImporter,
-                            togglePreferences,
-                            toggleSearchPage,
-                            setShowJobQueueModal,
-                        });
-                        setTimeout(() => invoke("lock", { t: false }), 1000);
+                        try {
+                            handleDynamicMenuAction(e.payload, {
+                                configRef,
+                                getDates,
+                                updateCurrentDate,
+                                resetPhotoState,
+                                toggleHome,
+                                setWelcomeImage,
+                                toggleImporter,
+                                togglePreferences,
+                                toggleSearchPage,
+                                setShowJobQueueModal,
+                            });
+                        } catch (err) {
+                            logger.error('App', 'dynamic_menu_error', 'Dynamic menu handler error', { error: err.toString() });
+                        } finally {
+                            setTimeout(() => invoke("lock", { t: false }), 1000);
+                        }
                     }
                 });
             });
