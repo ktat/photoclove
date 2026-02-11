@@ -67,7 +67,10 @@ function PhotosListMini(props) {
     const [imgStyle, setImgStyle] = useState({
         transition: 'opacity 0.1s',
         opacity: 0.5,
-        overflow: "hidden"
+        overflow: "hidden",
+        objectFit: "contain",
+        maxWidth: "100%",
+        maxHeight: "100%"
     });
     const [thumbnailStore, setThumbnailStore] = useState("");
     const [photosListImgSrc, setPhotosListImgSrc] = useState({});

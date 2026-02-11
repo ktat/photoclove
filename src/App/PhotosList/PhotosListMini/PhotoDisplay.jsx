@@ -502,7 +502,7 @@ function PhotoDisplay(props) {
                 </div>
             }
             {props.currentDisplayPath && !props.currentDisplayPath.match(/\.(mp4|webm)$/i) && !/\.nev$/i.test(props.currentDisplayPath) &&
-                <div id="imageWrapper" style={{ overflow: 'auto', alignItems: 'center', justifyContent: 'center', maxWidth: '100%', maxHeight: '100%', position: 'relative' }}>
+                <div id="imageWrapper" style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative' }}>
                     <img ref={imgRef} id="photoImgTag" className={photoDisplayImgClass + (isLoadingFullImage ? " loading-thumbnail" : "")}
                         loading="eager"
                         onDoubleClick={(e) => props.togglePhotoSelected(props.burstRestrictionsActive)}
