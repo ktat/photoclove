@@ -142,11 +142,11 @@ function PhotoSelectionSection({
                     )}
                 </div>
             )}
-            {photoIndex >= 0 && (
+            {photoIndex >= 0 && photoSelection.length > 0 && (
                 <>
                     <img
                         src={convertFileSrc(resolveDisplayPath(photoSelection[photoIndex]))}
-                        style={{ maxWidth: '100%', maxHeight: '150px', objectFit: 'contain' }}
+                        style={{ maxWidth: '100%', maxHeight: '150px', objectFit: 'contain', marginTop: 'var(--space-3)' }}
                     />
                     <a
                         className="enlarge-link"

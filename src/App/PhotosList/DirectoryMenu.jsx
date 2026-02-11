@@ -308,6 +308,7 @@ function DirectoryMenu(props) {
                     assignUnknownFacesToPerson: props.assignUnknownFacesToPerson
                 }}
                 importState={props.importState}
+                appConfig={props.config}
                 albumsList={props.albumsList}
                 tagsList={props.tagsList}
                 facesList={props.facesList}

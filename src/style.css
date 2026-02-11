@@ -83,11 +83,15 @@ div.selected:after {
   color: red;
 }
 
+#tab-selection.tab-active {
+  overflow-y: hidden;
+}
+
 ul.list-of-selected {
   text-align: left;
   overflow-y: auto;
   overflow-x: hidden;
-  height: calc(100vh - 300px - 150px);
+  max-height: calc(100vh - 300px - 150px);
 }
 
 ul.list-of-selected li {
