@@ -122,6 +122,8 @@ function PhotoEditor(props) {
                         setEditorStyles(editorValues);
                         setSavedCssStyle(loadedCssStyle.trim());
                         setCssPreview(loadedCssStyle.trim());
+                        // Apply visual styles to photo immediately
+                        applyTempStyles(editorValues, originalStyles, setOriginalStyles, loadingPhotoPath);
                     }
                     // No else needed - defaults already set at start of useEffect
                 })
@@ -426,8 +428,8 @@ function PhotoEditor(props) {
                                     max={360}
                                     extraRow={
                                         <>
-                                            <button className={styles['shortcut-btn']} onClick={() => rotateBy(-90)} title={t('photoEditor.turnLeft')}>↶ 90°</button>
-                                            <button className={styles['shortcut-btn']} onClick={() => rotateBy(90)} title={t('photoEditor.turnRight')}>↷ 90°</button>
+                                            <button className={styles['shortcut-btn']} onClick={() => rotateBy(-90)} title={t('photoEditor.turnLeft')}>↶</button>
+                                            <button className={styles['shortcut-btn']} onClick={() => rotateBy(90)} title={t('photoEditor.turnRight')}>↷</button>
                                         </>
                                     }
                                 />

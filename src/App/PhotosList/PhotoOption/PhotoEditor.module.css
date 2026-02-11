@@ -48,7 +48,7 @@
 }
 
 .editor-table td:nth-child(4) {
-    width: 18px;
+    width: 24px;
     padding-right: 0;
 }
 
@@ -65,6 +65,9 @@
     display: flex;
     gap: 2px;
     padding: 1px 0 !important;
+    width: auto !important;
+    min-width: 60px;
+    overflow: visible;
 }
 
 .editor-control {
@@ -269,9 +272,9 @@
     color: var(--color-text-secondary) !important;
     border: 1px solid var(--color-border-strong) !important;
     border-radius: 2px !important;
-    padding: 0px 2px !important;
+    padding: 1px 4px !important;
     cursor: pointer;
-    font-size: 8px;
+    font-size: 12px;
     line-height: 1.2;
     transition: background-color 0.2s ease-out;
     margin: 0 !important;
