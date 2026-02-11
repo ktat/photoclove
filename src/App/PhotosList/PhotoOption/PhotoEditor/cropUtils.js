@@ -142,3 +142,174 @@ export function clampCrop(crop) {
         height: Math.max(0, Math.min(crop.height, 100))
     };
 }
+
+/**
+ * Determine the interaction zone based on mouse position relative to crop selection
+ *
+ * @param {{x: number, y: number}} mousePos - Mouse position in percentage
+ * @param {{x: number, y: number, width: number, height: number}} cropSelection - Current crop selection
+ * @param {number} threshold - Hit-test threshold in percentage units (e.g., 3)
+ * @returns {string} Interaction zone: 'corner-tl', 'corner-tr', 'corner-bl', 'corner-br',
+ *   'edge-top', 'edge-bottom', 'edge-left', 'edge-right', 'move', or 'create'
+ */
+export function getInteractionZone(mousePos, cropSelection, threshold = 3) {
+    const { x, y, width, height } = cropSelection;
+    if (width <= 0 || height <= 0) return 'create';
+
+    const right = x + width;
+    const bottom = y + height;
+    const mx = mousePos.x;
+    const my = mousePos.y;
+
+    const nearLeft = Math.abs(mx - x) <= threshold;
+    const nearRight = Math.abs(mx - right) <= threshold;
+    const nearTop = Math.abs(my - y) <= threshold;
+    const nearBottom = Math.abs(my - bottom) <= threshold;
+
+    // Corner detection (priority over edges)
+    if (nearLeft && nearTop) return 'corner-tl';
+    if (nearRight && nearTop) return 'corner-tr';
+    if (nearLeft && nearBottom) return 'corner-bl';
+    if (nearRight && nearBottom) return 'corner-br';
+
+    // Edge detection (mouse must be within the selection's range on the other axis)
+    const withinX = mx >= x - threshold && mx <= right + threshold;
+    const withinY = my >= y - threshold && my <= bottom + threshold;
+
+    if (nearTop && withinX) return 'edge-top';
+    if (nearBottom && withinX) return 'edge-bottom';
+    if (nearLeft && withinY) return 'edge-left';
+    if (nearRight && withinY) return 'edge-right';
+
+    // Inside detection
+    if (mx >= x && mx <= right && my >= y && my <= bottom) return 'move';
+
+    return 'create';
+}
+
+/**
+ * Move crop selection by delta, clamped to 0-100 bounds
+ *
+ * @param {{x: number, y: number, width: number, height: number}} cropSelection - Current crop selection
+ * @param {{x: number, y: number}} delta - Movement delta in percentage
+ * @returns {{x: number, y: number, width: number, height: number}} New crop selection
+ */
+export function calculateCropMove(cropSelection, delta) {
+    let newX = cropSelection.x + delta.x;
+    let newY = cropSelection.y + delta.y;
+
+    // Clamp to bounds
+    newX = Math.max(0, Math.min(newX, 100 - cropSelection.width));
+    newY = Math.max(0, Math.min(newY, 100 - cropSelection.height));
+
+    return {
+        x: newX,
+        y: newY,
+        width: cropSelection.width,
+        height: cropSelection.height
+    };
+}
+
+const MIN_SIZE = 5;
+
+/**
+ * Resize crop selection from a corner, optionally maintaining aspect ratio
+ *
+ * @param {{x: number, y: number, width: number, height: number}} cropSelection - Current crop selection
+ * @param {string} corner - Which corner is being dragged: 'corner-tl', 'corner-tr', 'corner-bl', 'corner-br'
+ * @param {{x: number, y: number}} mousePos - Current mouse position in percentage
+ * @param {number|null} lockedRatio - Aspect ratio (width/height) to maintain, or null for free resize
+ * @returns {{x: number, y: number, width: number, height: number}} New crop selection
+ */
+export function calculateCropCornerResize(cropSelection, corner, mousePos, lockedRatio) {
+    const { x, y, width, height } = cropSelection;
+    const right = x + width;
+    const bottom = y + height;
+
+    let fixedX, fixedY, newX, newY;
+
+    // The fixed point is the opposite corner
+    switch (corner) {
+        case 'corner-tl': fixedX = right; fixedY = bottom; newX = mousePos.x; newY = mousePos.y; break;
+        case 'corner-tr': fixedX = x; fixedY = bottom; newX = mousePos.x; newY = mousePos.y; break;
+        case 'corner-bl': fixedX = right; fixedY = y; newX = mousePos.x; newY = mousePos.y; break;
+        case 'corner-br': fixedX = x; fixedY = y; newX = mousePos.x; newY = mousePos.y; break;
+        default: return cropSelection;
+    }
+
+    // Clamp mouse position to image bounds
+    newX = Math.max(0, Math.min(newX, 100));
+    newY = Math.max(0, Math.min(newY, 100));
+
+    let newWidth = Math.abs(newX - fixedX);
+    let newHeight = Math.abs(newY - fixedY);
+
+    if (lockedRatio != null) {
+        // Maintain aspect ratio: adjust height based on width
+        const ratioHeight = newWidth / lockedRatio;
+        if (ratioHeight <= 100) {
+            newHeight = ratioHeight;
+        } else {
+            newHeight = 100;
+            newWidth = newHeight * lockedRatio;
+        }
+    }
+
+    // Enforce minimum size
+    newWidth = Math.max(MIN_SIZE, newWidth);
+    newHeight = Math.max(MIN_SIZE, newHeight);
+
+    // Calculate top-left based on drag direction relative to fixed point
+    let resultX = newX < fixedX ? fixedX - newWidth : fixedX;
+    let resultY = newY < fixedY ? fixedY - newHeight : fixedY;
+
+    // Clamp to bounds
+    if (resultX < 0) { resultX = 0; newWidth = fixedX; }
+    if (resultY < 0) { resultY = 0; newHeight = fixedY; }
+    if (resultX + newWidth > 100) { newWidth = 100 - resultX; }
+    if (resultY + newHeight > 100) { newHeight = 100 - resultY; }
+
+    return { x: resultX, y: resultY, width: newWidth, height: newHeight };
+}
+
+/**
+ * Resize crop selection from an edge (one direction only)
+ *
+ * @param {{x: number, y: number, width: number, height: number}} cropSelection - Current crop selection
+ * @param {string} edge - Which edge is being dragged: 'edge-top', 'edge-bottom', 'edge-left', 'edge-right'
+ * @param {{x: number, y: number}} mousePos - Current mouse position in percentage
+ * @returns {{x: number, y: number, width: number, height: number}} New crop selection
+ */
+export function calculateCropEdgeResize(cropSelection, edge, mousePos) {
+    const { x, y, width, height } = cropSelection;
+    let newX = x, newY = y, newWidth = width, newHeight = height;
+
+    switch (edge) {
+        case 'edge-top': {
+            const clampedY = Math.max(0, Math.min(mousePos.y, y + height - MIN_SIZE));
+            newY = clampedY;
+            newHeight = (y + height) - clampedY;
+            break;
+        }
+        case 'edge-bottom': {
+            const clampedBottom = Math.max(y + MIN_SIZE, Math.min(mousePos.y, 100));
+            newHeight = clampedBottom - y;
+            break;
+        }
+        case 'edge-left': {
+            const clampedX = Math.max(0, Math.min(mousePos.x, x + width - MIN_SIZE));
+            newX = clampedX;
+            newWidth = (x + width) - clampedX;
+            break;
+        }
+        case 'edge-right': {
+            const clampedRight = Math.max(x + MIN_SIZE, Math.min(mousePos.x, 100));
+            newWidth = clampedRight - x;
+            break;
+        }
+        default:
+            return cropSelection;
+    }
+
+    return { x: newX, y: newY, width: newWidth, height: newHeight };
+}

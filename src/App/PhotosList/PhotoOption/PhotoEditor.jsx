@@ -14,7 +14,11 @@ import {
     CROP_PRESETS,
     calculateCropFromPreset,
     calculateCropPosition,
-    calculateCropDrag
+    calculateCropDrag,
+    getInteractionZone,
+    calculateCropMove,
+    calculateCropCornerResize,
+    calculateCropEdgeResize
 } from './PhotoEditor/cropUtils.js';
 import {
     applyTempStyles,
@@ -46,6 +50,8 @@ function PhotoEditor(props) {
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const [dragMode, setDragMode] = useState('create');
+    const [activePresetRatio, setActivePresetRatio] = useState(null);
+    const [interactionZone, setInteractionZone] = useState('create');
     const [savedCssStyle, setSavedCssStyle] = useState('');
     const [cssPreview, setCssPreview] = useState('');
 
@@ -357,34 +363,71 @@ function PhotoEditor(props) {
     function setCropPreset(preset) {
         const newCropSelection = calculateCropFromPreset(preset);
         setCropSelection(newCropSelection);
+        if (preset.ratio != null) {
+            setActivePresetRatio(preset.ratio);
+        } else {
+            // Original: use image's natural aspect ratio
+            const img = document.querySelector('#photoImgTag');
+            const ratio = (img?.naturalWidth && img?.naturalHeight)
+                ? img.naturalWidth / img.naturalHeight
+                : null;
+            setActivePresetRatio(ratio);
+        }
     }
 
-    function handleImageMouseDown(e) {
+    function handleImageMouseDown(e, forceZone) {
         if (!cropMode) return;
-
-        logger.debug('PhotoEditor', 'crop_mouse_down', 'Mouse down event in crop mode');
 
         const rect = e.currentTarget.getBoundingClientRect();
         const position = calculateCropPosition(e, rect);
+        const zone = forceZone || getInteractionZone(position, cropSelection);
+
+        logger.debug('PhotoEditor', 'crop_mouse_down', 'Mouse down event in crop mode', { zone });
 
         setIsDragging(true);
         setDragStart(position);
-        setDragMode('create');
-        setCropSelection({ ...position, width: 0, height: 0 });
+        setDragMode(zone);
+
+        if (zone === 'create') {
+            setCropSelection({ ...position, width: 0, height: 0 });
+            setActivePresetRatio(null);
+        }
 
         e.preventDefault();
         e.stopPropagation();
     }
 
     function handleImageMouseMove(e) {
-        if (!cropMode || !isDragging) return;
+        if (!cropMode) return;
 
         const rect = e.currentTarget.getBoundingClientRect();
         const position = calculateCropPosition(e, rect);
 
+        // Update cursor on hover (when not dragging)
+        if (!isDragging) {
+            const zone = getInteractionZone(position, cropSelection);
+            setInteractionZone(zone);
+            return;
+        }
+
         if (dragMode === 'create') {
             const newCropSelection = calculateCropDrag(position, dragStart);
             setCropSelection(newCropSelection);
+        } else if (dragMode === 'move') {
+            const delta = { x: position.x - dragStart.x, y: position.y - dragStart.y };
+            const newCropSelection = calculateCropMove(cropSelection, delta);
+            setCropSelection(newCropSelection);
+            setDragStart(position);
+        } else if (dragMode.startsWith('corner-')) {
+            const newCropSelection = calculateCropCornerResize(cropSelection, dragMode, position, activePresetRatio);
+            setCropSelection(newCropSelection);
+        } else if (dragMode.startsWith('edge-')) {
+            const newCropSelection = calculateCropEdgeResize(cropSelection, dragMode, position);
+            setCropSelection(newCropSelection);
+            // Edge drag breaks aspect ratio lock
+            if (activePresetRatio != null) {
+                setActivePresetRatio(null);
+            }
         }
 
         e.preventDefault();
@@ -412,6 +455,7 @@ function PhotoEditor(props) {
                 cropMode={cropMode}
                 cropSelection={cropSelection}
                 handlers={cropHandlers}
+                interactionZone={interactionZone}
             />
             <div className={styles['editor-tab']}>
                 <div className={styles['photo-info-editor']}>
