@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from 'react-i18next';
 import { logger } from '../../../services/LoggerService.js';
 import styles from './PhotoEditor.module.css';
 
@@ -29,6 +30,7 @@ import CropTool from './CropTool.jsx';
 import AdjustmentSlider from './PhotoEditor/AdjustmentSlider.jsx';
 
 function PhotoEditor(props) {
+    const { t } = useTranslation('common');
     const [originalStyles, setOriginalStyles] = useState(new Map());
     const [editorStyles, setEditorStyles] = useState({
         rotate: 0,
@@ -186,13 +188,13 @@ function PhotoEditor(props) {
 
     async function applyStyle() {
         if (!currentPhotoPath) {
-            props.addFooterMessage('editor', 'Please select a photo first', false, 3000);
+            props.addFooterMessage('editor', t('photoEditor.selectPhotoFirst'), false, 3000);
             return;
         }
 
         const css = generateCSS();
         if (!css) {
-            props.addFooterMessage('editor', 'No styles to apply', false, 3000);
+            props.addFooterMessage('editor', t('photoEditor.noStylesToApply'), false, 3000);
             return;
         }
 
@@ -204,31 +206,31 @@ function PhotoEditor(props) {
             setSavedCssStyle(css);
             // Reset parent state - changes are now saved
             props.setEditorHasUnsavedChanges?.(false);
-            props.addFooterMessage('editor', 'Style applied successfully', false, 3000);
+            props.addFooterMessage('editor', t('photoEditor.styleApplied'), false, 3000);
         } catch (error) {
             logger.error('PhotoEditor', 'style_apply_failed', 'Failed to apply style', { error: error.message });
-            props.addFooterMessage('editor', 'Failed to apply style', false, 3000);
+            props.addFooterMessage('editor', t('photoEditor.styleFailed'), false, 3000);
         }
     }
 
     async function saveAsCopy() {
         if (!currentPhotoPath) {
-            props.addFooterMessage('editor', 'Please select a photo first', false, 3000);
+            props.addFooterMessage('editor', t('photoEditor.selectPhotoFirst'), false, 3000);
             return;
         }
 
         const css = generateCSS();
         if (!css) {
-            props.addFooterMessage('editor', 'No styles to save', false, 3000);
+            props.addFooterMessage('editor', t('photoEditor.noStylesToSave'), false, 3000);
             return;
         }
 
         try {
-            props.addFooterMessage('editor', 'Creating styled copy...', false, 2000);
+            props.addFooterMessage('editor', t('photoEditor.creatingCopy'), false, 2000);
 
             const mainImage = document.querySelector('#photoImgTag');
             if (!mainImage) {
-                props.addFooterMessage('editor', 'Photo not found', false, 3000);
+                props.addFooterMessage('editor', t('photoEditor.photoNotFound'), false, 3000);
                 return;
             }
 
@@ -242,7 +244,7 @@ function PhotoEditor(props) {
             });
         } catch (error) {
             logger.error('PhotoEditor', 'save_styled_copy_failed', 'Failed to save styled copy', { error: error.message });
-            props.addFooterMessage('editor', `Failed to create styled copy: ${error.message}`, false, 5000);
+            props.addFooterMessage('editor', t('photoEditor.createCopyFailed', { error: error.message }), false, 5000);
         }
     }
 
@@ -292,20 +294,20 @@ function PhotoEditor(props) {
 
     async function downloadStyled() {
         if (!currentPhotoPath) {
-            props.addFooterMessage('editor', 'Please select a photo first', false, 3000);
+            props.addFooterMessage('editor', t('photoEditor.selectPhotoFirst'), false, 3000);
             return;
         }
 
         const css = generateCSS();
         if (!css) {
-            props.addFooterMessage('editor', 'No styles to download', false, 3000);
+            props.addFooterMessage('editor', t('photoEditor.noStylesToDownload'), false, 3000);
             return;
         }
 
         try {
             const mainImage = document.querySelector('#photoImgTag');
             if (!mainImage) {
-                props.addFooterMessage('editor', 'Photo not found', false, 3000);
+                props.addFooterMessage('editor', t('photoEditor.photoNotFound'), false, 3000);
                 return;
             }
 
@@ -317,7 +319,7 @@ function PhotoEditor(props) {
             });
         } catch (error) {
             logger.error('PhotoEditor', 'download_failed', 'Download failed', { error: error.message });
-            props.addFooterMessage('editor', 'Download failed: ' + error.message, false, 3000);
+            props.addFooterMessage('editor', t('photoEditor.downloadFailed', { error: error.message }), false, 3000);
         }
     }
 
@@ -415,7 +417,7 @@ function PhotoEditor(props) {
                         <table className={styles['editor-table']}>
                             <tbody>
                                 <AdjustmentSlider
-                                    label={<>Rotation<br />(deg)</>}
+                                    label={<>{t('photoEditor.rotation')}<br />{t('photoEditor.deg')}</>}
                                     value={editorStyles.rotate}
                                     onChange={(val) => updateStyle('rotate', val)}
                                     onReset={() => resetSingleControl('rotate')}
@@ -423,13 +425,13 @@ function PhotoEditor(props) {
                                     max={360}
                                     extraRow={
                                         <>
-                                            <button className={styles['shortcut-btn']} onClick={() => rotateBy(-90)} title="Turn left 90°">↶ 90°</button>
-                                            <button className={styles['shortcut-btn']} onClick={() => rotateBy(90)} title="Turn right 90°">↷ 90°</button>
+                                            <button className={styles['shortcut-btn']} onClick={() => rotateBy(-90)} title={t('photoEditor.turnLeft')}>↶ 90°</button>
+                                            <button className={styles['shortcut-btn']} onClick={() => rotateBy(90)} title={t('photoEditor.turnRight')}>↷ 90°</button>
                                         </>
                                     }
                                 />
                                 <AdjustmentSlider
-                                    label="Brightness"
+                                    label={t('photoEditor.brightness')}
                                     value={editorStyles.brightness}
                                     onChange={(val) => updateStyle('brightness', val)}
                                     onReset={() => resetSingleControl('brightness')}
@@ -437,7 +439,7 @@ function PhotoEditor(props) {
                                     max={200}
                                 />
                                 <AdjustmentSlider
-                                    label="Contrast"
+                                    label={t('photoEditor.contrast')}
                                     value={editorStyles.contrast}
                                     onChange={(val) => updateStyle('contrast', val)}
                                     onReset={() => resetSingleControl('contrast')}
@@ -445,7 +447,7 @@ function PhotoEditor(props) {
                                     max={200}
                                 />
                                 <AdjustmentSlider
-                                    label="Saturation"
+                                    label={t('photoEditor.saturation')}
                                     value={editorStyles.saturation}
                                     onChange={(val) => updateStyle('saturation', val)}
                                     onReset={() => resetSingleControl('saturation')}
@@ -453,7 +455,7 @@ function PhotoEditor(props) {
                                     max={200}
                                 />
                                 <AdjustmentSlider
-                                    label="Hue(deg)"
+                                    label={t('photoEditor.hue')}
                                     value={editorStyles.hue}
                                     onChange={(val) => updateStyle('hue', val)}
                                     onReset={() => resetSingleControl('hue')}
@@ -461,7 +463,7 @@ function PhotoEditor(props) {
                                     max={360}
                                 />
                                 <AdjustmentSlider
-                                    label="Scale"
+                                    label={t('photoEditor.scale')}
                                     value={editorStyles.scale}
                                     onChange={(val) => updateStyle('scale', val)}
                                     onReset={() => resetSingleControl('scale')}
@@ -472,26 +474,26 @@ function PhotoEditor(props) {
                         </table>
                         <div className={styles['editor-control-crop']}>
                             <div className={styles['control-row']}>
-                                <label>Crop:</label>
+                                <label>{t('photoEditor.crop')}:</label>
                                 {!cropMode ? (
-                                    <button className={styles['action-btn']} onClick={enterCropMode}>Crop</button>
+                                    <button className={styles['action-btn']} onClick={enterCropMode}>{t('photoEditor.crop')}</button>
                                 ) : (
                                     <div className={styles['crop-buttons']}>
-                                        <button className={styles['action-btn']} onClick={applyCrop}>Done</button>
-                                        <button className={styles['action-btn']} onClick={exitCropMode}>Cancel</button>
+                                        <button className={styles['action-btn']} onClick={applyCrop}>{t('button.done')}</button>
+                                        <button className={styles['action-btn']} onClick={exitCropMode}>{t('button.cancel')}</button>
                                     </div>
                                 )}
                             </div>
                             {cropMode && (
                                 <div className={styles['crop-presets']}>
-                                    <label>Presets:</label>
+                                    <label>{t('photoEditor.presets')}</label>
                                     <div className={styles['preset-buttons']}>
                                         {CROP_PRESETS.map((preset, index) => (
                                             <button
                                                 key={index}
                                                 className={styles['preset-btn']}
                                                 onClick={() => setCropPreset(preset)}
-                                                title={`Set crop to ${preset.name}`}
+                                                title={t('photoEditor.setCropPreset', { name: preset.name })}
                                             >
                                                 {preset.name}
                                             </button>
@@ -502,13 +504,13 @@ function PhotoEditor(props) {
                         </div>
                     </div>
                     <div className={styles['editor-buttons']}>
-                        <button className={styles['action-btn']} onClick={() => applyStyle()}>Apply</button>
-                        <button className={styles['action-btn']} onClick={() => saveAsCopy()}>Save As Copy</button>
-                        <button className={styles['action-btn']} onClick={() => resetStyle()}>Reset</button>
-                        <button className={styles['action-btn']} onClick={() => downloadStyled()}>Download</button>
+                        <button className={styles['action-btn']} onClick={() => applyStyle()}>{t('button.apply')}</button>
+                        <button className={styles['action-btn']} onClick={() => saveAsCopy()}>{t('photoEditor.saveAsCopy')}</button>
+                        <button className={styles['action-btn']} onClick={() => resetStyle()}>{t('button.reset')}</button>
+                        <button className={styles['action-btn']} onClick={() => downloadStyled()}>{t('button.download')}</button>
                     </div>
                     <div className={styles['css-preview']}>
-                        <label>CSS Preview:</label>
+                        <label>{t('photoEditor.cssPreview')}</label>
                         <textarea
                             id="css-preview-text"
                             rows="4"

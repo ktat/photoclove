@@ -4,6 +4,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
+import { useTranslation } from 'react-i18next';
 
 /**
  * CropTool component
@@ -13,6 +14,7 @@ import ReactDOM from 'react-dom';
  * @param {Object} props.handlers - Mouse event handlers (onMouseDown, onMouseMove, onMouseUp)
  */
 function CropTool({ cropMode, cropSelection, handlers }) {
+    const { t } = useTranslation('common');
     const [imageWrapper, setImageWrapper] = useState(null);
 
     useEffect(() => {
@@ -66,7 +68,7 @@ function CropTool({ cropMode, cropSelection, handlers }) {
                 pointerEvents: 'none',
                 zIndex: 10001
             }}>
-                Click and drag on the photo to select crop area
+                {t('photoEditor.cropInstruction')}
             </div>
 
             {/* Crop selection rectangle */}

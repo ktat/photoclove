@@ -155,9 +155,9 @@
     border: none;
     border-radius: var(--radius-sm);
     background: var(--color-success);
-    color: white;
+    color: #1a1a1a;
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;
     font-size: 11px;
     transition: background 0.3s ease-out;
 }
@@ -169,6 +169,7 @@
 
 .editor-buttons button:nth-child(2) {
     background: var(--color-primary);
+    color: white;
 }
 
 .editor-buttons button:nth-child(2):hover {
@@ -177,6 +178,7 @@
 
 .editor-buttons button:nth-child(3) {
     background: var(--color-warning);
+    color: #1a1a1a;
 }
 
 .editor-buttons button:nth-child(3):hover {
@@ -186,6 +188,7 @@
 
 .editor-buttons button:nth-child(4) {
     background: var(--color-info);
+    color: #1a1a1a;
 }
 
 .editor-buttons button:nth-child(4):hover {

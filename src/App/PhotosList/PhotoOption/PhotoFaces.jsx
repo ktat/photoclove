@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { logger } from '../../../services/LoggerService.js';
 import { useDialog } from '../../../context/DialogContext.jsx';
 import FaceDetectionService from '../../../services/FaceDetectionService.js';
@@ -7,8 +8,10 @@ import FaceThumbnail from '../../../components/FaceThumbnail.jsx';
 import styles from './PhotoFaces.module.css';
 
 function PhotoFaces({ currentPhoto, addFooterMessage }) {
+    const { t } = useTranslation('common');
     const currentPhotoPath = currentPhoto?.originalPath;
     const currentDisplayPath = currentPhoto?.displayPath();
+    const isRaw = currentPhoto?.isRawFormat?.() ?? false;
     const dialog = useDialog();
     const [faces, setFaces] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -24,6 +27,13 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
 
     // Get face detection context for sharing state with PhotoDisplay
     const { updateFaces, setHoveredFaceId, hoveredFaceId } = useFaceDetection();
+
+    // Reset useFullImage when switching to a RAW file
+    useEffect(() => {
+        if (isRaw) {
+            setUseFullImage(false);
+        }
+    }, [isRaw]);
 
     // Load model status and existing faces on mount
     useEffect(() => {
@@ -65,7 +75,7 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
 
             setStatus({
                 type: 'success',
-                message: `Detected ${detectedFaces.length} face${detectedFaces.length !== 1 ? 's' : ''}`
+                message: t('photoFaces.detectedCount', { count: detectedFaces.length })
             });
 
             logger.info('PhotoFaces', 'detect_faces_complete', 'Face detection complete', {
@@ -74,7 +84,7 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
             });
 
             if (addFooterMessage) {
-                addFooterMessage('faces', `Detected ${detectedFaces.length} face${detectedFaces.length !== 1 ? 's' : ''} in photo`);
+                addFooterMessage('faces', t('photoFaces.detectedInPhoto', { count: detectedFaces.length }));
             }
         } catch (error) {
             logger.error('PhotoFaces', 'detect_faces_error', 'Face detection failed', {
@@ -84,7 +94,7 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
 
             setStatus({
                 type: 'error',
-                message: `Detection failed: ${error}`
+                message: t('photoFaces.detectionFailed', { error: error.toString() })
             });
         } finally {
             setIsDetecting(false);
@@ -99,8 +109,8 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
 
         // Ask for confirmation
         const confirmed = await dialog.confirm({
-            title: 'Delete Face',
-            message: 'Delete this face detection? This cannot be undone.',
+            title: t('photoFaces.deleteFaceTitle'),
+            message: t('photoFaces.deleteFaceMessage'),
             kind: 'warning',
         });
         if (!confirmed) return;
@@ -116,7 +126,7 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
             logger.info('PhotoFaces', 'face_deleted', 'Face deleted successfully', { faceId: face.id });
 
             if (addFooterMessage) {
-                addFooterMessage('faces', 'Face removed');
+                addFooterMessage('faces', t('photoFaces.faceRemoved'));
             }
         } catch (error) {
             logger.error('PhotoFaces', 'delete_face_error', 'Failed to delete face', {
@@ -125,7 +135,7 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
             });
 
             if (addFooterMessage) {
-                addFooterMessage('faces', `Failed to delete face: ${error}`);
+                addFooterMessage('faces', t('photoFaces.deleteFaceFailed', { error: error.toString() }));
             }
         }
     };
@@ -182,7 +192,7 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
             });
 
             if (addFooterMessage) {
-                addFooterMessage('faces', `Named face as "${editingName.trim()}"`);
+                addFooterMessage('faces', t('photoFaces.namedFace', { name: editingName.trim() }));
             }
         } catch (error) {
             logger.error('PhotoFaces', 'save_person_name_error', 'Failed to save person name', {
@@ -191,7 +201,7 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
             });
 
             if (addFooterMessage) {
-                addFooterMessage('faces', `Failed to save name: ${error}`);
+                addFooterMessage('faces', t('photoFaces.saveNameFailed', { error: error.toString() }));
             }
         } finally {
             setEditingFaceId(null);
@@ -222,7 +232,7 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
             });
 
             if (addFooterMessage) {
-                addFooterMessage('faces', `Assigned face to "${personName}"`);
+                addFooterMessage('faces', t('photoFaces.assignedFace', { name: personName }));
             }
         } catch (error) {
             logger.error('PhotoFaces', 'assign_face_error', 'Failed to assign face', {
@@ -232,7 +242,7 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
             });
 
             if (addFooterMessage) {
-                addFooterMessage('faces', `Failed to assign face: ${error}`);
+                addFooterMessage('faces', t('photoFaces.assignFaceFailed', { error: error.toString() }));
             }
         } finally {
             setEditingFaceId(null);
@@ -260,9 +270,9 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
         return (
             <div className={styles['photo-faces-container']}>
                 <div className={styles['photo-faces-header']}>
-                    <h3>Face Detection</h3>
+                    <h3>{t('photoFaces.title')}</h3>
                 </div>
-                <div className={styles['photo-faces-loading']}>Loading...</div>
+                <div className={styles['photo-faces-loading']}>{t('photoFaces.loading')}</div>
             </div>
         );
     }
@@ -272,9 +282,9 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
     return (
         <div className={styles['photo-faces-container']}>
             <div className={styles['photo-faces-header']}>
-                <h3>Face Detection</h3>
+                <h3>{t('photoFaces.title')}</h3>
                 <p className={styles['photo-faces-description']}>
-                    Detect and recognize faces in this photo.
+                    {t('photoFaces.description')}
                 </p>
             </div>
 
@@ -282,8 +292,7 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
                 {/* Model status warning */}
                 {!modelsReady && (
                     <div className={styles['model-warning']}>
-                        Face detection models are not downloaded.
-                        Go to Preferences → Face Detection to download the required models.
+                        {t('photoFaces.modelWarning')}
                     </div>
                 )}
 
@@ -294,21 +303,21 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
                         onClick={handleDetectFaces}
                         disabled={!modelsReady || isDetecting}
                     >
-                        {isDetecting ? '⏳ Detecting...' : 'Detect Faces'}
+                        {isDetecting ? `⏳ ${t('photoFaces.detecting')}` : t('photoFaces.detectFaces')}
                     </button>
                     {/* Use Full Image option */}
                     <label
                         className={styles['use-full-image-option']}
-                        title="Use full resolution image for detection. More accurate for small faces but takes longer."
+                        title={isRaw ? t('aiTagging.highAccuracyRawDisabled') : t('aiTagging.highAccuracyTooltip')}
                     >
                         <input
                             type="checkbox"
                             className={styles['use-full-image-checkbox']}
                             checked={useFullImage}
                             onChange={(e) => setUseFullImage(e.target.checked)}
-                            disabled={isDetecting}
+                            disabled={isDetecting || isRaw}
                         />
-                        <span>High Accuracy (Slow)</span>
+                        <span>{t('aiTagging.highAccuracy')}</span>
                     </label>
                 </div>
 
@@ -321,7 +330,7 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
 
                 {/* Faces list */}
                 <div className={styles['photo-faces-section']}>
-                    <h4>Detected Faces ({faces.length})</h4>
+                    <h4>{t('photoFaces.detectedFaces', { count: faces.length })}</h4>
 
                     {faces.length > 0 ? (
                         <div className={styles['faces-list']}>
@@ -355,11 +364,11 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
                                                         value={editingName}
                                                         onChange={(e) => setEditingName(e.target.value)}
                                                         onKeyDown={(e) => handleKeyDown(e, face)}
-                                                        placeholder="Enter name or select below..."
+                                                        placeholder={t('photoFaces.enterName')}
                                                     />
                                                     {/* Existing persons list */}
                                                     {isLoadingPersons ? (
-                                                        <div className={styles['persons-loading']}>Loading...</div>
+                                                        <div className={styles['persons-loading']}>{t('photoFaces.loading')}</div>
                                                     ) : filteredPersons.length > 0 ? (
                                                         <div className={styles['persons-list']}>
                                                             {filteredPersons.map((person) => (
@@ -368,7 +377,7 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
                                                                     type="button"
                                                                     className={styles['person-option-btn']}
                                                                     onClick={() => handleAssignToPerson(face, person.person_id)}
-                                                                    title={`Assign to ${person.person_name}`}
+                                                                    title={t('photoFaces.assignTo', { name: person.person_name })}
                                                                 >
                                                                     <FaceThumbnail
                                                                         faceId={person.representative_face_id}
@@ -389,7 +398,7 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
                                                         </div>
                                                     ) : null}
                                                     <div className={styles['face-editing-hint']}>
-                                                        {editingName.trim() ? 'Press Enter to create new person' : 'Click a person or type a new name'}
+                                                        {editingName.trim() ? t('photoFaces.pressEnterHint') : t('photoFaces.clickOrTypeHint')}
                                                     </div>
                                                 </div>
                                             ) : (
@@ -399,14 +408,14 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
                                                         e.stopPropagation();
                                                         handleStartEditing(face);
                                                     }}
-                                                    title="Click to edit name"
+                                                    title={t('photoFaces.clickToEdit')}
                                                 >
-                                                    {face.person_name || 'Unknown person'}
+                                                    {face.person_name || t('photoFaces.unknownPerson')}
                                                 </span>
                                             )}
                                         </div>
                                         <div className={styles['face-confidence']}>
-                                            Confidence: {Math.round((face.confidence || 0) * 100)}%
+                                            {t('photoFaces.confidence', { value: Math.round((face.confidence || 0) * 100) })}
                                         </div>
                                     </div>
                                     <button
@@ -415,7 +424,7 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
                                             e.stopPropagation();
                                             handleDeleteFace(face, index);
                                         }}
-                                        title="Delete this face detection"
+                                        title={t('photoFaces.deleteFaceTooltip')}
                                     >
                                         ×
                                     </button>
@@ -424,8 +433,8 @@ function PhotoFaces({ currentPhoto, addFooterMessage }) {
                         </div>
                     ) : (
                         <div className={styles['photo-faces-empty']}>
-                            <p>No faces detected yet.</p>
-                            <p>Click "Detect Faces" to analyze this photo.</p>
+                            <p>{t('photoFaces.noFaces')}</p>
+                            <p>{t('photoFaces.noFacesHint')}</p>
                         </div>
                     )}
                 </div>

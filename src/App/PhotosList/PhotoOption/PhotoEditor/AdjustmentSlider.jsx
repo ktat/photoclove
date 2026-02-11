@@ -3,6 +3,7 @@
  * Handles range input, number input, and reset button in a unified component
  */
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from '../PhotoEditor.module.css';
 
 /**
@@ -25,6 +26,7 @@ function AdjustmentSlider({
     max,
     extraRow
 }) {
+    const { t } = useTranslation('common');
     const handleChange = (e) => {
         onChange(e.target.value);
     };
@@ -57,7 +59,7 @@ function AdjustmentSlider({
                     <button
                         className={styles['reset-btn']}
                         onClick={onReset}
-                        title={`Reset ${typeof label === 'string' ? label.toLowerCase() : 'value'}`}
+                        title={t('photoEditor.resetValue', { label: typeof label === 'string' ? label : '' })}
                     >
                         ↻
                     </button>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { useTranslation } from 'react-i18next';
 import { logger } from '../../../services/LoggerService.js';
 import { invokeWithErrorHandling } from '../../../services/TauriService.js';
 import TagSelector from '../../../components/TagSelector.jsx';
@@ -24,11 +25,20 @@ const parseConfidence = (metadata) => {
 };
 
 function PhotoTags({ currentPhoto, addFooterMessage, onPhotosRefresh }) {
+    const { t } = useTranslation('common');
     const currentPhotoPath = currentPhoto?.originalPath;
+    const isRaw = currentPhoto?.isRawFormat?.() ?? false;
     const [photoTags, setPhotoTags] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAiTagging, setIsAiTagging] = useState(false);
     const [useFullImage, setUseFullImage] = useState(false);
+
+    // Reset useFullImage when switching to a RAW file
+    useEffect(() => {
+        if (isRaw) {
+            setUseFullImage(false);
+        }
+    }, [isRaw]);
 
     useEffect(() => {
         if (currentPhotoPath) {
@@ -66,7 +76,7 @@ function PhotoTags({ currentPhoto, addFooterMessage, onPhotosRefresh }) {
                 photoPath: currentPhotoPath,
                 error: error.toString()
             });
-            addFooterMessage?.('Failed to load photo tags');
+            addFooterMessage?.(t('photoTags.loadFailed'));
         } finally {
             setIsLoading(false);
         }
@@ -74,7 +84,7 @@ function PhotoTags({ currentPhoto, addFooterMessage, onPhotosRefresh }) {
 
     const handleTagsChange = async (newTags) => {
         setPhotoTags(newTags);
-        addFooterMessage?.(`Photo tags updated (${newTags.length} tags)`);
+        addFooterMessage?.(t('photoTags.tagsUpdated', { count: newTags.length }));
 
         // Note: No need to refresh photos list in PhotoViewer mode
         // Grid view will be updated when user returns to grid or uses bulk tag operations
@@ -104,7 +114,7 @@ function PhotoTags({ currentPhoto, addFooterMessage, onPhotosRefresh }) {
             if (result.success) {
                 // Reload tags to show newly added AI tags
                 await loadPhotoTags();
-                addFooterMessage?.(`AI tagging added ${result.count} tag${result.count !== 1 ? 's' : ''}`);
+                addFooterMessage?.(t('photoTags.aiTaggingAdded', { count: result.count }));
                 logger.info('PhotoTags', 'ai_tagging_complete', 'AI tagging completed', {
                     photoPath: currentPhotoPath,
                     tagCount: result.count
@@ -120,12 +130,11 @@ function PhotoTags({ currentPhoto, addFooterMessage, onPhotosRefresh }) {
             // Check if AI tagging is disabled
             if (errorMsg.includes('AI tagging is disabled')) {
                 window.alert(
-                    'AI Tagging is Disabled\n\n' +
-                    'Please enable AI Tagging in Preferences → AI Tagging.\n\n' +
-                    'Note: You need to restart the application after enabling it.'
+                    t('photoTags.aiTaggingDisabledTitle') + '\n\n' +
+                    t('photoTags.aiTaggingDisabledMessage')
                 );
             } else {
-                addFooterMessage?.(`AI tagging failed: ${error}`);
+                addFooterMessage?.(t('photoTags.aiTaggingFailed', { error: error.toString() }));
             }
         } finally {
             setIsAiTagging(false);
@@ -136,9 +145,9 @@ function PhotoTags({ currentPhoto, addFooterMessage, onPhotosRefresh }) {
         return (
             <div className={styles['photo-tags-container']}>
                 <div className={styles['photo-tags-header']}>
-                    <h3>Photo Tags</h3>
+                    <h3>{t('photoTags.title')}</h3>
                 </div>
-                <div className={styles['photo-tags-loading']}>Loading tags...</div>
+                <div className={styles['photo-tags-loading']}>{t('photoTags.loadingTags')}</div>
             </div>
         );
     }
@@ -146,10 +155,9 @@ function PhotoTags({ currentPhoto, addFooterMessage, onPhotosRefresh }) {
     return (
         <div className={styles['photo-tags-container']}>
             <div className={styles['photo-tags-header']}>
-                <h3>Photo Tags</h3>
+                <h3>{t('photoTags.title')}</h3>
                 <p className={styles['photo-tags-description']}>
-                    Add tags to organize and categorize your photos.
-                    Tags make it easier to find related photos later.
+                    {t('photoTags.description')}
                 </p>
             </div>
 
@@ -162,27 +170,27 @@ function PhotoTags({ currentPhoto, addFooterMessage, onPhotosRefresh }) {
                             onClick={handleAiTagging}
                             disabled={isAiTagging}
                         >
-                            {isAiTagging ? '⏳ Running AI Tagging...' : 'Run AI Tagging'}
+                            {isAiTagging ? `⏳ ${t('photoTags.runningAiTagging')}` : t('photoTags.runAiTagging')}
                         </button>
                         {/* Use Full Image option */}
                         <label
                             className={styles['use-full-image-option']}
-                            title="Use full resolution image for tagging. More accurate for small details but takes longer."
+                            title={isRaw ? t('aiTagging.highAccuracyRawDisabled') : t('aiTagging.highAccuracyTooltip')}
                         >
                             <input
                                 type="checkbox"
                                 className={styles['use-full-image-checkbox']}
                                 checked={useFullImage}
                                 onChange={(e) => setUseFullImage(e.target.checked)}
-                                disabled={isAiTagging}
+                                disabled={isAiTagging || isRaw}
                             />
-                            <span>High Accuracy (Slow)</span>
+                            <span>{t('aiTagging.highAccuracy')}</span>
                         </label>
                     </div>
                 </div>
 
                 <div className={styles['photo-tags-section']}>
-                    <h4>Current Tags ({photoTags.length})</h4>
+                    <h4>{t('photoTags.currentTags', { count: photoTags.length })}</h4>
                     <TagSelector
                         photoPath={currentPhotoPath}
                         selectedTags={photoTags}
@@ -192,18 +200,18 @@ function PhotoTags({ currentPhoto, addFooterMessage, onPhotosRefresh }) {
 
                 {photoTags.length === 0 && (
                     <div className={styles['photo-tags-empty']}>
-                        <p>No tags assigned to this photo yet.</p>
-                        <p>Click the + button above to add your first tag!</p>
+                        <p>{t('photoTags.noTags')}</p>
+                        <p>{t('photoTags.noTagsHint')}</p>
                     </div>
                 )}
 
                 <div className={styles['photo-tags-tips']}>
-                    <h4>Tips</h4>
+                    <h4>{t('photoTags.tips')}</h4>
                     <ul>
-                        <li>Use descriptive tags like "vacation", "family", or "nature"</li>
-                        <li>Create color-coded tags for different categories</li>
-                        <li>Tags are shared across all photos in your library</li>
-                        <li>You can search for photos by tag using the search feature</li>
+                        <li>{t('photoTags.tipDescriptive')}</li>
+                        <li>{t('photoTags.tipColorCoded')}</li>
+                        <li>{t('photoTags.tipShared')}</li>
+                        <li>{t('photoTags.tipSearch')}</li>
                     </ul>
                 </div>
             </div>

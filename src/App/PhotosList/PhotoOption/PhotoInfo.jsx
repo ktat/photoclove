@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { useTranslation } from 'react-i18next';
 import fileUrl from "../../../PathUtil.jsx";
 import { logger } from '../../../services/LoggerService.js';
 import styles from '../PhotoOption.module.css';
 
 function PhotoInfo(props) {
+    const { t } = useTranslation('common');
     const [photoInfo, setPhotoInfo] = useState({});
     const [comment, setComment] = useState("");
 
@@ -144,7 +146,7 @@ function PhotoInfo(props) {
         if (!syncedProviders.length && !hasGooglePhotos) {
             return (
                 <div className={styles['backup-status-empty']}>
-                    No cloud backup configured
+                    {t('photoInfo.noBackup')}
                 </div>
             );
         }
@@ -157,16 +159,16 @@ function PhotoInfo(props) {
                     return (
                         <div key={provider.key} className={styles['backup-status-item']}>
                             <span className={styles['backup-provider']}>
-                                {provider.icon} {provider.name}: <span className={styles['backup-synced']}>✓ Synced</span>
+                                {provider.icon} {provider.name}: <span className={styles['backup-synced']}>✓ {t('photoInfo.synced')}</span>
                                 {syncedAt && <span className={styles['backup-date']}> ({syncedAt})</span>}
                             </span>
                             <button
                                 className={styles['copy-url-btn']}
                                 onClick={() => {
                                     writeText(info.url);
-                                    props.addFooterMessage("clipboard", "S3 URL copied to clipboard", false, 5000);
+                                    props.addFooterMessage("clipboard", t('photoInfo.s3UrlCopied'), false, 5000);
                                 }}
-                                title="Copy S3 URL"
+                                title={t('photoInfo.copyS3Url')}
                             >
                                 📋
                             </button>
@@ -176,15 +178,15 @@ function PhotoInfo(props) {
                 {hasGooglePhotos && (
                     <div className={styles['backup-status-item']}>
                         <span className={styles['backup-provider']}>
-                            📤 Google Photos: <span className={styles['backup-synced']}>✓ Uploaded</span>
+                            📤 Google Photos: <span className={styles['backup-synced']}>✓ {t('photoInfo.uploaded')}</span>
                         </span>
                         <button
                             className={styles['copy-url-btn']}
                             onClick={() => {
                                 writeText(googlePhotoUrl);
-                                props.addFooterMessage("clipboard", "Google Photos URL copied to clipboard", false, 5000);
+                                props.addFooterMessage("clipboard", t('photoInfo.googleUrlCopied'), false, 5000);
                             }}
-                            title="Copy URL"
+                            title={t('photoInfo.copyUrl')}
                         >
                             📋
                         </button>
@@ -199,7 +201,7 @@ function PhotoInfo(props) {
             <div className={styles['photo-info-table-wrapper']}>
                 <table className={styles['photo-info-table']}>
                     <tbody>
-                        <tr><th>File Name</th>
+                        <tr><th>{t('photoInfo.fileName')}</th>
                             <td>
                                 <a href="#" onClick={() => {
                                     // Copy trash path if trashed, otherwise display path
@@ -207,14 +209,14 @@ function PhotoInfo(props) {
                                         ? photoInfo.current_path
                                         : currentDisplayPath;
                                     writeText(pathToCopy);
-                                    props.addFooterMessage("clipboard", "Copy file path to clipboard", false, 5000);
+                                    props.addFooterMessage("clipboard", t('photoInfo.copyPathToClipboard'), false, 5000);
                                 }}>📋</a>
                                 <a
                                     onMouseEnter={() => {
                                         const displayPath = photoInfo.is_trashed
-                                            ? `${photoInfo.current_path} (trashed)`
+                                            ? `${photoInfo.current_path} ${t('photoInfo.trashed')}`
                                             : currentDisplayPath;
-                                        props.addFooterMessage("current_phtoo_path", "File Path: " + displayPath, false, 10000)
+                                        props.addFooterMessage("current_phtoo_path", t('photoInfo.filePath', { path: displayPath }), false, 10000)
                                     }}>
                                     {currentPhotoName}
                                 </a>
@@ -227,24 +229,24 @@ function PhotoInfo(props) {
                                     openUrl(fileUrl(pathToOpen));
                                 }}>🚀</a>
                             </td></tr>
-                        <tr><th>ISO</th><td>{photoInfo.exif ? photoInfo.exif.iso : ""}</td></tr>
-                        <tr><th>FNumber</th><td>{photoInfo.exif ? photoInfo.exif.fnumber : ""}</td></tr>
-                        <tr><th>Shutter Speed</th><td>{photoInfo.exif ? photoInfo.exif.exposure_time : ""}</td></tr>
-                        <tr><th>LensModel</th><td>{photoInfo.exif ? photoInfo.exif.lens_model : ""}</td></tr>
-                        <tr><th>LensMake</th><td>{photoInfo.exif ? photoInfo.exif.lens_make : ""}</td></tr>
-                        <tr><th>Make</th><td>{photoInfo.exif ? photoInfo.exif.make : ""}</td></tr>
-                        <tr><th>Model</th><td>{photoInfo.exif ? photoInfo.exif.model : ""}</td></tr>
-                        <tr><th>Date & Time</th><td>{photoInfo.exif ? photoInfo.exif.date_time : ""}</td></tr>
-                        <tr><th>Focal Length</th><td>{photoInfo.exif ?
+                        <tr><th>{t('photoInfo.iso')}</th><td>{photoInfo.exif ? photoInfo.exif.iso : ""}</td></tr>
+                        <tr><th>{t('photoInfo.fNumber')}</th><td>{photoInfo.exif ? photoInfo.exif.fnumber : ""}</td></tr>
+                        <tr><th>{t('photoInfo.shutterSpeed')}</th><td>{photoInfo.exif ? photoInfo.exif.exposure_time : ""}</td></tr>
+                        <tr><th>{t('photoInfo.lensModel')}</th><td>{photoInfo.exif ? photoInfo.exif.lens_model : ""}</td></tr>
+                        <tr><th>{t('photoInfo.lensMake')}</th><td>{photoInfo.exif ? photoInfo.exif.lens_make : ""}</td></tr>
+                        <tr><th>{t('photoInfo.make')}</th><td>{photoInfo.exif ? photoInfo.exif.make : ""}</td></tr>
+                        <tr><th>{t('photoInfo.model')}</th><td>{photoInfo.exif ? photoInfo.exif.model : ""}</td></tr>
+                        <tr><th>{t('photoInfo.dateTime')}</th><td>{photoInfo.exif ? photoInfo.exif.date_time : ""}</td></tr>
+                        <tr><th>{t('photoInfo.focalLength')}</th><td>{photoInfo.exif ?
                             photoInfo.exif.focal_length == photoInfo.exif.focal_length_in35mm_film
                                 ? photoInfo.exif.focal_length
                                 : photoInfo.exif.focal_length + "(" + photoInfo.exif.focal_length_in35mm_film + ")" : ""}
                         </td></tr>
-                        <tr><th>Digital Zoom Ratio</th><td>{photoInfo.exif ? photoInfo.exif.digital_zoom_ratio : ""}</td></tr>
-                        <tr><th>Exposure Mode</th><td>{photoInfo.exif ? photoInfo.exif.exposure_mode : ""}</td></tr>
-                        <tr><th>WhiteBalance Mode</th><td>{photoInfo.exif ? photoInfo.exif.white_balance_mode : ""}</td></tr>
-                        <tr><th>Orientation</th><td>{photoInfo.exif ? photoInfo.exif.orientation : ""}</td></tr>
-                        <tr><th>Google Photos URL</th><td>{photoInfo.meta && photoInfo.meta.google_photo_url ? <a href={photoInfo.meta.google_photo_url} target="_blank" rel="noopener noreferrer">link</a> : ""}</td></tr>
+                        <tr><th>{t('photoInfo.digitalZoomRatio')}</th><td>{photoInfo.exif ? photoInfo.exif.digital_zoom_ratio : ""}</td></tr>
+                        <tr><th>{t('photoInfo.exposureMode')}</th><td>{photoInfo.exif ? photoInfo.exif.exposure_mode : ""}</td></tr>
+                        <tr><th>{t('photoInfo.whiteBalanceMode')}</th><td>{photoInfo.exif ? photoInfo.exif.white_balance_mode : ""}</td></tr>
+                        <tr><th>{t('photoInfo.orientation')}</th><td>{photoInfo.exif ? photoInfo.exif.orientation : ""}</td></tr>
+                        <tr><th>{t('photoInfo.googlePhotosUrl')}</th><td>{photoInfo.meta && photoInfo.meta.google_photo_url ? <a href={photoInfo.meta.google_photo_url} target="_blank" rel="noopener noreferrer">{t('photoInfo.link')}</a> : ""}</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -252,7 +254,7 @@ function PhotoInfo(props) {
             {/* Cloud Backup Status Section */}
             {photoInfo.meta && (
                 <div className={styles['cloud-backup-section']}>
-                    <div className={styles['section-header']}>Cloud Backup</div>
+                    <div className={styles['section-header']}>{t('photoInfo.cloudBackup')}</div>
                     {renderCloudBackupStatus()}
                 </div>
             )}
@@ -261,7 +263,7 @@ function PhotoInfo(props) {
             {!props.isImportMode && !props.isTrashMode && (
                 <>
                     <div>
-                        Stars:
+                        {t('photoInfo.stars')}
                         <span className="star">
                             {
                                 [0, 1, 2, 3, 4].map((v, i) => {
@@ -271,12 +273,12 @@ function PhotoInfo(props) {
                         </span>
                     </div>
                     <div className="comment">
-                        Comment:<br />
+                        {t('photoInfo.comment')}<br />
                         <textarea
                             onChange={(e) => setComment(e.target.value)}
                             value={comment}>
                         </textarea>
-                        <button onClick={() => saveComment()}>SAVE</button>
+                        <button onClick={() => saveComment()}>{t('button.save')}</button>
                     </div>
                 </>
             )}
@@ -284,16 +286,14 @@ function PhotoInfo(props) {
             {/* Show informational message for import mode */}
             {props.isImportMode && (
                 <div style={{ padding: "10px", color: "var(--color-text-muted)", fontSize: "var(--font-size-xs)", fontStyle: "italic" }}>
-                    Note: Stars and comments are not available for photos in import mode.
-                    Import photos to your library to add metadata.
+                    {t('photoInfo.importModeNote')}
                 </div>
             )}
 
             {/* Show informational message for trash mode */}
             {props.isTrashMode && (
                 <div style={{ padding: "10px", color: "var(--color-text-muted)", fontSize: "var(--font-size-xs)", fontStyle: "italic" }}>
-                    Note: Stars and comments cannot be edited for photos in trash.
-                    Restore the photo to edit metadata.
+                    {t('photoInfo.trashModeNote')}
                 </div>
             )}
         </div>

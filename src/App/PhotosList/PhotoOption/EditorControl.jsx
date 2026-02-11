@@ -3,6 +3,7 @@
  * Provides slider + number input + reset button pattern
  */
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './PhotoEditor.module.css';
 
 /**
@@ -18,6 +19,7 @@ import styles from './PhotoEditor.module.css';
  * @param {React.ReactNode} [props.children] - Additional content below the control row
  */
 function EditorControl({ label, value, min, max, onChange, onReset, resetTitle, children }) {
+    const { t } = useTranslation('common');
     const handleChange = (e) => {
         onChange(e.target.value);
     };
@@ -45,7 +47,7 @@ function EditorControl({ label, value, min, max, onChange, onReset, resetTitle, 
                 <button
                     className={styles['reset-btn']}
                     onClick={onReset}
-                    title={resetTitle || `Reset ${label.toLowerCase()}`}
+                    title={resetTitle || t('photoEditor.resetValue', { label })}
                 >
                     ↻
                 </button>
