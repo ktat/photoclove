@@ -1,7 +1,7 @@
 use crate::entity::config::RawProcessingConfig;
 use crate::entity::photo;
 use crate::repository::{MetaDB, MetaInfoDB};
-use crate::utils::{exif_thumbnail, raw_decode, raw_file};
+use crate::utils::{exif_thumbnail, heic_decode, raw_decode, raw_file};
 use crate::value::{comment, date, file, star};
 use image_compressor::{Factor, FolderCompressor};
 use regex::Regex;
@@ -77,26 +77,29 @@ pub fn process_raw_thumbnails(
             let file_name_str = file_name.to_string_lossy();
             let file_path = entry.path();
 
-            if !file_path.is_file() || !raw_file::is_raw_file(&file_name_str) {
+            let is_raw = file_path.is_file() && raw_file::is_raw_file(&file_name_str);
+            let is_heic_avif =
+                file_path.is_file() && raw_file::is_heic_or_avif(&file_name_str);
+
+            if !is_raw && !is_heic_avif {
                 continue;
             }
 
-            // RAW thumbnail naming: photo.CR2 -> photo.cr2.jpg (lowercase + .jpg)
+            // Thumbnail naming: photo.CR2 -> photo.cr2.jpg (lowercase + .jpg)
             let thumbnail_name = format!("{}.jpg", file_name_str.to_lowercase());
             let thumbnail_path = dir_to.join(&thumbnail_name);
 
             if thumbnail_path.exists() {
                 log::debug!(
                     target: "photo_service",
-                    "raw_thumbnail_exists; file={}; thumbnail={}",
+                    "non_native_thumbnail_exists; file={}; thumbnail={}",
                     file_name_str, thumbnail_path.display()
                 );
                 continue;
             }
 
-            // Try EXIF thumbnail extraction
+            // Try EXIF thumbnail extraction (works for both RAW and HEIC/AVIF)
             if let Some((img, width, height)) = exif_thumbnail::extract_exif_thumbnail(&file_path) {
-                // Save as JPEG
                 if img
                     .save_with_format(&thumbnail_path, image::ImageFormat::Jpeg)
                     .is_ok()
@@ -104,21 +107,57 @@ pub fn process_raw_thumbnails(
                     count += 1;
                     log::info!(
                         target: "photo_service",
-                        "raw_thumbnail_created; file={}; thumbnail={}; size={}x{}",
+                        "non_native_thumbnail_created; file={}; thumbnail={}; size={}x{}",
                         file_name_str, thumbnail_path.display(), width, height
                     );
                 } else {
                     log::warn!(
                         target: "photo_service",
-                        "raw_thumbnail_save_failed; file={}; thumbnail={}",
+                        "non_native_thumbnail_save_failed; file={}; thumbnail={}",
                         file_name_str, thumbnail_path.display()
                     );
                 }
-            } else if raw_config.enable_full_decode {
-                // EXIF thumbnail not found, try full RAW decode as fallback
+            } else if is_heic_avif {
+                // HEIC/AVIF: decode with libheif as fallback
                 log::info!(
                     target: "photo_service",
-                    "raw_exif_thumbnail_not_found; trying_raw_decode; file={}",
+                    "heic_exif_not_found; trying_heic_decode; file={}",
+                    file_name_str
+                );
+                let max_size = raw_config.max_decode_size;
+                if let Some((img, width, height)) = heic_decode::decode_heic_to_image(
+                    file_path.to_str().unwrap_or(""),
+                    max_size,
+                ) {
+                    if img
+                        .save_with_format(&thumbnail_path, image::ImageFormat::Jpeg)
+                        .is_ok()
+                    {
+                        count += 1;
+                        log::info!(
+                            target: "photo_service",
+                            "heic_decode_thumbnail_created; file={}; thumbnail={}; size={}x{}",
+                            file_name_str, thumbnail_path.display(), width, height
+                        );
+                    } else {
+                        log::warn!(
+                            target: "photo_service",
+                            "heic_decode_thumbnail_save_failed; file={}",
+                            file_name_str
+                        );
+                    }
+                } else {
+                    log::warn!(
+                        target: "photo_service",
+                        "heic_decode_failed; file={}",
+                        file_name_str
+                    );
+                }
+            } else if raw_config.enable_full_decode {
+                // RAW: full decode as fallback
+                log::info!(
+                    target: "photo_service",
+                    "raw_exif_not_found; trying_raw_decode; file={}",
                     file_name_str
                 );
                 let max_size = raw_config.max_decode_size;
@@ -154,7 +193,7 @@ pub fn process_raw_thumbnails(
             } else {
                 log::info!(
                     target: "photo_service",
-                    "raw_full_decode_disabled; file={}",
+                    "full_decode_disabled; file={}",
                     file_name_str
                 );
             }
