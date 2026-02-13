@@ -11,7 +11,7 @@ import AICustomLabels from './AICustomLabels.jsx';
 // Based on actual model output distributions from testing
 const MODEL_THRESHOLD_RANGES = {
     mobilenet: { min: 0.05, max: 0.35 },  // Actual range: 0.020-0.983, median: 0.130 from 123 samples
-    openclip: { min: 0.17, max: 0.30 },  // Actual range: 0.174-0.302 from 233 samples
+    openclip: { min: 0.15, max: 0.40 },  // Cosine similarity practical range for photo classification
     siglip: { min: 0.15, max: 0.35 }
 };
 

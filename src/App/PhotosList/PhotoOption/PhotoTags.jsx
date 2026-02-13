@@ -12,13 +12,29 @@ import styles from './PhotoTags.module.css';
 const isAITag = (tagName) => tagName?.startsWith('ai:');
 
 /**
- * Parse confidence from tag metadata
+ * Threshold ranges per model (same as AITaggingTab.jsx)
+ */
+const MODEL_THRESHOLD_RANGES = {
+    mobilenet: { min: 0.05, max: 0.35 },
+    openclip: { min: 0.15, max: 0.40 },
+    siglip: { min: 0.15, max: 0.35 }
+};
+
+/**
+ * Parse confidence from tag metadata and normalize to 0-100% scale
  */
 const parseConfidence = (metadata) => {
     if (!metadata) return null;
     try {
         const parsed = JSON.parse(metadata);
-        return parsed.confidence ? Math.round(parsed.confidence * 100) : null;
+        if (!parsed.confidence) return null;
+        const raw = parsed.confidence;
+        const model = (parsed.model || '').toLowerCase();
+        const range = model.includes('siglip') ? MODEL_THRESHOLD_RANGES.siglip
+            : model.includes('openclip') || model.includes('clip') ? MODEL_THRESHOLD_RANGES.openclip
+            : MODEL_THRESHOLD_RANGES.mobilenet;
+        const normalized = Math.round(((raw - range.min) / (range.max - range.min)) * 100);
+        return Math.min(100, Math.max(0, normalized));
     } catch {
         return null;
     }
