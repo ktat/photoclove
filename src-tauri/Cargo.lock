@@ -1187,10 +1187,11 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.2.31"
+version = "1.2.55"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3a42d84bb6b69d3a8b3eaacf0d88f179e1929695e1ad012b6cf64d9caaa5fd2"
+checksum = "47b26a0954ae34af09b50f0de26458fa95369a0d478d8236d3f93082b219bd29"
 dependencies = [
+ "find-msvc-tools",
  "jobserver",
  "libc",
  "shlex",
@@ -1299,9 +1300,9 @@ dependencies = [
 
 [[package]]
 name = "cmake"
-version = "0.1.54"
+version = "0.1.57"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7caa3f9de89ddbe2c607f4101924c5abec803763ae9534e4f4d7d8f84aa81f0"
+checksum = "75443c44cd6b379beb8c5b45d85d0773baf31cce901fe7bb252f4eff3008ef7d"
 dependencies = [
  "cc",
 ]
@@ -2086,6 +2087,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "find-msvc-tools"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5baebc0774151f905a1a2cc41989300b1e6fbb29aff0ceffa1064fdd3088d582"
+
+[[package]]
 name = "fixedbitset"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2169,6 +2176,12 @@ checksum = "e13624c2627564efccf4934284bdd98cbaa14e79b0b5a141218e507b3a823456"
 dependencies = [
  "percent-encoding",
 ]
+
+[[package]]
+name = "four-cc"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "795cbfc56d419a7ce47ccbb7504dd9a5b7c484c083c356e797de08bd988d9629"
 
 [[package]]
 name = "fs2"
@@ -3561,9 +3574,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.174"
+version = "0.2.181"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1171693293099992e19cddea4e8b849964e9846f4acee11b3948bcc337be8776"
+checksum = "459427e2af2b9c839b132acb702a1c654d95e10f8c326bfc2ad11310e458b1c5"
 
 [[package]]
 name = "libfuzzer-sys"
@@ -3573,6 +3586,31 @@ checksum = "5037190e1f70cbeef565bd267599242926f724d3b8a9f510fd7e0b540cfa4404"
 dependencies = [
  "arbitrary",
  "cc",
+]
+
+[[package]]
+name = "libheif-rs"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e4a26370abb4723a3ce73083e479b98017604206cadb0e35da5eac4813600d85"
+dependencies = [
+ "enumn",
+ "four-cc",
+ "libc",
+ "libheif-sys",
+]
+
+[[package]]
+name = "libheif-sys"
+version = "3.1.0+1.18.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e663db80d4272b60c066c5a9d17370ffa0433a31d424152f95f1e1effb9b3860"
+dependencies = [
+ "cmake",
+ "libc",
+ "pkg-config",
+ "vcpkg",
+ "walkdir",
 ]
 
 [[package]]
@@ -4806,6 +4844,7 @@ dependencies = [
  "indexmap 2.10.0",
  "kamadak-exif",
  "keyring",
+ "libheif-rs",
  "linked-hash-map",
  "log",
  "ndarray",

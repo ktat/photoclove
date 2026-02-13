@@ -480,7 +480,7 @@ export class ImportState {
      */
     _isFilePath(path) {
         if (!path) return false;
-        return /\.(jpe?g|png|gif|webp|heic|heif|cr2|cr3|nef|arw|dng|raf|orf|rw2|3fr|tiff?)$/i.test(path);
+        return /\.(jpe?g|png|gif|webp|heic|heif|avif|cr2|cr3|nef|arw|dng|raf|orf|rw2|3fr|tiff?)$/i.test(path);
     }
 
     /**

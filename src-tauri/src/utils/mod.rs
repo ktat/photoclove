@@ -3,6 +3,7 @@
 pub mod cache;
 pub mod exif_parser;
 pub mod exif_thumbnail;
+pub mod heic_decode;
 pub mod raw_decode;
 pub mod raw_file;
 

@@ -350,7 +350,7 @@ pub fn run() {
             show_importer,
             get_resized_image,
             get_thumbnail_path,
-            get_raw_progressive_image,
+            get_progressive_image,
             clear_import_cache,
             save_image_to_download_dir,
             import_photos,

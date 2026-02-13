@@ -25,7 +25,11 @@ export function useProgressiveRawImage(photo, importState) {
     const photoPathRef = useRef(null);
 
     useEffect(() => {
-        if (!photo || !photo.isRawFormat || !photo.isRawFormat()) {
+        const isNonNative = photo && (
+            (photo.isRawFormat && photo.isRawFormat()) ||
+            (photo.isHeicOrAvif && photo.isHeicOrAvif())
+        );
+        if (!isNonNative) {
             return;
         }
 
@@ -44,7 +48,7 @@ export function useProgressiveRawImage(photo, importState) {
         const loadProgressive = async () => {
             // Level 1: EXIF thumbnail (fast)
             try {
-                const exifPath = await invoke('get_raw_progressive_image', {
+                const exifPath = await invoke('get_progressive_image', {
                     pathStr: currentPath,
                     maxSize: 1600,
                     qualityLevel: 1,
@@ -66,7 +70,7 @@ export function useProgressiveRawImage(photo, importState) {
 
             // Level 2: Full RAW decode (slow)
             try {
-                const fullPath = await invoke('get_raw_progressive_image', {
+                const fullPath = await invoke('get_progressive_image', {
                     pathStr: currentPath,
                     maxSize: 1600,
                     qualityLevel: 2,

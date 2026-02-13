@@ -22,8 +22,8 @@ const FALLBACK_HEIGHT = 600;
 const SCROLL_LOCK_DELAY_MS = 100;
 const FULL_IMAGE_LOAD_DELAY_MS = 300; // Delay before loading full image after navigation stops
 
-// RAW file extensions that browsers cannot render natively
-const RAW_EXTENSION_REGEX = /\.(cr2|cr3|nef|arw|dng|raf|orf|rw2|3fr)$/i;
+// Non-browser-native format extensions (RAW + HEIC/HEIF/AVIF)
+const NON_NATIVE_FORMAT_REGEX = /\.(cr2|cr3|nef|arw|dng|raf|orf|rw2|3fr|heic|heif|avif)$/i;
 
 let currentFile = "";
 let width = 0;
@@ -170,10 +170,10 @@ function PhotoDisplay(props) {
                 setVideoSource("");
 
                 // Check if this is a RAW file
-                const isRawFile = RAW_EXTENSION_REGEX.test(props.currentDisplayPath);
+                const isNonNativeFormat = NON_NATIVE_FORMAT_REGEX.test(props.currentDisplayPath);
 
-                if (isRawFile) {
-                    // RAW files: use progressive loading via backend decode
+                if (isNonNativeFormat) {
+                    // Non-native formats (RAW/HEIC/AVIF): use progressive loading via backend decode
                     setIsLoadingFullImage(true);
                     setIsShowingThumbnail(true);
 
@@ -187,7 +187,7 @@ function PhotoDisplay(props) {
                     const currentPath = props.currentDisplayPath;
 
                     // Level 1: EXIF thumbnail (fast)
-                    invoke('get_raw_progressive_image', {
+                    invoke('get_progressive_image', {
                         pathStr: currentPath,
                         maxSize: 1600,
                         qualityLevel: 1,
@@ -204,7 +204,7 @@ function PhotoDisplay(props) {
 
                     // Level 2: Full RAW decode (slow)
                     fullImageLoadTimeoutRef.current = setTimeout(() => {
-                        invoke('get_raw_progressive_image', {
+                        invoke('get_progressive_image', {
                             pathStr: currentPath,
                             maxSize: 1600,
                             qualityLevel: 2,

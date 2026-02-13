@@ -1,6 +1,7 @@
 use super::utils::{cleanup_kill_file, get_resume_start_index, log_resume_info, should_stop_job};
 use crate::entity::job_queue;
 use crate::repository::MetaInfoDB;
+use crate::utils::raw_file;
 use crate::value::file;
 use sha2::{Digest, Sha256};
 use tauri::{Emitter, Manager};
@@ -171,6 +172,50 @@ pub(crate) fn process_import_job(
                 destination_photo.embed_exif(photo.meta_data);
                 imported_photos.push(destination_photo);
                 log::debug!(target: "import_job", "photo_object; status=created_and_added");
+
+                // Generate thumbnail JPEG for non-browser-native formats
+                // Path matches what set_has_thumbnail() checks: {thumbnail_store}/{date}/{uuid}/{filename}.jpg
+                let dest_path_str = destination_path.display().to_string();
+                if raw_file::is_raw_file(&dest_path_str)
+                    || raw_file::is_heic_or_avif(&dest_path_str)
+                {
+                    let thumb_relative = format!(
+                        "{}/{}/{}.jpg",
+                        date,
+                        uuid,
+                        filename.to_lowercase()
+                    );
+                    let thumb_path = format!(
+                        "{}/{}",
+                        config.thumbnail_store.trim_end_matches('/'),
+                        thumb_relative
+                    );
+
+                    let gen_result = if raw_file::is_heic_or_avif(&dest_path_str) {
+                        crate::utils::heic_decode::generate_persistent_preview(
+                            &dest_path_str,
+                            &thumb_path,
+                            200,
+                            85,
+                        )
+                    } else {
+                        crate::utils::raw_decode::generate_persistent_preview(
+                            &dest_path_str,
+                            &thumb_path,
+                            200,
+                            85,
+                        )
+                    };
+
+                    match gen_result {
+                        Ok(()) => {
+                            log::info!(target: "import_job", "thumbnail_generated; path={}", thumb_path);
+                        }
+                        Err(e) => {
+                            log::warn!(target: "import_job", "thumbnail_generation_failed; error={}", e);
+                        }
+                    }
+                }
             }
             Err(e) => {
                 let error_msg = format!("Failed to copy file {}: {}", file_path, e);

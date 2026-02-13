@@ -9,7 +9,12 @@ const RAW_EXTENSIONS: &[&str] = &[
 ];
 
 /// Standard image extensions
-const STANDARD_IMAGE_EXTENSIONS: &[&str] = &["jpg", "jpeg", "png", "gif", "webp", "heic", "heif"];
+const STANDARD_IMAGE_EXTENSIONS: &[&str] = &[
+    "jpg", "jpeg", "png", "gif", "webp", "heic", "heif", "avif",
+];
+
+/// HEIC/HEIF/AVIF extensions (non-browser-native container formats)
+pub const HEIC_AVIF_EXTENSIONS: &[&str] = &["heic", "heif", "avif"];
 
 /// Check if a file path has a RAW file extension
 pub fn is_raw_file(path: &str) -> bool {
@@ -25,6 +30,14 @@ pub fn is_supported_image(path: &str) -> bool {
     STANDARD_IMAGE_EXTENSIONS
         .iter()
         .chain(RAW_EXTENSIONS.iter())
+        .any(|ext| lower.ends_with(&format!(".{}", ext)))
+}
+
+/// Check if a file path has a HEIC/HEIF/AVIF extension
+pub fn is_heic_or_avif(path: &str) -> bool {
+    let lower = path.to_lowercase();
+    HEIC_AVIF_EXTENSIONS
+        .iter()
         .any(|ext| lower.ends_with(&format!(".{}", ext)))
 }
 
@@ -55,6 +68,18 @@ mod tests {
     }
 
     #[test]
+    fn test_is_heic_or_avif() {
+        assert!(is_heic_or_avif("/photos/IMG_0001.heic"));
+        assert!(is_heic_or_avif("/photos/IMG_0001.HEIC"));
+        assert!(is_heic_or_avif("/photos/IMG_0001.heif"));
+        assert!(is_heic_or_avif("/photos/IMG_0001.avif"));
+        assert!(is_heic_or_avif("/photos/IMG_0001.AVIF"));
+        assert!(!is_heic_or_avif("/photos/DSC001.jpg"));
+        assert!(!is_heic_or_avif("/photos/DSC001.cr2"));
+        assert!(!is_heic_or_avif("/photos/DSC001.png"));
+    }
+
+    #[test]
     fn test_is_supported_image() {
         assert!(is_supported_image("/photos/DSC001.jpg"));
         assert!(is_supported_image("/photos/DSC001.JPEG"));
@@ -63,6 +88,7 @@ mod tests {
         assert!(is_supported_image("/photos/DSC001.webp"));
         assert!(is_supported_image("/photos/DSC001.heic"));
         assert!(is_supported_image("/photos/DSC001.heif"));
+        assert!(is_supported_image("/photos/DSC001.avif"));
         assert!(is_supported_image("/photos/DSC001.CR2"));
         assert!(is_supported_image("/photos/DSC001.nef"));
         assert!(!is_supported_image("/photos/DSC001.mp4"));

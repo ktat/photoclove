@@ -29,6 +29,11 @@ pub fn extract_exif_thumbnail(path: &Path) -> Option<(DynamicImage, u32, u32)> {
         return extract_raw_exif_thumbnail(path);
     }
 
+    // Route HEIC/AVIF files to dedicated extraction path
+    if raw_file::is_heic_or_avif(&path_str) {
+        return extract_heic_exif_thumbnail(path);
+    }
+
     extract_jpeg_exif_thumbnail(path)
 }
 
@@ -311,6 +316,96 @@ fn extract_raw_embedded_jpeg(path: &Path) -> Option<(DynamicImage, u32, u32)> {
     }
 
     best_result
+}
+
+/// Extract EXIF thumbnail from HEIC/HEIF/AVIF files using libheif-rs.
+///
+/// Tries to get the thumbnail image handle from libheif first (fastest).
+/// Falls back to decoding the primary image if no thumbnail is embedded.
+fn extract_heic_exif_thumbnail(path: &Path) -> Option<(DynamicImage, u32, u32)> {
+    use image::{ImageBuffer, Rgb};
+    use libheif_rs::{ColorSpace, HeifContext, ItemId, LibHeif, RgbChroma};
+
+    let path_str = path.to_string_lossy();
+    let lib_heif = LibHeif::new();
+
+    let ctx = HeifContext::read_from_file(path_str.as_ref())
+        .map_err(|e| {
+            log::debug!(target: "exif_thumbnail", "heic_context_read_failed; path={}; error={}", path.display(), e);
+        })
+        .ok()?;
+
+    let handle = ctx
+        .primary_image_handle()
+        .map_err(|e| {
+            log::debug!(target: "exif_thumbnail", "heic_primary_handle_failed; path={}; error={}", path.display(), e);
+        })
+        .ok()?;
+
+    // Try to get thumbnail image handle
+    let n_thumbs = handle.number_of_thumbnails();
+    if n_thumbs > 0 {
+        let mut thumb_ids: Vec<ItemId> = vec![0; n_thumbs];
+        let count = handle.thumbnail_ids(&mut thumb_ids);
+        if count > 0 {
+            if let Ok(thumb_handle) = handle.thumbnail(thumb_ids[0]) {
+                if let Ok(decoded) =
+                    lib_heif.decode(&thumb_handle, ColorSpace::Rgb(RgbChroma::Rgb), None)
+                {
+                    let planes = decoded.planes();
+                    if let Some(plane) = planes.interleaved.as_ref() {
+                        let w = thumb_handle.width();
+                        let h = thumb_handle.height();
+                        let stride = plane.stride;
+                        let data = &plane.data;
+
+                        let img_buf: ImageBuffer<Rgb<u8>, Vec<u8>> =
+                            ImageBuffer::from_fn(w, h, |x, y| {
+                                let offset = y as usize * stride + x as usize * 3;
+                                if offset + 2 < data.len() {
+                                    Rgb([data[offset], data[offset + 1], data[offset + 2]])
+                                } else {
+                                    Rgb([0, 0, 0])
+                                }
+                            });
+
+                        let img = DynamicImage::ImageRgb8(img_buf);
+                        log::debug!(target: "exif_thumbnail", "heic_thumbnail_extracted; path={}; size={}x{}", path.display(), w, h);
+                        return Some((img, w, h));
+                    }
+                }
+            }
+        }
+    }
+
+    log::debug!(target: "exif_thumbnail", "heic_no_thumbnail_handle; path={}; trying_primary_decode", path.display());
+
+    // Fallback: decode primary image (will be resized by caller if needed)
+    if let Ok(decoded) = lib_heif.decode(&handle, ColorSpace::Rgb(RgbChroma::Rgb), None) {
+        let planes = decoded.planes();
+        if let Some(plane) = planes.interleaved.as_ref() {
+            let w = handle.width();
+            let h = handle.height();
+            let stride = plane.stride;
+            let data = &plane.data;
+
+            let img_buf: ImageBuffer<Rgb<u8>, Vec<u8>> =
+                ImageBuffer::from_fn(w, h, |x, y| {
+                    let offset = y as usize * stride + x as usize * 3;
+                    if offset + 2 < data.len() {
+                        Rgb([data[offset], data[offset + 1], data[offset + 2]])
+                    } else {
+                        Rgb([0, 0, 0])
+                    }
+                });
+
+            let img = DynamicImage::ImageRgb8(img_buf);
+            log::debug!(target: "exif_thumbnail", "heic_primary_decoded_as_thumbnail; path={}; size={}x{}", path.display(), w, h);
+            return Some((img, w, h));
+        }
+    }
+
+    None
 }
 
 /// Extract EXIF thumbnail with minimum size check

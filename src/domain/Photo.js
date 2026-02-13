@@ -130,8 +130,8 @@ export class Photo {
                 }
                 this._cachedThumbnailPath = thumbnailPath;
                 return thumbnailPath;
-            } else if (this.isRawFormat()) {
-                // RAW files: thumbnail is {name_lowercase}.jpg (e.g., photo.cr2 -> photo.cr2.jpg)
+            } else if (this.isRawFormat() || this.isHeicOrAvif()) {
+                // RAW/HEIC/AVIF files: thumbnail is {name_lowercase}.jpg (e.g., photo.cr2 -> photo.cr2.jpg)
                 const rawThumbnailName = this.name.toLowerCase() + '.jpg';
                 if (uuid) {
                     thumbnailPath = `${thumbnailStore}/${photoDate}/${uuid}/${rawThumbnailName}`;
@@ -182,6 +182,23 @@ export class Photo {
     isRawFormat() {
         const rawExtensions = ['cr2', 'cr3', 'nef', 'arw', 'dng', 'raf', 'orf', 'rw2', '3fr'];
         return rawExtensions.includes(this.getExtension());
+    }
+
+    /**
+     * Check if photo is a HEIC/HEIF/AVIF file (non-browser-native container format)
+     * @returns {boolean} True if the photo is HEIC/HEIF/AVIF
+     */
+    isHeicOrAvif() {
+        const heicExtensions = ['heic', 'heif', 'avif'];
+        return heicExtensions.includes(this.getExtension());
+    }
+
+    /**
+     * Check if photo is a non-browser-native format (RAW or HEIC/AVIF)
+     * @returns {boolean} True if the browser cannot render this format natively
+     */
+    isNonNativeFormat() {
+        return this.isRawFormat() || this.isHeicOrAvif();
     }
 
     /**

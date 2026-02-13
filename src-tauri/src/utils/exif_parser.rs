@@ -55,6 +55,11 @@ pub fn parse_exif(path: &str) -> Result<ExifParseResult, String> {
         return parse_with_kexif(path);
     }
 
+    // For HEIC/AVIF files, extract EXIF via libheif then parse with kexif
+    if raw_file::is_heic_or_avif(path) {
+        return parse_heic_exif(path);
+    }
+
     // Try rexif first (fast path for JPEG)
     match rexif::parse_file(path) {
         Ok(exif_data) => {
@@ -112,6 +117,75 @@ fn parse_with_kexif(path: &str) -> Result<ExifParseResult, String> {
 
     if entries.is_empty() {
         return Err("No EXIF entries found".to_string());
+    }
+
+    Ok(ExifParseResult { entries })
+}
+
+/// Parse EXIF from HEIC/HEIF/AVIF files using libheif-rs to extract EXIF bytes,
+/// then parse with kamadak-exif.
+fn parse_heic_exif(path: &str) -> Result<ExifParseResult, String> {
+    use libheif_rs::{HeifContext, ItemId};
+
+    let ctx = HeifContext::read_from_file(path)
+        .map_err(|e| format!("Failed to read HEIC/AVIF file: {}", e))?;
+
+    let handle = ctx
+        .primary_image_handle()
+        .map_err(|e| format!("Failed to get primary image handle: {}", e))?;
+
+    // Get EXIF metadata block IDs (v1.1 API: mutable buffer + byte string filter)
+    let mut meta_ids: Vec<ItemId> = vec![0; 1];
+    let count = handle.metadata_block_ids(&mut meta_ids, b"Exif");
+    if count == 0 {
+        return Err("No EXIF metadata found in HEIC/AVIF file".to_string());
+    }
+
+    let exif_bytes = handle
+        .metadata(meta_ids[0])
+        .map_err(|e| format!("Failed to read EXIF metadata: {}", e))?;
+
+    // HEIC EXIF data may have a 4-byte offset prefix before the TIFF header
+    // Skip it if present (check for "Exif\0\0" or TIFF magic bytes)
+    let tiff_start = if exif_bytes.len() > 4 {
+        // Look for TIFF magic bytes (II or MM)
+        if exif_bytes[0] == b'I' && exif_bytes[1] == b'I'
+            || exif_bytes[0] == b'M' && exif_bytes[1] == b'M'
+        {
+            0
+        } else {
+            // Skip 4-byte offset prefix commonly found in HEIC EXIF data
+            4
+        }
+    } else {
+        0
+    };
+
+    let tiff_data = &exif_bytes[tiff_start..];
+
+    // Parse EXIF using kamadak-exif from raw bytes
+    let exif_reader = kexif::Reader::new();
+    let exif = exif_reader
+        .read_raw(tiff_data.to_vec())
+        .map_err(|e| format!("Failed to parse HEIC EXIF data: {}", e))?;
+
+    let mut entries = Vec::new();
+
+    for field in exif.fields() {
+        let tag = map_kexif_tag(field.tag);
+        let value = field.display_value().to_string();
+        let value_readable = field.display_value().with_unit(&exif).to_string();
+
+        entries.push(ExifEntry {
+            tag,
+            value,
+            value_readable,
+            ext_data: Vec::new(),
+        });
+    }
+
+    if entries.is_empty() {
+        return Err("No EXIF entries found in HEIC/AVIF file".to_string());
     }
 
     Ok(ExifParseResult { entries })

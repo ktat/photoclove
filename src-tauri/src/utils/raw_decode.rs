@@ -270,6 +270,45 @@ fn demosaic_pixel(
     }
 }
 
+/// Generate a persistent JPEG preview for a RAW file.
+///
+/// Decodes the source file, resizes it, and saves as JPEG to the preview path.
+pub fn generate_persistent_preview(
+    source_path: &str,
+    preview_path: &str,
+    max_size: u32,
+    quality: u8,
+) -> Result<(), String> {
+    let (img, _w, _h) = decode_raw_to_thumbnail(source_path, max_size)
+        .ok_or_else(|| format!("Failed to decode RAW: {}", source_path))?;
+
+    if let Some(parent) = std::path::Path::new(preview_path).parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create preview directory: {}", e))?;
+    }
+
+    let mut jpeg_data = Vec::new();
+    use image::codecs::jpeg::JpegEncoder;
+    {
+        let encoder = JpegEncoder::new_with_quality(&mut jpeg_data, quality);
+        img.write_with_encoder(encoder)
+            .map_err(|e| format!("Failed to encode JPEG preview: {}", e))?;
+    }
+
+    std::fs::write(preview_path, &jpeg_data)
+        .map_err(|e| format!("Failed to write preview file: {}", e))?;
+
+    log::info!(
+        target: "raw_decode",
+        "persistent_preview_generated; source={}; preview={}; bytes={}",
+        source_path,
+        preview_path,
+        jpeg_data.len()
+    );
+
+    Ok(())
+}
+
 /// Apply sRGB gamma correction
 fn gamma_srgb(linear: f32) -> f32 {
     if linear <= 0.0031308 {
