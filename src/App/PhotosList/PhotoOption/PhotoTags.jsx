@@ -16,7 +16,7 @@ const isAITag = (tagName) => tagName?.startsWith('ai:');
  */
 const MODEL_THRESHOLD_RANGES = {
     mobilenet: { min: 0.05, max: 0.35 },
-    openclip: { min: 0.15, max: 0.40 },
+    openclip: { min: 0.15, max: 0.33 },
     siglip: { min: 0.15, max: 0.35 }
 };
 
