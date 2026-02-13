@@ -168,9 +168,15 @@ pub fn generate_face_thumbnail_from_file(
     face_id: i64,
     size: u32,
 ) -> Result<PathBuf, String> {
-    // Load image
-    let mut image = image::open(photo_path)
-        .map_err(|e| format!("Failed to load image {}: {}", photo_path, e))?;
+    // Load image (use libheif for HEIC/AVIF, image::open for others)
+    let mut image = if crate::utils::raw_file::is_heic_or_avif(photo_path) {
+        crate::utils::heic_decode::decode_heic_to_image(photo_path, 1600)
+            .map(|(img, _, _)| img)
+            .ok_or_else(|| format!("Failed to decode HEIC/AVIF image: {}", photo_path))?
+    } else {
+        image::open(photo_path)
+            .map_err(|e| format!("Failed to load image {}: {}", photo_path, e))?
+    };
 
     // Apply EXIF orientation
     if let Some(orientation) = read_exif_orientation(photo_path) {

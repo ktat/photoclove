@@ -232,9 +232,14 @@ impl FaceDetectionService {
             path
         );
 
-        // Load full image
-        let mut image =
-            image::open(path).map_err(|e| format!("Failed to load image {}: {}", path, e))?;
+        // Load full image (use libheif for HEIC/AVIF, image::open for others)
+        let mut image = if crate::utils::raw_file::is_heic_or_avif(path) {
+            crate::utils::heic_decode::decode_heic_to_image(path, 1600)
+                .map(|(img, _, _)| img)
+                .ok_or_else(|| format!("Failed to decode HEIC/AVIF image: {}", path))?
+        } else {
+            image::open(path).map_err(|e| format!("Failed to load image {}: {}", path, e))?
+        };
 
         // Apply EXIF orientation if available
         if let Some(orient) = orientation {

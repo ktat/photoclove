@@ -311,19 +311,19 @@ pub fn preprocess_clip_image(
         }
     }
 
-    // Fallback: Load full image if EXIF thumbnail not found or disabled
+    // Fallback: Load full image (use libheif for HEIC/AVIF)
     if img.is_none() {
-        img = Some(
+        let path_str = image_path.to_string_lossy();
+        img = Some(if crate::utils::raw_file::is_heic_or_avif(&path_str) {
+            crate::utils::heic_decode::decode_heic_to_image(&path_str, 1600)
+                .map(|(i, _, _)| i)
+                .ok_or_else(|| format!("Failed to decode HEIC/AVIF: {}", image_path.display()))?
+        } else {
             image::open(image_path)
-                .map_err(|e| format!("Failed to load image {}: {}", image_path.display(), e))?,
-        );
-
+                .map_err(|e| format!("Failed to load image {}: {}", image_path.display(), e))?
+        });
         if use_exif_thumbnail {
-            log::debug!(
-                target: "ai_tagging",
-                "no_exif_thumbnail; fallback_to_full_image; path={}",
-                image_path.display()
-            );
+            log::debug!(target: "ai_tagging", "no_exif_thumbnail; fallback_to_full_image; path={}", image_path.display());
         }
     }
 
