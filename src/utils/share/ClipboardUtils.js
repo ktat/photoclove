@@ -51,20 +51,25 @@ export async function saveImageAsFile(blob, filename = 'photoclove-stats.png') {
         // Convert blob to base64
         const arrayBuffer = await blob.arrayBuffer();
         const uint8Array = new Uint8Array(arrayBuffer);
-        
+        let binary = '';
+        for (let i = 0; i < uint8Array.length; i++) {
+            binary += String.fromCharCode(uint8Array[i]);
+        }
+        const base64Data = btoa(binary);
+
         // Use Tauri to save file
-        const result = await invoke('save_image_file', {
-            imageData: Array.from(uint8Array),
+        const savedPath = await invoke('save_image_to_download_dir', {
+            imageData: base64Data,
             filename: filename
         });
 
-        logger.info('ClipboardUtils', 'save_image_success', 'Image saved successfully', { 
-            filename, 
-            path: result.path,
-            size: uint8Array.length 
+        logger.info('ClipboardUtils', 'save_image_success', 'Image saved successfully', {
+            filename,
+            path: savedPath,
+            size: uint8Array.length
         });
-        
-        return { success: true, path: result.path };
+
+        return { success: true, path: savedPath };
     } catch (error) {
         logger.error('ClipboardUtils', 'save_image_failed', 'Failed to save image', { 
             error: error.message, 
