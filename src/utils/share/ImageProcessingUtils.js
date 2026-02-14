@@ -2,36 +2,57 @@
  * Image processing utilities for sharing
  */
 
-import { convertFileSrc } from '@tauri-apps/api/core';
+import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { logger } from '../../services/LoggerService.js';
+
+const NON_NATIVE_FORMAT_REGEX = /\.(cr2|cr3|nef|arw|dng|raf|orf|rw2|3fr|heic|heif|avif)$/i;
 
 /**
  * Load image from file path
+ * For HEIC/RAW formats, uses backend decoding via get_progressive_image
  * @param {string} filePath - File path to load
  * @returns {Promise<HTMLImageElement>} Loaded image element
  */
 export async function loadImageFromPath(filePath) {
+    let src;
+
+    if (NON_NATIVE_FORMAT_REGEX.test(filePath)) {
+        // HEIC/RAW: browser can't decode directly, use backend full decode
+        const decodedPath = await invoke('get_progressive_image', {
+            pathStr: filePath,
+            maxSize: 1920,
+            qualityLevel: 2,
+            importDirectory: null
+        });
+        src = convertFileSrc(decodedPath) + '?t=' + Date.now();
+        logger.debug('ImageProcessingUtils', 'non_native_decoded', 'Non-native format decoded via backend', {
+            path: filePath
+        });
+    } else {
+        src = convertFileSrc(filePath);
+    }
+
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = 'anonymous';
 
         img.onload = () => {
-            logger.debug('ImageProcessingUtils', 'image_loaded', 'Image loaded successfully', { 
+            logger.debug('ImageProcessingUtils', 'image_loaded', 'Image loaded successfully', {
                 path: filePath,
-                size: `${img.width}x${img.height}` 
+                size: `${img.width}x${img.height}`
             });
             resolve(img);
         };
-        
+
         img.onerror = (error) => {
-            logger.error('ImageProcessingUtils', 'image_load_failed', 'Failed to load image', { 
-                path: filePath, 
-                error: error.message 
+            logger.error('ImageProcessingUtils', 'image_load_failed', 'Failed to load image', {
+                path: filePath,
+                error: error.message
             });
             reject(new Error(`Failed to load image: ${filePath}`));
         };
-        
-        img.src = convertFileSrc(filePath);
+
+        img.src = src;
     });
 }
 
