@@ -78,6 +78,10 @@ fn default_custom_watermark() -> Option<String> {
     None
 }
 
+fn default_copyright() -> Option<String> {
+    None
+}
+
 /// S3 Backup configuration
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct S3Config {
@@ -420,6 +424,8 @@ pub struct Config {
     pub s3: Option<S3Config>,
     #[serde(default = "default_custom_watermark")]
     pub custom_watermark: Option<String>,
+    #[serde(default = "default_copyright")]
+    pub copyright: Option<String>,
     #[serde(default = "default_raw_processing")]
     pub raw_processing: RawProcessingConfig,
 }
@@ -461,6 +467,7 @@ impl Config {
         self.face_detection = config.face_detection;
         self.s3 = config.s3;
         self.custom_watermark = config.custom_watermark;
+        self.copyright = config.copyright;
     }
 
     /// Get the config path, creating the file if it doesn't exist
@@ -577,6 +584,7 @@ impl Config {
             face_detection: default_face_detection(),
             s3: default_s3(),
             custom_watermark: default_custom_watermark(),
+            copyright: default_copyright(),
             raw_processing: default_raw_processing(),
         }
     }

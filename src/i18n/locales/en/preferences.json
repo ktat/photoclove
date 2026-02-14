@@ -26,7 +26,10 @@
     "sharing": "Sharing",
     "customWatermark": "Custom Watermark",
     "customWatermarkPlaceholder": "Your name or @handle",
-    "customWatermarkDescription": "Add your own watermark text when sharing photos"
+    "customWatermarkDescription": "Add your own watermark text when sharing photos",
+    "copyright": "Copyright",
+    "copyrightPlaceholder": "e.g. © 2026 Your Name",
+    "copyrightDescription": "Embed copyright information in PNG metadata when saving shared images"
   },
   "startup": {
     "startupBehavior": "Startup Behavior",

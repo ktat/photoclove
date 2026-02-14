@@ -416,20 +416,83 @@ pub fn clear_import_cache() -> Result<usize, String> {
     clear_import_thumbnail_cache(&cache_dir)
 }
 
+/// Inserts a tEXt chunk into PNG data before the IEND chunk.
+/// This operates at the chunk level so no re-encoding/quality loss occurs.
+fn insert_png_text_chunk(png_data: &[u8], keyword: &str, text: &str) -> Result<Vec<u8>, String> {
+    // PNG signature is 8 bytes, then chunks follow
+    if png_data.len() < 8 || &png_data[0..8] != b"\x89PNG\r\n\x1a\n" {
+        return Err("Not a valid PNG file".to_string());
+    }
+
+    // Build the tEXt chunk data: keyword + null separator + text
+    let mut chunk_data = Vec::new();
+    chunk_data.extend_from_slice(keyword.as_bytes());
+    chunk_data.push(0); // null separator
+    chunk_data.extend_from_slice(text.as_bytes());
+
+    // Build the full tEXt chunk: length(4) + "tEXt" + data + CRC(4)
+    let chunk_len = chunk_data.len() as u32;
+    let mut text_chunk = Vec::new();
+    text_chunk.extend_from_slice(&chunk_len.to_be_bytes());
+    text_chunk.extend_from_slice(b"tEXt");
+    text_chunk.extend_from_slice(&chunk_data);
+
+    // CRC covers chunk type + chunk data
+    let mut crc_input = Vec::new();
+    crc_input.extend_from_slice(b"tEXt");
+    crc_input.extend_from_slice(&chunk_data);
+    let crc = crc32fast::hash(&crc_input);
+    text_chunk.extend_from_slice(&crc.to_be_bytes());
+
+    // Find IEND chunk position (last 12 bytes: length(4) + "IEND"(4) + CRC(4))
+    // Search for IEND chunk type from the end
+    let iend_pos = png_data
+        .windows(4)
+        .rposition(|w| w == b"IEND")
+        .ok_or_else(|| "IEND chunk not found in PNG".to_string())?;
+    // The chunk starts 4 bytes before the type (length field)
+    let insert_pos = iend_pos - 4;
+
+    let mut result = Vec::with_capacity(png_data.len() + text_chunk.len());
+    result.extend_from_slice(&png_data[..insert_pos]);
+    result.extend_from_slice(&text_chunk);
+    result.extend_from_slice(&png_data[insert_pos..]);
+
+    Ok(result)
+}
+
 /// Saves base64 encoded image data to the download directory
 #[tauri::command]
 pub fn save_image_to_download_dir(
     image_data: &str,
     filename: &str,
+    copyright: Option<&str>,
     state: tauri::State<'_, crate::AppState>,
 ) -> Result<String, String> {
     use base64::{engine::general_purpose::STANDARD, Engine as _};
 
-    log::info!(target: "image", "save_image_to_download_dir; filename={}", filename);
+    log::info!(target: "image", "save_image_to_download_dir; filename={}; has_copyright={}", filename, copyright.is_some());
 
     let decoded = STANDARD
         .decode(image_data)
         .map_err(|e| format!("Failed to decode base64 image data: {}", e))?;
+
+    // Insert copyright tEXt chunk if provided
+    let final_data = match copyright {
+        Some(text) if !text.is_empty() => {
+            match insert_png_text_chunk(&decoded, "Copyright", text) {
+                Ok(data) => {
+                    log::info!(target: "image", "png_copyright_inserted; copyright={}", text);
+                    data
+                }
+                Err(e) => {
+                    log::warn!(target: "image", "png_copyright_insert_failed; error={}; saving_without_copyright", e);
+                    decoded
+                }
+            }
+        }
+        _ => decoded,
+    };
 
     let download_dir = &state.config.download_dir;
     fs::create_dir_all(download_dir)
@@ -438,7 +501,7 @@ pub fn save_image_to_download_dir(
     let full_path = path::Path::new(download_dir).join(filename);
     let full_path_str = full_path.to_string_lossy().to_string();
 
-    fs::write(&full_path, decoded).map_err(|e| format!("Failed to write image file: {}", e))?;
+    fs::write(&full_path, final_data).map_err(|e| format!("Failed to write image file: {}", e))?;
 
     log::info!(target: "image", "save_image_to_download_dir_success; path={}", full_path_str);
     Ok(full_path_str)

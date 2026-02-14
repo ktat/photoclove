@@ -4834,6 +4834,7 @@ dependencies = [
  "aws-sdk-s3",
  "base64 0.21.7",
  "chrono",
+ "crc32fast",
  "dirs",
  "env_logger",
  "filetime",

@@ -98,6 +98,20 @@ const GeneralTab = ({ config, setConfig, additionalExportFrom, setAdditionalExpo
                 <p className={styles['setting-description']}>
                     {t('preferences:general.customWatermarkDescription')}
                 </p>
+                <div className={styles['setting-row']}>
+                    <label className={styles['setting-label']}>{t('preferences:general.copyright')}</label>
+                    <input
+                        type="text"
+                        className={styles['setting-input']}
+                        value={config.copyright || ''}
+                        onChange={(e) => setConfig(prev => ({ ...prev, copyright: e.target.value }))}
+                        placeholder={t('preferences:general.copyrightPlaceholder')}
+                        maxLength={100}
+                    />
+                </div>
+                <p className={styles['setting-description']}>
+                    {t('preferences:general.copyrightDescription')}
+                </p>
             </div>
         </div>
     );

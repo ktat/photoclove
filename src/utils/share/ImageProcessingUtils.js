@@ -348,9 +348,9 @@ export async function generateShareablePhoto(photoPath, options = {}) {
             watermarkStyle
         });
 
-        // Convert to blob
+        // Convert to blob (PNG to support metadata embedding)
         return new Promise((resolve) => {
-            canvas.toBlob(resolve, 'image/jpeg', 0.9);
+            canvas.toBlob(resolve, 'image/png');
         });
     } catch (error) {
         logger.error('ImageProcessingUtils', 'photo_processing_failed', 'Failed to generate shareable photo', { 

@@ -26,7 +26,10 @@
     "sharing": "シェア",
     "customWatermark": "カスタムウォーターマーク",
     "customWatermarkPlaceholder": "あなたの名前や@ハンドル",
-    "customWatermarkDescription": "写真をシェアする際に独自のウォーターマークを追加"
+    "customWatermarkDescription": "写真をシェアする際に独自のウォーターマークを追加",
+    "copyright": "著作権表示",
+    "copyrightPlaceholder": "例: © 2026 あなたの名前",
+    "copyrightDescription": "シェア画像の保存時にPNGメタデータに著作権情報を埋め込みます"
   },
   "startup": {
     "startupBehavior": "起動時の動作",

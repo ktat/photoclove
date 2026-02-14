@@ -195,12 +195,16 @@ function ShareTab({
     const [saveStatus, setSaveStatus] = useState(null);
     const handleSaveImage = useCallback(async () => {
         if (!imageBlob) return;
-        const date = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const timestamp = now.toISOString().split('T')[0] + '_' +
+            String(now.getHours()).padStart(2, '0') +
+            String(now.getMinutes()).padStart(2, '0') +
+            String(now.getSeconds()).padStart(2, '0');
         const filename = shareMode === 'collage'
-            ? `photoclove-collage-${date}.png`
-            : `photoclove-share-${date}.png`;
+            ? `photoclove-collage-${timestamp}.png`
+            : `photoclove-share-${timestamp}.png`;
         try {
-            await saveImageAsFile(imageBlob, filename);
+            await saveImageAsFile(imageBlob, filename, appConfig?.copyright || null);
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus(null), 2000);
             // Trigger collage achievement if successful
@@ -211,7 +215,7 @@ function ShareTab({
             setSaveStatus('error');
             setTimeout(() => setSaveStatus(null), 2000);
         }
-    }, [imageBlob, shareMode]);
+    }, [imageBlob, shareMode, appConfig]);
 
     // Check if we have enough photos
     const hasPhotos = activePhotos.length > 0;

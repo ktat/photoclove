@@ -45,8 +45,9 @@ export async function copyImageToClipboard(blob) {
  * Save image blob as file
  * @param {Blob} blob - Image blob to save
  * @param {string} filename - Filename for saved image
+ * @param {string} [copyright] - Optional copyright text to embed in PNG metadata
  */
-export async function saveImageAsFile(blob, filename = 'photoclove-stats.png') {
+export async function saveImageAsFile(blob, filename = 'photoclove-stats.png', copyright = null) {
     try {
         // Convert blob to base64
         const arrayBuffer = await blob.arrayBuffer();
@@ -60,7 +61,8 @@ export async function saveImageAsFile(blob, filename = 'photoclove-stats.png') {
         // Use Tauri to save file
         const savedPath = await invoke('save_image_to_download_dir', {
             imageData: base64Data,
-            filename: filename
+            filename: filename,
+            copyright: copyright || null
         });
 
         logger.info('ClipboardUtils', 'save_image_success', 'Image saved successfully', {
