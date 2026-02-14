@@ -37,8 +37,8 @@ PhotoClove is a desktop photo manager designed for speed and simplicity. Built w
 
 PhotoClove uses a modern desktop architecture:
 
-- **Frontend**: React 18 with Vite for fast development and responsive UI (106 JSX/JS files)
-- **Backend**: Rust with Tauri 2.0 for native performance and system integration (36 Rust modules)
+- **Frontend**: React 18 with Vite for fast development and responsive UI
+- **Backend**: Rust with Tauri 2.0 for native performance and system integration
 - **Database**: SQLite with optimized indexes for fast metadata queries and search
 - **Storage**: Local filesystem with date-based organization and UUID conflict prevention
 - **State Management**: Domain-Driven Design with ViewMode value object for centralized view state management
@@ -53,10 +53,11 @@ PhotoClove uses a modern desktop architecture:
 - **Node.js** v18+ and **pnpm** (package manager)
 - **Rust** 1.84.1+ (for building from source)
 - **FFmpeg** and **GStreamer** (for video support)
+- **CMake** and **libnuma-dev** (for HEIC/AVIF support via libheif)
 
 #### Ubuntu/Debian Setup
 ```bash
-sudo apt install gstreamer1.0-plugins-bad ffmpeg librsvg2-dev libgstreamer1.0-dev
+sudo apt install gstreamer1.0-plugins-bad ffmpeg librsvg2-dev libgstreamer1.0-dev cmake libnuma-dev
 ```
 
 ### Development
@@ -123,8 +124,8 @@ Comprehensive documentation is available in the [`docs/`](./docs/) directory:
 
 PhotoClove is perfect for:
 
-- **Photographers** managing large collections of JPEG, PNG, and GIF images
-- **Content Creators** organizing photos and videos from multiple cameras/phones
+- **Photographers** managing large collections of JPEG, PNG, RAW (CR2, NEF, ARW, DNG, etc.), and HEIC/AVIF images
+- **Content Creators** organizing photos and videos from multiple cameras/phones (including iPhone HEIC)
 - **Families** importing and organizing photos from various devices
 - **Anyone** wanting fast, local photo management without cloud dependency
 
@@ -224,10 +225,12 @@ PhotoClove includes AI-powered automatic photo tagging with multiple model optio
 
 ### Features
 - **Auto-tag on Import**: Automatically tag photos during the import process
-- **Confidence Threshold**: Adjustable threshold (0.5-0.95) for tag accuracy
+- **Confidence Threshold**: Adjustable threshold with model-specific normalization for intuitive 0-100% scale
 - **Category Filtering**: Enable/disable specific categories for MobileNet
 - **Custom Labels**: Define your own detection labels for CLIP-based models (e.g., "birthday party", "family dinner")
 - **Batch Processing**: Tag multiple photos via background job queue
+- **High Accuracy Mode**: Use full-resolution images instead of EXIF thumbnails for better results
+- **Format Support**: Works with JPEG, PNG, RAW, HEIC/HEIF, and AVIF files
 
 ### Configuration
 Configure AI tagging in Preferences → AI Auto-Tagging. Models are downloaded on first use.
@@ -322,12 +325,16 @@ PhotoClove includes a comprehensive search system with advanced features:
 PhotoClove uses an advanced job queue system with enhanced capabilities:
 
 ### Job Types
-- **Photo Import**: Copy files to organized structure with progress tracking
+- **Photo Import**: Copy files to organized structure with progress tracking (JPEG, RAW, HEIC/AVIF)
 - **Thumbnail Generation**: Create preview images with batch processing
 - **Database Updates**: Index new photos and metadata efficiently
 - **Google Photos Upload**: Secure cloud uploads with automatic token refresh
 - **AI Tagging**: Automatic photo classification with configurable models
+- **Face Detection**: Batch face detection and embedding generation
+- **Face Thumbnail Regeneration**: Regenerate all face thumbnail crops
 - **S3 Sync**: Upload photos to S3-compatible cloud storage
+- **Burst Group Recalculation**: Recalculate burst photo groups
+- **Photography Insights**: Generate statistics and analytics
 
 ### Enhanced Features
 - **Immediate Retry**: Manual job retry executes instantly instead of waiting for next startup
@@ -419,16 +426,22 @@ PhotoClove uses a structured development workflow with the `improvement/` direct
 - [x] **S3 Cloud Backup**: Amazon S3 and S3-compatible storage backup with auto-sync, incremental sync, and per-photo tracking
 - [x] **S3 Enhanced Support**: iDrive e2 integration, updated region lists (Wasabi 15, DigitalOcean 13, iDrive e2 16), custom region input, provider-specific credentials, and emoji-enhanced UI
 - [x] **Face Detection**: AI-powered face detection with person assignment, similarity matching, Unknown Faces batch operations, and face thumbnail caching
+- [x] **Slideshow Mode**: Full-screen photo presentation with background music, configurable speed, and shuffle mode
+- [x] **Internationalization**: Multi-language support (7 languages: English, Japanese, German, French, Spanish, Chinese Simplified/Traditional)
+- [x] **RAW File Support**: CR2, CR3, NEF, ARW, DNG, RAF, ORF, RW2, 3FR with progressive loading and EXIF extraction
+- [x] **HEIC/HEIF/AVIF Support**: iPhone/modern camera format support via libheif-rs with full AI tagging and face detection
+- [x] **Custom React Dialogs**: Native dialog replacement with themed React components
+- [x] **Relative Path Storage**: Cross-OS NAS support with relative paths in database
+- [x] **Notification Center**: Notification bell with aggregated errors, warnings, and system events
+- [x] **Photography Insights**: Analytics dashboard with camera settings, equipment stats, and shooting time patterns
+- [x] **Achievements System**: Gamification with unlockable achievements for photo management milestones
+- [x] **Crop Tool**: Interactive crop with move, resize, edge-drag, and aspect ratio presets
 
 ### Current Focus 🎯
-- [ ] **CSS Modules Migration Completion**: Migrate remaining components (search/, modals, utilities) to CSS Modules
-- [ ] **Enhanced Error Handling**: Improve user feedback for failed operations with actionable error messages
 - [ ] **Performance Optimization**: Further optimize large collection handling and memory management
+- [ ] **Advanced Editing**: More sophisticated photo editing tools (filters, adjustments, layers)
 
 ### Future Plans
-- [ ] **Slide Show**: Full-screen photo presentation mode
-- [ ] **Internationalization**: Multi-language support
-- [ ] **Advanced Editing**: More sophisticated photo editing tools (filters, adjustments, layers)
 - [ ] **Amazon Photos Integration**: Direct upload to Amazon Photos service
 
 See [`CHANGES.md`](./CHANGES.md) for detailed version history and recent updates.
@@ -442,7 +455,6 @@ See [`CHANGES.md`](./CHANGES.md) for detailed version history and recent updates
 - Verify thumbnail generation completed (Job Queue)
 - Ensure file permissions allow read access
 - Use LogViewer (Ctrl+Shift+L) to inspect application logs
-- **Recent Fix**: Thumbnail lists now update properly after photo deletion across all viewing modes (Recent Photos, Search, Date view)
 
 **Import not working?**
 - Verify source directories are configured in Preferences
@@ -461,9 +473,14 @@ See [`CHANGES.md`](./CHANGES.md) for detailed version history and recent updates
 - Verify album/tag tables exist in SQLite database
 - Try restarting the application to trigger migrations
 
+**HEIC/AVIF photos not showing?**
+- Ensure `cmake` and `libnuma-dev` are installed (build dependencies for libheif)
+- HEIC/AVIF thumbnails are generated during import — re-import or use Maintenance → Regenerate Thumbnails
+- Check LogViewer for HEIC decode errors
+
 **Face Detection not working?**
 - Ensure models are downloaded in Preferences → Face Detection
-- Check that the photo file is accessible
+- Check that the photo file is accessible (supports JPEG, PNG, RAW, HEIC/AVIF)
 - Try "High Accuracy" mode for small or distant faces
 - Check LogViewer for detection errors
 
