@@ -149,6 +149,14 @@ pub const ACHIEVEMENTS: &[AchievementDefinition] = &[
         category: AchievementCategory::First,
         threshold: 1,
     },
+    AchievementDefinition {
+        id: "first_theme_change",
+        name: "Style Maker",
+        description: "Change the application theme for the first time",
+        icon: "🎨",
+        category: AchievementCategory::First,
+        threshold: 1,
+    },
     // === Monthly Pioneer Achievements ===
     AchievementDefinition {
         id: "monthly_jan",

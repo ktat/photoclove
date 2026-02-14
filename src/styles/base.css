@@ -179,76 +179,76 @@ body {
 [data-theme="light"] {
   color-scheme: light;
 
-  /* --- Background Colors (Warm Beige) --- */
-  --color-bg-base: #faf8f5;
-  --color-bg-elevated: #ffffff;
-  --color-bg-surface: #f0ebe5;
-  --color-bg-muted: #d4ccc4;
-  --color-bg-film: #a89888;
+  /* --- Background Colors (Slate Blue) --- */
+  --color-bg-base: #f0f2f5;
+  --color-bg-elevated: #f8fafc;
+  --color-bg-surface: #e2e8f0;
+  --color-bg-muted: #b8c4d4;
+  --color-bg-film: #cbd5e1;
 
   /* --- Text Colors --- */
-  --color-text-primary: #1f1f1f;
-  --color-text-secondary: #525252;
-  --color-text-muted: #737373;
+  --color-text-primary: #1e293b;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748b;
 
   /* --- Film Background Colors & Text/Link Colors --- */
-  --color-bg-film-light: #b5a79a;
-  --color-film-text: #2a1c10;
-  --color-film-link: #1a3460;
+  --color-bg-film-light: #e2e8f0;
+  --color-film-text: #1e293b;
+  --color-film-link: #0284c7;
 
-  /* --- Border Colors (Warm tone) --- */
-  --color-border-default: #c8beb4;
-  --color-border-subtle: #e0d8d0;
-  --color-border-strong: #a3a3a3;
+  /* --- Border Colors (Slate tone) --- */
+  --color-border-default: #b8c4d4;
+  --color-border-subtle: #e2e8f0;
+  --color-border-strong: #94a3b8;
 
   /* --- Primary (adjusted for light bg) --- */
-  --color-primary: #2563eb;
-  --color-primary-dark: #1d4ed8;
-  --color-primary-hover: #1e40af;
-  --color-primary-muted: rgba(37, 99, 235, 0.15);
-  --color-primary-selected: rgba(37, 99, 235, 0.2);
+  --color-primary: #0284c7;
+  --color-primary-dark: #0369a1;
+  --color-primary-hover: #0c4a6e;
+  --color-primary-muted: rgba(2, 132, 199, 0.15);
+  --color-primary-selected: rgba(2, 132, 199, 0.2);
   --color-primary-text: #ffffff;
 
-  /* --- State Colors (adjusted for light bg) --- */
+  /* --- State Colors (adjusted for slate light bg) --- */
   --color-success: #16a34a;
   --color-success-dark: #15803d;
-  --color-success-muted: rgba(22, 163, 74, 0.15);
+  --color-success-muted: rgba(22, 163, 74, 0.12);
 
   --color-warning: #d97706;
   --color-warning-dark: #b45309;
-  --color-warning-muted: rgba(217, 119, 6, 0.15);
+  --color-warning-muted: rgba(217, 119, 6, 0.12);
 
   --color-danger: #dc2626;
   --color-danger-dark: #b91c1c;
-  --color-danger-muted: rgba(220, 38, 38, 0.15);
+  --color-danger-muted: rgba(220, 38, 38, 0.12);
 
   /* --- Shadows (lighter for light theme) --- */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.15);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.2);
-  --shadow-glow-primary: 0 0 12px rgba(37, 99, 235, 0.3);
+  --shadow-glow-primary: 0 0 12px rgba(2, 132, 199, 0.3);
 
-  /* === Grid Theme Colors (Light - adjusted for light bg) === */
+  /* === Grid Theme Colors (Light - Slate Blue) === */
 
   /* --- Slide Mount Theme --- */
-  --slide-mount-grid-bg: #c8c0b8;
-  --slide-mount-mini-bg: #d8d0c8;
-  --slide-mount-mini-text: #3a3530;
-  --slide-mount-card-bg: #f0ebe5;
-  --slide-mount-card-border: #d0c8c0;
-  --slide-mount-card-shadow: rgba(0, 0, 0, 0.15);
-  --slide-mount-card-selected: #d8e4f5;
+  --slide-mount-grid-bg: #c0c8d4;
+  --slide-mount-mini-bg: #d0d8e4;
+  --slide-mount-mini-text: #2d3748;
+  --slide-mount-card-bg: #eef2f7;
+  --slide-mount-card-border: #c0c8d4;
+  --slide-mount-card-shadow: rgba(0, 0, 0, 0.12);
+  --slide-mount-card-selected: #d0e0f5;
 
   /* --- 35mm Slide Theme --- */
-  --slide-35mm-grid-bg-start: #b0a090;
-  --slide-35mm-grid-bg-end: #a09080;
-  --slide-35mm-mini-bg-start: #d4c4a8;
-  --slide-35mm-mini-bg-end: #c4b498;
-  --slide-35mm-mini-text: #4a4030;
-  --slide-35mm-card-bg-start: #e4d4b8;
-  --slide-35mm-card-bg-mid: #d4c4a8;
-  --slide-35mm-card-bg-end: #c4b498;
-  --slide-35mm-card-border: #9a8a6a;
+  --slide-35mm-grid-bg-start: #9aabbf;
+  --slide-35mm-grid-bg-end: #8a9bb0;
+  --slide-35mm-mini-bg-start: #c0d0e0;
+  --slide-35mm-mini-bg-end: #b0c0d0;
+  --slide-35mm-mini-text: #2d3748;
+  --slide-35mm-card-bg-start: #d0dde8;
+  --slide-35mm-card-bg-mid: #c0d0e0;
+  --slide-35mm-card-bg-end: #b0c0d0;
+  --slide-35mm-card-border: #7a8fa5;
 
   /* --- Light Box Theme --- */
   --lightbox-bg-start: rgba(100, 140, 200, 0.25);

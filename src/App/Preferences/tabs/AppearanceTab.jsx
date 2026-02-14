@@ -1,6 +1,7 @@
 import React from 'react';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
+import { checkFirstActionAchievement } from '../../../services/AchievementService.js';
 import styles from '../Preferences.module.css';
 import previewStyles from './ThemePreview.module.css';
 
@@ -18,6 +19,7 @@ const AppearanceTab = ({ config, setConfig }) => {
                         onChange={(e) => {
                             setConfig(prev => ({ ...prev, color_theme: e.target.value }));
                             document.documentElement.setAttribute('data-theme', e.target.value);
+                            checkFirstActionAchievement('first_theme_change').catch(() => {});
                         }}
                     >
                         <option value="dark">{t('appearance.themeDark')}</option>
@@ -35,6 +37,7 @@ const AppearanceTab = ({ config, setConfig }) => {
                         onChange={(e) => {
                             setConfig(prev => ({ ...prev, photo_grid_theme: e.target.value }));
                             document.documentElement.setAttribute('data-grid-theme', e.target.value);
+                            checkFirstActionAchievement('first_theme_change').catch(() => {});
                         }}
                     >
                         <option value="default">{t('appearance.gridDefault')}</option>
