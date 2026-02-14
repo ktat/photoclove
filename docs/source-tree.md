@@ -117,9 +117,16 @@ src/
 │       │   ├── 📄 FilterTab.jsx          # Filter options tab
 │       │   ├── 📄 SelectionTab.jsx       # Selection operations tab
 │       │   ├── 📄 ShareTab.jsx           # Photo sharing and collage creation
+│       │   ├── 📄 SelectionHeader.jsx    # Selection header component
+│       │   ├── 📄 PhotoSelectionSection.jsx  # Photo selection section
+│       │   ├── 📄 AlbumSelectionSection.jsx  # Album selection section
+│       │   ├── 📄 TagSelectionSection.jsx    # Tag selection section
+│       │   ├── 📄 PersonSelectionSection.jsx # Person selection section
+│       │   ├── 📄 UnknownFaceSelectionSection.jsx # Unknown face selection
 │       │   ├── 📄 tutorialContent.jsx    # Tutorial content
 │       │   ├── 📄 collectionOperations.js # Collection operations
 │       │   ├── 📄 dateOperations.js      # Date operations
+│       │   ├── 📄 groupOperations.js     # Group operations
 │       │   └── 📄 photoOperations.js     # Photo operations
 │       │
 │       ├── 📁 PhotoOption/
@@ -138,20 +145,27 @@ src/
 │       │       └── 📄 imageProcessing.js # Image processing utilities
 │       │
 │       └── 📁 PhotosListMini/
-│           ├── 📄 PhotoDisplay.jsx  # Individual photo display
+│           ├── 📄 PhotoDisplay.jsx  # Individual photo display (HEIC/AVIF progressive loading)
 │           ├── 📄 ThumbnailItem.jsx # Thumbnail item component
+│           ├── 📄 ThumbnailRenderer.jsx # Thumbnail renderer component
+│           ├── 📄 BurstOverlays.jsx # Burst group overlay component
+│           ├── 📄 FaceBoundingBoxOverlay.jsx # Face bounding box overlay
 │           ├── 📄 HelpPanel.jsx     # Help panel component
 │           ├── 📄 AlbumModeIndicator.jsx # Album mode indicator
 │           ├── 📄 photoUtils.js     # Thumbnail display calculations
+│           ├── 📄 thumbnailUtils.js # Thumbnail path utilities (HEIC/AVIF aware)
 │           ├── 📄 useKeyboardShortcuts.js # Keyboard navigation hook
 │           ├── 📄 useDeletionOperations.js # Deletion operations hook
 │           ├── 📄 usePhotoMetadataOperations.js # Photo metadata operations
 │           ├── 📄 usePhotoNavigation.js # Photo navigation hook
-│           └── 📄 useStarOperations.js # Star rating operations hook
+│           ├── 📄 useStarOperations.js # Star rating operations hook
+│           └── 📁 hooks/
+│               └── 📄 usePhotoDisplayZoom.js # Photo display zoom hook
 │
 ├── 📁 hooks/                   # Custom React hooks
 │   ├── 📄 useAsyncCancellation.js    # Async operation cancellation (request ID pattern)
 │   ├── 📄 useAppConfig.js           # Application configuration hook
+│   ├── 📄 useAppEventListeners.js   # App-level event listeners
 │   ├── 📄 useCollectionManagement.js # Collection (album/tag) management
 │   ├── 📄 useDataSynchronization.js # Data synchronization logic
 │   ├── 📄 useDateNavigation.js      # Date navigation logic
@@ -171,6 +185,10 @@ src/
 │   ├── 📄 usePhotoOperationFlow.js  # Photo operation flow management
 │   ├── 📄 usePhotoOperations.js     # Photo operations (album, trash, list)
 │   ├── 📄 usePhotoSelection.js      # Photo selection logic
+│   ├── 📄 useKeyboardShortcuts.js   # Global keyboard shortcuts
+│   ├── 📄 useNotifications.js       # Notification state management
+│   ├── 📄 usePhotoListFaces.js      # Photo list face operations
+│   ├── 📄 usePhotoListLoading.js    # Photo list loading state
 │   ├── 📄 usePhotosListDisplay.js   # PhotosList display state
 │   ├── 📄 usePhotosListEffects.js   # PhotosList side effects (extracted)
 │   ├── 📄 usePhotosListFilters.js   # Filter state management
@@ -189,6 +207,7 @@ src/
 │   ├── 📄 useTrashOperations.js     # Trash operations hook
 │   ├── 📄 useTutorial.js            # Tutorial state management
 │   ├── 📄 usePhotoOptionOperations.js # Shared operations for PhotoOption/DirectoryMenu
+│   ├── 📄 useProgressiveRawImage.js  # Progressive loading for RAW/HEIC/AVIF images
 │   ├── 📄 useViewMode.js            # View mode state machine
 │   ├── 📄 useViewModeFactory.js     # ViewMode factory (extracted)
 │   ├── 📄 useViewModeHelpers.js     # ViewMode helper functions
@@ -198,6 +217,7 @@ src/
 ├── 📁 components/              # Reusable UI components
 │   ├── 📄 AdvancedFilters.jsx       # Advanced filter controls
 │   ├── 📄 AlbumCreationModal.jsx    # Album creation dialog
+│   ├── 📄 AppDialog.jsx             # Custom React dialog (replaces native dialogs)
 │   ├── 📄 BackNavigationLink.jsx    # Back navigation component
 │   ├── 📄 CollectionSelectorModal.jsx # Collection selection dialog
 │   ├── 📄 ContextualDeleteModal.jsx # Context-aware delete confirmation
@@ -209,6 +229,8 @@ src/
 │   ├── 📄 ErrorToast.jsx            # Error toast notification
 │   ├── 📄 FaceThumbnail.jsx         # Face thumbnail with cache support
 │   ├── 📄 FilterPopover.jsx         # Filter popover component
+│   ├── 📄 NotificationBell.jsx      # Notification bell icon
+│   ├── 📄 NotificationCenterModal.jsx # Notification center modal
 │   ├── 📄 SavedSearches.jsx         # Saved searches component
 │   ├── 📄 SearchBar.jsx             # Search bar component
 │   ├── 📄 SearchTools.jsx           # Search tools container
@@ -223,6 +245,11 @@ src/
 │   ├── 📄 AchievementPopup.jsx      # Achievement unlock notification
 │   ├── 📄 ShareStatsDialog.jsx      # Share photography stats as images
 │   └── 📄 SlideShow.jsx             # Slideshow with music support
+│
+├── 📁 context/                 # React context providers
+│   ├── 📄 DialogContext.jsx        # Custom dialog context (AppDialog)
+│   ├── 📄 ErrorContext.jsx         # Error handling context
+│   └── 📄 UIContext.jsx            # UI state context
 │
 ├── 📁 domain/                  # Domain entities and value objects
 │   ├── 📄 Photo.js                  # Photo domain entity
@@ -262,9 +289,23 @@ src/
 │       ├── 📄 formatDate.js    # Date formatting
 │       └── 📄 formatNumber.js  # Number formatting
 │
+├── 📁 providers/               # React context providers
+│   └── 📄 AppProviders.jsx     # Centralized provider composition
+│
 ├── 📁 utils/                   # Utility functions
-│   ├── 📄 ShareUtils.js        # Photo sharing utilities (collage, watermark)
-│   └── 📄 orientationUtils.js  # EXIF orientation correction
+│   ├── 📄 orientationUtils.js  # EXIF orientation correction
+│   ├── 📄 PhotoProcessingUtils.js # Photo processing utilities
+│   └── 📁 share/              # Share utilities (refactored)
+│       ├── 📄 index.js         # Share module entry point
+│       ├── 📄 ClipboardUtils.js # Clipboard operations
+│       ├── 📄 CollageGenerator.js # Photo collage generation
+│       ├── 📄 ImageProcessingUtils.js # Image processing (watermark, resize)
+│       ├── 📄 SocialMediaShare.js # Social media sharing
+│       ├── 📄 StatsImageGenerator.js # Statistics image generation
+│       └── 📄 StatsTextGenerator.js # Statistics text generation
+│
+├── 📁 types/                   # Type definitions
+│   └── 📄 PageState.js         # Page state type
 │
 └── 📁 assets/                  # Static frontend assets
     └── 📄 react.svg            # React logo
@@ -370,6 +411,7 @@ src-tauri/
 │   │
 │   ├── 📁 commands/            # Tauri command handlers (refactored)
 │   │   ├── 📄 mod.rs           # Commands module declaration
+│   │   ├── 📄 achievement_commands.rs # Achievement commands
 │   │   ├── 📄 ai_model_commands.rs   # AI model management commands
 │   │   ├── 📄 album_commands.rs    # Album management commands
 │   │   ├── 📄 burst_group_commands.rs # Burst group commands
@@ -379,7 +421,8 @@ src-tauri/
 │   │   ├── 📄 config_commands.rs   # Configuration commands
 │   │   ├── 📄 database_commands.rs # Database commands
 │   │   ├── 📄 google_commands.rs   # Google Photos commands
-│   │   ├── 📄 image_commands.rs    # Image processing commands
+│   │   ├── 📄 image_commands.rs    # Image processing commands (HEIC/AVIF progressive loading)
+│   │   ├── 📄 job_helpers.rs      # Job queue helper functions
 │   │   ├── 📄 import_commands.rs   # Import commands
 │   │   ├── 📄 job_queue_commands.rs # Job queue commands
 │   │   ├── 📄 logging_commands.rs  # Logging commands
@@ -387,6 +430,7 @@ src-tauri/
 │   │   ├── 📄 recovery_queue_commands.rs # Recovery queue commands
 │   │   ├── 📄 s3_commands.rs       # S3 cloud storage commands
 │   │   ├── 📄 search_commands.rs   # Search commands
+│   │   ├── 📄 stats_commands.rs    # Statistics commands
 │   │   ├── 📄 style_commands.rs    # Style commands
 │   │   ├── 📄 tag_commands.rs      # Tag commands
 │   │   ├── 📄 trash_commands.rs    # Trash commands
@@ -395,13 +439,17 @@ src-tauri/
 │   │   └── 📁 photo_handlers/  # Photo command handlers (split)
 │   │       ├── 📄 mod.rs       # Photo handlers module
 │   │       ├── 📄 album.rs     # Album photo handlers
+│   │       ├── 📄 burst.rs     # Burst group photo handlers
 │   │       ├── 📄 collections.rs # Collection photo handlers
 │   │       ├── 📄 date.rs      # Date-based photo handlers
+│   │       ├── 📄 memories.rs  # Memories/On This Day handlers
 │   │       ├── 📄 navigation.rs # Photo navigation handlers
+│   │       ├── 📄 person.rs    # Person photo handlers
 │   │       ├── 📄 recent.rs    # Recent photos handlers
 │   │       ├── 📄 search.rs    # Search handlers
 │   │       ├── 📄 tag.rs       # Tag handlers
-│   │       └── 📄 trash.rs     # Trash handlers
+│   │       ├── 📄 trash.rs     # Trash handlers
+│   │       └── 📄 unknown_faces.rs # Unknown faces handlers
 │   │
 │   ├── 📄 entity.rs            # Domain entities module declaration
 │   ├── 📁 entity/              # Business domain entities
@@ -450,7 +498,7 @@ src-tauri/
 │   │   │
 │   │   ├── 📁 face_detection/  # Face detection subsystem
 │   │   │   ├── 📄 mod.rs       # Face detection module
-│   │   │   ├── 📄 service.rs   # Face detection service
+│   │   │   ├── 📄 service.rs   # Face detection service (HEIC/AVIF aware)
 │   │   │   ├── 📄 detector.rs  # Face detector (SCRFD)
 │   │   │   └── 📄 embedder.rs  # Face embedder (ArcFace)
 │   │   │
@@ -464,10 +512,17 @@ src-tauri/
 │   │       │
 │   │       ├── 📁 handlers/    # Job handlers
 │   │       │   ├── 📄 mod.rs   # Handlers module
+│   │       │   ├── 📄 ai_tagging.rs # AI tagging handler
 │   │       │   ├── 📄 create_db.rs # Database creation handler
+│   │       │   ├── 📄 face_detection.rs # Face detection handler
+│   │       │   ├── 📄 face_thumbnail_regenerate.rs # Face thumbnail regeneration handler
 │   │       │   ├── 📄 google_photos.rs # Google Photos handler
-│   │       │   ├── 📄 import.rs # Import handler
-│   │       │   └── 📄 thumbnail.rs # Thumbnail handler
+│   │       │   ├── 📄 import.rs # Import handler (HEIC/AVIF thumbnail generation)
+│   │       │   ├── 📄 insights.rs # Photography insights handler
+│   │       │   ├── 📄 recalculate_grouping.rs # Burst group recalculation handler
+│   │       │   ├── 📄 s3_sync.rs # S3 sync handler
+│   │       │   ├── 📄 thumbnail.rs # Thumbnail handler
+│   │       │   └── 📄 utils.rs # Handler utilities
 │   │       │
 │   │       └── 📁 utils/       # Job queue utilities
 │   │           ├── 📄 mod.rs   # Utils module
@@ -540,6 +595,14 @@ src-tauri/
 │   │   ├── 📄 file.rs          # File information value object
 │   │   └── 📄 star.rs          # Star rating value object
 │   │
+│   ├── 📁 utils/               # Utility modules
+│   │   ├── 📄 mod.rs           # Utils module declaration
+│   │   ├── 📄 raw_file.rs     # RAW/HEIC/AVIF file type detection (is_raw_file, is_heic_or_avif)
+│   │   ├── 📄 raw_decode.rs   # RAW file decoding (CR2, NEF, ARW, etc.)
+│   │   ├── 📄 heic_decode.rs  # HEIC/HEIF/AVIF decoding via libheif-rs
+│   │   ├── 📄 exif_parser.rs  # EXIF metadata parsing (JPEG, RAW, HEIC/AVIF)
+│   │   └── 📄 exif_thumbnail.rs # EXIF thumbnail extraction (JPEG, RAW, HEIC/AVIF)
+│   │
 │   └── 📁 bin/                 # Additional binary targets
 │
 ├── 📁 capabilities/            # Tauri security capabilities
@@ -595,7 +658,7 @@ src-tauri/
 - **`photo_service.rs`**: Photo processing (thumbnails, EXIF extraction, transformations)
 - **`s3_service.rs`**: S3 cloud storage backup and sync operations
 - **`token_storage_service.rs`**: OAuth token management with keyring storage
-- **`ai_tagging/`**: AI auto-tagging subsystem with multiple model backends (CLIP, SigLIP, OpenCLIP)
+- **`ai_tagging/`**: AI auto-tagging subsystem with multiple model backends (CLIP, SigLIP, OpenCLIP) — supports HEIC/AVIF via heic_decode
 
 **Repositories** (`repository/`): Data access and persistence
 - **`db/directory.rs`**: Filesystem-based photo storage and retrieval
@@ -616,8 +679,8 @@ src-tauri/
   - `tags.rs`: Tag operations
   - `utils.rs`: SQLite utilities
   - `collections/`: Collection operations subdirectory (crud, items, queries)
-- **`meta_db/migrations/`**: Database migration SQL files (001-007)
-- **`config/json.rs`**: JSON-based configuration file management
+- **`meta_db/migrations/`**: Database migration SQL files (001-010)
+  - `face_detection/`: Face detection queries (faces, persons, unknown, stats, types)
 
 **Commands** (`commands/`): Tauri command handlers (refactored from lib.rs)
 - Modular command structure with separate files for each feature area

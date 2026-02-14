@@ -41,7 +41,63 @@ This document provides comprehensive troubleshooting guidance for common issues 
 
 ## Recent Bug Fixes
 
-### Import Functionality Integration 
+### HEIC/HEIF/AVIF Format Support
+**Added 2026-02-12**: Full HEIC/HEIF/AVIF format support using libheif-rs with `compile-libheif` feature.
+- **Import**: HEIC/AVIF files are now scanned and imported with JPEG thumbnail generation
+- **Display**: Progressive loading (EXIF thumbnail → full decode) for HEIC/AVIF in PhotoViewer
+- **EXIF**: Metadata extraction from HEIC/AVIF files via libheif
+- **AI Tagging**: HEIC/AVIF files work with all AI models (MobileNet, OpenCLIP, SigLIP)
+- **Face Detection**: HEIC/AVIF files work with face detection and face thumbnail generation
+- **Maintenance**: Thumbnail regeneration supports HEIC/AVIF files
+- **Key files**: `src-tauri/src/utils/heic_decode.rs` (new), `src-tauri/src/utils/raw_file.rs` (is_heic_or_avif)
+
+### HEIC/AVIF Thumbnail Not Generated During Import
+**Fixed 2026-02-12**: HEIC files imported but thumbnails not created. Import pipeline was generating `.preview.jpg` instead of `{filename}.heic.jpg` that `set_has_thumbnail()` expects.
+- **Fix**: Changed import.rs to generate thumbnail at the correct path matching thumbnail store convention
+
+### HEIC/AVIF Maintenance Thumbnail Regeneration
+**Fixed 2026-02-12**: Maintenance tab "Regenerate Thumbnails" skipped HEIC/AVIF files. `process_raw_thumbnails` in photo_service.rs only checked `is_raw_file()`.
+- **Fix**: Added `is_heic_or_avif()` check alongside `is_raw_file()` in photo_service.rs
+
+### HEIC/AVIF Face Detection and AI Tagging
+**Fixed 2026-02-12**: Face Detection and AI Tagging failed for HEIC/AVIF files because 4 locations used `image::open()` which doesn't support HEIC.
+- **Fix**: Added `heic_decode::decode_heic_to_image()` routing in face_detection/service.rs, face_thumbnail_service.rs, ai_tagging/backend/onnx.rs, ai_tagging/backend/clip_common.rs
+
+### AI Tag Confidence Display Normalization
+**Fixed 2026-02-12**: PhotoTags.jsx displayed raw cosine similarity values (e.g., 31%) instead of normalized scale matching the slider. A clear cat photo showed 31% instead of a meaningful percentage.
+- **Fix**: Added `parseConfidence()` with `MODEL_THRESHOLD_RANGES` normalization in PhotoTags.jsx
+
+### OpenCLIP Threshold Range Calibration
+**Fixed 2026-02-12**: OpenCLIP `MODEL_THRESHOLD_RANGES` max was set to 0.40 but real-world data shows max scores around 0.31. Calibrated from 878 actual AI tag samples: observed max ~0.314, P99 ~0.29. Changed to max: 0.33 for accurate confidence display.
+
+### Selection Tab Preview Display Issues
+**Fixed 2026-02-11**: Selection tab preview images had display and layout issues in PhotoOption panel.
+
+### Light Theme Visibility on Film Background
+**Fixed 2026-02-11**: Several UI components were invisible or hard to read when using Light Theme with film background surfaces. Fixed DateList, LeftMenu, PhotosList, NotificationBell, and VerticalTabBar styles.
+
+### Crop Tool Move, Resize, and Edge-Drag
+**Added 2026-02-10**: Added interactive move, resize, and edge-drag interactions to the Crop tool in PhotoEditor. Users can now drag crop area edges and corners.
+
+### Menu Bar Reorganization with System Menu
+**Added 2026-02-07**: Reorganized menu bar with System menu, keyboard shortcuts, and emojis for better usability.
+
+### Relative Path Storage for Cross-OS NAS Support
+**Added 2026-02-05**: Store relative paths in database instead of absolute paths, enabling cross-OS NAS support. Photos can be accessed from different operating systems sharing the same NAS storage.
+
+### Custom React Dialogs
+**Added 2026-02-04**: Replaced native Tauri dialogs (`window.confirm`, `window.alert`) with custom React dialog components (`AppDialog.jsx`) for consistent cross-platform appearance. Added CLI Quick View mode for directory-based viewing.
+
+### NEV File Import Support
+**Added 2026-02-04**: Added NEV file format to the import pipeline with unsupported format placeholder display.
+
+### RAW File Support (3FR)
+**Added 2026-02-03**: Added comprehensive RAW file support including 3FR thumbnail extraction and subdirectory scanning. Progressive RAW image loading with EXIF thumbnail → full decode pipeline.
+
+### Notification Center
+**Added 2026-02-03**: Added notification center with bell icon in left sidebar. Notifications aggregate errors, warnings, and system events with read/unread status.
+
+### Import Functionality Integration
 **Fixed 2025-07-26**: Complete integration of import functionality using PhotosList/PhotosListMini with ImportState entity, eliminated separate Importer.jsx component
 
 ### ViewMode Display Condition Methods

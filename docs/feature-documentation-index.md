@@ -36,6 +36,11 @@ This index helps you quickly navigate to the right documentation for PhotoClove 
 - **[Photography Insights](feature-quick-reference.md#photography-insights-dashboard)** - Analytics and statistics dashboard
 - **[Slideshow Mode](feature-quick-reference.md#slideshow-mode)** - Photo presentation with background music
 - **[Internationalization](feature-quick-reference.md#internationalization-i18n)** - Multi-language support (7 languages)
+- **[HEIC/HEIF/AVIF Support](feature-quick-reference.md#heicheifavif-format-support)** - iPhone/modern camera format support with libheif-rs
+- **[RAW File Support](feature-quick-reference.md#raw-file-support)** - RAW format support (CR2, CR3, NEF, ARW, DNG, RAF, ORF, RW2, 3FR)
+- **[Custom React Dialogs](feature-quick-reference.md#custom-react-dialogs)** - Native dialog replacement with custom React components
+- **[Relative Path Storage](feature-quick-reference.md#relative-path-storage)** - Cross-OS NAS support with relative paths in DB
+- **[Notification Center](feature-quick-reference.md#notification-center)** - Notification bell with center modal
 
 ### Development Workflows
 - **[Feature Sequences](feature-sequences.md)** - Frontend/backend interaction flows

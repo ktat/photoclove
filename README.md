@@ -19,6 +19,7 @@ PhotoClove is a desktop photo manager designed for speed and simplicity. Built w
 - **⭐ Metadata Management**: Star ratings, comments, and searchable metadata with EXIF data extraction
 - **🔍 Advanced Search**: Comprehensive search interface with EXIF filters, saved searches, search history, and database optimization
 - **📊 Debug Logging**: Real-time log viewer with frontend/backend correlation for troubleshooting (Ctrl+Shift+L)
+- **📷 RAW & HEIC/AVIF Support**: Full support for RAW formats (CR2, CR3, NEF, ARW, DNG, RAF, ORF, RW2, 3FR) and HEIC/HEIF/AVIF (iPhone) with progressive loading, EXIF extraction, AI tagging, and face detection
 - **🎬 Video Support**: View and manage MP4/WebM videos with thumbnail generation
 - **☁️ Google Photos Integration**: Secure OAuth authentication with automatic token refresh and seamless photo uploads
 - **☁️ S3 Cloud Backup**: Backup photos to Amazon S3 or S3-compatible storage (Wasabi, MinIO, Cloudflare R2, DigitalOcean Spaces, iDrive e2) with auto-sync on import, custom region support, and provider-specific credentials
