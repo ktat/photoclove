@@ -253,6 +253,8 @@ pub async fn delete_permanently_batch(
             Ok(_) => {
                 // Delete thumbnail if it exists
                 let _ = thumbnail_service::delete_thumbnail(&photo, &state.config);
+                // Delete persistent decoded cache (RAW/HEIC)
+                thumbnail_service::delete_decoded_cache(&path_str, &state.config.thumbnail_store);
 
                 // Permanently delete from database (no date_summary update needed)
                 meta_db.delete_photo_permanently_no_summary(&photo);
@@ -330,6 +332,8 @@ pub async fn empty_trash(state: tauri::State<'_, AppState>) -> Result<String, St
 
         // Remove file from trash permanently (pass relative path for trash lookup)
         if file_service::remove_from_trash_permanently(abs_file, trash, &path).is_ok() {
+            // Delete persistent decoded cache (RAW/HEIC)
+            thumbnail_service::delete_decoded_cache(&path, &state.config.thumbnail_store);
             // Permanently delete from database
             meta_db.delete_photo_permanently(&photo);
             deleted_count += 1;

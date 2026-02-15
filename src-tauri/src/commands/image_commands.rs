@@ -143,15 +143,30 @@ pub fn get_resized_image(
     let start_time = Instant::now();
     log::debug!(target: "image", "resize_request; path={}; max_size={}; import_directory={:?}", path_str, max_size, import_directory);
 
-    // Get cache directory and create if needed
-    let cache_dir = utils::get_cache_dir()?;
-    if !cache_dir.exists() {
-        fs::create_dir_all(&cache_dir)
-            .map_err(|e| format!("Failed to create cache directory: {}", e))?;
-    }
+    let exif_start = Instant::now();
+    let should_use_exif = import_directory.is_some() || state.config.use_exif_thumbnail;
+    let is_raw = raw_file::is_raw_file(path_str);
+    let is_heic_avif = raw_file::is_heic_or_avif(path_str);
 
-    // Generate cache path using common function
-    let cache_path_str = utils::generate_cache_path(path_str, import_directory)?;
+    // For RAW/HEIC files, use persistent cache under thumbnail_store instead of ~/.cache/
+    let cache_path_str = if is_raw || is_heic_avif {
+        let persistent_path = format!("{}.jpg", utils::generate_persistent_cache_path(path_str, &state.config.thumbnail_store)?);
+        let persistent_dir = path::Path::new(&persistent_path).parent()
+            .ok_or_else(|| "Failed to get persistent cache directory".to_string())?;
+        if !persistent_dir.exists() {
+            fs::create_dir_all(persistent_dir)
+                .map_err(|e| format!("Failed to create persistent cache directory: {}", e))?;
+        }
+        persistent_path
+    } else {
+        // Get cache directory and create if needed
+        let cache_dir = utils::get_cache_dir()?;
+        if !cache_dir.exists() {
+            fs::create_dir_all(&cache_dir)
+                .map_err(|e| format!("Failed to create cache directory: {}", e))?;
+        }
+        utils::generate_cache_path(path_str, import_directory)?
+    };
     let cache_path = path::Path::new(&cache_path_str);
 
     // Check if cached file exists and is newer than source
@@ -174,11 +189,6 @@ pub fn get_resized_image(
     }
 
     log::debug!(target: "image", "cache_miss; generating_thumbnail");
-
-    let exif_start = Instant::now();
-    let should_use_exif = import_directory.is_some() || state.config.use_exif_thumbnail;
-    let is_raw = raw_file::is_raw_file(path_str);
-    let is_heic_avif = raw_file::is_heic_or_avif(path_str);
 
     if should_use_exif {
         // For HEIC/AVIF or RAW files, use the dedicated exif_thumbnail extraction
@@ -513,11 +523,13 @@ pub fn save_image_to_download_dir(
 /// Level 1: EXIF/embedded thumbnail (fast). Level 2: Full decode (slow).
 /// Results are cached with level suffix (`{hash}_exif`, `{hash}_full`).
 #[tauri::command]
+#[allow(unused_variables)]
 pub fn get_progressive_image(
     path_str: &str,
     max_size: u32,
     quality_level: u32,
     import_directory: Option<&str>,
+    state: tauri::State<'_, crate::AppState>,
 ) -> Result<String, String> {
     use std::time::Instant;
     let start_time = Instant::now();
@@ -528,10 +540,17 @@ pub fn get_progressive_image(
         return Err("Not a RAW or HEIC/AVIF file".to_string());
     }
 
-    let base_cache_path = utils::generate_cache_path(path_str, import_directory)?;
+    let base_cache_path = utils::generate_persistent_cache_path(path_str, &state.config.thumbnail_store)?;
+    // Ensure persistent cache directory exists
+    let persistent_dir = path::Path::new(&base_cache_path).parent()
+        .ok_or_else(|| "Failed to get persistent cache directory".to_string())?;
+    if !persistent_dir.exists() {
+        fs::create_dir_all(persistent_dir)
+            .map_err(|e| format!("Failed to create persistent cache directory: {}", e))?;
+    }
     let suffix = match quality_level {
-        1 => "_exif",
-        2 => "_full",
+        1 => "_exif.jpg",
+        2 => "_full.jpg",
         _ => return Err("Invalid quality level (must be 1 or 2)".to_string()),
     };
     let cache_path_str = format!("{}{}", base_cache_path, suffix);

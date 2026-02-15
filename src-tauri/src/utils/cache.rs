@@ -62,6 +62,39 @@ pub fn generate_cache_path(
         .map(|s| s.to_string())
 }
 
+/// Generate persistent cache path for RAW/HEIC decoded images.
+///
+/// Unlike `generate_cache_path` which uses `~/.cache/` (cleared on startup),
+/// this stores files under `{thumbnail_store}/.cache/` which persists across restarts.
+///
+/// # Arguments
+///
+/// * `photo_path` - The path to the original photo
+/// * `thumbnail_store` - The thumbnail store directory from config
+///
+/// # Returns
+///
+/// The persistent cache file path as a String
+pub fn generate_persistent_cache_path(
+    photo_path: &str,
+    thumbnail_store: &str,
+) -> Result<String, String> {
+    let cache_dir = PathBuf::from(thumbnail_store).join("decoded");
+
+    let mut hasher = DefaultHasher::new();
+    photo_path.hash(&mut hasher);
+    let hash = hasher.finish();
+    // Return without extension so callers can append appropriate suffix
+    // e.g. ".jpg" for base, "_exif.jpg" for progressive EXIF, "_full.jpg" for progressive full
+    let cache_filename = format!("{:x}", hash);
+    let cache_path = cache_dir.join(&cache_filename);
+
+    cache_path
+        .to_str()
+        .ok_or_else(|| "Failed to convert persistent cache path to string".to_string())
+        .map(|s| s.to_string())
+}
+
 /// Get the cache directory path for thumbnails
 ///
 /// # Returns

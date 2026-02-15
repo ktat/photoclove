@@ -1,4 +1,5 @@
 use crate::entity::{config, photo};
+use crate::utils;
 use std::fs;
 use std::path::Path;
 
@@ -48,4 +49,35 @@ pub fn delete_thumbnail(
     }
 
     Ok(())
+}
+
+/// Delete persistent decoded cache files for a RAW/HEIC photo.
+///
+/// Removes the base file ({hash}.jpg) and progressive variants (_exif, _full)
+/// from the persistent cache directory ({thumbnail_store}/.cache/).
+pub fn delete_decoded_cache(photo_path: &str, thumbnail_store: &str) {
+    let base_path = match utils::generate_persistent_cache_path(photo_path, thumbnail_store) {
+        Ok(p) => p,
+        Err(e) => {
+            log::warn!(target: "thumbnail_service", "delete_decoded_cache; error={}; photo_path={}", e, photo_path);
+            return;
+        }
+    };
+
+    let mut deleted = 0;
+    for suffix in &[".jpg", "_exif.jpg", "_full.jpg"] {
+        let path_str = format!("{}{}", base_path, suffix);
+        let path = Path::new(&path_str);
+        if path.exists() {
+            if let Err(e) = fs::remove_file(path) {
+                log::warn!(target: "thumbnail_service", "delete_decoded_cache; failed={}; error={}", path_str, e);
+            } else {
+                deleted += 1;
+            }
+        }
+    }
+
+    if deleted > 0 {
+        log::info!(target: "thumbnail_service", "delete_decoded_cache; photo_path={}; deleted={}", photo_path, deleted);
+    }
 }
