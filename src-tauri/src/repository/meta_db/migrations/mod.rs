@@ -159,6 +159,14 @@ pub fn run_migrations(conn: &Connection) -> Result<()> {
                     }
                 }
             }
+            14 => {
+                // Migration 14 adds verification_hash column to achievement_progress
+                if has_achievement_column(conn, "verification_hash") {
+                    log::info!(target: "migrations", "skipping_migration; version=14; reason=column_already_exists");
+                    mark_migration_applied(conn, 14, "add_achievement_hash (column exists)")?;
+                    continue;
+                }
+            }
             _ => {}
         }
 
@@ -211,6 +219,24 @@ fn table_exists(conn: &Connection) -> bool {
 /// Check if a column exists in photo_metadata table
 fn has_column(conn: &Connection, column_name: &str) -> bool {
     conn.prepare("PRAGMA table_info(photo_metadata)")
+        .and_then(|mut stmt| {
+            let rows = stmt.query_map([], |row| {
+                let name: String = row.get(1)?;
+                Ok(name)
+            })?;
+            for name in rows.flatten() {
+                if name == column_name {
+                    return Ok(true);
+                }
+            }
+            Ok(false)
+        })
+        .unwrap_or(false)
+}
+
+/// Check if a column exists in achievement_progress table
+fn has_achievement_column(conn: &Connection, column_name: &str) -> bool {
+    conn.prepare("PRAGMA table_info(achievement_progress)")
         .and_then(|mut stmt| {
             let rows = stmt.query_map([], |row| {
                 let name: String = row.get(1)?;
