@@ -19,7 +19,7 @@ PhotoClove is a desktop photo manager designed for speed and simplicity. Built w
 - **⭐ Metadata Management**: Star ratings, comments, and searchable metadata with EXIF data extraction
 - **🔍 Advanced Search**: Comprehensive search interface with EXIF filters, saved searches, search history, and database optimization
 - **📊 Debug Logging**: Real-time log viewer with frontend/backend correlation for troubleshooting (Ctrl+Shift+L)
-- **📷 RAW & HEIC/AVIF Support**: Full support for RAW formats (CR2, CR3, NEF, ARW, DNG, RAF, ORF, RW2, 3FR) and HEIC/HEIF/AVIF (iPhone) with progressive loading, EXIF extraction, AI tagging, and face detection
+- **📷 RAW & HEIC/AVIF Support**: Full support for RAW formats (CR2, CR3, NEF, ARW, DNG, RAF, ORF, RW2, 3FR) and HEIC/HEIF/AVIF (iPhone) with progressive loading, EXIF extraction, AI tagging, face detection, persistent decoded cache, and Share/Collage support
 - **🎬 Video Support**: View and manage MP4/WebM videos with thumbnail generation
 - **☁️ Google Photos Integration**: Secure OAuth authentication with automatic token refresh and seamless photo uploads
 - **☁️ S3 Cloud Backup**: Backup photos to Amazon S3 or S3-compatible storage (Wasabi, MinIO, Cloudflare R2, DigitalOcean Spaces, iDrive e2) with auto-sync on import, custom region support, and provider-specific credentials
@@ -30,7 +30,8 @@ PhotoClove is a desktop photo manager designed for speed and simplicity. Built w
 - **📚 Album Management**: Create custom photo collections with descriptions, cover photos, and custom ordering
 - **🏷️ Tag System**: Color-coded tags for photo categorization with search integration and bulk operations
 - **💡 Tutorial System**: Context-aware help tooltips for new users
-- **🎨 Theme Support**: Dark/Light application themes with customizable photo grid themes (Film Strip, Slide Mount, Light Box, 35mm Slide)
+- **📤 Share & Collage**: Share photos with watermarks, create multi-photo collages (2-9 photos), copy to clipboard or save as file with PNG copyright metadata
+- **🎨 Theme Support**: Dark/Light (Slate Blue) application themes with customizable photo grid themes (Film Strip, Slide Mount, Light Box, 35mm Slide)
 - **🖥️ Cross-Platform**: Works on Windows, macOS, and Linux
 
 ## 🏗️ Architecture
@@ -195,6 +196,23 @@ import_to/
 - **Real-Time Preview**: See changes instantly
 - **Save Options**: Save styles to database or export new image file
 - **Transform Controls**: Brightness, contrast, saturation, hue, rotation, scaling
+
+## 📤 Share & Collage
+
+PhotoClove includes powerful sharing and collage creation features:
+
+### Share
+- **Single Photo Export**: Share individual photos with optional watermarks
+- **Clipboard Copy**: Copy photos directly to clipboard for quick pasting
+- **File Save**: Save as PNG with embedded copyright metadata and timestamped filenames
+- **Watermarks**: PhotoClove logo watermark and/or custom text watermark with configurable color, opacity, and position
+- **Format Support**: Works with JPEG, PNG, RAW, and HEIC/AVIF files
+
+### Collage
+- **Multi-Photo Layouts**: Combine 2-9 selected photos into grid layouts (2x1, 2x2, 3x3, etc.)
+- **Smart Layouts**: Automatic layout selection based on photo count
+- **Customization**: Background color, padding, corner radius, and spacing controls
+- **Watermark Support**: Apply watermarks to the final collage
 
 ## 📚 Albums & Tags
 
@@ -436,6 +454,9 @@ PhotoClove uses a structured development workflow with the `improvement/` direct
 - [x] **Photography Insights**: Analytics dashboard with camera settings, equipment stats, and shooting time patterns
 - [x] **Achievements System**: Gamification with unlockable achievements for photo management milestones
 - [x] **Crop Tool**: Interactive crop with move, resize, edge-drag, and aspect ratio presets
+- [x] **Share & Collage**: Photo sharing with watermarks, multi-photo collage creation (2-9 photos), clipboard copy, and file save with PNG copyright metadata
+- [x] **Persistent RAW/HEIC Cache**: Decoded images cached in thumbnail_store for faster re-access across restarts
+- [x] **Light Theme Redesign**: Slate Blue color scheme for improved readability and visual consistency
 
 ### Current Focus 🎯
 - [ ] **Performance Optimization**: Further optimize large collection handling and memory management
