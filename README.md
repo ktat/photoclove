@@ -1,4 +1,4 @@
-# PhotoClove 🦀📸
+# PhotoClove
 
 > A fast, modern photo management application built with Rust and React
 
