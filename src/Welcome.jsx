@@ -70,7 +70,6 @@ function Welcome(props) {
                 <div id="welcome">
                     <div className="welcome language-select">
                         <h1 className="language-title">{t('common:language.select')}</h1>
-                        <div className="language-icon">&#x1F310;</div>
                         <div className="language-buttons">
                             {supportedLanguages.map((lang) => (
                                 <button
@@ -95,9 +94,6 @@ function Welcome(props) {
             {showWelcome &&
                 <div id="welcome">
                     <div className="welcome">
-                        <div className="photo-clove">
-                            &#x1f980;
-                        </div>
                         <div className="introduce">
                             {t('messages:welcome.description')}
                         </div>
