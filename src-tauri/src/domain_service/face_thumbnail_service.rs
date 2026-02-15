@@ -168,19 +168,38 @@ pub fn generate_face_thumbnail_from_file(
     face_id: i64,
     size: u32,
 ) -> Result<PathBuf, String> {
-    // Load image (use libheif for HEIC/AVIF, image::open for others)
+    // Load image: for HEIC/AVIF, try persistent cache first, then decode
+    let mut used_persistent_cache = false;
     let mut image = if crate::utils::raw_file::is_heic_or_avif(photo_path) {
-        crate::utils::heic_decode::decode_heic_to_image(photo_path, 1600)
-            .map(|(img, _, _)| img)
-            .ok_or_else(|| format!("Failed to decode HEIC/AVIF image: {}", photo_path))?
+        let persistent_path = format!(
+            "{}.jpg",
+            crate::utils::generate_persistent_cache_path(photo_path, thumbnail_store)?
+        );
+        if Path::new(&persistent_path).exists() {
+            log::debug!(
+                target: "face_thumbnail",
+                "using_persistent_cache; photo_path={}; cache_path={}",
+                photo_path,
+                persistent_path
+            );
+            used_persistent_cache = true;
+            image::open(&persistent_path)
+                .map_err(|e| format!("Failed to load cached image {}: {}", persistent_path, e))?
+        } else {
+            crate::utils::heic_decode::decode_heic_to_image(photo_path, 1600)
+                .map(|(img, _, _)| img)
+                .ok_or_else(|| format!("Failed to decode HEIC/AVIF image: {}", photo_path))?
+        }
     } else {
         image::open(photo_path)
             .map_err(|e| format!("Failed to load image {}: {}", photo_path, e))?
     };
 
-    // Apply EXIF orientation
-    if let Some(orientation) = read_exif_orientation(photo_path) {
-        image = apply_exif_orientation(image, &orientation);
+    // Apply EXIF orientation (skip for cached images which are already orientation-corrected)
+    if !used_persistent_cache {
+        if let Some(orientation) = read_exif_orientation(photo_path) {
+            image = apply_exif_orientation(image, &orientation);
+        }
     }
 
     generate_face_thumbnail(&image, bbox, thumbnail_store, face_id, size)

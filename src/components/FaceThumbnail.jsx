@@ -3,6 +3,8 @@ import { convertFileSrc } from '@tauri-apps/api/core';
 import { invoke } from '@tauri-apps/api/core';
 import { logger } from '../services/LoggerService.js';
 
+const NON_NATIVE_FORMAT_REGEX = /\.(cr2|cr3|nef|arw|dng|raf|orf|rw2|3fr|heic|heif|avif)$/i;
+
 /**
  * FaceThumbnail - Displays a face thumbnail
  * Tries to load cached thumbnail first, falls back to canvas crop
@@ -53,7 +55,21 @@ function FaceThumbnail({ faceId, photoPath, bbox, size = 50, borderRadius = 'var
 
         const loadAndDraw = async () => {
             try {
-                const response = await fetch(convertFileSrc(photoPath));
+                // For HEIC/RAW files, get decoded path from backend since browser can't decode them
+                let imageSrc;
+                if (NON_NATIVE_FORMAT_REGEX.test(photoPath)) {
+                    const decodedPath = await invoke('get_resized_image', {
+                        pathStr: photoPath,
+                        maxSize: 1600,
+                        importDirectory: null,
+                        skipResizeFallback: null,
+                    });
+                    imageSrc = convertFileSrc(decodedPath);
+                } else {
+                    imageSrc = convertFileSrc(photoPath);
+                }
+
+                const response = await fetch(imageSrc);
                 if (!response.ok) {
                     throw new Error(`Failed to fetch: ${response.status}`);
                 }
