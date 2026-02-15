@@ -459,18 +459,22 @@ This document helps you quickly find the relevant documentation when working on 
   - ShareTab: Main sharing interface in DirectoryMenu and PhotoOption
   - ShareStatsDialog: Share photography statistics as images
 - **Key Features**:
-  - Multiple collage layout templates (grid, masonry, polaroid, etc.)
+  - Single photo export and multi-photo collage creation (2-9 photos)
+  - Multiple collage layout templates (grid layouts: 2x1, 2x2, 3x3, etc.)
   - Custom watermark support (PhotoClove logo or user-defined text)
-  - Export to clipboard or file
+  - Export to clipboard or save as file
+  - PNG copyright metadata embedding (XMP dc:rights)
+  - Timestamped filenames for saved files
+  - HEIC/RAW format support (decoded via backend for non-native formats)
   - Share photography insights/statistics
-  - Layout customization (spacing, background color)
+  - Layout customization (spacing, background color, corner radius, padding)
 - **Watermark Options**:
   - PhotoClove watermark with logo
-  - Custom user watermark (configurable in Preferences)
+  - Custom user watermark (configurable in Preferences → General)
   - Position and opacity controls
 - **Related Files**:
-  - Frontend: `src/App/PhotosList/DirectoryMenu/ShareTab.jsx`, `src/components/ShareStatsDialog.jsx`, `src/utils/ShareUtils.js`
-  - Backend: `src-tauri/src/commands/image_commands.rs`
+  - Frontend: `src/App/PhotosList/DirectoryMenu/ShareTab.jsx`, `src/components/ShareStatsDialog.jsx`, `src/utils/ShareUtils.js`, `src/utils/share/CollageGenerator.js`, `src/utils/share/ImageProcessingUtils.js`, `src/utils/share/ClipboardUtils.js`
+  - Backend: `src-tauri/src/commands/image_commands.rs` (save_png_with_metadata command)
 
 ### 🎬 Slideshow Mode
 **When you need to understand**: Photo presentation, automatic slideshow, background music
@@ -538,6 +542,40 @@ This document helps you quickly find the relevant documentation when working on 
   - Config: `src/i18n/index.js`
   - Locales: `src/i18n/locales/`
   - Utils: `src/i18n/utils/formatDate.js`, `src/i18n/utils/formatNumber.js`
+
+### 📷 HEIC/HEIF/AVIF Format Support
+**When you need to understand**: HEIC/HEIF/AVIF image handling, iPhone photo support
+- **Purpose**: Full support for HEIC/HEIF/AVIF formats common in iPhone and modern cameras
+- **Key Features**:
+  - Import with automatic JPEG thumbnail generation
+  - Progressive loading (EXIF thumbnail → full decode) in PhotoViewer
+  - EXIF metadata extraction via libheif
+  - AI Tagging and Face Detection support
+  - Share & Collage support (decoded via backend)
+  - Persistent decoded cache in `{thumbnail_store}/decoded/` for fast re-access
+  - Face thumbnails use persistent cache instead of re-decoding original HEIC
+- **Persistent Cache**:
+  - Location: `{thumbnail_store}/decoded/{hash}.jpg`
+  - Survives app restarts (unlike `~/.cache/` which is cleared on startup)
+  - Used by image display, face thumbnail generation, and Share/Collage
+  - Cache path generation: `utils::generate_persistent_cache_path()`
+- **Related Files**:
+  - Backend: `src-tauri/src/utils/heic_decode.rs`, `src-tauri/src/utils/raw_file.rs`, `src-tauri/src/utils/cache.rs`
+  - Face thumbnails: `src-tauri/src/domain_service/face_thumbnail_service.rs`
+  - Frontend fallback: `src/components/FaceThumbnail.jsx`
+
+### 📷 RAW File Support
+**When you need to understand**: RAW image handling (CR2, CR3, NEF, ARW, DNG, RAF, ORF, RW2, 3FR)
+- **Purpose**: Full support for camera RAW formats with progressive loading
+- **Key Features**:
+  - Import with automatic thumbnail generation
+  - Progressive loading with EXIF thumbnail fallback
+  - EXIF metadata extraction
+  - AI Tagging and Face Detection support
+  - Persistent decoded cache (same as HEIC/AVIF)
+- **Related Files**:
+  - Backend: `src-tauri/src/utils/raw_file.rs`, `src-tauri/src/utils/cache.rs`
+  - Image commands: `src-tauri/src/commands/image_commands.rs`
 
 ## Quick Reference by Technology
 

@@ -70,6 +70,23 @@ This document provides comprehensive troubleshooting guidance for common issues 
 ### OpenCLIP Threshold Range Calibration
 **Fixed 2026-02-12**: OpenCLIP `MODEL_THRESHOLD_RANGES` max was set to 0.40 but real-world data shows max scores around 0.31. Calibrated from 878 actual AI tag samples: observed max ~0.314, P99 ~0.29. Changed to max: 0.33 for accurate confidence display.
 
+### HEIC/RAW Face Thumbnail Display Failure
+**Fixed 2026-02-15**: Face detection worked for HEIC images but face thumbnails failed to display. Backend `face_thumbnail_service.rs` decoded HEIC directly instead of using persistent cache, and frontend fallback tried browser-side HEIC decoding which isn't supported.
+- **Fix**: Backend now checks `{thumbnail_store}/decoded/{hash}.jpg` persistent cache first. Frontend fallback uses `get_resized_image` command for HEIC/RAW files instead of browser decode.
+
+### Persistent RAW/HEIC Decoded Cache
+**Added 2026-02-15**: RAW/HEIC decoded images were stored in `~/.cache/` which was cleared on startup, requiring re-decode on every restart. Moved to `{thumbnail_store}/decoded/` for persistence across restarts.
+
+### Share/Collage HEIC/RAW Support
+**Fixed 2026-02-14**: Share and Collage features failed for HEIC/RAW images because `ImageProcessingUtils.js` tried to load non-native formats directly in the browser.
+- **Fix**: Added backend decode routing for non-native formats via `get_resized_image` command.
+
+### PNG Copyright Metadata in Share
+**Added 2026-02-14**: Share save now embeds copyright metadata (XMP dc:rights) in PNG files and uses timestamped filenames.
+
+### Light Theme Redesign to Slate Blue
+**Added 2026-02-13**: Redesigned Light Theme with Slate Blue color scheme for improved readability. Added theme change achievement.
+
 ### Selection Tab Preview Display Issues
 **Fixed 2026-02-11**: Selection tab preview images had display and layout issues in PhotoOption panel.
 

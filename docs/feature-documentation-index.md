@@ -41,6 +41,7 @@ This index helps you quickly navigate to the right documentation for PhotoClove 
 - **[Custom React Dialogs](feature-quick-reference.md#custom-react-dialogs)** - Native dialog replacement with custom React components
 - **[Relative Path Storage](feature-quick-reference.md#relative-path-storage)** - Cross-OS NAS support with relative paths in DB
 - **[Notification Center](feature-quick-reference.md#notification-center)** - Notification bell with center modal
+- **[Share & Collage](feature-quick-reference.md#-share-tab-photo-sharing--collage)** - Photo sharing with watermarks, collage creation, and PNG metadata
 
 ### Development Workflows
 - **[Feature Sequences](feature-sequences.md)** - Frontend/backend interaction flows
