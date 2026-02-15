@@ -73,6 +73,13 @@ pnpm tauri dev
 
 ### Building
 
+At first, you need to download AI model for AI tagging feature.
+See src-tauri/models/README.md
+
+```bash
+make setup-ai
+```
+
 ```bash
 # Build for production
 pnpm tauri build
@@ -89,6 +96,27 @@ sudo apt install librsvg2-dev libgstreamer1.0-dev patchelf
 # Build with clean environment
 rm -rf src-tauri/target
 env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
+```
+
+### Windows Build
+
+Preparation:
+
+```bash
+# Install vcpkg if you don't have
+git clone https://github.com/microsoft/vcpkg.git
+.\vcpkg\bootstrap-vcpkg.bat
+
+# Install libheif
+.\vcpkg\vcpkg install libheif:x64-windows-static-md
+
+# Copy heif.lib as libheif.lib
+cd "C:\path\to\vcpkg\installed\x64-windows-static-md\lib"
+copy heif.lib libheif.lib
+```
+
+```bash
+pnpm tauri build
 ```
 
 ## 📖 Documentation
