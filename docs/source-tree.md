@@ -56,7 +56,6 @@ src/
 │   ├── 📄 Login.jsx            # Authentication (Google login)
 │   ├── 📄 NavigationIcons.jsx  # Navigation icon components
 │   ├── 📄 PhotosList.jsx       # Main photo grid view
-│   ├── 📄 Preferences.jsx      # Application settings
 │   ├── 📄 RecoveryQueueModal.jsx # Recovery queue management modal
 │   │
 │   ├── 📁 Footer/
@@ -66,20 +65,23 @@ src/
 │   │   └── 📄 SelectedPhotoInfo.jsx # Import batch information
 │   │
 │   ├── 📁 Preferences/         # Settings components
+│   │   ├── 📄 index.jsx              # Preferences main component
 │   │   └── 📁 tabs/            # Individual preference tabs
 │   │       ├── 📄 GeneralTab.jsx       # General settings
 │   │       ├── 📄 StartupTab.jsx       # Startup options
 │   │       ├── 📄 ThumbnailTab.jsx     # Thumbnail settings
 │   │       ├── 📄 GroupingTab.jsx      # Photo grouping settings
-│   │       ├── 📄 PerformanceTab.jsx   # Performance settings
 │   │       ├── 📄 AppearanceTab.jsx    # Appearance/theme settings
-│   │       ├── 📄 LoggingTab.jsx       # Logging configuration
-│   │       ├── 📄 AdvancedTab.jsx      # Advanced settings
+│   │       ├── 📄 AdvancedTab.jsx      # Advanced settings (includes performance & logging)
 │   │       ├── 📄 AITaggingTab.jsx     # AI auto-tagging settings
 │   │       ├── 📄 AIModelSelector.jsx  # AI model selection component
 │   │       ├── 📄 AICustomLabels.jsx   # Custom AI label configuration
 │   │       ├── 📄 S3BackupTab.jsx      # S3 cloud backup settings
-│   │       └── 📄 FaceDetectionTab.jsx # Face detection model management
+│   │       ├── 📄 S3AuthenticationSection.jsx # S3 authentication UI section
+│   │       ├── 📄 S3Constants.js       # S3 provider constants
+│   │       ├── 📄 FaceDetectionTab.jsx # Face detection model management
+│   │       └── 📁 hooks/
+│   │           └── 📄 useS3BackupHandlers.js # S3 backup event handlers
 │   │
 │   ├── 📁 Home/                # Home screen components
 │   │   └── 📄 GettingStartedChecklist.jsx # New user onboarding checklist
@@ -91,8 +93,12 @@ src/
 │   │   ├── 📄 ShootingTimeSection.jsx     # Shooting time patterns
 │   │   └── 📄 StorageSection.jsx          # Storage usage stats
 │   │
+│   └── 📁 constants/           # App-level constants
+│       └── 📄 menuActions.js       # Menu action constants
+│
 │   └── 📁 PhotosList/          # Photo viewing components
 │       ├── 📄 DirectoryMenu.jsx     # Right sidebar menu
+│       ├── 📄 EmptyState.jsx        # Empty state display component
 │       ├── 📄 PhotoLoading.jsx      # Loading indicator
 │       ├── 📄 PhotoOption.jsx       # Photo metadata panel
 │       ├── 📄 SharedModals.jsx      # Shared modals for operations
@@ -136,13 +142,14 @@ src/
 │       │   ├── 📄 PhotoFaces.jsx    # Face detection and person naming
 │       │   ├── 📄 CropTool.jsx      # Crop tool component
 │       │   ├── 📄 EditorControl.jsx # Editor control component
-│       │   ├── 📄 BurstGroupPanel.jsx # Burst group management
 │       │   │
 │       │   └── 📁 PhotoEditor/      # PhotoEditor utility modules
+│       │       ├── 📄 AdjustmentSlider.jsx # Adjustment slider component
 │       │       ├── 📄 cssUtils.js   # CSS parsing/generation
 │       │       ├── 📄 cropUtils.js  # Crop calculations
 │       │       ├── 📄 styleUtils.js # Style application
-│       │       └── 📄 imageProcessing.js # Image processing utilities
+│       │       ├── 📄 imageProcessing.js # Image processing utilities
+│       │       └── 📄 photoExportUtils.js # Photo export utilities
 │       │
 │       └── 📁 PhotosListMini/
 │           ├── 📄 PhotoDisplay.jsx  # Individual photo display (HEIC/AVIF progressive loading)
@@ -156,7 +163,6 @@ src/
 │           ├── 📄 thumbnailUtils.js # Thumbnail path utilities (HEIC/AVIF aware)
 │           ├── 📄 useKeyboardShortcuts.js # Keyboard navigation hook
 │           ├── 📄 useDeletionOperations.js # Deletion operations hook
-│           ├── 📄 usePhotoMetadataOperations.js # Photo metadata operations
 │           ├── 📄 usePhotoNavigation.js # Photo navigation hook
 │           ├── 📄 useStarOperations.js # Star rating operations hook
 │           └── 📁 hooks/
@@ -246,9 +252,15 @@ src/
 │   ├── 📄 ShareStatsDialog.jsx      # Share photography stats as images
 │   └── 📄 SlideShow.jsx             # Slideshow with music support
 │
+├── 📁 constants/               # Application constants
+│   ├── 📄 pages.js                 # Page constants
+│   └── 📄 viewModes.js             # ViewMode constants
+│
 ├── 📁 context/                 # React context providers
 │   ├── 📄 DialogContext.jsx        # Custom dialog context (AppDialog)
 │   ├── 📄 ErrorContext.jsx         # Error handling context
+│   ├── 📄 FaceDetectionContext.jsx # Face detection context
+│   ├── 📄 PhotoContext.jsx         # Photo data context
 │   └── 📄 UIContext.jsx            # UI state context
 │
 ├── 📁 domain/                  # Domain entities and value objects
@@ -265,8 +277,11 @@ src/
 │   ├── 📄 TauriService.js      # Tauri backend communication service
 │   ├── 📄 AchievementService.js # Achievement tracking and display
 │   ├── 📄 InsightsService.js   # Photography insights fetching
+│   ├── 📄 PhotoCacheService.js # Photo data cache management
+│   ├── 📄 PhotoService.js      # Photo domain service
 │   ├── 📄 SlideshowMusicService.js # Slideshow music management
 │   ├── 📄 FaceDetectionService.js # Face detection API service
+│   ├── 📄 UnifiedCollectionService.js # Unified collection CRUD service
 │   └── 📁 firebase/            # Firebase authentication
 │       ├── 📄 app.js           # Firebase app configuration
 │       ├── 📄 auth.js          # Authentication methods
@@ -295,6 +310,13 @@ src/
 ├── 📁 utils/                   # Utility functions
 │   ├── 📄 orientationUtils.js  # EXIF orientation correction
 │   ├── 📄 PhotoProcessingUtils.js # Photo processing utilities
+│   ├── 📄 ShareUtils.js        # Share utility functions
+│   ├── 📄 UIStateUtils.js      # UI state utility functions
+│   ├── 📄 debugStorage.js      # Debug storage utilities
+│   ├── 📄 photoUtils.js        # Photo utility functions
+│   ├── 📄 tabClassUtils.js     # Tab CSS class utilities
+│   ├── 📄 tagColorUtils.js     # Tag color utilities
+│   ├── 📄 thumbnailUtils.js    # Thumbnail utility functions
 │   └── 📁 share/              # Share utilities (refactored)
 │       ├── 📄 index.js         # Share module entry point
 │       ├── 📄 ClipboardUtils.js # Clipboard operations
@@ -305,7 +327,8 @@ src/
 │       └── 📄 StatsTextGenerator.js # Statistics text generation
 │
 ├── 📁 types/                   # Type definitions
-│   └── 📄 PageState.js         # Page state type
+│   ├── 📄 PageState.js         # Page state type
+│   └── 📄 photo.types.js       # Photo type definitions
 │
 └── 📁 assets/                  # Static frontend assets
     └── 📄 react.svg            # React logo
@@ -332,7 +355,6 @@ src/
   - **`photoUtils.js`**: Thumbnail display calculations and border styles
   - **`useKeyboardShortcuts.js`**: Keyboard navigation hook for photo browsing
   - **`useDeletionOperations.js`**: Deletion operations hook
-  - **`usePhotoMetadataOperations.js`**: Photo metadata operations hook
   - **`usePhotoNavigation.js`**: Photo navigation hook
   - **`useStarOperations.js`**: Star rating operations hook
 - **`PhotoOption.jsx`**: Right sidebar panel for photo metadata and actions
@@ -458,11 +480,11 @@ src-tauri/
 │   │   ├── 📄 google_photos.rs # Google Photos integration entity
 │   │   ├── 📄 importer.rs      # Import operation state entity
 │   │   ├── 📄 job_queue.rs     # Background job entities
+│   │   ├── 📄 job_type_config.rs # Job type configuration entity
 │   │   ├── 📄 photo.rs         # Photo entity with metadata
 │   │   ├── 📄 photo_collection.rs # Unified collection entity
 │   │   ├── 📄 photo_meta.rs    # Photo metadata entities
 │   │   ├── 📄 recovery_queue.rs # Recovery queue entity
-│   │   ├── 📄 storage_sync.rs  # Storage synchronization entity
 │   │   └── 📄 trash.rs         # Trash/recycle bin entity
 │   │
 │   ├── 📄 domain_service.rs    # Domain services module declaration
@@ -535,16 +557,15 @@ src-tauri/
 │   │   ├── 📄 dir.rs           # Directory-based storage
 │   │   ├── 📄 meta_db.rs       # Metadata database interface
 │   │   │
-│   │   ├── 📁 config/          # Configuration storage
-│   │   │   └── 📄 json.rs      # JSON-based config storage
-│   │   │
 │   │   ├── 📁 db/              # Database implementations
-│   │   │   └── 📄 directory.rs # Filesystem-based repository
+│   │   │   ├── 📄 directory.rs # Filesystem-based repository
+│   │   │   └── 📄 sqlite.rs   # SQLite repository implementation
 │   │   │
 │   │   └── 📁 meta_db/         # Metadata database (refactored)
 │   │       │
 │   │       ├── 📁 sqlite/      # SQLite database implementation
 │   │       │   ├── 📄 mod.rs       # SQLite module
+│   │       │   ├── 📄 achievements.rs # Achievement progress operations
 │   │       │   ├── 📄 burst_groups.rs # Burst group operations
 │   │       │   ├── 📄 counts.rs    # Count operations
 │   │       │   ├── 📄 date_summary.rs # Date summary operations
@@ -566,6 +587,11 @@ src-tauri/
 │   │       │   │   ├── 📄 items.rs # Collection item operations
 │   │       │   │   └── 📄 queries.rs # Collection queries
 │   │       │   │
+│   │       │   ├── 📁 stats/      # Statistics operations
+│   │       │   │   ├── 📄 mod.rs          # Stats module
+│   │       │   │   ├── 📄 stats_queries.rs # Statistics queries
+│   │       │   │   └── 📄 stats_types.rs  # Statistics types
+│   │       │   │
 │   │       │   └── 📁 face_detection/ # Face detection operations
 │   │       │       ├── 📄 mod.rs   # Face detection module
 │   │       │       ├── 📄 faces.rs # Face CRUD and batch operations
@@ -585,7 +611,11 @@ src-tauri/
 │   │           ├── 📄 007_add_storage_sync.sql
 │   │           ├── 📄 008_create_face_detection.sql
 │   │           ├── 📄 009_fix_face_detection_fk.sql
-│   │           └── 📄 010_add_photo_id_and_face_mapping.sql
+│   │           ├── 📄 010_add_photo_id_and_face_mapping.sql
+│   │           ├── 📄 011_add_job_processed_count.sql
+│   │           ├── 📄 012_add_job_last_processed_id.sql
+│   │           ├── 📄 013_create_achievements.sql
+│   │           └── 📄 014_add_achievement_hash.sql
 │   │
 │   ├── 📄 value.rs             # Value objects module declaration
 │   ├── 📁 value/               # Domain value objects
@@ -600,6 +630,7 @@ src-tauri/
 │   │   ├── 📄 raw_file.rs     # RAW/HEIC/AVIF file type detection (is_raw_file, is_heic_or_avif)
 │   │   ├── 📄 raw_decode.rs   # RAW file decoding (CR2, NEF, ARW, etc.)
 │   │   ├── 📄 heic_decode.rs  # HEIC/HEIF/AVIF decoding via libheif-rs
+│   │   ├── 📄 cache.rs       # Persistent decoded image cache management
 │   │   ├── 📄 exif_parser.rs  # EXIF metadata parsing (JPEG, RAW, HEIC/AVIF)
 │   │   └── 📄 exif_thumbnail.rs # EXIF thumbnail extraction (JPEG, RAW, HEIC/AVIF)
 │   │
@@ -679,7 +710,7 @@ src-tauri/
   - `tags.rs`: Tag operations
   - `utils.rs`: SQLite utilities
   - `collections/`: Collection operations subdirectory (crud, items, queries)
-- **`meta_db/migrations/`**: Database migration SQL files (001-010)
+- **`meta_db/migrations/`**: Database migration SQL files (001-014)
   - `face_detection/`: Face detection queries (faces, persons, unknown, stats, types)
 
 **Commands** (`commands/`): Tauri command handlers (refactored from lib.rs)

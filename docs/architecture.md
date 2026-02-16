@@ -109,7 +109,7 @@ PhotoClove is a photo management application built with a desktop-native archite
 - **JobQueue.jsx**: Background job monitoring
 
 #### 4. Configuration Components
-- **Preferences.jsx**: Application settings management
+- **Preferences/index.jsx**: Application settings management
 - **FolderPicker.jsx**: Directory selection dialogs
 
 ### Backend Architecture

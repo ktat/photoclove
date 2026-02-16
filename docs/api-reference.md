@@ -25,7 +25,7 @@ This document provides API reference organized by use case for PhotoClove's back
 ### Configuration Operations
 - **Commands**: `get_config`, `save_config`
 - **Sequence**: [Preferences Update](feature-sequences.md#1-preferences-update)
-- **Frontend**: `src/App/Preferences.jsx`
+- **Frontend**: `src/App/Preferences/index.jsx`
 - **Backend**: `src-tauri/src/entity/config.rs`
 
 ### Unified Collection System (Albums & Tags)
@@ -107,7 +107,7 @@ Commands for managing failed operations that can be retried.
 | `retry_all_recovery_items` | None | `Result<String, String>` | Retry all pending items; returns `{"total", "succeeded", "failed"}` |
 | `cleanup_recovery_items` | None | `Result<usize, String>` | Cleanup old resolved/discarded items; returns count of cleaned items |
 
-- **Frontend**: `src/App/RecoveryQueue.jsx`
+- **Frontend**: `src/App/RecoveryQueueModal.jsx`
 - **Backend**: `src-tauri/src/commands/recovery_queue_commands.rs`
 
 ### Burst Group Commands
@@ -121,7 +121,7 @@ Commands for managing burst photo groups (consecutive shots grouping).
 | `recalculate_grouping` | `threshold_seconds: u32`, `min_group_size: u32` | `Result<String, String>` | Recalculate auto burst groups globally; returns job unit ID |
 | `recalculate_grouping_in_date` | `date_str: String`, `threshold_seconds: u32`, `min_group_size: u32` | `Result<u32, String>` | Recalculate burst groups for a specific date (YYYY-MM-DD); returns count of new groups |
 
-- **Frontend**: `src/App/PhotosList/PhotoOption/BurstGroupPanel.jsx`
+- **Frontend**: `src/App/PhotosList/PhotoOption/PhotoInfo.jsx`
 - **Backend**: `src-tauri/src/commands/burst_group_commands.rs`
 
 ### S3 Backup Commands
@@ -142,7 +142,7 @@ Commands for managing S3 cloud backup configuration and sync operations.
 **Storage Types**: `aws_s3`, `minio`, `wasabi`, `cloudflare_r2`, `digitalocean`, `custom`
 **Auth Methods**: `aws_credentials`, `iam_role`, `access_key`
 
-- **Frontend**: `src/App/Preferences/S3Backup.jsx`
+- **Frontend**: `src/App/Preferences/tabs/S3BackupTab.jsx`
 - **Backend**: `src-tauri/src/commands/s3_commands.rs`
 
 ### AI Model Commands
@@ -161,7 +161,7 @@ Commands for managing AI models used in photo auto-tagging.
 
 **Model Status Values**: `ready`, `not_downloaded`, `downloading:{progress}`, `failed:{error}`
 
-- **Frontend**: `src/App/Preferences/AITagging.jsx`
+- **Frontend**: `src/App/Preferences/tabs/AITaggingTab.jsx`
 - **Backend**: `src-tauri/src/commands/ai_model_commands.rs`
 
 ### Face Detection Commands

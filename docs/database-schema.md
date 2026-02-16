@@ -206,6 +206,27 @@ Junction table for photo-face relationships (for efficient queries).
 - `idx_faces_cluster_id`: Index on detected_faces.cluster_id for clustering
 - `idx_persons_name`: Index on persons.name for name searches
 
+## Job Queue Additional Columns
+
+The following columns were added to the `job_queue` table via migrations 011-012:
+
+- `processed_count` (INTEGER NOT NULL DEFAULT 0): Number of items processed so far (for progress tracking and resume)
+- `last_processed_id` (INTEGER): Last processed item ID for job resume functionality (LastProcessedId strategy)
+
+## Achievement Progress Table
+
+Achievement progress tracking for gamification features (migration 013-014).
+
+### Achievement Progress Fields
+- `id` (TEXT PRIMARY KEY): Achievement ID (e.g., 'first_import', 'photos_1000')
+- `current_value` (INTEGER DEFAULT 0): Current progress value
+- `achieved_at` (TEXT): NULL = not achieved, ISO datetime = achieved
+- `updated_at` (TEXT NOT NULL): Last update timestamp
+- `verification_hash` (TEXT): Hash for tamper detection (added in migration 014)
+
+### Achievement Progress Indexes
+- `idx_achievement_achieved`: Index on achieved_at for querying achieved/unachieved achievements
+
 ## Indexes
 
 ### Performance Indexes

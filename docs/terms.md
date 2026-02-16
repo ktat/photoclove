@@ -79,7 +79,7 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 
 ### Configuration
 - **Term**: Preferences
-- **Implementation**: `src/App/Preferences.jsx`
+- **Implementation**: `src/App/Preferences/index.jsx`
 - **Description**: Application settings and configuration
 
 - **Term**: FolderPicker
@@ -176,21 +176,13 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - **Implementation**: `src/App/Preferences/tabs/GroupingTab.jsx`
 - **Description**: Photo grouping (burst, similar) settings
 
-- **Term**: PerformanceTab
-- **Implementation**: `src/App/Preferences/tabs/PerformanceTab.jsx`
-- **Description**: Performance tuning settings
-
 - **Term**: AppearanceTab
 - **Implementation**: `src/App/Preferences/tabs/AppearanceTab.jsx`
 - **Description**: UI theme and appearance settings
 
-- **Term**: LoggingTab
-- **Implementation**: `src/App/Preferences/tabs/LoggingTab.jsx`
-- **Description**: Logging configuration settings
-
 - **Term**: AdvancedTab
 - **Implementation**: `src/App/Preferences/tabs/AdvancedTab.jsx`
-- **Description**: Advanced and experimental settings
+- **Description**: Advanced settings (includes performance tuning and logging configuration)
 
 - **Term**: S3BackupTab
 - **Implementation**: `src/App/Preferences/tabs/S3BackupTab.jsx`

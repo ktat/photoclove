@@ -119,11 +119,11 @@ This document helps you quickly find the relevant documentation when working on 
 - **Architecture**: [Core Components → Configuration Components](architecture.md#4-configuration-components)
 - **Sequences**: [Configuration Management](feature-sequences.md#configuration-management)
 - **Components**: [Preferences Screen](component-structure.md#preferences-screen)
-- **Related Files**: `src/App/Preferences.jsx`, `src/FolderPicker.jsx`, `src-tauri/src/entity/config.rs`
+- **Related Files**: `src/App/Preferences/index.jsx`, `src/FolderPicker.jsx`, `src-tauri/src/entity/config.rs`
 
 ### 🔄 State Management & ViewMode DDD Architecture
 **When you need to understand**: React state, Context APIs, component state patterns, state debugging, custom hooks, Domain-Driven Design
-- **Guide**: [State Management Guide](state-management-guide.md) - Comprehensive guide to refactored state management architecture
+- **Guide**: [State Management Guide](guides/state-management-guide.md) - Comprehensive guide to refactored state management architecture
 - **DDD Architecture**: Domain-Driven Design approach with ViewMode value object for view state management
 - **ViewMode System**: 
   - `ViewMode` - Immutable DDD value object encapsulating view mode logic (60+ methods)
@@ -206,7 +206,7 @@ This document helps you quickly find the relevant documentation when working on 
 
 ### 🔐 Google OAuth Token Management
 **When you need to understand**: Google Photos authentication, token storage, automatic refresh, secure credential management
-- **Documentation**: [OAuth Token Management](oauth-token-management.md)
+- **Documentation**: [OAuth Token Management](guides/oauth-token-management.md)
 - **Architecture**: Platform-native keyring storage with external service integration
 - **Features**: Secure token storage, automatic refresh, external OAuth proxy, debug tools
 - **Security**: Platform-native keyring (Linux Secret Service, macOS Keychain, Windows Credential Manager)
@@ -288,7 +288,7 @@ This document helps you quickly find the relevant documentation when working on 
 
 ### ☁️ Google Photos Integration
 **When you need to understand**: Google Photos upload, cloud storage sync, OAuth authentication, API error handling
-- **Documentation**: [OAuth Token Management](oauth-token-management.md) for authentication details
+- **Documentation**: [OAuth Token Management](guides/oauth-token-management.md) for authentication details
 - **Features**: Photo upload to Google Photos, automatic token refresh, job queue integration, comprehensive error handling
 - **Authentication**: Secure OAuth flow with external service, automatic token management
 - **Upload Process**: Integrated with job queue system for background uploads with progress tracking
@@ -335,7 +335,7 @@ This document helps you quickly find the relevant documentation when working on 
   - High accuracy mode: Use full-resolution images for better accuracy
   - Pre-computed embeddings: Faster inference with OpenCLIP/SigLIP using cached text embeddings
 - **Configuration**: Model selection, confidence threshold (0-100%), EXIF thumbnail usage, high accuracy mode, custom label definitions, auto-tag preferences
-- **Related Files**: `src/App/Preferences/AITaggingTab.jsx`, `src/App/PhotoViewer/PhotoMenu.jsx`, `src-tauri/src/domain_service/ai_tagging/`, `src-tauri/src/commands/ai_model_commands.rs`
+- **Related Files**: `src/App/Preferences/tabs/AITaggingTab.jsx`, `src/App/PhotosList/PhotoOption/PhotoTags.jsx`, `src-tauri/src/domain_service/ai_tagging/`, `src-tauri/src/commands/ai_model_commands.rs`
 
 ### 👤 Face Detection & Recognition
 **When you need to understand**: Face detection in photos, person management, face browsing, unknown faces management
@@ -370,7 +370,7 @@ This document helps you quickly find the relevant documentation when working on 
   - ViewMode-aware selection management
   - Batch API using SQL IN clause for efficient operations
 - **Related Files**:
-  - Frontend: `src/App/PhotosList/PhotoListContent.jsx`, `src/App/PhotosList/FacesList.jsx`, `src/App/PhotosList/UnknownFacesList.jsx`, `src/App/PhotoViewer/PhotoMenu.jsx`, `src/components/FaceThumbnail.jsx`, `src/App/PhotosList/DirectoryMenu/SelectionTab.jsx`
+  - Frontend: `src/App/PhotosList/PhotoListContent.jsx`, `src/App/PhotosList/FacesList.jsx`, `src/App/PhotosList/UnknownFacesList.jsx`, `src/App/PhotosList/PhotoOption/PhotoFaces.jsx`, `src/components/FaceThumbnail.jsx`, `src/App/PhotosList/DirectoryMenu/SelectionTab.jsx`
   - Backend: `src-tauri/src/domain_service/face_detection/`, `src-tauri/src/domain_service/face_thumbnail_service.rs`, `src-tauri/src/commands/face_detection_commands.rs`, `src-tauri/src/commands/face_batch_commands.rs`
   - Hooks: `src/hooks/usePhotoOperations.js`, `src/hooks/usePhotosState.js`
   - Services: `src/services/FaceDetectionService.js`

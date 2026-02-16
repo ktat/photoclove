@@ -74,7 +74,7 @@ See also:
 
 ## Preferences Screen
 
-**Component**: `src/App/Preferences.jsx`
+**Component**: `src/App/Preferences/index.jsx`
 
 ```html
 <div id="preferences" class="preferences">
