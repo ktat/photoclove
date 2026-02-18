@@ -19,3 +19,4 @@ dev.sh
 /.claude/
 public/movie.tmp.MP4
 src-tauri/models/*.onnx
+coverage/
