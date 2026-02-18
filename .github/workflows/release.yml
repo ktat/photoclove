@@ -81,9 +81,16 @@ jobs:
         if: startsWith(matrix.platform, 'macos')
         run: brew install cmake
 
-      - name: Create dummy ONNX model file
+      - name: Install Windows NASM (required for libheif compile)
+        if: matrix.platform == 'windows-latest'
+        uses: ilammy/setup-nasm@v1
+
+      - name: Download default ONNX model
         shell: bash
-        run: mkdir -p src-tauri/models && touch src-tauri/models/dummy.onnx
+        run: |
+          mkdir -p src-tauri/models
+          curl -L -o src-tauri/models/mobilenet-v3-large.onnx \
+            "https://github.com/onnx/models/raw/main/validated/vision/classification/mobilenet/model/mobilenetv2-12.onnx"
 
       - name: Install frontend dependencies
         run: pnpm install
