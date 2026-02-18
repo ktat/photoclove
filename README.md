@@ -113,8 +113,8 @@ make setup-ai
 > **Note**: `make setup-ai` is Linux x64 only. On macOS and Windows, the ONNX Runtime must be installed separately. The app builds without this step, but AI tagging will not work at runtime.
 
 ```bash
-# Build for production
-pnpm tauri build
+# Build for production (Linux)
+make build-linux
 ```
 
 #### WSL2 Build (Ubuntu 22.04)
@@ -128,9 +128,9 @@ sudo apt install build-essential pkg-config libwebkit2gtk-4.1-dev libssl-dev \
   gstreamer1.0-plugins-bad gstreamer1.0-plugins-good gstreamer1.0-libav \
   ffmpeg libgstreamer1.0-dev cmake libnuma-dev libsecret-1-dev patchelf
 
-# Build with clean environment
+# Build with clean environment (strips Windows paths from PATH)
 rm -rf src-tauri/target
-env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
+make build-wsl
 ```
 
 ### macOS Build
@@ -143,7 +143,7 @@ env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
 brew install cmake ffmpeg libheif
 
 # Build
-pnpm tauri build
+make build-macos
 ```
 
 > **Note**: `make setup-ai` does not support macOS. Download the ONNX Runtime for macOS from the [ONNX Runtime releases](https://github.com/microsoft/onnxruntime/releases) and set `ORT_DYLIB_PATH` accordingly.

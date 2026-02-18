@@ -49,6 +49,17 @@ $(ONNX_LIB_FILE):
 setup-ai: download-model download-onnxruntime
 	@echo "AI Auto-Tagging setup complete!"
 
+# Platform-specific build targets
+build-linux:
+	pnpm tauri build
+
+build-macos:
+	pnpm tauri build
+
+# WSL2: strips Windows paths from PATH to avoid build conflicts
+build-wsl:
+	env PATH=$(shell echo $$PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
+
 # Clean downloaded AI files
 clean-ai:
 	rm -f $(MODEL_FILE)
