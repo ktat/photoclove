@@ -51,14 +51,29 @@ PhotoClove uses a modern desktop architecture:
 
 ### Prerequisites
 
-- **Node.js** v18+ and **pnpm** (package manager)
-- **Rust** 1.84.1+ (for building from source)
+- **Node.js** v18+ ([nodejs.org](https://nodejs.org/))
+- **pnpm** (package manager): `npm install -g pnpm` or `corepack enable && corepack prepare pnpm@latest --activate`
+- **Rust** 1.84.1+ via [rustup](https://rustup.rs/): `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
 - **FFmpeg** and **GStreamer** (for video support)
 - **CMake** and **libnuma-dev** (for HEIC/AVIF support via libheif)
+- **libwebkit2gtk-4.1-dev** (Linux only — Tauri WebView renderer)
+- **libsecret-1-dev** (Linux only — required for OAuth and S3 credential storage)
 
 #### Ubuntu/Debian Setup
 ```bash
-sudo apt install gstreamer1.0-plugins-bad ffmpeg librsvg2-dev libgstreamer1.0-dev cmake libnuma-dev
+# Core Tauri dependencies
+sudo apt install build-essential pkg-config libwebkit2gtk-4.1-dev libssl-dev \
+  libayatana-appindicator3-dev librsvg2-dev libxdo-dev
+
+# Video support
+sudo apt install gstreamer1.0-plugins-bad gstreamer1.0-plugins-good \
+  gstreamer1.0-libav ffmpeg libgstreamer1.0-dev
+
+# HEIC/AVIF support (libheif)
+sudo apt install cmake libnuma-dev
+
+# Keyring support (for OAuth and S3 credentials)
+sudo apt install libsecret-1-dev
 ```
 
 ### Development
@@ -73,12 +88,15 @@ pnpm tauri dev
 
 ### Building
 
-At first, you need to download AI model for AI tagging feature.
-See src-tauri/models/README.md
+For the AI Auto-Tagging feature, download the ONNX model and runtime before building.
+See `src-tauri/models/README.md` for details.
 
 ```bash
+# Linux x64 only — downloads ONNX model and ONNX Runtime library
 make setup-ai
 ```
+
+> **Note**: `make setup-ai` is Linux x64 only. On macOS and Windows, the ONNX Runtime must be installed separately. The app builds without this step, but AI tagging will not work at runtime.
 
 ```bash
 # Build for production
@@ -90,19 +108,41 @@ pnpm tauri build
 # Update WSL first
 wsl --update && wsl --shutdown
 
-# Install build dependencies
-sudo apt install librsvg2-dev libgstreamer1.0-dev patchelf
+# Install build dependencies (same as Ubuntu/Debian Setup above, plus patchelf)
+sudo apt install build-essential pkg-config libwebkit2gtk-4.1-dev libssl-dev \
+  libayatana-appindicator3-dev librsvg2-dev libxdo-dev \
+  gstreamer1.0-plugins-bad gstreamer1.0-plugins-good gstreamer1.0-libav \
+  ffmpeg libgstreamer1.0-dev cmake libnuma-dev libsecret-1-dev patchelf
 
 # Build with clean environment
 rm -rf src-tauri/target
 env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
 ```
 
+### macOS Build
+
+```bash
+# Install Homebrew if not already installed
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install dependencies
+brew install cmake ffmpeg libheif
+
+# Build
+pnpm tauri build
+```
+
+> **Note**: `make setup-ai` does not support macOS. Download the ONNX Runtime for macOS from the [ONNX Runtime releases](https://github.com/microsoft/onnxruntime/releases) and set `ORT_DYLIB_PATH` accordingly.
+
 ### Windows Build
+
+Prerequisites:
+- [Microsoft Visual Studio Build Tools 2022](https://visualstudio.microsoft.com/visual-cpp-build-tools/) (C++ workload required)
+- [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (usually pre-installed on Windows 11)
 
 Preparation:
 
-```bash
+```powershell
 # Install vcpkg if you don't have
 git clone https://github.com/microsoft/vcpkg.git
 .\vcpkg\bootstrap-vcpkg.bat
@@ -115,9 +155,11 @@ cd "C:\path\to\vcpkg\installed\x64-windows-static-md\lib"
 copy heif.lib libheif.lib
 ```
 
-```bash
+```powershell
 pnpm tauri build
 ```
+
+> **Note**: `make setup-ai` does not support Windows. Download the ONNX Runtime for Windows from [ONNX Runtime releases](https://github.com/microsoft/onnxruntime/releases) and set `ORT_DYLIB_PATH` to `onnxruntime.dll`.
 
 ## 📖 Documentation
 
