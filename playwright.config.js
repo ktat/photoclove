@@ -21,7 +21,7 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'pnpm tauri dev',
+    command: process.env.CI ? 'pnpm dev' : 'pnpm tauri dev',
     port: 1420,
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
