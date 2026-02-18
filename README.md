@@ -47,6 +47,20 @@ PhotoClove uses a modern desktop architecture:
 - **Caching**: Unified cache service with LRU eviction and automatic cleanup
 - **Domain Model**: Domain-Driven Design with Photo, PhotoCollection, and ImportState entities
 
+## 📦 Releases
+
+Pre-built installers are available on the [GitHub Releases page](https://github.com/ktat/photoclove/releases).
+
+| OS | Installer |
+|---|---|
+| Windows | `.msi` or `.exe` |
+| macOS (Apple Silicon) | `aarch64.dmg` |
+| macOS (Intel) | `x64.dmg` |
+| Linux (Debian/Ubuntu) | `.deb` |
+| Linux (other) | `.AppImage` |
+
+> **Note on AI Auto-Tagging**: The default MobileNet model (`mobilenet-v3-large.onnx`) is bundled with release builds. For OpenCLIP or SigLIP models, download them separately via Preferences → AI Auto-Tagging. The ONNX Runtime library must also be installed separately — see `src-tauri/models/README.md` for details.
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -99,8 +113,8 @@ make setup-ai
 > **Note**: `make setup-ai` is Linux x64 only. On macOS and Windows, the ONNX Runtime must be installed separately. The app builds without this step, but AI tagging will not work at runtime.
 
 ```bash
-# Build for production
-pnpm tauri build
+# Build for production (Linux)
+make build-linux
 ```
 
 #### WSL2 Build (Ubuntu 22.04)
@@ -114,9 +128,9 @@ sudo apt install build-essential pkg-config libwebkit2gtk-4.1-dev libssl-dev \
   gstreamer1.0-plugins-bad gstreamer1.0-plugins-good gstreamer1.0-libav \
   ffmpeg libgstreamer1.0-dev cmake libnuma-dev libsecret-1-dev patchelf
 
-# Build with clean environment
+# Build with clean environment (strips Windows paths from PATH)
 rm -rf src-tauri/target
-env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
+make build-wsl
 ```
 
 ### macOS Build
@@ -129,7 +143,7 @@ env PATH=$(echo $PATH | perl -p -e 's{:/mnt/c.+:}{:}g') pnpm tauri build
 brew install cmake ffmpeg libheif
 
 # Build
-pnpm tauri build
+make build-macos
 ```
 
 > **Note**: `make setup-ai` does not support macOS. Download the ONNX Runtime for macOS from the [ONNX Runtime releases](https://github.com/microsoft/onnxruntime/releases) and set `ORT_DYLIB_PATH` accordingly.
@@ -139,21 +153,8 @@ pnpm tauri build
 Prerequisites:
 - [Microsoft Visual Studio Build Tools 2022](https://visualstudio.microsoft.com/visual-cpp-build-tools/) (C++ workload required)
 - [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (usually pre-installed on Windows 11)
-
-Preparation:
-
-```powershell
-# Install vcpkg if you don't have
-git clone https://github.com/microsoft/vcpkg.git
-.\vcpkg\bootstrap-vcpkg.bat
-
-# Install libheif
-.\vcpkg\vcpkg install libheif:x64-windows-static-md
-
-# Copy heif.lib as libheif.lib
-cd "C:\path\to\vcpkg\installed\x64-windows-static-md\lib"
-copy heif.lib libheif.lib
-```
+- [CMake](https://cmake.org/download/) (required to compile libheif from source)
+- [NASM](https://www.nasm.us/) (required for libheif codec support)
 
 ```powershell
 pnpm tauri build

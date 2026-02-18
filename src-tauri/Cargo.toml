@@ -13,7 +13,6 @@ default-run = "photoclove"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
-vcpkg = "0.2"
 
 [dependencies]
 tauri-plugin-global-shortcut = "2"
