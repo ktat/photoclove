@@ -107,9 +107,26 @@ export default [
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_'
       }],
-      'no-console': ['warn', { 
-        allow: ['warn', 'error', 'info'] 
+      'no-console': ['warn', {
+        allow: ['warn', 'error', 'info']
       }]
+    }
+  },
+  {
+    files: ['src/test/**/*.js', '**/*.test.{js,ts,jsx,tsx}'],
+    languageOptions: {
+      globals: {
+        global: 'writable',
+        afterEach: 'readonly',
+        beforeEach: 'readonly',
+        afterAll: 'readonly',
+        beforeAll: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        vi: 'readonly',
+        test: 'readonly',
+      }
     }
   }
 ];
