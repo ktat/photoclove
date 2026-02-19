@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { auth } from '../services/firebase';
 const { openGoogleSignIn, googleSignIn, signOut } = auth;
-import { localForage } from "../storage/forage";
+import { localForage as _localForage } from "../storage/forage";
 import { logger } from "../services/LoggerService.js";
 
 function loginGoogle() {

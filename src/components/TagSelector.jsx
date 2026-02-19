@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { invoke } from '@tauri-apps/api/core';
+import { invoke as _invoke } from '@tauri-apps/api/core';
 import { UnifiedPhotoCollection } from '../domain/UnifiedPhotoCollection.js';
 import { logger } from '../services/LoggerService.js';
 import TagInput from './TagInput.jsx';

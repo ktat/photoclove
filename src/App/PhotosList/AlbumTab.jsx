@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
+import { invoke as _invoke } from '@tauri-apps/api/core';
 import { logger } from '../../services/LoggerService.js';
 import { useError } from '../../context/ErrorContext.jsx';
 import { useDialog } from '../../context/DialogContext.jsx';

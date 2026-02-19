@@ -13,7 +13,7 @@ const COLLAPSED_KEY = 'photoclove_getting_started_collapsed';
  * Shows progress through 5 key steps to help users discover main features
  * Displayed as a floating overlay in the bottom-right corner
  */
-function GettingStartedChecklist({ config }) {
+function GettingStartedChecklist({ config: _config }) {
     const { t } = useTranslation('common');
     const { useCount, togglePreferences, toggleSearchPage, toggleImporter, openTagsList } = useUI();
     const [achievements, setAchievements] = useState(null);

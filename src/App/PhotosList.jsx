@@ -78,7 +78,7 @@ function PhotosList({
     setShortCutNavigation,
     addFooterMessage,
     onRightMenuToggle,
-    searchMode,
+    searchMode: _searchMode,
     isAdvancedSearchMode,
     setShowJobQueueModal,
     getDatesNum,

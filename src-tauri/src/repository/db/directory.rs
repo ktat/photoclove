@@ -503,7 +503,7 @@ impl RepositoryDB for Directory {
     async fn move_photos_to_exif_date(&self, date: date::Date) -> date::Dates {
         let dir = self.path.child(date.to_string());
         let files = dir_service::find_files(&dir);
-        log::info!(target: "directory", "move_photos_to_exif_date; date={}; dir={}; file_count={}", date.to_string(), dir.path, files.files.len());
+        log::info!(target: "directory", "move_photos_to_exif_date; date={}; dir={}; file_count={}", date, dir.path, files.files.len());
         let mut dates_to_be_changed: HashMap<String, bool> = HashMap::new();
         for file in files.files {
             // file has absolute path from filesystem scan

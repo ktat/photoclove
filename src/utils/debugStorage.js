@@ -33,7 +33,7 @@ export function listPageStates() {
                     expired,
                     version: value?.version || 'unknown'
                 });
-            } catch (e) {
+            } catch (_e) {
                 states.push({
                     key,
                     value: 'Invalid JSON',
@@ -110,7 +110,7 @@ export function clearExpiredStates() {
                     localStorage.removeItem(key);
                     cleared++;
                 }
-            } catch (e) {
+            } catch (_e) {
                 // Clear invalid JSON
                 localStorage.removeItem(key);
                 cleared++;

@@ -180,7 +180,7 @@ function App() {
         };
 
         initialize();
-    }, []);
+    }, [transitionTo]);
 
     // Update welcome image when config loads
     useEffect(() => {

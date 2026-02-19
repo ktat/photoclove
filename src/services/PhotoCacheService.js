@@ -343,7 +343,7 @@ class PhotoCacheService {
   }
   
   performPeriodicCleanup() {
-    const now = Date.now();
+    const _now = Date.now();
     let totalRemoved = 0;
     
     // Clean expired entries from all caches

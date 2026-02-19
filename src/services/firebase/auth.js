@@ -1,5 +1,5 @@
 import { open } from '@tauri-apps/plugin-shell';
-import { getAuth, GoogleAuthProvider, getRedirectResult, signInWithRedirect, signInWithCredential } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, getRedirectResult as _getRedirectResult, signInWithRedirect as _signInWithRedirect, signInWithCredential } from 'firebase/auth';
 import { invoke } from "@tauri-apps/api/core";
 import { GoogleAuthConfig } from "../../.google-auth-config";
 import { localForage } from "../../storage/forage";

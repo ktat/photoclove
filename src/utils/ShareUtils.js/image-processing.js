@@ -2,7 +2,7 @@
  * Image processing and watermark utilities
  */
 
-import { logger } from '../../services/LoggerService.js';
+import { logger as _logger } from '../../services/LoggerService.js';
 
 /**
  * Add PhotoClove watermark to canvas

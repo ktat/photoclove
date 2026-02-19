@@ -17,7 +17,7 @@ import ListViewHeader from "./ListViewHeader.jsx";
 import GenericListView from "./GenericListView.jsx";
 import TagCloudView from "./TagCloudView.jsx";
 import FacesList from "./FacesList.jsx";
-import FaceThumbnail from "../../components/FaceThumbnail.jsx";
+import FaceThumbnail as _FaceThumbnail from "../../components/FaceThumbnail.jsx";
 import BackNavigationLink from "../../components/BackNavigationLink.jsx";
 import StatusBar from "./StatusBar.jsx";
 import PhotosToolbar from "./PhotosToolbar.jsx";
@@ -58,7 +58,7 @@ function PhotoListContent({
     configState,
     // Config
     isLimitedByConfig,
-    configLimit,
+    configLimit: _configLimit,
     debugMessage,
     // Infinite scroll
     infiniteScrollEnabled,

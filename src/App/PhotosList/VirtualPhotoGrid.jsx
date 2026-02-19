@@ -28,27 +28,30 @@ const PhotoCell = memo(function PhotoCell({
     thumbnailOrientationCorrection
 }) {
     const index = rowIndex * columnCount + columnIndex;
-
-    // Return empty cell if index exceeds photo count
-    if (index >= photos.length) {
-        return <div style={style} />;
-    }
-
     const photoData = photos[index];
 
     // Convert JSON to Photo entity if needed (for methods like thumbnailPath, displayPath)
     // This is important for trash photos which need displayPath() to get trash-relative path
     const photo = useMemo(() => {
+        // Return null if index exceeds photo count or no photoData
+        if (index >= photos.length || !photoData) {
+            return null;
+        }
         // If already a Photo instance (has displayPath method), use as is
-        if (photoData && typeof photoData.displayPath === 'function') {
+        if (typeof photoData.displayPath === 'function') {
             return photoData;
         }
         // Convert JSON to Photo entity
-        if (photoData && photoData.originalPath) {
+        if (photoData.originalPath) {
             return Photo.fromJSON(photoData);
         }
         return photoData;
-    }, [photoData]);
+    }, [index, photos.length, photoData]);
+
+    // Return empty cell if index exceeds photo count
+    if (index >= photos.length) {
+        return <div style={style} />;
+    }
 
     if (!photo) {
         return <div style={style} />;
@@ -101,7 +104,7 @@ function VirtualPhotoGrid({
     showSideMenu,
     importState,
     thumbnailOrientationCorrection = false,
-    containerRef
+    containerRef: _containerRef
 }) {
     const gridRef = useRef(null);
     const localContainerRef = useRef(null);

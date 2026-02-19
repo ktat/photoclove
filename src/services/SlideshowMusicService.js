@@ -116,7 +116,7 @@ class SlideshowMusicService {
 
       // Audio error handler - only for playback errors, not load errors
       // Load errors are handled in loadTrack via fetch
-      this.audio.addEventListener('error', (e) => {
+      this.audio.addEventListener('error', (_e) => {
         const audioError = this.audio.error;
         const errorDetails = audioError ? {
           code: audioError.code,

@@ -1,5 +1,4 @@
 import { useEffect, useState, useMemo } from "react";
-import { flushSync } from "react-dom";
 import { useTranslation } from 'react-i18next';
 import Scrollable from "../Scrollable.jsx";
 import '../scrollable.css';
@@ -20,23 +19,20 @@ function DateList(props) {
         updateRecentPhotosMode
     } = usePhoto();
 
-    const { toggleSearchPage, showPhotosListView, showDatePhotos, showRecentPhotos, viewMode: currentAppViewMode } = useUI();
+    const { showDatePhotos, showRecentPhotos, viewMode: currentAppViewMode } = useUI();
 
     const [selectedStyle, setSelectedStyle] = useState({});
 
     // Show loading bar: either during initial load (!hideLoading) or when refresh clicked (isRefreshing)
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const showLoading = !hideLoading || isRefreshing;
+    const showLoading = !hideLoading || derivedIsRefreshing;
 
-    // Reset isRefreshing when loading completes
-    useEffect(() => {
-        if (hideLoading && isRefreshing) {
-            setIsRefreshing(false);
-        }
-    }, [hideLoading, isRefreshing]);
+    // Reset isRefreshing when loading completes - use derived state instead of effect
+    const derivedIsRefreshing = isRefreshing && !hideLoading;
 
     // Sync selectedStyle with currentDate from context (e.g., when navigating from memories)
-    useEffect(() => {
+    // Use useMemo to derive style instead of effect to avoid cascading renders
+    const derivedSelectedStyle = useMemo(() => {
         if (currentDate) {
             // Parse date string (handles both "2018-01-31" and "2018/01/31" formats)
             const normalizedDate = currentDate.replace(/-/g, '/');
@@ -45,10 +41,14 @@ function DateList(props) {
                 const [year, month, day] = dateParts;
                 // Create the same format used by DateList for keys
                 const dateKey = new Date(year + '/' + month + '/' + day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
-                setSelectedStyle({ ["a-" + dateKey]: "var(--color-text-primary)", ["li-" + dateKey]: "square" });
+                return { ["a-" + dateKey]: "var(--color-text-primary)", ["li-" + dateKey]: "square" };
             }
         }
+        return {};
     }, [currentDate]);
+
+    // Merge manually set selectedStyle with derived style
+    const finalSelectedStyle = { ...derivedSelectedStyle, ...selectedStyle };
 
     // Get selected date color based on current ViewMode
     // White when viewing date photos, muted when viewing other modes
@@ -65,7 +65,7 @@ function DateList(props) {
     const [expandedYears, setExpandedYears] = useState(new Set());
     const [expandedMonths, setExpandedMonths] = useState(new Set());
 
-    useEffect((e) => {
+    useEffect(() => {
         props.getDates();
     }, [])
 
@@ -356,9 +356,7 @@ function DateList(props) {
                 ) : (
                     <a href="#" className="dateList-refresh" onClick={(e) => {
                         e.preventDefault();
-                        flushSync(() => {
-                            setIsRefreshing(true);
-                        });
+                        setIsRefreshing(true);
                         props.getDates();
                     }}>
                         <span className="refresh-icon">⟳</span>
@@ -433,10 +431,10 @@ function DateList(props) {
                                 const date = new Date(l.year + '/' + l.month + '/' + l.day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
                                 const photoCount = getPhotoCount(l.year, l.month, l.day);
                                 return photoCount > 0 && (
-                                    <li key={i} style={{ listStyle: selectedStyle["li-" + date] || "none" }}>
+                                    <li key={i} style={{ listStyle: finalSelectedStyle["li-" + date] || "none" }}>
                                         <a href="#"
                                            style={{
-                                               color: selectedStyle["a-" + date] ? getSelectedDateColor() : "var(--color-film-link, var(--color-primary))",
+                                               color: finalSelectedStyle["a-" + date] ? getSelectedDateColor() : "var(--color-film-link, var(--color-primary))",
                                                fontSize: "inherit"
                                            }} 
                                            onClick={(e) => {
@@ -455,7 +453,7 @@ function DateList(props) {
 
                         {/* Hierarchical View - Clean & Simple */}
                         {viewMode === 'hierarchical' && 
-                            hierarchicalData.map((yearData, yearIndex) => {
+                            hierarchicalData.map((yearData, _yearIndex) => {
                                 const yearPhotoCount = getYearPhotoCount(yearData);
                                 const isYearExpanded = expandedYears.has(yearData.year);
                                 return yearPhotoCount > 0 && (
@@ -479,7 +477,7 @@ function DateList(props) {
                                         {/* Months Container */}
                                         {isYearExpanded && (
                                             <div style={{ marginLeft: "var(--space-3)" }}>
-                                                {yearData.months.map((monthData, monthIndex) => {
+                                                {yearData.months.map((monthData, _monthIndex) => {
                                                     const monthPhotoCount = getMonthPhotoCount(yearData, monthData);
                                                     const monthKey = `${yearData.year}-${monthData.month}`;
                                                     const isMonthExpanded = expandedMonths.has(monthKey);
@@ -505,10 +503,10 @@ function DateList(props) {
                                                             {/* Days */}
                                                             {isMonthExpanded && (
                                                                 <div style={{ marginLeft: "var(--space-3)" }}>
-                                                                    {monthData.days.map((day, dayIndex) => {
+                                                                    {monthData.days.map((day, _dayIndex) => {
                                                                         const date = new Date(yearData.year + '/' + monthData.month + '/' + day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
                                                                         const photoCount = getPhotoCount(yearData.year, monthData.month, day);
-                                                                        const isSelected = selectedStyle["a-" + date];
+                                                                        const isSelected = finalSelectedStyle["a-" + date];
                                                                         return photoCount > 0 && (
                                                                             <div key={`day-${yearData.year}-${monthData.month}-${day}`} style={{ listStyle: isSelected ? "square" : "none" }}>
                                                                                 <a href="#"

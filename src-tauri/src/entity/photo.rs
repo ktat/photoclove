@@ -164,28 +164,6 @@ impl Photo {
         }
     }
 
-    /// Get preview path for non-browser-native formats (RAW, HEIC, AVIF)
-    /// Returns: thumbnail_store/relative_path.preview.jpg
-    pub fn get_preview_path(&self) -> Option<String> {
-        if !self.has_config {
-            return None;
-        }
-
-        let path = &self.file.path;
-        if !crate::utils::raw_file::is_raw_file(path)
-            && !crate::utils::raw_file::is_heic_or_avif(path)
-        {
-            return None;
-        }
-
-        let thumbnail_store = &self.thumbnail_store;
-        let preview_path = format!(
-            "{}/{}.preview.jpg",
-            thumbnail_store.trim_end_matches('/'),
-            self.file.path.trim_start_matches('/').to_lowercase()
-        );
-        Some(preview_path)
-    }
 
     pub fn set_has_thumbnail(&mut self) {
         if self.has_config {

@@ -9,6 +9,27 @@ import {
 } from 'recharts';
 import styles from '../InsightsModal.module.css';
 
+// Custom tooltip component defined outside render
+const CustomTooltip = ({ active, payload, label, t }) => {
+    if (active && payload && payload.length) {
+        return (
+            <div style={{
+                background: 'var(--color-bg-elevated)',
+                border: '1px solid var(--color-border-default)',
+                borderRadius: 'var(--radius-sm)',
+                padding: 'var(--space-2) var(--space-3)',
+                fontSize: 'var(--font-size-sm)'
+            }}>
+                <div style={{ fontWeight: 600 }}>{label}</div>
+                <div style={{ color: 'var(--color-primary)' }}>
+                    {payload[0].value.toLocaleString()} {t('photos', 'photos')}
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
+
 function ShootingTimeSection({ data }) {
     const { t } = useTranslation('insights');
 
@@ -54,26 +75,6 @@ function ShootingTimeSection({ data }) {
         return `rgba(74, 158, 255, ${0.3 + intensity * 0.7})`;
     };
 
-    // Custom tooltip
-    const CustomTooltip = ({ active, payload, label }) => {
-        if (active && payload && payload.length) {
-            return (
-                <div style={{
-                    background: 'var(--color-bg-elevated)',
-                    border: '1px solid var(--color-border-default)',
-                    borderRadius: 'var(--radius-sm)',
-                    padding: 'var(--space-2) var(--space-3)',
-                    fontSize: 'var(--font-size-sm)'
-                }}>
-                    <div style={{ fontWeight: 600 }}>{label}</div>
-                    <div style={{ color: 'var(--color-primary)' }}>
-                        {payload[0].value.toLocaleString()} {t('photos', 'photos')}
-                    </div>
-                </div>
-            );
-        }
-        return null;
-    };
 
     return (
         <div className={styles.section}>
@@ -102,7 +103,7 @@ function ShootingTimeSection({ data }) {
                             tickFormatter={(h) => h % 4 === 0 ? `${h}` : ''}
                         />
                         <YAxis stroke="var(--color-text-muted)" tick={{ fontSize: 10 }} />
-                        <Tooltip content={<CustomTooltip />} />
+                        <Tooltip content={(props) => <CustomTooltip {...props} t={t} />} />
                         <Bar dataKey="count" name={t('photos', 'Photos')}>
                             {hourData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={getHourBarColor(entry.count)} />
@@ -131,7 +132,7 @@ function ShootingTimeSection({ data }) {
                             tick={{ fontSize: 11 }}
                         />
                         <YAxis stroke="var(--color-text-muted)" tick={{ fontSize: 10 }} />
-                        <Tooltip content={<CustomTooltip />} />
+                        <Tooltip content={(props) => <CustomTooltip {...props} t={t} />} />
                         <Bar dataKey="count" fill="var(--color-primary)" name={t('photos', 'Photos')} />
                     </BarChart>
                 </ResponsiveContainer>

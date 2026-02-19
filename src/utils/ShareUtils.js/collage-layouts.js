@@ -148,7 +148,7 @@ export function calculateAbsolutePositions(layout, canvasWidth, canvasHeight, pa
  * @returns {Object} Object with width and height
  */
 export function getOptimalCanvasSize(photoCount, targetSize = 800, aspectRatio = 'square') {
-    const layout = getCollageLayout(photoCount);
+    const _layout = getCollageLayout(photoCount);
     
     let width, height;
     

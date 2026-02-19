@@ -2,7 +2,7 @@
  * Statistics image generation for sharing
  */
 
-import { logger } from '../../services/LoggerService.js';
+import { logger as _logger } from '../../services/LoggerService.js';
 
 /**
  * Generate shareable image from insights data
@@ -16,7 +16,7 @@ export async function generateStatsImage(insights, options = {}) {
         height = 400,
         backgroundColor = '#1a1a2e',
         textColor = '#ffffff',
-        accentColor = '#4ade80',
+        accentColor: _accentColor = '#4ade80',
         period = 'all'
     } = options;
 

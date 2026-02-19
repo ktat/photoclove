@@ -20,7 +20,12 @@ function Footer({ onRecoveryQueueClick }) {
     }, []);
 
     useEffect(() => {
-        fetchRecoveryCount();
+        // Initial fetch on mount
+        const performInitialFetch = async () => {
+            await fetchRecoveryCount();
+        };
+        performInitialFetch();
+
         // Poll every 30 seconds
         const interval = setInterval(fetchRecoveryCount, 30000);
         return () => clearInterval(interval);

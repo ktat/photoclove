@@ -4,7 +4,7 @@
  * Displays all achievements organized by category with progress indicators.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import BaseModal, { ModalLoading, ModalError } from '../components/BaseModal.jsx';
 import { getAchievements, getCategoryIcon } from '../services/AchievementService.js';
@@ -17,11 +17,7 @@ const AchievementsView = ({ onClose }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    loadAchievements();
-  }, []);
-
-  const loadAchievements = async () => {
+  const loadAchievements = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -35,7 +31,11 @@ const AchievementsView = ({ onClose }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadAchievements();
+  }, [loadAchievements]);
 
   const renderAchievementBadge = (achievement) => {
     const isAchieved = achievement.achieved_at != null;
