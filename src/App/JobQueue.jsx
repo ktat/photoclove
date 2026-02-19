@@ -68,10 +68,10 @@ const JobQueue = ({ onClose, ...props }) => {
       try {
         jobsData = JSON.parse(result);
         logger.debug('JobQueue', 'json_parse_success', 'Successfully parsed jobs data', { jobsCount: jobsData?.length });
-      } catch (_parseError) {
+      } catch (parseError) {
         // If JSON parsing fails, the result might be an error string
-        logger.error('JobQueue', 'json_parse_failed', 'Failed to parse jobs data as JSON', { 
-          error: parseError.message, 
+        logger.error('JobQueue', 'json_parse_failed', 'Failed to parse jobs data as JSON', {
+          error: parseError.message,
           rawResult: result 
         });
         setError("Failed to parse jobs data. Raw response: " + result);
@@ -115,7 +115,7 @@ const JobQueue = ({ onClose, ...props }) => {
       let response;
       try {
         response = JSON.parse(result);
-      } catch (_parseError) {
+      } catch (parseError) {
         logger.error('JobQueue', 'retry_parse_failed', 'Failed to parse retry response', { error: parseError.message, result });
         props.addFooterMessage("job_queue", "Failed to parse retry response: " + result);
         return;
@@ -145,7 +145,7 @@ const JobQueue = ({ onClose, ...props }) => {
       let response;
       try {
         response = JSON.parse(result);
-      } catch (_parseError) {
+      } catch (parseError) {
         logger.error('JobQueue', 'resume_parse_failed', 'Failed to parse resume response', { error: parseError.message, result });
         props.addFooterMessage("job_queue", "Failed to parse resume response: " + result);
         return;
@@ -175,7 +175,7 @@ const JobQueue = ({ onClose, ...props }) => {
       let response;
       try {
         response = JSON.parse(result);
-      } catch (_parseError) {
+      } catch (parseError) {
         logger.error('JobQueue', 'restart_parse_failed', 'Failed to parse restart response', { error: parseError.message, result });
         props.addFooterMessage("job_queue", "Failed to parse restart response: " + result);
         return;
@@ -205,7 +205,7 @@ const JobQueue = ({ onClose, ...props }) => {
       let response;
       try {
         response = JSON.parse(result);
-      } catch (_parseError) {
+      } catch (parseError) {
         logger.error('JobQueue', 'stop_parse_failed', 'Failed to parse stop response', { error: parseError.message, result });
         props.addFooterMessage("job_queue", "Failed to parse stop response: " + result);
         return;
@@ -241,7 +241,7 @@ const JobQueue = ({ onClose, ...props }) => {
       let response;
       try {
         response = JSON.parse(result);
-      } catch (_parseError) {
+      } catch (parseError) {
         logger.error('JobQueue', 'delete_parse_failed', 'Failed to parse delete response', { error: parseError.message, result });
         props.addFooterMessage("job_queue", "Failed to parse delete response: " + result);
         return;

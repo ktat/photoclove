@@ -25,10 +25,10 @@ function DateList(props) {
 
     // Show loading bar: either during initial load (!hideLoading) or when refresh clicked (isRefreshing)
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const showLoading = !hideLoading || derivedIsRefreshing;
 
     // Reset isRefreshing when loading completes - use derived state instead of effect
     const derivedIsRefreshing = isRefreshing && !hideLoading;
+    const showLoading = !hideLoading || derivedIsRefreshing;
 
     // Sync selectedStyle with currentDate from context (e.g., when navigating from memories)
     // Use useMemo to derive style instead of effect to avoid cascading renders
