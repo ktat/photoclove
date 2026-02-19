@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import "./components/search.css";
@@ -22,7 +22,7 @@ import LogViewer from "./App/LogViewer.jsx";
 import DocumentViewer from "./components/DocumentViewer.jsx";
 import LicensesView from "./App/LicensesView.jsx";
 import RecoveryQueueModal from "./App/RecoveryQueueModal.jsx";
-import InsightsModal from "./App/InsightsModal.jsx";
+const InsightsModal = lazy(() => import('./App/InsightsModal.jsx'));
 import AchievementsView from "./App/AchievementsView.jsx";
 import AchievementPopup from "./components/AchievementPopup.jsx";
 import Tooltip from "./components/Tooltip.jsx";
@@ -408,7 +408,11 @@ function App() {
             {showRecoveryQueueModal && (
                 <RecoveryQueueModal onClose={() => setShowRecoveryQueueModal(false)} addFooterMessage={addFooterMessage} />
             )}
-            {showInsightsModal && <InsightsModal onClose={() => setShowInsightsModal(false)} />}
+            {showInsightsModal && (
+                <Suspense fallback={<div>Loading insights...</div>}>
+                    <InsightsModal onClose={() => setShowInsightsModal(false)} />
+                </Suspense>
+            )}
             {showAchievementsModal && <AchievementsView onClose={() => setShowAchievementsModal(false)} />}
             {showNotificationCenter && (
                 <NotificationCenterModal

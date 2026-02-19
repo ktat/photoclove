@@ -34,5 +34,43 @@ export default defineConfig({
     minify: !process.env.TAURI_DEBUG ? "esbuild" : false,
     // produce sourcemaps for debug builds
     sourcemap: !!process.env.TAURI_DEBUG,
+    // Increase chunk size warning limit to 1MB
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          // React core libraries
+          if (id.includes('react') || id.includes('react-dom')) {
+            return 'react-vendor';
+          }
+          
+          // Firebase related packages
+          if (id.includes('firebase')) {
+            return 'firebase';
+          }
+          
+          // Charts library
+          if (id.includes('recharts')) {
+            return 'charts';
+          }
+          
+          // Tauri plugins
+          if (id.includes('@tauri-apps')) {
+            return 'tauri-vendor';
+          }
+          
+          // Utility libraries
+          if (id.includes('axios') || id.includes('classnames') || 
+              id.includes('i18next') || id.includes('react-i18next')) {
+            return 'utils';
+          }
+          
+          // Large node_modules dependencies
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
+        }
+      }
+    }
   },
 });
