@@ -164,7 +164,6 @@ impl Photo {
         }
     }
 
-
     pub fn set_has_thumbnail(&mut self) {
         if self.has_config {
             let thumbnail_store = self.thumbnail_store.clone();

@@ -9,9 +9,8 @@ const RAW_EXTENSIONS: &[&str] = &[
 ];
 
 /// Standard image extensions
-const STANDARD_IMAGE_EXTENSIONS: &[&str] = &[
-    "jpg", "jpeg", "png", "gif", "webp", "heic", "heif", "avif",
-];
+const STANDARD_IMAGE_EXTENSIONS: &[&str] =
+    &["jpg", "jpeg", "png", "gif", "webp", "heic", "heif", "avif"];
 
 /// HEIC/HEIF/AVIF extensions (non-browser-native container formats)
 pub const HEIC_AVIF_EXTENSIONS: &[&str] = &["heic", "heif", "avif"];

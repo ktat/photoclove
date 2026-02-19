@@ -78,8 +78,7 @@ pub fn process_raw_thumbnails(
             let file_path = entry.path();
 
             let is_raw = file_path.is_file() && raw_file::is_raw_file(&file_name_str);
-            let is_heic_avif =
-                file_path.is_file() && raw_file::is_heic_or_avif(&file_name_str);
+            let is_heic_avif = file_path.is_file() && raw_file::is_heic_or_avif(&file_name_str);
 
             if !is_raw && !is_heic_avif {
                 continue;
@@ -125,10 +124,9 @@ pub fn process_raw_thumbnails(
                     file_name_str
                 );
                 let max_size = raw_config.max_decode_size;
-                if let Some((img, width, height)) = heic_decode::decode_heic_to_image(
-                    file_path.to_str().unwrap_or(""),
-                    max_size,
-                ) {
+                if let Some((img, width, height)) =
+                    heic_decode::decode_heic_to_image(file_path.to_str().unwrap_or(""), max_size)
+                {
                     if img
                         .save_with_format(&thumbnail_path, image::ImageFormat::Jpeg)
                         .is_ok()

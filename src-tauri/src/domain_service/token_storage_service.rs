@@ -67,8 +67,10 @@ impl TokenStorageService {
 
         // Use the same external service that handles initial OAuth
         let client = reqwest::Client::new();
-        let form_body = format!("refresh_token={}", 
-            urlencoding::encode(&token_data.refresh_token));
+        let form_body = format!(
+            "refresh_token={}",
+            urlencoding::encode(&token_data.refresh_token)
+        );
 
         let response = client
             .post("https://rwds.net/cgi-bin/token.cgi")

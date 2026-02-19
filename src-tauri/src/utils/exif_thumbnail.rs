@@ -389,15 +389,14 @@ fn extract_heic_exif_thumbnail(path: &Path) -> Option<(DynamicImage, u32, u32)> 
             let stride = plane.stride;
             let data = &plane.data;
 
-            let img_buf: ImageBuffer<Rgb<u8>, Vec<u8>> =
-                ImageBuffer::from_fn(w, h, |x, y| {
-                    let offset = y as usize * stride + x as usize * 3;
-                    if offset + 2 < data.len() {
-                        Rgb([data[offset], data[offset + 1], data[offset + 2]])
-                    } else {
-                        Rgb([0, 0, 0])
-                    }
-                });
+            let img_buf: ImageBuffer<Rgb<u8>, Vec<u8>> = ImageBuffer::from_fn(w, h, |x, y| {
+                let offset = y as usize * stride + x as usize * 3;
+                if offset + 2 < data.len() {
+                    Rgb([data[offset], data[offset + 1], data[offset + 2]])
+                } else {
+                    Rgb([0, 0, 0])
+                }
+            });
 
             let img = DynamicImage::ImageRgb8(img_buf);
             log::debug!(target: "exif_thumbnail", "heic_primary_decoded_as_thumbnail; path={}; size={}x{}", path.display(), w, h);

@@ -72,8 +72,10 @@ impl Dir {
     }
 
     pub fn find_all_files(&self, date_after: Option<date::Date>) -> file::Files {
-        let re = Regex::new(r"(?i)\.(?:jpe?g|gif|png|heic|heif|avif|cr2|cr3|nef|nev|arw|dng|raf|orf|rw2|3fr)$")
-            .unwrap();
+        let re = Regex::new(
+            r"(?i)\.(?:jpe?g|gif|png|heic|heif|avif|cr2|cr3|nef|nev|arw|dng|raf|orf|rw2|3fr)$",
+        )
+        .unwrap();
         let readdir = match fs::read_dir(&self.path) {
             Ok(rd) => rd,
             Err(e) => {
@@ -126,8 +128,10 @@ impl Dir {
         date_after: Option<date::Date>,
     ) -> DirsFiles {
         let mut df = DirsFiles::new(self.path.clone());
-        let re = Regex::new(r"(?i)\.(?:jpe?g|gif|png|heic|heif|avif|cr2|cr3|nef|nev|arw|dng|raf|orf|rw2|3fr)$")
-            .unwrap();
+        let re = Regex::new(
+            r"(?i)\.(?:jpe?g|gif|png|heic|heif|avif|cr2|cr3|nef|nev|arw|dng|raf|orf|rw2|3fr)$",
+        )
+        .unwrap();
         let readdir = match fs::read_dir(&self.path) {
             Ok(rd) => rd,
             Err(_) => return DirsFiles::new(self.path.clone()),

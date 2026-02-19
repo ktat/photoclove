@@ -113,8 +113,8 @@ fn encode_and_cache_jpeg(
         }
     }
 
-    let mut f = fs::File::create(cache_path)
-        .map_err(|e| format!("Failed to create cache file: {}", e))?;
+    let mut f =
+        fs::File::create(cache_path).map_err(|e| format!("Failed to create cache file: {}", e))?;
     f.write_all(&jpeg_data)
         .map_err(|e| format!("Failed to write cache file: {}", e))?;
     Ok(())
@@ -150,8 +150,12 @@ pub fn get_resized_image(
 
     // For RAW/HEIC files, use persistent cache under thumbnail_store instead of ~/.cache/
     let cache_path_str = if is_raw || is_heic_avif {
-        let persistent_path = format!("{}.jpg", utils::generate_persistent_cache_path(path_str, &state.config.thumbnail_store)?);
-        let persistent_dir = path::Path::new(&persistent_path).parent()
+        let persistent_path = format!(
+            "{}.jpg",
+            utils::generate_persistent_cache_path(path_str, &state.config.thumbnail_store)?
+        );
+        let persistent_dir = path::Path::new(&persistent_path)
+            .parent()
             .ok_or_else(|| "Failed to get persistent cache directory".to_string())?;
         if !persistent_dir.exists() {
             fs::create_dir_all(persistent_dir)
@@ -201,9 +205,9 @@ pub fn get_resized_image(
                     let exif_time = exif_start.elapsed();
                     log::info!(target: "image", "exif_thumbnail_cached; cache_path={}; size={}x{}; exif_ms={}; total_ms={}",
                         cache_path.display(), width, height, exif_time.as_millis(), start_time.elapsed().as_millis());
-                    let cache_path_str = cache_path.to_str().ok_or_else(|| {
-                        "Failed to convert cache path to string".to_string()
-                    })?;
+                    let cache_path_str = cache_path
+                        .to_str()
+                        .ok_or_else(|| "Failed to convert cache path to string".to_string())?;
                     return Ok(cache_path_str.to_string());
                 }
             }
@@ -540,9 +544,11 @@ pub fn get_progressive_image(
         return Err("Not a RAW or HEIC/AVIF file".to_string());
     }
 
-    let base_cache_path = utils::generate_persistent_cache_path(path_str, &state.config.thumbnail_store)?;
+    let base_cache_path =
+        utils::generate_persistent_cache_path(path_str, &state.config.thumbnail_store)?;
     // Ensure persistent cache directory exists
-    let persistent_dir = path::Path::new(&base_cache_path).parent()
+    let persistent_dir = path::Path::new(&base_cache_path)
+        .parent()
         .ok_or_else(|| "Failed to get persistent cache directory".to_string())?;
     if !persistent_dir.exists() {
         fs::create_dir_all(persistent_dir)

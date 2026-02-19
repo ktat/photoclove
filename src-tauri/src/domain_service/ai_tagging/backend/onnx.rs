@@ -176,19 +176,16 @@ impl OnnxClassifier {
         // Fallback: Load full image if EXIF thumbnail not found or disabled
         if img.is_none() {
             let path_str = image_path.to_string_lossy();
-            img = Some(
-                if crate::utils::raw_file::is_heic_or_avif(&path_str) {
-                    crate::utils::heic_decode::decode_heic_to_image(&path_str, 1600)
-                        .map(|(i, _, _)| i)
-                        .ok_or_else(|| {
-                            format!("Failed to decode HEIC/AVIF: {}", image_path.display())
-                        })?
-                } else {
-                    image::open(image_path).map_err(|e| {
-                        format!("Failed to load image {}: {}", image_path.display(), e)
+            img = Some(if crate::utils::raw_file::is_heic_or_avif(&path_str) {
+                crate::utils::heic_decode::decode_heic_to_image(&path_str, 1600)
+                    .map(|(i, _, _)| i)
+                    .ok_or_else(|| {
+                        format!("Failed to decode HEIC/AVIF: {}", image_path.display())
                     })?
-                },
-            );
+            } else {
+                image::open(image_path)
+                    .map_err(|e| format!("Failed to load image {}: {}", image_path.display(), e))?
+            });
 
             if use_exif_thumbnail {
                 log::debug!(

@@ -179,12 +179,8 @@ pub(crate) fn process_import_job(
                 if raw_file::is_raw_file(&dest_path_str)
                     || raw_file::is_heic_or_avif(&dest_path_str)
                 {
-                    let thumb_relative = format!(
-                        "{}/{}/{}.jpg",
-                        date,
-                        uuid,
-                        filename.to_lowercase()
-                    );
+                    let thumb_relative =
+                        format!("{}/{}/{}.jpg", date, uuid, filename.to_lowercase());
                     let thumb_path = format!(
                         "{}/{}",
                         config.thumbnail_store.trim_end_matches('/'),
