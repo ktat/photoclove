@@ -29,9 +29,14 @@
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
-      "timestampUrl": ""
+      "timestampUrl": "",
+      "allowDowngrades": true,
+      "wix": {
+        "language": "en-US",
+        "template": null
+      }
     },
-    "longDescription": "",
+    "longDescription": "PhotoClove - A modern photo viewer and manager",
     "macOS": {
       "entitlements": null,
       "exceptionDomain": "",
@@ -42,7 +47,7 @@
     "resources": [
       "models/*.onnx"
     ],
-    "shortDescription": ""
+    "shortDescription": "PhotoClove - Photo viewer and manager"
   },
   "productName": "PhotoClove",
   "mainBinaryName": "PhotoClove",
