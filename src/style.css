@@ -225,7 +225,7 @@ div.photo-clove {
 
 .video-on div {
   justify-content: center;
-  overflow: scroll;
+  overflow: hidden;
   display: flex;
 }
 
