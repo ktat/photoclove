@@ -1,10 +1,11 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, startTransition } from "react";
 import { useTranslation } from 'react-i18next';
 import Scrollable from "../Scrollable.jsx";
 import '../scrollable.css';
 import { usePhoto } from "../context/PhotoContext.jsx";
 import { useUI } from "../context/UIContext.jsx";
 import { logger } from "../services/LoggerService.js";
+import { debounce } from "../utils/performanceUtils.js";
 
 function DateList(props) {
     const { t } = useTranslation('common');
@@ -141,15 +142,26 @@ function DateList(props) {
     }, [filteredDateList]);
 
 
-    // Helper function to handle date click
-    const handleDateClick = (year, month, day) => {
-        const date = new Date(year + '/' + month + '/' + day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
-        setSelectedStyle({ ["a-" + date]: "var(--color-text-primary)", ["li-" + date]: "square" });
-        logger.info('DateList', 'date_click', 'Date clicked - starting navigation', { date });
-        updateRecentPhotosMode(false);
-        updateCurrentDate(date);
-        showDatePhotos(date);
-    };
+    // Helper function to handle date click - optimized with debounce and startTransition
+    const handleDateClick = useMemo(() =>
+        debounce((year, month, day) => {
+            const dateKey = `${year}/${month}/${day}`;
+            const formattedDate = new Date(dateKey).toLocaleString('default', {
+                year: 'numeric', month: '2-digit', day: '2-digit'
+            });
+
+            logger.info('DateList', 'date_click', 'Date clicked - starting navigation', { date: formattedDate });
+
+            // Use startTransition to mark state updates as non-urgent for better performance
+            startTransition(() => {
+                setSelectedStyle({ [`a-${formattedDate}`]: "var(--color-text-primary)", [`li-${formattedDate}`]: "square" });
+                updateRecentPhotosMode(false);
+                updateCurrentDate(formattedDate);
+                showDatePhotos(formattedDate);
+            });
+        }, 150), // 150ms debounce for Windows stability
+        [setSelectedStyle, updateRecentPhotosMode, updateCurrentDate, showDatePhotos]
+    );
 
     // Helper function to get photo count for a date
     const getPhotoCount = (year, month, day) => {

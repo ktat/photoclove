@@ -20,8 +20,13 @@ export default defineConfig({
   server: {
     port: 1420,
     strictPort: true,
+    hmr: {
+      overlay: false // Disable error overlay for better development experience on Windows
+    },
     watch: {
       ignored: ['**/example/**', '**/public/**'],
+      usePolling: process.platform === 'win32', // Use polling on Windows for better stability
+      interval: 1000 // Polling interval for Windows
     }
   },
   // to make use of `TAURI_DEBUG` and other env variables
