@@ -279,7 +279,9 @@ const SlideShow = ({ photos = [], startIndex = 0, onClose }) => {
     return null;
   }
 
-  const photoPath = currentPhoto.displayPath();
+  const photoPath = currentPhoto.isNonNativeFormat?.()
+    ? currentPhoto.thumbnailPath()
+    : currentPhoto.displayPath();
   const imgSrc = convertFileSrc(photoPath);
 
   return (
