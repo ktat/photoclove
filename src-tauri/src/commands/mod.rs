@@ -31,6 +31,8 @@ pub mod style_commands;
 pub mod tag_commands;
 pub mod trash_commands;
 pub mod utility_commands;
+pub mod video_commands;
+pub mod video_streaming;
 
 // Re-export all commands for convenient access
 pub use ai_model_commands::*;
@@ -54,3 +56,4 @@ pub use style_commands::*;
 pub use tag_commands::*;
 pub use trash_commands::*;
 pub use utility_commands::*;
+pub use video_commands::*;

@@ -9,57 +9,7 @@
 use crate::utils::{self, raw_file};
 use std::{fs, path};
 
-#[cfg(unix)]
-use std::os::unix::fs::symlink;
-
-#[cfg(windows)]
-use std::os::windows::fs::symlink_file;
-
-/// Links a file to the public directory for serving through the web interface.
-#[tauri::command]
-pub async fn link_file_to_public(
-    from_file_path: &str,
-    to_file_name: &str,
-    _state: tauri::State<'_, crate::AppState>,
-) -> Result<String, ()> {
-    let from = path::Path::new(from_file_path);
-    let to = path::Path::new("../public/").join(to_file_name);
-    log::debug!(target: "file_service", "create_symlink; from={:?}; to={:?}", from, to);
-
-    if cfg!(target_os = "windows") {
-        match std::fs::copy(from, to.clone()) {
-            Ok(_) => Ok("true".to_string()),
-            Err(e) => {
-                log::error!(target: "file_service", "copy_file_failed; from={:?}; to={:?}; error={:?}", from, to, e);
-                Ok("false".to_string())
-            }
-        }
-    } else {
-        match fs::remove_file(to.as_path()) {
-            Ok(_) => {}
-            Err(e) => {
-                log::error!(target: "file_service", "delete_file_failed; file={:?}; error={:?}", to.clone(), e);
-            }
-        };
-
-        #[cfg(unix)]
-        return match symlink(from, to.clone()) {
-            Ok(_) => Ok("true".to_string()),
-            Err(e) => {
-                log::error!(target: "file_service", "create_symlink_failed; from={:?}; to={:?}; error={:?}", from, to, e);
-                Ok("false".to_string())
-            }
-        };
-        #[cfg(windows)]
-        return match symlink_file(from, to.clone()) {
-            Ok(_) => Ok("true".to_string()),
-            Err(e) => {
-                log::error!(target: "file_service", "create_symlink_failed; from={:?}; to={:?}; error={:?}", from, to, e);
-                Ok("false".to_string())
-            }
-        };
-    }
-}
+// link_file_to_public function removed - replaced with standard Tauri v2 convertFileSrc for video playback
 
 /// Helper function to get the thumbnail cache path for a photo.
 pub(crate) fn get_thumbnail_path_for_photo(

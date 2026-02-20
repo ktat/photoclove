@@ -395,7 +395,6 @@ pub fn run() {
             config_commands::get_quickview_path,
             save_star,
             save_comment,
-            link_file_to_public,
             move_photos_to_exif_date,
             upload_to_google_photos,
             store_google_tokens,
@@ -509,6 +508,11 @@ pub fn run() {
             achievement_commands::check_photo_count_achievements,
             achievement_commands::check_monthly_achievements,
             achievement_commands::check_star_count_achievements,
+            // Video streaming commands
+            start_video_server,
+            register_video_path,
+            get_video_server_status,
+            clear_video_mappings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
