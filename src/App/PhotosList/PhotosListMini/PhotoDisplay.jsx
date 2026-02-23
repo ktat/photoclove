@@ -11,10 +11,9 @@ import { BurstBadge, BurstGroupIndicator, FaceCountIndicator } from "./BurstOver
 
 // Layout and timing constants
 const CONTAINER_READY_DELAY_MS = 50;
-const VIDEO_SOURCE_DELAY_MS = 200;
-const LOCK_RELEASE_DELAY_MS = 1000;
 const VIDEO_HEIGHT_OFFSET = 150;
 const CONTAINER_PADDING = 40;
+const MAX_INTERNAL_VIDEO_SIZE_MB = 500; // 500MB threshold for internal video playback
 const MAX_RETRY_COUNT = 3;
 const RETRY_DELAY_MS = 100;
 const FALLBACK_WIDTH = 800;
@@ -33,6 +32,7 @@ function PhotoDisplay(props) {
     const [photoDisplayImgClass, setPhotoDisplayImgClass] = useState("");
     const [videoSource, setVideoSource] = useState("");
     const [videoClass, setVideoClass] = useState("video-off");
+    const videoRef = useRef(null);
     const [photoDisplayWidth, setPhotoDisplayWidth] = useState("pdWidth");
     const [photoDisplayHeight, setPhotoDisplayHeight] = useState("pdHeight");
 
@@ -59,6 +59,27 @@ function PhotoDisplay(props) {
     });
 
     // Function to parse CSS style string and convert to style object
+    // Function to update video container size based on current app size
+    const updateVideoSize = () => {
+        let photoContainer = document.querySelector('#photo');
+        if (photoContainer) {
+            let containerWidth = photoContainer.clientWidth - CONTAINER_PADDING;
+            let containerHeight = photoContainer.clientHeight - VIDEO_HEIGHT_OFFSET;
+            
+            // Ensure minimum reasonable size
+            containerWidth = Math.max(containerWidth, 600);
+            containerHeight = Math.max(containerHeight, 400);
+            
+            setPhotoDisplayWidth(containerWidth + "px");
+            setPhotoDisplayHeight(containerHeight + "px");
+            
+            logger.debug('PhotoDisplay', 'video_size_updated', 'Video container resized', {
+                width: containerWidth,
+                height: containerHeight
+            });
+        }
+    };
+
     const parseCssStyle = (cssString) => {
         if (!cssString) return {};
 
@@ -89,6 +110,11 @@ function PhotoDisplay(props) {
                     handleImgLoad(null, 0); // Recalculate wrapper size
                 }, CONTAINER_READY_DELAY_MS);
             }
+            
+            // Also resize video container if video is currently showing
+            if (videoClass === "video-on" && props.currentDisplayPath && props.currentDisplayPath.match(/(mp4|webm)$/i)) {
+                updateVideoSize();
+            }
         };
 
         window.addEventListener('resize', resizeHandler);
@@ -106,6 +132,40 @@ function PhotoDisplay(props) {
         handleImgLoad(null, 0);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.photosListMiniClosed])
+
+    // Video keyboard seek with fastSeek() (glucose_media_player inspired)
+    // ArrowLeft/Right: ±5 seconds, 0-9: percentage seek
+    useEffect(() => {
+        if (videoClass !== "video-on") return;
+
+        const handleVideoKeyDown = (e) => {
+            const video = videoRef.current;
+            if (!video || !video.duration) return;
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            const seek = (targetTime) => {
+                if ('fastSeek' in video) {
+                    video.fastSeek(targetTime);
+                } else {
+                    video.currentTime = targetTime;
+                }
+            };
+
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                seek(Math.max(0, video.currentTime - 5));
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                seek(Math.min(video.duration, video.currentTime + 5));
+            } else if (e.key >= '0' && e.key <= '9' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                e.preventDefault();
+                seek(video.duration * (parseInt(e.key) / 10));
+            }
+        };
+
+        document.addEventListener('keydown', handleVideoKeyDown);
+        return () => document.removeEventListener('keydown', handleVideoKeyDown);
+    }, [videoClass]);
 
     // Toggle face bbox visibility with 'f' key (only when Face tab is active)
     useEffect(() => {
@@ -157,12 +217,7 @@ function PhotoDisplay(props) {
         setTimeout(() => {
             if (props.currentDisplayPath && props.currentDisplayPath.match(/(mp4|webm)$/i)) {
                 movie(props.currentDisplayPath);
-                let photoDisplayDiv = document.querySelector('.photoDisplay');
-                let width = photoDisplayDiv.clientWidth;
-                let height = photoDisplayDiv.clientHeight - VIDEO_HEIGHT_OFFSET;
-
-                setPhotoDisplayWidth(width + "px");
-                setPhotoDisplayHeight(height + "px");
+                updateVideoSize();
                 setVideoClass("video-on");
                 setDisplaySrc("");
             } else {
@@ -297,26 +352,36 @@ function PhotoDisplay(props) {
 
     async function movie(path) {
         if (currentFile != path) {
-            invoke("lock", { t: true }).then(async (r) => {
-                // tauri cannot play movie file which is not in public folder. So copy movie file to public/movie
-                const ext = path.split('.').pop();
-                const result = await invoke("link_file_to_public", {
-                    fromFilePath: path,
-                    toFileName: "movie.tmp." + ext
-                }).then((r) => {
-                    let videoPath = "/movie.tmp." + ext + "?" + path;
-                    currentFile = path;
-                    // I don't know why it works only when set twice sometime.
-                    setVideoSource("#");
-                    // I don't know why react player require waiting for a while to play video correctly.
-                    setTimeout(() => {
-                        setVideoSource(videoPath);
-                    }, VIDEO_SOURCE_DELAY_MS);
+            try {
+                // Use optimized HTTP streaming server
+                logger.info('PhotoDisplay', 'video_streaming_init', 'Starting optimized video streaming');
+                const serverUrl = await invoke("start_video_server");
+                
+                // Register video path and get streaming URL
+                const streamingUrl = await invoke("register_video_path", { 
+                    videoPath: path 
                 });
-                setTimeout(() => {
-                    invoke("lock", { t: false })
-                }, LOCK_RELEASE_DELAY_MS);
-            })
+                
+                currentFile = path;
+                setVideoSource(streamingUrl);
+                
+                logger.info('PhotoDisplay', 'video_streaming_success', 'Optimized streaming started', { 
+                    path, 
+                    streamingUrl,
+                    protocol: 'http_optimized' 
+                });
+                
+            } catch (error) {
+                logger.error('PhotoDisplay', 'video_streaming_error', 'Streaming failed', { 
+                    path, 
+                    error: error.toString()
+                });
+                
+                // Fallback to external player
+                await openUrl(fileUrl(path));
+                setVideoSource("");
+                return false;
+            }
         }
         return true;
     }
@@ -483,12 +548,81 @@ function PhotoDisplay(props) {
                     url={videoSource}
                     */ }
                     <video
+                        key={videoSource}
+                        ref={videoRef}
                         controls
                         src={videoSource}
+                        preload="auto"
+                        controlsList="nodownload nofullscreen noremoteplayback"
+                        disablePictureInPicture
+                        playsInline
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'contain',
+                            backgroundColor: 'var(--color-bg-secondary)'
+                        }}
+                        onLoadStart={() => {
+                            logger.info('PhotoDisplay', 'video_load_start', 'Video loading started', { src: videoSource });
+                        }}
+                        onLoadedMetadata={(e) => {
+                            const video = e.target;
+                            logger.info('PhotoDisplay', 'video_metadata', 'Video metadata loaded', {
+                                duration: video.duration,
+                                videoWidth: video.videoWidth,
+                                videoHeight: video.videoHeight,
+                                codecs: video.canPlayType('video/mp4; codecs="avc1.42E01E"'),
+                                src: videoSource
+                            });
+                            
+                            // Log buffer status without forcing reload
+                            try {
+                                if (video.buffered && video.buffered.length > 0) {
+                                    logger.debug('PhotoDisplay', 'buffer_status', 'Initial buffer', {
+                                        buffered: video.buffered.end(0) - video.buffered.start(0)
+                                    });
+                                }
+                            } catch (err) {
+                                logger.debug('PhotoDisplay', 'buffer_setup_failed', 'Buffer status failed', { error: err.message });
+                            }
+                        }}
+                        onError={(e) => logger.error('PhotoDisplay', 'video_error', 'Video loading error', { src: videoSource, error: e.target.error })}
+                        onCanPlay={() => logger.info('PhotoDisplay', 'video_can_play', 'Video can play', { src: videoSource })}
+                        onWaiting={() => {
+                            logger.warn('PhotoDisplay', 'video_buffering', 'Video buffering detected - may need larger chunks', { src: videoSource });
+                        }}
+                        onProgress={(e) => {
+                            if (e.target.buffered.length > 0) {
+                                const bufferedEnd = e.target.buffered.end(0);
+                                const currentTime = e.target.currentTime;
+                                const bufferAhead = bufferedEnd - currentTime;
+                                logger.debug('PhotoDisplay', 'buffer_progress', 'Buffer status', {
+                                    bufferedSeconds: bufferAhead,
+                                    currentTime: currentTime
+                                });
+                            }
+                        }}
+                        onPlaying={() => logger.debug('PhotoDisplay', 'video_playing', 'Video playing smoothly', { src: videoSource })}
+                        onStalled={() => logger.warn('PhotoDisplay', 'video_stalled', 'Video playback stalled', { src: videoSource })}
+                        onSuspend={() => logger.debug('PhotoDisplay', 'video_suspended', 'Video loading suspended', { src: videoSource })}
+                        onVolumeChange={(e) => {
+                            // Ensure audio doesn't get muted accidentally
+                            if (e.target.muted) {
+                                logger.warn('PhotoDisplay', 'video_muted', 'Video was muted unexpectedly');
+                            }
+                        }}
+                        onContextMenu={(e) => e.preventDefault()}
                     >
+                        Your browser does not support the video tag.
                     </video>
                 </div>
-                Open with other software: <a href="#" onClick={(e) => openUrl(fileUrl(props.currentDisplayPath))}>{props.currentDisplayPath}</a>
+                <div style={{ marginTop: 'var(--space-2)', fontSize: 'var(--font-size-sm)' }}>
+                    <a href="#" onClick={(e) => {e.preventDefault(); openUrl(fileUrl(props.currentDisplayPath));}}>
+                        📺 Open with external player
+                    </a>
+                    <span style={{ margin: '0 var(--space-2)', color: 'var(--color-text-secondary)' }}>|</span>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>{props.currentDisplayPath}</span>
+                </div>
             </div>
             {props.currentDisplayPath && /\.nev$/i.test(props.currentDisplayPath) &&
                 <div id="imageWrapper" style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative', flexDirection: 'column' }}>

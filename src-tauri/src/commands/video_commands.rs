@@ -92,3 +92,31 @@ pub async fn clear_video_mappings() -> Result<(), String> {
         Err("Warp video server not initialized".to_string())
     }
 }
+
+/// Shutdown the video server (for cleanup/restart scenarios)
+#[tauri::command]
+pub async fn shutdown_video_server() -> Result<String, String> {
+    if let Some(server) = VIDEO_SERVER.get() {
+        server.shutdown().await?;
+        log::info!(target: "video_commands", "video_server_shutdown_requested");
+        Ok("Video server shutdown successfully".to_string())
+    } else {
+        Err("Video server not initialized".to_string())
+    }
+}
+
+/// Get detailed server statistics for debugging
+#[tauri::command] 
+pub async fn get_video_server_stats() -> Result<serde_json::Value, String> {
+    if let Some(server) = VIDEO_SERVER.get() {
+        let stats = server.get_stats().await;
+        log::debug!(target: "video_commands", "server_stats_requested; stats={}", stats);
+        Ok(stats)
+    } else {
+        Ok(serde_json::json!({
+            "running": false,
+            "error": "Server not initialized",
+            "server_type": "warp"
+        }))
+    }
+}

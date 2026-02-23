@@ -6,12 +6,21 @@ use std::path::PathBuf;
 use base64::Engine;
 use tokio::io::{AsyncSeekExt, AsyncReadExt};
 use warp::http::{StatusCode, HeaderMap, HeaderValue};
+use tokio::task::JoinHandle;
+use tokio_util::io::ReaderStream;
+use futures_util::stream::StreamExt;
+
+#[derive(Debug)]
+struct StreamingError;
+
+impl warp::reject::Reject for StreamingError {}
 
 pub struct VideoServer {
     pub server_url: String,
     pub video_mappings: Arc<tokio::sync::RwLock<HashMap<String, PathBuf>>>,
     pub is_running: Arc<AtomicBool>,
     pub port: Arc<AtomicU16>,
+    pub server_handle: Arc<tokio::sync::Mutex<Option<JoinHandle<()>>>>,
 }
 
 impl VideoServer {
@@ -19,14 +28,15 @@ impl VideoServer {
         let mappings = Arc::new(tokio::sync::RwLock::new(HashMap::new()));
         let is_running = Arc::new(AtomicBool::new(false));
         let port = Arc::new(AtomicU16::new(0));
+        let server_handle = Arc::new(tokio::sync::Mutex::new(None));
         
         // Clone for async move
         let mappings_clone = mappings.clone();
         let is_running_clone = is_running.clone();
         let port_clone = port.clone();
         
-        // Start warp server in background using tokio::spawn for non-blocking execution
-        tokio::spawn(async move {
+        // Start warp server in background and capture JoinHandle
+        let handle = tokio::spawn(async move {
             // Create CORS filter
             let cors = warp::cors()
                 .allow_any_origin()
@@ -72,6 +82,9 @@ impl VideoServer {
             log::info!(target: "video_server", "warp_server_stopped");
         });
         
+        // Store the JoinHandle
+        *server_handle.lock().await = Some(handle);
+        
         // Wait for server to start and get assigned port
         let mut attempts = 0;
         while !is_running.load(Ordering::Relaxed) && attempts < 50 {
@@ -91,29 +104,46 @@ impl VideoServer {
             video_mappings: mappings,
             is_running,
             port,
+            server_handle,
         })
     }
     
     pub async fn register_video(&self, video_path: String) -> Result<String, String> {
-        // Verify file exists and is accessible
+        // Canonicalize path for security (prevent directory traversal)
         let path = PathBuf::from(&video_path);
-        if !path.exists() {
+        let canonical_path = path.canonicalize()
+            .map_err(|e| format!("Failed to resolve path '{}': {}", video_path, e))?;
+        
+        // Verify file exists and is accessible
+        if !canonical_path.exists() {
             return Err(format!("Video file not found: {}", video_path));
         }
-        if !path.is_file() {
+        if !canonical_path.is_file() {
             return Err(format!("Path is not a file: {}", video_path));
         }
         
-        // Use base64 encoding of path as video ID
-        let video_id = base64::engine::general_purpose::STANDARD.encode(&video_path);
+        // Additional security: verify it's a video file
+        let extension = canonical_path.extension()
+            .and_then(|ext| ext.to_str())
+            .unwrap_or("")
+            .to_lowercase();
         
-        // Store mapping
+        if !matches!(extension.as_str(), "mp4" | "webm" | "avi" | "mov" | "mkv" | "m4v" | "3gp" | "flv") {
+            return Err(format!("File is not a supported video format: {}", video_path));
+        }
+        
+        // Use base64 encoding of canonical path as video ID
+        let canonical_path_str = canonical_path.to_string_lossy().to_string();
+        let video_id = base64::engine::general_purpose::STANDARD.encode(&canonical_path_str);
+        
+        // Store mapping with canonical path
         let mut mappings = self.video_mappings.write().await;
-        mappings.insert(video_id.clone(), path);
+        mappings.insert(video_id.clone(), canonical_path.clone());
         
         let streaming_url = format!("{}/video/{}", self.server_url, video_id);
         
-        log::info!(target: "video_server", "video_registered; path={}; url={}", video_path, streaming_url);
+        log::info!(target: "video_server", "video_registered; original={}; canonical={:?}; url={}", 
+            video_path, canonical_path, streaming_url);
         
         Ok(streaming_url)
     }
@@ -124,6 +154,40 @@ impl VideoServer {
     
     pub fn get_port(&self) -> u16 {
         self.port.load(Ordering::Relaxed)
+    }
+    
+    /// Gracefully shutdown the video server
+    pub async fn shutdown(&self) -> Result<(), String> {
+        log::info!(target: "video_server", "shutting_down_server");
+        
+        // Mark server as not running
+        self.is_running.store(false, Ordering::Relaxed);
+        
+        // Abort the server task
+        let mut handle_guard = self.server_handle.lock().await;
+        if let Some(handle) = handle_guard.take() {
+            handle.abort();
+            log::info!(target: "video_server", "server_task_aborted");
+        }
+        
+        // Clear video mappings
+        let mut mappings = self.video_mappings.write().await;
+        mappings.clear();
+        
+        log::info!(target: "video_server", "server_shutdown_complete");
+        Ok(())
+    }
+    
+    /// Get server statistics for debugging
+    pub async fn get_stats(&self) -> serde_json::Value {
+        let mappings = self.video_mappings.read().await;
+        serde_json::json!({
+            "running": self.is_running(),
+            "port": self.get_port(),
+            "server_url": self.server_url,
+            "registered_videos": mappings.len(),
+            "has_server_handle": self.server_handle.lock().await.is_some(),
+        })
     }
 }
 
@@ -181,39 +245,54 @@ async fn serve_video_file(
                     .map_err(|_| warp::reject::not_found())?;
                 
                 let content_length = end - start + 1;
-                let mut buffer = vec![0u8; content_length as usize];
+
+                // Create streaming response with content-length (enables precise seeking)
+                let stream = ReaderStream::with_capacity(file.take(content_length), 65536);
+                let body_stream = stream.map(|result| {
+                    result.map_err(|e| {
+                        log::error!(target: "video_server", "stream_read_error; error={:?}", e);
+                        e
+                    })
+                });
+
+                log::info!(target: "video_server", "range_response_stream; start={}; end={}; size={}",
+                    start, end, content_length);
+
+                let response = warp::http::Response::builder()
+                    .status(StatusCode::PARTIAL_CONTENT)
+                    .header("content-range", format!("bytes {}-{}/{}", start, end, file_size))
+                    .header("accept-ranges", "bytes")
+                    .header("content-length", content_length.to_string())
+                    .header("content-type", get_video_content_type(&file_path))
+                    .body(warp::hyper::Body::wrap_stream(body_stream))
+                    .map_err(|_| warp::reject::custom(StreamingError))?;
                 
-                file.read_exact(&mut buffer).await
-                    .map_err(|_| warp::reject::not_found())?;
-                
-                
-                log::info!(target: "video_server", "range_response; start={}; end={}; size={}", start, end, content_length);
-                
-                let reply = warp::reply::with_status(buffer, StatusCode::PARTIAL_CONTENT);
-                let reply = warp::reply::with_header(reply, "content-range", 
-                    format!("bytes {}-{}/{}", start, end, file_size));
-                let reply = warp::reply::with_header(reply, "accept-ranges", "bytes");
-                let reply = warp::reply::with_header(reply, "content-length", content_length.to_string());
-                let reply = warp::reply::with_header(reply, "content-type", get_video_content_type(&file_path));
-                
-                return Ok(Box::new(reply));
+                return Ok(Box::new(response));
             }
         }
     }
     
-    // Full file response
-    let mut buffer = Vec::new();
-    file.read_to_end(&mut buffer).await
-        .map_err(|_| warp::reject::not_found())?;
-    
+    // Full file streaming response (avoids loading entire file into memory)
     log::info!(target: "video_server", "full_file_response; size={}", file_size);
-    
-    let reply = warp::reply::with_header(buffer, "accept-ranges", "bytes");
-    let reply = warp::reply::with_header(reply, "content-length", file_size.to_string());
-    let reply = warp::reply::with_header(reply, "content-type", get_video_content_type(&file_path));
-    let reply = warp::reply::with_header(reply, "cache-control", "public, max-age=3600");
-    
-    Ok(Box::new(reply))
+
+    let stream = ReaderStream::with_capacity(file, 65536);
+    let body_stream = stream.map(|result| {
+        result.map_err(|e| {
+            log::error!(target: "video_server", "stream_read_error; error={:?}", e);
+            e
+        })
+    });
+
+    let response = warp::http::Response::builder()
+        .status(StatusCode::OK)
+        .header("accept-ranges", "bytes")
+        .header("content-length", file_size.to_string())
+        .header("content-type", get_video_content_type(&file_path))
+        .header("cache-control", "public, max-age=3600")
+        .body(warp::hyper::Body::wrap_stream(body_stream))
+        .map_err(|_| warp::reject::custom(StreamingError))?;
+
+    Ok(Box::new(response))
 }
 
 fn parse_range(range: &str, file_size: u64) -> Option<(u64, u64)> {

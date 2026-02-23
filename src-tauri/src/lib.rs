@@ -513,6 +513,8 @@ pub fn run() {
             register_video_path,
             get_video_server_status,
             clear_video_mappings,
+            shutdown_video_server,
+            get_video_server_stats,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
