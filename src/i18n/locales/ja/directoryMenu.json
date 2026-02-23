@@ -23,7 +23,7 @@
     "movie": "動画"
   },
   "selection": {
-    "selectAllInPage": "ページ内の全写真を選択",
+    "selectAllInPage": "表示されているすべての写真を選択",
     "photosNotSelected": "写真が選択されていません。",
     "photosSelected": "枚の写真を選択中",
     "selectOperation": "操作を選択",

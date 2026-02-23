@@ -23,7 +23,7 @@
     "movie": "Movie"
   },
   "selection": {
-    "selectAllInPage": "Select all photos in page",
+    "selectAllInPage": "Select all displayed photos",
     "photosNotSelected": "Photos are not selected.",
     "photosSelected": "photos selected",
     "selectOperation": "Select an Operation",

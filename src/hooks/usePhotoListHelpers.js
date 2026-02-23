@@ -165,13 +165,14 @@ export function usePhotoListHelpers({
     }, [photoSelectionDict, togglePhotoSelection]);
 
     /**
-     * Select all photos (respects infinite scroll)
+     * Select all photos currently shown in the grid
+     * PhotoGrid displays all filteredPhotos via react-window virtualization,
+     * so we select filteredPhotos (not displayedPhotos which is only a 50-item slice).
+     * Re-clicking after filteredPhotos grows (e.g. new imports) adds the new ones.
      */
     const selectAllPhotoToSelection = useCallback(() => {
-        // For infinite scroll, select only displayed photos to avoid confusion
-        const targetPhotos = infiniteScrollEnabled ? displayedPhotos : filteredPhotos;
-        selectAllPhotos(targetPhotos);
-    }, [infiniteScrollEnabled, displayedPhotos, filteredPhotos, selectAllPhotos]);
+        selectAllPhotos(filteredPhotos);
+    }, [filteredPhotos, selectAllPhotos]);
 
     return {
         setStarWithUpdate,
