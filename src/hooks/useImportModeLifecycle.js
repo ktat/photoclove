@@ -35,6 +35,8 @@ export function useImportModeLifecycle({
     const isImportLike = viewMode === VIEW_MODES.IMPORT || viewMode === VIEW_MODES.QUICK_VIEW;
 
     useEffect(() => {
+        let cancelled = false;
+
         if (isImportLike) {
             // Set tab state for import mode
             setTabClass({
@@ -57,6 +59,10 @@ export function useImportModeLifecycle({
             if (!importState) {
                 const initialPath = viewMode === VIEW_MODES.QUICK_VIEW ? modeData?.quickViewPath : undefined;
                 ImportState.create(initialPath).then((newImportState) => {
+                    if (cancelled) {
+                        newImportState.cleanup();
+                        return;
+                    }
                     // Check Quick View achievement after ImportState is created
                     // (delayed to ensure event listeners in App.jsx are registered)
                     if (viewMode === VIEW_MODES.QUICK_VIEW) {
@@ -141,6 +147,9 @@ export function useImportModeLifecycle({
                     });
             }
         }
+        return () => {
+            cancelled = true;
+        };
     }, [
         viewMode,
         viewModeObj,

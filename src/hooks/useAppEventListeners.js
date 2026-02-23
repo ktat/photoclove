@@ -42,6 +42,7 @@ export function useAppEventListeners({
     configRef.current = config;
 
     useEffect(() => {
+        let cancelled = false;
         let menuUnlisten, unlisten0, unlisten1, unlisten2, unlisten3, unlisten4, unlisten5, unlistenImport, unlistenAchievement;
 
         const setupListeners = async () => {
@@ -139,7 +140,11 @@ export function useAppEventListeners({
                             logger.info('App', 'new_achievements', 'New achievements unlocked', {
                                 count: result.newly_achieved.length,
                             });
-                            setAchievementQueue((prev) => [...prev, ...result.newly_achieved]);
+                            setAchievementQueue((prev) => {
+                                const existingIds = new Set(prev.map(a => a.id));
+                                const newItems = result.newly_achieved.filter(a => !existingIds.has(a.id));
+                                return [...prev, ...newItems];
+                            });
                         }
                     } catch (error) {
                         logger.error('App', 'achievement_check_error', 'Failed to check achievements', {
@@ -155,7 +160,10 @@ export function useAppEventListeners({
                     achievement: e.payload?.id,
                 });
                 if (e.payload) {
-                    setAchievementQueue((prev) => [...prev, e.payload]);
+                    setAchievementQueue((prev) => {
+                        if (prev.some(a => a.id === e.payload.id)) return prev;
+                        return [...prev, e.payload];
+                    });
                 }
             });
 
@@ -185,6 +193,19 @@ export function useAppEventListeners({
                     }
                 });
             });
+
+            // If cleanup already ran while we were setting up, clean up now
+            if (cancelled) {
+                if (menuUnlisten) menuUnlisten();
+                if (unlisten0) unlisten0();
+                if (unlisten1) unlisten1();
+                if (unlisten2) unlisten2();
+                if (unlisten3) unlisten3();
+                if (unlisten4) unlisten4();
+                if (unlisten5) unlisten5();
+                if (unlistenImport) unlistenImport();
+                if (unlistenAchievement) unlistenAchievement();
+            }
         };
 
         setupListeners();
@@ -214,6 +235,7 @@ export function useAppEventListeners({
 
         // Cleanup
         return () => {
+            cancelled = true;
             if (menuUnlisten) menuUnlisten();
             if (unlisten0) unlisten0();
             if (unlisten1) unlisten1();
