@@ -164,15 +164,28 @@ impl SQLite {
             .unwrap_or(false);
 
         let should_achieve = current_value >= threshold;
-        let newly_achieved = !was_achieved && should_achieve;
+
+        // Check if record already has achieved_at (even without a valid hash = legacy record)
+        let has_existing_achieved_at = existing
+            .as_ref()
+            .map(|(_, at, _)| at.is_some())
+            .unwrap_or(false);
+
+        // Newly achieved only if threshold is met AND no prior achieved_at exists
+        let newly_achieved = !was_achieved && should_achieve && !has_existing_achieved_at;
 
         let (achieved_at, verification_hash) = if should_achieve {
             if was_achieved {
                 // Keep existing achieved_at and hash
                 let (_, achieved, hash) = existing.as_ref().unwrap();
                 (achieved.clone(), hash.clone())
+            } else if has_existing_achieved_at {
+                // Legacy record: has achieved_at but missing/invalid hash - fix hash using existing timestamp
+                let existing_at = existing.as_ref().unwrap().1.as_deref().unwrap_or(&now).to_string();
+                let hash = generate_hash(id, &existing_at);
+                (Some(existing_at), Some(hash))
             } else {
-                // New achievement - generate hash
+                // Genuinely new achievement - generate hash from now
                 let hash = generate_hash(id, &now);
                 (Some(now.clone()), Some(hash))
             }
@@ -226,11 +239,31 @@ impl SQLite {
             })
             .unwrap_or(false);
 
-        if already_achieved {
+        // Check if record already has achieved_at (even without a valid hash = legacy record)
+        let has_existing_achieved_at = existing
+            .as_ref()
+            .map(|(at, _)| at.is_some())
+            .unwrap_or(false);
+
+        if already_achieved || has_existing_achieved_at {
+            if has_existing_achieved_at && !already_achieved {
+                // Legacy record: fix hash silently using existing achieved_at
+                let existing_at = existing.as_ref().unwrap().0.as_deref().unwrap_or(&now).to_string();
+                let verification_hash = generate_hash(id, &existing_at);
+                conn.execute(
+                    "UPDATE achievement_progress SET verification_hash = ?, updated_at = ? WHERE id = ? AND (verification_hash IS NULL OR verification_hash = '')",
+                    params![verification_hash, now, id],
+                )?;
+                log::info!(
+                    target: "achievements",
+                    "legacy_hash_fixed; id={}",
+                    id
+                );
+            }
             return Ok(false);
         }
 
-        // Generate hash for new achievement
+        // Generate hash for genuinely new achievement
         let verification_hash = generate_hash(id, &now);
 
         conn.execute(
