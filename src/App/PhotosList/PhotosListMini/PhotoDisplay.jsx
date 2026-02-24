@@ -350,14 +350,29 @@ function PhotoDisplay(props) {
         };
     }, [props.currentDisplayPath, props.thumbnailSrc, props.imgCacheMap, props.progressiveImageLoading]);
 
-    function movie(path) {
+    async function movie(path) {
         if (currentFile !== path) {
             currentFile = path;
-            // Use asset protocol which is allowed by CSP (media-src includes asset:)
-            // The warp HTTP server was blocked by mixed-content policy (HTTPS page → HTTP server)
-            const assetUrl = convertFileSrc(path);
-            setVideoSource(assetUrl);
-            logger.info('PhotoDisplay', 'video_load', 'Loading video via asset protocol', { path, assetUrl });
+            try {
+                // Start video server if not already running
+                await invoke('start_video_server');
+                
+                // Register video file and get streaming URL
+                const streamingUrl = await invoke('register_video_path', { videoPath: path });
+                setVideoSource(streamingUrl);
+                logger.info('PhotoDisplay', 'video_load', 'Loading video via HTTP streaming server', { 
+                    path, 
+                    streamingUrl 
+                });
+            } catch (error) {
+                // Fallback to asset protocol if HTTP server fails
+                logger.warn('PhotoDisplay', 'video_streaming_fallback', 'HTTP streaming failed, using asset protocol', {
+                    path,
+                    error: error.message
+                });
+                const assetUrl = convertFileSrc(path);
+                setVideoSource(assetUrl);
+            }
         }
     }
 
@@ -523,10 +538,10 @@ function PhotoDisplay(props) {
                     url={videoSource}
                     */ }
                     <video
-                        key={videoSource}
+                        key={videoSource || 'empty'}
                         ref={videoRef}
                         controls
-                        src={videoSource}
+                        src={videoSource || undefined}
                         preload="auto"
                         controlsList="nodownload nofullscreen noremoteplayback"
                         disablePictureInPicture
@@ -561,7 +576,7 @@ function PhotoDisplay(props) {
                                 logger.debug('PhotoDisplay', 'buffer_setup_failed', 'Buffer status failed', { error: err.message });
                             }
                         }}
-                        onError={(e) => logger.error('PhotoDisplay', 'video_error', 'Video loading error', { src: videoSource, error: e.target.error })}
+                        onError={(e) => { if (!videoSource) return; logger.error('PhotoDisplay', 'video_error', 'Video loading error', { src: videoSource, error: e.target.error }); }}
                         onCanPlay={() => logger.info('PhotoDisplay', 'video_can_play', 'Video can play', { src: videoSource })}
                         onWaiting={() => {
                             logger.warn('PhotoDisplay', 'video_buffering', 'Video buffering detected - may need larger chunks', { src: videoSource });
