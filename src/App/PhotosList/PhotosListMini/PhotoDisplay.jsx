@@ -350,40 +350,15 @@ function PhotoDisplay(props) {
         };
     }, [props.currentDisplayPath, props.thumbnailSrc, props.imgCacheMap, props.progressiveImageLoading]);
 
-    async function movie(path) {
-        if (currentFile != path) {
-            try {
-                // Use optimized HTTP streaming server
-                logger.info('PhotoDisplay', 'video_streaming_init', 'Starting optimized video streaming');
-                const serverUrl = await invoke("start_video_server");
-                
-                // Register video path and get streaming URL
-                const streamingUrl = await invoke("register_video_path", { 
-                    videoPath: path 
-                });
-                
-                currentFile = path;
-                setVideoSource(streamingUrl);
-                
-                logger.info('PhotoDisplay', 'video_streaming_success', 'Optimized streaming started', { 
-                    path, 
-                    streamingUrl,
-                    protocol: 'http_optimized' 
-                });
-                
-            } catch (error) {
-                logger.error('PhotoDisplay', 'video_streaming_error', 'Streaming failed', { 
-                    path, 
-                    error: error.toString()
-                });
-                
-                // Fallback to external player
-                await openUrl(fileUrl(path));
-                setVideoSource("");
-                return false;
-            }
+    function movie(path) {
+        if (currentFile !== path) {
+            currentFile = path;
+            // Use asset protocol which is allowed by CSP (media-src includes asset:)
+            // The warp HTTP server was blocked by mixed-content policy (HTTPS page → HTTP server)
+            const assetUrl = convertFileSrc(path);
+            setVideoSource(assetUrl);
+            logger.info('PhotoDisplay', 'video_load', 'Loading video via asset protocol', { path, assetUrl });
         }
-        return true;
     }
 
     const handleImgLoad = (e, retryCount = 0) => {
