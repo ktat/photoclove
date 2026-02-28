@@ -155,6 +155,25 @@ Prerequisites:
 - [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (usually pre-installed on Windows 11)
 - [CMake](https://cmake.org/download/) (required to compile libheif from source)
 - [NASM](https://www.nasm.us/) (required for libheif codec support)
+- [vcpkg](https://github.com/microsoft/vcpkg) (for native library dependencies)
+
+#### vcpkg Setup
+
+```powershell
+# Clone vcpkg (e.g. to C:\Users\<user>\source\repos\vcpkg)
+git clone https://github.com/microsoft/vcpkg.git
+cd vcpkg
+.\bootstrap-vcpkg.bat
+
+# Install required libraries
+.\vcpkg install openssl:x64-windows-static-md
+
+# Set environment variables (add to your profile for persistence)
+$env:VCPKG_ROOT = "C:\Users\<user>\source\repos\vcpkg"
+$env:PATH += ";$env:VCPKG_ROOT"
+```
+
+#### Build
 
 ```powershell
 pnpm tauri build
