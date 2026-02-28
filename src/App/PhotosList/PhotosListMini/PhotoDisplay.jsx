@@ -354,22 +354,14 @@ function PhotoDisplay(props) {
         if (currentFile !== path) {
             currentFile = path;
             try {
-                // Start video server if not already running
-                await invoke('start_video_server');
-                
-                // Register video file and get streaming URL
+                // Use warp streaming server for proper Range Request support (required for video seeking)
+                const serverUrl = await invoke('start_video_server');
                 const streamingUrl = await invoke('register_video_path', { videoPath: path });
                 setVideoSource(streamingUrl);
-                logger.info('PhotoDisplay', 'video_load', 'Loading video via HTTP streaming server', { 
-                    path, 
-                    streamingUrl 
-                });
-            } catch (error) {
-                // Fallback to asset protocol if HTTP server fails
-                logger.warn('PhotoDisplay', 'video_streaming_fallback', 'HTTP streaming failed, using asset protocol', {
-                    path,
-                    error: error.message
-                });
+                logger.info('PhotoDisplay', 'video_load', 'Loading video via streaming server', { path, streamingUrl, serverUrl });
+            } catch (e) {
+                // Fallback to asset protocol if streaming server fails
+                logger.warn('PhotoDisplay', 'video_server_fallback', 'Streaming server failed, using asset protocol', { path, error: String(e) });
                 const assetUrl = convertFileSrc(path);
                 setVideoSource(assetUrl);
             }
@@ -538,11 +530,11 @@ function PhotoDisplay(props) {
                     url={videoSource}
                     */ }
                     <video
-                        key={videoSource || 'empty'}
+                        key={videoSource}
                         ref={videoRef}
                         controls
-                        src={videoSource || undefined}
-                        preload="auto"
+                        src={videoSource}
+                        preload="metadata"
                         controlsList="nodownload nofullscreen noremoteplayback"
                         disablePictureInPicture
                         playsInline
@@ -576,7 +568,7 @@ function PhotoDisplay(props) {
                                 logger.debug('PhotoDisplay', 'buffer_setup_failed', 'Buffer status failed', { error: err.message });
                             }
                         }}
-                        onError={(e) => { if (!videoSource) return; logger.error('PhotoDisplay', 'video_error', 'Video loading error', { src: videoSource, error: e.target.error }); }}
+                        onError={(e) => logger.error('PhotoDisplay', 'video_error', 'Video loading error', { src: videoSource, error: e.target.error })}
                         onCanPlay={() => logger.info('PhotoDisplay', 'video_can_play', 'Video can play', { src: videoSource })}
                         onWaiting={() => {
                             logger.warn('PhotoDisplay', 'video_buffering', 'Video buffering detected - may need larger chunks', { src: videoSource });

@@ -489,7 +489,7 @@ function PhotosList({
         starFilter, hasCommentFilter, hasTagFilter, extensionFilter, importExtensionFilter, showFilterPopover, hasActiveFiltersState,
         photoSelectionDict, photoSelection, selectedAlbums, selectedTags, selectedPersons, selectedUnknownFaces,
         currentPhoto, currentPhotoIndex, showSideMenu, iconSize, sortOfPhotos, importSortOfPhotos, datePage, numOfPhoto,
-        searchQuery, searchInitialQuery, searchFilters, searchResults, currentSearchParams,
+        searchQuery, searchInitialQuery, searchFilters, searchResults, currentSearchParams, isSearching,
         displayedPhotos, filteredPhotos, displayedPhotoCount, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch,
         photosListMiniAllPhotos, setPhotosListMiniAllPhotos, photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex, photosListMiniReread, setPhotosListMiniReread,
         imgCacheMap, setImgCacheMap, thumbnailStore, setThumbnailStore,

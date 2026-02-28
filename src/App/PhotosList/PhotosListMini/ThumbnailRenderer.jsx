@@ -59,7 +59,7 @@ function ThumbnailRenderer({
                         <span>🎬</span>
                     </div>
                 ) : (
-                    <>
+                    <div style={{ position: "relative", display: "inline-block" }}>
                         <img
                             src={localImgSrc || imgSrcCache[photo.originalPath]}
                             style={{
@@ -73,9 +73,9 @@ function ThumbnailRenderer({
                             onError={handleError}
                         />
                         {hasVideoPlayIcon && (
-                            <div style={{ color: "var(--color-text-primary)", position: "relative", top: maxHeight / -4 }}>▶</div>
+                            <div style={{ color: "var(--color-text-primary)", position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", pointerEvents: "none" }}>▶</div>
                         )}
-                    </>
+                    </div>
                 )}
 
                 {/* Metadata overlay - stars and comments (bottom-right, matching PhotoCard) */}

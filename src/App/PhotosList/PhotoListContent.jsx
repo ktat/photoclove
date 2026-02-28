@@ -132,7 +132,8 @@ function PhotoListContent({
 
     const {
         query: searchQuery,
-        currentParams: currentSearchParams
+        currentParams: currentSearchParams,
+        isSearching
     } = searchState;
 
     const {
@@ -405,10 +406,21 @@ function PhotoListContent({
                                 />
                             </div>
                             : <div>
-                                <>
-                                    <EmptyState viewModeObj={viewModeObj} searchQuery={searchQuery} searchParams={currentSearchParams} />
-                                    {renderFilterClearingUI()}
-                                </>
+                                {isSearching ? (
+                                    <div className="empty-state-container">
+                                        <div className="empty-state-content">
+                                            <div className="empty-state-icon">
+                                                <span className="empty-state-emoji">🔍</span>
+                                            </div>
+                                            <h2 className="empty-state-text">Searching...</h2>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <EmptyState viewModeObj={viewModeObj} searchQuery={searchQuery} searchParams={currentSearchParams} />
+                                        {renderFilterClearingUI()}
+                                    </>
+                                )}
                             </div>
                         }
                         {/* Only render PhotoGrid when there are photos to display */}

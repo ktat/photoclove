@@ -55,6 +55,7 @@ export function usePhotoListStateGroups({
     searchFilters,
     searchResults,
     currentSearchParams,
+    isSearching,
 
     // PhotoDataState params
     displayedPhotos,
@@ -149,8 +150,9 @@ export function usePhotoListStateGroups({
         initialQuery: searchInitialQuery,
         filters: searchFilters,
         results: searchResults,
-        currentParams: currentSearchParams
-    }), [searchQuery, searchInitialQuery, searchFilters, searchResults, currentSearchParams]);
+        currentParams: currentSearchParams,
+        isSearching
+    }), [searchQuery, searchInitialQuery, searchFilters, searchResults, currentSearchParams, isSearching]);
 
     /** @type {import('../types/PageState.js').PhotoDataState} */
     const photoDataState = useMemo(() => ({
