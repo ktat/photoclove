@@ -134,7 +134,7 @@ impl VideoServer {
         
         // Use base64 encoding of canonical path as video ID
         let canonical_path_str = canonical_path.to_string_lossy().to_string();
-        let video_id = base64::engine::general_purpose::STANDARD.encode(&canonical_path_str);
+        let video_id = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(&canonical_path_str);
         
         // Store mapping with canonical path
         let mut mappings = self.video_mappings.write().await;
