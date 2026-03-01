@@ -95,7 +95,8 @@ name = "photoclove"
 path = "src/main.rs"
 
 [profile.release]
-opt-level = "s"
-codegen-units = 256
+opt-level = "0"
+codegen-units = 1
+incremetal = false
 lto = false
 strip = "debuginfo"
