@@ -3,7 +3,6 @@
 //! Handles uploading photos to S3 or S3-compatible storage.
 
 use super::utils::{cleanup_kill_file, get_resume_start_index, log_resume_info, should_stop_job};
-use crate::domain_service::s3_service::S3Service;
 use crate::entity::job_queue;
 use crate::entity::recovery_queue::OperationType;
 use crate::repository::meta_db::sqlite::SQLite;
@@ -46,8 +45,7 @@ pub(crate) async fn process_s3_sync_job(
     let backup_thumbnails = s3_config.backup_thumbnails;
 
     // Initialize S3 service
-    let mut s3_service = S3Service::new(s3_config.clone());
-    s3_service.init().await?;
+    let s3_service = crate::domain_service::s3_service::create_service(&s3_config).await?;
 
     // Get photo paths from job target
     let photo_paths = &job.job.target;

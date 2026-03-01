@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "crates/video-server"]
+members = [".", "crates/video-server", "crates/s3-backup"]
 
 [package]
 name = "photoclove"
@@ -71,9 +71,7 @@ ndarray = "0.17"
 ureq = "2.9"
 
 # S3 Backup
-aws-config = { version = "1.1", features = ["behavior-version-latest"] }
-aws-sdk-s3 = "1.15"
-aws-credential-types = "1.1"
+s3-backup = { path = "crates/s3-backup" }
 # tauri-plugin-shell = "2"
 # turbojpeg-sys = {version = "0.2.3", features = ["bindgen"] }
 # turbojpeg = {version = "0.5", features = ["image"] }

@@ -50,8 +50,7 @@ pub async fn test_s3_connection(state: State<'_, AppState>) -> Result<String, St
         return Err("S3 backup is not enabled".to_string());
     }
 
-    let mut service = s3_service::S3Service::new(s3_config);
-    service.init().await?;
+    let service = s3_service::create_service(&s3_config).await?;
 
     let result = service.test_connection().await?;
 
