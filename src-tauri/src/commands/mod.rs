@@ -32,7 +32,6 @@ pub mod tag_commands;
 pub mod trash_commands;
 pub mod utility_commands;
 pub mod video_commands;
-pub mod video_streaming;
 
 // Re-export all commands for convenient access
 pub use ai_model_commands::*;

@@ -1,4 +1,4 @@
-use crate::commands::video_streaming::VideoServer;
+use video_server::VideoServer;
 use std::sync::Arc;
 use tokio::sync::OnceCell;
 
