@@ -95,8 +95,11 @@ name = "photoclove"
 path = "src/main.rs"
 
 [profile.release]
-opt-level = "0"
-codegen-units = 1
-incremetal = false
+opt-level = 1
+codegen-units = 256
 lto = false
 strip = "debuginfo"
+
+# External dependencies stay size-optimized (compiled as separate rlibs)
+[profile.release.package."*"]
+opt-level = "s"

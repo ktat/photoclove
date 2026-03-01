@@ -72,10 +72,6 @@ fn queue_startup_insights(config: &entity::config::Config, app_handle: tauri::Ap
     domain_service::job_queue::executor::process_new_jobs(db_arc, 1, app_handle);
 }
 
-#![cfg_attr(
-    all(not(debug_assertions), target_os = "windows"),
-    windows_subsystem = "windows"
-)]
 pub fn run() {
     use crate::entity::config;
     use crate::repository::*;
