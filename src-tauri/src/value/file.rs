@@ -82,7 +82,7 @@ impl Dir {
         let p = Path::new(&path);
         let cp = PathAbs::new(p);
         let result = p.try_exists();
-        match (result.is_err(), cp) {
+        match (result, cp) {
             (_, Err(e)) => {
                 log::error!(target: "file", "invalid_abs_path; path={:?}; error={:?}", p, e);
                 Dir {
@@ -90,19 +90,27 @@ impl Dir {
                     created_at: get_created_time("/".to_string()),
                 }
             }
-            (true, Ok(abs_path)) => {
+            (Err(e), Ok(abs_path)) => {
                 log::error!(
                     target: "file",
-                    "invalid_path_for_dir; path={:?}; canonical_path={:?}",
+                    "invalid_path_for_dir; path={:?}; canonical_path={:?}; error={:?}",
                     p,
-                    abs_path.as_path()
+                    abs_path.as_path(),
+                    e
                 );
                 Dir {
                     path: "/".to_string(),
                     created_at: get_created_time("/".to_string()),
                 }
             }
-            (false, Ok(_)) => {
+            (Ok(false), Ok(abs_path)) => {
+                // Path does not exist - use resolved path but skip filesystem access
+                Dir {
+                    path: abs_path.as_path().display().to_string(),
+                    created_at: Local::now().format("%Y-%m-%d %T").to_string(),
+                }
+            }
+            (Ok(true), Ok(_)) => {
                 let ap = PathAbs::new(p).unwrap().as_path().display().to_string();
                 Dir {
                     path: ap.clone(),

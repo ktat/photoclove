@@ -81,7 +81,7 @@ pub fn record_photos_meta_data(
         .map_err(|_| "Failed to prepare statement")?;
 
     let now = date::DateTime::now().to_db_string();
-    let import_to = sqlite.db_path().replace("/photoclove.db", "");
+    let import_to = crate::entity::config::Config::new().import_to;
     let date_re =
         regex::Regex::new(r"^(\d{4})-(0?[1-9]|1[012])-(0?[1-9]|[12][0-9]|30|31)$").unwrap();
     for mut photo in photos {
@@ -180,8 +180,7 @@ pub fn record_photos_all_meta_data(
     dates: date::Dates,
 ) -> Result<HashMap<String, usize>, &'static str> {
     let mut date_num: HashMap<String, usize> = HashMap::new();
-    let db_path = sqlite.db_path();
-    let import_to = db_path.replace("/photoclove.db", "");
+    let import_to = crate::entity::config::Config::new().import_to;
 
     for date in dates.dates {
         let date_dir = file::Dir::new(format!("{}/{}", import_to, date));
