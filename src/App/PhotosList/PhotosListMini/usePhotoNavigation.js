@@ -81,6 +81,8 @@ export function usePhotoNavigation({
             }
         }
 
+        const newCacheMap = { ...imgCacheMap };
+
         for (let j = 0; j < cacheCandidates.length; j++) {
             const photoIndex = cacheCandidates[j];
             const photo = photos[photoIndex];
@@ -89,15 +91,14 @@ export function usePhotoNavigation({
             const response = await fetch(convertFileSrc(displayPath), { cache: "force-cache" });
             const blob = await response.blob();
             const objectURL = URL.createObjectURL(blob);
-            imgCacheMap[f] = [objectURL];
-            setImgCacheMap(imgCacheMap);
+            newCacheMap[f] = [objectURL];
         }
 
-        const keys = Object.keys(imgCacheMap);
+        const keys = Object.keys(newCacheMap);
         keys.forEach((v) => {
             if (!thisTimeCacheMap[v]) {
                 // Revoke object URLs to prevent memory leaks
-                const cachedUrls = imgCacheMap[v];
+                const cachedUrls = newCacheMap[v];
                 if (Array.isArray(cachedUrls)) {
                     cachedUrls.forEach(url => {
                         if (url && typeof url === 'string' && url.startsWith('blob:')) {
@@ -105,10 +106,10 @@ export function usePhotoNavigation({
                         }
                     });
                 }
-                delete imgCacheMap[v];
+                delete newCacheMap[v];
             }
         });
-        setImgCacheMap(imgCacheMap);
+        setImgCacheMap(newCacheMap);
     }, [photos, imgCacheMap, setImgCacheMap]);
 
     /**

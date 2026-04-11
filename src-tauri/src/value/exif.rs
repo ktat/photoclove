@@ -2,6 +2,30 @@ use crate::utils::exif_parser::{self, ExifTagKind};
 use crate::value::file;
 use regex;
 use serde::{Deserialize, Serialize};
+use std::sync::OnceLock;
+
+static RE_DATE_HYPHEN: OnceLock<regex::Regex> = OnceLock::new();
+static RE_DATE_COLON: OnceLock<regex::Regex> = OnceLock::new();
+static RE_LENS_PREFIX: OnceLock<regex::Regex> = OnceLock::new();
+
+fn date_hyphen_regex() -> &'static regex::Regex {
+    RE_DATE_HYPHEN.get_or_init(|| {
+        regex::Regex::new(r"^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})").expect("Invalid regex")
+    })
+}
+
+fn date_colon_regex() -> &'static regex::Regex {
+    RE_DATE_COLON.get_or_init(|| {
+        regex::Regex::new(r"^([0-9]{4}):([0-9]{1,2}):([0-9]{1,2})").expect("Invalid regex")
+    })
+}
+
+fn lens_prefix_regex() -> &'static regex::Regex {
+    RE_LENS_PREFIX.get_or_init(|| {
+        regex::Regex::new("(?i)(LUMIX|LEICA|OLYMPUS|SIGMA|TAMRON|KOWA|COSINA|VOIGT|VENUS)$")
+            .expect("Invalid regex")
+    })
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ExifData {
@@ -62,11 +86,8 @@ impl ExifData {
             Err(_) => {
                 // Fall back to file creation time
                 let file_created_time = file.created_datetime();
-                if let Ok(re) = regex::Regex::new(r"^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})") {
-                    data.date_time = re.replace(&file_created_time, "$1/$2/$3").to_string();
-                } else {
-                    data.date_time = file_created_time;
-                }
+                let re = date_hyphen_regex();
+                data.date_time = re.replace(&file_created_time, "$1/$2/$3").to_string();
             }
             Ok(parse_result) => {
                 for e in parse_result.entries {
@@ -119,7 +140,8 @@ impl ExifData {
                     t = data.date_time_original.clone();
                 }
                 // Convert EXIF colon format to ISO 8601 hyphen format (2025:11:23 -> 2025-11-23)
-                if let Ok(re) = regex::Regex::new(r"^([0-9]{4}):([0-9]{1,2}):([0-9]{1,2})") {
+                {
+                    let re = date_colon_regex();
                     if !t.is_empty() {
                         data.date_time = re.replace(&t, "$1-$2-$3").to_string();
                     } else {
@@ -152,12 +174,7 @@ fn get_lens_from_maker_note(data: Vec<u8>) -> String {
     }
 
     // Lens name prefix regex (LUMIX, LEICA, OLYMPUS, SIGMA, etc.)
-    let re = match regex::Regex::new(
-        "(?i)(LUMIX|LEICA|OLYMPUS|SIGMA|TAMRON|KOWA|COSINA|VOIGT|VENUS)$",
-    ) {
-        Ok(r) => r,
-        Err(_) => return String::new(),
-    };
+    let re = lens_prefix_regex();
 
     // safely skip 12byte x (data[12](num of entries) + 1("Panasonic\0\0\0"))
     let mut i: usize = usize::from(data[12] + 1) * 12;

@@ -158,7 +158,7 @@ pub(crate) trait RepositoryDB {
         path: &str,
         date: date::Date,
         sort: Sort,
-        conifg: Option<config::Config>,
+        opt_conf: Option<config::Config>,
     ) -> Option<photo::Photo>;
     async fn get_prev_photo_in_date(
         &self,
@@ -166,7 +166,7 @@ pub(crate) trait RepositoryDB {
         path: &str,
         date: date::Date,
         sort: Sort,
-        conifg: Option<config::Config>,
+        opt_conf: Option<config::Config>,
     ) -> Option<photo::Photo>;
     #[allow(clippy::too_many_arguments)]
     async fn get_photos_in_date(
@@ -180,7 +180,7 @@ pub(crate) trait RepositoryDB {
         star: i32,
         has_comment: bool,
         extension: &str,
-        conifg: Option<config::Config>,
+        opt_conf: Option<config::Config>,
     ) -> photo::Photos;
     #[allow(clippy::too_many_arguments)]
     async fn get_recent_photos(
@@ -193,7 +193,7 @@ pub(crate) trait RepositoryDB {
         star: i32,
         has_comment: bool,
         extension: &str,
-        conifg: Option<config::Config>,
+        opt_conf: Option<config::Config>,
     ) -> photo::Photos;
     async fn move_photos_to_exif_date(&self, date: date::Date) -> date::Dates;
     fn get_photo_count_per_dates(&self, dates: date::Dates, meta_data: DatesNum) -> DatesNum;
@@ -201,7 +201,7 @@ pub(crate) trait RepositoryDB {
 }
 #[allow(dead_code)]
 trait RepositoryConfig {
-    fn get_cofnig(&mut self) -> config::Config;
+    fn get_config(&mut self) -> config::Config;
 }
 
 #[allow(dead_code)] // Some trait methods are reserved for future use

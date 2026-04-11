@@ -12,12 +12,12 @@ function Welcome(props) {
     const [showLanguageSelect, setShowLanguageSelect] = useState(false);
     const [selectedLanguage, setSelectedLanguage] = useState(getCurrentLanguage());
 
-    useEffect((e) => {
+    useEffect(() => {
         props.setWelcomeImage(WelcomeImage(props.config));
     }, [props.config]);
 
-    useEffect((e) => {
-        setTimeout(() => {
+    useEffect(() => {
+        const timer = setTimeout(() => {
             setShowSplash(false);
             // Show language selection on first run (useCount === 0)
             if (props.useCount === 0) {
@@ -26,14 +26,14 @@ function Welcome(props) {
                 setShowWelcome(true);
             }
         }, props.useCount > 0 ? 0 : 1000);
+        return () => clearTimeout(timer);
     }, []);
 
     function getAndSaveConfig(useCount) {
         props.setUseCount(useCount);
         invoke("get_config", {}).then((r) => {
             const json = JSON.parse(r);
-            json.use_count = useCount;
-            invoke("save_config", { config: json });
+            invoke("save_config", { config: { ...json, use_count: useCount } });
         })
     }
 

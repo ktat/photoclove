@@ -55,7 +55,7 @@ impl RepositoryDB for SQLite {
         page: u32,
         offset: usize,
         star: i32,
-        hasComment: bool,
+        has_comment: bool,
         extension: &str,
         opt_conf: Option<config::Config>,
     ) -> photo::Photos {
@@ -68,7 +68,7 @@ impl RepositoryDB for SQLite {
         path: &str,
         date: date::Date,
         sort: Sort,
-        conifg: Option<config::Config>,
+        opt_conf: Option<config::Config>,
     ) -> Option<photo::Photo> {
         // SQLite implementation not fully implemented yet
         Option::None
@@ -79,7 +79,7 @@ impl RepositoryDB for SQLite {
         path: &str,
         date: date::Date,
         sort: Sort,
-        conifg: Option<config::Config>,
+        opt_conf: Option<config::Config>,
     ) -> Option<photo::Photo> {
         // SQLite implementation not fully implemented yet
         Option::None
@@ -92,7 +92,7 @@ impl RepositoryDB for SQLite {
         num: u32,
         offset: usize,
         star: i32,
-        hasComment: bool,
+        has_comment: bool,
         extension: &str,
         opt_conf: Option<config::Config>,
     ) -> photo::Photos {
@@ -108,15 +108,12 @@ impl RepositoryDB for SQLite {
 }
 
 impl SQLite {
-    pub fn new(path: String) -> SQLite {
+    pub fn new(path: String) -> Result<SQLite, rusqlite::Error> {
         let f = file::File::new(path);
-        let conn = Connection::open("my_database.db");
-        let mut s = SQLite {
-            path: f,
-            conn: conn.unwrap(),
-        };
+        let conn = Connection::open("my_database.db")?;
+        let mut s = SQLite { path: f, conn };
         s.init();
-        s
+        Ok(s)
     }
 
     fn init(&mut self) {
@@ -149,29 +146,25 @@ impl SQLite {
 
 static SETUP_SQL: [&str; 1] = ["
     CREATE TABLE dates (
-        id int auto_increment,
-        date date,
-        primary key (id),
-        unique (date)
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT UNIQUE
     );
-    CREATE INDEX date on dates(date);
+    CREATE INDEX idx_dates_date ON dates(date);
 
     CREATE TABLE photos (
-        id int auto_increment,
-        date_id int,
-        path varchar,
-        primary key (id),
-        unique (path)
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date_id INTEGER,
+        path TEXT UNIQUE
     );
 
     CREATE TABLE photo_exif (
-        id int auto_increment,
-        photo_id int,
-        key_name varchar,
-        value varchar,
-        unique (photo_id,key_name)
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        photo_id INTEGER,
+        key_name TEXT,
+        value TEXT,
+        UNIQUE (photo_id, key_name)
     );
-    CREATE INDEX photo_exif_kv on photo_exif(key_name,value);
+    CREATE INDEX idx_photo_exif_kv ON photo_exif(key_name, value);
 
     "];
 

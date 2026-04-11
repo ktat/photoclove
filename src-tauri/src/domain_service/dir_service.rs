@@ -1,7 +1,10 @@
 use crate::value::{date, file};
 use regex::Regex;
 use std::fs;
+use std::sync::OnceLock;
 use uuid::Uuid;
+
+static RE_DATE_DIR: OnceLock<Regex> = OnceLock::new();
 
 pub fn find_files(dir: &file::Dir) -> file::Files {
     let mut f = file::Files { files: Vec::new() };
@@ -100,11 +103,11 @@ pub fn find_directories(dir: &file::Dir, regex: &Option<Regex>) -> file::Dirs {
 }
 
 pub fn find_date_like_directories(dir: &file::Dir) -> file::Dirs {
-    let re = &Option::Some(
+    let re = RE_DATE_DIR.get_or_init(|| {
         Regex::new(r"(?:\\|/)([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)(?:\\|/)?$")
-            .unwrap(),
-    );
-    find_directories(dir, re)
+            .expect("Invalid date directory regex")
+    });
+    find_directories(dir, &Some(re.clone()))
 }
 
 #[cfg(test)]

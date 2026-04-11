@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom';
 
 function Tooltip({ show, text, position }) {
-  if (!show) return null;
+  if (!show || !position) return null;
 
   return createPortal(
     <div

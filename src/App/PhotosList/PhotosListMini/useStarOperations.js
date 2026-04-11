@@ -1,7 +1,7 @@
 /**
  * useStarOperations - Hook for star rating and selection feedback operations
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { invoke } from "@tauri-apps/api/core";
 import { checkStarCountAchievements } from '../../../services/AchievementService.js';
 
@@ -25,6 +25,10 @@ export function useStarOperations({
     const [unselectedInfoHidden, setUnselectedInfoHidden] = useState(true);
     const [selectedContent, setSelectedContent] = useState("");
     const [unselectedContent, setUnselectedContent] = useState("");
+
+    // Timer refs to prevent overlapping setTimeout race conditions
+    const selectedTimerRef = useRef(null);
+    const unselectedTimerRef = useRef(null);
 
     /**
      * Change star rating
@@ -61,7 +65,8 @@ export function useStarOperations({
             }
 
             setSelectedContent(content);
-            setTimeout(() => {
+            clearTimeout(selectedTimerRef.current);
+            selectedTimerRef.current = setTimeout(() => {
                 setSelectedInfoHidden(true);
             }, 700);
             setSelectedInfoHidden(false);
@@ -81,7 +86,8 @@ export function useStarOperations({
      */
     const showBlockedMessage = useCallback((message) => {
         setUnselectedContent(message);
-        setTimeout(() => {
+        clearTimeout(unselectedTimerRef.current);
+        unselectedTimerRef.current = setTimeout(() => {
             setUnselectedInfoHidden(true);
         }, 1500);
         setUnselectedInfoHidden(false);
@@ -100,13 +106,17 @@ export function useStarOperations({
 
         const wasSelected = toggleSelection(currentPhotoPath);
 
-        setTimeout(() => {
-            if (wasSelected) {
+        if (wasSelected) {
+            clearTimeout(selectedTimerRef.current);
+            selectedTimerRef.current = setTimeout(() => {
                 setSelectedInfoHidden(true);
-            } else {
+            }, 700);
+        } else {
+            clearTimeout(unselectedTimerRef.current);
+            unselectedTimerRef.current = setTimeout(() => {
                 setUnselectedInfoHidden(true);
-            }
-        }, 700);
+            }, 700);
+        }
 
         if (wasSelected) {
             setSelectedContent("Photo is selected");

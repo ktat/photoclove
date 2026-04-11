@@ -475,21 +475,30 @@ impl Config {
         let home = match home_dir() {
             Some(path) => path,
             None => {
-                panic!("Cannot get HOME directory!");
+                log::error!(target: "config", "home_directory_error; status=not_found");
+                return ".photoclove.yml".to_string();
             }
         };
         let config_file = home.join(".photoclove.yml");
         if !config_file.exists() {
-            let file = std::fs::OpenOptions::new()
+            match std::fs::OpenOptions::new()
                 .create(true)
                 .truncate(true)
                 .write(true)
                 .open(config_file.display().to_string())
-                .unwrap();
-            let writer = BufWriter::new(file);
-            let config = Config::template();
-            config.prepare_directory_if_required();
-            serde_yaml::to_writer(writer, &config).unwrap();
+            {
+                Ok(file) => {
+                    let writer = BufWriter::new(file);
+                    let config = Config::template();
+                    config.prepare_directory_if_required();
+                    if let Err(e) = serde_yaml::to_writer(writer, &config) {
+                        log::error!(target: "config", "config_write_failed; error={}", e);
+                    }
+                }
+                Err(e) => {
+                    log::error!(target: "config", "config_create_failed; path={}; error={}", config_file.display(), e);
+                }
+            }
         }
         config_file.display().to_string()
     }
@@ -547,7 +556,8 @@ impl Config {
         let home = match home_dir() {
             Some(path) => path,
             None => {
-                panic!("Cannot get HOME directory!");
+                log::error!(target: "config", "home_directory_error; status=not_found_for_template");
+                std::path::PathBuf::from(".")
             }
         };
         Config {
@@ -591,9 +601,21 @@ impl Config {
 
     pub fn new() -> Config {
         let config_path = Config::config_path();
-        let file = fs::File::open(config_path).unwrap();
+        let file = match fs::File::open(&config_path) {
+            Ok(f) => f,
+            Err(e) => {
+                log::error!(target: "config", "config_open_failed; path={}; error={}", config_path, e);
+                return Config::template();
+            }
+        };
         let reader = BufReader::new(file);
-        let config: Config = serde_yaml::from_reader(reader).unwrap();
+        let config: Config = match serde_yaml::from_reader(reader) {
+            Ok(c) => c,
+            Err(e) => {
+                log::error!(target: "config", "config_parse_failed; path={}; error={}", config_path, e);
+                return Config::template();
+            }
+        };
         config.prepare_directory_if_required();
         config
     }

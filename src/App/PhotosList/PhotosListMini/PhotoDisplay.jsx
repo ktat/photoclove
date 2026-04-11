@@ -50,12 +50,9 @@ function PhotoDisplay(props) {
     const imgRef = useRef(null);
 
     // Zoom and drag functionality
-    const { dragPhotoStart, dragPhoto, dragPhotoEnd, photoScroll } = usePhotoDisplayZoom({
+    const { dragPhotoStart, dragPhoto, dragPhotoEnd } = usePhotoDisplayZoom({
         photoZoom: props.photoZoom,
         setPhotoZoom: props.setPhotoZoom,
-        photoZoomReady: props.photoZoomReady,
-        SetImgStyle: props.SetImgStyle,
-        setDisplayedImageSize
     });
 
     // Function to parse CSS style string and convert to style object
@@ -651,7 +648,6 @@ function PhotoDisplay(props) {
                         onMouseDown={(e) => dragPhotoStart(e, setPhotoDisplayImgClass)}
                         onMouseMove={(e) => dragPhoto(e)}
                         onMouseUp={(e) => dragPhotoEnd(setPhotoDisplayImgClass)}
-                        onWheel={(e) => photoScroll(e)}
                     />
                     {/* Face bounding box overlay - only shown when Face tab is active */}
                     {isFaceTabActive && showFaceBboxes && detectedFaces.length > 0 && (

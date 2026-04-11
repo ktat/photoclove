@@ -16,8 +16,11 @@ pub fn delete_thumbnail(
     );
 
     // Handle different file extensions (similar to photo.rs logic)
-    let ext_regex = regex::Regex::new(r"\.JPG$").unwrap();
-    let thumbnail_path_ext_changed = ext_regex.replace(&thumbnail_path, ".jpg").to_string();
+    let thumbnail_path_ext_changed = if thumbnail_path.ends_with(".JPG") {
+        format!("{}.jpg", &thumbnail_path[..thumbnail_path.len() - 4])
+    } else {
+        thumbnail_path.clone()
+    };
 
     let mut deleted_files = 0;
 

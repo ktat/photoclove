@@ -1,5 +1,6 @@
 use chrono::{
-    Datelike, Duration, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc,
+    Datelike, Duration, Local, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, TimeZone,
+    Timelike, Utc,
 };
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -256,12 +257,21 @@ impl Date {
     pub fn from_string(date_str: &String, delimiter: Option<&str>) -> Date {
         match Self::try_from_string(date_str, delimiter) {
             Ok(date) => date,
-            Err(err) => panic!(
-                "Date parsing failed: {}, delimiter: {}, error: {}",
-                date_str,
-                delimiter.unwrap_or("/"),
-                err
-            ),
+            Err(err) => {
+                log::error!(
+                    target: "date",
+                    "date_parse_failed; date_str={}; delimiter={}; error={}",
+                    date_str,
+                    delimiter.unwrap_or("/"),
+                    err
+                );
+                let today = Local::now();
+                Date {
+                    year: today.year(),
+                    month: today.month(),
+                    day: today.day(),
+                }
+            }
         }
     }
 

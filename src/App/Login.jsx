@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { once } from "@tauri-apps/api/event";
 import { auth } from '../services/firebase';
 const { openGoogleSignIn, googleSignIn, signOut } = auth;
 import { localForage as _localForage } from "../storage/forage";
@@ -8,7 +8,7 @@ import { logger } from "../services/LoggerService.js";
 function loginGoogle() {
     logger.info('Login', 'oauth_start', 'Starting Google OAuth flow');
     
-    listen('oauth://url', (data) => {
+    once('oauth://url', (data) => {
         logger.info('Login', 'oauth_callback', 'Received OAuth callback', { payload: data.payload });
         googleSignIn(data.payload);
     });

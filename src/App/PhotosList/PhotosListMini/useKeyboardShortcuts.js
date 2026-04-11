@@ -143,14 +143,11 @@ export function useKeyboardShortcuts(handlers, state) {
             }
         } else if (e.ctrlKey && e.keyCode === 48) { // ctrl+0 - reset zoom
             handlers.setPhotoZoom("auto");
-            // Reset to wrapper size
-            const wrapperDiv = document.querySelector('#imageWrapper');
-            if (wrapperDiv) {
-                const wrapperWidth = parseFloat(wrapperDiv.style.width);
-                const wrapperHeight = parseFloat(wrapperDiv.style.height);
-                handlers.SetImgStyle({ width: wrapperWidth + 'px', height: wrapperHeight + 'px', opacity: '100%' });
-            } else {
-                handlers.SetImgStyle({ width: '100%', height: '100%', opacity: '100%' });
+            // Reset CSS transform zoom
+            const imgTag = document.querySelector('.photo img');
+            if (imgTag) {
+                imgTag.style.transform = '';
+                imgTag.style.transformOrigin = '';
             }
             document.querySelector("#dummy-for-focus")?.focus();
         } else if (!state.photoZoomReady && e.ctrlKey) {

@@ -3,10 +3,33 @@
 use super::filter_options;
 use super::search_debug::{create_embedded_sql, format_param_for_debug, log_date_range_debug};
 use super::SQLite;
+use crate::entity::config;
 use crate::entity::photo::Photo;
 use crate::entity::photo::Photos;
 use crate::value::exif::ExifData;
 use crate::value::file::File;
+
+thread_local! {
+    static CACHED_CONFIG: std::cell::RefCell<Option<config::Config>> = const { std::cell::RefCell::new(None) };
+}
+
+fn get_cached_config() -> config::Config {
+    CACHED_CONFIG.with(|cache| {
+        let mut cache = cache.borrow_mut();
+        if cache.is_none() {
+            *cache = Some(config::Config::new());
+        }
+        cache.as_ref().unwrap().clone()
+    })
+}
+
+/// Invalidate the cached config (call when config changes)
+#[allow(dead_code)]
+pub fn invalidate_config_cache() {
+    CACHED_CONFIG.with(|cache| {
+        *cache.borrow_mut() = None;
+    });
+}
 
 // Re-export filter options functions
 pub use filter_options::{get_camera_options, get_extension_options, get_lens_options};
@@ -391,8 +414,8 @@ fn add_search_condition(
 fn map_row_to_photo(row: &rusqlite::Row) -> Result<Photo, rusqlite::Error> {
     let photo_path = row.get::<_, String>("path").unwrap_or_default();
 
-    // Get config for path resolution and thumbnail checking
-    let config = crate::entity::config::Config::new();
+    // Get config for path resolution and thumbnail checking (cached per thread)
+    let config = get_cached_config();
 
     // photo_path is relative in DB; resolve to absolute for filesystem check
     let abs_path = crate::value::file::to_absolute_path(&photo_path, &config.import_to);
