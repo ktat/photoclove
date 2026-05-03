@@ -32,7 +32,7 @@ export function useViewModeSync({
     setPhotosListMiniCurrentIndex,
     setCurrentPhoto,
     setAllPhotosForCurrentFetch,
-    loadAllPhotosBasedOnViewMode,
+    refreshPhotosOnly,
     appConfig,
     sortOfPhotos,
     photosCache,
@@ -79,10 +79,11 @@ export function useViewModeSync({
             setAllPhotosForCurrentFetch([]);
         }
 
-        // Load via the same path as the manual refresh button (applyFilters=true)
-        // — routes everything through loadViaUnifiedAPI which handles all view
-        // modes uniformly (album/tag/trash/date/recent/burst).
-        loadAllPhotosBasedOnViewMode(viewModeObj, appConfig, false);
+        // Use refreshPhotosOnly which wraps loadAllPhotosBasedOnViewMode with
+        // a MIN_LOADING_TIME (~500ms) guard. Without this the loading screen
+        // can be invisibly brief when the backend responds quickly, leading
+        // to confusing instant view-mode swaps with no visual feedback.
+        refreshPhotosOnly();
     }, [
         viewMode,
         viewModeObj,
