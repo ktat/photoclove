@@ -32,7 +32,7 @@ export function useViewModeSync({
     setPhotosListMiniCurrentIndex,
     setCurrentPhoto,
     setAllPhotosForCurrentFetch,
-    loadPhotosWithCollection,
+    loadAllPhotosBasedOnViewMode,
     appConfig,
     sortOfPhotos,
     photosCache,
@@ -63,8 +63,16 @@ export function useViewModeSync({
             }
         }
 
-        // Load all photos based on ViewMode (Phase 1: unified for all view modes)
-        loadPhotosWithCollection(viewModeObj);
+        // Cache miss. Clear the previous view's photos right away so the grid
+        // doesn't flash old data while the backend load is in flight.
+        if (setAllPhotosForCurrentFetch) {
+            setAllPhotosForCurrentFetch([]);
+        }
+
+        // Load via the same path as the manual refresh button (applyFilters=true)
+        // — routes everything through loadViaUnifiedAPI which handles all view
+        // modes uniformly (album/tag/trash/search/date/recent/burst).
+        loadAllPhotosBasedOnViewMode(viewModeObj, appConfig, false);
     }, [
         viewMode,
         viewModeObj,

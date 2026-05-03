@@ -27,8 +27,11 @@ export function usePhotosCache(maxKeys, maxTotalPhotos) {
 
     const set = useCallback((viewKey, photos, currentViewKey) => {
         if (!viewKey) return;
+        // Store the array reference directly; callers must use patch() to
+        // update entries (Phase 2 helpers do this). This lets cache restore
+        // return the same reference so the save-effect can dedup.
         cacheRef.current.set(viewKey, {
-            photos: [...photos],
+            photos,
             updatedAt: Date.now(),
         });
         evict(cacheRef.current, maxKeys, maxTotalPhotos, currentViewKey);

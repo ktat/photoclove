@@ -376,18 +376,10 @@ function PhotosList({
         filterOptions, isFilterOptionsLoading, loadFilterOptions
     });
 
-    // Phase 1 unification: commit search results to allPhotosForCurrentFetch.
-    // useSearch keeps `searchResults` as an internal buffer; the grid reads
-    // through allPhotosForCurrentFetch only.
-    // Dedup on reference so this only fires when useSearch produces a new
-    // results array (i.e. after a real search), not on every parent re-render.
-    const lastSearchResultsRef = useRef(null);
-    useEffect(() => {
-        if (!viewModeObj?.isSearchMode?.() || !searchResults) return;
-        if (lastSearchResultsRef.current === searchResults) return;
-        setAllPhotosForCurrentFetch(searchResults);
-        lastSearchResultsRef.current = searchResults;
-    }, [searchResults, viewModeObj, setAllPhotosForCurrentFetch]);
+    // Search results flow through useViewModeSync (loadViaUnifiedAPI) when
+    // currentSearchParams changes — no separate commit effect needed.
+    // useSearch.searchResults remains an internal buffer (used for history,
+    // counts in the search bar, etc.) but is no longer the grid's source.
 
     // Trash operations
     const { deletePhotos: deletePhotosHandler, restorePhotos: restorePhotosHandler } = useTrashOperations({
@@ -430,16 +422,33 @@ function PhotosList({
         [viewModeObj, currentSearchParams, importState?.currentImportPath]
     );
 
-    // Save snapshot when allPhotosForCurrentFetch changes. Skip when the
-    // array reference hasn't changed (e.g. cache restoration just wrote the
-    // same array we'd be re-saving) to avoid redundant LRU updates.
+    // Save snapshot when allPhotosForCurrentFetch changes.
+    //
+    // Subtle guard: when viewKey JUST changed but the photos haven't been
+    // reloaded yet, the array we see still belongs to the previous view. We
+    // must not save those stale photos under the new key — otherwise the
+    // cache would associate (e.g.) the previous home photos with `trash`
+    // and the next visit would restore the wrong list. We detect this by
+    // checking that lastSavedRef.photos === allPhotosForCurrentFetch (same
+    // reference as last time) while currentViewKey has moved on.
     const lastSavedRef = useRef({ key: null, photos: null });
     useEffect(() => {
         if (!currentViewKey || !(allPhotosForCurrentFetch?.length > 0)) return;
+
+        // Stale-on-transition guard
+        if (
+            lastSavedRef.current.photos === allPhotosForCurrentFetch &&
+            lastSavedRef.current.key !== currentViewKey
+        ) {
+            return;
+        }
+
+        // Dedup
         if (
             lastSavedRef.current.key === currentViewKey &&
             lastSavedRef.current.photos === allPhotosForCurrentFetch
         ) return;
+
         photosCache.set(currentViewKey, allPhotosForCurrentFetch, currentViewKey);
         lastSavedRef.current = { key: currentViewKey, photos: allPhotosForCurrentFetch };
     }, [allPhotosForCurrentFetch, currentViewKey, photosCache]);
@@ -451,7 +460,7 @@ function PhotosList({
         setCurrentPhotoLoadingController, setShowSideMenu, setPhotosList,
         setCurrentPhotoIndex, setPhotosListMiniCurrentIndex, setCurrentPhoto,
         setAllPhotosForCurrentFetch,
-        loadPhotosWithCollection, appConfig, sortOfPhotos,
+        loadAllPhotosBasedOnViewMode, appConfig, sortOfPhotos,
         photosCache, currentViewKey
     });
 
