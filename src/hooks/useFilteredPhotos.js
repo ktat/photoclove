@@ -3,84 +3,47 @@
  */
 import { useMemo } from 'react';
 import { convertJSONToPhotoEntities } from '../utils/PhotoProcessingUtils.js';
-import { Photo } from '../domain/Photo.js';
 import { logger } from '../services/LoggerService.js';
 
 /**
- * Hook for computing filtered and sorted photos based on view mode
+ * Hook for computing filtered and sorted photos based on view mode.
+ *
+ * After Phase 1 unification, all view modes (album/tag/search/trash/etc.)
+ * feed photos through allPhotosForCurrentFetch. This hook only filters
+ * and (for import mode) sorts.
+ *
  * @param {Object} options
  * @param {ViewMode} options.viewModeObj - Current view mode object
- * @param {Array} options.albumPhotos - Photos in current album
- * @param {Array} options.tagPhotos - Photos with current tag
- * @param {Object} options.photoCollection - Photo collection object
- * @param {Array} options.allPhotosForCurrentFetch - All fetched photos
+ * @param {Array} options.allPhotosForCurrentFetch - All fetched photos (single source)
  * @param {Function} options.applyFiltersWithConfig - Filter application function
  * @param {number} options.importSortOfPhotos - Import mode sort value
- * @param {number} options.sortOfPhotos - General sort value
+ * @param {number} options.sortOfPhotos - General sort value (unused here; backend applies)
  * @param {Object} options.appConfig - Application config
- * @param {Array} options.searchResults - Search results from useSearch
  * @returns {Array} Filtered and sorted photos
  */
 export function useFilteredPhotos({
     viewModeObj,
-    albumPhotos,
-    tagPhotos,
-    photoCollection,
     allPhotosForCurrentFetch,
     applyFiltersWithConfig,
     importSortOfPhotos,
     sortOfPhotos,
-    appConfig,
-    searchResults = []
+    appConfig
 }) {
     return useMemo(() => {
-        // Use appropriate photo source based on current mode
-        // For search mode, use searchResults if available
-        const sourcePhotos = viewModeObj.isSearchMode() && searchResults.length > 0 ? searchResults :
-            (viewModeObj.isAlbumMode() ? albumPhotos :
-                (viewModeObj.isTagMode() ? tagPhotos :
-                    (viewModeObj.isTrashMode() ? (photoCollection?.photos || []) :
-                        allPhotosForCurrentFetch)));
-
-        const usingSearchResults = viewModeObj.isSearchMode() && searchResults.length > 0;
+        const sourcePhotos = allPhotosForCurrentFetch;
 
         logger.debug('useFilteredPhotos', 'source_selection', 'Using photo source for filtering', {
-            mode: viewModeObj.mode,
+            mode: viewModeObj?.mode,
             sourceCount: sourcePhotos.length,
-            isAlbumMode: viewModeObj.isAlbumMode(),
-            isTagMode: viewModeObj.isTagMode(),
-            isTrashMode: viewModeObj.isTrashMode(),
-            isSearchMode: viewModeObj.isSearchMode(),
-            searchResultsCount: searchResults.length,
-            usingSearchResults
         });
 
-        // Convert source photos to Photo entities
-        // For search results (raw backend data), use Photo.fromBackendData
-        // For other sources, use convertJSONToPhotoEntities
-        let photosWithMethods;
-        if (usingSearchResults && appConfig) {
-            photosWithMethods = sourcePhotos
-                .map(photoData => {
-                    try {
-                        return Photo.fromBackendData(photoData, appConfig, false);
-                    } catch (e) {
-                        logger.warn('useFilteredPhotos', 'conversion_error', 'Failed to convert search result', {
-                            error: e.message
-                        });
-                        return null;
-                    }
-                })
-                .filter(photo => photo !== null);
-        } else {
-            photosWithMethods = convertJSONToPhotoEntities(sourcePhotos, appConfig);
-        }
+        const photosWithMethods = convertJSONToPhotoEntities(sourcePhotos, appConfig);
 
         // Apply frontend filters
         let result = applyFiltersWithConfig(photosWithMethods);
 
         // Apply frontend sorting for import mode
-        if (viewModeObj.isImportMode()) {
+        if (viewModeObj?.isImportMode?.()) {
             const sortComparator = getImportSortComparator(importSortOfPhotos);
             if (sortComparator) {
                 result = [...result].sort(sortComparator);
@@ -97,7 +60,7 @@ export function useFilteredPhotos({
         });
 
         return result;
-    }, [viewModeObj, albumPhotos, tagPhotos, photoCollection?.photos, allPhotosForCurrentFetch, applyFiltersWithConfig, importSortOfPhotos, sortOfPhotos, appConfig, searchResults]);
+    }, [viewModeObj, allPhotosForCurrentFetch, applyFiltersWithConfig, importSortOfPhotos, sortOfPhotos, appConfig]);
 }
 
 /**

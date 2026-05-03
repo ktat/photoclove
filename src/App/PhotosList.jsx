@@ -237,10 +237,8 @@ function PhotosList({
 
     // Filtered photos using extracted hook
     const filteredPhotos = useFilteredPhotos({
-        viewModeObj, albumPhotos, tagPhotos, photoCollection,
-        allPhotosForCurrentFetch, applyFiltersWithConfig,
-        importSortOfPhotos, sortOfPhotos, appConfig,
-        searchResults
+        viewModeObj, allPhotosForCurrentFetch, applyFiltersWithConfig,
+        importSortOfPhotos, sortOfPhotos, appConfig
     });
 
     // Photo loader hook
