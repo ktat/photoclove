@@ -105,8 +105,17 @@ export function usePhotoDisplay({
             setCurrentPhotoLoadingController(null);
         }
 
-        // Refresh photos from backend when closing PhotoViewer
-        // This ensures tag/metadata changes made in viewer are reflected in grid
+        // Refresh photos from backend when closing PhotoViewer.
+        // This ensures tag/metadata changes made in viewer are reflected in grid.
+        //
+        // Skip refresh for search mode: ViewMode.getUnifiedPhotoParams uses the
+        // factory-time searchParams (stale), so a refresh here would re-issue
+        // an empty-params search and clobber the user's actual results. Search
+        // results stay current via the in-memory allPhotosForCurrentFetch.
+        if (viewModeObj?.isSearchMode?.()) {
+            return;
+        }
+
         const fetchPhotos = async () => refreshPhotos();
         fetchPhotos().catch(error => handleError(error, 'Refresh photos after closing display'));
     }, [
