@@ -98,8 +98,6 @@ export const usePhotosState = () => {
     const [filteredTags, setFilteredTags] = useState([]);
     const [tagSearchTerm, setTagSearchTerm] = useState('');
     const [currentTagName, setCurrentTagName] = useState('');
-    const [tagPhotos, setTagPhotos] = useState([]);
-    const [trashPhotos, setTrashPhotos] = useState([]);
     const [selectedTags, setSelectedTags] = useState(() => loadSelectionFromStorage(STORAGE_KEY_TAGS));
 
     // Faces state
@@ -236,10 +234,6 @@ export const usePhotosState = () => {
         setTagSearchTerm,
         currentTagName,
         setCurrentTagName,
-        tagPhotos,
-        setTagPhotos,
-        trashPhotos,
-        setTrashPhotos,
         selectedTags,
         setSelectedTags,
 

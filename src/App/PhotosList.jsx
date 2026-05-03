@@ -38,7 +38,6 @@ import { usePhotoListFaces } from "../hooks/usePhotoListFaces.js";
 import { FaceDetectionProvider } from "../context/FaceDetectionContext.jsx";
 import {
     useViewModeChangeEffect,
-    usePhotoSyncEffect,
     useSelectionTabEffect,
     useSortChangeEffect,
     useBurstModeChangeEffect,
@@ -88,8 +87,8 @@ function PhotosList({
     const {
         dateList, datePage, updateDatePage, currentDate, updateCurrentDate,
         dateNum, updateDateNum, updateDateList, setCurrentDateNum,
-        recentPhotosMode, albumsList, currentAlbum, albumPhotos,
-        updateAlbumsList, updateCurrentAlbum, updateAlbumPhotos
+        recentPhotosMode, albumsList, currentAlbum,
+        updateAlbumsList, updateCurrentAlbum
     } = usePhoto();
 
     const {
@@ -133,7 +132,6 @@ function PhotosList({
         showAlbumCreationModal, setShowAlbumCreationModal, selectedAlbums, setSelectedAlbums,
         tagsList, setTagsList, filteredTags, setFilteredTags,
         tagSearchTerm, setTagSearchTerm, currentTagName, setCurrentTagName,
-        tagPhotos, setTagPhotos, trashPhotos, setTrashPhotos,
         selectedTags, setSelectedTags, showFilterPopover, setShowFilterPopover,
         filterButtonRef,
         facesList, setFacesList, faceSearchTerm, setFaceSearchTerm,
@@ -205,9 +203,9 @@ function PhotosList({
         loadTrashPhotos, loadFilterOptions, logOperation
     } = usePhotoDataLoader({
         handleError, convertPhotosToEntities: convertPhotosWithConfig,
-        updateAlbumsList, setFilteredAlbums, updateAlbumPhotos, setPhotosList,
+        updateAlbumsList, setFilteredAlbums, setPhotosList,
         setAllPhotosForCurrentFetch,
-        setTagsList, setFilteredTags, setTagPhotos, setTrashPhotos, setCurrentAlbumName,
+        setTagsList, setFilteredTags, setCurrentAlbumName,
         openAlbum, setFilterOptions, setIsFilterOptionsLoading,
         filterOptions, isFilterOptionsLoading, appConfig,
         burstModeEnabled
@@ -280,11 +278,6 @@ function PhotosList({
         handleAlbumClickOriginal(album);
     }, [handleAlbumClickOriginal]);
 
-    // Photo sync effect
-    usePhotoSyncEffect({
-        viewModeObj, allPhotosForCurrentFetch, updateAlbumPhotos, setTagPhotos
-    });
-
     // Photo display hook
     const { displayPhoto, closePhotoDisplay, closeRightColumn } = usePhotoDisplay({
         photosListMiniAllPhotos, viewModeObj, setCurrentPhoto, setCurrentPhotoIndex,
@@ -323,7 +316,7 @@ function PhotosList({
         allPhotosForCurrentFetch, setAllPhotosForCurrentFetch,
         photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex,
         setCurrentPhoto, setCurrentPhotoIndex, currentPhotoIndex, closePhotoDisplay,
-        setTrashPhotos, setPhotosListMiniReread, photosListMiniReread,
+        setPhotosListMiniReread, photosListMiniReread,
         dateNum, setDateNum: updateDateNum, dateList, setDateList: updateDateList, sortOfPhotos,
         triggerUnknownFacesRefresh: () => setUnknownFacesRefreshTrigger(prev => prev + 1),
         dialog

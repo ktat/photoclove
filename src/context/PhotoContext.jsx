@@ -22,7 +22,6 @@ export const PhotoProvider = ({ children }) => {
   // Album state
   const [albumsList, setAlbumsList] = useState([]);
   const [currentAlbum, setCurrentAlbum] = useState(null);
-  const [albumPhotos, setAlbumPhotos] = useState([]);
   
   const setCurrentDateNum = useCallback((num) => {
     setDateNum(prevDateNum => {
@@ -63,14 +62,8 @@ export const PhotoProvider = ({ children }) => {
       setCurrentAlbum(album);
     }, []),
 
-    updateAlbumPhotos: useCallback((photos) => {
-      // photos should already be in JSON format from loadAlbumPhotos
-      setAlbumPhotos(photos);
-    }, []),
-
     resetAlbumState: useCallback(() => {
       setCurrentAlbum(null);
-      setAlbumPhotos([]);
     }, [])
   };
 
@@ -84,7 +77,6 @@ export const PhotoProvider = ({ children }) => {
     recentPhotosMode,
     albumsList,
     currentAlbum,
-    albumPhotos,
     // Actions
     ...photoActions
   };

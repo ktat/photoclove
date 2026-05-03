@@ -19,35 +19,6 @@ export function useViewModeChangeEffect({
 }
 
 /**
- * Hook for syncing photos to album/tag mode state
- * Note: Must sync even when photo count is 0 (e.g., after removing all photos from a tag)
- */
-export function usePhotoSyncEffect({
-    viewModeObj,
-    allPhotosForCurrentFetch,
-    updateAlbumPhotos,
-    setTagPhotos
-}) {
-    useEffect(() => {
-        // Only sync when in album/tag mode and allPhotosForCurrentFetch is an array
-        // (including empty arrays to handle cases where all photos are removed)
-        if (!Array.isArray(allPhotosForCurrentFetch)) return;
-
-        if (viewModeObj.isAlbumMode()) {
-            updateAlbumPhotos(allPhotosForCurrentFetch);
-            logger.debug('usePhotosListEffects', 'sync_album', 'Synced to albumPhotos', {
-                photoCount: allPhotosForCurrentFetch.length
-            });
-        } else if (viewModeObj.isTagMode()) {
-            setTagPhotos(allPhotosForCurrentFetch);
-            logger.debug('usePhotosListEffects', 'sync_tag', 'Synced to tagPhotos', {
-                photoCount: allPhotosForCurrentFetch.length
-            });
-        }
-    }, [allPhotosForCurrentFetch, viewModeObj, updateAlbumPhotos, setTagPhotos]);
-}
-
-/**
  * Hook for auto-opening selection tab when items are selected
  */
 export function useSelectionTabEffect({
@@ -258,7 +229,6 @@ export function useViewModeSideMenuEffect({
 
 export default {
     useViewModeChangeEffect,
-    usePhotoSyncEffect,
     useSelectionTabEffect,
     useSortChangeEffect,
     useBurstModeChangeEffect,

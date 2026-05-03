@@ -61,7 +61,6 @@ export function usePhotoOperations({
     currentPhotoIndex,
     closePhotoDisplay,
     // Trash operations state
-    setTrashPhotos,
     setPhotosListMiniReread,
     photosListMiniReread,
     // Date state (for moveToTrash)
@@ -375,17 +374,12 @@ export function usePhotoOperations({
     // Photo deletion and trash operations
     const permanentlyDeletePhoto = useCallback((photoPath) => {
         invoke("delete_permanently_batch", { paths: [photoPath] }).then(() => {
-            // Remove from trash photos list
-            if (setTrashPhotos) {
-                setTrashPhotos(prevPhotos => prevPhotos.filter(photo => photo.path !== photoPath));
-            }
-
             // Update navigation using shared helper
             handlePhotoRemovalNavigation(currentPhotoIndex, photoPath);
         }).catch((error) => {
             handleError(error, 'Permanently delete photo', { path: photoPath });
         });
-    }, [handleError, setTrashPhotos, currentPhotoIndex, handlePhotoRemovalNavigation]);
+    }, [handleError, currentPhotoIndex, handlePhotoRemovalNavigation]);
 
     // Helper to update date counts after photo removal
     const updateDateCounts = useCallback((resultDate) => {
@@ -430,18 +424,13 @@ export function usePhotoOperations({
                 updateDateCounts(resultDate);
             }
 
-            // Remove from trash photos list
-            if (setTrashPhotos) {
-                setTrashPhotos(prevPhotos => prevPhotos.filter(photo => photo.path !== photoPath));
-            }
-
             addFooterMessage('trash', 'Photo restored from trash');
             return true;
         } catch (error) {
             handleError(error, 'Restore photo from trash', { path: photoPath });
             return false;
         }
-    }, [handleError, addFooterMessage, setTrashPhotos, updateDateCounts]);
+    }, [handleError, addFooterMessage, updateDateCounts]);
 
     const deletePhoto = useCallback((photoPath) => {
         // If in trash mode, permanently delete instead of moving to trash
