@@ -24,7 +24,19 @@ export default defineConfig({
       overlay: false // Disable error overlay for better development experience on Windows
     },
     watch: {
-      ignored: ['**/example/**', '**/public/**'],
+      // src-tauri/target/** generates tens of thousands of files during a
+      // tauri dev build (cargo intermediate artifacts) which trips the
+      // Linux inotify watcher limit (ENOSPC). Ignore them at the watcher
+      // level so vite doesn't try to subscribe.
+      ignored: [
+        '**/example/**',
+        '**/public/**',
+        '**/src-tauri/target/**',
+        '**/src-tauri/.cargo/**',
+        '**/node_modules/**',
+        '**/.git/**',
+        '**/dist/**',
+      ],
       usePolling: process.platform === 'win32', // Use polling on Windows for better stability
       interval: 1000 // Polling interval for Windows
     }
