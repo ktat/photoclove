@@ -35,11 +35,19 @@ export function getViewKey(viewModeObj, searchParams = null, importPath = null) 
         return 'trash';
     }
     if (viewModeObj.isImportMode?.()) {
-        return `import:${importPath ?? 'default'}`;
+        // Without an import path the view is uninitialised — uncacheable.
+        return importPath ? `import:${importPath}` : null;
     }
     if (viewModeObj.isInBurstGroupMode?.()) {
         const id = viewModeObj.getCurrentBurstGroupId?.();
         return id != null ? `burst:${id}` : 'burst:none';
+    }
+    if (viewModeObj.isDateMode?.()) {
+        const date = viewModeObj.getCurrentDate?.();
+        return date ? `date:${date}` : null;
+    }
+    if (viewModeObj.isRecentMode?.()) {
+        return 'recent';
     }
     return 'home';
 }

@@ -2,17 +2,14 @@
  * useViewModeSync Hook
  *
  * Manages photo loading synchronization based on view mode changes.
- * Extracted from PhotosList.jsx to reduce component complexity.
  *
  * Responsibilities:
  * - Monitors view mode changes and triggers photo loading
- * - Handles side menu visibility based on view mode
- * - Cancels in-progress photo loading when view mode changes
- * - Resets photo state when switching between modes
- * - Skips unnecessary reloads for album and tag modes
+ * - Looks up the view cache before backend load; restores synchronously on hit
+ * - Sets side menu visibility based on view mode
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { ViewMode } from '../domain/ViewMode.js';
 import { VIEW_MODES } from '../constants/viewModes.js';
 import { logger } from '../services/LoggerService.js';
@@ -41,14 +38,10 @@ export function useViewModeSync({
     photosCache,
     currentViewKey
 }) {
-    // Track if this is the initial mount
-    const isInitialMount = useRef(true);
-
     // Stringify searchParams to use in dependency array (avoid reference changes)
     const searchParamsStr = currentSearchParams ? JSON.stringify(currentSearchParams) : null;
 
     useEffect(() => {
-        // Skip on initial mount if no viewMode
         if (!viewMode || !viewModeObj) {
             return;
         }
@@ -66,19 +59,12 @@ export function useViewModeSync({
                     count: cached.length,
                 });
                 setAllPhotosForCurrentFetch(cached);
-                if (isInitialMount.current) isInitialMount.current = false;
                 return;
             }
         }
 
         // Load all photos based on ViewMode (Phase 1: unified for all view modes)
         loadPhotosWithCollection(viewModeObj);
-
-        // Mark that initial mount has completed
-        if (isInitialMount.current) {
-            isInitialMount.current = false;
-        }
-
     }, [
         viewMode,
         viewModeObj,

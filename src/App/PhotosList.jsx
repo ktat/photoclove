@@ -379,10 +379,14 @@ function PhotosList({
     // Phase 1 unification: commit search results to allPhotosForCurrentFetch.
     // useSearch keeps `searchResults` as an internal buffer; the grid reads
     // through allPhotosForCurrentFetch only.
+    // Dedup on reference so this only fires when useSearch produces a new
+    // results array (i.e. after a real search), not on every parent re-render.
+    const lastSearchResultsRef = useRef(null);
     useEffect(() => {
-        if (viewModeObj?.isSearchMode?.() && searchResults) {
-            setAllPhotosForCurrentFetch(searchResults);
-        }
+        if (!viewModeObj?.isSearchMode?.() || !searchResults) return;
+        if (lastSearchResultsRef.current === searchResults) return;
+        setAllPhotosForCurrentFetch(searchResults);
+        lastSearchResultsRef.current = searchResults;
     }, [searchResults, viewModeObj, setAllPhotosForCurrentFetch]);
 
     // Trash operations
@@ -426,13 +430,18 @@ function PhotosList({
         [viewModeObj, currentSearchParams, importState?.currentImportPath]
     );
 
-    // Save snapshot when allPhotosForCurrentFetch changes after a successful
-    // load. The cache reads through ref internally so this does not retrigger
-    // during PhotoDisplay edits (Phase 2 will patch the cache via helpers).
+    // Save snapshot when allPhotosForCurrentFetch changes. Skip when the
+    // array reference hasn't changed (e.g. cache restoration just wrote the
+    // same array we'd be re-saving) to avoid redundant LRU updates.
+    const lastSavedRef = useRef({ key: null, photos: null });
     useEffect(() => {
-        if (allPhotosForCurrentFetch?.length > 0 && currentViewKey) {
-            photosCache.set(currentViewKey, allPhotosForCurrentFetch, currentViewKey);
-        }
+        if (!currentViewKey || !(allPhotosForCurrentFetch?.length > 0)) return;
+        if (
+            lastSavedRef.current.key === currentViewKey &&
+            lastSavedRef.current.photos === allPhotosForCurrentFetch
+        ) return;
+        photosCache.set(currentViewKey, allPhotosForCurrentFetch, currentViewKey);
+        lastSavedRef.current = { key: currentViewKey, photos: allPhotosForCurrentFetch };
     }, [allPhotosForCurrentFetch, currentViewKey, photosCache]);
 
     // View mode sync hooks

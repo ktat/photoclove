@@ -128,20 +128,18 @@ export function usePhotoDataLoader({
         }
     }, [setAllPhotosForCurrentFetch, loadUnifiedData, setPhotosList, convertPhotosToEntities, startNewRequest, isRequestValid, burstModeEnabled]);
 
-    // Handle album click to switch to album view
+    // Handle album click to switch to album view.
+    // Photo loading is now driven by useViewModeSync (cache lookup -> backend
+    // load), so we don't trigger loadAlbumPhotos here anymore.
     const handleAlbumClick = useCallback((album) => {
         logOperation.click('album', {
             albumId: album.id,
             albumName: album.name
         });
 
-        // Switch to album view mode
         openAlbum(album.id);
         setCurrentAlbumName(album.name);
-
-        // Load photos for this album
-        loadAlbumPhotos(album.id);
-    }, [openAlbum, loadAlbumPhotos, logOperation, setCurrentAlbumName]);
+    }, [openAlbum, logOperation, setCurrentAlbumName]);
 
     // Tag loading functions
     const loadTags = useCallback(async () => {
