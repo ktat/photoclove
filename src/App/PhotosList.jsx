@@ -374,6 +374,15 @@ function PhotosList({
         filterOptions, isFilterOptionsLoading, loadFilterOptions
     });
 
+    // Phase 1 unification: commit search results to allPhotosForCurrentFetch.
+    // useSearch keeps `searchResults` as an internal buffer; the grid reads
+    // through allPhotosForCurrentFetch only.
+    useEffect(() => {
+        if (viewModeObj?.isSearchMode?.() && searchResults) {
+            setAllPhotosForCurrentFetch(searchResults);
+        }
+    }, [searchResults, viewModeObj, setAllPhotosForCurrentFetch]);
+
     // Trash operations
     const { deletePhotos: deletePhotosHandler, restorePhotos: restorePhotosHandler } = useTrashOperations({
         allPhotosForCurrentFetch, setAllPhotosForCurrentFetch, photoSelection,
