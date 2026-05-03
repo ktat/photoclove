@@ -84,6 +84,11 @@ export const usePhotosState = () => {
     // Sorting state
     const [sortOfPhotos, setSort] = useState(0);
     const sortInitialized = useRef(false);
+    // True when star edits have made the on-screen order stale relative to
+    // the current sort criterion. closePhotoDisplay reads this to decide
+    // whether to apply a local re-sort. Set by setStarWithUpdate when
+    // sortOfPhotos is star-based (Phase 2).
+    const [sortDirty, setSortDirty] = useState(false);
 
     // Filter options state
     const [filterOptions, setFilterOptions] = useState(null);
@@ -210,6 +215,8 @@ export const usePhotosState = () => {
         sortOfPhotos,
         setSort,
         sortInitialized,
+        sortDirty,
+        setSortDirty,
 
         // Filter options
         filterOptions,
