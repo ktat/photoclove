@@ -82,6 +82,14 @@ fn default_copyright() -> Option<String> {
     None
 }
 
+fn default_view_cache_max_keys() -> u32 {
+    10
+}
+
+fn default_view_cache_max_total_photos() -> u32 {
+    50000
+}
+
 /// S3 Backup configuration
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct S3Config {
@@ -428,6 +436,10 @@ pub struct Config {
     pub copyright: Option<String>,
     #[serde(default = "default_raw_processing")]
     pub raw_processing: RawProcessingConfig,
+    #[serde(default = "default_view_cache_max_keys")]
+    pub view_cache_max_keys: u32,
+    #[serde(default = "default_view_cache_max_total_photos")]
+    pub view_cache_max_total_photos: u32,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepositoryConfig {
@@ -596,6 +608,8 @@ impl Config {
             custom_watermark: default_custom_watermark(),
             copyright: default_copyright(),
             raw_processing: default_raw_processing(),
+            view_cache_max_keys: default_view_cache_max_keys(),
+            view_cache_max_total_photos: default_view_cache_max_total_photos(),
         }
     }
 
