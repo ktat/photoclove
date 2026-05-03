@@ -191,7 +191,16 @@ export function usePhotoLoader({
             if (needsUnifiedAPI) {
                 photoEntities = await loadViaUnifiedAPI(viewMode, config, requestId, silent);
                 if (photoEntities === null) {
-                    if (!silent) setPhotoLoading(false);
+                    // Returned null because either the request was cancelled
+                    // (newer request in flight) or actually failed. If
+                    // cancelled, the newer request still has photoLoading
+                    // set to true and will turn it off when it completes —
+                    // we MUST NOT clear it here, otherwise the grid briefly
+                    // renders an empty "No Photos" / "Trash is Empty" state
+                    // while the active request is still loading.
+                    if (!silent && isRequestValid(requestId)) {
+                        setPhotoLoading(false);
+                    }
                     return;
                 }
             } else {
@@ -222,7 +231,10 @@ export function usePhotoLoader({
                     // Fallback to unified API
                     photoEntities = await loadViaUnifiedAPI(viewMode, config, requestId, silent);
                     if (photoEntities === null) {
-                        if (!silent) setPhotoLoading(false);
+                        // See comment above (same race condition).
+                        if (!silent && isRequestValid(requestId)) {
+                            setPhotoLoading(false);
+                        }
                         return;
                     }
                 }
