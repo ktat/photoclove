@@ -383,7 +383,7 @@ function PhotosList({
     useSearchModeSync({
         viewModeObj, searchResults, isSearching,
         setAllPhotosForCurrentFetch, convertPhotosWithConfig,
-        clearSearchHook, updateSearchParams,
+        clearSearchHook, updateSearchParams, setSearchFilters,
     });
 
     // Trash operations

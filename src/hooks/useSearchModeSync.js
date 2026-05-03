@@ -28,6 +28,7 @@ export function useSearchModeSync({
     convertPhotosWithConfig,
     clearSearchHook,
     updateSearchParams,
+    setSearchFilters,
 }) {
     const lastSearchResultsRef = useRef(null);
 
@@ -58,11 +59,17 @@ export function useSearchModeSync({
             setAllPhotosForCurrentFetch([]);
             lastSearchResultsRef.current = null;
         } else if (!isSearch && prevSearchModeRef.current) {
-            // Just left search mode — reset state so re-entering is fresh
+            // Just left search mode — reset state so re-entering is fresh.
+            // Three pieces of state drive the search form's initial values:
+            //   - searchQuery / searchType (in useSearch, cleared by clearSearchHook)
+            //   - currentSearchParams (cleared by updateSearchParams(null))
+            //   - searchFilters (the filter checkboxes; useState in
+            //     useSearchAndFilters and the only one not cleared above)
             clearSearchHook();
             updateSearchParams(null);
+            if (setSearchFilters) setSearchFilters({});
             lastSearchResultsRef.current = null;
         }
         prevSearchModeRef.current = isSearch;
-    }, [viewModeObj, setAllPhotosForCurrentFetch, clearSearchHook, updateSearchParams]);
+    }, [viewModeObj, setAllPhotosForCurrentFetch, clearSearchHook, updateSearchParams, setSearchFilters]);
 }
