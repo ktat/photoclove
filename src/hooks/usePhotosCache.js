@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useState, useMemo } from 'react';
 import { logger } from '../services/LoggerService.js';
 
 /**
@@ -60,7 +60,15 @@ export function usePhotosCache(maxKeys, maxTotalPhotos) {
         triggerRender();
     }, [triggerRender]);
 
-    return { get, set, patch, invalidate, clear };
+    // useMemo the return object so consumers can use it as a stable
+    // dependency in their effects. Without this, the object literal would
+    // be recreated every render, causing any effect that depends on
+    // `photosCache` to fire on every render — leading to infinite loops
+    // when the effect itself triggers state updates.
+    return useMemo(
+        () => ({ get, set, patch, invalidate, clear }),
+        [get, set, patch, invalidate, clear]
+    );
 }
 
 function evict(cache, maxKeys, maxTotalPhotos, currentViewKey) {
