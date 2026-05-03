@@ -9,7 +9,7 @@
  * - Sets side menu visibility based on view mode
  */
 
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 import { ViewMode } from '../domain/ViewMode.js';
 import { VIEW_MODES } from '../constants/viewModes.js';
 import { logger } from '../services/LoggerService.js';
@@ -42,11 +42,13 @@ export function useViewModeSync({
     // Stringify searchParams to use in dependency array (avoid reference changes)
     const searchParamsStr = currentSearchParams ? JSON.stringify(currentSearchParams) : null;
 
-    // The empty-state UI is gated by displayState.isFetched (set true only
-    // after a successful load completes). That eliminates the
-    // viewMode-changed-but-fetch-not-started flash, so a regular useEffect
-    // is sufficient here.
-    useEffect(() => {
+    // useLayoutEffect runs synchronously after commit but before paint.
+    // We need both setAllPhotosForCurrentFetch([]) and refreshPhotosOnly()'s
+    // setPhotoLoading(true) to commit before paint — otherwise the user
+    // briefly sees stale photos from the previous view, or a black/empty
+    // grid, before the loading overlay catches up. The isFetched gate
+    // alone wasn't enough because the *fetch start* itself happens here.
+    useLayoutEffect(() => {
         if (!viewMode || !viewModeObj) {
             return;
         }

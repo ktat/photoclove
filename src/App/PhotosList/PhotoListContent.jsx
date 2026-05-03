@@ -416,12 +416,17 @@ function PhotoListContent({
                                             <h2 className="empty-state-text">Searching...</h2>
                                         </div>
                                     </div>
-                                ) : isFetched ? (
+                                ) : (viewModeObj?.isSearchMode?.() || isFetched) ? (
+                                    /* Search mode is always allowed to render EmptyState — the
+                                       component itself shows "Ready to Search" (no query) vs
+                                       "No results found" (query but no hits). For other modes
+                                       we gate on isFetched: a fetch must have completed for
+                                       "this view is empty" to be a confirmed answer. */
                                     <>
                                         <EmptyState viewModeObj={viewModeObj} searchQuery={searchQuery} searchParams={currentSearchParams} />
                                         {renderFilterClearingUI()}
                                     </>
-                                ) : null /* Fetch hasn't completed for this view yet — don't render an empty state. The loading overlay (driven by photoLoading) covers this transition. */}
+                                ) : null /* Fetch hasn't completed for this non-search view yet — the loading overlay covers this transition. */}
                             </div>
                         }
                         {/* Only render PhotoGrid when there are photos to display */}
