@@ -2,15 +2,19 @@
  * Compute a stable cache key for the current view mode.
  *
  * Maps each view mode + its parameter to a string used as
- * the LRU map key in usePhotosCache.
+ * the LRU map key in usePhotosCache. Synchronous so it can be used
+ * inside effects and selectors without deferred state.
+ *
+ * For search the key is `search:<canonical-json>` directly — long but
+ * sufficient as a Map key (no need for a hash since we never persist or
+ * transmit it).
  */
-export async function getViewKey(viewModeObj, searchParams = null, importPath = null) {
+export function getViewKey(viewModeObj, searchParams = null, importPath = null) {
     if (!viewModeObj) return null;
 
     if (viewModeObj.isSearchMode?.()) {
         if (!searchParams) return 'search:empty';
-        const hash = await sha256Short(JSON.stringify(stableSort(searchParams)));
-        return `search:${hash}`;
+        return `search:${JSON.stringify(stableSort(searchParams))}`;
     }
     if (viewModeObj.isAlbumMode?.()) {
         const id = viewModeObj.getCurrentAlbumId?.();
@@ -33,20 +37,11 @@ export async function getViewKey(viewModeObj, searchParams = null, importPath = 
     if (viewModeObj.isImportMode?.()) {
         return `import:${importPath ?? 'default'}`;
     }
-    if (viewModeObj.isBurstGroupMode?.()) {
+    if (viewModeObj.isInBurstGroupMode?.()) {
         const id = viewModeObj.getCurrentBurstGroupId?.();
         return id != null ? `burst:${id}` : 'burst:none';
     }
     return 'home';
-}
-
-async function sha256Short(input) {
-    const buf = new TextEncoder().encode(input);
-    const digest = await crypto.subtle.digest('SHA-256', buf);
-    const hex = Array.from(new Uint8Array(digest))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-    return hex.slice(0, 8);
 }
 
 function stableSort(obj) {

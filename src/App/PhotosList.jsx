@@ -34,6 +34,8 @@ import { useFilteredPhotos } from "../hooks/useFilteredPhotos.js";
 import { usePhotosListHandlers } from "../hooks/usePhotosListHandlers.js";
 import { usePhotoListLoading } from "../hooks/usePhotoListLoading.js";
 import { usePhotoListFaces } from "../hooks/usePhotoListFaces.js";
+import { usePhotosCache } from "../hooks/usePhotosCache.js";
+import { getViewKey } from "../utils/ViewKey.js";
 
 import { FaceDetectionProvider } from "../context/FaceDetectionContext.jsx";
 import {
@@ -410,13 +412,38 @@ function PhotosList({
         appConfig, iconSize, currentPhotoLoadingController, setThumbnailStore
     });
 
+    // View Cache (Phase 1): LRU map of view-mode -> photos snapshot.
+    // Lets us restore previously-loaded views instantly on switch-back.
+    const photosCache = usePhotosCache(
+        appConfig?.view_cache_max_keys ?? 10,
+        appConfig?.view_cache_max_total_photos ?? 50000
+    );
+
+    // viewKey for the currently-active view, recomputed when view mode or
+    // search params change. Synchronous so it is available in the same tick.
+    const currentViewKey = useMemo(
+        () => getViewKey(viewModeObj, currentSearchParams, importState?.currentImportPath),
+        [viewModeObj, currentSearchParams, importState?.currentImportPath]
+    );
+
+    // Save snapshot when allPhotosForCurrentFetch changes after a successful
+    // load. The cache reads through ref internally so this does not retrigger
+    // during PhotoDisplay edits (Phase 2 will patch the cache via helpers).
+    useEffect(() => {
+        if (allPhotosForCurrentFetch?.length > 0 && currentViewKey) {
+            photosCache.set(currentViewKey, allPhotosForCurrentFetch, currentViewKey);
+        }
+    }, [allPhotosForCurrentFetch, currentViewKey, photosCache]);
+
     // View mode sync hooks
     useViewModeSync({
         viewMode, viewModeObj, currentDate, currentAlbumId, currentTagId, currentBurstGroupId, searchQuery,
         currentSearchParams, photoLoading, currentPhotoLoadingController,
         setCurrentPhotoLoadingController, setShowSideMenu, setPhotosList,
         setCurrentPhotoIndex, setPhotosListMiniCurrentIndex, setCurrentPhoto,
-        loadPhotosWithCollection, appConfig, sortOfPhotos
+        setAllPhotosForCurrentFetch,
+        loadPhotosWithCollection, appConfig, sortOfPhotos,
+        photosCache, currentViewKey
     });
 
     useImportStateSync({ viewMode, importState, loadPhotosWithCollection });

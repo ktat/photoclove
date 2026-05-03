@@ -34,9 +34,12 @@ export function useViewModeSync({
     setCurrentPhotoIndex,
     setPhotosListMiniCurrentIndex,
     setCurrentPhoto,
+    setAllPhotosForCurrentFetch,
     loadPhotosWithCollection,
     appConfig,
-    sortOfPhotos
+    sortOfPhotos,
+    photosCache,
+    currentViewKey
 }) {
     // Track if this is the initial mount
     const isInitialMount = useRef(true);
@@ -52,6 +55,21 @@ export function useViewModeSync({
 
         // Set side menu visibility based on search mode
         setShowSideMenu(viewModeObj.isSearchMode());
+
+        // View cache lookup: if we have a snapshot for this view, restore
+        // it synchronously and skip the backend round-trip.
+        if (photosCache && currentViewKey && setAllPhotosForCurrentFetch) {
+            const cached = photosCache.get(currentViewKey);
+            if (cached && cached.length > 0) {
+                logger.debug('useViewModeSync', 'cache_hit', 'Restoring photos from view cache', {
+                    viewKey: currentViewKey,
+                    count: cached.length,
+                });
+                setAllPhotosForCurrentFetch(cached);
+                if (isInitialMount.current) isInitialMount.current = false;
+                return;
+            }
+        }
 
         // Load all photos based on ViewMode (Phase 1: unified for all view modes)
         loadPhotosWithCollection(viewModeObj);
@@ -71,11 +89,9 @@ export function useViewModeSync({
         searchQuery,
         searchParamsStr,
         appConfig,
-        sortOfPhotos
+        sortOfPhotos,
+        currentViewKey
         // Note: Intentionally excluding setter functions and callbacks to prevent infinite loops
-        // These functions are stable and don't need to trigger re-runs
-        // Note: Using searchParamsStr (stringified) instead of currentSearchParams to avoid
-        // infinite loops from object reference changes while still detecting content changes
     ]);
 }
 
