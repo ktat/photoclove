@@ -35,6 +35,7 @@ import { usePhotosListHandlers } from "../hooks/usePhotosListHandlers.js";
 import { usePhotoListLoading } from "../hooks/usePhotoListLoading.js";
 import { usePhotoListFaces } from "../hooks/usePhotoListFaces.js";
 import { usePhotosCache } from "../hooks/usePhotosCache.js";
+import { useSearchModeSync } from "../hooks/useSearchModeSync.js";
 import { getViewKey } from "../utils/ViewKey.js";
 
 import { FaceDetectionProvider } from "../context/FaceDetectionContext.jsx";
@@ -376,35 +377,14 @@ function PhotosList({
         filterOptions, isFilterOptionsLoading, loadFilterOptions
     });
 
-    // Search mode commit: useSearch.performSearch is the sole loader for
-    // search results (user-triggered). When `searchResults` changes (a fresh
-    // query), convert to Photo entities and write to allPhotosForCurrentFetch
-    // so the grid + filters react. useViewModeSync intentionally skips
-    // search mode (see comment there).
-    const lastSearchResultsRef = useRef(null);
-    useEffect(() => {
-        if (!viewModeObj?.isSearchMode?.()) return;
-        if (!searchResults) return;
-        if (lastSearchResultsRef.current === searchResults) return;
-        lastSearchResultsRef.current = searchResults;
-        // searchResults is raw backend data; convert to Photo entities so it
-        // matches the format produced by loadViaUnifiedAPI for other modes.
-        const entities = convertPhotosWithConfig(searchResults, false, false);
-        setAllPhotosForCurrentFetch(entities);
-    }, [searchResults, viewModeObj, setAllPhotosForCurrentFetch, convertPhotosWithConfig]);
-
-    // When entering search mode without prior results, clear the grid so it
-    // doesn't show photos from the previous view.
-    const prevSearchModeRef = useRef(false);
-    useEffect(() => {
-        const isSearch = !!viewModeObj?.isSearchMode?.();
-        if (isSearch && !prevSearchModeRef.current) {
-            // Just entered search mode — clear stale photos until a search runs
-            setAllPhotosForCurrentFetch([]);
-            lastSearchResultsRef.current = null;
-        }
-        prevSearchModeRef.current = isSearch;
-    }, [viewModeObj, setAllPhotosForCurrentFetch]);
+    // Search-mode glue: commit results, show "Searching..." overlay, and
+    // reset state on entry/exit. Extracted to keep this file under the
+    // 700-line limit. See useSearchModeSync for details.
+    useSearchModeSync({
+        viewModeObj, searchResults, isSearching,
+        setAllPhotosForCurrentFetch, convertPhotosWithConfig,
+        clearSearchHook, updateSearchParams,
+    });
 
     // Trash operations
     const { deletePhotos: deletePhotosHandler, restorePhotos: restorePhotosHandler } = useTrashOperations({
