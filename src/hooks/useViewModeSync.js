@@ -51,12 +51,27 @@ export function useViewModeSync({
     useLayoutEffect(() => {
         if (!viewMode || !viewModeObj) return;
         if (viewModeObj.isSearchMode?.()) return;
-        // Cache hit can be checked here too — restoring cached photos is
-        // also fast and synchronous.
+
+        // Non-loadable modes (HOME / list views) don't fetch photos, so
+        // there's no load to indicate. Force-clear photoLoading in case a
+        // previous mode left it stuck (otherwise the loading overlay
+        // sticks forever for these modes).
+        const isNonLoadableMode =
+            viewMode === VIEW_MODES.HOME ||
+            viewMode === VIEW_MODES.ALBUM_LIST ||
+            viewMode === VIEW_MODES.TAG_LIST ||
+            viewMode === VIEW_MODES.FACE_LIST;
+        if (isNonLoadableMode) {
+            if (setPhotoLoading) setPhotoLoading(false);
+            return;
+        }
+
+        // Cache hit: previous photos restored synchronously by the main
+        // effect; clear any lingering photoLoading from a previous mode.
         if (photosCache && currentViewKey) {
             const cached = photosCache.get(currentViewKey);
             if (cached && cached.length > 0) {
-                // Cache hit: don't show loading overlay; restore in main effect.
+                if (setPhotoLoading) setPhotoLoading(false);
                 return;
             }
         }
