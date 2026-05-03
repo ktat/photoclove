@@ -242,6 +242,26 @@ function PhotosList({
         importSortOfPhotos, sortOfPhotos, appConfig
     });
 
+    // View Cache (Phase 1): LRU map of view-mode -> photos snapshot.
+    // Defined here (before usePhotoLoader) so that the load function can
+    // call onLoadSuccess to atomically save loaded photos under their
+    // viewKey — avoiding the race where viewKey changes between
+    // load completion and a generic save effect.
+    const photosCache = usePhotosCache(
+        appConfig?.view_cache_max_keys ?? 10,
+        appConfig?.view_cache_max_total_photos ?? 50000
+    );
+    const currentViewKey = useMemo(
+        () => getViewKey(viewModeObj, currentSearchParams, importState?.currentImportPath),
+        [viewModeObj, currentSearchParams, importState?.currentImportPath]
+    );
+    const onLoadSuccess = useCallback((viewMode, photoEntities) => {
+        if (!photoEntities || photoEntities.length === 0) return;
+        const key = getViewKey(viewMode, currentSearchParams, importState?.currentImportPath);
+        if (!key) return;
+        photosCache.set(key, photoEntities, key);
+    }, [photosCache, currentSearchParams, importState?.currentImportPath]);
+
     // Photo loader hook
     const {
         photoLoading, setPhotoLoading,
@@ -256,7 +276,8 @@ function PhotosList({
         convertPhotosToEntities: convertPhotosWithConfig, handleError,
         datePage: datePage || {}, updateDatePage, addFooterMessage,
         burstModeEnabled,
-        currentSearchParams
+        currentSearchParams,
+        onLoadSuccess
     });
 
     // Album/Tag/Person photo loading wrappers and refresh/reload functions
@@ -412,51 +433,6 @@ function PhotosList({
     useConfigAndCleanupEffect({
         appConfig, iconSize, currentPhotoLoadingController, setThumbnailStore
     });
-
-    // View Cache (Phase 1): LRU map of view-mode -> photos snapshot.
-    // Lets us restore previously-loaded views instantly on switch-back.
-    const photosCache = usePhotosCache(
-        appConfig?.view_cache_max_keys ?? 10,
-        appConfig?.view_cache_max_total_photos ?? 50000
-    );
-
-    // viewKey for the currently-active view, recomputed when view mode or
-    // search params change. Synchronous so it is available in the same tick.
-    const currentViewKey = useMemo(
-        () => getViewKey(viewModeObj, currentSearchParams, importState?.currentImportPath),
-        [viewModeObj, currentSearchParams, importState?.currentImportPath]
-    );
-
-    // Save snapshot when allPhotosForCurrentFetch changes.
-    //
-    // Subtle guard: when viewKey JUST changed but the photos haven't been
-    // reloaded yet, the array we see still belongs to the previous view. We
-    // must not save those stale photos under the new key — otherwise the
-    // cache would associate (e.g.) the previous home photos with `trash`
-    // and the next visit would restore the wrong list. We detect this by
-    // checking that lastSavedRef.photos === allPhotosForCurrentFetch (same
-    // reference as last time) while currentViewKey has moved on.
-    const lastSavedRef = useRef({ key: null, photos: null });
-    useEffect(() => {
-        if (!currentViewKey || !(allPhotosForCurrentFetch?.length > 0)) return;
-
-        // Stale-on-transition guard
-        if (
-            lastSavedRef.current.photos === allPhotosForCurrentFetch &&
-            lastSavedRef.current.key !== currentViewKey
-        ) {
-            return;
-        }
-
-        // Dedup
-        if (
-            lastSavedRef.current.key === currentViewKey &&
-            lastSavedRef.current.photos === allPhotosForCurrentFetch
-        ) return;
-
-        photosCache.set(currentViewKey, allPhotosForCurrentFetch, currentViewKey);
-        lastSavedRef.current = { key: currentViewKey, photos: allPhotosForCurrentFetch };
-    }, [allPhotosForCurrentFetch, currentViewKey, photosCache]);
 
     // View mode sync hooks
     useViewModeSync({

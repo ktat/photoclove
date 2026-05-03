@@ -72,7 +72,8 @@ export function usePhotoLoader({
     updateDatePage,
     addFooterMessage,
     burstModeEnabled = false,
-    currentSearchParams = null
+    currentSearchParams = null,
+    onLoadSuccess = null
 }) {
     // Loading state
     const [photoLoading, setPhotoLoading] = useState(false);
@@ -125,6 +126,14 @@ export function usePhotoLoader({
             const photoEntities = convertPhotosToEntities(data.photos, isFromTrash, false);
             setAllPhotosForCurrentFetch(photoEntities);
 
+            // Save to view cache atomically with the state update.
+            // Doing this here (rather than via a generic effect on
+            // allPhotosForCurrentFetch) avoids a race where two loads
+            // complete in succession and a viewKey-changed render lands
+            // before the cache-save effect could distinguish "fresh from
+            // load X" vs "stale residual after switching to view Y".
+            if (onLoadSuccess) onLoadSuccess(viewMode, photoEntities);
+
             return photoEntities;
         } catch (error) {
             if (!isRequestValid(requestId)) {
@@ -144,7 +153,8 @@ export function usePhotoLoader({
         setAllPhotosForCurrentFetch,
         convertPhotosToEntities,
         handleError,
-        isRequestValid
+        isRequestValid,
+        onLoadSuccess
     ]);
 
     /**
