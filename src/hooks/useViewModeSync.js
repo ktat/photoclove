@@ -53,12 +53,7 @@ export function useViewModeSync({
         // Set side menu visibility based on search mode
         setShowSideMenu(viewModeObj.isSearchMode());
 
-        // Skip photo loading if in album or tag mode - these photos are managed separately
-        if (viewModeObj.isAlbumMode() || viewModeObj.isTagMode()) {
-            return;
-        }
-
-        // Load all photos based on ViewMode
+        // Load all photos based on ViewMode (Phase 1: unified for all view modes)
         loadPhotosWithCollection(viewModeObj);
 
         // Mark that initial mount has completed
