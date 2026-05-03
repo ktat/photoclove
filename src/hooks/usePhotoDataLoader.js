@@ -13,13 +13,10 @@ export function usePhotoDataLoader({
     convertPhotosToEntities,
     updateAlbumsList,
     setFilteredAlbums,
-    updateAlbumPhotos,
     setPhotosList,
     setAllPhotosForCurrentFetch,
     setTagsList,
     setFilteredTags,
-    setTagPhotos,
-    setTrashPhotos,
     setCurrentAlbumName,
     openAlbum,
     setFilterOptions,
@@ -120,7 +117,7 @@ export function usePhotoDataLoader({
 
             // Wrapper signature: (photosData, isFromTrash, toJSON) - appConfig via closure
             const photosAsJSON = convertPhotosToEntities(albumPhotosData, false, true);
-            updateAlbumPhotos(photosAsJSON);
+            setAllPhotosForCurrentFetch(photosAsJSON);
             setPhotosList({ photos: photosAsJSON });
         } catch (error) {
             // Ignore errors from cancelled requests
@@ -129,7 +126,7 @@ export function usePhotoDataLoader({
             }
             // Error already handled by loadUnifiedData
         }
-    }, [updateAlbumPhotos, loadUnifiedData, setPhotosList, convertPhotosToEntities, startNewRequest, isRequestValid, burstModeEnabled]);
+    }, [setAllPhotosForCurrentFetch, loadUnifiedData, setPhotosList, convertPhotosToEntities, startNewRequest, isRequestValid, burstModeEnabled]);
 
     // Handle album click to switch to album view
     const handleAlbumClick = useCallback((album) => {
@@ -198,8 +195,8 @@ export function usePhotoDataLoader({
             // Wrapper signature: (photosData, isFromTrash, toJSON) - appConfig via closure
             const photosAsJSON = convertPhotosToEntities(tagPhotosData, false, true);
 
-            // Set tagPhotos with JSON for React state
-            setTagPhotos(photosAsJSON);
+            // Tag photos now flow through allPhotosForCurrentFetch (Phase 1 unification)
+            setAllPhotosForCurrentFetch(photosAsJSON);
             setPhotosList({ photos: photosAsJSON });
         } catch (error) {
             // Ignore errors from cancelled requests
@@ -208,7 +205,7 @@ export function usePhotoDataLoader({
             }
             // Error already handled by loadUnifiedData
         }
-    }, [loadUnifiedData, setTagPhotos, setPhotosList, convertPhotosToEntities, startNewRequest, isRequestValid, burstModeEnabled]);
+    }, [loadUnifiedData, setAllPhotosForCurrentFetch, setPhotosList, convertPhotosToEntities, startNewRequest, isRequestValid, burstModeEnabled]);
 
     const loadPersonPhotos = useCallback(async (personId) => {
         // Start new request, invalidating any previous pending requests
@@ -313,7 +310,8 @@ export function usePhotoDataLoader({
 
             // Wrapper signature: (photosData, isFromTrash, toJSON) - appConfig via closure
             const photosAsJSON = convertPhotosToEntities(photos, true, true);
-            setTrashPhotos(photosAsJSON);
+            // Trash photos now flow through allPhotosForCurrentFetch (Phase 1 unification)
+            setAllPhotosForCurrentFetch(photosAsJSON);
         } catch (error) {
             // Ignore errors from cancelled requests
             if (!isRequestValid(requestId)) {
@@ -321,7 +319,7 @@ export function usePhotoDataLoader({
             }
             // Error already handled by loadUnifiedData
         }
-    }, [loadUnifiedData, appConfig, convertPhotosToEntities, setTrashPhotos, startNewRequest, isRequestValid]);
+    }, [loadUnifiedData, appConfig, convertPhotosToEntities, setAllPhotosForCurrentFetch, startNewRequest, isRequestValid]);
 
     // Filter options caching function  
     const loadFilterOptions = useCallback(async () => {
