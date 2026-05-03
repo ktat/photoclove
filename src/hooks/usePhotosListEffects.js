@@ -133,8 +133,10 @@ export function useBurstModeChangeEffect({
     const prevBurstModeEnabled = useRef(burstModeEnabled);
 
     useEffect(() => {
-        // Skip if no change (initial render)
+        // Skip if no change (initial render). NOTE: use `===` carefully —
+        // primitives only.
         if (prevBurstModeEnabled.current === burstModeEnabled) return;
+        const wasEnabled = prevBurstModeEnabled.current;
         prevBurstModeEnabled.current = burstModeEnabled;
 
         if (!viewModeObj || !appConfig) return;
@@ -149,15 +151,19 @@ export function useBurstModeChangeEffect({
 
         logger.info('usePhotosListEffects', 'burst_mode_reload', 'Burst mode changed, reloading', {
             viewMode: viewModeObj.mode,
-            burstModeEnabled
+            from: wasEnabled,
+            to: burstModeEnabled,
         });
 
         // Use refreshPhotosOnly (same wrapper as view-mode-switch loads):
         // gen-guard prevents double-fire conflicts with concurrent loads,
         // and the loading overlay stays visible for at least 500ms.
-        refreshPhotosOnly().catch?.(error => {
-            handleError(error, 'Reload photos after burst mode change');
-        });
+        const promise = refreshPhotosOnly();
+        if (promise && typeof promise.catch === 'function') {
+            promise.catch(error => {
+                handleError(error, 'Reload photos after burst mode change');
+            });
+        }
     }, [burstModeEnabled, viewModeObj, appConfig, refreshPhotosOnly, handleError]);
 }
 

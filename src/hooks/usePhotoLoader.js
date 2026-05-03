@@ -100,18 +100,39 @@ export function usePhotoLoader({
                 burstModeEnabled: burstModeEnabled
             });
 
+            logger.info('PhotosList', 'load_via_unified_api_request', 'Sending unified photo request', {
+                mode: viewMode.mode,
+                searchType: photoParams.search_type,
+                burstModeEnabled,
+                requestId,
+            });
+
             const result = await invoke("get_photos_unified", { request: photoParams });
 
             if (!isRequestValid(requestId)) {
+                logger.debug('PhotosList', 'load_via_unified_api_invalidated', 'Request was cancelled', {
+                    mode: viewMode.mode,
+                    requestId,
+                });
                 return null;
             }
 
             const data = JSON.parse(result);
 
             if (!data || !data.photos || !Array.isArray(data.photos)) {
-                logger.error('PhotosList', 'invalid_data_structure', 'Invalid data structure from backend');
+                logger.error('PhotosList', 'invalid_data_structure', 'Invalid data structure from backend', {
+                    mode: viewMode.mode,
+                    searchType: photoParams.search_type,
+                });
                 return null;
             }
+
+            logger.info('PhotosList', 'load_via_unified_api_response', 'Received unified photo response', {
+                mode: viewMode.mode,
+                searchType: photoParams.search_type,
+                photoCount: data.photos.length,
+                burstModeEnabled,
+            });
 
             // Check if we hit the configuration limit
             const effectiveLimit = config?.max_photos_per_fetch || 1000;
