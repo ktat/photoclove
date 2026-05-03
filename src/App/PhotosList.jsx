@@ -204,7 +204,7 @@ function PhotosList({
         loadTags, loadTagPhotos: loadTagPhotosOriginal,
         loadPersonPhotos: loadPersonPhotosOriginal,
         loadUnknownFacesPhotos: loadUnknownFacesPhotosOriginal,
-        loadTrashPhotos, loadFilterOptions, logOperation
+        loadFilterOptions, logOperation
     } = usePhotoDataLoader({
         handleError, convertPhotosToEntities: convertPhotosWithConfig,
         updateAlbumsList, setFilteredAlbums, setPhotosList,
@@ -428,7 +428,8 @@ function PhotosList({
         allPhotosForCurrentFetch, setAllPhotosForCurrentFetch, viewMode,
         loadAlbums, currentAlbumId, loadAlbumPhotos, photoSelectionDict,
         togglePhotoSelection, changeTab, infiniteScrollEnabled, displayedPhotos,
-        filteredPhotos, selectAllPhotos, tabClass
+        filteredPhotos, selectAllPhotos, tabClass,
+        photosCache, currentViewKey
     });
 
     // Side menu toggle notification effect

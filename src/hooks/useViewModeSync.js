@@ -79,6 +79,20 @@ export function useViewModeSync({
         // with stale/empty params.
         if (viewModeObj.isSearchMode()) return;
 
+        // Non-loadable modes (HOME, list views) don't fetch photos —
+        // mark them as "fetched" up front so the empty-state UI / sidebar
+        // can render normally instead of staying blank waiting for a
+        // load that will never come.
+        const isNonLoadableMode =
+            viewMode === VIEW_MODES.HOME ||
+            viewMode === VIEW_MODES.ALBUM_LIST ||
+            viewMode === VIEW_MODES.TAG_LIST ||
+            viewMode === VIEW_MODES.FACE_LIST;
+        if (isNonLoadableMode) {
+            if (setIsFetched) setIsFetched(true);
+            return;
+        }
+
         // View cache lookup: synchronous restore on hit.
         if (photosCache && currentViewKey && setAllPhotosForCurrentFetch) {
             const cached = photosCache.get(currentViewKey);

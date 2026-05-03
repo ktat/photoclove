@@ -267,6 +267,11 @@ export function usePhotoLoader({
                     photoEntities = updatedCollection.photos.filter(photo => photo !== null);
                     setAllPhotosForCurrentFetch(photoEntities);
 
+                    // Notify the same way loadViaUnifiedAPI does, so that
+                    // import / date / recent / search-fallback / trash paths
+                    // also flip isFetched=true and write the View Cache entry.
+                    if (onLoadSuccess) onLoadSuccess(viewMode, photoEntities);
+
                     // Clear related states
                     setPhotosListImgSrc({});
                     setCurrentPhoto(null);

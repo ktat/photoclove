@@ -199,17 +199,11 @@ export function useCollectionManagement({
                 handleError(error, 'Load trash collection');
             }
         },
-        [VIEW_MODES.ALBUM]: () => {
-            if (currentAlbumId) {
-                loadAlbumPhotos(currentAlbumId);
-            }
-        },
-        [VIEW_MODES.TAG]: () => {
-            if (currentTagId) {
-                loadTagPhotos(currentTagId);
-            }
-        }
-    }), [loadAlbums, loadTags, appConfig, sortOfPhotos, loadAlbumPhotos, loadTagPhotos, currentAlbumId, currentTagId, setPhotoCollection, handleError]);
+        // ALBUM/TAG modes intentionally have NO modeLoader entry: photo loading
+        // is now driven by useViewModeSync (cache lookup -> backend load)
+        // exclusively. A second eager load here races with that path and
+        // bypasses onLoadSuccess (no cache write, no isFetched flip).
+    }), [loadAlbums, loadTags, appConfig, sortOfPhotos, setPhotoCollection, handleError]);
 
     /**
      * Execute mode-specific loader functions

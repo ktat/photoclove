@@ -55,8 +55,18 @@ export function usePhotoListHelpers({
     displayedPhotos,
     filteredPhotos,
     selectAllPhotos,
-    tabClass
+    tabClass,
+    photosCache,
+    currentViewKey
 }) {
+    // Patch the View Cache entry for the current view so that switching
+    // away and back doesn't restore stale (pre-edit) photos. Phase 1
+    // introduced the cache; without this, edits become invisible after a
+    // round-trip through another view.
+    const patchCacheCurrentView = useCallback((updater) => {
+        if (!photosCache?.patch || !currentViewKey) return;
+        photosCache.patch(currentViewKey, updater);
+    }, [photosCache, currentViewKey]);
     /**
      * Enhanced setStar function that updates photosListMiniAllPhotos
      * @param {Array} newStar - New star rating array
@@ -91,7 +101,16 @@ export function usePhotoListHelpers({
             return photo;
         });
         setAllPhotosForCurrentFetch(updatedAllPhotos);
-    }, [setStar, photosListMiniAllPhotos, setPhotosListMiniAllPhotos, currentPhoto, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch]);
+
+        // Keep the View Cache for this view in sync so a future switch
+        // back doesn't restore the pre-edit star value.
+        patchCacheCurrentView(prev => prev.map(photo => {
+            if (photo.originalPath === currentPhoto?.originalPath) {
+                return { ...photo, star: starValue };
+            }
+            return photo;
+        }));
+    }, [setStar, photosListMiniAllPhotos, setPhotosListMiniAllPhotos, currentPhoto, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch, patchCacheCurrentView]);
 
     /**
      * Update comment in photo lists
@@ -116,21 +135,30 @@ export function usePhotoListHelpers({
             return photo;
         });
         setAllPhotosForCurrentFetch(updatedAllPhotos);
-    }, [photosListMiniAllPhotos, setPhotosListMiniAllPhotos, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch]);
+
+        // Keep the View Cache for this view in sync.
+        patchCacheCurrentView(prev => prev.map(photo => {
+            if (photo.originalPath === photoPath) {
+                return { ...photo, comment: hasComment ? "has comment" : null };
+            }
+            return photo;
+        }));
+    }, [photosListMiniAllPhotos, setPhotosListMiniAllPhotos, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch, patchCacheCurrentView]);
 
     /**
-     * Refresh album list and current album after update
+     * Refresh album list after metadata update.
+     *
+     * Album-level metadata changes (cover, name, description) don't change
+     * the photo membership, so we don't reload the photos themselves —
+     * useViewModeSync drives that via the cache/refresh path. Only the
+     * album list (used by sidebar / pickers) needs to refresh here.
      */
     const handleAlbumUpdate = useCallback(() => {
-        // Refresh album list and current album after update
         if (viewMode === VIEW_MODES.ALBUM_LIST) {
             loadAlbums();
         }
-        if (currentAlbumId) {
-            loadAlbumPhotos(currentAlbumId);
-        }
-        logger.info('usePhotoListHelpers', 'album_updated', 'Album refreshed after update', { currentAlbumId });
-    }, [viewMode, loadAlbums, currentAlbumId, loadAlbumPhotos]);
+        logger.info('usePhotoListHelpers', 'album_updated', 'Album list refreshed after metadata update', { currentAlbumId });
+    }, [viewMode, loadAlbums, currentAlbumId]);
 
     /**
      * Add or remove photo from selection and switch to selection tab
