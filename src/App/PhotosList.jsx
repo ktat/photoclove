@@ -445,7 +445,7 @@ function PhotosList({
         currentSearchParams, photoLoading, currentPhotoLoadingController,
         setCurrentPhotoLoadingController, setShowSideMenu, setPhotosList,
         setCurrentPhotoIndex, setPhotosListMiniCurrentIndex, setCurrentPhoto,
-        setAllPhotosForCurrentFetch, setIsFetched,
+        setAllPhotosForCurrentFetch, setIsFetched, setPhotoLoading,
         refreshPhotosOnly, appConfig, sortOfPhotos,
         photosCache, currentViewKey
     });
