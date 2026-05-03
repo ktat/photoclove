@@ -117,6 +117,7 @@ function PhotosList({
         photos, setPhotosList, photoCollection, setPhotoCollection,
         allPhotosForCurrentFetch, setAllPhotosForCurrentFetch,
         currentPhoto, setCurrentPhoto, currentPhotoIndex, setCurrentPhotoIndex,
+        isFetched, setIsFetched,
         iconSize, setIconSize, numOfPhoto, setNumOfPhoto,
         showSideMenu, setShowSideMenu, isLimitedByConfig, setIsLimitedByConfig,
         configLimit, setConfigLimit, star, setStar,
@@ -256,11 +257,15 @@ function PhotosList({
         [viewModeObj, currentSearchParams, importState?.currentImportPath]
     );
     const onLoadSuccess = useCallback((viewMode, photoEntities) => {
+        // Mark the current view as fetched so the empty-state UI can render
+        // when truly empty (vs. "we just haven't fetched yet"). Run even on
+        // empty results — that's a confirmed "no photos for this view".
+        setIsFetched(true);
         if (!photoEntities || photoEntities.length === 0) return;
         const key = getViewKey(viewMode, currentSearchParams, importState?.currentImportPath);
         if (!key) return;
         photosCache.set(key, photoEntities, key);
-    }, [photosCache, currentSearchParams, importState?.currentImportPath]);
+    }, [photosCache, currentSearchParams, importState?.currentImportPath, setIsFetched]);
 
     // Photo loader hook
     const {
@@ -440,7 +445,7 @@ function PhotosList({
         currentSearchParams, photoLoading, currentPhotoLoadingController,
         setCurrentPhotoLoadingController, setShowSideMenu, setPhotosList,
         setCurrentPhotoIndex, setPhotosListMiniCurrentIndex, setCurrentPhoto,
-        setAllPhotosForCurrentFetch,
+        setAllPhotosForCurrentFetch, setIsFetched,
         refreshPhotosOnly, appConfig, sortOfPhotos,
         photosCache, currentViewKey
     });
@@ -514,7 +519,7 @@ function PhotosList({
         viewMode, currentDate, viewModeObj,
         starFilter, hasCommentFilter, hasTagFilter, extensionFilter, importExtensionFilter, showFilterPopover, hasActiveFiltersState,
         photoSelectionDict, photoSelection, selectedAlbums, selectedTags, selectedPersons, selectedUnknownFaces,
-        currentPhoto, currentPhotoIndex, showSideMenu, iconSize, sortOfPhotos, importSortOfPhotos, datePage, numOfPhoto,
+        currentPhoto, currentPhotoIndex, showSideMenu, iconSize, sortOfPhotos, importSortOfPhotos, datePage, numOfPhoto, isFetched,
         searchQuery, searchInitialQuery, searchFilters, searchResults, currentSearchParams, isSearching,
         displayedPhotos, filteredPhotos, displayedPhotoCount, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch,
         photosListMiniAllPhotos, setPhotosListMiniAllPhotos, photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex, photosListMiniReread, setPhotosListMiniReread,

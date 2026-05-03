@@ -48,6 +48,7 @@ export function usePhotoListStateGroups({
     importSortOfPhotos,
     datePage,
     numOfPhoto,
+    isFetched,
 
     // SearchState params
     searchQuery,
@@ -140,8 +141,9 @@ export function usePhotoListStateGroups({
         importSort: importSortOfPhotos,
         scrollPosition: 0, // Will be managed in Phase 2
         datePage: datePage || {},
-        numOfPhoto: numOfPhoto
-    }), [currentPhoto, currentPhotoIndex, showSideMenu, iconSize, sortOfPhotos, importSortOfPhotos, datePage, numOfPhoto]);
+        numOfPhoto: numOfPhoto,
+        isFetched: isFetched
+    }), [currentPhoto, currentPhotoIndex, showSideMenu, iconSize, sortOfPhotos, importSortOfPhotos, datePage, numOfPhoto, isFetched]);
 
     /** @type {import('../types/PageState.js').SearchState} */
     // isSearchMode and isAdvancedSearchMode are derived from viewModeObj

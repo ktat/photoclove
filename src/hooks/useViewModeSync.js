@@ -9,7 +9,7 @@
  * - Sets side menu visibility based on view mode
  */
 
-import { useEffect, useLayoutEffect } from 'react';
+import { useEffect } from 'react';
 import { ViewMode } from '../domain/ViewMode.js';
 import { VIEW_MODES } from '../constants/viewModes.js';
 import { logger } from '../services/LoggerService.js';
@@ -32,6 +32,7 @@ export function useViewModeSync({
     setPhotosListMiniCurrentIndex,
     setCurrentPhoto,
     setAllPhotosForCurrentFetch,
+    setIsFetched,
     refreshPhotosOnly,
     appConfig,
     sortOfPhotos,
@@ -41,13 +42,11 @@ export function useViewModeSync({
     // Stringify searchParams to use in dependency array (avoid reference changes)
     const searchParamsStr = currentSearchParams ? JSON.stringify(currentSearchParams) : null;
 
-    // useLayoutEffect (not useEffect): we need the photos clear and
-    // photoLoading=true to commit *before* the browser paints. Otherwise,
-    // there is a one-frame window where viewMode has switched (e.g. to
-    // 'trash') but allPhotos still holds the previous view's photos OR is
-    // []with photoLoading=false — either flashes "Trash is Empty" or stale
-    // photos before the loading overlay appears.
-    useLayoutEffect(() => {
+    // The empty-state UI is gated by displayState.isFetched (set true only
+    // after a successful load completes). That eliminates the
+    // viewMode-changed-but-fetch-not-started flash, so a regular useEffect
+    // is sufficient here.
+    useEffect(() => {
         if (!viewMode || !viewModeObj) {
             return;
         }
@@ -75,6 +74,7 @@ export function useViewModeSync({
                     count: cached.length,
                 });
                 setAllPhotosForCurrentFetch(cached);
+                if (setIsFetched) setIsFetched(true);
                 return;
             }
         }
@@ -84,6 +84,10 @@ export function useViewModeSync({
         if (setAllPhotosForCurrentFetch) {
             setAllPhotosForCurrentFetch([]);
         }
+        // Reset isFetched: until the fetch completes, the empty-state UI
+        // ("No Photos", "Trash is Empty") must not render — there is no
+        // confirmed "empty" answer yet, just a pending load.
+        if (setIsFetched) setIsFetched(false);
 
         // Use refreshPhotosOnly which wraps loadAllPhotosBasedOnViewMode with
         // a MIN_LOADING_TIME (~500ms) guard. Without this the loading screen

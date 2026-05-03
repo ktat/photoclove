@@ -127,7 +127,8 @@ function PhotoListContent({
         iconSize,
         sort: sortOfPhotos,
         importSort: importSortOfPhotos,
-        datePage
+        datePage,
+        isFetched
     } = displayState;
 
     const {
@@ -415,12 +416,12 @@ function PhotoListContent({
                                             <h2 className="empty-state-text">Searching...</h2>
                                         </div>
                                     </div>
-                                ) : (
+                                ) : isFetched ? (
                                     <>
                                         <EmptyState viewModeObj={viewModeObj} searchQuery={searchQuery} searchParams={currentSearchParams} />
                                         {renderFilterClearingUI()}
                                     </>
-                                )}
+                                ) : null /* Fetch hasn't completed for this view yet — don't render an empty state. The loading overlay (driven by photoLoading) covers this transition. */}
                             </div>
                         }
                         {/* Only render PhotoGrid when there are photos to display */}

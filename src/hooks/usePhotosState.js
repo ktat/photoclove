@@ -31,6 +31,12 @@ export const usePhotosState = () => {
     const [currentPhoto, setCurrentPhoto] = useState(null);
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(undefined);
 
+    // Whether a fetch has completed for the current view. Used to
+    // suppress "No Photos" / "Trash is Empty" empty-state UI between a
+    // view-mode change and the fetch starting (the brief window where
+    // allPhotos is [] but we're not yet — or just barely — in a load).
+    const [isFetched, setIsFetched] = useState(false);
+
     // UI state
     const [iconSize, setIconSize] = useState(100);
     const [numOfPhoto, setNumOfPhoto] = useState(20);
@@ -127,6 +133,8 @@ export const usePhotosState = () => {
         setCurrentPhoto,
         currentPhotoIndex,
         setCurrentPhotoIndex,
+        isFetched,
+        setIsFetched,
 
         // UI state
         iconSize,
