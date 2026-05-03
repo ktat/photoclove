@@ -90,7 +90,7 @@ export function useSortChangeEffect({
     viewModeObj,
     appConfig,
     sortInitialized,
-    loadAllPhotosBasedOnViewMode,
+    refreshPhotosOnly,
     handleError
 }) {
     useEffect(() => {
@@ -104,16 +104,19 @@ export function useSortChangeEffect({
             return;
         }
 
-        // For other modes, need to re-fetch from backend with new sort value
+        // For other modes, need to re-fetch from backend with new sort value.
+        // Route through refreshPhotosOnly so this load goes through the same
+        // gen-guard / min-loading-time wrapper as the view-mode-switch load
+        // (no double-fire conflicts, consistent loading overlay UX).
         logger.info('usePhotosListEffects', 'sort_reload', 'Sort changed, reloading', {
             viewMode: viewModeObj.mode,
             sortOfPhotos
         });
 
-        loadAllPhotosBasedOnViewMode(viewModeObj, appConfig).catch(error => {
+        refreshPhotosOnly().catch?.(error => {
             handleError(error, 'Reload photos after sort change');
         });
-    }, [sortOfPhotos, viewModeObj, appConfig, importSortOfPhotos, loadAllPhotosBasedOnViewMode, handleError, sortInitialized]);
+    }, [sortOfPhotos, viewModeObj, appConfig, importSortOfPhotos, refreshPhotosOnly, handleError, sortInitialized]);
 }
 
 /**
@@ -124,7 +127,7 @@ export function useBurstModeChangeEffect({
     burstModeEnabled,
     viewModeObj,
     appConfig,
-    loadAllPhotosBasedOnViewMode,
+    refreshPhotosOnly,
     handleError
 }) {
     const prevBurstModeEnabled = useRef(burstModeEnabled);
@@ -149,10 +152,13 @@ export function useBurstModeChangeEffect({
             burstModeEnabled
         });
 
-        loadAllPhotosBasedOnViewMode(viewModeObj, appConfig).catch(error => {
+        // Use refreshPhotosOnly (same wrapper as view-mode-switch loads):
+        // gen-guard prevents double-fire conflicts with concurrent loads,
+        // and the loading overlay stays visible for at least 500ms.
+        refreshPhotosOnly().catch?.(error => {
             handleError(error, 'Reload photos after burst mode change');
         });
-    }, [burstModeEnabled, viewModeObj, appConfig, loadAllPhotosBasedOnViewMode, handleError]);
+    }, [burstModeEnabled, viewModeObj, appConfig, refreshPhotosOnly, handleError]);
 }
 
 /**

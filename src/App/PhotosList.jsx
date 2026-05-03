@@ -357,13 +357,13 @@ function PhotosList({
     // Sort change effect
     useSortChangeEffect({
         sortOfPhotos, importSortOfPhotos, viewModeObj, appConfig,
-        sortInitialized, loadAllPhotosBasedOnViewMode, handleError
+        sortInitialized, refreshPhotosOnly, handleError
     });
 
     // Burst mode change effect
     useBurstModeChangeEffect({
         burstModeEnabled, viewModeObj, appConfig,
-        loadAllPhotosBasedOnViewMode, handleError
+        refreshPhotosOnly, handleError
     });
 
     // Infinite scroll
