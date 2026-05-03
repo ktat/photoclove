@@ -41,6 +41,46 @@ describe('getPhotoSortComparator', () => {
     it('returns null for unknown sortValue', () => {
         expect(getPhotoSortComparator(999)).toBeNull();
     });
+
+    it('sortValue=3 sorts by created_at asc', () => {
+        const sorted = [...photos].sort(getPhotoSortComparator(3));
+        expect(sorted.map(p => p.originalPath)).toEqual(['a/2.jpg', 'a/3.jpg', 'a/1.jpg']);
+    });
+
+    it('sortValue=5 sorts by star asc, tie by created_at asc', () => {
+        const tied = [
+            { originalPath: 'a/1.jpg', star: 5, created_at: '2024-01-01T00:00:00Z' },
+            { originalPath: 'a/2.jpg', star: 5, created_at: '2024-01-02T00:00:00Z' },
+            { originalPath: 'a/3.jpg', star: 3, created_at: '2024-01-05T00:00:00Z' },
+        ];
+        const sorted = [...tied].sort(getPhotoSortComparator(5));
+        expect(sorted.map(p => p.originalPath)).toEqual(['a/3.jpg', 'a/1.jpg', 'a/2.jpg']);
+    });
+
+    it('sortValue=6 sorts by originalPath desc', () => {
+        const sorted = [...photos].sort(getPhotoSortComparator(6));
+        expect(sorted.map(p => p.originalPath)).toEqual(['a/3.jpg', 'a/2.jpg', 'a/1.jpg']);
+    });
+
+    it('handles null exif_date_time_original (sorts to start under asc)', () => {
+        const withNull = [
+            { originalPath: 'a/1.jpg', exif_date_time_original: '2023-12-01T00:00:00Z' },
+            { originalPath: 'a/2.jpg', exif_date_time_original: null },
+            { originalPath: 'a/3.jpg', exif_date_time_original: '2023-12-03T00:00:00Z' },
+        ];
+        const sorted = [...withNull].sort(getPhotoSortComparator(1));
+        expect(sorted.map(p => p.originalPath)).toEqual(['a/2.jpg', 'a/1.jpg', 'a/3.jpg']);
+    });
+
+    it('handles null star as 0 in star desc', () => {
+        const withNull = [
+            { originalPath: 'a/1.jpg', star: 5, created_at: '2024-01-01T00:00:00Z' },
+            { originalPath: 'a/2.jpg', star: null, created_at: '2024-01-02T00:00:00Z' },
+            { originalPath: 'a/3.jpg', star: 3, created_at: '2024-01-03T00:00:00Z' },
+        ];
+        const sorted = [...withNull].sort(getPhotoSortComparator(4));
+        expect(sorted.map(p => p.originalPath)).toEqual(['a/1.jpg', 'a/3.jpg', 'a/2.jpg']);
+    });
 });
 
 describe('isStarSort', () => {

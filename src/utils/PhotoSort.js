@@ -7,6 +7,15 @@
  * local re-sort when sortDirty).
  */
 
+/**
+ * String comparator with null/undefined coalesced to ''.
+ *
+ * Null/undefined coalesce to '' or 0. This means nulls sort to the start
+ * for asc and end for desc — which matches our backend's typical NULLS-
+ * LAST-on-DESC behavior but diverges on ASC. In Phase 2 use cases (re-
+ * sort after star edit, Save as Copy insert) the relevant fields are
+ * always populated, so this is acceptable.
+ */
 const cmpStr = (a, b) => {
     const av = a ?? '';
     const bv = b ?? '';
@@ -47,6 +56,10 @@ export function isStarSort(sortValue) {
 /**
  * Binary search to find the insertion index for `newPhoto` in `sortedPhotos`.
  * Returns sortedPhotos.length when comparator is null (= unknown sort).
+ *
+ * `sortedPhotos` must already be sorted by the same comparator.
+ * Uses upper-bound semantics: when an existing element compares equal to
+ * `newPhoto`, the new photo is inserted *after* it.
  */
 export function findInsertIndex(sortedPhotos, newPhoto, comparator) {
     if (!comparator) return sortedPhotos.length;
@@ -54,6 +67,7 @@ export function findInsertIndex(sortedPhotos, newPhoto, comparator) {
     let hi = sortedPhotos.length;
     while (lo < hi) {
         const mid = (lo + hi) >>> 1;
+        // <= 0: equal elements push search right → upper-bound insert (after ties)
         if (comparator(sortedPhotos[mid], newPhoto) <= 0) {
             lo = mid + 1;
         } else {
