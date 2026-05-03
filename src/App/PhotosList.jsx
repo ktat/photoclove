@@ -455,7 +455,8 @@ function PhotosList({
 
     usePhotoDataSync({
         filteredPhotos, displayedPhotos, allPhotosForCurrentFetch, infiniteScrollEnabled,
-        setPhotosListMiniAllPhotos, setDisplayedPhotoCount, setPhotosList
+        setPhotosListMiniAllPhotos, setDisplayedPhotoCount, setPhotosList,
+        currentPhotoPath: currentPhoto?.originalPath
     });
 
     useImportModeLifecycle({

@@ -9,6 +9,13 @@
  * - Sync filtered photos with displayed photos
  * - Handle infinite scroll photo count updates
  * - Update photos list when displayed photos change
+ *
+ * Phase 2: While PhotoDisplay is open (currentPhotoPath != null) the
+ * filtered-to-mini sync is FROZEN. Edit helpers (setStarWithUpdate,
+ * updatePhotoTags, etc.) write photosListMiniAllPhotos directly so
+ * navigation indices stay stable. The effect re-runs on close
+ * (currentPhotoPath -> null), which reconciles the mini list with the
+ * latest filter/sort result.
  */
 
 import { useEffect } from 'react';
@@ -22,9 +29,11 @@ export function useFilteredPhotosSync({
     allPhotosForCurrentFetch,
     infiniteScrollEnabled,
     setPhotosListMiniAllPhotos,
-    setDisplayedPhotoCount
+    setDisplayedPhotoCount,
+    currentPhotoPath
 }) {
     useEffect(() => {
+        if (currentPhotoPath) return; // Phase 2: freeze sync while PhotoDisplay is open
         if (filteredPhotos.length > 0 || allPhotosForCurrentFetch.length > 0) {
             // Convert Photo entities to JSON for PhotosListMini (with safety check)
             const photosAsJSON = filteredPhotos
@@ -49,7 +58,8 @@ export function useFilteredPhotosSync({
     }, [
         filteredPhotos,
         infiniteScrollEnabled,
-        allPhotosForCurrentFetch
+        allPhotosForCurrentFetch,
+        currentPhotoPath
         // Note: Intentionally excluding setter functions to prevent infinite loops
     ]);
 }
@@ -78,18 +88,18 @@ export function usePhotoDataSync({
     infiniteScrollEnabled,
     setPhotosListMiniAllPhotos,
     setDisplayedPhotoCount,
-    setPhotosList
+    setPhotosList,
+    currentPhotoPath
 }) {
-    // Sync filtered photos to JSON format
     useFilteredPhotosSync({
         filteredPhotos,
         allPhotosForCurrentFetch,
         infiniteScrollEnabled,
         setPhotosListMiniAllPhotos,
-        setDisplayedPhotoCount
+        setDisplayedPhotoCount,
+        currentPhotoPath
     });
 
-    // Sync displayed photos to photos list
     useDisplayedPhotosSync({
         displayedPhotos,
         setPhotosList
