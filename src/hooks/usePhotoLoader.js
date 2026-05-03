@@ -118,8 +118,11 @@ export function usePhotoLoader({
             setIsLimitedByConfig(isLimited);
             setConfigLimit(effectiveLimit);
 
-            // Convert to Photo entities and store
-            const photoEntities = convertPhotosToEntities(data.photos, false, false);
+            // Convert to Photo entities and store. Trash photos need
+            // isFromTrash=true so displayPath() resolves to the trash path
+            // (otherwise PhotoDisplay shows "No Photo").
+            const isFromTrash = viewMode.isTrashMode?.() ?? false;
+            const photoEntities = convertPhotosToEntities(data.photos, isFromTrash, false);
             setAllPhotosForCurrentFetch(photoEntities);
 
             return photoEntities;

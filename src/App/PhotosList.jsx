@@ -376,10 +376,35 @@ function PhotosList({
         filterOptions, isFilterOptionsLoading, loadFilterOptions
     });
 
-    // Search results flow through useViewModeSync (loadViaUnifiedAPI) when
-    // currentSearchParams changes — no separate commit effect needed.
-    // useSearch.searchResults remains an internal buffer (used for history,
-    // counts in the search bar, etc.) but is no longer the grid's source.
+    // Search mode commit: useSearch.performSearch is the sole loader for
+    // search results (user-triggered). When `searchResults` changes (a fresh
+    // query), convert to Photo entities and write to allPhotosForCurrentFetch
+    // so the grid + filters react. useViewModeSync intentionally skips
+    // search mode (see comment there).
+    const lastSearchResultsRef = useRef(null);
+    useEffect(() => {
+        if (!viewModeObj?.isSearchMode?.()) return;
+        if (!searchResults) return;
+        if (lastSearchResultsRef.current === searchResults) return;
+        lastSearchResultsRef.current = searchResults;
+        // searchResults is raw backend data; convert to Photo entities so it
+        // matches the format produced by loadViaUnifiedAPI for other modes.
+        const entities = convertPhotosWithConfig(searchResults, false, false);
+        setAllPhotosForCurrentFetch(entities);
+    }, [searchResults, viewModeObj, setAllPhotosForCurrentFetch, convertPhotosWithConfig]);
+
+    // When entering search mode without prior results, clear the grid so it
+    // doesn't show photos from the previous view.
+    const prevSearchModeRef = useRef(false);
+    useEffect(() => {
+        const isSearch = !!viewModeObj?.isSearchMode?.();
+        if (isSearch && !prevSearchModeRef.current) {
+            // Just entered search mode — clear stale photos until a search runs
+            setAllPhotosForCurrentFetch([]);
+            lastSearchResultsRef.current = null;
+        }
+        prevSearchModeRef.current = isSearch;
+    }, [viewModeObj, setAllPhotosForCurrentFetch]);
 
     // Trash operations
     const { deletePhotos: deletePhotosHandler, restorePhotos: restorePhotosHandler } = useTrashOperations({

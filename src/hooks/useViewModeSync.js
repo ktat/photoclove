@@ -49,6 +49,16 @@ export function useViewModeSync({
         // Set side menu visibility based on search mode
         setShowSideMenu(viewModeObj.isSearchMode());
 
+        // Search mode is driven by performSearch (user-triggered) + a dedicated
+        // commit effect in PhotosList. We must NOT auto-load here, because
+        // ViewMode's searchParams come from the factory's initial value and
+        // don't reflect the user's live `currentSearchParams` — running a load
+        // would either query with stale/empty params (returning "everything")
+        // or never react to search-condition changes.
+        if (viewModeObj.isSearchMode()) {
+            return;
+        }
+
         // View cache lookup: if we have a snapshot for this view, restore
         // it synchronously and skip the backend round-trip.
         if (photosCache && currentViewKey && setAllPhotosForCurrentFetch) {
@@ -71,7 +81,7 @@ export function useViewModeSync({
 
         // Load via the same path as the manual refresh button (applyFilters=true)
         // — routes everything through loadViaUnifiedAPI which handles all view
-        // modes uniformly (album/tag/trash/search/date/recent/burst).
+        // modes uniformly (album/tag/trash/date/recent/burst).
         loadAllPhotosBasedOnViewMode(viewModeObj, appConfig, false);
     }, [
         viewMode,
