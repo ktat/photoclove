@@ -9,7 +9,7 @@
  * - Sets side menu visibility based on view mode
  */
 
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 import { ViewMode } from '../domain/ViewMode.js';
 import { VIEW_MODES } from '../constants/viewModes.js';
 import { logger } from '../services/LoggerService.js';
@@ -41,7 +41,13 @@ export function useViewModeSync({
     // Stringify searchParams to use in dependency array (avoid reference changes)
     const searchParamsStr = currentSearchParams ? JSON.stringify(currentSearchParams) : null;
 
-    useEffect(() => {
+    // useLayoutEffect (not useEffect): we need the photos clear and
+    // photoLoading=true to commit *before* the browser paints. Otherwise,
+    // there is a one-frame window where viewMode has switched (e.g. to
+    // 'trash') but allPhotos still holds the previous view's photos OR is
+    // []with photoLoading=false — either flashes "Trash is Empty" or stale
+    // photos before the loading overlay appears.
+    useLayoutEffect(() => {
         if (!viewMode || !viewModeObj) {
             return;
         }
