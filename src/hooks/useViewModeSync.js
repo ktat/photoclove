@@ -43,19 +43,21 @@ export function useViewModeSync({
     // Stringify searchParams to use in dependency array (avoid reference changes)
     const searchParamsStr = currentSearchParams ? JSON.stringify(currentSearchParams) : null;
 
-    // useLayoutEffect: minimal synchronous prep — flip photoLoading=true
-    // before the browser paints so the user sees the loading overlay
-    // immediately (not stale photos / black grid / "Trash is Empty"). This
-    // effect must do as little work as possible, otherwise it blocks paint
-    // and the loading-overlay CSS animation freezes for a noticeable beat.
+    // useLayoutEffect: synchronous photo-state setup before the browser
+    // paints. Doing this in useEffect (post-paint) leaves a one-frame
+    // window where the previous view's photos are visible under the new
+    // view's header. Doing it here keeps the underlying allPhotos /
+    // isFetched / photoLoading aligned with the new viewKey before the
+    // browser ever shows the new mode.
+    //
+    // Heavy / async work (refreshPhotosOnly) stays in the post-paint
+    // useEffect below, otherwise the loading-overlay CSS animation
+    // freezes during the synchronous render cascade.
     useLayoutEffect(() => {
         if (!viewMode || !viewModeObj) return;
         if (viewModeObj.isSearchMode?.()) return;
 
-        // Non-loadable modes (HOME / list views) don't fetch photos, so
-        // there's no load to indicate. Force-clear photoLoading in case a
-        // previous mode left it stuck (otherwise the loading overlay
-        // sticks forever for these modes).
+        // Non-loadable modes (HOME / list views) don't fetch photos.
         const isNonLoadableMode =
             viewMode === VIEW_MODES.HOME ||
             viewMode === VIEW_MODES.ALBUM_LIST ||
@@ -66,22 +68,34 @@ export function useViewModeSync({
             return;
         }
 
-        // Cache hit: previous photos restored synchronously by the main
-        // effect; clear any lingering photoLoading from a previous mode.
-        if (photosCache && currentViewKey) {
+        // Cache hit: restore the cached photos synchronously so the new
+        // view's grid renders immediately with its own data — no flash
+        // of the previous view's photos.
+        if (photosCache && currentViewKey && setAllPhotosForCurrentFetch) {
             const cached = photosCache.get(currentViewKey);
             if (cached && cached.length > 0) {
+                setAllPhotosForCurrentFetch(cached);
+                if (setIsFetched) setIsFetched(true);
                 if (setPhotoLoading) setPhotoLoading(false);
                 return;
             }
         }
-        if (setPhotoLoading) setPhotoLoading(true);
-    }, [currentViewKey, viewMode, viewModeObj, photosCache, setPhotoLoading]);
 
-    // Main effect: side menu, photo state setup, and the actual fetch.
-    // Runs after paint so the loading overlay is already on screen — the
-    // backend round-trip and any heavy state updates here don't freeze the
-    // overlay's CSS animation.
+        // Cache miss: clear any stale photos and show the loading overlay
+        // before paint. The actual fetch fires in the useEffect below.
+        if (setAllPhotosForCurrentFetch) setAllPhotosForCurrentFetch([]);
+        if (setIsFetched) setIsFetched(false);
+        if (setPhotoLoading) setPhotoLoading(true);
+    }, [currentViewKey, viewMode, viewModeObj, photosCache, setPhotoLoading, setAllPhotosForCurrentFetch, setIsFetched]);
+
+    // Main effect: side menu + actual fetch. Runs after paint so the
+    // loading overlay is already on screen — the backend round-trip
+    // doesn't freeze the overlay's CSS animation.
+    //
+    // Note: photo state (allPhotos, isFetched, photoLoading) is set up
+    // synchronously in the useLayoutEffect above before paint. This
+    // effect just kicks off the fetch (and handles search-mode-skip,
+    // non-loadable-mode-skip, side-menu visibility).
     useEffect(() => {
         if (!viewMode || !viewModeObj) return;
 
@@ -94,10 +108,9 @@ export function useViewModeSync({
         // with stale/empty params.
         if (viewModeObj.isSearchMode()) return;
 
-        // Non-loadable modes (HOME, list views) don't fetch photos —
-        // mark them as "fetched" up front so the empty-state UI / sidebar
-        // can render normally instead of staying blank waiting for a
-        // load that will never come.
+        // Non-loadable modes don't fetch but still need isFetched=true so
+        // the empty-state / sidebar UI can render rather than waiting on
+        // a load that won't happen.
         const isNonLoadableMode =
             viewMode === VIEW_MODES.HOME ||
             viewMode === VIEW_MODES.ALBUM_LIST ||
@@ -108,29 +121,22 @@ export function useViewModeSync({
             return;
         }
 
-        // View cache lookup: synchronous restore on hit.
-        if (photosCache && currentViewKey && setAllPhotosForCurrentFetch) {
+        // Cache hit was already handled in useLayoutEffect (photos
+        // restored, isFetched=true, photoLoading=false). Skip fetching.
+        if (photosCache && currentViewKey) {
             const cached = photosCache.get(currentViewKey);
             if (cached && cached.length > 0) {
-                logger.debug('useViewModeSync', 'cache_hit', 'Restoring photos from view cache', {
+                logger.debug('useViewModeSync', 'cache_hit', 'Photos restored from view cache (in layout effect)', {
                     viewKey: currentViewKey,
                     count: cached.length,
                 });
-                setAllPhotosForCurrentFetch(cached);
-                if (setIsFetched) setIsFetched(true);
                 return;
             }
         }
 
-        // Cache miss. Clear the previous view's photos so the grid behind
-        // the loading overlay doesn't briefly show stale data.
-        if (setAllPhotosForCurrentFetch) setAllPhotosForCurrentFetch([]);
-        // isFetched=false suppresses the empty-state UI until the fetch
-        // confirms there really is nothing to show.
-        if (setIsFetched) setIsFetched(false);
-
-        // refreshPhotosOnly wraps the load with MIN_LOADING_TIME=500ms so
-        // the loading overlay is visible long enough to be perceptible.
+        // Cache miss: kick off the fetch. refreshPhotosOnly wraps the
+        // load with MIN_LOADING_TIME=500ms so the overlay is visible
+        // long enough to be perceptible.
         refreshPhotosOnly();
     }, [
         viewMode,
