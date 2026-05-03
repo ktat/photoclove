@@ -3,6 +3,7 @@
  */
 import { useMemo } from 'react';
 import { convertJSONToPhotoEntities } from '../utils/PhotoProcessingUtils.js';
+import { getPhotoSortComparator } from '../utils/PhotoSort.js';
 import { logger } from '../services/LoggerService.js';
 
 /**
@@ -38,13 +39,10 @@ export function useFilteredPhotos({
         });
 
         const photosWithMethods = convertJSONToPhotoEntities(sourcePhotos, appConfig);
-
-        // Apply frontend filters
         let result = applyFiltersWithConfig(photosWithMethods);
 
-        // Apply frontend sorting for import mode
         if (viewModeObj?.isImportMode?.()) {
-            const sortComparator = getImportSortComparator(importSortOfPhotos);
+            const sortComparator = getPhotoSortComparator(importSortOfPhotos);
             if (sortComparator) {
                 result = [...result].sort(sortComparator);
                 logger.debug('useFilteredPhotos', 'import_sorted', 'Applied frontend sort to import photos', {
@@ -61,37 +59,6 @@ export function useFilteredPhotos({
 
         return result;
     }, [viewModeObj, allPhotosForCurrentFetch, applyFiltersWithConfig, importSortOfPhotos, sortOfPhotos, appConfig]);
-}
-
-/**
- * Get sort comparator for import mode
- * @param {number} sortValue - Sort value
- * @returns {Function|null} Comparator function or null
- */
-function getImportSortComparator(sortValue) {
-    const comparators = {
-        2: (a, b) => {
-            // Added Time (desc) - newest first
-            const aTime = a.created_at || '';
-            const bTime = b.created_at || '';
-            return bTime.localeCompare(aTime);
-        },
-        3: (a, b) => {
-            // Added Time (asc) - oldest first
-            const aTime = a.created_at || '';
-            const bTime = b.created_at || '';
-            return aTime.localeCompare(bTime);
-        },
-        6: (a, b) => {
-            // File Name (desc) - Z→A
-            return (b.name || '').localeCompare(a.name || '');
-        },
-        7: (a, b) => {
-            // File Name (asc) - A→Z
-            return (a.name || '').localeCompare(b.name || '');
-        }
-    };
-    return comparators[sortValue] || null;
 }
 
 export default useFilteredPhotos;
