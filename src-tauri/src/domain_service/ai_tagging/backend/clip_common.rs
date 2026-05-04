@@ -365,17 +365,26 @@ impl<C: ClipModelConfig> BaseClipClassifier<C> {
 
     /// Load pre-computed text embeddings from JSON file
     fn load_precomputed_embeddings(&mut self) -> Result<bool, String> {
-        let embeddings_path = self.models_dir.join(C::embeddings_filename());
+        let filename = C::embeddings_filename();
+        let embeddings_path = match super::model_manager::find_model_file(filename) {
+            Some(path) => path,
+            None => {
+                log::debug!(
+                    target: "ai_tagging",
+                    "precomputed_embeddings_not_found; backend={}; filename={}",
+                    C::BACKEND_NAME,
+                    filename
+                );
+                return Ok(false);
+            }
+        };
 
-        if !embeddings_path.exists() {
-            log::debug!(
-                target: "ai_tagging",
-                "precomputed_embeddings_not_found; backend={}; path={}",
-                C::BACKEND_NAME,
-                embeddings_path.display()
-            );
-            return Ok(false);
-        }
+        log::info!(
+            target: "ai_tagging",
+            "loading_precomputed_embeddings; backend={}; path={}",
+            C::BACKEND_NAME,
+            embeddings_path.display()
+        );
 
         let data = std::fs::read_to_string(&embeddings_path)
             .map_err(|e| format!("Failed to read embeddings file: {}", e))?;

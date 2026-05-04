@@ -45,7 +45,8 @@
       "signingIdentity": null
     },
     "resources": [
-      "models/*.onnx"
+      "models/*.onnx",
+      "models/*.json"
     ],
     "shortDescription": "PhotoClove - Photo viewer and manager"
   },

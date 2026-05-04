@@ -5,6 +5,49 @@
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
+/// Locate a model-related file across all known install locations.
+///
+/// Search order: app data dir → bundled resources next to the executable →
+/// development tree (`src-tauri/models/`). Used for both ONNX model files and
+/// pre-computed text embedding JSONs so they resolve consistently.
+pub fn find_model_file(filename: &str) -> Option<PathBuf> {
+    if let Some(data_dir) = dirs::data_local_dir() {
+        let path = data_dir.join("photoclove").join("models").join(filename);
+        if path.exists() {
+            return Some(path);
+        }
+    }
+
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            let candidates = [
+                exe_dir.join("models").join(filename),
+                exe_dir.join("../Resources/models").join(filename),
+                exe_dir.join("../share/photoclove/models").join(filename),
+            ];
+            for path in &candidates {
+                if path.exists() {
+                    return Some(path.clone());
+                }
+            }
+        }
+    }
+
+    if let Ok(cwd) = std::env::current_dir() {
+        let candidates = [
+            cwd.join("models").join(filename),
+            cwd.join("src-tauri/models").join(filename),
+        ];
+        for path in &candidates {
+            if path.exists() {
+                return Some(path.clone());
+            }
+        }
+    }
+
+    None
+}
+
 /// Information about an available AI model
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelInfo {
