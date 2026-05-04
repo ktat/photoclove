@@ -44,6 +44,8 @@ export function usePhotoOperations({
     handleError,
     addFooterMessage,
     loadAlbums,
+    updateAlbumsList,
+    setFilteredAlbums,
     loadTags,
     loadFaces,
     currentAlbumId,
@@ -302,13 +304,22 @@ export function usePhotoOperations({
         }
     }, [selectedPersons, loadFaces, clearPersonSelection, addFooterMessage, handleError, dialog]);
 
-    // Handle album deletion (navigation logic)
+    // Handle album deletion: locally remove from album lists + clear
+    // collection service cache. Avoids a backend refetch (Phase 2).
     const handleAlbumDelete = useCallback((deletedAlbumId) => {
         if (deletedAlbumId === currentAlbumId) {
+            // Switching out of the deleted album also auto-closes any
+            // open PhotoDisplay via useAutoClosePhotoDisplayEffect.
             toggleAlbumListMode();
         }
-        loadAlbums();
-    }, [currentAlbumId, toggleAlbumListMode, loadAlbums]);
+        if (updateAlbumsList) {
+            updateAlbumsList(prev => prev.filter(a => a.id !== deletedAlbumId));
+        }
+        if (setFilteredAlbums) {
+            setFilteredAlbums(prev => prev.filter(a => a.id !== deletedAlbumId));
+        }
+        unifiedCollectionService.clearCache();
+    }, [currentAlbumId, toggleAlbumListMode, updateAlbumsList, setFilteredAlbums]);
 
     // Album-photo relationship operations
     const handleAddToAlbum = useCallback(async (photoPath, albumId) => {

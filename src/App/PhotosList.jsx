@@ -340,7 +340,7 @@ function PhotosList({
         selectedPersons, setSelectedPersons, selectedUnknownFaces, setSelectedUnknownFaces,
         tagsList, albumsList, appConfig, currentViewMode: viewMode,
         currentDate, currentAlbumName, currentTagName, searchQuery, handleError,
-        addFooterMessage, loadAlbums, loadTags, loadFaces: reloadFaces, currentAlbumId, toggleAlbumListMode,
+        addFooterMessage, loadAlbums, updateAlbumsList, setFilteredAlbums, loadTags, loadFaces: reloadFaces, currentAlbumId, toggleAlbumListMode,
         viewModeObj, photosListMiniAllPhotos, setPhotosListMiniAllPhotos,
         allPhotosForCurrentFetch, setAllPhotosForCurrentFetch,
         photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex,
