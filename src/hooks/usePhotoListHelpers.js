@@ -146,6 +146,42 @@ export function usePhotoListHelpers({
     }, [photosListMiniAllPhotos, setPhotosListMiniAllPhotos, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch, patchCacheCurrentView]);
 
     /**
+     * Update tags for a photo in both the grid (allPhotosForCurrentFetch),
+     * the navigation strip (photosListMiniAllPhotos), and the View Cache.
+     *
+     * Tag arrays don't change array length or sort order, so navigation
+     * indices stay valid. The hasTagFilter filter (in useFilteredPhotos)
+     * will exclude/include the photo automatically post-close.
+     *
+     * @param {string} photoPath
+     * @param {Array<{id, name, color}>} tagsArray
+     */
+    const updatePhotoTags = useCallback((photoPath, tagsArray) => {
+        const updatedPhotos = photosListMiniAllPhotos.map(photoJSON => {
+            if (photoJSON.originalPath === photoPath) {
+                return { ...photoJSON, tags: tagsArray };
+            }
+            return photoJSON;
+        });
+        setPhotosListMiniAllPhotos(updatedPhotos);
+
+        const updatedAllPhotos = allPhotosForCurrentFetch.map(photo => {
+            if (photo.originalPath === photoPath) {
+                return { ...photo, tags: tagsArray };
+            }
+            return photo;
+        });
+        setAllPhotosForCurrentFetch(updatedAllPhotos);
+
+        patchCacheCurrentView(prev => prev.map(photo => {
+            if (photo.originalPath === photoPath) {
+                return { ...photo, tags: tagsArray };
+            }
+            return photo;
+        }));
+    }, [photosListMiniAllPhotos, setPhotosListMiniAllPhotos, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch, patchCacheCurrentView]);
+
+    /**
      * Refresh album list after metadata update.
      *
      * Album-level metadata changes (cover, name, description) don't change
@@ -205,6 +241,7 @@ export function usePhotoListHelpers({
     return {
         setStarWithUpdate,
         updatePhotoComment,
+        updatePhotoTags,
         handleAlbumUpdate,
         addSelection,
         toggleSelection,
