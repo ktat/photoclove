@@ -1,7 +1,7 @@
 # Instant Return From PhotoDisplay (Phase 2)
 
 **Date:** 2026-05-03
-**Status:** Design (approved scope, awaiting implementation plan; depends on Phase 1)
+**Status:** Implemented (2026-05-04). Plan: `docs/superpowers/plans/2026-05-04-phase2-instant-photo-display-close.md`. Last code commit: 54d5893b.
 **Depends on:** [2026-05-03-photos-state-unification-design.md](./2026-05-03-photos-state-unification-design.md)
 
 ## 背景と動機
