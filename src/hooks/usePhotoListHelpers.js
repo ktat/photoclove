@@ -198,30 +198,6 @@ export function usePhotoListHelpers({
     }, [photosListMiniAllPhotos, setPhotosListMiniAllPhotos, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch, patchCacheCurrentView]);
 
     /**
-     * Update album membership for a photo. albumIds is the FULL new list
-     * of album IDs the photo belongs to. inAlbum is a derived "membership
-     * in any album" boolean used by some filters / UI badges.
-     *
-     * Note: Photo entity currently models a single albumId (string|null).
-     * For multi-album membership the helper takes the first id; if the
-     * Photo entity is later extended to multi-album the helper should be
-     * updated accordingly.
-     *
-     * @param {string} photoPath
-     * @param {string[]} albumIds
-     */
-    const updatePhotoAlbums = useCallback((photoPath, albumIds) => {
-        const inAlbum = albumIds.length > 0;
-        const apply = (photo) => photo.originalPath === photoPath
-            ? { ...photo, albumId: albumIds[0] ?? null, inAlbum }
-            : photo;
-
-        setPhotosListMiniAllPhotos(prev => prev.map(apply));
-        setAllPhotosForCurrentFetch(prev => prev.map(apply));
-        patchCacheCurrentView(prev => prev.map(apply));
-    }, [setPhotosListMiniAllPhotos, setAllPhotosForCurrentFetch, patchCacheCurrentView]);
-
-    /**
      * Update cssStyle (saved CSS transform/filter/clip-path) for a photo.
      * Persists to backend separately (save_css_style); this helper only
      * updates in-memory state so the grid reflects the change on close
@@ -391,7 +367,6 @@ export function usePhotoListHelpers({
         setStarWithUpdate,
         updatePhotoComment,
         updatePhotoTags,
-        updatePhotoAlbums,
         updatePhotoCssStyle,
         addPhotoToList,
         handleAlbumUpdate,
