@@ -212,6 +212,9 @@ function PhotoEditor(props) {
                 cssStyle: css
             });
             setSavedCssStyle(css);
+            // Phase 2: reflect cssStyle in grid/mini/cache so close returns
+            // instantly without a refetch.
+            props.onCssStyleUpdate?.(currentPhotoPath, css);
             // Reset parent state - changes are now saved
             props.setEditorHasUnsavedChanges?.(false);
             props.addFooterMessage('editor', t('photoEditor.styleApplied'), false, 3000);

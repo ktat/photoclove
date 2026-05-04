@@ -206,6 +206,33 @@ export function usePhotoListHelpers({
     }, [setPhotosListMiniAllPhotos, setAllPhotosForCurrentFetch, patchCacheCurrentView]);
 
     /**
+     * Update cssStyle (saved CSS transform/filter/clip-path) for a photo.
+     * Persists to backend separately (save_css_style); this helper only
+     * updates in-memory state so the grid reflects the change on close
+     * without a refetch.
+     *
+     * Sets BOTH css_style (snake_case, used in JSON-shape arrays like
+     * photosListMiniAllPhotos) and cssStyle (camelCase, used by Photo
+     * entity internals via convertJSONToPhotoEntities).
+     *
+     * Backend regenerates the thumbnail asynchronously. Grid display
+     * reads cssStyle live from in-memory data so the visual update
+     * lands immediately on close.
+     *
+     * @param {string} photoPath
+     * @param {string} css
+     */
+    const updatePhotoCssStyle = useCallback((photoPath, css) => {
+        const apply = (photo) => photo.originalPath === photoPath
+            ? { ...photo, css_style: css, cssStyle: css }
+            : photo;
+
+        setPhotosListMiniAllPhotos(prev => prev.map(apply));
+        setAllPhotosForCurrentFetch(prev => prev.map(apply));
+        patchCacheCurrentView(prev => prev.map(apply));
+    }, [setPhotosListMiniAllPhotos, setAllPhotosForCurrentFetch, patchCacheCurrentView]);
+
+    /**
      * Refresh album list after metadata update.
      *
      * Album-level metadata changes (cover, name, description) don't change
@@ -267,6 +294,7 @@ export function usePhotoListHelpers({
         updatePhotoComment,
         updatePhotoTags,
         updatePhotoAlbums,
+        updatePhotoCssStyle,
         handleAlbumUpdate,
         addSelection,
         toggleSelection,

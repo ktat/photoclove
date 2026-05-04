@@ -404,6 +404,7 @@ function PhotoOption(props) {
                             showSideMenu={props.showSideMenu}
                             addFooterMessage={props.addFooterMessage}
                             onPhotosRefresh={props.onPhotosRefresh}
+                            onCssStyleUpdate={props.onCssStyleUpdate}
                             setEditorHasUnsavedChanges={props.setEditorHasUnsavedChanges}
                         />
                     )}
