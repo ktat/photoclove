@@ -41,7 +41,17 @@ export function useTrashOperations({
     reloadCurrentModeData,
     updatePhotosAfterTrashOperation,
     handleError,
-    addFooterMessage
+    addFooterMessage,
+    // Phase 2: extra state for PhotoDisplay-aware rollback
+    currentPhoto,
+    setCurrentPhoto,
+    currentPhotoIndex,
+    setCurrentPhotoIndex,
+    photosListMiniAllPhotos,
+    setPhotosListMiniAllPhotos,
+    photosListMiniCurrentIndex,
+    setPhotosListMiniCurrentIndex,
+    handlePhotoRemovalNavigationBulk
 }) {
     /**
      * Generic handler to delete photos with date count updates
@@ -80,8 +90,18 @@ export function useTrashOperations({
             const deletedPaths = [...paths];
             const photosBackup = allPhotosForCurrentFetch ? [...allPhotosForCurrentFetch] : null;
 
-            // Optimistic UI update - remove deleted photos from view
-            if (allPhotosForCurrentFetch && setAllPhotosForCurrentFetch) {
+            // Phase 2: full rollback context for PhotoDisplay-aware bulk delete
+            const miniPhotosBackup = photosListMiniAllPhotos ? [...photosListMiniAllPhotos] : null;
+            const miniIndexBackup = photosListMiniCurrentIndex;
+            const currentIndexBackup = currentPhotoIndex;
+            const currentPhotoBackup = currentPhoto;
+
+            // If PhotoDisplay is open, use the bulk navigation helper so the mini
+            // list + currentPhotoIndex are also adjusted. Otherwise fall back to
+            // the existing optimistic filter on allPhotosForCurrentFetch only.
+            if (currentPhoto && handlePhotoRemovalNavigationBulk) {
+                handlePhotoRemovalNavigationBulk(deletedPaths);
+            } else if (allPhotosForCurrentFetch && setAllPhotosForCurrentFetch) {
                 const updatedPhotos = allPhotosForCurrentFetch.filter(
                     photo => !deletedPaths.includes(photo.originalPath)
                 );
@@ -160,6 +180,18 @@ export function useTrashOperations({
                 if (photosBackup && setAllPhotosForCurrentFetch) {
                     setAllPhotosForCurrentFetch(photosBackup);
                 }
+                if (miniPhotosBackup && setPhotosListMiniAllPhotos) {
+                    setPhotosListMiniAllPhotos(miniPhotosBackup);
+                }
+                if (setPhotosListMiniCurrentIndex && miniIndexBackup !== undefined) {
+                    setPhotosListMiniCurrentIndex(miniIndexBackup);
+                }
+                if (setCurrentPhotoIndex && currentIndexBackup !== undefined) {
+                    setCurrentPhotoIndex(currentIndexBackup);
+                }
+                if (setCurrentPhoto && currentPhotoBackup) {
+                    setCurrentPhoto(currentPhotoBackup);
+                }
                 addFooterMessage('trash', 'Delete operation failed. Reloading...');
 
                 // Reload to ensure UI matches database state
@@ -188,7 +220,16 @@ export function useTrashOperations({
         updateDateList,
         reloadCurrentModeData,
         handleError,
-        addFooterMessage
+        addFooterMessage,
+        currentPhoto,
+        setCurrentPhoto,
+        currentPhotoIndex,
+        setCurrentPhotoIndex,
+        photosListMiniAllPhotos,
+        setPhotosListMiniAllPhotos,
+        photosListMiniCurrentIndex,
+        setPhotosListMiniCurrentIndex,
+        handlePhotoRemovalNavigationBulk
     ]);
 
     /**

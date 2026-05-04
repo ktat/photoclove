@@ -335,7 +335,8 @@ function PhotosList({
         deleteSelectedAlbums, handleAlbumDelete, handleTagSelection, clearTagSelection,
         deleteSelectedTags, handlePersonSelection, clearPersonSelection,
         deleteSelectedPersons, handleUnknownFaceSelection, clearUnknownFaceSelection,
-        deleteUnknownFacesBatch, assignUnknownFacesToPerson, removePhotoFromList
+        deleteUnknownFacesBatch, assignUnknownFacesToPerson, removePhotoFromList,
+        handlePhotoRemovalNavigationBulk
     } = usePhotoOperations({
         selectedAlbums, setSelectedAlbums, selectedTags, setSelectedTags,
         selectedPersons, setSelectedPersons, selectedUnknownFaces, setSelectedUnknownFaces,
@@ -417,7 +418,13 @@ function PhotosList({
     const { deletePhotos: deletePhotosHandler, restorePhotos: restorePhotosHandler } = useTrashOperations({
         allPhotosForCurrentFetch, setAllPhotosForCurrentFetch, photoSelection,
         clearPhotoSelection, dateNum, updateDateNum, dateList, updateDateList,
-        reloadCurrentModeData, updatePhotosAfterTrashOperation, handleError, addFooterMessage
+        reloadCurrentModeData, updatePhotosAfterTrashOperation, handleError, addFooterMessage,
+        // Phase 2: PhotoDisplay-aware rollback
+        currentPhoto, setCurrentPhoto,
+        currentPhotoIndex, setCurrentPhotoIndex,
+        photosListMiniAllPhotos, setPhotosListMiniAllPhotos,
+        photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex,
+        handlePhotoRemovalNavigationBulk
     });
 
     // Photo list helpers

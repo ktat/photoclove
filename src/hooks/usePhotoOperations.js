@@ -132,6 +132,81 @@ export function usePhotoOperations({
         closePhotoDisplay
     ]);
 
+    /**
+     * Bulk version of handlePhotoRemovalNavigation: removes multiple
+     * photos by path, recomputes navigation index in O(N+M).
+     *
+     * @param {string[]} paths - paths to remove
+     * @returns {{ removedCount: number, newCurrentIndex: number } | null}
+     *          state for caller's logging / rollback context
+     */
+    const handlePhotoRemovalNavigationBulk = useCallback((paths) => {
+        if (!paths || paths.length === 0) return null;
+        if (!photosListMiniAllPhotos || photosListMiniAllPhotos.length === 0) return null;
+
+        const pathSet = new Set(paths);
+        let removedBefore = 0;
+        let currentIsRemoved = false;
+
+        for (let i = 0; i < photosListMiniAllPhotos.length; i++) {
+            const path = getPhotoPath(photosListMiniAllPhotos[i]);
+            if (pathSet.has(path)) {
+                if (typeof currentPhotoIndex === 'number') {
+                    if (i < currentPhotoIndex) removedBefore++;
+                    else if (i === currentPhotoIndex) currentIsRemoved = true;
+                }
+            }
+        }
+
+        const newAllPhotos = photosListMiniAllPhotos.filter(
+            p => !pathSet.has(getPhotoPath(p))
+        );
+        setPhotosListMiniAllPhotos(newAllPhotos);
+
+        if (allPhotosForCurrentFetch && setAllPhotosForCurrentFetch) {
+            const updatedAllPhotos = allPhotosForCurrentFetch.filter(
+                photo => !pathSet.has(getPhotoPath(photo))
+            );
+            setAllPhotosForCurrentFetch(updatedAllPhotos);
+        }
+
+        if (newAllPhotos.length === 0) {
+            if (closePhotoDisplay) closePhotoDisplay();
+            return { removedCount: paths.length, newCurrentIndex: -1 };
+        }
+
+        const baseIdx = (typeof currentPhotoIndex === 'number') ? currentPhotoIndex : 0;
+        let newIndex;
+        if (currentIsRemoved) {
+            // Same logic as single-removal: stay at index (= next photo)
+            // or step back if we were at the end.
+            const proposed = baseIdx - removedBefore;
+            newIndex = proposed >= newAllPhotos.length ? newAllPhotos.length - 1 : proposed;
+        } else {
+            newIndex = baseIdx - removedBefore;
+        }
+
+        const newPhoto = newAllPhotos[newIndex];
+        if (newPhoto) {
+            const newPhotoEntity = newPhoto instanceof Photo ? newPhoto : Photo.fromJSON(newPhoto);
+            if (setPhotosListMiniCurrentIndex) setPhotosListMiniCurrentIndex(newIndex);
+            if (setCurrentPhoto) setCurrentPhoto(newPhotoEntity);
+            if (setCurrentPhotoIndex) setCurrentPhotoIndex(newIndex);
+        }
+
+        return { removedCount: paths.length, newCurrentIndex: newIndex };
+    }, [
+        photosListMiniAllPhotos,
+        setPhotosListMiniAllPhotos,
+        allPhotosForCurrentFetch,
+        setAllPhotosForCurrentFetch,
+        setPhotosListMiniCurrentIndex,
+        setCurrentPhoto,
+        setCurrentPhotoIndex,
+        currentPhotoIndex,
+        closePhotoDisplay
+    ]);
+
     // Album selection handlers
     const handleAlbumSelection = useCallback((albumId, isSelected) => {
         const newSelection = isSelected
@@ -483,6 +558,7 @@ export function usePhotoOperations({
 
         // Photo list management
         removePhotoFromList,
+        handlePhotoRemovalNavigationBulk,
 
         // Photo operations
         permanentlyDeletePhoto,
