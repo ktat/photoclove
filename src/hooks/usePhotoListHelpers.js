@@ -95,22 +95,20 @@ export function usePhotoListHelpers({
         }
 
         // Update the star value in photosListMiniAllPhotos
-        const updatedPhotos = photosListMiniAllPhotos.map(photoJSON => {
+        setPhotosListMiniAllPhotos(prev => prev.map(photoJSON => {
             if (photoJSON.originalPath === currentPhoto?.originalPath) {
                 return { ...photoJSON, star: starValue };
             }
             return photoJSON;
-        });
-        setPhotosListMiniAllPhotos(updatedPhotos);
+        }));
 
         // Also update allPhotosForCurrentFetch to trigger re-filtering
-        const updatedAllPhotos = allPhotosForCurrentFetch.map(photo => {
+        setAllPhotosForCurrentFetch(prev => prev.map(photo => {
             if (photo.originalPath === currentPhoto?.originalPath) {
                 return { ...photo, star: starValue };
             }
             return photo;
-        });
-        setAllPhotosForCurrentFetch(updatedAllPhotos);
+        }));
 
         // Keep the View Cache for this view in sync so a future switch
         // back doesn't restore the pre-edit star value.
@@ -126,7 +124,7 @@ export function usePhotoListHelpers({
         if (isStarSort(sortOfPhotos) && setSortDirty) {
             setSortDirty(true);
         }
-    }, [setStar, photosListMiniAllPhotos, setPhotosListMiniAllPhotos, currentPhoto, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch, patchCacheCurrentView, sortOfPhotos, setSortDirty]);
+    }, [setStar, setPhotosListMiniAllPhotos, currentPhoto, setAllPhotosForCurrentFetch, patchCacheCurrentView, sortOfPhotos, setSortDirty]);
 
     /**
      * Update comment in photo lists
