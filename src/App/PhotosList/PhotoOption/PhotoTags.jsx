@@ -5,6 +5,7 @@ import { logger } from '../../../services/LoggerService.js';
 import { invokeWithErrorHandling } from '../../../services/TauriService.js';
 import TagSelector from '../../../components/TagSelector.jsx';
 import styles from './PhotoTags.module.css';
+import { unifiedCollectionService } from '../../../services/UnifiedCollectionService.js';
 
 /**
  * Check if a tag is an AI-generated tag
@@ -40,7 +41,7 @@ const parseConfidence = (metadata) => {
     }
 };
 
-function PhotoTags({ currentPhoto, addFooterMessage, onPhotosRefresh }) {
+function PhotoTags({ currentPhoto, addFooterMessage, onTagsChanged }) {
     const { t } = useTranslation('common');
     const currentPhotoPath = currentPhoto?.originalPath;
     const isRaw = currentPhoto?.isRawFormat?.() ?? false;
@@ -102,11 +103,25 @@ function PhotoTags({ currentPhoto, addFooterMessage, onPhotosRefresh }) {
         setPhotoTags(newTags);
         addFooterMessage?.(t('photoTags.tagsUpdated', { count: newTags.length }));
 
-        // Note: No need to refresh photos list in PhotoViewer mode
-        // Grid view will be updated when user returns to grid or uses bulk tag operations
+        // Propagate to grid/mini state so close returns instantly with the
+        // change visible (Phase 2: replaces onPhotosRefresh refetch).
+        if (currentPhotoPath && onTagsChanged) {
+            onTagsChanged(currentPhotoPath, newTags);
+        }
+
+        // If a brand-new tag was created via TagSelector, the unified
+        // collection service cache is now stale. Clearing it forces a
+        // refetch on next access (30s TTL applies anyway). New-tag creation
+        // is rare so a full clear is the simplest correct option.
+        const hasNewTag = newTags.some(tag => !!tag.justCreated);
+        if (hasNewTag) {
+            unifiedCollectionService.clearCache();
+        }
+
         logger.info('PhotoTags', 'tags_updated', 'Photo tags updated in viewer', {
             photoPath: currentPhotoPath,
-            tagCount: newTags.length
+            tagCount: newTags.length,
+            hasNewTag
         });
     };
 

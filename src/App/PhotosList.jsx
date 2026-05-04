@@ -421,7 +421,7 @@ function PhotosList({
 
     // Photo list helpers
     const {
-        setStarWithUpdate, updatePhotoComment, handleAlbumUpdate,
+        setStarWithUpdate, updatePhotoComment, updatePhotoTags, handleAlbumUpdate,
         addSelection, toggleSelection, selectAllPhotoToSelection
     } = usePhotoListHelpers({
         setStar, photosListMiniAllPhotos, setPhotosListMiniAllPhotos, currentPhoto,
@@ -615,6 +615,7 @@ function PhotosList({
                         searchTools={searchTools} addFooterMessage={handlers.addFooterMessage}
                         imgCacheMap={imgCacheMap} setStar={setStarWithUpdate} star={star}
                         onPhotosRefresh={refreshPhotosOnly} onCommentUpdate={updatePhotoComment}
+                        onTagsChanged={updatePhotoTags}
                         onAlbumUpdate={handleAlbumUpdate} onAlbumDelete={handleAlbumDelete}
                         photoSelection={photoSelection} config={appConfig}
                         selectedAlbums={selectedAlbums} selectedTags={selectedTags} selectedPersons={selectedPersons}
