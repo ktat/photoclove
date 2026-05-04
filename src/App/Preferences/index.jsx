@@ -15,6 +15,7 @@ import AITaggingTab from "./tabs/AITaggingTab.jsx";
 import FaceDetectionTab from "./tabs/FaceDetectionTab.jsx";
 import S3BackupTab from "./tabs/S3BackupTab.jsx";
 import PerformanceTab from "./tabs/PerformanceTab.jsx";
+import LoggingTab from "./tabs/LoggingTab.jsx";
 import AdvancedTab from "./tabs/AdvancedTab.jsx";
 import styles from './Preferences.module.css';
 
@@ -199,6 +200,7 @@ function Preferences(props) {
         { id: 'face_detection', label: t('preferences:tabs.faceDetection'), icon: '👤' },
         { id: 's3_backup', label: t('preferences:tabs.s3Backup'), icon: '☁️' },
         { id: 'performance', label: 'Performance', icon: '⚡' },
+        { id: 'logging', label: t('preferences:tabs.logging'), icon: '📝' },
         { id: 'advanced', label: t('preferences:tabs.advanced'), icon: '🔧' }
     ];
 
@@ -257,6 +259,8 @@ function Preferences(props) {
                 );
             case 'performance':
                 return <PerformanceTab config={config} setConfig={setConfig} />;
+            case 'logging':
+                return <LoggingTab config={config} setConfig={setConfig} />;
             case 'advanced':
                 return <AdvancedTab config={config} setConfig={setConfig} useCount={useCount} />;
             default:
