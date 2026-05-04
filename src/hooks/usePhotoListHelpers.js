@@ -272,6 +272,8 @@ export function usePhotoListHelpers({
             workingMini = [...photosListMiniAllPhotos].sort(comparator);
             setAllPhotosForCurrentFetch(workingAll);
             setPhotosListMiniAllPhotos(workingMini);
+            // Cache must also be sorted before the binary-search splice below.
+            patchCacheCurrentView(prev => [...prev].sort(comparator));
             if (setSortDirty) setSortDirty(false);
         }
 
