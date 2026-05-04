@@ -309,11 +309,21 @@ function PhotosList({
     }, [handleAlbumClickOriginal]);
 
     // Photo display hook
+    const patchCacheCurrentViewCb = useCallback((updater) => {
+        if (photosCache?.patch && currentViewKey) {
+            photosCache.patch(currentViewKey, updater);
+        }
+    }, [photosCache, currentViewKey]);
+
     const { displayPhoto, closePhotoDisplay, closeRightColumn } = usePhotoDisplay({
-        photosListMiniAllPhotos, viewModeObj, setCurrentPhoto, setCurrentPhotoIndex,
+        photosListMiniAllPhotos, setPhotosListMiniAllPhotos,
+        setAllPhotosForCurrentFetch,
+        viewModeObj, setCurrentPhoto, setCurrentPhotoIndex,
         setPhotosListMiniCurrentIndex, setPhotosListMiniReread, setShowSideMenu,
         currentPhotoLoadingController, setCurrentPhotoLoadingController,
-        handleError, refreshPhotos: refreshPhotosOnly, photosListMiniReread
+        photosListMiniReread,
+        sortDirty, setSortDirty, sortOfPhotos,
+        patchCacheCurrentView: patchCacheCurrentViewCb
     });
 
     // Face handlers (defined before usePhotoOperations to avoid initialization error)
