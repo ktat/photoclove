@@ -251,7 +251,7 @@ function PhotoEditor(props) {
                 photoPath: currentPhotoPath,
                 cssStyle: css,
                 addFooterMessage: props.addFooterMessage,
-                onPhotosRefresh: props.onPhotosRefresh
+                onAddPhotoToList: props.onAddPhotoToList
             });
         } catch (error) {
             logger.error('PhotoEditor', 'save_styled_copy_failed', 'Failed to save styled copy', { error: error.message });

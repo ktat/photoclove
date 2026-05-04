@@ -13,7 +13,7 @@
 import { useCallback } from 'react';
 import { VIEW_MODES } from '../constants/viewModes.js';
 import { logger } from '../services/LoggerService.js';
-import { isStarSort } from '../utils/PhotoSort.js';
+import { isStarSort, getPhotoSortComparator, findInsertIndex } from '../utils/PhotoSort.js';
 
 /**
  * Custom hook for photo list helper functions
@@ -60,7 +60,14 @@ export function usePhotoListHelpers({
     photosCache,
     currentViewKey,
     sortOfPhotos,
-    setSortDirty
+    setSortDirty,
+    photosListMiniCurrentIndex,
+    setPhotosListMiniCurrentIndex,
+    currentPhotoIndex,
+    setCurrentPhotoIndex,
+    displayedPhotoCount,
+    setDisplayedPhotoCount,
+    sortDirty
 }) {
     // Patch the View Cache entry for the current view so that switching
     // away and back doesn't restore stale (pre-edit) photos. Phase 1
@@ -242,6 +249,86 @@ export function usePhotoListHelpers({
     }, [setPhotosListMiniAllPhotos, setAllPhotosForCurrentFetch, patchCacheCurrentView]);
 
     /**
+     * Insert a newly created photo (Save as Copy result) into both the
+     * grid (allPhotosForCurrentFetch) and the navigation strip
+     * (photosListMiniAllPhotos) at the position dictated by the current
+     * sort. View Cache is also patched. Navigation index is adjusted so
+     * the user stays on their current photo.
+     *
+     * - currentPhoto entity itself is NOT changed (Photo identity preserved).
+     * - If sortDirty is true (star edits made order stale) we apply a local
+     *   re-sort first so binary-search runs against a sorted array.
+     *
+     * @param {object} newPhotoData JSON-shape photo (matches Photo.toJSON())
+     */
+    const addPhotoToList = useCallback((newPhotoData) => {
+        const comparator = getPhotoSortComparator(sortOfPhotos);
+
+        // If sortDirty, re-sort first so insert position is accurate.
+        let workingAll = allPhotosForCurrentFetch;
+        let workingMini = photosListMiniAllPhotos;
+        if (sortDirty && comparator) {
+            workingAll = [...allPhotosForCurrentFetch].sort(comparator);
+            workingMini = [...photosListMiniAllPhotos].sort(comparator);
+            setAllPhotosForCurrentFetch(workingAll);
+            setPhotosListMiniAllPhotos(workingMini);
+            if (setSortDirty) setSortDirty(false);
+        }
+
+        const insertIdxAll = findInsertIndex(workingAll, newPhotoData, comparator);
+        const insertIdxMini = findInsertIndex(workingMini, newPhotoData, comparator);
+
+        setAllPhotosForCurrentFetch(prev => {
+            const next = [...prev];
+            next.splice(insertIdxAll, 0, newPhotoData);
+            return next;
+        });
+        setPhotosListMiniAllPhotos(prev => {
+            const next = [...prev];
+            next.splice(insertIdxMini, 0, newPhotoData);
+            return next;
+        });
+
+        patchCacheCurrentView(prev => {
+            const next = [...prev];
+            const cacheIdx = findInsertIndex(next, newPhotoData, comparator);
+            next.splice(cacheIdx, 0, newPhotoData);
+            return next;
+        });
+
+        // Navigation indices: any insert at or before the current index
+        // pushes the current photo right by 1.
+        if (typeof photosListMiniCurrentIndex === 'number' && insertIdxMini <= photosListMiniCurrentIndex) {
+            setPhotosListMiniCurrentIndex(prev => (prev ?? 0) + 1);
+        }
+        if (typeof currentPhotoIndex === 'number' && insertIdxAll <= currentPhotoIndex) {
+            setCurrentPhotoIndex(prev => (prev ?? 0) + 1);
+        }
+
+        // Infinite scroll: bump display window if insertion landed within
+        // the visible slice so the new photo isn't hidden post-close.
+        if (infiniteScrollEnabled && insertIdxMini < (displayedPhotoCount ?? 0)) {
+            setDisplayedPhotoCount(prev => prev + 1);
+        }
+    }, [
+        sortOfPhotos,
+        sortDirty,
+        setSortDirty,
+        allPhotosForCurrentFetch,
+        setAllPhotosForCurrentFetch,
+        photosListMiniAllPhotos,
+        setPhotosListMiniAllPhotos,
+        patchCacheCurrentView,
+        photosListMiniCurrentIndex,
+        setPhotosListMiniCurrentIndex,
+        currentPhotoIndex,
+        setCurrentPhotoIndex,
+        displayedPhotoCount,
+        setDisplayedPhotoCount,
+        infiniteScrollEnabled
+    ]);
+
+    /**
      * Refresh album list after metadata update.
      *
      * Album-level metadata changes (cover, name, description) don't change
@@ -304,6 +391,7 @@ export function usePhotoListHelpers({
         updatePhotoTags,
         updatePhotoAlbums,
         updatePhotoCssStyle,
+        addPhotoToList,
         handleAlbumUpdate,
         addSelection,
         toggleSelection,

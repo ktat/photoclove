@@ -405,6 +405,7 @@ function PhotoOption(props) {
                             addFooterMessage={props.addFooterMessage}
                             onPhotosRefresh={props.onPhotosRefresh}
                             onCssStyleUpdate={props.onCssStyleUpdate}
+                            onAddPhotoToList={props.onAddPhotoToList}
                             setEditorHasUnsavedChanges={props.setEditorHasUnsavedChanges}
                         />
                     )}

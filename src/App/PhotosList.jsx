@@ -422,7 +422,8 @@ function PhotosList({
 
     // Photo list helpers
     const {
-        setStarWithUpdate, updatePhotoComment, updatePhotoTags, updatePhotoCssStyle, handleAlbumUpdate,
+        setStarWithUpdate, updatePhotoComment, updatePhotoTags, updatePhotoCssStyle,
+        addPhotoToList, handleAlbumUpdate,
         addSelection, toggleSelection, selectAllPhotoToSelection
     } = usePhotoListHelpers({
         setStar, photosListMiniAllPhotos, setPhotosListMiniAllPhotos, currentPhoto,
@@ -430,7 +431,11 @@ function PhotosList({
         loadAlbums, currentAlbumId, loadAlbumPhotos, photoSelectionDict,
         togglePhotoSelection, changeTab, infiniteScrollEnabled, displayedPhotos,
         filteredPhotos, selectAllPhotos, tabClass,
-        photosCache, currentViewKey, sortOfPhotos, setSortDirty
+        photosCache, currentViewKey, sortOfPhotos, setSortDirty,
+        photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex,
+        currentPhotoIndex, setCurrentPhotoIndex,
+        displayedPhotoCount, setDisplayedPhotoCount,
+        sortDirty
     });
 
     // Side menu toggle notification effect
@@ -618,6 +623,7 @@ function PhotosList({
                         onPhotosRefresh={refreshPhotosOnly} onCommentUpdate={updatePhotoComment}
                         onTagsChanged={updatePhotoTags}
                         onCssStyleUpdate={updatePhotoCssStyle}
+                        onAddPhotoToList={addPhotoToList}
                         onAlbumUpdate={handleAlbumUpdate} onAlbumDelete={handleAlbumDelete}
                         photoSelection={photoSelection} config={appConfig}
                         selectedAlbums={selectedAlbums} selectedTags={selectedTags} selectedPersons={selectedPersons}

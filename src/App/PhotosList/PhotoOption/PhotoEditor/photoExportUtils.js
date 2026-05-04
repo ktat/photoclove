@@ -213,44 +213,63 @@ export async function downloadStyledImage({ mainImage, editorStyles, photoPath, 
 }
 
 /**
- * Save styled image as a copy to the photo library
- * @param {Object} options - Save options
- * @param {HTMLImageElement} options.mainImage - The source image element
- * @param {Object} options.editorStyles - The editor styles to apply
- * @param {string} options.photoPath - The original photo path
- * @param {string} options.cssStyle - The CSS style string
- * @param {Function} options.addFooterMessage - Function to show footer message
- * @param {Function} options.onPhotosRefresh - Optional callback to refresh photos
+ * Save styled copy of a photo.
+ * Phase 2: backend returns a JSON object with metadata; we parse and
+ * call onAddPhotoToList to insert in-memory instead of refetching.
+ *
+ * @param {Object} options
+ * @param {HTMLImageElement} options.mainImage
+ * @param {Object} options.editorStyles
+ * @param {string} options.photoPath
+ * @param {string} options.cssStyle
+ * @param {Function} options.addFooterMessage
+ * @param {Function} options.onAddPhotoToList - Receives newPhotoData
+ *        JSON to insert into in-memory lists.
  * @returns {Promise<string>} The new photo path
  */
-export async function saveStyledCopy({ mainImage, editorStyles, photoPath, cssStyle, addFooterMessage, onPhotosRefresh }) {
+export async function saveStyledCopy({ mainImage, editorStyles, photoPath, cssStyle, addFooterMessage, onAddPhotoToList }) {
     try {
         const canvas = await createStyledCanvas(mainImage, editorStyles);
         const base64Data = await canvasToBase64(canvas, 'image/jpeg', 0.95);
 
-        // Send to backend to save as copy
-        const newPhotoPath = await invoke('save_styled_copy_from_frontend', {
+        const resultJson = await invoke('save_styled_copy_from_frontend', {
             originalPhotoPath: photoPath,
             cssStyle: cssStyle,
             imageData: base64Data
         });
 
-        // Extract filename from path for display
+        // Phase 2: backend returns a JSON object with metadata.
+        const result = JSON.parse(resultJson);
+        const newPhotoPath = result.newPhotoPath;
         const newFilename = newPhotoPath.split('/').pop();
         addFooterMessage('editor', `Styled copy created: ${newFilename}`, false, 5000);
 
-        // Refresh photo list to show the new image
-        if (onPhotosRefresh) {
-            onPhotosRefresh();
+        // Insert into the in-memory grid + mini list (replaces old
+        // onPhotosRefresh refetch).
+        if (onAddPhotoToList) {
+            const newPhotoData = {
+                originalPath: newPhotoPath,
+                name: newFilename,
+                created_at: result.createdAt,
+                exif_date_time_original: null,
+                star: result.star ?? 0,
+                comment: result.comment ?? '',
+                tags: result.tags ?? [],
+                css_style: result.cssStyle ?? cssStyle,
+                metaData: result.metaData ?? null,
+                hasThumbnail: result.hasThumbnail ?? false,
+                inAlbum: false,
+                albumId: null,
+            };
+            onAddPhotoToList(newPhotoData);
         }
 
-        // Trigger a manual reload by emitting an event
+        // Refresh date sidebar count.
         if (window.dispatchEvent) {
             window.dispatchEvent(new CustomEvent('refreshDates'));
         }
 
         return newPhotoPath;
-
     } catch (error) {
         logger.error('PhotoExport', 'save_styled_copy_failed', 'Failed to save styled copy', { error: error.message });
         throw error;
