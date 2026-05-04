@@ -25,26 +25,24 @@ export function useFilteredPhotosSync({
     setDisplayedPhotoCount
 }) {
     useEffect(() => {
-        if (filteredPhotos.length > 0 || allPhotosForCurrentFetch.length > 0) {
-            // Convert Photo entities to JSON for PhotosListMini (with safety check)
-            const photosAsJSON = filteredPhotos
-                .filter(photo => photo && typeof photo.toJSON === 'function')
-                .map(photo => photo.toJSON());
+        // Convert Photo entities to JSON for PhotosListMini (with safety check)
+        const photosAsJSON = filteredPhotos
+            .filter(photo => photo && typeof photo.toJSON === 'function')
+            .map(photo => photo.toJSON());
 
-            logger.debug('usePhotoDataSync', 'photos_json_conversion', 'Converting photos to JSON', {
-                totalPhotos: filteredPhotos.length,
-                validPhotos: photosAsJSON.length,
-                skippedPhotos: filteredPhotos.length - photosAsJSON.length,
-                firstPhotoType: filteredPhotos.length > 0 ? filteredPhotos[0].constructor.name : 'none',
-                hasToJSONMethod: filteredPhotos.length > 0 ? typeof filteredPhotos[0].toJSON : 'none'
-            });
+        logger.debug('usePhotoDataSync', 'photos_json_conversion', 'Converting photos to JSON', {
+            totalPhotos: filteredPhotos.length,
+            validPhotos: photosAsJSON.length,
+            skippedPhotos: filteredPhotos.length - photosAsJSON.length,
+            firstPhotoType: filteredPhotos.length > 0 ? filteredPhotos[0].constructor.name : 'none',
+            hasToJSONMethod: filteredPhotos.length > 0 ? typeof filteredPhotos[0].toJSON : 'none'
+        });
 
-            setPhotosListMiniAllPhotos(photosAsJSON);
+        setPhotosListMiniAllPhotos(photosAsJSON);
 
-            // Reset display count for infinite scroll when filters change
-            if (infiniteScrollEnabled) {
-                setDisplayedPhotoCount(Math.min(50, filteredPhotos.length));
-            }
+        // Reset display count for infinite scroll when filters change
+        if (infiniteScrollEnabled) {
+            setDisplayedPhotoCount(Math.min(50, filteredPhotos.length));
         }
     }, [
         filteredPhotos,

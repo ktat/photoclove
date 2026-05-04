@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useContext, useMemo, useCallback, useRef } from 'react';
 import { invoke } from "@tauri-apps/api/core";
 import PhotoDisplay from "./PhotosListMini/PhotoDisplay.jsx";
 import { ImgCacheContext, AllPhotosContext } from "../ImgCacheContext.jsx";
@@ -228,6 +228,22 @@ function PhotosListMini(props) {
             }
         }
     }, [props.goBackFromBurstGroup, props.setCurrentIndex]);
+
+    // Auto-exit burst group when all photos are deleted
+    const burstPhotosWereLoadedRef = useRef(false);
+    useEffect(() => {
+        if (!isInBurstGroupMode) {
+            burstPhotosWereLoadedRef.current = false;
+            return;
+        }
+        if (photosWithMethods.length > 0) {
+            burstPhotosWereLoadedRef.current = true;
+        } else if (burstPhotosWereLoadedRef.current) {
+            burstPhotosWereLoadedRef.current = false;
+            logger.info('PhotosListMini', 'burst_group_empty', 'All burst photos deleted, exiting burst group');
+            handleGoBackFromBurstGroup();
+        }
+    }, [isInBurstGroupMode, photosWithMethods.length, handleGoBackFromBurstGroup]);
 
     // Use keyboard shortcuts hook
     const { photoNavigation, photoNavigationUp } = useKeyboardShortcuts(
