@@ -130,6 +130,7 @@ function PhotosList({
         photosListMiniReread, setPhotosListMiniReread, setPhotosListImgSrc,
         imgCacheMap, setImgCacheMap, thumbnailStore, setThumbnailStore,
         debugMessage, sortOfPhotos, setSort, sortInitialized,
+        sortDirty, setSortDirty,
         filterOptions, setFilterOptions, isFilterOptionsLoading, setIsFilterOptionsLoading,
         importState, setImportState, filteredAlbums, setFilteredAlbums,
         albumSearchTerm, setAlbumSearchTerm, currentAlbumName, setCurrentAlbumName,
@@ -429,7 +430,7 @@ function PhotosList({
         loadAlbums, currentAlbumId, loadAlbumPhotos, photoSelectionDict,
         togglePhotoSelection, changeTab, infiniteScrollEnabled, displayedPhotos,
         filteredPhotos, selectAllPhotos, tabClass,
-        photosCache, currentViewKey
+        photosCache, currentViewKey, sortOfPhotos, setSortDirty
     });
 
     // Side menu toggle notification effect

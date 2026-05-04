@@ -13,6 +13,7 @@
 import { useCallback } from 'react';
 import { VIEW_MODES } from '../constants/viewModes.js';
 import { logger } from '../services/LoggerService.js';
+import { isStarSort } from '../utils/PhotoSort.js';
 
 /**
  * Custom hook for photo list helper functions
@@ -57,7 +58,9 @@ export function usePhotoListHelpers({
     selectAllPhotos,
     tabClass,
     photosCache,
-    currentViewKey
+    currentViewKey,
+    sortOfPhotos,
+    setSortDirty
 }) {
     // Patch the View Cache entry for the current view so that switching
     // away and back doesn't restore stale (pre-edit) photos. Phase 1
@@ -110,7 +113,13 @@ export function usePhotoListHelpers({
             }
             return photo;
         }));
-    }, [setStar, photosListMiniAllPhotos, setPhotosListMiniAllPhotos, currentPhoto, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch, patchCacheCurrentView]);
+
+        // Phase 2: if current sort is star-based the on-screen order is now
+        // stale. closePhotoDisplay will apply a local re-sort.
+        if (isStarSort(sortOfPhotos) && setSortDirty) {
+            setSortDirty(true);
+        }
+    }, [setStar, photosListMiniAllPhotos, setPhotosListMiniAllPhotos, currentPhoto, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch, patchCacheCurrentView, sortOfPhotos, setSortDirty]);
 
     /**
      * Update comment in photo lists
