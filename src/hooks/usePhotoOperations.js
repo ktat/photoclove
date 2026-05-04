@@ -72,8 +72,19 @@ export function usePhotoOperations({
     setDateList,
     sortOfPhotos,
     triggerUnknownFacesRefresh,
-    dialog
+    dialog,
+    // Phase 2 cache patch (View Cache must stay in sync with photo array
+    // edits so a view-switch round-trip doesn't restore deleted photos).
+    photosCache,
+    currentViewKey
 }) {
+    // Patch the View Cache entry for the current view so that switching
+    // away and back doesn't restore deleted photos.
+    const patchCacheCurrentView = useCallback((updater) => {
+        if (!photosCache?.patch || !currentViewKey) return;
+        photosCache.patch(currentViewKey, updater);
+    }, [photosCache, currentViewKey]);
+
     /**
      * Shared helper: Handle photo removal from list and navigation adjustment
      * Used by permanentlyDeletePhoto, moveToTrash, removePhotoFromList
@@ -94,6 +105,12 @@ export function usePhotoOperations({
                 photo => getPhotoPath(photo) !== photoPath
             );
             setAllPhotosForCurrentFetch(updatedAllPhotos);
+        }
+
+        // Patch the View Cache so a switch-away-and-back doesn't restore the
+        // just-removed photo.
+        if (photoPath) {
+            patchCacheCurrentView(prev => prev.filter(p => getPhotoPath(p) !== photoPath));
         }
 
         // Handle navigation after removal
@@ -129,7 +146,8 @@ export function usePhotoOperations({
         setPhotosListMiniCurrentIndex,
         setCurrentPhoto,
         setCurrentPhotoIndex,
-        closePhotoDisplay
+        closePhotoDisplay,
+        patchCacheCurrentView
     ]);
 
     /**
@@ -170,6 +188,10 @@ export function usePhotoOperations({
             setAllPhotosForCurrentFetch(updatedAllPhotos);
         }
 
+        // Patch the View Cache so a switch-away-and-back doesn't restore any
+        // of the just-removed photos.
+        patchCacheCurrentView(prev => prev.filter(p => !pathSet.has(getPhotoPath(p))));
+
         if (newAllPhotos.length === 0) {
             if (closePhotoDisplay) closePhotoDisplay();
             return { removedCount: paths.length, newCurrentIndex: -1 };
@@ -204,7 +226,8 @@ export function usePhotoOperations({
         setCurrentPhoto,
         setCurrentPhotoIndex,
         currentPhotoIndex,
-        closePhotoDisplay
+        closePhotoDisplay,
+        patchCacheCurrentView
     ]);
 
     // Album selection handlers

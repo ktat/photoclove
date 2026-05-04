@@ -360,7 +360,8 @@ function PhotosList({
         setPhotosListMiniReread, photosListMiniReread,
         dateNum, setDateNum: updateDateNum, dateList, setDateList: updateDateList, sortOfPhotos,
         triggerUnknownFacesRefresh: () => setUnknownFacesRefreshTrigger(prev => prev + 1),
-        dialog
+        dialog,
+        photosCache, currentViewKey
     });
 
     // Side menu visibility effect
