@@ -318,12 +318,16 @@ fn map_burst_photo_row(
 ) -> rusqlite::Result<photo::Photo> {
     let photo_path = row.get::<_, String>("path")?;
 
-    // Create Photo entity from file path
-    let file_result = crate::value::file::File::new_if_exists(photo_path.clone());
-    if file_result.is_none() {
-        return Err(rusqlite::Error::InvalidPath(photo_path.into()));
-    }
-    let file = file_result.unwrap();
+    // Photo paths in the DB are stored RELATIVE to config.import_to. The
+    // previous implementation used File::new_if_exists which does
+    // Path::new(path).exists() — that resolves against the process's
+    // current working directory, never against import_to, so it always
+    // returned None for every row. The mapper then returned an Err for
+    // every photo and the entire burst result was empty (count=0).
+    //
+    // Use File::from_relative which is the documented "DB read use case"
+    // constructor — no filesystem validation, just stores the path.
+    let file = crate::value::file::File::from_relative(photo_path);
 
     let mut p = photo::Photo::new(file, Some(config.clone()));
     p.set_has_thumbnail();

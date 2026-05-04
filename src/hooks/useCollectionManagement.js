@@ -72,7 +72,9 @@ export function useCollectionManagement({
     handleError
 }) {
     /**
-     * Handle tag click to switch to tag view
+     * Handle tag click to switch to tag view.
+     * Photo loading is now driven by useViewModeSync (cache lookup -> backend
+     * load), so we don't trigger loadTagPhotos here anymore.
      */
     const handleTagClick = useCallback((tag) => {
         logOperation.click('tag', {
@@ -80,13 +82,9 @@ export function useCollectionManagement({
             tagName: tag.name
         });
 
-        // Switch to tag view mode
         openTag(tag.id);
         setCurrentTagName(tag.name);
-
-        // Load tag photos
-        loadTagPhotos(tag.id);
-    }, [openTag, loadTagPhotos, logOperation, setCurrentTagName]);
+    }, [openTag, logOperation, setCurrentTagName]);
 
     /**
      * Handle new tag creation
@@ -201,17 +199,11 @@ export function useCollectionManagement({
                 handleError(error, 'Load trash collection');
             }
         },
-        [VIEW_MODES.ALBUM]: () => {
-            if (currentAlbumId) {
-                loadAlbumPhotos(currentAlbumId);
-            }
-        },
-        [VIEW_MODES.TAG]: () => {
-            if (currentTagId) {
-                loadTagPhotos(currentTagId);
-            }
-        }
-    }), [loadAlbums, loadTags, appConfig, sortOfPhotos, loadAlbumPhotos, loadTagPhotos, currentAlbumId, currentTagId, setPhotoCollection, handleError]);
+        // ALBUM/TAG modes intentionally have NO modeLoader entry: photo loading
+        // is now driven by useViewModeSync (cache lookup -> backend load)
+        // exclusively. A second eager load here races with that path and
+        // bypasses onLoadSuccess (no cache write, no isFetched flip).
+    }), [loadAlbums, loadTags, appConfig, sortOfPhotos, setPhotoCollection, handleError]);
 
     /**
      * Execute mode-specific loader functions

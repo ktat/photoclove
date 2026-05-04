@@ -125,6 +125,41 @@ pub fn get_ai_models_dir() -> Result<String, String> {
     Ok(dir.to_string_lossy().to_string())
 }
 
+/// Get installation status of the ONNX Runtime dynamic library.
+#[tauri::command]
+pub fn get_onnx_runtime_status() -> Result<String, String> {
+    use crate::domain_service::ai_tagging::runtime_installer;
+
+    let installed = runtime_installer::is_installed();
+    let supported = runtime_installer::download_url().is_some();
+    let path = runtime_installer::lib_path()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_default();
+
+    Ok(serde_json::json!({
+        "installed": installed,
+        "auto_install_supported": supported,
+        "path": path,
+        "version": runtime_installer::ONNX_VERSION,
+    })
+    .to_string())
+}
+
+/// Download and install the ONNX Runtime dynamic library.
+#[tauri::command]
+pub fn download_onnx_runtime() -> Result<String, String> {
+    use crate::domain_service::ai_tagging::runtime_installer;
+
+    log::info!(target: "ai_tagging", "onnx_runtime_install_request");
+    runtime_installer::install()?;
+
+    Ok(serde_json::json!({
+        "result": "success",
+        "version": runtime_installer::ONNX_VERSION,
+    })
+    .to_string())
+}
+
 /// Get default CLIP labels for OpenCLIP/SigLIP
 #[tauri::command]
 pub fn get_default_clip_labels() -> Result<String, String> {

@@ -4,6 +4,7 @@
 //! Implementations can use different ML frameworks (ONNX, Candle, etc.)
 
 pub mod clip_common;
+pub mod clip_labels;
 pub mod model_manager;
 pub mod onnx;
 pub mod openclip;

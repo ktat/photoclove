@@ -1,0 +1,93 @@
+import { useRef, useCallback, useState, useMemo } from 'react';
+import { logger } from '../services/LoggerService.js';
+
+/**
+ * LRU cache for photos lists keyed by viewKey.
+ *
+ * Stored in useRef to avoid render churn; trigger setter forces re-render
+ * only when the consumer explicitly requests a UI update.
+ *
+ * Cache shape: Map<viewKey, { photos: PhotoJSON[], updatedAt: number }>
+ */
+export function usePhotosCache(maxKeys, maxTotalPhotos) {
+    const cacheRef = useRef(new Map());
+    const [, setVersion] = useState(0);
+    const triggerRender = useCallback(() => setVersion(v => v + 1), []);
+
+    const get = useCallback((viewKey) => {
+        if (!viewKey) return null;
+        const entry = cacheRef.current.get(viewKey);
+        if (entry) {
+            entry.updatedAt = Date.now();
+            cacheRef.current.delete(viewKey);
+            cacheRef.current.set(viewKey, entry);
+        }
+        return entry?.photos ?? null;
+    }, []);
+
+    const set = useCallback((viewKey, photos, currentViewKey) => {
+        if (!viewKey) return;
+        // Store the array reference directly; callers must use patch() to
+        // update entries (Phase 2 helpers do this). This lets cache restore
+        // return the same reference so the save-effect can dedup.
+        cacheRef.current.set(viewKey, {
+            photos,
+            updatedAt: Date.now(),
+        });
+        evict(cacheRef.current, maxKeys, maxTotalPhotos, currentViewKey);
+        logger.debug('usePhotosCache', 'set', 'View cache updated', {
+            viewKey,
+            size: cacheRef.current.size,
+            photosCount: photos.length,
+        });
+    }, [maxKeys, maxTotalPhotos]);
+
+    const patch = useCallback((viewKey, updater) => {
+        if (!viewKey) return;
+        const entry = cacheRef.current.get(viewKey);
+        if (!entry) return;
+        entry.photos = updater(entry.photos);
+        entry.updatedAt = Date.now();
+    }, []);
+
+    const invalidate = useCallback((viewKey) => {
+        if (!viewKey) return;
+        cacheRef.current.delete(viewKey);
+    }, []);
+
+    const clear = useCallback(() => {
+        cacheRef.current.clear();
+        triggerRender();
+    }, [triggerRender]);
+
+    // useMemo the return object so consumers can use it as a stable
+    // dependency in their effects. Without this, the object literal would
+    // be recreated every render, causing any effect that depends on
+    // `photosCache` to fire on every render — leading to infinite loops
+    // when the effect itself triggers state updates.
+    return useMemo(
+        () => ({ get, set, patch, invalidate, clear }),
+        [get, set, patch, invalidate, clear]
+    );
+}
+
+function evict(cache, maxKeys, maxTotalPhotos, currentViewKey) {
+    while (cache.size > maxKeys || totalPhotos(cache) > maxTotalPhotos) {
+        const oldestKey = findOldestEvictableKey(cache, currentViewKey);
+        if (!oldestKey) break;
+        cache.delete(oldestKey);
+    }
+}
+
+function totalPhotos(cache) {
+    let total = 0;
+    for (const entry of cache.values()) total += entry.photos.length;
+    return total;
+}
+
+function findOldestEvictableKey(cache, currentViewKey) {
+    for (const key of cache.keys()) {
+        if (key !== currentViewKey) return key;
+    }
+    return null;
+}

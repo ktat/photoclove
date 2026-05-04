@@ -124,6 +124,11 @@ export class ViewMode {
         return null;
     }
 
+    getCurrentBurstGroupId() {
+        if (this.isInBurstGroupMode()) return this._data.burstGroupId || null;
+        return null;
+    }
+
     getCurrentPersonId() {
         if (this.isPersonMode()) return this._data.personId || null;
         return null;

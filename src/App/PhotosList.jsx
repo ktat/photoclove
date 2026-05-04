@@ -34,11 +34,13 @@ import { useFilteredPhotos } from "../hooks/useFilteredPhotos.js";
 import { usePhotosListHandlers } from "../hooks/usePhotosListHandlers.js";
 import { usePhotoListLoading } from "../hooks/usePhotoListLoading.js";
 import { usePhotoListFaces } from "../hooks/usePhotoListFaces.js";
+import { usePhotosCache } from "../hooks/usePhotosCache.js";
+import { useSearchModeSync } from "../hooks/useSearchModeSync.js";
+import { getViewKey } from "../utils/ViewKey.js";
 
 import { FaceDetectionProvider } from "../context/FaceDetectionContext.jsx";
 import {
     useViewModeChangeEffect,
-    usePhotoSyncEffect,
     useSelectionTabEffect,
     useSortChangeEffect,
     useBurstModeChangeEffect,
@@ -88,8 +90,8 @@ function PhotosList({
     const {
         dateList, datePage, updateDatePage, currentDate, updateCurrentDate,
         dateNum, updateDateNum, updateDateList, setCurrentDateNum,
-        recentPhotosMode, albumsList, currentAlbum, albumPhotos,
-        updateAlbumsList, updateCurrentAlbum, updateAlbumPhotos
+        recentPhotosMode, albumsList, currentAlbum,
+        updateAlbumsList, updateCurrentAlbum
     } = usePhoto();
 
     const {
@@ -115,6 +117,7 @@ function PhotosList({
         photos, setPhotosList, photoCollection, setPhotoCollection,
         allPhotosForCurrentFetch, setAllPhotosForCurrentFetch,
         currentPhoto, setCurrentPhoto, currentPhotoIndex, setCurrentPhotoIndex,
+        isFetched, setIsFetched,
         iconSize, setIconSize, numOfPhoto, setNumOfPhoto,
         showSideMenu, setShowSideMenu, isLimitedByConfig, setIsLimitedByConfig,
         configLimit, setConfigLimit, star, setStar,
@@ -127,13 +130,13 @@ function PhotosList({
         photosListMiniReread, setPhotosListMiniReread, setPhotosListImgSrc,
         imgCacheMap, setImgCacheMap, thumbnailStore, setThumbnailStore,
         debugMessage, sortOfPhotos, setSort, sortInitialized,
+        sortDirty, setSortDirty,
         filterOptions, setFilterOptions, isFilterOptionsLoading, setIsFilterOptionsLoading,
         importState, setImportState, filteredAlbums, setFilteredAlbums,
         albumSearchTerm, setAlbumSearchTerm, currentAlbumName, setCurrentAlbumName,
         showAlbumCreationModal, setShowAlbumCreationModal, selectedAlbums, setSelectedAlbums,
         tagsList, setTagsList, filteredTags, setFilteredTags,
         tagSearchTerm, setTagSearchTerm, currentTagName, setCurrentTagName,
-        tagPhotos, setTagPhotos, trashPhotos, setTrashPhotos,
         selectedTags, setSelectedTags, showFilterPopover, setShowFilterPopover,
         filterButtonRef,
         facesList, setFacesList, faceSearchTerm, setFaceSearchTerm,
@@ -202,12 +205,12 @@ function PhotosList({
         loadTags, loadTagPhotos: loadTagPhotosOriginal,
         loadPersonPhotos: loadPersonPhotosOriginal,
         loadUnknownFacesPhotos: loadUnknownFacesPhotosOriginal,
-        loadTrashPhotos, loadFilterOptions, logOperation
+        loadFilterOptions, logOperation
     } = usePhotoDataLoader({
         handleError, convertPhotosToEntities: convertPhotosWithConfig,
-        updateAlbumsList, setFilteredAlbums, updateAlbumPhotos, setPhotosList,
+        updateAlbumsList, setFilteredAlbums, setPhotosList,
         setAllPhotosForCurrentFetch,
-        setTagsList, setFilteredTags, setTagPhotos, setTrashPhotos, setCurrentAlbumName,
+        setTagsList, setFilteredTags, setCurrentAlbumName,
         openAlbum, setFilterOptions, setIsFilterOptionsLoading,
         filterOptions, isFilterOptionsLoading, appConfig,
         burstModeEnabled
@@ -237,11 +240,33 @@ function PhotosList({
 
     // Filtered photos using extracted hook
     const filteredPhotos = useFilteredPhotos({
-        viewModeObj, albumPhotos, tagPhotos, photoCollection,
-        allPhotosForCurrentFetch, applyFiltersWithConfig,
-        importSortOfPhotos, sortOfPhotos, appConfig,
-        searchResults
+        viewModeObj, allPhotosForCurrentFetch, applyFiltersWithConfig,
+        importSortOfPhotos, sortOfPhotos, appConfig
     });
+
+    // View Cache (Phase 1): LRU map of view-mode -> photos snapshot.
+    // Defined here (before usePhotoLoader) so that the load function can
+    // call onLoadSuccess to atomically save loaded photos under their
+    // viewKey — avoiding the race where viewKey changes between
+    // load completion and a generic save effect.
+    const photosCache = usePhotosCache(
+        appConfig?.view_cache_max_keys ?? 10,
+        appConfig?.view_cache_max_total_photos ?? 50000
+    );
+    const currentViewKey = useMemo(
+        () => getViewKey(viewModeObj, currentSearchParams, importState?.currentImportPath, sortOfPhotos),
+        [viewModeObj, currentSearchParams, importState?.currentImportPath, sortOfPhotos]
+    );
+    const onLoadSuccess = useCallback((viewMode, photoEntities) => {
+        // Mark the current view as fetched so the empty-state UI can render
+        // when truly empty (vs. "we just haven't fetched yet"). Run even on
+        // empty results — that's a confirmed "no photos for this view".
+        setIsFetched(true);
+        if (!photoEntities || photoEntities.length === 0) return;
+        const key = getViewKey(viewMode, currentSearchParams, importState?.currentImportPath, sortOfPhotos);
+        if (!key) return;
+        photosCache.set(key, photoEntities, key);
+    }, [photosCache, currentSearchParams, importState?.currentImportPath, sortOfPhotos, setIsFetched]);
 
     // Photo loader hook
     const {
@@ -257,7 +282,8 @@ function PhotosList({
         convertPhotosToEntities: convertPhotosWithConfig, handleError,
         datePage: datePage || {}, updateDatePage, addFooterMessage,
         burstModeEnabled,
-        currentSearchParams
+        currentSearchParams,
+        onLoadSuccess
     });
 
     // Album/Tag/Person photo loading wrappers and refresh/reload functions
@@ -282,17 +308,22 @@ function PhotosList({
         handleAlbumClickOriginal(album);
     }, [handleAlbumClickOriginal]);
 
-    // Photo sync effect
-    usePhotoSyncEffect({
-        viewModeObj, allPhotosForCurrentFetch, updateAlbumPhotos, setTagPhotos
-    });
-
     // Photo display hook
+    const patchCacheCurrentViewCb = useCallback((updater) => {
+        if (photosCache?.patch && currentViewKey) {
+            photosCache.patch(currentViewKey, updater);
+        }
+    }, [photosCache, currentViewKey]);
+
     const { displayPhoto, closePhotoDisplay, closeRightColumn } = usePhotoDisplay({
-        photosListMiniAllPhotos, viewModeObj, setCurrentPhoto, setCurrentPhotoIndex,
+        photosListMiniAllPhotos, setPhotosListMiniAllPhotos,
+        setAllPhotosForCurrentFetch,
+        viewModeObj, setCurrentPhoto, setCurrentPhotoIndex,
         setPhotosListMiniCurrentIndex, setPhotosListMiniReread, setShowSideMenu,
         currentPhotoLoadingController, setCurrentPhotoLoadingController,
-        handleError, refreshPhotos: refreshPhotosOnly, photosListMiniReread
+        photosListMiniReread,
+        sortDirty, setSortDirty, sortOfPhotos,
+        patchCacheCurrentView: patchCacheCurrentViewCb
     });
 
     // Face handlers (defined before usePhotoOperations to avoid initialization error)
@@ -314,21 +345,23 @@ function PhotosList({
         deleteSelectedAlbums, handleAlbumDelete, handleTagSelection, clearTagSelection,
         deleteSelectedTags, handlePersonSelection, clearPersonSelection,
         deleteSelectedPersons, handleUnknownFaceSelection, clearUnknownFaceSelection,
-        deleteUnknownFacesBatch, assignUnknownFacesToPerson, removePhotoFromList
+        deleteUnknownFacesBatch, assignUnknownFacesToPerson, removePhotoFromList,
+        handlePhotoRemovalNavigationBulk
     } = usePhotoOperations({
         selectedAlbums, setSelectedAlbums, selectedTags, setSelectedTags,
         selectedPersons, setSelectedPersons, selectedUnknownFaces, setSelectedUnknownFaces,
         tagsList, albumsList, appConfig, currentViewMode: viewMode,
         currentDate, currentAlbumName, currentTagName, searchQuery, handleError,
-        addFooterMessage, loadAlbums, loadTags, loadFaces: reloadFaces, currentAlbumId, toggleAlbumListMode,
+        addFooterMessage, loadAlbums, updateAlbumsList, setFilteredAlbums, loadTags, loadFaces: reloadFaces, currentAlbumId, toggleAlbumListMode,
         viewModeObj, photosListMiniAllPhotos, setPhotosListMiniAllPhotos,
         allPhotosForCurrentFetch, setAllPhotosForCurrentFetch,
         photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex,
         setCurrentPhoto, setCurrentPhotoIndex, currentPhotoIndex, closePhotoDisplay,
-        setTrashPhotos, setPhotosListMiniReread, photosListMiniReread,
+        setPhotosListMiniReread, photosListMiniReread,
         dateNum, setDateNum: updateDateNum, dateList, setDateList: updateDateList, sortOfPhotos,
         triggerUnknownFacesRefresh: () => setUnknownFacesRefreshTrigger(prev => prev + 1),
-        dialog
+        dialog,
+        photosCache, currentViewKey
     });
 
     // Side menu visibility effect
@@ -337,13 +370,13 @@ function PhotosList({
     // Sort change effect
     useSortChangeEffect({
         sortOfPhotos, importSortOfPhotos, viewModeObj, appConfig,
-        sortInitialized, loadAllPhotosBasedOnViewMode, handleError
+        sortInitialized, refreshPhotosOnly, handleError
     });
 
     // Burst mode change effect
     useBurstModeChangeEffect({
         burstModeEnabled, viewModeObj, appConfig,
-        loadAllPhotosBasedOnViewMode, handleError
+        refreshPhotosOnly, handleError
     });
 
     // Infinite scroll
@@ -383,23 +416,45 @@ function PhotosList({
         filterOptions, isFilterOptionsLoading, loadFilterOptions
     });
 
+    // Search-mode glue: commit results, show "Searching..." overlay, and
+    // reset state on entry/exit. Extracted to keep this file under the
+    // 700-line limit. See useSearchModeSync for details.
+    useSearchModeSync({
+        viewModeObj, searchResults, isSearching,
+        setAllPhotosForCurrentFetch, convertPhotosWithConfig,
+        clearSearchHook, updateSearchParams, setSearchFilters,
+    });
+
     // Trash operations
     const { deletePhotos: deletePhotosHandler, restorePhotos: restorePhotosHandler } = useTrashOperations({
         allPhotosForCurrentFetch, setAllPhotosForCurrentFetch, photoSelection,
         clearPhotoSelection, dateNum, updateDateNum, dateList, updateDateList,
-        reloadCurrentModeData, updatePhotosAfterTrashOperation, handleError, addFooterMessage
+        reloadCurrentModeData, updatePhotosAfterTrashOperation, handleError, addFooterMessage,
+        // Phase 2: PhotoDisplay-aware rollback
+        currentPhoto, setCurrentPhoto,
+        currentPhotoIndex, setCurrentPhotoIndex,
+        photosListMiniAllPhotos, setPhotosListMiniAllPhotos,
+        photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex,
+        handlePhotoRemovalNavigationBulk,
+        sortDirty, setSortDirty
     });
 
     // Photo list helpers
     const {
-        setStarWithUpdate, updatePhotoComment, handleAlbumUpdate,
+        setStarWithUpdate, updatePhotoComment, updatePhotoTags, updatePhotoCssStyle,
+        addPhotoToList, handleAlbumUpdate,
         addSelection, toggleSelection, selectAllPhotoToSelection
     } = usePhotoListHelpers({
         setStar, photosListMiniAllPhotos, setPhotosListMiniAllPhotos, currentPhoto,
         allPhotosForCurrentFetch, setAllPhotosForCurrentFetch, viewMode,
         loadAlbums, currentAlbumId, loadAlbumPhotos, photoSelectionDict,
         togglePhotoSelection, changeTab, infiniteScrollEnabled, displayedPhotos,
-        filteredPhotos, selectAllPhotos, tabClass
+        filteredPhotos, selectAllPhotos, tabClass,
+        photosCache, currentViewKey, sortOfPhotos, setSortDirty,
+        photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex,
+        currentPhotoIndex, setCurrentPhotoIndex,
+        displayedPhotoCount, setDisplayedPhotoCount,
+        sortDirty
     });
 
     // Side menu toggle notification effect
@@ -416,14 +471,17 @@ function PhotosList({
         currentSearchParams, photoLoading, currentPhotoLoadingController,
         setCurrentPhotoLoadingController, setShowSideMenu, setPhotosList,
         setCurrentPhotoIndex, setPhotosListMiniCurrentIndex, setCurrentPhoto,
-        loadPhotosWithCollection, appConfig, sortOfPhotos
+        setAllPhotosForCurrentFetch, setIsFetched, setPhotoLoading,
+        refreshPhotosOnly, appConfig, sortOfPhotos,
+        photosCache, currentViewKey
     });
 
     useImportStateSync({ viewMode, importState, loadPhotosWithCollection });
 
     usePhotoDataSync({
         filteredPhotos, displayedPhotos, allPhotosForCurrentFetch, infiniteScrollEnabled,
-        setPhotosListMiniAllPhotos, setDisplayedPhotoCount, setPhotosList
+        setPhotosListMiniAllPhotos, setDisplayedPhotoCount, setPhotosList,
+        currentPhotoPath: currentPhoto?.originalPath
     });
 
     useImportModeLifecycle({
@@ -488,7 +546,7 @@ function PhotosList({
         viewMode, currentDate, viewModeObj,
         starFilter, hasCommentFilter, hasTagFilter, extensionFilter, importExtensionFilter, showFilterPopover, hasActiveFiltersState,
         photoSelectionDict, photoSelection, selectedAlbums, selectedTags, selectedPersons, selectedUnknownFaces,
-        currentPhoto, currentPhotoIndex, showSideMenu, iconSize, sortOfPhotos, importSortOfPhotos, datePage, numOfPhoto,
+        currentPhoto, currentPhotoIndex, showSideMenu, iconSize, sortOfPhotos, importSortOfPhotos, datePage, numOfPhoto, isFetched,
         searchQuery, searchInitialQuery, searchFilters, searchResults, currentSearchParams, isSearching,
         displayedPhotos, filteredPhotos, displayedPhotoCount, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch,
         photosListMiniAllPhotos, setPhotosListMiniAllPhotos, photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex, photosListMiniReread, setPhotosListMiniReread,
@@ -581,7 +639,10 @@ function PhotosList({
                         searchResultsCount={displayedPhotos.length} onClearSearch={clearSearch}
                         searchTools={searchTools} addFooterMessage={handlers.addFooterMessage}
                         imgCacheMap={imgCacheMap} setStar={setStarWithUpdate} star={star}
-                        onPhotosRefresh={refreshPhotosOnly} onCommentUpdate={updatePhotoComment}
+                        onCommentUpdate={updatePhotoComment}
+                        onTagsChanged={updatePhotoTags}
+                        onCssStyleUpdate={updatePhotoCssStyle}
+                        onAddPhotoToList={addPhotoToList}
                         onAlbumUpdate={handleAlbumUpdate} onAlbumDelete={handleAlbumDelete}
                         photoSelection={photoSelection} config={appConfig}
                         selectedAlbums={selectedAlbums} selectedTags={selectedTags} selectedPersons={selectedPersons}

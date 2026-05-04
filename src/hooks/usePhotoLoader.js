@@ -72,7 +72,8 @@ export function usePhotoLoader({
     updateDatePage,
     addFooterMessage,
     burstModeEnabled = false,
-    currentSearchParams = null
+    currentSearchParams = null,
+    onLoadSuccess = null
 }) {
     // Loading state
     const [photoLoading, setPhotoLoading] = useState(false);
@@ -118,9 +119,20 @@ export function usePhotoLoader({
             setIsLimitedByConfig(isLimited);
             setConfigLimit(effectiveLimit);
 
-            // Convert to Photo entities and store
-            const photoEntities = convertPhotosToEntities(data.photos, false, false);
+            // Convert to Photo entities and store. Trash photos need
+            // isFromTrash=true so displayPath() resolves to the trash path
+            // (otherwise PhotoDisplay shows "No Photo").
+            const isFromTrash = viewMode.isTrashMode?.() ?? false;
+            const photoEntities = convertPhotosToEntities(data.photos, isFromTrash, false);
             setAllPhotosForCurrentFetch(photoEntities);
+
+            // Save to view cache atomically with the state update.
+            // Doing this here (rather than via a generic effect on
+            // allPhotosForCurrentFetch) avoids a race where two loads
+            // complete in succession and a viewKey-changed render lands
+            // before the cache-save effect could distinguish "fresh from
+            // load X" vs "stale residual after switching to view Y".
+            if (onLoadSuccess) onLoadSuccess(viewMode, photoEntities);
 
             return photoEntities;
         } catch (error) {
@@ -141,7 +153,8 @@ export function usePhotoLoader({
         setAllPhotosForCurrentFetch,
         convertPhotosToEntities,
         handleError,
-        isRequestValid
+        isRequestValid,
+        onLoadSuccess
     ]);
 
     /**
@@ -188,7 +201,16 @@ export function usePhotoLoader({
             if (needsUnifiedAPI) {
                 photoEntities = await loadViaUnifiedAPI(viewMode, config, requestId, silent);
                 if (photoEntities === null) {
-                    if (!silent) setPhotoLoading(false);
+                    // Returned null because either the request was cancelled
+                    // (newer request in flight) or actually failed. If
+                    // cancelled, the newer request still has photoLoading
+                    // set to true and will turn it off when it completes —
+                    // we MUST NOT clear it here, otherwise the grid briefly
+                    // renders an empty "No Photos" / "Trash is Empty" state
+                    // while the active request is still loading.
+                    if (!silent && isRequestValid(requestId)) {
+                        setPhotoLoading(false);
+                    }
                     return;
                 }
             } else {
@@ -219,7 +241,10 @@ export function usePhotoLoader({
                     // Fallback to unified API
                     photoEntities = await loadViaUnifiedAPI(viewMode, config, requestId, silent);
                     if (photoEntities === null) {
-                        if (!silent) setPhotoLoading(false);
+                        // See comment above (same race condition).
+                        if (!silent && isRequestValid(requestId)) {
+                            setPhotoLoading(false);
+                        }
                         return;
                     }
                 }
@@ -241,6 +266,11 @@ export function usePhotoLoader({
 
                     photoEntities = updatedCollection.photos.filter(photo => photo !== null);
                     setAllPhotosForCurrentFetch(photoEntities);
+
+                    // Notify the same way loadViaUnifiedAPI does, so that
+                    // import / date / recent / search-fallback / trash paths
+                    // also flip isFetched=true and write the View Cache entry.
+                    if (onLoadSuccess) onLoadSuccess(viewMode, photoEntities);
 
                     // Clear related states
                     setPhotosListImgSrc({});

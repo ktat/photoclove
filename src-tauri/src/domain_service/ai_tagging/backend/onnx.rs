@@ -312,23 +312,7 @@ impl AIClassifierBackend for OnnxClassifier {
             return Ok(());
         }
 
-        // Set ORT_DYLIB_PATH if not already set and library exists in app data
-        if std::env::var("ORT_DYLIB_PATH").is_err() {
-            if let Some(data_dir) = dirs::data_local_dir() {
-                let lib_path = data_dir
-                    .join("photoclove")
-                    .join("lib")
-                    .join("libonnxruntime.so");
-                if lib_path.exists() {
-                    log::info!(
-                        target: "ai_tagging",
-                        "setting_ort_dylib_path; path={}",
-                        lib_path.display()
-                    );
-                    std::env::set_var("ORT_DYLIB_PATH", &lib_path);
-                }
-            }
-        }
+        crate::utils::ensure_ort_dylib_loaded()?;
 
         let model_path = self.get_model_path()?;
 

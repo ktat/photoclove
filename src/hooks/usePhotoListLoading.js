@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { logger } from "../services/LoggerService.js";
 import { unifiedCollectionService } from "../services/UnifiedCollectionService.js";
 
@@ -63,14 +63,26 @@ export function usePhotoListLoading({
         finally { setPhotoLoading(false); }
     }, [loadUnknownFacesPhotosOriginal, setPhotoLoading]);
 
+    // Generation counter so that overlapping refresh calls (e.g. user
+    // clicks date → trash while date is still loading) don't clobber each
+    // other's photoLoading state. Only the latest call's finally block is
+    // allowed to flip photoLoading=false. Previous behavior: an older
+    // call's finally cleared photoLoading while the new call was still in
+    // flight, briefly exposing the underlying grid (showing the old view's
+    // photos) until the new call finished.
+    const refreshGenRef = useRef(0);
+
     // Refresh photos helper with loading state
     const refreshPhotosOnly = useCallback(async () => {
-        logger.info('PhotosList', 'refresh_photos_only', 'Refreshing photos with loading indicator', { viewMode });
+        const myGen = ++refreshGenRef.current;
+        logger.info('PhotosList', 'refresh_photos_only', 'Refreshing photos with loading indicator', { viewMode, gen: myGen });
         setPhotoLoading(true);
         try {
             await withMinLoadingTime(() => loadAllPhotosBasedOnViewMode(viewModeObj, appConfig, true));
         } finally {
-            setPhotoLoading(false);
+            if (refreshGenRef.current === myGen) {
+                setPhotoLoading(false);
+            }
         }
     }, [loadAllPhotosBasedOnViewMode, viewModeObj, appConfig, viewMode, setPhotoLoading, withMinLoadingTime]);
 

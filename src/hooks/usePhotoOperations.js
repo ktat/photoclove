@@ -44,6 +44,8 @@ export function usePhotoOperations({
     handleError,
     addFooterMessage,
     loadAlbums,
+    updateAlbumsList,
+    setFilteredAlbums,
     loadTags,
     loadFaces,
     currentAlbumId,
@@ -61,7 +63,6 @@ export function usePhotoOperations({
     currentPhotoIndex,
     closePhotoDisplay,
     // Trash operations state
-    setTrashPhotos,
     setPhotosListMiniReread,
     photosListMiniReread,
     // Date state (for moveToTrash)
@@ -71,8 +72,19 @@ export function usePhotoOperations({
     setDateList,
     sortOfPhotos,
     triggerUnknownFacesRefresh,
-    dialog
+    dialog,
+    // Phase 2 cache patch (View Cache must stay in sync with photo array
+    // edits so a view-switch round-trip doesn't restore deleted photos).
+    photosCache,
+    currentViewKey
 }) {
+    // Patch the View Cache entry for the current view so that switching
+    // away and back doesn't restore deleted photos.
+    const patchCacheCurrentView = useCallback((updater) => {
+        if (!photosCache?.patch || !currentViewKey) return;
+        photosCache.patch(currentViewKey, updater);
+    }, [photosCache, currentViewKey]);
+
     /**
      * Shared helper: Handle photo removal from list and navigation adjustment
      * Used by permanentlyDeletePhoto, moveToTrash, removePhotoFromList
@@ -93,6 +105,12 @@ export function usePhotoOperations({
                 photo => getPhotoPath(photo) !== photoPath
             );
             setAllPhotosForCurrentFetch(updatedAllPhotos);
+        }
+
+        // Patch the View Cache so a switch-away-and-back doesn't restore the
+        // just-removed photo.
+        if (photoPath) {
+            patchCacheCurrentView(prev => prev.filter(p => getPhotoPath(p) !== photoPath));
         }
 
         // Handle navigation after removal
@@ -128,7 +146,88 @@ export function usePhotoOperations({
         setPhotosListMiniCurrentIndex,
         setCurrentPhoto,
         setCurrentPhotoIndex,
-        closePhotoDisplay
+        closePhotoDisplay,
+        patchCacheCurrentView
+    ]);
+
+    /**
+     * Bulk version of handlePhotoRemovalNavigation: removes multiple
+     * photos by path, recomputes navigation index in O(N+M).
+     *
+     * @param {string[]} paths - paths to remove
+     * @returns {{ removedCount: number, newCurrentIndex: number } | null}
+     *          state for caller's logging / rollback context
+     */
+    const handlePhotoRemovalNavigationBulk = useCallback((paths) => {
+        if (!paths || paths.length === 0) return null;
+        if (!photosListMiniAllPhotos || photosListMiniAllPhotos.length === 0) return null;
+
+        const pathSet = new Set(paths);
+        let removedBefore = 0;
+        let currentIsRemoved = false;
+
+        for (let i = 0; i < photosListMiniAllPhotos.length; i++) {
+            const path = getPhotoPath(photosListMiniAllPhotos[i]);
+            if (pathSet.has(path)) {
+                if (typeof currentPhotoIndex === 'number') {
+                    if (i < currentPhotoIndex) removedBefore++;
+                    else if (i === currentPhotoIndex) currentIsRemoved = true;
+                }
+            }
+        }
+
+        const newAllPhotos = photosListMiniAllPhotos.filter(
+            p => !pathSet.has(getPhotoPath(p))
+        );
+        setPhotosListMiniAllPhotos(newAllPhotos);
+
+        if (allPhotosForCurrentFetch && setAllPhotosForCurrentFetch) {
+            const updatedAllPhotos = allPhotosForCurrentFetch.filter(
+                photo => !pathSet.has(getPhotoPath(photo))
+            );
+            setAllPhotosForCurrentFetch(updatedAllPhotos);
+        }
+
+        // Patch the View Cache so a switch-away-and-back doesn't restore any
+        // of the just-removed photos.
+        patchCacheCurrentView(prev => prev.filter(p => !pathSet.has(getPhotoPath(p))));
+
+        if (newAllPhotos.length === 0) {
+            if (closePhotoDisplay) closePhotoDisplay();
+            return { removedCount: paths.length, newCurrentIndex: -1 };
+        }
+
+        const baseIdx = (typeof currentPhotoIndex === 'number') ? currentPhotoIndex : 0;
+        let newIndex;
+        if (currentIsRemoved) {
+            // Same logic as single-removal: stay at index (= next photo)
+            // or step back if we were at the end.
+            const proposed = baseIdx - removedBefore;
+            newIndex = proposed >= newAllPhotos.length ? newAllPhotos.length - 1 : proposed;
+        } else {
+            newIndex = baseIdx - removedBefore;
+        }
+
+        const newPhoto = newAllPhotos[newIndex];
+        if (newPhoto) {
+            const newPhotoEntity = newPhoto instanceof Photo ? newPhoto : Photo.fromJSON(newPhoto);
+            if (setPhotosListMiniCurrentIndex) setPhotosListMiniCurrentIndex(newIndex);
+            if (setCurrentPhoto) setCurrentPhoto(newPhotoEntity);
+            if (setCurrentPhotoIndex) setCurrentPhotoIndex(newIndex);
+        }
+
+        return { removedCount: paths.length, newCurrentIndex: newIndex };
+    }, [
+        photosListMiniAllPhotos,
+        setPhotosListMiniAllPhotos,
+        allPhotosForCurrentFetch,
+        setAllPhotosForCurrentFetch,
+        setPhotosListMiniCurrentIndex,
+        setCurrentPhoto,
+        setCurrentPhotoIndex,
+        currentPhotoIndex,
+        closePhotoDisplay,
+        patchCacheCurrentView
     ]);
 
     // Album selection handlers
@@ -303,13 +402,22 @@ export function usePhotoOperations({
         }
     }, [selectedPersons, loadFaces, clearPersonSelection, addFooterMessage, handleError, dialog]);
 
-    // Handle album deletion (navigation logic)
+    // Handle album deletion: locally remove from album lists + clear
+    // collection service cache. Avoids a backend refetch (Phase 2).
     const handleAlbumDelete = useCallback((deletedAlbumId) => {
         if (deletedAlbumId === currentAlbumId) {
+            // Switching out of the deleted album also auto-closes any
+            // open PhotoDisplay via useAutoClosePhotoDisplayEffect.
             toggleAlbumListMode();
         }
-        loadAlbums();
-    }, [currentAlbumId, toggleAlbumListMode, loadAlbums]);
+        if (updateAlbumsList) {
+            updateAlbumsList(prev => prev.filter(a => a.id !== deletedAlbumId));
+        }
+        if (setFilteredAlbums) {
+            setFilteredAlbums(prev => prev.filter(a => a.id !== deletedAlbumId));
+        }
+        unifiedCollectionService.clearCache();
+    }, [currentAlbumId, toggleAlbumListMode, updateAlbumsList, setFilteredAlbums]);
 
     // Album-photo relationship operations
     const handleAddToAlbum = useCallback(async (photoPath, albumId) => {
@@ -375,17 +483,12 @@ export function usePhotoOperations({
     // Photo deletion and trash operations
     const permanentlyDeletePhoto = useCallback((photoPath) => {
         invoke("delete_permanently_batch", { paths: [photoPath] }).then(() => {
-            // Remove from trash photos list
-            if (setTrashPhotos) {
-                setTrashPhotos(prevPhotos => prevPhotos.filter(photo => photo.path !== photoPath));
-            }
-
             // Update navigation using shared helper
             handlePhotoRemovalNavigation(currentPhotoIndex, photoPath);
         }).catch((error) => {
             handleError(error, 'Permanently delete photo', { path: photoPath });
         });
-    }, [handleError, setTrashPhotos, currentPhotoIndex, handlePhotoRemovalNavigation]);
+    }, [handleError, currentPhotoIndex, handlePhotoRemovalNavigation]);
 
     // Helper to update date counts after photo removal
     const updateDateCounts = useCallback((resultDate) => {
@@ -430,18 +533,13 @@ export function usePhotoOperations({
                 updateDateCounts(resultDate);
             }
 
-            // Remove from trash photos list
-            if (setTrashPhotos) {
-                setTrashPhotos(prevPhotos => prevPhotos.filter(photo => photo.path !== photoPath));
-            }
-
             addFooterMessage('trash', 'Photo restored from trash');
             return true;
         } catch (error) {
             handleError(error, 'Restore photo from trash', { path: photoPath });
             return false;
         }
-    }, [handleError, addFooterMessage, setTrashPhotos, updateDateCounts]);
+    }, [handleError, addFooterMessage, updateDateCounts]);
 
     const deletePhoto = useCallback((photoPath) => {
         // If in trash mode, permanently delete instead of moving to trash
@@ -483,6 +581,7 @@ export function usePhotoOperations({
 
         // Photo list management
         removePhotoFromList,
+        handlePhotoRemovalNavigationBulk,
 
         // Photo operations
         permanentlyDeletePhoto,

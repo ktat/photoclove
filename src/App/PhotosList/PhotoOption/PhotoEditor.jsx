@@ -212,6 +212,9 @@ function PhotoEditor(props) {
                 cssStyle: css
             });
             setSavedCssStyle(css);
+            // Phase 2: reflect cssStyle in grid/mini/cache so close returns
+            // instantly without a refetch.
+            props.onCssStyleUpdate?.(currentPhotoPath, css);
             // Reset parent state - changes are now saved
             props.setEditorHasUnsavedChanges?.(false);
             props.addFooterMessage('editor', t('photoEditor.styleApplied'), false, 3000);
@@ -248,7 +251,7 @@ function PhotoEditor(props) {
                 photoPath: currentPhotoPath,
                 cssStyle: css,
                 addFooterMessage: props.addFooterMessage,
-                onPhotosRefresh: props.onPhotosRefresh
+                onAddPhotoToList: props.onAddPhotoToList
             });
         } catch (error) {
             logger.error('PhotoEditor', 'save_styled_copy_failed', 'Failed to save styled copy', { error: error.message });

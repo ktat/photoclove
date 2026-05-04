@@ -3,7 +3,6 @@
 //! This module provides shared functionality for CLIP-style vision-language models.
 
 use super::{AIClassifierBackend, ClassificationResult, ClassifierConfig};
-use crate::domain_service::ai_tagging::categories::AutoTagCategory;
 use ort::session::builder::GraphOptimizationLevel;
 use ort::session::Session;
 use ort::value::Tensor;
@@ -11,165 +10,7 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 
-/// Default labels for CLIP-based classification
-pub const DEFAULT_CLIP_LABELS: &[&str] = &[
-    // People
-    "a photo of a person",
-    "a photo of people",
-    "a photo of a face",
-    "a group photo",
-    "a selfie",
-    // Animals
-    "a photo of a dog",
-    "a photo of a cat",
-    "a photo of a bird",
-    "a photo of fish",
-    "a photo of a horse",
-    "a photo of wildlife",
-    "a photo of an insect",
-    "a photo of a cow",
-    // Nature
-    "a photo of the ocean",
-    "a photo of a beach",
-    "a photo of mountains",
-    "a photo of a forest",
-    "a photo of a sunset",
-    "a photo of the sky",
-    "a photo of a lake",
-    "a photo of a river",
-    // Plants
-    "a photo of flowers",
-    "a photo of trees",
-    "a photo of a garden",
-    "a photo of plants",
-    // Scenes
-    "a photo of food",
-    "a photo of a building",
-    "a photo of a street",
-    "an indoor photo",
-    "an outdoor photo",
-    "a night photo",
-    // Events
-    "a wedding photo",
-    "a birthday party photo",
-    "a travel photo",
-    "a vacation photo",
-];
-
-/// Map a CLIP label to an AutoTagCategory
-pub fn label_to_category(label: &str) -> Option<AutoTagCategory> {
-    let lower = label.to_lowercase();
-
-    // Events (check first - more specific patterns)
-    if lower.contains("wedding") {
-        return Some(AutoTagCategory::Wedding);
-    }
-    if lower.contains("birthday") {
-        return Some(AutoTagCategory::Birthday);
-    }
-    if lower.contains("travel") || lower.contains("vacation") {
-        return Some(AutoTagCategory::Travel);
-    }
-
-    // People
-    if lower.contains("person") || lower.contains("selfie") {
-        return Some(AutoTagCategory::Person);
-    }
-    if lower.contains("people") || lower.contains("group photo") {
-        return Some(AutoTagCategory::Group);
-    }
-    if lower.contains("face") {
-        return Some(AutoTagCategory::Face);
-    }
-
-    // Animals
-    if lower.contains("dog") {
-        return Some(AutoTagCategory::Dog);
-    }
-    if lower.contains("cat") {
-        return Some(AutoTagCategory::Cat);
-    }
-    if lower.contains("bird") {
-        return Some(AutoTagCategory::Bird);
-    }
-    if lower.contains("fish") {
-        return Some(AutoTagCategory::Fish);
-    }
-    if lower.contains("horse") {
-        return Some(AutoTagCategory::Horse);
-    }
-    if lower.contains("cow") {
-        return Some(AutoTagCategory::Cow);
-    }
-    if lower.contains("wildlife") {
-        return Some(AutoTagCategory::Wildlife);
-    }
-    if lower.contains("insect") {
-        return Some(AutoTagCategory::Insect);
-    }
-
-    // Nature
-    if lower.contains("ocean") || lower.contains("sea") {
-        return Some(AutoTagCategory::Sea);
-    }
-    if lower.contains("beach") {
-        return Some(AutoTagCategory::Beach);
-    }
-    if lower.contains("mountain") {
-        return Some(AutoTagCategory::Mountain);
-    }
-    if lower.contains("forest") {
-        return Some(AutoTagCategory::Forest);
-    }
-    if lower.contains("sunset") {
-        return Some(AutoTagCategory::Sunset);
-    }
-    if lower.contains("sky") {
-        return Some(AutoTagCategory::Sky);
-    }
-    if lower.contains("lake") {
-        return Some(AutoTagCategory::Lake);
-    }
-    if lower.contains("river") {
-        return Some(AutoTagCategory::River);
-    }
-
-    // Plants
-    if lower.contains("flower") {
-        return Some(AutoTagCategory::Flower);
-    }
-    if lower.contains("tree") {
-        return Some(AutoTagCategory::Tree);
-    }
-    if lower.contains("garden") {
-        return Some(AutoTagCategory::Garden);
-    }
-    if lower.contains("plant") {
-        return Some(AutoTagCategory::Plant);
-    }
-
-    // Scenes
-    if lower.contains("food") {
-        return Some(AutoTagCategory::Food);
-    }
-    if lower.contains("building") {
-        return Some(AutoTagCategory::Building);
-    }
-    if lower.contains("street") {
-        return Some(AutoTagCategory::Street);
-    }
-    if lower.contains("indoor") {
-        return Some(AutoTagCategory::Indoor);
-    }
-    if lower.contains("outdoor") {
-        return Some(AutoTagCategory::Outdoor);
-    }
-    if lower.contains("night") {
-        return Some(AutoTagCategory::Night);
-    }
-
-    None
-}
+pub use super::clip_labels::{label_to_category, DEFAULT_CLIP_LABELS};
 
 /// Calculate cosine similarity between two vectors
 pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
@@ -524,17 +365,26 @@ impl<C: ClipModelConfig> BaseClipClassifier<C> {
 
     /// Load pre-computed text embeddings from JSON file
     fn load_precomputed_embeddings(&mut self) -> Result<bool, String> {
-        let embeddings_path = self.models_dir.join(C::embeddings_filename());
+        let filename = C::embeddings_filename();
+        let embeddings_path = match super::model_manager::find_model_file(filename) {
+            Some(path) => path,
+            None => {
+                log::debug!(
+                    target: "ai_tagging",
+                    "precomputed_embeddings_not_found; backend={}; filename={}",
+                    C::BACKEND_NAME,
+                    filename
+                );
+                return Ok(false);
+            }
+        };
 
-        if !embeddings_path.exists() {
-            log::debug!(
-                target: "ai_tagging",
-                "precomputed_embeddings_not_found; backend={}; path={}",
-                C::BACKEND_NAME,
-                embeddings_path.display()
-            );
-            return Ok(false);
-        }
+        log::info!(
+            target: "ai_tagging",
+            "loading_precomputed_embeddings; backend={}; path={}",
+            C::BACKEND_NAME,
+            embeddings_path.display()
+        );
 
         let data = std::fs::read_to_string(&embeddings_path)
             .map_err(|e| format!("Failed to read embeddings file: {}", e))?;
@@ -605,18 +455,7 @@ impl<C: ClipModelConfig> AIClassifierBackend for BaseClipClassifier<C> {
             return Ok(());
         }
 
-        // Set ORT_DYLIB_PATH if needed
-        if std::env::var("ORT_DYLIB_PATH").is_err() {
-            if let Some(data_dir) = dirs::data_local_dir() {
-                let lib_path = data_dir
-                    .join("photoclove")
-                    .join("lib")
-                    .join("libonnxruntime.so");
-                if lib_path.exists() {
-                    std::env::set_var("ORT_DYLIB_PATH", &lib_path);
-                }
-            }
-        }
+        crate::utils::ensure_ort_dylib_loaded()?;
 
         let visual_path = self.visual_model_path();
         let text_path = self.text_model_path();

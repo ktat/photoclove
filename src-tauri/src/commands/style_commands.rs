@@ -5,6 +5,8 @@ use crate::repository;
 use crate::repository::MetaInfoDB;
 use crate::value::{date, file};
 use base64::{engine::general_purpose, Engine as _};
+use chrono::Utc;
+use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::Path;
@@ -73,7 +75,7 @@ pub async fn get_css_style(
 /// * `state` - Application state containing database and config
 ///
 /// # Returns
-/// * `Ok(String)` - Path to the newly created styled copy
+/// * `Ok(String)` - JSON string with metadata: `{newPhotoPath, createdAt, hasThumbnail, metaData, star, comment, tags, cssStyle}`
 /// * `Err(String)` - Error message on failure
 #[tauri::command]
 pub async fn save_styled_copy_from_frontend(
@@ -109,9 +111,31 @@ pub async fn save_styled_copy_from_frontend(
     let new_abs_path_str = file::to_absolute_path(&new_rel_path_str, &state.config.import_to);
     let new_abs_path = Path::new(&new_abs_path_str);
 
+    // Helper to fetch original photo's metadata (creates fresh Photo since
+    // get_photo_meta consumes its argument)
+    let fetch_original_meta = || {
+        let original_photo = photo::Photo::new(
+            file::File::from_relative(original_photo_path.to_string()),
+            None,
+        );
+        state.meta_db.get_photo_meta(original_photo)
+    };
+
     // 4. Check if styled copy already exists (use absolute path for filesystem check)
     if new_abs_path.exists() {
-        return Ok(new_rel_path_str);
+        let original_meta = fetch_original_meta();
+        let now_iso = Utc::now().to_rfc3339();
+        return Ok(json!({
+            "newPhotoPath": new_rel_path_str,
+            "createdAt": now_iso,
+            "hasThumbnail": false,
+            "metaData": null,
+            "star": original_meta.star.star(),
+            "comment": original_meta.comment.comment(),
+            "tags": [],
+            "cssStyle": css_style,
+        })
+        .to_string());
     }
 
     // 5. Decode base64 image data and save (use absolute path for filesystem write)
@@ -127,13 +151,13 @@ pub async fn save_styled_copy_from_frontend(
     let new_file = file::File::from_relative(new_rel_path_str.clone());
     let new_photo = photo::Photo::new(new_file, Some(state.config.clone()));
 
-    // 7. Set initial metadata (copy from original photo if exists)
+    // 7. Fetch original meta BEFORE record_photos_meta_data consumes new_photo
     let meta_db = &state.meta_db;
-    let original_photo = photo::Photo::new(
-        file::File::from_relative(original_photo_path.to_string()),
-        None,
-    );
-    let original_meta = meta_db.get_photo_meta(original_photo);
+    let original_meta = fetch_original_meta();
+
+    // Capture primitive values before the match consumes original_meta fields
+    let star_val = original_meta.star.star();
+    let comment_val = original_meta.comment.comment();
 
     // Extract date for thumbnail generation before consuming new_photo
     let photo_dir_date = new_photo.get_imported_dir_date();
@@ -142,12 +166,12 @@ pub async fn save_styled_copy_from_frontend(
     match meta_db.record_photos_meta_data(vec![new_photo]) {
         Ok(_) => {
             // Copy star rating and comment from original (use relative paths for DB)
-            if original_meta.star.star() > 0 {
+            if star_val > 0 {
                 let new_photo_for_star =
                     photo::Photo::new(file::File::from_relative(new_rel_path_str.clone()), None);
                 meta_db.save_star(&new_photo_for_star, original_meta.star);
             }
-            if !original_meta.comment.comment().is_empty() {
+            if !comment_val.is_empty() {
                 let new_photo_for_comment =
                     photo::Photo::new(file::File::from_relative(new_rel_path_str.clone()), None);
                 meta_db.save_comment(&new_photo_for_comment, original_meta.comment);
@@ -189,7 +213,19 @@ pub async fn save_styled_copy_from_frontend(
         "first_edit",
     );
 
-    Ok(new_rel_path_str)
+    // 10. Return JSON object with metadata
+    let now_iso = Utc::now().to_rfc3339();
+    Ok(json!({
+        "newPhotoPath": new_rel_path_str,
+        "createdAt": now_iso,
+        "hasThumbnail": false,
+        "metaData": null,
+        "star": star_val,
+        "comment": comment_val,
+        "tags": [],
+        "cssStyle": css_style,
+    })
+    .to_string())
 }
 
 /// Normalizes CSS style string for consistent hashing

@@ -144,8 +144,9 @@ const TagSelector = ({ photoPath, selectedTags = [], onTagsChange }) => {
     };
 
     const handleTagCreated = (newTag) => {
-        setAllTags(prev => [...prev, newTag]);
-        handleTagSelect(newTag);
+        const flagged = { ...newTag, justCreated: true };
+        setAllTags(prev => [...prev, flagged]);
+        handleTagSelect(flagged);
     };
 
     const handleDropdownToggle = () => {

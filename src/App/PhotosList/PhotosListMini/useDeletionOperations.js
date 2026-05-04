@@ -156,6 +156,16 @@ export function useDeletionOperations({
                     clearSelection: false
                 });
 
+                // Directly update photosListMiniAllPhotos to reflect deletion.
+                // useFilteredPhotosSync is frozen while PhotoDisplay is open,
+                // so we must bypass it here to keep the mini list in sync.
+                if (setAllPhotos && allPhotos) {
+                    const updatedPhotos = allPhotos.filter(
+                        p => (p?.originalPath ?? p) !== currentPhoto.originalPath
+                    );
+                    setAllPhotos(updatedPhotos);
+                }
+
                 logger.info('useDeletionOperations', 'photo_deleted', 'Photo moved to trash', {
                     photoPath: currentPhoto.originalPath
                 });

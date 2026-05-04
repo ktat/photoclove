@@ -13,13 +13,10 @@ export function usePhotoDataLoader({
     convertPhotosToEntities,
     updateAlbumsList,
     setFilteredAlbums,
-    updateAlbumPhotos,
     setPhotosList,
     setAllPhotosForCurrentFetch,
     setTagsList,
     setFilteredTags,
-    setTagPhotos,
-    setTrashPhotos,
     setCurrentAlbumName,
     openAlbum,
     setFilterOptions,
@@ -120,7 +117,7 @@ export function usePhotoDataLoader({
 
             // Wrapper signature: (photosData, isFromTrash, toJSON) - appConfig via closure
             const photosAsJSON = convertPhotosToEntities(albumPhotosData, false, true);
-            updateAlbumPhotos(photosAsJSON);
+            setAllPhotosForCurrentFetch(photosAsJSON);
             setPhotosList({ photos: photosAsJSON });
         } catch (error) {
             // Ignore errors from cancelled requests
@@ -129,22 +126,20 @@ export function usePhotoDataLoader({
             }
             // Error already handled by loadUnifiedData
         }
-    }, [updateAlbumPhotos, loadUnifiedData, setPhotosList, convertPhotosToEntities, startNewRequest, isRequestValid, burstModeEnabled]);
+    }, [setAllPhotosForCurrentFetch, loadUnifiedData, setPhotosList, convertPhotosToEntities, startNewRequest, isRequestValid, burstModeEnabled]);
 
-    // Handle album click to switch to album view
+    // Handle album click to switch to album view.
+    // Photo loading is now driven by useViewModeSync (cache lookup -> backend
+    // load), so we don't trigger loadAlbumPhotos here anymore.
     const handleAlbumClick = useCallback((album) => {
         logOperation.click('album', {
             albumId: album.id,
             albumName: album.name
         });
 
-        // Switch to album view mode
         openAlbum(album.id);
         setCurrentAlbumName(album.name);
-
-        // Load photos for this album
-        loadAlbumPhotos(album.id);
-    }, [openAlbum, loadAlbumPhotos, logOperation, setCurrentAlbumName]);
+    }, [openAlbum, logOperation, setCurrentAlbumName]);
 
     // Tag loading functions
     const loadTags = useCallback(async () => {
@@ -198,8 +193,8 @@ export function usePhotoDataLoader({
             // Wrapper signature: (photosData, isFromTrash, toJSON) - appConfig via closure
             const photosAsJSON = convertPhotosToEntities(tagPhotosData, false, true);
 
-            // Set tagPhotos with JSON for React state
-            setTagPhotos(photosAsJSON);
+            // Tag photos now flow through allPhotosForCurrentFetch (Phase 1 unification)
+            setAllPhotosForCurrentFetch(photosAsJSON);
             setPhotosList({ photos: photosAsJSON });
         } catch (error) {
             // Ignore errors from cancelled requests
@@ -208,7 +203,7 @@ export function usePhotoDataLoader({
             }
             // Error already handled by loadUnifiedData
         }
-    }, [loadUnifiedData, setTagPhotos, setPhotosList, convertPhotosToEntities, startNewRequest, isRequestValid, burstModeEnabled]);
+    }, [loadUnifiedData, setAllPhotosForCurrentFetch, setPhotosList, convertPhotosToEntities, startNewRequest, isRequestValid, burstModeEnabled]);
 
     const loadPersonPhotos = useCallback(async (personId) => {
         // Start new request, invalidating any previous pending requests
@@ -281,49 +276,7 @@ export function usePhotoDataLoader({
         }
     }, [loadUnifiedData, setPhotosList, setAllPhotosForCurrentFetch, convertPhotosToEntities, startNewRequest, isRequestValid]);
 
-    // Load trash photos
-    const loadTrashPhotos = useCallback(async () => {
-        // Start new request, invalidating any previous pending requests
-        const requestId = startNewRequest();
-
-        try {
-            const photosData = await loadUnifiedData('trash', {}, {
-                operation: 'trash photos',
-                hasConfig: !!appConfig,
-                configTrashPath: appConfig?.trash_path,
-                configThumbnailStore: appConfig?.thumbnail_store,
-                requestId
-            });
-
-            // Check if this request was cancelled while waiting
-            if (!isRequestValid(requestId)) {
-                logger.debug('PhotosList', 'trash_request_cancelled', 'Ignoring stale trash photos response', {
-                    requestId
-                });
-                return;
-            }
-
-            // Handle both array and object formats
-            let photos = [];
-            if (Array.isArray(photosData)) {
-                photos = photosData;
-            } else if (photosData && photosData.photos) {
-                photos = photosData.photos;
-            }
-
-            // Wrapper signature: (photosData, isFromTrash, toJSON) - appConfig via closure
-            const photosAsJSON = convertPhotosToEntities(photos, true, true);
-            setTrashPhotos(photosAsJSON);
-        } catch (error) {
-            // Ignore errors from cancelled requests
-            if (!isRequestValid(requestId)) {
-                return;
-            }
-            // Error already handled by loadUnifiedData
-        }
-    }, [loadUnifiedData, appConfig, convertPhotosToEntities, setTrashPhotos, startNewRequest, isRequestValid]);
-
-    // Filter options caching function  
+    // Filter options caching function
     const loadFilterOptions = useCallback(async () => {
         if (filterOptions || isFilterOptionsLoading) return filterOptions;
 
@@ -370,7 +323,6 @@ export function usePhotoDataLoader({
         loadUnknownFacesPhotos,
 
         // Trash operations
-        loadTrashPhotos,
         
         // Filter options
         loadFilterOptions,

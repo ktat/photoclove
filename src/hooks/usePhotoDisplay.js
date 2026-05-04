@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { logger } from '../services/LoggerService.js';
 import { checkFirstActionAchievement } from '../services/AchievementService.js';
 import { Photo } from '../domain/Photo.js';
+import { getPhotoSortComparator } from '../utils/PhotoSort.js';
 
 /**
  * Custom hook for photo display management
@@ -11,23 +12,38 @@ import { Photo } from '../domain/Photo.js';
  * - Closing photo display
  * - Managing right column visibility
  *
+ * Phase 2: closePhotoDisplay no longer calls refreshPhotos. Edits made
+ * during PhotoDisplay are propagated in-memory via Phase 2 helpers
+ * (setStarWithUpdate, updatePhotoTags, updatePhotoComment,
+ * updatePhotoCssStyle, addPhotoToList, handlePhotoRemovalNavigationBulk).
+ * useFilteredPhotosSync reconciles photosListMiniAllPhotos with the
+ * filter result when currentPhoto becomes null. If sortDirty is true,
+ * we apply a local re-sort here so the grid lands in the correct
+ * order without a backend roundtrip.
+ *
  * @param {Object} params
- * @param {Array} params.photosListMiniAllPhotos - All photos for mini display
- * @param {Object} params.viewModeObj - ViewMode object for mode detection
- * @param {Function} params.setCurrentPhoto - Setter for current photo entity
- * @param {Function} params.setCurrentPhotoIndex - Setter for current photo index
- * @param {Function} params.setPhotosListMiniCurrentIndex - Setter for mini list index
- * @param {Function} params.setPhotosListMiniReread - Setter to trigger thumbnail re-read
- * @param {Function} params.setShowSideMenu - Setter for side menu visibility
- * @param {Object} params.currentPhotoLoadingController - AbortController for photo loading
- * @param {Function} params.setCurrentPhotoLoadingController - Setter for loading controller
- * @param {Function} params.handleError - Error handler function
- * @param {Function} params.refreshPhotos - Function to refresh photos from backend
- * @param {boolean} params.photosListMiniReread - Current reread state
+ * @param {Array} params.photosListMiniAllPhotos
+ * @param {Function} params.setPhotosListMiniAllPhotos
+ * @param {Function} params.setAllPhotosForCurrentFetch
+ * @param {Object} params.viewModeObj
+ * @param {Function} params.setCurrentPhoto
+ * @param {Function} params.setCurrentPhotoIndex
+ * @param {Function} params.setPhotosListMiniCurrentIndex
+ * @param {Function} params.setPhotosListMiniReread
+ * @param {Function} params.setShowSideMenu
+ * @param {Object} params.currentPhotoLoadingController
+ * @param {Function} params.setCurrentPhotoLoadingController
+ * @param {boolean} params.photosListMiniReread
+ * @param {boolean} params.sortDirty
+ * @param {Function} params.setSortDirty
+ * @param {number} params.sortOfPhotos
+ * @param {Function} params.patchCacheCurrentView - (updater) => void; updates the cached array for the current viewKey
  * @returns {Object} Photo display management functions
  */
 export function usePhotoDisplay({
     photosListMiniAllPhotos,
+    setPhotosListMiniAllPhotos,
+    setAllPhotosForCurrentFetch,
     viewModeObj,
     setCurrentPhoto,
     setCurrentPhotoIndex,
@@ -36,9 +52,11 @@ export function usePhotoDisplay({
     setShowSideMenu,
     currentPhotoLoadingController,
     setCurrentPhotoLoadingController,
-    handleError,
-    refreshPhotos,
-    photosListMiniReread
+    photosListMiniReread,
+    sortDirty,
+    setSortDirty,
+    sortOfPhotos,
+    patchCacheCurrentView
 }) {
     /**
      * Display a photo in full-screen view
@@ -89,34 +107,50 @@ export function usePhotoDisplay({
     ]);
 
     /**
-     * Close the photo display and return to grid view
+     * Close the photo display and return to grid view.
+     *
+     * Phase 2: no backend refetch. The freeze on useFilteredPhotosSync
+     * lifts as currentPhoto becomes null and the effect reconciles the
+     * mini list. If sortDirty is true (star edits made order stale),
+     * apply a local re-sort to all three state slots first.
      */
     const closePhotoDisplay = useCallback(() => {
         logger.info('usePhotoDisplay', 'close_photo_display', 'Closing full-screen photo display', {
-            viewMode: viewModeObj?.currentMode
+            viewMode: viewModeObj?.currentMode,
+            sortDirty
         });
 
         setShowSideMenu(false);
         setCurrentPhoto(null);
 
-        // Cancel any existing photo loading before starting new request
         if (currentPhotoLoadingController) {
             currentPhotoLoadingController.abort();
             setCurrentPhotoLoadingController(null);
         }
 
-        // Refresh photos from backend when closing PhotoViewer
-        // This ensures tag/metadata changes made in viewer are reflected in grid
-        const fetchPhotos = async () => refreshPhotos();
-        fetchPhotos().catch(error => handleError(error, 'Refresh photos after closing display'));
+        if (sortDirty) {
+            const comparator = getPhotoSortComparator(sortOfPhotos);
+            if (comparator) {
+                setAllPhotosForCurrentFetch(prev => [...prev].sort(comparator));
+                setPhotosListMiniAllPhotos(prev => [...prev].sort(comparator));
+                if (patchCacheCurrentView) {
+                    patchCacheCurrentView(prev => [...prev].sort(comparator));
+                }
+            }
+            if (setSortDirty) setSortDirty(false);
+        }
     }, [
         setShowSideMenu,
         viewModeObj,
         setCurrentPhoto,
         currentPhotoLoadingController,
         setCurrentPhotoLoadingController,
-        refreshPhotos,
-        handleError
+        sortDirty,
+        setSortDirty,
+        sortOfPhotos,
+        setAllPhotosForCurrentFetch,
+        setPhotosListMiniAllPhotos,
+        patchCacheCurrentView
     ]);
 
     /**

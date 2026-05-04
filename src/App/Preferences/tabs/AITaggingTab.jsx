@@ -61,9 +61,20 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
     const [progress, setProgress] = useState({ message: '', progress: 0 });
     const [modelStatuses, setModelStatuses] = useState({});
     const [downloadingModelId, setDownloadingModelId] = useState(null);
+    const [onnxStatus, setOnnxStatus] = useState(null);
+    const [downloadingOnnx, setDownloadingOnnx] = useState(false);
     const prevModelTypeRef = React.useRef(null);
 
-    // Fetch model statuses on mount
+    const fetchOnnxStatus = async () => {
+        try {
+            const result = await invoke("get_onnx_runtime_status");
+            setOnnxStatus(JSON.parse(result));
+        } catch (error) {
+            logger.error('AITaggingTab', 'onnx_status_error', 'Failed to load ONNX Runtime status', { error });
+        }
+    };
+
+    // Fetch model statuses and ONNX runtime status on mount
     useEffect(() => {
         const fetchModelStatuses = async () => {
             try {
@@ -82,7 +93,23 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
             }
         };
         fetchModelStatuses();
+        fetchOnnxStatus();
     }, []);
+
+    const handleDownloadOnnx = async () => {
+        setDownloadingOnnx(true);
+        try {
+            if (addFooterMessage) addFooterMessage("onnx_runtime_download", t('preferences:aiTagging.runtime.downloading'));
+            await invoke("download_onnx_runtime");
+            await fetchOnnxStatus();
+            if (addFooterMessage) addFooterMessage("onnx_runtime_download", t('preferences:aiTagging.runtime.downloadSuccess'));
+        } catch (error) {
+            logger.error('AITaggingTab', 'onnx_download_error', 'Failed to install ONNX Runtime', { error });
+            if (addFooterMessage) addFooterMessage("onnx_runtime_download_error", t('preferences:aiTagging.runtime.downloadFailed', { error: String(error) }));
+        } finally {
+            setDownloadingOnnx(false);
+        }
+    };
 
     // Listen for AI tagging progress events
     useEffect(() => {
@@ -298,6 +325,54 @@ function AITaggingTab({ config, setConfig, addFooterMessage }) {
                     ⚠️ {t('preferences:aiTagging.enableWarning')}
                 </p>
             </div>
+
+            {aiConfig.enabled && onnxStatus && !onnxStatus.installed && (
+                <div style={{
+                    marginTop: 'var(--space-3)',
+                    padding: 'var(--space-3)',
+                    background: 'var(--color-bg-surface)',
+                    border: '1px solid var(--color-warning)',
+                    borderRadius: 'var(--radius-md)',
+                }}>
+                    <div style={{ fontWeight: '600', marginBottom: 'var(--space-2)' }}>
+                        ⚠️ {t('preferences:aiTagging.runtime.notInstalled')}
+                    </div>
+                    <p style={{
+                        fontSize: 'var(--font-size-sm)',
+                        color: 'var(--color-text-secondary)',
+                        margin: '0 0 var(--space-2) 0',
+                    }}>
+                        {t('preferences:aiTagging.runtime.required')}
+                    </p>
+                    {onnxStatus.auto_install_supported ? (
+                        <button
+                            onClick={handleDownloadOnnx}
+                            disabled={downloadingOnnx}
+                            style={{
+                                padding: 'var(--space-1) var(--space-3)',
+                                background: downloadingOnnx ? 'var(--color-bg-muted)' : 'var(--color-primary)',
+                                color: 'var(--color-bg-base)',
+                                border: 'none',
+                                borderRadius: 'var(--radius-sm)',
+                                cursor: downloadingOnnx ? 'wait' : 'pointer',
+                                fontSize: 'var(--font-size-sm)',
+                            }}
+                        >
+                            {downloadingOnnx
+                                ? t('preferences:aiTagging.runtime.downloading')
+                                : t('preferences:aiTagging.runtime.download')}
+                        </button>
+                    ) : (
+                        <p style={{
+                            fontSize: 'var(--font-size-xs)',
+                            color: 'var(--color-text-muted)',
+                            margin: 0,
+                        }}>
+                            {t('preferences:aiTagging.runtime.notSupported')}
+                        </p>
+                    )}
+                </div>
+            )}
 
             {aiConfig.enabled && (
                 <>

@@ -19,35 +19,6 @@ export function useViewModeChangeEffect({
 }
 
 /**
- * Hook for syncing photos to album/tag mode state
- * Note: Must sync even when photo count is 0 (e.g., after removing all photos from a tag)
- */
-export function usePhotoSyncEffect({
-    viewModeObj,
-    allPhotosForCurrentFetch,
-    updateAlbumPhotos,
-    setTagPhotos
-}) {
-    useEffect(() => {
-        // Only sync when in album/tag mode and allPhotosForCurrentFetch is an array
-        // (including empty arrays to handle cases where all photos are removed)
-        if (!Array.isArray(allPhotosForCurrentFetch)) return;
-
-        if (viewModeObj.isAlbumMode()) {
-            updateAlbumPhotos(allPhotosForCurrentFetch);
-            logger.debug('usePhotosListEffects', 'sync_album', 'Synced to albumPhotos', {
-                photoCount: allPhotosForCurrentFetch.length
-            });
-        } else if (viewModeObj.isTagMode()) {
-            setTagPhotos(allPhotosForCurrentFetch);
-            logger.debug('usePhotosListEffects', 'sync_tag', 'Synced to tagPhotos', {
-                photoCount: allPhotosForCurrentFetch.length
-            });
-        }
-    }, [allPhotosForCurrentFetch, viewModeObj, updateAlbumPhotos, setTagPhotos]);
-}
-
-/**
  * Hook for auto-opening selection tab when items are selected
  */
 export function useSelectionTabEffect({
@@ -119,7 +90,7 @@ export function useSortChangeEffect({
     viewModeObj,
     appConfig,
     sortInitialized,
-    loadAllPhotosBasedOnViewMode,
+    refreshPhotosOnly,
     handleError
 }) {
     useEffect(() => {
@@ -133,16 +104,19 @@ export function useSortChangeEffect({
             return;
         }
 
-        // For other modes, need to re-fetch from backend with new sort value
+        // For other modes, need to re-fetch from backend with new sort value.
+        // Route through refreshPhotosOnly so this load goes through the same
+        // gen-guard / min-loading-time wrapper as the view-mode-switch load
+        // (no double-fire conflicts, consistent loading overlay UX).
         logger.info('usePhotosListEffects', 'sort_reload', 'Sort changed, reloading', {
             viewMode: viewModeObj.mode,
             sortOfPhotos
         });
 
-        loadAllPhotosBasedOnViewMode(viewModeObj, appConfig).catch(error => {
+        refreshPhotosOnly().catch?.(error => {
             handleError(error, 'Reload photos after sort change');
         });
-    }, [sortOfPhotos, viewModeObj, appConfig, importSortOfPhotos, loadAllPhotosBasedOnViewMode, handleError, sortInitialized]);
+    }, [sortOfPhotos, viewModeObj, appConfig, importSortOfPhotos, refreshPhotosOnly, handleError, sortInitialized]);
 }
 
 /**
@@ -153,14 +127,16 @@ export function useBurstModeChangeEffect({
     burstModeEnabled,
     viewModeObj,
     appConfig,
-    loadAllPhotosBasedOnViewMode,
+    refreshPhotosOnly,
     handleError
 }) {
     const prevBurstModeEnabled = useRef(burstModeEnabled);
 
     useEffect(() => {
-        // Skip if no change (initial render)
+        // Skip if no change (initial render). NOTE: use `===` carefully —
+        // primitives only.
         if (prevBurstModeEnabled.current === burstModeEnabled) return;
+        const wasEnabled = prevBurstModeEnabled.current;
         prevBurstModeEnabled.current = burstModeEnabled;
 
         if (!viewModeObj || !appConfig) return;
@@ -175,30 +151,47 @@ export function useBurstModeChangeEffect({
 
         logger.info('usePhotosListEffects', 'burst_mode_reload', 'Burst mode changed, reloading', {
             viewMode: viewModeObj.mode,
-            burstModeEnabled
+            from: wasEnabled,
+            to: burstModeEnabled,
         });
 
-        loadAllPhotosBasedOnViewMode(viewModeObj, appConfig).catch(error => {
-            handleError(error, 'Reload photos after burst mode change');
-        });
-    }, [burstModeEnabled, viewModeObj, appConfig, loadAllPhotosBasedOnViewMode, handleError]);
+        // Use refreshPhotosOnly (same wrapper as view-mode-switch loads):
+        // gen-guard prevents double-fire conflicts with concurrent loads,
+        // and the loading overlay stays visible for at least 500ms.
+        const promise = refreshPhotosOnly();
+        if (promise && typeof promise.catch === 'function') {
+            promise.catch(error => {
+                handleError(error, 'Reload photos after burst mode change');
+            });
+        }
+    }, [burstModeEnabled, viewModeObj, appConfig, refreshPhotosOnly, handleError]);
 }
 
 /**
- * Hook for auto-closing photo display in list modes
+ * Hook for auto-closing photo display when the underlying list changes.
+ *
+ * Closes the PhotoDisplay any time the user switches view mode while a
+ * photo is open. The previous behaviour only triggered on list-style modes
+ * (ALBUM_LIST/TAG_LIST/FACE_LIST/HOME), but switching to a *different*
+ * album/tag/search/trash should also close the display — otherwise the
+ * user is left looking at a photo from the new list with the prior view's
+ * navigation context.
  */
 export function useAutoClosePhotoDisplayEffect({
     viewMode,
     currentPhoto,
     closePhotoDisplay
 }) {
+    const prevViewModeRef = useRef(viewMode);
     useEffect(() => {
-        // Close photo display when switching to modes that show lists instead of photos
-        if (viewMode === VIEW_MODES.ALBUM_LIST || viewMode === VIEW_MODES.TAG_LIST || viewMode === VIEW_MODES.FACE_LIST || viewMode === VIEW_MODES.HOME) {
-            if (currentPhoto) {
-                logger.info('usePhotosListEffects', 'auto_close', 'Auto-closing photo display for list mode', { viewMode });
-                closePhotoDisplay();
-            }
+        const prev = prevViewModeRef.current;
+        prevViewModeRef.current = viewMode;
+        if (prev !== viewMode && currentPhoto) {
+            logger.info('usePhotosListEffects', 'auto_close', 'Auto-closing photo display on view-mode change', {
+                from: prev,
+                to: viewMode,
+            });
+            closePhotoDisplay();
         }
     }, [viewMode, currentPhoto, closePhotoDisplay]);
 }
@@ -258,7 +251,6 @@ export function useViewModeSideMenuEffect({
 
 export default {
     useViewModeChangeEffect,
-    usePhotoSyncEffect,
     useSelectionTabEffect,
     useSortChangeEffect,
     useBurstModeChangeEffect,

@@ -13,6 +13,7 @@
 import { useCallback } from 'react';
 import { VIEW_MODES } from '../constants/viewModes.js';
 import { logger } from '../services/LoggerService.js';
+import { isStarSort, getPhotoSortComparator, findInsertIndex } from '../utils/PhotoSort.js';
 
 /**
  * Custom hook for photo list helper functions
@@ -55,8 +56,27 @@ export function usePhotoListHelpers({
     displayedPhotos,
     filteredPhotos,
     selectAllPhotos,
-    tabClass
+    tabClass,
+    photosCache,
+    currentViewKey,
+    sortOfPhotos,
+    setSortDirty,
+    photosListMiniCurrentIndex,
+    setPhotosListMiniCurrentIndex,
+    currentPhotoIndex,
+    setCurrentPhotoIndex,
+    displayedPhotoCount,
+    setDisplayedPhotoCount,
+    sortDirty
 }) {
+    // Patch the View Cache entry for the current view so that switching
+    // away and back doesn't restore stale (pre-edit) photos. Phase 1
+    // introduced the cache; without this, edits become invisible after a
+    // round-trip through another view.
+    const patchCacheCurrentView = useCallback((updater) => {
+        if (!photosCache?.patch || !currentViewKey) return;
+        photosCache.patch(currentViewKey, updater);
+    }, [photosCache, currentViewKey]);
     /**
      * Enhanced setStar function that updates photosListMiniAllPhotos
      * @param {Array} newStar - New star rating array
@@ -75,23 +95,36 @@ export function usePhotoListHelpers({
         }
 
         // Update the star value in photosListMiniAllPhotos
-        const updatedPhotos = photosListMiniAllPhotos.map(photoJSON => {
+        setPhotosListMiniAllPhotos(prev => prev.map(photoJSON => {
             if (photoJSON.originalPath === currentPhoto?.originalPath) {
                 return { ...photoJSON, star: starValue };
             }
             return photoJSON;
-        });
-        setPhotosListMiniAllPhotos(updatedPhotos);
+        }));
 
         // Also update allPhotosForCurrentFetch to trigger re-filtering
-        const updatedAllPhotos = allPhotosForCurrentFetch.map(photo => {
+        setAllPhotosForCurrentFetch(prev => prev.map(photo => {
             if (photo.originalPath === currentPhoto?.originalPath) {
                 return { ...photo, star: starValue };
             }
             return photo;
-        });
-        setAllPhotosForCurrentFetch(updatedAllPhotos);
-    }, [setStar, photosListMiniAllPhotos, setPhotosListMiniAllPhotos, currentPhoto, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch]);
+        }));
+
+        // Keep the View Cache for this view in sync so a future switch
+        // back doesn't restore the pre-edit star value.
+        patchCacheCurrentView(prev => prev.map(photo => {
+            if (photo.originalPath === currentPhoto?.originalPath) {
+                return { ...photo, star: starValue };
+            }
+            return photo;
+        }));
+
+        // Phase 2: if current sort is star-based the on-screen order is now
+        // stale. closePhotoDisplay will apply a local re-sort.
+        if (isStarSort(sortOfPhotos) && setSortDirty) {
+            setSortDirty(true);
+        }
+    }, [setStar, setPhotosListMiniAllPhotos, currentPhoto, setAllPhotosForCurrentFetch, patchCacheCurrentView, sortOfPhotos, setSortDirty]);
 
     /**
      * Update comment in photo lists
@@ -116,21 +149,160 @@ export function usePhotoListHelpers({
             return photo;
         });
         setAllPhotosForCurrentFetch(updatedAllPhotos);
-    }, [photosListMiniAllPhotos, setPhotosListMiniAllPhotos, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch]);
+
+        // Keep the View Cache for this view in sync.
+        patchCacheCurrentView(prev => prev.map(photo => {
+            if (photo.originalPath === photoPath) {
+                return { ...photo, comment: hasComment ? "has comment" : null };
+            }
+            return photo;
+        }));
+    }, [photosListMiniAllPhotos, setPhotosListMiniAllPhotos, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch, patchCacheCurrentView]);
 
     /**
-     * Refresh album list and current album after update
+     * Update tags for a photo in both the grid (allPhotosForCurrentFetch),
+     * the navigation strip (photosListMiniAllPhotos), and the View Cache.
+     *
+     * Tag arrays don't change array length or sort order, so navigation
+     * indices stay valid. The hasTagFilter filter (in useFilteredPhotos)
+     * will exclude/include the photo automatically post-close.
+     *
+     * @param {string} photoPath
+     * @param {Array<{id, name, color}>} tagsArray
+     */
+    const updatePhotoTags = useCallback((photoPath, tagsArray) => {
+        const apply = (photo) => photo.originalPath === photoPath
+            ? { ...photo, tags: tagsArray }
+            : photo;
+
+        setPhotosListMiniAllPhotos(prev => prev.map(apply));
+        setAllPhotosForCurrentFetch(prev => prev.map(apply));
+        patchCacheCurrentView(prev => prev.map(apply));
+    }, [setPhotosListMiniAllPhotos, setAllPhotosForCurrentFetch, patchCacheCurrentView]);
+
+    /**
+     * Update cssStyle (saved CSS transform/filter/clip-path) for a photo.
+     * Persists to backend separately (save_css_style); this helper only
+     * updates in-memory state so the grid reflects the change on close
+     * without a refetch.
+     *
+     * Sets BOTH css_style (snake_case, used in JSON-shape arrays like
+     * photosListMiniAllPhotos) and cssStyle (camelCase, used by Photo
+     * entity internals via convertJSONToPhotoEntities).
+     *
+     * Backend regenerates the thumbnail asynchronously. Grid display
+     * reads cssStyle live from in-memory data so the visual update
+     * lands immediately on close.
+     *
+     * @param {string} photoPath
+     * @param {string} css
+     */
+    const updatePhotoCssStyle = useCallback((photoPath, css) => {
+        const apply = (photo) => photo.originalPath === photoPath
+            ? { ...photo, css_style: css, cssStyle: css }
+            : photo;
+
+        setPhotosListMiniAllPhotos(prev => prev.map(apply));
+        setAllPhotosForCurrentFetch(prev => prev.map(apply));
+        patchCacheCurrentView(prev => prev.map(apply));
+    }, [setPhotosListMiniAllPhotos, setAllPhotosForCurrentFetch, patchCacheCurrentView]);
+
+    /**
+     * Insert a newly created photo (Save as Copy result) into both the
+     * grid (allPhotosForCurrentFetch) and the navigation strip
+     * (photosListMiniAllPhotos) at the position dictated by the current
+     * sort. View Cache is also patched. Navigation index is adjusted so
+     * the user stays on their current photo.
+     *
+     * - currentPhoto entity itself is NOT changed (Photo identity preserved).
+     * - If sortDirty is true (star edits made order stale) we apply a local
+     *   re-sort first so binary-search runs against a sorted array.
+     *
+     * @param {object} newPhotoData JSON-shape photo (matches Photo.toJSON())
+     */
+    const addPhotoToList = useCallback((newPhotoData) => {
+        const comparator = getPhotoSortComparator(sortOfPhotos);
+
+        // If sortDirty, re-sort first so insert position is accurate.
+        let workingAll = allPhotosForCurrentFetch;
+        let workingMini = photosListMiniAllPhotos;
+        if (sortDirty && comparator) {
+            workingAll = [...allPhotosForCurrentFetch].sort(comparator);
+            workingMini = [...photosListMiniAllPhotos].sort(comparator);
+            setAllPhotosForCurrentFetch(workingAll);
+            setPhotosListMiniAllPhotos(workingMini);
+            // Cache must also be sorted before the binary-search splice below.
+            patchCacheCurrentView(prev => [...prev].sort(comparator));
+            if (setSortDirty) setSortDirty(false);
+        }
+
+        const insertIdxAll = findInsertIndex(workingAll, newPhotoData, comparator);
+        const insertIdxMini = findInsertIndex(workingMini, newPhotoData, comparator);
+
+        setAllPhotosForCurrentFetch(prev => {
+            const next = [...prev];
+            next.splice(insertIdxAll, 0, newPhotoData);
+            return next;
+        });
+        setPhotosListMiniAllPhotos(prev => {
+            const next = [...prev];
+            next.splice(insertIdxMini, 0, newPhotoData);
+            return next;
+        });
+
+        patchCacheCurrentView(prev => {
+            const next = [...prev];
+            const cacheIdx = findInsertIndex(next, newPhotoData, comparator);
+            next.splice(cacheIdx, 0, newPhotoData);
+            return next;
+        });
+
+        // Navigation indices: any insert at or before the current index
+        // pushes the current photo right by 1.
+        if (typeof photosListMiniCurrentIndex === 'number' && insertIdxMini <= photosListMiniCurrentIndex) {
+            setPhotosListMiniCurrentIndex(prev => (prev ?? 0) + 1);
+        }
+        if (typeof currentPhotoIndex === 'number' && insertIdxAll <= currentPhotoIndex) {
+            setCurrentPhotoIndex(prev => (prev ?? 0) + 1);
+        }
+
+        // Infinite scroll: bump display window if insertion landed within
+        // the visible slice so the new photo isn't hidden post-close.
+        if (infiniteScrollEnabled && insertIdxMini < (displayedPhotoCount ?? 0)) {
+            setDisplayedPhotoCount(prev => prev + 1);
+        }
+    }, [
+        sortOfPhotos,
+        sortDirty,
+        setSortDirty,
+        allPhotosForCurrentFetch,
+        setAllPhotosForCurrentFetch,
+        photosListMiniAllPhotos,
+        setPhotosListMiniAllPhotos,
+        patchCacheCurrentView,
+        photosListMiniCurrentIndex,
+        setPhotosListMiniCurrentIndex,
+        currentPhotoIndex,
+        setCurrentPhotoIndex,
+        displayedPhotoCount,
+        setDisplayedPhotoCount,
+        infiniteScrollEnabled
+    ]);
+
+    /**
+     * Refresh album list after metadata update.
+     *
+     * Album-level metadata changes (cover, name, description) don't change
+     * the photo membership, so we don't reload the photos themselves —
+     * useViewModeSync drives that via the cache/refresh path. Only the
+     * album list (used by sidebar / pickers) needs to refresh here.
      */
     const handleAlbumUpdate = useCallback(() => {
-        // Refresh album list and current album after update
         if (viewMode === VIEW_MODES.ALBUM_LIST) {
             loadAlbums();
         }
-        if (currentAlbumId) {
-            loadAlbumPhotos(currentAlbumId);
-        }
-        logger.info('usePhotoListHelpers', 'album_updated', 'Album refreshed after update', { currentAlbumId });
-    }, [viewMode, loadAlbums, currentAlbumId, loadAlbumPhotos]);
+        logger.info('usePhotoListHelpers', 'album_updated', 'Album list refreshed after metadata update', { currentAlbumId });
+    }, [viewMode, loadAlbums, currentAlbumId]);
 
     /**
      * Add or remove photo from selection and switch to selection tab
@@ -177,6 +349,9 @@ export function usePhotoListHelpers({
     return {
         setStarWithUpdate,
         updatePhotoComment,
+        updatePhotoTags,
+        updatePhotoCssStyle,
+        addPhotoToList,
         handleAlbumUpdate,
         addSelection,
         toggleSelection,

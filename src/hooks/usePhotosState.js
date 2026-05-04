@@ -31,6 +31,12 @@ export const usePhotosState = () => {
     const [currentPhoto, setCurrentPhoto] = useState(null);
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(undefined);
 
+    // Whether a fetch has completed for the current view. Used to
+    // suppress "No Photos" / "Trash is Empty" empty-state UI between a
+    // view-mode change and the fetch starting (the brief window where
+    // allPhotos is [] but we're not yet — or just barely — in a load).
+    const [isFetched, setIsFetched] = useState(false);
+
     // UI state
     const [iconSize, setIconSize] = useState(100);
     const [numOfPhoto, setNumOfPhoto] = useState(20);
@@ -78,6 +84,11 @@ export const usePhotosState = () => {
     // Sorting state
     const [sortOfPhotos, setSort] = useState(0);
     const sortInitialized = useRef(false);
+    // True when star edits have made the on-screen order stale relative to
+    // the current sort criterion. closePhotoDisplay reads this to decide
+    // whether to apply a local re-sort. Set by setStarWithUpdate when
+    // sortOfPhotos is star-based (Phase 2).
+    const [sortDirty, setSortDirty] = useState(false);
 
     // Filter options state
     const [filterOptions, setFilterOptions] = useState(null);
@@ -98,8 +109,6 @@ export const usePhotosState = () => {
     const [filteredTags, setFilteredTags] = useState([]);
     const [tagSearchTerm, setTagSearchTerm] = useState('');
     const [currentTagName, setCurrentTagName] = useState('');
-    const [tagPhotos, setTagPhotos] = useState([]);
-    const [trashPhotos, setTrashPhotos] = useState([]);
     const [selectedTags, setSelectedTags] = useState(() => loadSelectionFromStorage(STORAGE_KEY_TAGS));
 
     // Faces state
@@ -129,6 +138,8 @@ export const usePhotosState = () => {
         setCurrentPhoto,
         currentPhotoIndex,
         setCurrentPhotoIndex,
+        isFetched,
+        setIsFetched,
 
         // UI state
         iconSize,
@@ -204,6 +215,8 @@ export const usePhotosState = () => {
         sortOfPhotos,
         setSort,
         sortInitialized,
+        sortDirty,
+        setSortDirty,
 
         // Filter options
         filterOptions,
@@ -236,10 +249,6 @@ export const usePhotosState = () => {
         setTagSearchTerm,
         currentTagName,
         setCurrentTagName,
-        tagPhotos,
-        setTagPhotos,
-        trashPhotos,
-        setTrashPhotos,
         selectedTags,
         setSelectedTags,
 
