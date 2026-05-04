@@ -254,8 +254,8 @@ function PhotosList({
         appConfig?.view_cache_max_total_photos ?? 50000
     );
     const currentViewKey = useMemo(
-        () => getViewKey(viewModeObj, currentSearchParams, importState?.currentImportPath),
-        [viewModeObj, currentSearchParams, importState?.currentImportPath]
+        () => getViewKey(viewModeObj, currentSearchParams, importState?.currentImportPath, sortOfPhotos),
+        [viewModeObj, currentSearchParams, importState?.currentImportPath, sortOfPhotos]
     );
     const onLoadSuccess = useCallback((viewMode, photoEntities) => {
         // Mark the current view as fetched so the empty-state UI can render
@@ -263,10 +263,10 @@ function PhotosList({
         // empty results — that's a confirmed "no photos for this view".
         setIsFetched(true);
         if (!photoEntities || photoEntities.length === 0) return;
-        const key = getViewKey(viewMode, currentSearchParams, importState?.currentImportPath);
+        const key = getViewKey(viewMode, currentSearchParams, importState?.currentImportPath, sortOfPhotos);
         if (!key) return;
         photosCache.set(key, photoEntities, key);
-    }, [photosCache, currentSearchParams, importState?.currentImportPath, setIsFetched]);
+    }, [photosCache, currentSearchParams, importState?.currentImportPath, sortOfPhotos, setIsFetched]);
 
     // Photo loader hook
     const {

@@ -8,8 +8,23 @@
  * For search the key is `search:<canonical-json>` directly — long but
  * sufficient as a Map key (no need for a hash since we never persist or
  * transmit it).
+ *
+ * `sortOfPhotos` is appended as `|sort:<n>` so cache entries are
+ * partitioned per sort order. Backend returns photos sorted server-side,
+ * so changing sort must produce a fresh fetch (= different cache key).
+ * Without this, switching sort would silently restore the previously-
+ * cached order. Import mode does its own frontend sort via
+ * importSortOfPhotos and ignores sortOfPhotos, but adding the suffix
+ * uniformly is harmless (just splits import cache between the rarely-
+ * used non-import sort dimension).
  */
-export function getViewKey(viewModeObj, searchParams = null, importPath = null) {
+export function getViewKey(viewModeObj, searchParams = null, importPath = null, sortOfPhotos = null) {
+    const baseKey = computeBaseKey(viewModeObj, searchParams, importPath);
+    if (baseKey == null) return null;
+    return sortOfPhotos != null ? `${baseKey}|sort:${sortOfPhotos}` : baseKey;
+}
+
+function computeBaseKey(viewModeObj, searchParams, importPath) {
     if (!viewModeObj) return null;
 
     if (viewModeObj.isSearchMode?.()) {
