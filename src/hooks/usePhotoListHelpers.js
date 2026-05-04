@@ -171,29 +171,14 @@ export function usePhotoListHelpers({
      * @param {Array<{id, name, color}>} tagsArray
      */
     const updatePhotoTags = useCallback((photoPath, tagsArray) => {
-        const updatedPhotos = photosListMiniAllPhotos.map(photoJSON => {
-            if (photoJSON.originalPath === photoPath) {
-                return { ...photoJSON, tags: tagsArray };
-            }
-            return photoJSON;
-        });
-        setPhotosListMiniAllPhotos(updatedPhotos);
+        const apply = (photo) => photo.originalPath === photoPath
+            ? { ...photo, tags: tagsArray }
+            : photo;
 
-        const updatedAllPhotos = allPhotosForCurrentFetch.map(photo => {
-            if (photo.originalPath === photoPath) {
-                return { ...photo, tags: tagsArray };
-            }
-            return photo;
-        });
-        setAllPhotosForCurrentFetch(updatedAllPhotos);
-
-        patchCacheCurrentView(prev => prev.map(photo => {
-            if (photo.originalPath === photoPath) {
-                return { ...photo, tags: tagsArray };
-            }
-            return photo;
-        }));
-    }, [photosListMiniAllPhotos, setPhotosListMiniAllPhotos, allPhotosForCurrentFetch, setAllPhotosForCurrentFetch, patchCacheCurrentView]);
+        setPhotosListMiniAllPhotos(prev => prev.map(apply));
+        setAllPhotosForCurrentFetch(prev => prev.map(apply));
+        patchCacheCurrentView(prev => prev.map(apply));
+    }, [setPhotosListMiniAllPhotos, setAllPhotosForCurrentFetch, patchCacheCurrentView]);
 
     /**
      * Update cssStyle (saved CSS transform/filter/clip-path) for a photo.
