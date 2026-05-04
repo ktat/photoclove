@@ -435,7 +435,8 @@ function PhotosList({
         currentPhotoIndex, setCurrentPhotoIndex,
         photosListMiniAllPhotos, setPhotosListMiniAllPhotos,
         photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex,
-        handlePhotoRemovalNavigationBulk
+        handlePhotoRemovalNavigationBulk,
+        sortDirty, setSortDirty
     });
 
     // Photo list helpers

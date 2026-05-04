@@ -51,7 +51,11 @@ export function useTrashOperations({
     setPhotosListMiniAllPhotos,
     photosListMiniCurrentIndex,
     setPhotosListMiniCurrentIndex,
-    handlePhotoRemovalNavigationBulk
+    handlePhotoRemovalNavigationBulk,
+    // Phase 2: rollback sortDirty too if backend delete fails after
+    // closePhotoDisplay() has been triggered (which clears the flag)
+    sortDirty,
+    setSortDirty
 }) {
     /**
      * Generic handler to delete photos with date count updates
@@ -95,6 +99,7 @@ export function useTrashOperations({
             const miniIndexBackup = photosListMiniCurrentIndex;
             const currentIndexBackup = currentPhotoIndex;
             const currentPhotoBackup = currentPhoto;
+            const sortDirtyBackup = sortDirty;
 
             // If PhotoDisplay is open, use the bulk navigation helper so the mini
             // list + currentPhotoIndex are also adjusted. Otherwise fall back to
@@ -192,6 +197,9 @@ export function useTrashOperations({
                 if (setCurrentPhoto && currentPhotoBackup) {
                     setCurrentPhoto(currentPhotoBackup);
                 }
+                if (setSortDirty && sortDirtyBackup !== undefined) {
+                    setSortDirty(sortDirtyBackup);
+                }
                 addFooterMessage('trash', 'Delete operation failed. Reloading...');
 
                 // Reload to ensure UI matches database state
@@ -229,7 +237,9 @@ export function useTrashOperations({
         setPhotosListMiniAllPhotos,
         photosListMiniCurrentIndex,
         setPhotosListMiniCurrentIndex,
-        handlePhotoRemovalNavigationBulk
+        handlePhotoRemovalNavigationBulk,
+        sortDirty,
+        setSortDirty
     ]);
 
     /**
