@@ -18,7 +18,7 @@
  * latest filter/sort result.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { logger } from '../services/LoggerService.js';
 
 /**
@@ -32,8 +32,20 @@ export function useFilteredPhotosSync({
     setDisplayedPhotoCount,
     currentPhotoPath
 }) {
+    // Track previous currentPhotoPath so we can detect the close transition
+    // (non-null -> null). On close we reconcile the mini list but must NOT
+    // reset displayedPhotoCount — the user expects to land on their pre-
+    // open scroll position. Edit helpers (delete/Save as Copy) already
+    // adjust the count for length changes.
+    const prevCurrentPhotoPathRef = useRef(currentPhotoPath);
+
     useEffect(() => {
-        if (currentPhotoPath) return; // Phase 2: freeze sync while PhotoDisplay is open
+        const wasInPhotoDisplay = prevCurrentPhotoPathRef.current != null;
+        const isInPhotoDisplay = currentPhotoPath != null;
+        prevCurrentPhotoPathRef.current = currentPhotoPath;
+
+        if (isInPhotoDisplay) return; // Phase 2: freeze sync while PhotoDisplay is open
+
         if (filteredPhotos.length > 0 || allPhotosForCurrentFetch.length > 0) {
             // Convert Photo entities to JSON for PhotosListMini (with safety check)
             const photosAsJSON = filteredPhotos
@@ -50,8 +62,9 @@ export function useFilteredPhotosSync({
 
             setPhotosListMiniAllPhotos(photosAsJSON);
 
-            // Reset display count for infinite scroll when filters change
-            if (infiniteScrollEnabled) {
+            // Only reset display count when filters/data changed, not when
+            // returning from PhotoDisplay (preserves scroll position).
+            if (infiniteScrollEnabled && !wasInPhotoDisplay) {
                 setDisplayedPhotoCount(Math.min(50, filteredPhotos.length));
             }
         }
