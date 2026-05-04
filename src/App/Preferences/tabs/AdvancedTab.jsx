@@ -67,35 +67,6 @@ const AdvancedTab = ({ config, setConfig, useCount }) => {
                 </p>
             </div>
 
-            {/* Logging Section */}
-            <h2 className={styles['section-title']}>📝 {t('preferences:tabs.logging')}</h2>
-            <div className={styles['setting-group']}>
-                <div className={styles['setting-item']}>
-                    <input
-                        type="checkbox"
-                        id="logging-enabled-check"
-                        checked={config.logging_enabled || false}
-                        onChange={(e) => setConfig(prev => ({ ...prev, logging_enabled: e.target.checked }))}
-                    />
-                    <label htmlFor="logging-enabled-check">
-                        {t('preferences:logging.logLevel')}
-                    </label>
-                </div>
-                <div className={styles['setting-row']}>
-                    <label>{t('preferences:logging.logLevel')}:</label>
-                    <select
-                        value={config.logging_level || 'info'}
-                        onChange={(e) => setConfig(prev => ({ ...prev, logging_level: e.target.value }))}
-                        disabled={!config.logging_enabled}
-                    >
-                        <option value="debug">{t('preferences:logging.logLevelDebug')}</option>
-                        <option value="info">{t('preferences:logging.logLevelInfo')}</option>
-                        <option value="warn">{t('preferences:logging.logLevelWarn')}</option>
-                        <option value="error">{t('preferences:logging.logLevelError')}</option>
-                    </select>
-                </div>
-            </div>
-
             {/* Google Photos Section */}
             <h2 className={styles['section-title']}>📤 {t('preferences:advanced.googlePhotos')}</h2>
             <div className={styles['setting-group']}>
