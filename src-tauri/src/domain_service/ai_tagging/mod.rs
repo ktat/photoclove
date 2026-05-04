@@ -11,4 +11,5 @@
 
 pub mod backend;
 pub mod categories;
+pub mod runtime_installer;
 pub mod service;

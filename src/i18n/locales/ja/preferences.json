@@ -176,6 +176,17 @@
     "startingTagging": "すべての写真にAIタグ付けを開始中...",
     "noPhotosFound": "ライブラリに写真が見つかりません",
     "processingPhotos": "{{count}}枚の写真を処理中...",
+    "runtime": {
+      "title": "ONNX Runtime",
+      "notInstalled": "ONNX Runtime がインストールされていません",
+      "installed": "ONNX Runtime がインストール済みです",
+      "required": "AIタグ付けには ONNX Runtime ライブラリが必要です。",
+      "download": "ダウンロード (~13MB)",
+      "downloading": "ダウンロード中...",
+      "downloadSuccess": "ONNX Runtime のインストールが完了しました",
+      "downloadFailed": "ONNX Runtime のインストールに失敗: {{error}}",
+      "notSupported": "このプラットフォームでは自動インストール非対応です。README を参照して手動でセットアップしてください。"
+    },
     "categories": {
       "people": "人物",
       "animals": "動物",

@@ -106,29 +106,7 @@ impl FaceDetectionService {
     pub fn init(&mut self) -> Result<(), String> {
         log::info!(target: "face_detection", "initializing_face_detection_service");
 
-        // Set ORT_DYLIB_PATH if not already set and library exists in app data
-        if std::env::var("ORT_DYLIB_PATH").is_err() {
-            if let Some(data_dir) = dirs::data_local_dir() {
-                let lib_path = data_dir
-                    .join("photoclove")
-                    .join("lib")
-                    .join("libonnxruntime.so");
-                if lib_path.exists() {
-                    log::info!(
-                        target: "face_detection",
-                        "setting_ort_dylib_path; path={}",
-                        lib_path.display()
-                    );
-                    std::env::set_var("ORT_DYLIB_PATH", &lib_path);
-                } else {
-                    log::warn!(
-                        target: "face_detection",
-                        "ort_dylib_not_found; expected_path={}",
-                        lib_path.display()
-                    );
-                }
-            }
-        }
+        crate::utils::ensure_ort_dylib_loaded()?;
 
         // Initialize detector
         {

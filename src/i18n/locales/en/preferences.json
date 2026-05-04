@@ -176,6 +176,17 @@
     "startingTagging": "Starting AI tagging for all photos...",
     "noPhotosFound": "No photos found in library",
     "processingPhotos": "Processing {{count}} photos...",
+    "runtime": {
+      "title": "ONNX Runtime",
+      "notInstalled": "ONNX Runtime is not installed",
+      "installed": "ONNX Runtime is installed",
+      "required": "AI tagging requires the ONNX Runtime library.",
+      "download": "Download (~13MB)",
+      "downloading": "Downloading...",
+      "downloadSuccess": "ONNX Runtime installed successfully",
+      "downloadFailed": "ONNX Runtime install failed: {{error}}",
+      "notSupported": "Auto-install not supported on this platform. See README for manual setup."
+    },
     "categories": {
       "people": "People",
       "animals": "Animals",

@@ -72,16 +72,8 @@ fn main() {
     use crate::repository::*;
     use std::path::Path;
 
-    if std::env::var("ORT_DYLIB_PATH").is_err() {
-        if let Some(data_dir) = dirs::data_local_dir() {
-            let lib_path = data_dir
-                .join("photoclove")
-                .join("lib")
-                .join("libonnxruntime.so");
-            if lib_path.exists() {
-                std::env::set_var("ORT_DYLIB_PATH", &lib_path);
-            }
-        }
+    if let Err(e) = crate::utils::ensure_ort_dylib_loaded() {
+        log::warn!(target: "ort", "dylib_unavailable; reason={}", e);
     }
 
     let is_first_run = config::Config::config_path_if_exists().is_none();
@@ -346,6 +338,8 @@ fn main() {
             download_ai_model,
             delete_ai_model,
             get_ai_models_dir,
+            get_onnx_runtime_status,
+            download_onnx_runtime,
             get_default_clip_labels,
             get_photos_to_import_under_directory,
             get_dates_num,
