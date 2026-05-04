@@ -637,7 +637,7 @@ function PhotosList({
                         searchResultsCount={displayedPhotos.length} onClearSearch={clearSearch}
                         searchTools={searchTools} addFooterMessage={handlers.addFooterMessage}
                         imgCacheMap={imgCacheMap} setStar={setStarWithUpdate} star={star}
-                        onPhotosRefresh={refreshPhotosOnly} onCommentUpdate={updatePhotoComment}
+                        onCommentUpdate={updatePhotoComment}
                         onTagsChanged={updatePhotoTags}
                         onCssStyleUpdate={updatePhotoCssStyle}
                         onAddPhotoToList={addPhotoToList}

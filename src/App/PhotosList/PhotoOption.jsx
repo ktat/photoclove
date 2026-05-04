@@ -403,7 +403,6 @@ function PhotoOption(props) {
                             currentPhoto={props.currentPhoto}
                             showSideMenu={props.showSideMenu}
                             addFooterMessage={props.addFooterMessage}
-                            onPhotosRefresh={props.onPhotosRefresh}
                             onCssStyleUpdate={props.onCssStyleUpdate}
                             onAddPhotoToList={props.onAddPhotoToList}
                             setEditorHasUnsavedChanges={props.setEditorHasUnsavedChanges}
