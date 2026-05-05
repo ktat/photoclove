@@ -482,16 +482,46 @@ impl Config {
         self.copyright = config.copyright;
     }
 
-    /// Get the config path, creating the file if it doesn't exist
-    pub fn config_path() -> String {
-        let home = match home_dir() {
-            Some(path) => path,
+    /// Override the default config path via `--config <PATH>` CLI argument
+    /// or `PHOTOCLOVE_CONFIG_PATH` environment variable (CLI takes precedence).
+    ///
+    /// Used primarily by E2E tests to point the app at an isolated config file
+    /// (and thus an isolated photo library / DB) without touching the user's
+    /// real `~/.photoclove.yml`. Parsed manually here because tauri-plugin-cli
+    /// is only queryable after `Builder.run()`, but config is loaded before.
+    fn config_path_override() -> Option<String> {
+        let args: Vec<String> = std::env::args().collect();
+        let mut i = 1;
+        while i < args.len() {
+            let a = &args[i];
+            if a == "--config" || a == "-c" {
+                if i + 1 < args.len() {
+                    return Some(args[i + 1].clone());
+                }
+            } else if let Some(stripped) = a.strip_prefix("--config=") {
+                return Some(stripped.to_string());
+            }
+            i += 1;
+        }
+        std::env::var("PHOTOCLOVE_CONFIG_PATH").ok()
+    }
+
+    fn default_config_file() -> std::path::PathBuf {
+        if let Some(p) = Self::config_path_override() {
+            return std::path::PathBuf::from(p);
+        }
+        match home_dir() {
+            Some(home) => home.join(".photoclove.yml"),
             None => {
                 log::error!(target: "config", "home_directory_error; status=not_found");
-                return ".photoclove.yml".to_string();
+                std::path::PathBuf::from(".photoclove.yml")
             }
-        };
-        let config_file = home.join(".photoclove.yml");
+        }
+    }
+
+    /// Get the config path, creating the file if it doesn't exist
+    pub fn config_path() -> String {
+        let config_file = Self::default_config_file();
         if !config_file.exists() {
             match std::fs::OpenOptions::new()
                 .create(true)
@@ -518,8 +548,7 @@ impl Config {
     /// Check if config file exists without creating it
     /// Returns Some(path) if exists, None if not
     pub fn config_path_if_exists() -> Option<String> {
-        let home = home_dir()?;
-        let config_file = home.join(".photoclove.yml");
+        let config_file = Self::default_config_file();
         if config_file.exists() {
             Some(config_file.display().to_string())
         } else {
