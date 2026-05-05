@@ -176,20 +176,7 @@ export function usePhotoListHelpers({
             ? { ...photo, tags: tagsArray }
             : photo;
 
-        // Diagnostic: verify the match actually finds the target photo
-        // and that the tags update propagates. Check LogViewer if the
-        // grid badge doesn't refresh on close.
-        setAllPhotosForCurrentFetch(prev => {
-            const matched = prev.filter(p => p.originalPath === photoPath).length;
-            logger.info('usePhotoListHelpers', 'update_photo_tags', 'updatePhotoTags fired', {
-                photoPath,
-                tagCount: tagsArray?.length ?? 0,
-                allPhotosCount: prev.length,
-                matchedInAllPhotos: matched,
-                samplePathInArray: prev[0]?.originalPath
-            });
-            return prev.map(apply);
-        });
+        setAllPhotosForCurrentFetch(prev => prev.map(apply));
         setPhotosListMiniAllPhotos(prev => prev.map(apply));
         patchCacheCurrentView(prev => prev.map(apply));
     }, [setPhotosListMiniAllPhotos, setAllPhotosForCurrentFetch, patchCacheCurrentView]);
