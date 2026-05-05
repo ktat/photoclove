@@ -18,5 +18,23 @@ dev.sh
 .aider*
 /.claude/
 public/movie.tmp.MP4
+public/movie.tmp.mp4
+public/movie.tmp.webm
 src-tauri/models/*.onnx
 coverage/
+
+# Tauri bundle output (when copied to repo root)
+/PhotoClove*.rpm
+/PhotoClove*.deb
+/PhotoClove*.exe
+/PhotoClove*.msi
+
+# Windows ADS metadata
+*:Zone.Identifier
+
+# Local run artifacts
+/run.log
+/run.og
+
+# Backup files
+*.back
