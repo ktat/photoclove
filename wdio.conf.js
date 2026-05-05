@@ -2,11 +2,14 @@ import { spawn, spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildTestConfig, cleanupTestConfig } from "./e2e/fixtures.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 const binaryName = process.platform === "win32" ? "PhotoClove.exe" : "PhotoClove";
 const application = path.resolve(__dirname, "src-tauri", "target", "debug", binaryName);
+
+const { configPath: testConfigPath, tmpRoot: testConfigTmpRoot } = buildTestConfig();
 
 let tauriDriver;
 let exit = false;
@@ -30,6 +33,7 @@ export const config = {
       maxInstances: 1,
       "tauri:options": {
         application,
+        args: ["--config", testConfigPath],
       },
     },
   ],
@@ -81,6 +85,8 @@ export const config = {
   },
 
   afterSession: () => closeTauriDriver(),
+
+  onComplete: () => cleanupTestConfig(testConfigTmpRoot),
 };
 
 function closeTauriDriver() {
@@ -103,4 +109,7 @@ function onShutdown(fn) {
   process.on("SIGBREAK", cleanup);
 }
 
-onShutdown(closeTauriDriver);
+onShutdown(() => {
+  closeTauriDriver();
+  cleanupTestConfig(testConfigTmpRoot);
+});
