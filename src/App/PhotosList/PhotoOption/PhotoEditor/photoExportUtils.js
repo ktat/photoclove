@@ -247,6 +247,10 @@ export async function saveStyledCopy({ mainImage, editorStyles, photoPath, cssSt
         // Insert into the in-memory grid + mini list (replaces old
         // onPhotosRefresh refetch).
         if (onAddPhotoToList) {
+            // Field names must match what Photo.fromJSON reads:
+            // - cssStyle (camelCase, NOT css_style)
+            // - meta_data (snake_case, NOT metaData)
+            // configData is added by addPhotoToList using appConfig.
             const newPhotoData = {
                 originalPath: newPhotoPath,
                 name: newFilename,
@@ -255,8 +259,8 @@ export async function saveStyledCopy({ mainImage, editorStyles, photoPath, cssSt
                 star: result.star ?? 0,
                 comment: result.comment ?? '',
                 tags: result.tags ?? [],
-                css_style: result.cssStyle ?? cssStyle,
-                metaData: result.metaData ?? null,
+                cssStyle: result.cssStyle ?? cssStyle,
+                meta_data: result.metaData ?? null,
                 hasThumbnail: result.hasThumbnail ?? false,
                 inAlbum: false,
                 albumId: null,

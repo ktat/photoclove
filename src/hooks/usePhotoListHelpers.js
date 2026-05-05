@@ -67,7 +67,8 @@ export function usePhotoListHelpers({
     setCurrentPhotoIndex,
     displayedPhotoCount,
     setDisplayedPhotoCount,
-    sortDirty
+    sortDirty,
+    appConfig
 }) {
     // Patch the View Cache entry for the current view so that switching
     // away and back doesn't restore stale (pre-edit) photos. Phase 1
@@ -175,8 +176,21 @@ export function usePhotoListHelpers({
             ? { ...photo, tags: tagsArray }
             : photo;
 
+        // Diagnostic: verify the match actually finds the target photo
+        // and that the tags update propagates. Check LogViewer if the
+        // grid badge doesn't refresh on close.
+        setAllPhotosForCurrentFetch(prev => {
+            const matched = prev.filter(p => p.originalPath === photoPath).length;
+            logger.info('usePhotoListHelpers', 'update_photo_tags', 'updatePhotoTags fired', {
+                photoPath,
+                tagCount: tagsArray?.length ?? 0,
+                allPhotosCount: prev.length,
+                matchedInAllPhotos: matched,
+                samplePathInArray: prev[0]?.originalPath
+            });
+            return prev.map(apply);
+        });
         setPhotosListMiniAllPhotos(prev => prev.map(apply));
-        setAllPhotosForCurrentFetch(prev => prev.map(apply));
         patchCacheCurrentView(prev => prev.map(apply));
     }, [setPhotosListMiniAllPhotos, setAllPhotosForCurrentFetch, patchCacheCurrentView]);
 
@@ -223,6 +237,21 @@ export function usePhotoListHelpers({
     const addPhotoToList = useCallback((newPhotoData) => {
         const comparator = getPhotoSortComparator(sortOfPhotos);
 
+        // Photo.fromJSON requires configData; existing entries in the mini
+        // array carry it via Photo.toJSON, but Save as Copy's freshly built
+        // newPhotoData does not. Inject it from appConfig so PhotosListMini's
+        // map(Photo.fromJSON) doesn't throw on the inserted entry.
+        const dataWithConfig = appConfig
+            ? {
+                  ...newPhotoData,
+                  configData: {
+                      import_to: appConfig.import_to,
+                      thumbnail_store: appConfig.thumbnail_store,
+                      trash_path: appConfig.trash_path
+                  }
+              }
+            : newPhotoData;
+
         // If sortDirty, re-sort first so insert position is accurate.
         let workingAll = allPhotosForCurrentFetch;
         let workingMini = photosListMiniAllPhotos;
@@ -236,24 +265,24 @@ export function usePhotoListHelpers({
             if (setSortDirty) setSortDirty(false);
         }
 
-        const insertIdxAll = findInsertIndex(workingAll, newPhotoData, comparator);
-        const insertIdxMini = findInsertIndex(workingMini, newPhotoData, comparator);
+        const insertIdxAll = findInsertIndex(workingAll, dataWithConfig, comparator);
+        const insertIdxMini = findInsertIndex(workingMini, dataWithConfig, comparator);
 
         setAllPhotosForCurrentFetch(prev => {
             const next = [...prev];
-            next.splice(insertIdxAll, 0, newPhotoData);
+            next.splice(insertIdxAll, 0, dataWithConfig);
             return next;
         });
         setPhotosListMiniAllPhotos(prev => {
             const next = [...prev];
-            next.splice(insertIdxMini, 0, newPhotoData);
+            next.splice(insertIdxMini, 0, dataWithConfig);
             return next;
         });
 
         patchCacheCurrentView(prev => {
             const next = [...prev];
-            const cacheIdx = findInsertIndex(next, newPhotoData, comparator);
-            next.splice(cacheIdx, 0, newPhotoData);
+            const cacheIdx = findInsertIndex(next, dataWithConfig, comparator);
+            next.splice(cacheIdx, 0, dataWithConfig);
             return next;
         });
 
@@ -286,7 +315,8 @@ export function usePhotoListHelpers({
         setCurrentPhotoIndex,
         displayedPhotoCount,
         setDisplayedPhotoCount,
-        infiniteScrollEnabled
+        infiniteScrollEnabled,
+        appConfig
     ]);
 
     /**

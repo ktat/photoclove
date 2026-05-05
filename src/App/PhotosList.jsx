@@ -454,7 +454,7 @@ function PhotosList({
         photosListMiniCurrentIndex, setPhotosListMiniCurrentIndex,
         currentPhotoIndex, setCurrentPhotoIndex,
         displayedPhotoCount, setDisplayedPhotoCount,
-        sortDirty
+        sortDirty, appConfig
     });
 
     // Side menu toggle notification effect
