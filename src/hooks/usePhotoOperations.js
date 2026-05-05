@@ -162,6 +162,11 @@ export function usePhotoOperations({
         if (!paths || paths.length === 0) return null;
         if (!photosListMiniAllPhotos || photosListMiniAllPhotos.length === 0) return null;
 
+        // The user's current view position is photosListMiniCurrentIndex —
+        // this is what usePhotoNavigation updates on prev/next. currentPhotoIndex
+        // is only set by displayPhoto (= initial open) and not touched by nav,
+        // so it goes stale once the user navigates inside PhotoDisplay. Using
+        // it here would jump back to the originally-opened index on delete.
         const pathSet = new Set(paths);
         let removedBefore = 0;
         let currentIsRemoved = false;
@@ -169,9 +174,9 @@ export function usePhotoOperations({
         for (let i = 0; i < photosListMiniAllPhotos.length; i++) {
             const path = getPhotoPath(photosListMiniAllPhotos[i]);
             if (pathSet.has(path)) {
-                if (typeof currentPhotoIndex === 'number') {
-                    if (i < currentPhotoIndex) removedBefore++;
-                    else if (i === currentPhotoIndex) currentIsRemoved = true;
+                if (typeof photosListMiniCurrentIndex === 'number') {
+                    if (i < photosListMiniCurrentIndex) removedBefore++;
+                    else if (i === photosListMiniCurrentIndex) currentIsRemoved = true;
                 }
             }
         }
@@ -197,7 +202,7 @@ export function usePhotoOperations({
             return { removedCount: paths.length, newCurrentIndex: -1 };
         }
 
-        const baseIdx = (typeof currentPhotoIndex === 'number') ? currentPhotoIndex : 0;
+        const baseIdx = (typeof photosListMiniCurrentIndex === 'number') ? photosListMiniCurrentIndex : 0;
         let newIndex;
         if (currentIsRemoved) {
             // Same logic as single-removal: stay at index (= next photo)
@@ -222,10 +227,10 @@ export function usePhotoOperations({
         setPhotosListMiniAllPhotos,
         allPhotosForCurrentFetch,
         setAllPhotosForCurrentFetch,
+        photosListMiniCurrentIndex,
         setPhotosListMiniCurrentIndex,
         setCurrentPhoto,
         setCurrentPhotoIndex,
-        currentPhotoIndex,
         closePhotoDisplay,
         patchCacheCurrentView
     ]);
@@ -483,12 +488,14 @@ export function usePhotoOperations({
     // Photo deletion and trash operations
     const permanentlyDeletePhoto = useCallback((photoPath) => {
         invoke("delete_permanently_batch", { paths: [photoPath] }).then(() => {
-            // Update navigation using shared helper
-            handlePhotoRemovalNavigation(currentPhotoIndex, photoPath);
+            // Use photosListMiniCurrentIndex (= the user's current view index in
+            // PhotoDisplay nav). currentPhotoIndex is set only by displayPhoto
+            // and goes stale once the user navigates inside PhotoDisplay.
+            handlePhotoRemovalNavigation(photosListMiniCurrentIndex, photoPath);
         }).catch((error) => {
             handleError(error, 'Permanently delete photo', { path: photoPath });
         });
-    }, [handleError, currentPhotoIndex, handlePhotoRemovalNavigation]);
+    }, [handleError, photosListMiniCurrentIndex, handlePhotoRemovalNavigation]);
 
     // Helper to update date counts after photo removal
     const updateDateCounts = useCallback((resultDate) => {
@@ -511,7 +518,8 @@ export function usePhotoOperations({
 
             if (resultDate) {
                 updateDateCounts(resultDate);
-                handlePhotoRemovalNavigation(currentPhotoIndex, photoPath);
+                // See permanentlyDeletePhoto — use mini index, not currentPhotoIndex.
+                handlePhotoRemovalNavigation(photosListMiniCurrentIndex, photoPath);
             }
         } catch (error) {
             handleError(error, 'Move photo to trash', { path: photoPath });
@@ -521,7 +529,7 @@ export function usePhotoOperations({
         permanentlyDeletePhoto,
         handleError,
         updateDateCounts,
-        currentPhotoIndex,
+        photosListMiniCurrentIndex,
         handlePhotoRemovalNavigation
     ]);
 
