@@ -436,14 +436,15 @@ describe("PhotoClove application", () => {
   it("deselects a photo via the ✕ button in the right sidebar selection list", async () => {
     await navigateToDate("2022-12-01"); // 2 photos
 
-    // Select both photos via JS click so the right sidebar opening
-    // (after the first selection) doesn't shift the second checkbox's
-    // coords away from where WebDriver took the click target.
+    // Click both inputs via JS — programmatic label.click() doesn't
+    // reliably forward to the associated input on WebKit, and clicking
+    // the first via WebDriver opens the right sidebar which shifts the
+    // second checkbox out from under WebDriver's pre-fetched coords.
     await browser.execute(() => {
-      const labels = document.querySelectorAll(
-        "[data-testid='photo-card'] label.checkbox-photo",
+      const inputs = document.querySelectorAll(
+        "[data-testid='photo-card'] input[type='checkbox']",
       );
-      for (const label of labels) label.click();
+      for (const input of inputs) input.click();
     });
 
     // Wait for sidebar to open and show both deselect buttons
@@ -487,14 +488,15 @@ describe("PhotoClove application", () => {
     const cards = await $$("[data-testid='photo-card']");
     expect(cards.length).toBe(2);
 
-    // JS-click both checkboxes in one batch so the sidebar opening after
-    // the first click doesn't shift the second checkbox out from under
-    // WebDriver's coord-based click.
+    // Click both checkboxes via JS (input.click directly, not the label —
+    // programmatic label.click() doesn't reliably forward to the
+    // associated input on WebKit) so the sidebar opening after the first
+    // click doesn't shift the second checkbox out from under WebDriver.
     await browser.execute(() => {
-      const labels = document.querySelectorAll(
-        "[data-testid='photo-card'] label.checkbox-photo",
+      const inputs = document.querySelectorAll(
+        "[data-testid='photo-card'] input[type='checkbox']",
       );
-      for (const label of labels) label.click();
+      for (const input of inputs) input.click();
     });
 
     // Wait for both cards to be marked selected

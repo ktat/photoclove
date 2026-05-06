@@ -120,7 +120,16 @@ function preUnlockAchievements(dbPath) {
   }
 
   const sql = lines.join("\n");
-  // Pipe the multi-statement SQL into sqlite3 via stdin.
-  execSync(`sqlite3 "${dbPath}"`, { input: sql });
+  // Write SQL to a temp file and feed it via stdin redirection. Some
+  // sqlite3 builds don't reliably consume Node's `input:` stdin, so a
+  // file is the more portable path. Fail loud — silent failures here
+  // would hide test fixture corruption.
+  const sqlPath = `${dbPath}.fixtures.sql`;
+  writeFileSync(sqlPath, sql);
+  execSync(`sqlite3 "${dbPath}" < "${sqlPath}"`, {
+    shell: "/bin/sh",
+    stdio: ["ignore", "inherit", "inherit"],
+  });
+  rmSync(sqlPath);
 }
 
