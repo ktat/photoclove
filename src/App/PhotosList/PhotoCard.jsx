@@ -436,6 +436,7 @@ function PhotoCard({
                 {/* Burst group badge - shows count when NOT in burst group, shows "Grouped" when IN burst group */}
                 {photo.burst_group_id && photo.burst_count > 1 && !isInBurstGroupMode && (
                     <div
+                        data-testid="burst-badge"
                         className={styles.burstBadge}
                         title={`Burst group: ${photo.burst_count} photos - Click to view all`}
                         onClick={(e) => {

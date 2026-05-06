@@ -40,6 +40,7 @@ function PhotosToolbar({
         <div className="photo-operation">
             {showBurstToggle && (
                 <button
+                    data-testid="burst-toggle"
                     className={burstModeEnabled ? styles.burstButtonActive : styles.burstButton}
                     onClick={toggleBurstMode}
                     title={burstModeEnabled ? t('toolbar.burstShowAll') : t('toolbar.burstGroup')}
