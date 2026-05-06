@@ -29,10 +29,7 @@ function EquipmentSection({ data }) {
                     <div key={index} className={styles.equipmentItem}>
                         <span className={styles.equipmentRank}>{index + 1}</span>
                         <div className={styles.equipmentInfo}>
-                            <div className={styles.equipmentModel}>{item.model}</div>
-                            {item.make && (
-                                <div className={styles.equipmentMake}>{item.make}</div>
-                            )}
+                            <div className={styles.equipmentModel}>{item.name}</div>
                         </div>
                         <span className={styles.equipmentCount}>
                             {item.count.toLocaleString()}

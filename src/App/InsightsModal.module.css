@@ -259,11 +259,6 @@
     text-overflow: ellipsis;
 }
 
-.equipmentMake {
-    font-size: var(--font-size-xs);
-    color: var(--color-text-muted);
-}
-
 .equipmentCount {
     font-size: var(--font-size-sm);
     font-weight: 600;
