@@ -134,4 +134,25 @@ describe("PhotoClove application", () => {
     // 6 photos in the burst → representative shows +5
     expect(badgeText).toBe("+5");
   });
+
+  it("expands a burst group into all member photos when its badge is clicked", async () => {
+    // Continues from the previous spec: still on 2022/05/23 with burst
+    // mode on, 1 representative + 1 outlier visible. Click the +5 badge
+    // to enter the burst group view.
+    const badge = await $("[data-testid='burst-badge']");
+    await badge.waitForExist({ timeout: 5000 });
+    await browser.execute((el) => el.click(), badge);
+
+    // In burst group mode the list shows all 6 burst members. The badge
+    // itself disappears (PhotoCard hides it when isInBurstGroupMode).
+    await browser.waitUntil(
+      async () => {
+        const cards = await $$("[data-testid='photo-card']");
+        return cards.length === 6;
+      },
+      { timeout: 10000, timeoutMsg: "burst group did not expand to 6 cards" },
+    );
+    const badgesAfter = await $$("[data-testid='burst-badge']");
+    expect(badgesAfter.length).toBe(0);
+  });
 });
