@@ -18,6 +18,15 @@ jobs:
     container: node:20-slim
 
     steps:
+    - name: Install OS deps for actions/checkout + codecov
+      # node:20-slim ships without git or gpg, both of which the codecov
+      # action shells out to. apt is fast (a few seconds) so adding them
+      # is cheaper than swapping to the full node:20 image.
+      run: |
+        apt-get update
+        apt-get install -y --no-install-recommends git gnupg ca-certificates
+        rm -rf /var/lib/apt/lists/*
+
     - uses: actions/checkout@v4
 
     - name: Install pnpm
@@ -121,6 +130,12 @@ jobs:
     container: node:20-slim
 
     steps:
+    - name: Install OS deps for actions/checkout
+      run: |
+        apt-get update
+        apt-get install -y --no-install-recommends git ca-certificates
+        rm -rf /var/lib/apt/lists/*
+
     - uses: actions/checkout@v4
 
     - name: Install pnpm
