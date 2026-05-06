@@ -16,8 +16,14 @@ function PhotoSelectionSection({
     dropdownRef
 }) {
     const { t } = useTranslation(['directoryMenu']);
-    const [photoIndex, setPhotoIndex] = useState(-1);
+    // Track the previewed photo by PATH, not by index. If we tracked the
+    // index, deselecting the previewed photo (or any earlier one) would
+    // either point to a stale slot (broken <img>) or shift the preview
+    // onto a different photo. Tracking the path lets us hide the preview
+    // when the photo leaves the selection entirely.
+    const [previewPath, setPreviewPath] = useState(null);
     const [showBigPhoto, setShowBigPhoto] = useState(false);
+    const previewActive = previewPath != null && photoSelection.includes(previewPath);
 
     // Resolve relative paths to absolute via Photo entity for image display
     const resolveDisplayPath = useCallback((path) => {
@@ -133,7 +139,7 @@ function PhotoSelectionSection({
                                     }}
                                     aria-label="deselect"
                                 >✕</button>
-                                <a href="#" onClick={() => setPhotoIndex(i)}>{v.replace(/^.+\//, "")}</a>
+                                <a href="#" onClick={() => setPreviewPath(v)}>{v.replace(/^.+\//, "")}</a>
                             </li>
                         ))}
                     </ul>
@@ -159,10 +165,10 @@ function PhotoSelectionSection({
                     )}
                 </div>
             )}
-            {photoIndex >= 0 && photoSelection.length > 0 && (
+            {previewActive && (
                 <>
                     <img
-                        src={convertFileSrc(resolveDisplayPath(photoSelection[photoIndex]))}
+                        src={convertFileSrc(resolveDisplayPath(previewPath))}
                         style={{ maxWidth: '100%', maxHeight: '150px', objectFit: 'contain', marginTop: 'var(--space-3)' }}
                     />
                     <a
@@ -177,7 +183,7 @@ function PhotoSelectionSection({
                             onMouseLeave={() => setShowBigPhoto(false)}
                             onClick={() => setShowBigPhoto(false)}
                         >
-                            <img src={convertFileSrc(resolveDisplayPath(photoSelection[photoIndex]))} />
+                            <img src={convertFileSrc(resolveDisplayPath(previewPath))} />
                         </div>
                     )}
                 </>
