@@ -92,6 +92,14 @@ jobs:
     - name: Install dependencies
       run: pnpm install
 
+    - name: Create dummy ONNX file for Tauri build
+      # tauri.conf.json bundle.resources globs `models/*.onnx`, and the
+      # build script aborts when the glob matches nothing. The real
+      # mobilenet model is gitignored (too big), so seed a placeholder
+      # — `tauri build --no-bundle` doesn't actually copy it anywhere.
+      run: |
+        mkdir -p src-tauri/models && touch src-tauri/models/dummy.onnx
+
     - name: Run E2E tests
       run: xvfb-run --auto-servernum pnpm test:e2e
 
