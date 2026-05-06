@@ -89,6 +89,17 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Install sqlite3 CLI
+      # e2e/fixtures.js seeds the test fixture DB with pre-unlocked
+      # achievement_progress rows so the AchievementPopup overlay
+      # doesn't intercept clicks during a test run. Needs the sqlite3
+      # CLI (the photoclove-ci image doesn't ship it).
+      run: |
+        if ! command -v sqlite3 >/dev/null 2>&1; then
+          apt-get update
+          apt-get install -y --no-install-recommends sqlite3
+        fi
+
     - name: Cache pnpm store
       uses: actions/cache@v4
       with:
