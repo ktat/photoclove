@@ -33,9 +33,7 @@ describe("PhotoClove application", () => {
 
     const firstLink = await cards[0].$("a");
     await firstLink.scrollIntoView();
-    // The <a> wrapper can be obscured by overlay siblings; trigger click via JS
-    // so we exercise the React handler regardless of pointer-event interception.
-    await browser.execute((el) => el.click(), firstLink);
+    await firstLink.click();
 
     const display = await $("#photos-display-wrapper");
     await display.waitForExist({ timeout: 10000 });
@@ -43,7 +41,7 @@ describe("PhotoClove application", () => {
 
     const closeLink = await display.$("a=close");
     await closeLink.waitForExist({ timeout: 5000 });
-    await browser.execute((el) => el.click(), closeLink);
+    await closeLink.click();
 
     await browser.waitUntil(
       async () => !(await $("#photos-display-wrapper").isExisting()),
@@ -55,7 +53,7 @@ describe("PhotoClove application", () => {
     // Navigate to date (a) = 2022/05/23
     const dateA = await $("[data-date='2022/05/23']");
     await dateA.waitForExist({ timeout: 10000 });
-    await browser.execute((el) => el.click(), dateA);
+    await dateA.click();
 
     const photoList = await $("#photoList");
     await browser.waitUntil(
@@ -71,7 +69,7 @@ describe("PhotoClove application", () => {
     const cards = await $$("[data-testid='photo-card']");
     const firstLink = await cards[0].$("a");
     await firstLink.scrollIntoView();
-    await browser.execute((el) => el.click(), firstLink);
+    await firstLink.click();
 
     const display = await $("#photos-display-wrapper");
     await display.waitForExist({ timeout: 10000 });
@@ -79,7 +77,7 @@ describe("PhotoClove application", () => {
     // Switch to date (b) = 2022/12/01 while PhotoDisplay is open
     const dateB = await $("[data-date='2022/12/01']");
     await dateB.waitForExist({ timeout: 5000 });
-    await browser.execute((el) => el.click(), dateB);
+    await dateB.click();
 
     // First wait for the new date's list to finish loading. The wrapper
     // briefly unmounts during loading (`shouldDisplay = !photoLoading &&
@@ -104,7 +102,7 @@ describe("PhotoClove application", () => {
     // (P1212647-P1212652 share a burst_group_id; P1212646 is a non-burst outlier).
     const dateLink = await $("[data-date='2022/05/23']");
     await dateLink.waitForExist({ timeout: 10000 });
-    await browser.execute((el) => el.click(), dateLink);
+    await dateLink.click();
 
     // Wait for date page to render
     const photoList = await $("#photoList");
@@ -117,7 +115,7 @@ describe("PhotoClove application", () => {
     // the plain `date` handler which doesn't aggregate burst groups.
     const burstToggle = await $("[data-testid='burst-toggle']");
     await burstToggle.waitForExist({ timeout: 5000 });
-    await browser.execute((el) => el.click(), burstToggle);
+    await burstToggle.click();
 
     // After grouping: 2 cards (1 burst rep + 1 outlier) instead of 7
     await browser.waitUntil(
@@ -141,7 +139,7 @@ describe("PhotoClove application", () => {
     // to enter the burst group view.
     const badge = await $("[data-testid='burst-badge']");
     await badge.waitForExist({ timeout: 5000 });
-    await browser.execute((el) => el.click(), badge);
+    await badge.click();
 
     // In burst group mode the list shows all 6 burst members. The badge
     // itself disappears (PhotoCard hides it when isInBurstGroupMode).

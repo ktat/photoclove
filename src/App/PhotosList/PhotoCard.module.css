@@ -225,6 +225,15 @@
     transition: border-color 0.15s ease-out, background-color 0.15s ease-out;
 }
 
+/* Thumbnail link wraps the image; make it a block so it fills the
+   container instead of being a tiny inline strip the user can miss
+   (and WebDriver's pointer-event interactability check can reject). */
+.thumbnailLink {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
 /* Film strip theme - thumbnail container */
 :global([data-grid-theme="filmstrip"]) .thumbnailContainer {
     border-radius: 0;

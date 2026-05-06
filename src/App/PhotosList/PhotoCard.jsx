@@ -380,7 +380,7 @@ function PhotoCard({
             }}
         >
             <div className={styles.thumbnailContainer} style={{ width: iconSize + 'px', height: iconSize + 'px' }}>
-                <a href="#" onClick={() => onDisplayPhoto(photo.originalPath, index)}>
+                <a href="#" className={styles.thumbnailLink} onClick={() => onDisplayPhoto(photo.originalPath, index)}>
                     {photo.isUnsupportedFormat && photo.isUnsupportedFormat()
                         ? <div className={styles.imageWrapper} style={{ flexDirection: 'column' }}>
                             <span style={{ fontSize: (iconSize / 4) + 'px' }}>&#128247;</span>
