@@ -103,6 +103,22 @@ function preUnlockAchievements(dbPath) {
       ` VALUES ('${id}', 1, '${achievedAt}', '${achievedAt}', '${hash}');`,
     );
   }
+
+  // Register 2022-11-08 photos in photo_metadata. Files exist on disk in
+  // example/import_to/2022-11-08/ but the committed photoclove.db has no
+  // rows for them, so the date sidebar lists 2022-11-08 (date_summary
+  // has it) but no cards render. The bulk-delete test uses this date
+  // specifically because deleting from it doesn't impact other dates
+  // that other tests depend on.
+  for (const filename of ["P1224152.JPG", "P1224184.JPG"]) {
+    lines.push(
+      `INSERT OR IGNORE INTO photo_metadata` +
+      ` (path, photo_date, star, comment, created_at, updated_at)` +
+      ` VALUES ('2022-11-08/${filename}', '2022-11-08 00:00:00', 0, '',` +
+      ` '2022-11-08 00:00:00', '2022-11-08 00:00:00');`,
+    );
+  }
+
   const sql = lines.join("\n");
   // Pipe the multi-statement SQL into sqlite3 via stdin.
   execSync(`sqlite3 "${dbPath}"`, { input: sql });

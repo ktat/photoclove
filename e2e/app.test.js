@@ -436,14 +436,15 @@ describe("PhotoClove application", () => {
   it("deselects a photo via the ✕ button in the right sidebar selection list", async () => {
     await navigateToDate("2022-12-01"); // 2 photos
 
-    const cards = await $$("[data-testid='photo-card']");
-
-    // Select both photos via checkboxes
-    for (const card of cards) {
-      const label = await card.$("label.checkbox-photo");
-      await label.scrollIntoView();
-      await label.click();
-    }
+    // Select both photos via JS click so the right sidebar opening
+    // (after the first selection) doesn't shift the second checkbox's
+    // coords away from where WebDriver took the click target.
+    await browser.execute(() => {
+      const labels = document.querySelectorAll(
+        "[data-testid='photo-card'] label.checkbox-photo",
+      );
+      for (const label of labels) label.click();
+    });
 
     // Wait for sidebar to open and show both deselect buttons
     await browser.waitUntil(
@@ -478,19 +479,23 @@ describe("PhotoClove application", () => {
     // this test deletes both photos, and the fixture (a tmp copy of
     // example/import_to) is shared across the whole spec run. Subsequent
     // tests in keyboard.test.js use 2022-12-01 and would be left with
-    // an empty photo list.
+    // an empty photo list. The 2022-11-08 photos are seeded into the
+    // photo_metadata table by e2e/fixtures.js (the disk files exist in
+    // the committed example/import_to but the DB rows don't).
     await navigateToDate("2022-11-08"); // 2 photos
 
     const cards = await $$("[data-testid='photo-card']");
     expect(cards.length).toBe(2);
 
-    // Select all photos via checkboxes — selecting the first triggers the
-    // sidebar to open automatically (useSelectionTabEffect)
-    for (const card of cards) {
-      const label = await card.$("label.checkbox-photo");
-      await label.scrollIntoView();
-      await label.click();
-    }
+    // JS-click both checkboxes in one batch so the sidebar opening after
+    // the first click doesn't shift the second checkbox out from under
+    // WebDriver's coord-based click.
+    await browser.execute(() => {
+      const labels = document.querySelectorAll(
+        "[data-testid='photo-card'] label.checkbox-photo",
+      );
+      for (const label of labels) label.click();
+    });
 
     // Wait for both cards to be marked selected
     await browser.waitUntil(
