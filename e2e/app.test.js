@@ -336,15 +336,21 @@ describe("PhotoClove application", () => {
     // On webkit2gtk the active element after card click can be the grid <a>
     // rather than the dummy sink, so browser.keys("c") never reaches the
     // shortcut handler. Direct dispatch sidesteps the focus race.
+    //
+    // KeyboardEvent constructor in WebKit ignores the `keyCode` init
+    // dictionary entry (it stays 0). photoNavigation switches on
+    // e.keyCode, so we re-define the property after construction.
     const sendShortcut = async (key, keyCode) => {
       await browser.execute((k, kc) => {
         const sink = document.querySelector("#dummy-for-focus");
-        if (sink) {
-          sink.dispatchEvent(new KeyboardEvent("keydown", {
-            key: k, keyCode: kc, which: kc, code: "Key" + k.toUpperCase(),
-            bubbles: true, cancelable: true,
-          }));
-        }
+        if (!sink) return;
+        const ev = new KeyboardEvent("keydown", {
+          key: k, code: "Key" + k.toUpperCase(),
+          bubbles: true, cancelable: true,
+        });
+        Object.defineProperty(ev, "keyCode", { get: () => kc });
+        Object.defineProperty(ev, "which", { get: () => kc });
+        sink.dispatchEvent(ev);
       }, key, keyCode);
     };
 

@@ -36,7 +36,7 @@ const AchievementPopup = ({ achievement, onClose }) => {
   if (!achievement) return null;
 
   return (
-    <div className={`${styles.overlay} ${isVisible ? styles.visible : ''}`} onClick={handleClose}>
+    <div data-testid="achievement-popup" className={`${styles.overlay} ${isVisible ? styles.visible : ''}`} onClick={handleClose}>
       <div className={styles.popup} onClick={(e) => e.stopPropagation()}>
         <div className={styles.confetti}>
           <span className={styles.confettiItem}>🎉</span>

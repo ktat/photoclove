@@ -35,21 +35,42 @@ async function openFirstPhoto(isoDate) {
   await (await $("#photos-display-wrapper")).waitForExist({ timeout: 10000 });
 }
 
+// Achievement-unlock side effects (first_star, first_delete, etc.) render
+// a fullscreen z-index 10000 overlay that intercepts every click. Auto-
+// closes after 5s, but tests are faster than that. Dismiss it explicitly
+// via JS click (overlay's onClick handler closes the popup).
+async function dismissAchievementPopupIfVisible() {
+  const popup = await $("[data-testid='achievement-popup']");
+  if (!(await popup.isExisting())) return;
+  await browser.execute(() => {
+    document.querySelector("[data-testid='achievement-popup']")?.click();
+  });
+  await browser.waitUntil(
+    async () => !(await $("[data-testid='achievement-popup']").isExisting()),
+    { timeout: 3000, timeoutMsg: "achievement popup did not dismiss" },
+  );
+}
+
 // Dispatch a keydown event directly on #dummy-for-focus (the element that
 // owns the photoNavigation onKeyDown handler) instead of relying on
 // browser.keys(), which routes via WebDriver's active-element tracker.
 // On slow CI the click → mount-effect race can leave focus on the grid
 // <a>, so browser.keys() never reaches photoNavigation. Direct dispatch
 // sidesteps the focus race entirely.
+//
+// KeyboardEvent constructor in WebKit ignores the `keyCode` init dict
+// entry — set it via defineProperty after construction so the keyCode-
+// based switch in photoNavigation actually matches.
 async function pressShortcut(key, keyCode, code) {
   await browser.execute((k, kc, c) => {
     const sink = document.querySelector("#dummy-for-focus");
-    if (sink) {
-      sink.dispatchEvent(new KeyboardEvent("keydown", {
-        key: k, keyCode: kc, which: kc, code: c,
-        bubbles: true, cancelable: true,
-      }));
-    }
+    if (!sink) return;
+    const ev = new KeyboardEvent("keydown", {
+      key: k, code: c, bubbles: true, cancelable: true,
+    });
+    Object.defineProperty(ev, "keyCode", { get: () => kc });
+    Object.defineProperty(ev, "which", { get: () => kc });
+    sink.dispatchEvent(ev);
   }, key, keyCode, code);
 }
 
@@ -156,6 +177,9 @@ describe("PhotoClove keyboard shortcuts", () => {
     // s: star 0 → 1
     await browser.keys("s");
     await closePhotoDisplay();
+    // The first time star is set in this run the backend emits the
+    // first_star achievement; the resulting popup blocks all clicks.
+    await dismissAchievementPopupIfVisible();
     await browser.waitUntil(
       async () =>
         (await (await $$("[data-testid='photo-card']"))[0].getText()).includes("⭐1"),
