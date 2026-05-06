@@ -64,3 +64,26 @@ build-wsl:
 clean-ai:
 	rm -f $(MODEL_FILE)
 	rm -f $(ONNX_LIB_DIR)/libonnxruntime.so*
+
+# E2E test fixture DBs the running app writes to (updated_at, view counts, etc.).
+# Listed explicitly so we don't accidentally `git checkout` user changes.
+E2E_FIXTURE_DBS = example/import_to/photoclove.db example/import_to/.photoclove.db
+
+# Reset E2E fixture DBs to their committed state. Tests mutate them as a
+# side effect of the app running, so each fresh run should start from the
+# committed snapshot rather than whatever drifted during the previous run.
+reset-e2e-fixture:
+	@for db in $(E2E_FIXTURE_DBS); do \
+		if git ls-files --error-unmatch $$db >/dev/null 2>&1; then \
+			git checkout -- $$db; \
+		fi; \
+	done
+
+# Run the WebdriverIO E2E suite with the fixture freshly reset.
+test-e2e: reset-e2e-fixture
+	pnpm test:e2e
+
+# Run all locally-runnable test layers.
+test: reset-e2e-fixture
+	pnpm test:run
+	pnpm test:e2e
