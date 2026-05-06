@@ -56,9 +56,29 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
 # ---- tauri-driver (pre-compiled) --------------------------------------
 RUN cargo install tauri-driver --locked
 
+# ---- Pre-compile photoclove's Rust dependencies -----------------------
+# Uses cargo-chef so the recipe is derived from Cargo.toml/Cargo.lock
+# alone — cook builds only the dep graph (no app code), populating
+# $CARGO_HOME/registry and $CARGO_TARGET_DIR with compiled artifacts.
+# Image rebuild is auto-triggered when Cargo.lock changes (see
+# .github/workflows/build-ci-image.yml path filter).
+RUN cargo install cargo-chef --locked
+
+# Pre-compiled deps live outside any per-CI workspace path so they
+# survive `actions/checkout` clearing the workspace at job start.
+ENV CARGO_TARGET_DIR=/usr/local/cargo-target
+RUN mkdir -p /workspace/src-tauri/crates
+COPY src-tauri/Cargo.toml src-tauri/Cargo.lock /workspace/src-tauri/
+COPY src-tauri/crates /workspace/src-tauri/crates
+WORKDIR /workspace/src-tauri
+RUN cargo chef prepare --recipe-path /tmp/recipe.json \
+    && cargo chef cook --recipe-path /tmp/recipe.json \
+    && rm -rf /workspace/src-tauri
+
+WORKDIR /workspace
+
 # Sanity check: surface versions in the image build log so a regression
 # (e.g. tauri-driver bumped, Node missing) is obvious without bisecting.
 RUN node --version && pnpm --version && rustc --version && \
-    cargo --version && tauri-driver --help >/dev/null
-
-WORKDIR /workspace
+    cargo --version && tauri-driver --help >/dev/null && \
+    echo "cargo-target size:" && du -sh /usr/local/cargo-target

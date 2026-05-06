@@ -10,6 +10,12 @@ on:
     paths:
       - .github/docker/ci.Dockerfile
       - .github/workflows/build-ci-image.yml
+      # Cargo.lock changes invalidate the pre-cooked dep cache baked
+      # into the image, so rebuild whenever it (or any workspace
+      # member's Cargo.toml) shifts.
+      - src-tauri/Cargo.lock
+      - src-tauri/Cargo.toml
+      - src-tauri/crates/**/Cargo.toml
   workflow_dispatch:
 
 permissions:
