@@ -83,6 +83,15 @@ body {
   --color-primary-selected: rgba(74, 158, 255, 0.25);
   --color-primary-text: #0a1628;
 
+  /* --- Film Background Colors & Text/Link Colors (Dark) --- */
+  /* Used by .rightMenu (selection sidebar). Light theme overrides
+     these in the [data-theme="light"] block below. Without dark-theme
+     defaults the .rightMenu a links fall back to the body color and
+     look white on the dark sidebar. */
+  --color-bg-film-light: #1e293b;
+  --color-film-text: #e4e4e4;
+  --color-film-link: #4a9eff;
+
   /* --- State Colors --- */
   --color-success: #22c55e;
   --color-success-dark: #16803c;
