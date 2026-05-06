@@ -298,4 +298,133 @@ describe("PhotoClove application", () => {
     await photoList.waitForExist({ timeout: 10000 });
     expect(await photoList.isExisting()).toBe(true);
   });
+
+  // ── Selection tests ─────────────────────────────────────────────────────────
+
+  it("selects a photo via its checkbox in the photo list", async () => {
+    await navigateToDate("2022-12-01");
+
+    const cards = await $$("[data-testid='photo-card']");
+    expect(cards.length).toBe(2);
+
+    // Click the visible checkbox label on the first card
+    const checkboxLabel = await cards[0].$("label.checkbox-photo");
+    await checkboxLabel.scrollIntoView();
+    await checkboxLabel.click();
+
+    await browser.waitUntil(
+      async () => {
+        const cls = await (await $$("[data-testid='photo-card']"))[0].getAttribute("class");
+        return cls?.includes("cardSelected");
+      },
+      { timeout: 5000, timeoutMsg: "photo card did not become selected after checkbox click" },
+    );
+  });
+
+  it("selects the current photo via the 'c' key while in PhotoDisplay", async () => {
+    await navigateToDate("2022-12-01");
+
+    // Open the first photo
+    const cards = await $$("[data-testid='photo-card']");
+    const firstLink = await cards[0].$("a");
+    await firstLink.scrollIntoView();
+    await firstLink.click();
+    await (await $("#photos-display-wrapper")).waitForExist({ timeout: 10000 });
+
+    // Press 'c' to select the currently displayed photo
+    await browser.keys("c");
+
+    // Close the display, then verify the card is marked selected
+    const closeLink = await (await $("#photos-display-wrapper")).$("a=close");
+    await closeLink.waitForExist({ timeout: 5000 });
+    await closeLink.click();
+    await browser.waitUntil(
+      async () => !(await $("#photos-display-wrapper").isExisting()),
+      { timeout: 5000, timeoutMsg: "PhotoDisplay did not close" },
+    );
+
+    await browser.waitUntil(
+      async () => {
+        const allCards = await $$("[data-testid='photo-card']");
+        for (const card of allCards) {
+          const cls = await card.getAttribute("class");
+          if (cls?.includes("cardSelected")) return true;
+        }
+        return false;
+      },
+      { timeout: 5000, timeoutMsg: "no card became selected after 'c' key" },
+    );
+  });
+
+  // ── Deletion tests ───────────────────────────────────────────────────────────
+
+  it("moves a photo to trash via the Del key in PhotoDisplay", async () => {
+    // 2022-12-03 has exactly 1 photo (c.jpg) — easy to verify disappearance
+    await navigateToDate("2022-12-03");
+    const cards = await $$("[data-testid='photo-card']");
+    expect(cards.length).toBe(1);
+
+    const firstLink = await cards[0].$("a");
+    await firstLink.scrollIntoView();
+    await firstLink.click();
+    await (await $("#photos-display-wrapper")).waitForExist({ timeout: 10000 });
+
+    // Del key triggers the move-to-trash confirmation
+    await browser.keys("Delete");
+
+    const confirmBtn = await $("button=Move to Trash");
+    await confirmBtn.waitForExist({ timeout: 5000 });
+    await confirmBtn.click();
+
+    // The photo should be removed from the list
+    await browser.waitUntil(
+      async () => (await $$("[data-testid='photo-card']")).length === 0,
+      { timeout: 10000, timeoutMsg: "photo was not removed from list after Del + confirm" },
+    );
+  });
+
+  it("moves selected photos to trash via the right sidebar delete operation", async () => {
+    await navigateToDate("2022-12-01"); // 2 photos: a.jpg and b.jpg
+
+    const cards = await $$("[data-testid='photo-card']");
+    expect(cards.length).toBe(2);
+
+    // Select all photos via checkboxes — selecting the first triggers the
+    // sidebar to open automatically (useSelectionTabEffect)
+    for (const card of cards) {
+      const label = await card.$("label.checkbox-photo");
+      await label.scrollIntoView();
+      await label.click();
+    }
+
+    // Wait for both cards to be marked selected
+    await browser.waitUntil(
+      async () => {
+        const allCards = await $$("[data-testid='photo-card']");
+        let selected = 0;
+        for (const card of allCards) {
+          const cls = await card.getAttribute("class");
+          if (cls?.includes("cardSelected")) selected++;
+        }
+        return selected === 2;
+      },
+      { timeout: 5000, timeoutMsg: "both photo cards did not become selected" },
+    );
+
+    // The right sidebar opens automatically; choose "deleteFiles" from the dropdown
+    const opDropdown = await $("div.operation select");
+    await opDropdown.waitForExist({ timeout: 5000 });
+    await opDropdown.selectByAttribute("value", "deleteFiles");
+
+    // Confirm the modal
+    const confirmBtn = await $("button=Move to Trash");
+    await confirmBtn.waitForExist({ timeout: 5000 });
+    await confirmBtn.click();
+
+    // All selected photos should be removed from the list
+    await browser.waitUntil(
+      async () => (await $$("[data-testid='photo-card']")).length === 0,
+      { timeout: 10000, timeoutMsg: "photos were not removed from list after sidebar delete" },
+    );
+  });
 });

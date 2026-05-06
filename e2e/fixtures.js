@@ -1,4 +1,5 @@
 import { writeFileSync, mkdirSync, rmSync } from "node:fs";
+import { execSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -10,20 +11,28 @@ const REPO_ROOT = path.resolve(__dirname, "..");
  * Build an isolated PhotoClove config that points the app at `example/`
  * directories instead of the user's real `~/.photoclove/` data. Returns the
  * config path to pass via `--config` and a tmp root to clean up afterwards.
+ *
+ * The import_to directory (including photoclove.db) is copied to tmpRoot so
+ * that deletion tests don't corrupt the committed fixture data.
  */
 export function buildTestConfig() {
   const fixtureRoot = path.join(REPO_ROOT, "example");
-  const importTo = path.join(fixtureRoot, "import_to");
-  const trashPath = path.join(fixtureRoot, "trash");
-  const thumbnailStore = path.join(fixtureRoot, "thumbnail");
   const exportFrom = path.join(fixtureRoot, "export_from");
+
+  const tmpRoot = path.join(tmpdir(), `photoclove-e2e-${process.pid}-${Date.now()}`);
+  mkdirSync(tmpRoot, { recursive: true });
+
+  // Copy the entire import_to directory (photos + DB) so tests can safely
+  // write to the database without corrupting the committed fixture data.
+  const importTo = path.join(tmpRoot, "import_to");
+  execSync(`cp -r "${path.join(fixtureRoot, "import_to")}" "${importTo}"`);
+
+  const trashPath = path.join(tmpRoot, "trash");
+  const thumbnailStore = path.join(tmpRoot, "thumbnail");
 
   for (const dir of [trashPath, thumbnailStore]) {
     mkdirSync(dir, { recursive: true });
   }
-
-  const tmpRoot = path.join(tmpdir(), `photoclove-e2e-${process.pid}-${Date.now()}`);
-  mkdirSync(tmpRoot, { recursive: true });
 
   const configPath = path.join(tmpRoot, "photoclove.yml");
   const yaml = [
@@ -54,3 +63,4 @@ export function cleanupTestConfig(tmpRoot) {
     rmSync(tmpRoot, { recursive: true, force: true });
   }
 }
+
