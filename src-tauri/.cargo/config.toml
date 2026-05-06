@@ -3,3 +3,12 @@ rustflags = [
     "-C", "link-arg=/OPT:REF",
     "-C", "link-arg=/OPT:ICF",
 ]
+
+# Link with mold on Linux. The CI image bakes it in; contributors on
+# Linux need `apt install mold` (or equivalent) once. Drops the
+# photoclove final-link step from several seconds to under one.
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+
+[target.aarch64-unknown-linux-gnu]
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]

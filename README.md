@@ -72,6 +72,7 @@ Pre-built installers are available on the [GitHub Releases page](https://github.
 - **CMake** and **libnuma-dev** (for HEIC/AVIF support via libheif)
 - **libwebkit2gtk-4.1-dev** (Linux only — Tauri WebView renderer)
 - **libsecret-1-dev** (Linux only — required for OAuth and S3 credential storage)
+- **mold** (Linux only — `cargo` is configured to link with mold for fast incremental rebuilds; install via `sudo apt install mold` on Debian/Ubuntu)
 
 #### Ubuntu/Debian Setup
 ```bash
