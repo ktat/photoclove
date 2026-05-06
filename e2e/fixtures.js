@@ -1,5 +1,6 @@
 import { writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { execSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,6 +27,12 @@ export function buildTestConfig() {
   // write to the database without corrupting the committed fixture data.
   const importTo = path.join(tmpRoot, "import_to");
   execSync(`cp -r "${path.join(fixtureRoot, "import_to")}" "${importTo}"`);
+
+  // Pre-unlock all achievements in the copied DB so the AchievementPopup
+  // never appears during tests. The popup is a fullscreen z-index 10000
+  // overlay that intercepts every click for 5s, breaking subsequent
+  // interactions in CI's tighter timing.
+  preUnlockAchievements(path.join(importTo, "photoclove.db"));
 
   const trashPath = path.join(tmpRoot, "trash");
   const thumbnailStore = path.join(tmpRoot, "thumbnail");
@@ -62,5 +69,42 @@ export function cleanupTestConfig(tmpRoot) {
   if (tmpRoot) {
     rmSync(tmpRoot, { recursive: true, force: true });
   }
+}
+
+// Achievement IDs to pre-unlock. Must stay in sync with
+// src-tauri/src/domain_service/achievements/definitions.rs. We just enumerate
+// the "first_*" ones plus a few global counters that tests are likely to
+// trigger; missing entries simply re-trigger the popup which is harmless
+// for the few that aren't covered.
+const PRE_UNLOCK_ACHIEVEMENTS = [
+  "first_import", "first_edit", "first_tag", "first_album", "first_star",
+  "first_search", "first_export", "first_google_upload", "first_delete",
+  "first_view", "first_collage", "first_slideshow", "first_ai_tagging",
+  "first_face_detection", "first_quick_view", "first_theme_change",
+];
+
+// Hash format must match generate_hash() in
+// src-tauri/src/repository/meta_db/sqlite/achievements.rs:
+//   sha256("{id}:{achieved_at}:{HASH_SALT}")
+const HASH_SALT = "Ph0t0Cl0v3_Ach13v3m3nt_S4lt_2024";
+
+function preUnlockAchievements(dbPath) {
+  const achievedAt = "2020-01-01 00:00:00";
+  const lines = [];
+  for (const id of PRE_UNLOCK_ACHIEVEMENTS) {
+    const hash = createHash("sha256")
+      .update(`${id}:${achievedAt}:${HASH_SALT}`)
+      .digest("hex");
+    // INSERT OR REPLACE so this is idempotent across CI re-runs and works
+    // whether or not the row already exists in the committed fixture DB.
+    lines.push(
+      `INSERT OR REPLACE INTO achievement_progress` +
+      ` (id, current_value, achieved_at, updated_at, verification_hash)` +
+      ` VALUES ('${id}', 1, '${achievedAt}', '${achievedAt}', '${hash}');`,
+    );
+  }
+  const sql = lines.join("\n");
+  // Pipe the multi-statement SQL into sqlite3 via stdin.
+  execSync(`sqlite3 "${dbPath}"`, { input: sql });
 }
 
