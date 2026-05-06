@@ -61,6 +61,11 @@
   text-align: center;
   font-weight: bold;
   border-radius: var(--radius-xl);
+  /* Notification overlay — never intercept clicks. Users don't interact
+     with these toasts; if they sit over the close link or another UI
+     element during their 700ms-1500ms display window, clicks must still
+     pass through. */
+  pointer-events: none;
 }
 
 #selectedInfo {

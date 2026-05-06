@@ -33,6 +33,14 @@ async function openFirstPhoto(isoDate) {
   await firstLink.scrollIntoView();
   await firstLink.click();
   await (await $("#photos-display-wrapper")).waitForExist({ timeout: 10000 });
+  // PhotosListMini's mount effect focuses #dummy-for-focus so onKeyDown
+  // fires there. WebDriver's keys() goes to whatever has focus right
+  // now; on slow CI the click-then-mount-effect race can leave focus on
+  // the original grid link, so the keystroke never reaches photoNavigation.
+  // Force focus before any browser.keys() call.
+  await browser.execute(() => {
+    document.querySelector("#dummy-for-focus")?.focus();
+  });
 }
 
 async function closePhotoDisplay() {

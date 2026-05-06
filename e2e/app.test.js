@@ -329,6 +329,11 @@ describe("PhotoClove application", () => {
     await firstLink.scrollIntoView();
     await firstLink.click();
     await (await $("#photos-display-wrapper")).waitForExist({ timeout: 10000 });
+    // Force focus to the keyboard-shortcut sink. PhotosListMini's mount
+    // effect normally does this, but on slow CI the click → mount-effect
+    // race can leave focus on the grid link, so the next keystroke would
+    // never reach photoNavigation.
+    await browser.execute(() => document.querySelector("#dummy-for-focus")?.focus());
 
     // 1st c → select
     await browser.keys("c");
@@ -355,6 +360,7 @@ describe("PhotoClove application", () => {
     // Reopen the same photo and press 'c' again → deselect
     await (await (await $$("[data-testid='photo-card']"))[0].$("a")).click();
     await (await $("#photos-display-wrapper")).waitForExist({ timeout: 10000 });
+    await browser.execute(() => document.querySelector("#dummy-for-focus")?.focus());
 
     await browser.keys("c");
 
