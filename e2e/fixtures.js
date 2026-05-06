@@ -120,10 +120,6 @@ function preUnlockAchievements(dbPath) {
   }
 
   const sql = lines.join("\n");
-  // Write SQL to a temp file and feed it via stdin redirection. Some
-  // sqlite3 builds don't reliably consume Node's `input:` stdin, so a
-  // file is the more portable path. Fail loud — silent failures here
-  // would hide test fixture corruption.
   const sqlPath = `${dbPath}.fixtures.sql`;
   writeFileSync(sqlPath, sql);
   execSync(`sqlite3 "${dbPath}" < "${sqlPath}"`, {
@@ -131,5 +127,19 @@ function preUnlockAchievements(dbPath) {
     stdio: ["ignore", "inherit", "inherit"],
   });
   rmSync(sqlPath);
+
+  // Verify the photo_metadata seed actually applied — silent failure
+  // would manifest later as "no cards rendered for 2022-11-08" which
+  // is much harder to debug. Throw early with a useful message.
+  const photoCount = execSync(
+    `sqlite3 "${dbPath}" "SELECT COUNT(*) FROM photo_metadata WHERE path LIKE '2022-11-08%';"`,
+    { shell: "/bin/sh" },
+  ).toString().trim();
+  if (photoCount !== "2") {
+    throw new Error(
+      `[fixtures] expected 2 photo_metadata rows for 2022-11-08 after seed, got ${photoCount}. SQL may have failed.`,
+    );
+  }
+  console.log(`[fixtures] seeded ${photoCount} 2022-11-08 photos into ${dbPath}`);
 }
 
