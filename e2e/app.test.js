@@ -329,14 +329,27 @@ describe("PhotoClove application", () => {
     await firstLink.scrollIntoView();
     await firstLink.click();
     await (await $("#photos-display-wrapper")).waitForExist({ timeout: 10000 });
-    // Force focus to the keyboard-shortcut sink. PhotosListMini's mount
-    // effect normally does this, but on slow CI the click → mount-effect
-    // race can leave focus on the grid link, so the next keystroke would
-    // never reach photoNavigation.
-    await browser.execute(() => document.querySelector("#dummy-for-focus")?.focus());
+
+    // Dispatch the keydown directly on #dummy-for-focus (the element that
+    // owns the photoNavigation onKeyDown handler) instead of relying on
+    // browser.keys(), which routes via WebDriver's active-element tracker.
+    // On webkit2gtk the active element after card click can be the grid <a>
+    // rather than the dummy sink, so browser.keys("c") never reaches the
+    // shortcut handler. Direct dispatch sidesteps the focus race.
+    const sendShortcut = async (key, keyCode) => {
+      await browser.execute((k, kc) => {
+        const sink = document.querySelector("#dummy-for-focus");
+        if (sink) {
+          sink.dispatchEvent(new KeyboardEvent("keydown", {
+            key: k, keyCode: kc, which: kc, code: "Key" + k.toUpperCase(),
+            bubbles: true, cancelable: true,
+          }));
+        }
+      }, key, keyCode);
+    };
 
     // 1st c → select
-    await browser.keys("c");
+    await sendShortcut("c", 67);
 
     const closeLink = await (await $("#photos-display-wrapper")).$("a=close");
     await closeLink.waitForExist({ timeout: 5000 });
@@ -360,9 +373,8 @@ describe("PhotoClove application", () => {
     // Reopen the same photo and press 'c' again → deselect
     await (await (await $$("[data-testid='photo-card']"))[0].$("a")).click();
     await (await $("#photos-display-wrapper")).waitForExist({ timeout: 10000 });
-    await browser.execute(() => document.querySelector("#dummy-for-focus")?.focus());
 
-    await browser.keys("c");
+    await sendShortcut("c", 67);
 
     const closeLink2 = await (await $("#photos-display-wrapper")).$("a=close");
     await closeLink2.waitForExist({ timeout: 5000 });
@@ -452,7 +464,12 @@ describe("PhotoClove application", () => {
   });
 
   it("moves selected photos to trash via the right sidebar delete operation", async () => {
-    await navigateToDate("2022-12-01"); // 2 photos: a.jpg and b.jpg
+    // 2022-11-08: 2 photos. Chosen specifically to avoid 2022-12-01 because
+    // this test deletes both photos, and the fixture (a tmp copy of
+    // example/import_to) is shared across the whole spec run. Subsequent
+    // tests in keyboard.test.js use 2022-12-01 and would be left with
+    // an empty photo list.
+    await navigateToDate("2022-11-08"); // 2 photos
 
     const cards = await $$("[data-testid='photo-card']");
     expect(cards.length).toBe(2);

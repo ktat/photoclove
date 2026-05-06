@@ -33,20 +33,41 @@ async function openFirstPhoto(isoDate) {
   await firstLink.scrollIntoView();
   await firstLink.click();
   await (await $("#photos-display-wrapper")).waitForExist({ timeout: 10000 });
-  // PhotosListMini's mount effect focuses #dummy-for-focus so onKeyDown
-  // fires there. WebDriver's keys() goes to whatever has focus right
-  // now; on slow CI the click-then-mount-effect race can leave focus on
-  // the original grid link, so the keystroke never reaches photoNavigation.
-  // Force focus before any browser.keys() call.
-  await browser.execute(() => {
-    document.querySelector("#dummy-for-focus")?.focus();
-  });
+}
+
+// Dispatch a keydown event directly on #dummy-for-focus (the element that
+// owns the photoNavigation onKeyDown handler) instead of relying on
+// browser.keys(), which routes via WebDriver's active-element tracker.
+// On slow CI the click → mount-effect race can leave focus on the grid
+// <a>, so browser.keys() never reaches photoNavigation. Direct dispatch
+// sidesteps the focus race entirely.
+async function pressShortcut(key, keyCode, code) {
+  await browser.execute((k, kc, c) => {
+    const sink = document.querySelector("#dummy-for-focus");
+    if (sink) {
+      sink.dispatchEvent(new KeyboardEvent("keydown", {
+        key: k, keyCode: kc, which: kc, code: c,
+        bubbles: true, cancelable: true,
+      }));
+    }
+  }, key, keyCode, code);
 }
 
 async function closePhotoDisplay() {
-  const closeLink = await (await $("#photos-display-wrapper")).$("a=close");
-  await closeLink.waitForExist({ timeout: 5000 });
-  await closeLink.click();
+  // Use a JS click so any short-lived overlay (notifications etc.) on the
+  // close link's coords doesn't intercept it. WebDriver's elementClick
+  // uses real pointer events that can be intercepted.
+  await browser.execute(() => {
+    const wrapper = document.querySelector("#photos-display-wrapper");
+    if (!wrapper) return;
+    const links = wrapper.querySelectorAll("a");
+    for (const a of links) {
+      if (a.textContent?.trim() === "close") {
+        a.click();
+        return;
+      }
+    }
+  });
   await browser.waitUntil(
     async () => !(await $("#photos-display-wrapper").isExisting()),
     { timeout: 5000, timeoutMsg: "PhotoDisplay did not close" },
