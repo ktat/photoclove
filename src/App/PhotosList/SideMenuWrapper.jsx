@@ -72,6 +72,7 @@ function SideMenuWrapper({
     const { query: searchQuery, initialQuery: searchInitialQuery, filters: searchFilters, results: searchResults, currentParams: currentSearchParams } = searchState;
     const isAdvancedSearchMode = viewModeObj.isAdvancedSearchMode();
     const {
+        toggleSelection,
         clearPhotoSelection,
         selectAllPhotoToSelection,
         setCurrentDateNum,
@@ -118,6 +119,7 @@ function SideMenuWrapper({
                     currentDate={currentDate}
                     closeRightColumn={closeRightColumn}
                     photoSelection={photoSelection}
+                    togglePhotoSelection={toggleSelection}
                     clearPhotoSelection={clearPhotoSelection}
                     selectAllPhotoToSelection={selectAllPhotoToSelection}
                     dateNum={dateNum}

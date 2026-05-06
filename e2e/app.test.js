@@ -405,6 +405,46 @@ describe("PhotoClove application", () => {
     );
   });
 
+  it("deselects a photo via the ✕ button in the right sidebar selection list", async () => {
+    await navigateToDate("2022-12-01"); // 2 photos
+
+    const cards = await $$("[data-testid='photo-card']");
+
+    // Select both photos via checkboxes
+    for (const card of cards) {
+      const label = await card.$("label.checkbox-photo");
+      await label.scrollIntoView();
+      await label.click();
+    }
+
+    // Wait for sidebar to open and show both deselect buttons
+    await browser.waitUntil(
+      async () => (await $$("[data-testid='deselect-photo']")).length === 2,
+      { timeout: 5000, timeoutMsg: "deselect buttons did not appear for 2 selected photos" },
+    );
+
+    // Click the first ✕ button to deselect one photo
+    await (await $$("[data-testid='deselect-photo']"))[0].click();
+
+    // Sidebar should now show only 1 deselect button
+    await browser.waitUntil(
+      async () => (await $$("[data-testid='deselect-photo']")).length === 1,
+      { timeout: 5000, timeoutMsg: "deselect button count did not drop to 1" },
+    );
+
+    // The corresponding photo card should lose its selection highlight
+    await browser.waitUntil(
+      async () => {
+        let selected = 0;
+        for (const card of await $$("[data-testid='photo-card']")) {
+          if ((await card.getAttribute("class"))?.includes("cardSelected")) selected++;
+        }
+        return selected === 1;
+      },
+      { timeout: 5000, timeoutMsg: "expected exactly 1 card to remain selected" },
+    );
+  });
+
   it("moves selected photos to trash via the right sidebar delete operation", async () => {
     await navigateToDate("2022-12-01"); // 2 photos: a.jpg and b.jpg
 
