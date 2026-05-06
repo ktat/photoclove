@@ -7,7 +7,13 @@ import { buildTestConfig, cleanupTestConfig } from "./e2e/fixtures.js";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 const binaryName = process.platform === "win32" ? "PhotoClove.exe" : "PhotoClove";
-const application = path.resolve(__dirname, "src-tauri", "target", "debug", binaryName);
+// Resolve where `tauri build` actually drops the binary. Honors
+// CARGO_TARGET_DIR (set by the CI image so cargo writes outside the
+// per-job workspace), otherwise falls back to the in-workspace target.
+const cargoTargetDir = process.env.CARGO_TARGET_DIR
+  ? path.resolve(process.env.CARGO_TARGET_DIR)
+  : path.resolve(__dirname, "src-tauri", "target");
+const application = path.join(cargoTargetDir, "debug", binaryName);
 
 const { configPath: testConfigPath, tmpRoot: testConfigTmpRoot } = buildTestConfig();
 
