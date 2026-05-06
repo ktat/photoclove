@@ -272,7 +272,8 @@ function PhotosList({
     const {
         photoLoading, setPhotoLoading,
         currentPhotoLoadingController, setCurrentPhotoLoadingController,
-        getPhotos, loadAllPhotosBasedOnViewMode, loadPhotosWithCollection
+        getPhotos, loadAllPhotosBasedOnViewMode, loadPhotosWithCollection,
+        cancelInFlightLoad
     } = usePhotoLoader({
         viewModeObj, appConfig, sortOfPhotos, starFilter, hasCommentFilter,
         extensionFilter, filteredPhotos, numOfPhoto, importState,
@@ -473,7 +474,7 @@ function PhotosList({
         setCurrentPhotoIndex, setPhotosListMiniCurrentIndex, setCurrentPhoto,
         setAllPhotosForCurrentFetch, setIsFetched, setPhotoLoading,
         refreshPhotosOnly, appConfig, sortOfPhotos,
-        photosCache, currentViewKey
+        photosCache, currentViewKey, cancelInFlightLoad
     });
 
     useImportStateSync({ viewMode, importState, loadPhotosWithCollection });

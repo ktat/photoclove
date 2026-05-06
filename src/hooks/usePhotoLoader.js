@@ -80,7 +80,7 @@ export function usePhotoLoader({
     const [currentPhotoLoadingController, setCurrentPhotoLoadingController] = useState(null);
 
     // Async cancellation for stale request handling
-    const { startNewRequest, isRequestValid } = useAsyncCancellation();
+    const { startNewRequest, isRequestValid, cancelAll } = useAsyncCancellation();
 
     /**
      * Internal: Load photos via unified API with filters
@@ -402,6 +402,11 @@ export function usePhotoLoader({
         // Functions
         getPhotos,
         loadPhotos,
+        // Cancel any in-flight loadPhotos. Cache-hit branches that
+        // synchronously install photos must call this so a previous
+        // backend response doesn't land later and overwrite the
+        // newly-shown view.
+        cancelInFlightLoad: cancelAll,
         // Legacy aliases (for backward compatibility)
         loadAllPhotosBasedOnViewMode,
         loadPhotosWithCollection

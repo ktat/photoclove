@@ -38,7 +38,8 @@ export function useViewModeSync({
     appConfig,
     sortOfPhotos,
     photosCache,
-    currentViewKey
+    currentViewKey,
+    cancelInFlightLoad
 }) {
     // Stringify searchParams to use in dependency array (avoid reference changes)
     const searchParamsStr = currentSearchParams ? JSON.stringify(currentSearchParams) : null;
@@ -58,12 +59,16 @@ export function useViewModeSync({
         if (viewModeObj.isSearchMode?.()) return;
 
         // Non-loadable modes (HOME / list views) don't fetch photos.
+        // Also drop any in-flight previous load — otherwise its eventual
+        // response would silently overwrite allPhotosForCurrentFetch even
+        // though the user has navigated away from any photo view.
         const isNonLoadableMode =
             viewMode === VIEW_MODES.HOME ||
             viewMode === VIEW_MODES.ALBUM_LIST ||
             viewMode === VIEW_MODES.TAG_LIST ||
             viewMode === VIEW_MODES.FACE_LIST;
         if (isNonLoadableMode) {
+            if (cancelInFlightLoad) cancelInFlightLoad();
             if (setPhotoLoading) setPhotoLoading(false);
             return;
         }
@@ -74,6 +79,13 @@ export function useViewModeSync({
         if (photosCache && currentViewKey && setAllPhotosForCurrentFetch) {
             const cached = photosCache.get(currentViewKey);
             if (cached && cached.length > 0) {
+                // Invalidate any in-flight backend load from a previous
+                // view. Without this, picking view A (no cache, slow load)
+                // then view B (cache hit) shows B immediately, but A's
+                // load eventually resolves and overwrites B's photos with
+                // A's. cancelInFlightLoad bumps the request-id counter so
+                // A's response gets dropped on arrival.
+                if (cancelInFlightLoad) cancelInFlightLoad();
                 setAllPhotosForCurrentFetch(cached);
                 if (setIsFetched) setIsFetched(true);
                 if (setPhotoLoading) setPhotoLoading(false);
@@ -86,7 +98,7 @@ export function useViewModeSync({
         if (setAllPhotosForCurrentFetch) setAllPhotosForCurrentFetch([]);
         if (setIsFetched) setIsFetched(false);
         if (setPhotoLoading) setPhotoLoading(true);
-    }, [currentViewKey, viewMode, viewModeObj, photosCache, setPhotoLoading, setAllPhotosForCurrentFetch, setIsFetched]);
+    }, [currentViewKey, viewMode, viewModeObj, photosCache, setPhotoLoading, setAllPhotosForCurrentFetch, setIsFetched, cancelInFlightLoad]);
 
     // Main effect: side menu + actual fetch. Runs after paint so the
     // loading overlay is already on screen — the backend round-trip
