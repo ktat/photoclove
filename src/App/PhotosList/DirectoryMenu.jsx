@@ -295,6 +295,7 @@ function DirectoryMenu(props) {
                 }}
                 handlers={{
                     doOperation,
+                    togglePhotoSelection: props.togglePhotoSelection,
                     selectAllPhotoToSelection: props.selectAllPhotoToSelection,
                     clearPhotoSelection: props.clearPhotoSelection,
                     deleteSelectedAlbums: props.deleteSelectedAlbums,

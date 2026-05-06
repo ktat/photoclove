@@ -35,7 +35,7 @@ function PhotoSelectionSection({
         return photo?.displayPath() || path;
     }, [appConfig, viewModeObj]);
 
-    const { doOperation, selectAllPhotoToSelection, clearPhotoSelection } = handlers;
+    const { doOperation, togglePhotoSelection, selectAllPhotoToSelection, clearPhotoSelection } = handlers;
 
     return (
         <>
@@ -117,7 +117,24 @@ function PhotoSelectionSection({
                     )}
                     <ul className="list-of-selected">
                         {photoSelection.map((v, i) => (
-                            <li key={v}><a href="#" onClick={() => setPhotoIndex(i)}>{v.replace(/^.+\//, "")}</a></li>
+                            <li key={v}>
+                                <button
+                                    data-testid="deselect-photo"
+                                    onClick={() => togglePhotoSelection(v)}
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        padding: '0 var(--space-1) 0 0',
+                                        color: 'var(--color-text-muted)',
+                                        fontSize: 'var(--font-size-base)',
+                                        lineHeight: 1,
+                                        verticalAlign: 'middle'
+                                    }}
+                                    aria-label="deselect"
+                                >✕</button>
+                                <a href="#" onClick={() => setPhotoIndex(i)}>{v.replace(/^.+\//, "")}</a>
+                            </li>
                         ))}
                     </ul>
 

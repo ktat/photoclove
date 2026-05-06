@@ -59,7 +59,7 @@ function NavigationIcons({
       onMouseEnter={(e) => handleMouseEnter(t('navigation.import'), e)}
       onMouseLeave={handleMouseLeave}>📥</a>
 
-      <a href="#" onClick={() => {
+      <a href="#" data-testid="nav-albums" onClick={() => {
         resetPhotoState();
         toggleAlbumListMode();
       }}
@@ -80,7 +80,7 @@ function NavigationIcons({
       onMouseEnter={(e) => handleMouseEnter(t('navigation.people'), e)}
       onMouseLeave={handleMouseLeave}>👤</a>
 
-      <a href="#" onClick={() => {
+      <a href="#" data-testid="nav-trash" onClick={() => {
         resetPhotoState();
         openTrash();
       }}
