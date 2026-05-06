@@ -96,6 +96,8 @@
     "singlePhoto": "Single Photo",
     "collage": "Collage",
     "needTwoPhotos": "Need 2+ photos for collage",
+    "order": "Order",
+    "dragToReorder": "Drag to reorder",
     "options": "Options",
     "backgroundColor": "Background",
     "padding": "Padding",

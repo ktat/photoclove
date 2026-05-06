@@ -24,6 +24,7 @@ import {
 import { Photo } from '../../../domain/Photo.js';
 import { logger } from '../../../services/LoggerService.js';
 import { checkFirstActionAchievement } from '../../../services/AchievementService.js';
+import CollageOrderEditor from './CollageOrderEditor.jsx';
 import styles from './ShareTab.module.css';
 
 const BACKGROUND_COLORS = [
@@ -94,6 +95,21 @@ function ShareTab({
         return photoSelection.map(resolveToDisplayPath);
     }, [isPhotoViewer, photoSource, currentPhotoPath, photoSelection, resolveToDisplayPath]);
 
+    // User-controlled collage order. Mirrors activePhotos but keeps any
+    // ordering set by the drag handle in CollageOrderEditor. Reconciles
+    // on activePhotos changes by preserving existing positions for kept
+    // paths and appending newly-added ones to the end.
+    const [orderedPaths, setOrderedPaths] = useState([]);
+    useEffect(() => {
+        setOrderedPaths(prev => {
+            const activeSet = new Set(activePhotos);
+            const kept = prev.filter(p => activeSet.has(p));
+            const keptSet = new Set(kept);
+            const additions = activePhotos.filter(p => !keptSet.has(p));
+            return [...kept, ...additions];
+        });
+    }, [activePhotos]);
+
     // Auto-select mode based on photo count
     useEffect(() => {
         if (activePhotos.length === 1) {
@@ -140,8 +156,8 @@ function ShareTab({
 
                     if (shareMode === 'single' && activePhotos.length >= 1) {
                         blob = await generateShareablePhoto(activePhotos[0], watermarkOptions);
-                    } else if (shareMode === 'collage' && activePhotos.length >= 2) {
-                        blob = await generateCollage(activePhotos.slice(0, 9), {
+                    } else if (shareMode === 'collage' && orderedPaths.length >= 2) {
+                        blob = await generateCollage(orderedPaths.slice(0, 9), {
                             backgroundColor: effectiveBackgroundColor,
                             padding,
                             cornerRadius,
@@ -168,7 +184,7 @@ function ShareTab({
         }, 300);
 
         return () => clearTimeout(timeoutId);
-    }, [activePhotos, shareMode, addPhotoCloveWatermark, addUserWatermark, userWatermarkText, effectiveBackgroundColor, padding, cornerRadius, watermarkColor, watermarkOpacity, watermarkStyle]);
+    }, [activePhotos, orderedPaths, shareMode, addPhotoCloveWatermark, addUserWatermark, userWatermarkText, effectiveBackgroundColor, padding, cornerRadius, watermarkColor, watermarkOpacity, watermarkStyle]);
 
     // Cleanup URL on unmount
     useEffect(() => {
@@ -270,6 +286,23 @@ function ShareTab({
                             {t('directoryMenu:share.collage', 'Collage')}
                         </button>
                     </div>
+                </div>
+            )}
+
+            {/* Collage order (drag-and-drop) */}
+            {shareMode === 'collage' && canCreateCollage && (
+                <div className={styles.section}>
+                    <label className={styles.sectionTitle}>
+                        {t('directoryMenu:share.order', 'Order')}
+                    </label>
+                    <CollageOrderEditor
+                        paths={orderedPaths.slice(0, 9)}
+                        onReorder={(reordered) => {
+                            // Preserve any extras beyond 9 — they're not in
+                            // the collage but are still in the selection.
+                            setOrderedPaths(prev => [...reordered, ...prev.slice(9)]);
+                        }}
+                    />
                 </div>
             )}
 

@@ -96,6 +96,8 @@
     "singlePhoto": "単体写真",
     "collage": "コラージュ",
     "needTwoPhotos": "コラージュには2枚以上必要",
+    "order": "並び順",
+    "dragToReorder": "ドラッグで並び替え",
     "options": "オプション",
     "backgroundColor": "背景色",
     "padding": "余白",
