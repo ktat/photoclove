@@ -202,7 +202,7 @@ fn get_memories_photos_grouped(
             }
         })
         .collect();
-    result.sort_by(|a, b| a.years_ago.cmp(&b.years_ago));
+    result.sort_by_key(|a| a.years_ago);
 
     log::info!(target: "memories", "get_memories_grouped; years_count={}", result.len());
     Ok(result)

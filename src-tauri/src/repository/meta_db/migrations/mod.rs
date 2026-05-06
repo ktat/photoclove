@@ -131,41 +131,35 @@ pub fn run_migrations(conn: &Connection) -> Result<()> {
         // Special handling for migrations that add columns which might already exist
         // (e.g., from migration 001 which now includes these columns for fresh DBs)
         match migration.version {
-            7 => {
-                // Migration 7 adds storage_sync column
-                if has_column(conn, "storage_sync") {
-                    log::info!(target: "migrations", "skipping_migration; version=7; reason=column_already_exists");
-                    mark_migration_applied(conn, 7, "add_storage_sync (column exists)")?;
-                    continue;
+            // Migration 7 adds storage_sync column
+            7 if has_column(conn, "storage_sync") => {
+                log::info!(target: "migrations", "skipping_migration; version=7; reason=column_already_exists");
+                mark_migration_applied(conn, 7, "add_storage_sync (column exists)")?;
+                continue;
+            }
+            // Migration 10 assumes burst_group_id and storage_sync exist
+            // Ensure they exist before running this migration
+            10 if table_exists(conn) => {
+                if !has_column(conn, "burst_group_id") {
+                    log::info!(target: "migrations", "adding_burst_group_id_before_migration_10");
+                    conn.execute(
+                        "ALTER TABLE photo_metadata ADD COLUMN burst_group_id TEXT",
+                        [],
+                    )?;
+                }
+                if !has_column(conn, "storage_sync") {
+                    log::info!(target: "migrations", "adding_storage_sync_before_migration_10");
+                    conn.execute(
+                        "ALTER TABLE photo_metadata ADD COLUMN storage_sync TEXT DEFAULT NULL",
+                        [],
+                    )?;
                 }
             }
-            10 => {
-                // Migration 10 assumes burst_group_id and storage_sync exist
-                // Ensure they exist before running this migration
-                if table_exists(conn) {
-                    if !has_column(conn, "burst_group_id") {
-                        log::info!(target: "migrations", "adding_burst_group_id_before_migration_10");
-                        conn.execute(
-                            "ALTER TABLE photo_metadata ADD COLUMN burst_group_id TEXT",
-                            [],
-                        )?;
-                    }
-                    if !has_column(conn, "storage_sync") {
-                        log::info!(target: "migrations", "adding_storage_sync_before_migration_10");
-                        conn.execute(
-                            "ALTER TABLE photo_metadata ADD COLUMN storage_sync TEXT DEFAULT NULL",
-                            [],
-                        )?;
-                    }
-                }
-            }
-            14 => {
-                // Migration 14 adds verification_hash column to achievement_progress
-                if has_achievement_column(conn, "verification_hash") {
-                    log::info!(target: "migrations", "skipping_migration; version=14; reason=column_already_exists");
-                    mark_migration_applied(conn, 14, "add_achievement_hash (column exists)")?;
-                    continue;
-                }
+            // Migration 14 adds verification_hash column to achievement_progress
+            14 if has_achievement_column(conn, "verification_hash") => {
+                log::info!(target: "migrations", "skipping_migration; version=14; reason=column_already_exists");
+                mark_migration_applied(conn, 14, "add_achievement_hash (column exists)")?;
+                continue;
             }
             _ => {}
         }
