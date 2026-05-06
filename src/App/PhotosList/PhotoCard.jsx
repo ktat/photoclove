@@ -370,6 +370,7 @@ function PhotoCard({
     return (
         <div
             key={uniqueKey}
+            data-testid="photo-card"
             className={classNames('row', getSizeClass(iconSize), { [styles.cardSelected]: isSelected })}
             style={{
                 flex: "0 0 " + ((iconSize / 1) + 41) + "px",

@@ -40,7 +40,8 @@ export function buildTestConfig() {
     "thumbnail_ignore_file_size: 1048576",
     "copy_parallel: 2",
     "thumbnail_parallel: 1",
-    "use_count: 0",
+    "# Skip the Welcome screen (shown when use_count <= 2)",
+    "use_count: 99",
     "",
   ].join("\n");
 
