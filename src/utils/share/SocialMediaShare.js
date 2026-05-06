@@ -22,8 +22,10 @@ export function getShareUrl(platform, text) {
         telegram: `https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodedText}`,
         whatsapp: `https://wa.me/?text=${encodedText}`,
         mastodon: `https://mastodon.social/share?text=${encodedText}`,
-        instagram: null, // Instagram doesn't support web sharing
-        tiktok: null // TikTok doesn't support web sharing
+        bluesky: `https://bsky.app/intent/compose?text=${encodedText}`,
+        threads: `https://www.threads.net/intent/post?text=${encodedText}`,
+        // Instagram has no public web share intent; open the site so the user can paste the copied image.
+        instagram: 'https://www.instagram.com/'
     };
 
     return urls[platform] || null;
