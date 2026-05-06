@@ -51,6 +51,54 @@ describe("PhotoClove application", () => {
     );
   });
 
+  it("closes PhotoDisplay and shows the new list when switching dates", async () => {
+    // Navigate to date (a) = 2022/05/23
+    const dateA = await $("[data-date='2022/05/23']");
+    await dateA.waitForExist({ timeout: 10000 });
+    await browser.execute((el) => el.click(), dateA);
+
+    const photoList = await $("#photoList");
+    await browser.waitUntil(
+      async () => (await photoList.getAttribute("data-date")) === "2022/05/23",
+      { timeout: 10000, timeoutMsg: "did not land on 2022/05/23" },
+    );
+    await browser.waitUntil(
+      async () => (await $$("[data-testid='photo-card']")).length > 0,
+      { timeout: 10000, timeoutMsg: "no cards on 2022/05/23" },
+    );
+
+    // Open photo (A) → PhotoDisplay opens
+    const cards = await $$("[data-testid='photo-card']");
+    const firstLink = await cards[0].$("a");
+    await firstLink.scrollIntoView();
+    await browser.execute((el) => el.click(), firstLink);
+
+    const display = await $("#photos-display-wrapper");
+    await display.waitForExist({ timeout: 10000 });
+
+    // Switch to date (b) = 2022/12/01 while PhotoDisplay is open
+    const dateB = await $("[data-date='2022/12/01']");
+    await dateB.waitForExist({ timeout: 5000 });
+    await browser.execute((el) => el.click(), dateB);
+
+    // First wait for the new date's list to finish loading. The wrapper
+    // briefly unmounts during loading (`shouldDisplay = !photoLoading &&
+    // currentPhoto`) — checking only "wrapper gone" would catch that
+    // transient state and falsely pass while the bug is present.
+    await browser.waitUntil(
+      async () => (await $("#photoList").getAttribute("data-date")) === "2022/12/01",
+      { timeout: 10000, timeoutMsg: "did not navigate to 2022/12/01" },
+    );
+    await browser.waitUntil(
+      async () => (await $$("[data-testid='photo-card']")).length === 2,
+      { timeout: 10000, timeoutMsg: "expected 2 cards on 2022/12/01" },
+    );
+
+    // Bug: with the new list loaded, the PhotoDisplay overlay must not
+    // come back showing photo (A) from the previous date.
+    expect(await $("#photos-display-wrapper").isExisting()).toBe(false);
+  });
+
   it("collapses a burst sequence into a single representative with a +N badge", async () => {
     // Navigate to 2022/05/23 — the fixture's only date with a burst group
     // (P1212647-P1212652 share a burst_group_id; P1212646 is a non-burst outlier).

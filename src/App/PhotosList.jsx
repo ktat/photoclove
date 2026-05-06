@@ -588,7 +588,7 @@ function PhotosList({
     });
 
     // Auto-close photo display effect
-    useAutoClosePhotoDisplayEffect({ viewMode, currentPhoto, closePhotoDisplay });
+    useAutoClosePhotoDisplayEffect({ currentViewKey, currentPhoto, closePhotoDisplay });
 
     return (
         <ErrorBoundary name="PhotosList" level="component">

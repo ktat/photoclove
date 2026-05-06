@@ -170,30 +170,30 @@ export function useBurstModeChangeEffect({
 /**
  * Hook for auto-closing photo display when the underlying list changes.
  *
- * Closes the PhotoDisplay any time the user switches view mode while a
- * photo is open. The previous behaviour only triggered on list-style modes
- * (ALBUM_LIST/TAG_LIST/FACE_LIST/HOME), but switching to a *different*
- * album/tag/search/trash should also close the display — otherwise the
- * user is left looking at a photo from the new list with the prior view's
- * navigation context.
+ * Closes the PhotoDisplay any time the user switches the view context while
+ * a photo is open — including same-mode switches like date→date or
+ * album→album. Watches `currentViewKey` (from getViewKey) so any change to
+ * the view's identifying data (date, album id, tag id, search params,
+ * sort) triggers a close. Otherwise the user is left looking at a photo
+ * from the previous list while the new list loads underneath.
  */
 export function useAutoClosePhotoDisplayEffect({
-    viewMode,
+    currentViewKey,
     currentPhoto,
     closePhotoDisplay
 }) {
-    const prevViewModeRef = useRef(viewMode);
+    const prevKeyRef = useRef(currentViewKey);
     useEffect(() => {
-        const prev = prevViewModeRef.current;
-        prevViewModeRef.current = viewMode;
-        if (prev !== viewMode && currentPhoto) {
-            logger.info('usePhotosListEffects', 'auto_close', 'Auto-closing photo display on view-mode change', {
+        const prev = prevKeyRef.current;
+        prevKeyRef.current = currentViewKey;
+        if (prev !== currentViewKey && currentPhoto) {
+            logger.info('usePhotosListEffects', 'auto_close', 'Auto-closing photo display on view-key change', {
                 from: prev,
-                to: viewMode,
+                to: currentViewKey,
             });
             closePhotoDisplay();
         }
-    }, [viewMode, currentPhoto, closePhotoDisplay]);
+    }, [currentViewKey, currentPhoto, closePhotoDisplay]);
 }
 
 /**
