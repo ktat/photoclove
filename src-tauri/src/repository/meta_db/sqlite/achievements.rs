@@ -181,7 +181,13 @@ impl SQLite {
                 (achieved.clone(), hash.clone())
             } else if has_existing_achieved_at {
                 // Legacy record: has achieved_at but missing/invalid hash - fix hash using existing timestamp
-                let existing_at = existing.as_ref().unwrap().1.as_deref().unwrap_or(&now).to_string();
+                let existing_at = existing
+                    .as_ref()
+                    .unwrap()
+                    .1
+                    .as_deref()
+                    .unwrap_or(&now)
+                    .to_string();
                 let hash = generate_hash(id, &existing_at);
                 (Some(existing_at), Some(hash))
             } else {
@@ -248,7 +254,13 @@ impl SQLite {
         if already_achieved || has_existing_achieved_at {
             if has_existing_achieved_at && !already_achieved {
                 // Legacy record: fix hash silently using existing achieved_at
-                let existing_at = existing.as_ref().unwrap().0.as_deref().unwrap_or(&now).to_string();
+                let existing_at = existing
+                    .as_ref()
+                    .unwrap()
+                    .0
+                    .as_deref()
+                    .unwrap_or(&now)
+                    .to_string();
                 let verification_hash = generate_hash(id, &existing_at);
                 conn.execute(
                     "UPDATE achievement_progress SET verification_hash = ?, updated_at = ? WHERE id = ? AND (verification_hash IS NULL OR verification_hash = '')",

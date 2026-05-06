@@ -133,9 +133,7 @@ impl S3Service {
     /// Get default endpoint URL for known S3-compatible providers
     fn get_default_endpoint(&self) -> Option<String> {
         match self.config.storage_type {
-            StorageType::Wasabi => {
-                Some(format!("https://s3.{}.wasabisys.com", self.config.region))
-            }
+            StorageType::Wasabi => Some(format!("https://s3.{}.wasabisys.com", self.config.region)),
             StorageType::MinIO => None,
             StorageType::CloudflareR2 => None,
             StorageType::DigitalOcean => Some(format!(

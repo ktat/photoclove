@@ -1,14 +1,14 @@
-use warp::Filter;
-use std::sync::Arc;
-use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, AtomicU16, Ordering};
-use std::path::{Path, PathBuf};
 use base64::Engine;
-use tokio::io::{AsyncSeekExt, AsyncReadExt};
-use warp::http::{StatusCode, HeaderMap, HeaderValue};
+use futures_util::stream::StreamExt;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, AtomicU16, Ordering};
+use std::sync::Arc;
+use tokio::io::{AsyncReadExt, AsyncSeekExt};
 use tokio::task::JoinHandle;
 use tokio_util::io::ReaderStream;
-use futures_util::stream::StreamExt;
+use warp::http::{HeaderMap, HeaderValue, StatusCode};
+use warp::Filter;
 
 #[derive(Debug)]
 struct StreamingError;
@@ -67,7 +67,8 @@ impl VideoServer {
 
             // Bind to port 0 for automatic OS assignment
             let server = warp::serve(routes);
-            let (addr, server_future) = server.bind_ephemeral(std::net::SocketAddr::from(([127, 0, 0, 1], 0)));
+            let (addr, server_future) =
+                server.bind_ephemeral(std::net::SocketAddr::from(([127, 0, 0, 1], 0)));
 
             let assigned_port = addr.port();
             port_clone.store(assigned_port, Ordering::Relaxed);
@@ -111,7 +112,8 @@ impl VideoServer {
     pub async fn register_video(&self, video_path: String) -> Result<String, String> {
         // Canonicalize path for security (prevent directory traversal)
         let path = PathBuf::from(&video_path);
-        let canonical_path = path.canonicalize()
+        let canonical_path = path
+            .canonicalize()
             .map_err(|e| format!("Failed to resolve path '{}': {}", video_path, e))?;
 
         // Verify file exists and is accessible
@@ -123,13 +125,20 @@ impl VideoServer {
         }
 
         // Additional security: verify it's a video file
-        let extension = canonical_path.extension()
+        let extension = canonical_path
+            .extension()
             .and_then(|ext| ext.to_str())
             .unwrap_or("")
             .to_lowercase();
 
-        if !matches!(extension.as_str(), "mp4" | "webm" | "avi" | "mov" | "mkv" | "m4v" | "3gp" | "flv") {
-            return Err(format!("File is not a supported video format: {}", video_path));
+        if !matches!(
+            extension.as_str(),
+            "mp4" | "webm" | "avi" | "mov" | "mkv" | "m4v" | "3gp" | "flv"
+        ) {
+            return Err(format!(
+                "File is not a supported video format: {}",
+                video_path
+            ));
         }
 
         // Use base64 encoding of canonical path as video ID
@@ -194,7 +203,10 @@ impl VideoServer {
 // Warp filter helper for dependency injection
 fn with_mappings(
     mappings: Arc<tokio::sync::RwLock<HashMap<String, PathBuf>>>,
-) -> impl Filter<Extract = (Arc<tokio::sync::RwLock<HashMap<String, PathBuf>>>,), Error = std::convert::Infallible> + Clone {
+) -> impl Filter<
+    Extract = (Arc<tokio::sync::RwLock<HashMap<String, PathBuf>>>,),
+    Error = std::convert::Infallible,
+> + Clone {
     warp::any().map(move || mappings.clone())
 }
 
@@ -223,13 +235,14 @@ async fn serve_video_file(
     log::debug!(target: "video_server", "serving_video_file; path={:?}", file_path);
 
     // Open file and get metadata
-    let mut file = tokio::fs::File::open(&file_path).await
-        .map_err(|e| {
-            log::error!(target: "video_server", "file_open_error; path={:?}; error={:?}", file_path, e);
-            warp::reject::not_found()
-        })?;
+    let mut file = tokio::fs::File::open(&file_path).await.map_err(|e| {
+        log::error!(target: "video_server", "file_open_error; path={:?}; error={:?}", file_path, e);
+        warp::reject::not_found()
+    })?;
 
-    let metadata = file.metadata().await
+    let metadata = file
+        .metadata()
+        .await
         .map_err(|_| warp::reject::not_found())?;
 
     let file_size = metadata.len();
@@ -241,7 +254,8 @@ async fn serve_video_file(
 
             if let Some((start, end)) = parse_range(range_str, file_size) {
                 // Seek to start position
-                file.seek(std::io::SeekFrom::Start(start)).await
+                file.seek(std::io::SeekFrom::Start(start))
+                    .await
                     .map_err(|_| warp::reject::not_found())?;
 
                 let content_length = end - start + 1;
@@ -260,7 +274,10 @@ async fn serve_video_file(
 
                 let response = warp::http::Response::builder()
                     .status(StatusCode::PARTIAL_CONTENT)
-                    .header("content-range", format!("bytes {}-{}/{}", start, end, file_size))
+                    .header(
+                        "content-range",
+                        format!("bytes {}-{}/{}", start, end, file_size),
+                    )
                     .header("accept-ranges", "bytes")
                     .header("content-length", content_length.to_string())
                     .header("content-type", get_video_content_type(&file_path))

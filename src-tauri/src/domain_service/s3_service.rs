@@ -7,8 +7,8 @@ use crate::domain_service::token_storage_service::TokenStorageService;
 use crate::entity::config::{S3AuthMethod, S3Config, S3StorageType};
 
 // Re-export the S3Service and related types from the s3-backup crate
-pub use s3_backup::S3Service;
 pub use s3_backup::list_aws_profiles;
+pub use s3_backup::S3Service;
 
 /// Convert the app's S3Config into s3-backup's S3BackupConfig,
 /// resolving credentials from keyring when needed.
@@ -16,11 +16,9 @@ pub fn to_backup_config(config: &S3Config) -> Result<s3_backup::S3BackupConfig, 
     let storage_type = convert_storage_type(&config.storage_type);
 
     let auth = match config.auth_method {
-        S3AuthMethod::AwsCredentials => {
-            s3_backup::AuthConfig::AwsCredentials {
-                profile: config.profile.clone(),
-            }
-        }
+        S3AuthMethod::AwsCredentials => s3_backup::AuthConfig::AwsCredentials {
+            profile: config.profile.clone(),
+        },
         S3AuthMethod::IAMRole => s3_backup::AuthConfig::IamRole,
         S3AuthMethod::AccessKey => {
             let provider = s3_backup::storage_type_to_provider(&storage_type);

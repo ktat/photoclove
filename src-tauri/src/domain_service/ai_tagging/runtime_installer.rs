@@ -102,10 +102,10 @@ pub fn install() -> Result<(), String> {
 
     log::info!(target: "ai_tagging", "onnx_runtime_download_start; url={}", url);
 
-    let tmp_archive = std::env::temp_dir()
-        .join(format!("photoclove-onnxruntime-{}.tgz", ONNX_VERSION));
-    let extract_dir = std::env::temp_dir()
-        .join(format!("photoclove-onnxruntime-extract-{}", ONNX_VERSION));
+    let tmp_archive =
+        std::env::temp_dir().join(format!("photoclove-onnxruntime-{}.tgz", ONNX_VERSION));
+    let extract_dir =
+        std::env::temp_dir().join(format!("photoclove-onnxruntime-extract-{}", ONNX_VERSION));
 
     // Download to temp file
     let response = ureq::get(&url)
@@ -174,7 +174,9 @@ pub fn install() -> Result<(), String> {
 /// the release; check both.
 fn find_lib_dir(extract_dir: &std::path::Path, subdir: &str) -> Option<PathBuf> {
     let candidates = [
-        extract_dir.join(format!("{}-{}", subdir, ONNX_VERSION)).join("lib"),
+        extract_dir
+            .join(format!("{}-{}", subdir, ONNX_VERSION))
+            .join("lib"),
         extract_dir.join(subdir).join("lib"),
     ];
     candidates.into_iter().find(|p| p.exists())

@@ -1,6 +1,6 @@
-use video_server::VideoServer;
 use std::sync::Arc;
 use tokio::sync::OnceCell;
+use video_server::VideoServer;
 
 static VIDEO_SERVER: OnceCell<Arc<VideoServer>> = OnceCell::const_new();
 
@@ -20,13 +20,13 @@ pub async fn start_video_server() -> Result<String, String> {
             }
         }
     }).await.map_err(|e| e.clone())?;
-    
+
     if !server.is_running() {
         let error_msg = "Warp video server failed to start properly";
         log::error!(target: "video_commands", "server_not_running_after_init");
         return Err(error_msg.to_string());
     }
-    
+
     log::info!(target: "video_commands", "warp_server_ready; url={}", server.server_url);
     Ok(server.server_url.clone())
 }
@@ -34,17 +34,18 @@ pub async fn start_video_server() -> Result<String, String> {
 /// Register a video file for streaming and get the streaming URL
 #[tauri::command]
 pub async fn register_video_path(video_path: String) -> Result<String, String> {
-    let server = VIDEO_SERVER.get()
+    let server = VIDEO_SERVER
+        .get()
         .ok_or("Warp video server not started. Call start_video_server() first.")?;
-    
+
     log::debug!(target: "video_commands", "registering_video_with_warp; path={}", video_path);
-    
+
     match server.register_video(video_path.clone()).await {
         Ok(streaming_url) => {
             log::info!(target: "video_commands", "warp_video_registration_success; path={}; url={}", 
                 video_path, streaming_url);
             Ok(streaming_url)
-        },
+        }
         Err(e) => {
             log::error!(target: "video_commands", "warp_video_registration_failed; path={}; error={}", 
                 video_path, e);
@@ -66,7 +67,7 @@ pub async fn get_video_server_status() -> Result<serde_json::Value, String> {
             "registered_videos": mappings.len(),
             "os_assigned_port": server.get_port() > 0
         });
-        
+
         log::debug!(target: "video_commands", "warp_server_status; status={}", status);
         Ok(status)
     } else {
@@ -85,7 +86,7 @@ pub async fn clear_video_mappings() -> Result<(), String> {
         let mut mappings = server.video_mappings.write().await;
         let count = mappings.len();
         mappings.clear();
-        
+
         log::info!(target: "video_commands", "warp_video_mappings_cleared; count={}", count);
         Ok(())
     } else {
@@ -106,7 +107,7 @@ pub async fn shutdown_video_server() -> Result<String, String> {
 }
 
 /// Get detailed server statistics for debugging
-#[tauri::command] 
+#[tauri::command]
 pub async fn get_video_server_stats() -> Result<serde_json::Value, String> {
     if let Some(server) = VIDEO_SERVER.get() {
         let stats = server.get_stats().await;
