@@ -1,15 +1,19 @@
-async function navigateToDate(date) {
-  const link = await $(`[data-date='${date}']`);
+// Click a date link by its locale-independent ISO key (YYYY-MM-DD).
+// Returns once #photoList has loaded that date and at least one card rendered.
+async function navigateToDate(isoDate) {
+  const link = await $(`[data-iso-date='${isoDate}']`);
   await link.waitForExist({ timeout: 10000 });
+  const displayedDate = await link.getAttribute("data-date");
   await link.click();
   await browser.waitUntil(
-    async () => (await $("#photoList").getAttribute("data-date")) === date,
-    { timeout: 10000, timeoutMsg: `did not navigate to ${date}` },
+    async () => (await $("#photoList").getAttribute("data-date")) === displayedDate,
+    { timeout: 10000, timeoutMsg: `did not navigate to ${isoDate}` },
   );
   await browser.waitUntil(
     async () => (await $$("[data-testid='photo-card']")).length > 0,
-    { timeout: 10000, timeoutMsg: `no cards rendered for ${date}` },
+    { timeout: 10000, timeoutMsg: `no cards rendered for ${isoDate}` },
   );
+  return displayedDate;
 }
 
 async function clickRecentPhotos() {
@@ -87,7 +91,7 @@ describe("PhotoClove application", () => {
 
   it("closes PhotoDisplay and shows the new list when switching dates", async () => {
     // Date (a) → open photo → switch to date (b)
-    await navigateToDate("2022/05/23");
+    await navigateToDate("2022-05-23");
 
     const cards = await $$("[data-testid='photo-card']");
     const firstLink = await cards[0].$("a");
@@ -97,24 +101,25 @@ describe("PhotoClove application", () => {
     const display = await $("#photos-display-wrapper");
     await display.waitForExist({ timeout: 10000 });
 
-    const dateB = await $("[data-date='2022/12/01']");
+    const dateB = await $("[data-iso-date='2022-12-01']");
+    const dateBStr = await dateB.getAttribute("data-date");
     await dateB.click();
 
     // Wait for the new list to fully load before asserting on display state —
     // the wrapper briefly unmounts during loading regardless of the bug.
     await browser.waitUntil(
-      async () => (await $("#photoList").getAttribute("data-date")) === "2022/12/01",
-      { timeout: 10000, timeoutMsg: "did not navigate to 2022/12/01" },
+      async () => (await $("#photoList").getAttribute("data-date")) === dateBStr,
+      { timeout: 10000, timeoutMsg: `did not navigate to ${dateBStr}` },
     );
     await browser.waitUntil(
       async () => (await $$("[data-testid='photo-card']")).length === 2,
-      { timeout: 10000, timeoutMsg: "expected 2 cards on 2022/12/01" },
+      { timeout: 10000, timeoutMsg: `expected 2 cards on ${dateBStr}` },
     );
     expect(await $("#photos-display-wrapper").isExisting()).toBe(false);
   });
 
   it("collapses a burst sequence into a single representative with a +N badge", async () => {
-    await navigateToDate("2022/05/23");
+    await navigateToDate("2022-05-23");
     await ensureBurstModeOn();
 
     // 6-photo burst + 1 outlier → 2 cards after grouping
@@ -176,7 +181,7 @@ describe("PhotoClove application", () => {
   });
 
   it("expands a burst group into all member photos when its badge is clicked", async () => {
-    await navigateToDate("2022/05/23");
+    await navigateToDate("2022-05-23");
     await ensureBurstModeOn();
     await browser.waitUntil(
       async () => (await $$("[data-testid='burst-badge']")).length === 1,

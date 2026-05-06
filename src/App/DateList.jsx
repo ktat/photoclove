@@ -441,6 +441,7 @@ function DateList(props) {
                         {viewMode === 'flat' && 
                             filteredDateList.map((l, i) => {
                                 const date = new Date(l.year + '/' + l.month + '/' + l.day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                                const isoDate = `${l.year}-${String(l.month).padStart(2, '0')}-${String(l.day).padStart(2, '0')}`;
                                 const photoCount = getPhotoCount(l.year, l.month, l.day);
                                 return photoCount > 0 && (
                                     <li key={i} style={{ listStyle: finalSelectedStyle["li-" + date] || "none" }}>
@@ -448,12 +449,13 @@ function DateList(props) {
                                            style={{
                                                color: finalSelectedStyle["a-" + date] ? getSelectedDateColor() : "var(--color-film-link, var(--color-primary))",
                                                fontSize: "inherit"
-                                           }} 
+                                           }}
                                            onClick={(e) => {
                                                e.preventDefault();
                                                handleDateClick(l.year, l.month, l.day);
                                            }}
-                                           data-date={date} 
+                                           data-date={date}
+                                           data-iso-date={isoDate}
                                            data-page={datePage[date]}>
                                             {date}
                                             {photoCount !== undefined ? " (" + photoCount + ")" : ""}
