@@ -465,10 +465,10 @@ mod tests {
         }
         let fo = file::File::new(f.to_string());
         let r = fo.create_file_if_not_exists();
-        assert_eq!(std::path::Path::new(f).exists(), true);
+        assert!(std::path::Path::new(f).exists());
         assert_eq!(r, expected_created);
         let r2 = fo.create_file_if_not_exists();
-        assert_eq!(r2, false);
+        assert!(!r2);
     }
 
     #[test]

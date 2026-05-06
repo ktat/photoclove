@@ -474,7 +474,7 @@ mod tests {
     #[test]
     fn test_invalid_date() {
         let d = date::Date::new(2022, 2, 32);
-        assert_eq!(d.is_none(), true);
+        assert!(d.is_none());
     }
 
     #[test]

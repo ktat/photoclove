@@ -284,8 +284,8 @@ mod tests {
     fn test_has_stored_tokens_when_empty() {
         // This test assumes no tokens are stored
         // In a real test environment, you'd want to clean up first
-        let result = TokenStorageService::has_stored_tokens();
-        // We can't make assumptions about the state, just test that it doesn't panic
-        assert!(result == true || result == false);
+        // Don't assert on the value (depends on environment); just confirm
+        // the call returns without panicking.
+        let _result = TokenStorageService::has_stored_tokens();
     }
 }

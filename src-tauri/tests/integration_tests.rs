@@ -166,6 +166,7 @@ mod tests {
     fn test_config_structure() {
         // Test configuration-like structure
         #[derive(Debug, Clone)]
+        #[allow(dead_code)]
         struct MockConfig {
             import_to: String,
             export_from: Vec<String>,
@@ -186,6 +187,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::unnecessary_literal_unwrap)]
     fn test_error_handling() {
         // Test error handling patterns
         let result: Result<String, String> = Ok("success".to_string());

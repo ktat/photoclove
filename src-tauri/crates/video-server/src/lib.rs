@@ -2,7 +2,7 @@ use warp::Filter;
 use std::sync::Arc;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU16, Ordering};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use base64::Engine;
 use tokio::io::{AsyncSeekExt, AsyncReadExt};
 use warp::http::{StatusCode, HeaderMap, HeaderValue};
@@ -326,7 +326,7 @@ fn parse_range(range: &str, file_size: u64) -> Option<(u64, u64)> {
     Some((start, end))
 }
 
-fn get_video_content_type(file_path: &PathBuf) -> HeaderValue {
+fn get_video_content_type(file_path: &Path) -> HeaderValue {
     let path_str = file_path.to_string_lossy();
     if path_str.ends_with(".mp4") {
         HeaderValue::from_static("video/mp4")
