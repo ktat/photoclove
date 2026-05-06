@@ -1,21 +1,16 @@
-use crate::entity::photo;
 use crate::repository::{self};
 use crate::repository::{dir, MetaInfoDB};
 use crate::value::{date, file};
 use filetime;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{
     fs,
     io::{self, Read, Write},
-    path,
-    sync::{Arc, Mutex, RwLock},
-    thread, time,
+    path, time,
 };
-use tauri::Emitter;
 use uuid::Uuid;
 
 static IN_PROGRESS_NUM: AtomicUsize = AtomicUsize::new(1);
@@ -26,11 +21,6 @@ pub struct Importer {
     pub page: usize,
     pub num: usize,
     pub paths: Vec<String>,
-}
-
-#[allow(dead_code)]
-pub struct ImporterSelectedFiles {
-    selected_photo_files: Vec<file::File>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -262,196 +252,6 @@ fn copy_file(from: &str, to: &str) -> io::Result<u64> {
     filetime::set_file_mtime(to, ft)?;
 
     result
-}
-
-#[allow(dead_code)]
-impl ImporterSelectedFiles {
-    pub fn new() -> ImporterSelectedFiles {
-        ImporterSelectedFiles {
-            selected_photo_files: Vec::new(),
-        }
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn import_photos(
-        &self,
-        window: &tauri::Window,
-        _origin_repo_db: &repository::RepoDB,
-        origin_meta_db: &repository::MetaDB,
-        destination_dir: Arc<path::PathBuf>,
-        trash_dir: Arc<path::PathBuf>,
-        copy_parallel: usize,
-        progress: &Mutex<ImportProgress>,
-    ) -> Result<date::Dates, ()> {
-        progress.lock().unwrap().start_time = time::SystemTime::now();
-        progress.lock().unwrap().now_importing = true;
-        progress.lock().unwrap().num = self.selected_photo_files.len();
-
-        // Determine the source UUID for the import session
-        let source_uuid = if let Some(first_file) = self.selected_photo_files.first() {
-            match get_or_create_source_uuid(
-                &first_file.path,
-                Some(destination_dir.as_ref()),
-                Some(origin_meta_db),
-            ) {
-                Ok(uuid) => Some(uuid),
-                Err(e) => {
-                    log::error!(target: "importer", "source_uuid_creation_failed; error={}", e);
-                    None
-                }
-            }
-        } else {
-            None
-        };
-
-        let mut handles = vec![];
-        let mut photos_file_chunks: Vec<Vec<file::File>> = Vec::new();
-        let len = self.selected_photo_files.len();
-        let n = len / copy_parallel;
-        let mut i = 0;
-        let mut files: Vec<file::File> = Vec::new();
-        for file in &self.selected_photo_files {
-            files.push(file::File::new(file.path.clone()));
-            i += 1;
-            if i > n {
-                photos_file_chunks.push(files);
-                i = 0;
-                files = Vec::new();
-            }
-        }
-        if !files.is_empty() {
-            photos_file_chunks.push(files);
-        }
-
-        let sleep_millis = time::Duration::from_millis(100);
-        let t1 = time::SystemTime::now();
-        let arc_date_list = Arc::new(RwLock::new(HashMap::new()));
-        for files in photos_file_chunks {
-            let window = window.clone();
-            let meta_db = origin_meta_db.new_connect();
-            let arc_dest_path = Arc::clone(&destination_dir);
-            let arc_trash_path = Arc::clone(&trash_dir);
-            let arc_date_list_clone = Arc::clone(&arc_date_list);
-            let source_uuid_clone = source_uuid.clone();
-            // log::debug!(target: "importer", "trash_path; path={:?}", &arc_trash_path);
-            let handle = thread::spawn(move || {
-                let mut n: usize = 0;
-                let mut photos: Vec<photo::Photo> = Vec::new();
-                for file in files {
-                    let filename = file.filename();
-                    let photo = photo::Photo::new_with_exif(file.clone());
-                    let destination_date_dir = arc_dest_path.join(photo.created_date_string());
-                    arc_date_list_clone
-                        .write()
-                        .unwrap()
-                        .entry(photo.created_date_string())
-                        .or_insert(true);
-
-                    // Create the final destination path with UUID if available
-                    let destination_path = if let Some(ref uuid) = source_uuid_clone {
-                        let uuid_dir = destination_date_dir.join(uuid);
-                        if !uuid_dir.exists() {
-                            match fs::create_dir_all(&uuid_dir) {
-                                Ok(_) => {}
-                                Err(e) => {
-                                    log::error!(target: "importer", "uuid_dir_creation_failed; path={}; error={}", uuid_dir.display(), e);
-                                }
-                            }
-                        }
-                        uuid_dir.join(filename)
-                    } else {
-                        // Fallback to original behavior if UUID is not available
-                        if !destination_date_dir.exists() {
-                            match fs::create_dir(destination_date_dir.clone()) {
-                                Ok(_) => {}
-                                Err(e) => {
-                                    log::error!(target: "importer", "dir_creation_failed; path={}; error={}", destination_date_dir.display(), e);
-                                }
-                            }
-                        }
-                        destination_date_dir.join(filename)
-                    };
-
-                    // Ensure the date directory exists
-                    if !destination_date_dir.exists() {
-                        match fs::create_dir_all(&destination_date_dir) {
-                            Ok(_) => {}
-                            Err(e) => {
-                                log::error!(target: "importer", "date_dir_creation_failed; path={}; error={}", destination_date_dir.display(), e);
-                            }
-                        }
-                    }
-                    let p = file.path.clone();
-                    if p == destination_path.display().to_string() {
-                        log::info!(target: "importer", "file_ignored; reason=same_file; from={}; to={}", p, destination_path.display());
-                        n += 1;
-                        continue;
-                    } else {
-                        let trash_file_path = arc_trash_path
-                            .join(destination_path.clone().strip_prefix("/").unwrap());
-                        log::debug!(target: "importer", "trash_file_check; path={}", trash_file_path.display());
-                        if trash_file_path.exists() {
-                            n += 1;
-                            continue;
-                        }
-                        let result = copy_file(&p, &destination_path.display().to_string());
-                        thread::sleep(sleep_millis);
-                        log::info!(target: "importer", "file_copied; from={}; to={}", p, destination_path.display());
-                        if result.is_err() {
-                            log::error!(target: "importer", "file_copy_failed; error={:?}; path={}", result.err(), destination_path.display());
-                        }
-                    }
-                    let df = file::File::new(destination_path.display().to_string());
-                    let mut d_photo = photo::Photo::new(df.clone(), Option::None);
-                    d_photo.embed_exif(photo.meta_data);
-                    photos.push(d_photo);
-
-                    let t2 = time::SystemTime::now();
-                    let diff = t2.duration_since(t1).unwrap();
-                    n += 1;
-                    if diff.as_secs() > 2 {
-                        let current_num = IN_PROGRESS_NUM.load(Ordering::SeqCst);
-                        IN_PROGRESS_NUM.store(current_num + n, Ordering::SeqCst);
-                        match window.emit("import", current_num + n) {
-                            Ok(()) => (),
-                            Err(e) => {
-                                log::error!(target: "importer", "event_emit_failed; event=import; error={:?}", e);
-                            }
-                        }
-                        n = 0;
-                    }
-                }
-                meta_db.record_photos_meta_data(photos).unwrap();
-
-                let current_num = IN_PROGRESS_NUM.load(Ordering::SeqCst);
-                IN_PROGRESS_NUM.store(current_num + n, Ordering::SeqCst);
-            });
-            handles.push(handle);
-        }
-
-        for handle in handles {
-            handle.join().expect("Failed to join on thread");
-        }
-
-        progress.lock().unwrap().reset_import_progress();
-        let _ = progress;
-
-        let mut dates: date::Dates = date::Dates::empty();
-        for key in arc_date_list.read().unwrap().keys() {
-            // Skip empty keys
-            if !key.trim().is_empty() {
-                dates
-                    .dates
-                    .push(date::Date::from_string(key, Option::Some("-")));
-            }
-        }
-
-        Result::Ok(dates)
-    }
-
-    pub fn add_photo_file(&mut self, file: file::File) {
-        self.selected_photo_files.push(file);
-    }
 }
 
 impl Importer {
