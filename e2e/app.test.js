@@ -1,43 +1,79 @@
+async function navigateToDate(date) {
+  const link = await $(`[data-date='${date}']`);
+  await link.waitForExist({ timeout: 10000 });
+  await link.click();
+  await browser.waitUntil(
+    async () => (await $("#photoList").getAttribute("data-date")) === date,
+    { timeout: 10000, timeoutMsg: `did not navigate to ${date}` },
+  );
+  await browser.waitUntil(
+    async () => (await $$("[data-testid='photo-card']")).length > 0,
+    { timeout: 10000, timeoutMsg: `no cards rendered for ${date}` },
+  );
+}
+
+async function clickRecentPhotos() {
+  const link = await $(".recent-photos-link");
+  await link.waitForExist({ timeout: 30000 });
+  await link.click();
+  await browser.waitUntil(
+    async () => (await $$("[data-testid='photo-card']")).length > 0,
+    { timeout: 30000, timeoutMsg: "no cards rendered for Recent Photos" },
+  );
+}
+
+async function ensureBurstModeOn() {
+  const toggle = await $("[data-testid='burst-toggle']");
+  await toggle.waitForExist({ timeout: 5000 });
+  if ((await toggle.getAttribute("aria-pressed")) !== "true") {
+    await toggle.click();
+    await browser.waitUntil(
+      async () => (await toggle.getAttribute("aria-pressed")) === "true",
+      { timeout: 5000, timeoutMsg: "burst toggle did not turn on" },
+    );
+  }
+}
+
 describe("PhotoClove application", () => {
+  // Reset to HOME before every spec so tests run independently of order.
+  // HOME unmounts PhotosList (#photoList disappears) and the auto-close
+  // effect closes any open PhotoDisplay via the currentViewKey change.
+  beforeEach(async () => {
+    const home = await $("[data-testid='nav-home']");
+    if (await home.isExisting()) {
+      await home.click();
+      await browser.waitUntil(
+        async () => {
+          const listGone = !(await $("#photoList").isExisting());
+          const displayGone = !(await $("#photos-display-wrapper").isExisting());
+          return listGone && displayGone;
+        },
+        { timeout: 5000, timeoutMsg: "did not return to HOME" },
+      );
+    }
+  });
+
   it("launches with the expected window title", async () => {
     const title = await browser.getTitle();
     expect(title).toMatch(/photoclove/i);
   });
 
   it("navigates to the photo list via the Recent Photos sidebar link", async () => {
-    const recentLink = await $(".recent-photos-link");
-    await recentLink.waitForExist({ timeout: 30000 });
-    await recentLink.click();
-
-    const photoList = await $("#photoList");
-    await photoList.waitForExist({ timeout: 30000 });
-
-    try {
-      await browser.waitUntil(
-        async () => {
-          const cards = await $$("[data-testid='photo-card']");
-          return cards.length > 0;
-        },
-        { timeout: 30000, timeoutMsg: "no photo cards rendered from test library" },
-      );
-    } catch (err) {
-      const html = await photoList.getHTML();
-      console.log("[debug] #photoList HTML (first 800 chars):\n", html.slice(0, 800));
-      throw err;
-    }
+    await clickRecentPhotos();
+    expect(await $("#photoList").isExisting()).toBe(true);
   });
 
   it("opens PhotoDisplay when a card is clicked and closes via the close link", async () => {
+    await clickRecentPhotos();
+
     const cards = await $$("[data-testid='photo-card']");
     expect(cards.length).toBeGreaterThan(0);
-
     const firstLink = await cards[0].$("a");
     await firstLink.scrollIntoView();
     await firstLink.click();
 
     const display = await $("#photos-display-wrapper");
     await display.waitForExist({ timeout: 10000 });
-    expect(await display.isExisting()).toBe(true);
 
     const closeLink = await display.$("a=close");
     await closeLink.waitForExist({ timeout: 5000 });
@@ -50,22 +86,9 @@ describe("PhotoClove application", () => {
   });
 
   it("closes PhotoDisplay and shows the new list when switching dates", async () => {
-    // Navigate to date (a) = 2022/05/23
-    const dateA = await $("[data-date='2022/05/23']");
-    await dateA.waitForExist({ timeout: 10000 });
-    await dateA.click();
+    // Date (a) → open photo → switch to date (b)
+    await navigateToDate("2022/05/23");
 
-    const photoList = await $("#photoList");
-    await browser.waitUntil(
-      async () => (await photoList.getAttribute("data-date")) === "2022/05/23",
-      { timeout: 10000, timeoutMsg: "did not land on 2022/05/23" },
-    );
-    await browser.waitUntil(
-      async () => (await $$("[data-testid='photo-card']")).length > 0,
-      { timeout: 10000, timeoutMsg: "no cards on 2022/05/23" },
-    );
-
-    // Open photo (A) → PhotoDisplay opens
     const cards = await $$("[data-testid='photo-card']");
     const firstLink = await cards[0].$("a");
     await firstLink.scrollIntoView();
@@ -74,15 +97,11 @@ describe("PhotoClove application", () => {
     const display = await $("#photos-display-wrapper");
     await display.waitForExist({ timeout: 10000 });
 
-    // Switch to date (b) = 2022/12/01 while PhotoDisplay is open
     const dateB = await $("[data-date='2022/12/01']");
-    await dateB.waitForExist({ timeout: 5000 });
     await dateB.click();
 
-    // First wait for the new date's list to finish loading. The wrapper
-    // briefly unmounts during loading (`shouldDisplay = !photoLoading &&
-    // currentPhoto`) — checking only "wrapper gone" would catch that
-    // transient state and falsely pass while the bug is present.
+    // Wait for the new list to fully load before asserting on display state —
+    // the wrapper briefly unmounts during loading regardless of the bug.
     await browser.waitUntil(
       async () => (await $("#photoList").getAttribute("data-date")) === "2022/12/01",
       { timeout: 10000, timeoutMsg: "did not navigate to 2022/12/01" },
@@ -91,66 +110,38 @@ describe("PhotoClove application", () => {
       async () => (await $$("[data-testid='photo-card']")).length === 2,
       { timeout: 10000, timeoutMsg: "expected 2 cards on 2022/12/01" },
     );
-
-    // Bug: with the new list loaded, the PhotoDisplay overlay must not
-    // come back showing photo (A) from the previous date.
     expect(await $("#photos-display-wrapper").isExisting()).toBe(false);
   });
 
   it("collapses a burst sequence into a single representative with a +N badge", async () => {
-    // Navigate to 2022/05/23 — the fixture's only date with a burst group
-    // (P1212647-P1212652 share a burst_group_id; P1212646 is a non-burst outlier).
-    const dateLink = await $("[data-date='2022/05/23']");
-    await dateLink.waitForExist({ timeout: 10000 });
-    await dateLink.click();
+    await navigateToDate("2022/05/23");
+    await ensureBurstModeOn();
 
-    // Wait for date page to render
-    const photoList = await $("#photoList");
+    // 6-photo burst + 1 outlier → 2 cards after grouping
     await browser.waitUntil(
-      async () => (await photoList.getAttribute("data-date")) === "2022/05/23",
-      { timeout: 10000, timeoutMsg: "did not navigate to 2022/05/23" },
-    );
-
-    // Enable burst grouping mode. Until this is on, the list is rendered via
-    // the plain `date` handler which doesn't aggregate burst groups.
-    const burstToggle = await $("[data-testid='burst-toggle']");
-    await burstToggle.waitForExist({ timeout: 5000 });
-    await burstToggle.click();
-
-    // After grouping: 2 cards (1 burst rep + 1 outlier) instead of 7
-    await browser.waitUntil(
-      async () => {
-        const cards = await $$("[data-testid='photo-card']");
-        return cards.length === 2;
-      },
+      async () => (await $$("[data-testid='photo-card']")).length === 2,
       { timeout: 10000, timeoutMsg: "burst grouping did not collapse to 2 cards" },
     );
 
     const badges = await $$("[data-testid='burst-badge']");
     expect(badges.length).toBe(1);
-    const badgeText = (await badges[0].getText()).trim();
-    // 6 photos in the burst → representative shows +5
-    expect(badgeText).toBe("+5");
+    expect((await badges[0].getText()).trim()).toBe("+5");
   });
 
   it("expands a burst group into all member photos when its badge is clicked", async () => {
-    // Continues from the previous spec: still on 2022/05/23 with burst
-    // mode on, 1 representative + 1 outlier visible. Click the +5 badge
-    // to enter the burst group view.
-    const badge = await $("[data-testid='burst-badge']");
-    await badge.waitForExist({ timeout: 5000 });
-    await badge.click();
-
-    // In burst group mode the list shows all 6 burst members. The badge
-    // itself disappears (PhotoCard hides it when isInBurstGroupMode).
+    await navigateToDate("2022/05/23");
+    await ensureBurstModeOn();
     await browser.waitUntil(
-      async () => {
-        const cards = await $$("[data-testid='photo-card']");
-        return cards.length === 6;
-      },
+      async () => (await $$("[data-testid='burst-badge']")).length === 1,
+      { timeout: 10000, timeoutMsg: "burst badge did not appear" },
+    );
+
+    await (await $("[data-testid='burst-badge']")).click();
+
+    await browser.waitUntil(
+      async () => (await $$("[data-testid='photo-card']")).length === 6,
       { timeout: 10000, timeoutMsg: "burst group did not expand to 6 cards" },
     );
-    const badgesAfter = await $$("[data-testid='burst-badge']");
-    expect(badgesAfter.length).toBe(0);
+    expect((await $$("[data-testid='burst-badge']")).length).toBe(0);
   });
 });

@@ -45,7 +45,7 @@ function NavigationIcons({
 
   return (
     <div className="navigation-icons">
-      <a href="#" onClick={handleHomeClick}
+      <a href="#" data-testid="nav-home" onClick={handleHomeClick}
       onMouseEnter={(e) => handleMouseEnter(t('navigation.home'), e)}
       onMouseLeave={handleMouseLeave}>🏠</a>
 

@@ -41,6 +41,7 @@ function PhotosToolbar({
             {showBurstToggle && (
                 <button
                     data-testid="burst-toggle"
+                    aria-pressed={burstModeEnabled}
                     className={burstModeEnabled ? styles.burstButtonActive : styles.burstButton}
                     onClick={toggleBurstMode}
                     title={burstModeEnabled ? t('toolbar.burstShowAll') : t('toolbar.burstGroup')}
