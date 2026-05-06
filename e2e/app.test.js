@@ -321,20 +321,18 @@ describe("PhotoClove application", () => {
     );
   });
 
-  it("selects the current photo via the 'c' key while in PhotoDisplay", async () => {
+  it("toggles photo selection on/off via the 'c' key while in PhotoDisplay", async () => {
     await navigateToDate("2022-12-01");
 
-    // Open the first photo
     const cards = await $$("[data-testid='photo-card']");
     const firstLink = await cards[0].$("a");
     await firstLink.scrollIntoView();
     await firstLink.click();
     await (await $("#photos-display-wrapper")).waitForExist({ timeout: 10000 });
 
-    // Press 'c' to select the currently displayed photo
+    // 1st c → select
     await browser.keys("c");
 
-    // Close the display, then verify the card is marked selected
     const closeLink = await (await $("#photos-display-wrapper")).$("a=close");
     await closeLink.waitForExist({ timeout: 5000 });
     await closeLink.click();
@@ -347,12 +345,36 @@ describe("PhotoClove application", () => {
       async () => {
         const allCards = await $$("[data-testid='photo-card']");
         for (const card of allCards) {
-          const cls = await card.getAttribute("class");
-          if (cls?.includes("cardSelected")) return true;
+          if ((await card.getAttribute("class"))?.includes("cardSelected")) return true;
         }
         return false;
       },
-      { timeout: 5000, timeoutMsg: "no card became selected after 'c' key" },
+      { timeout: 5000, timeoutMsg: "card did not become selected after first 'c'" },
+    );
+
+    // Reopen the same photo and press 'c' again → deselect
+    await (await (await $$("[data-testid='photo-card']"))[0].$("a")).click();
+    await (await $("#photos-display-wrapper")).waitForExist({ timeout: 10000 });
+
+    await browser.keys("c");
+
+    const closeLink2 = await (await $("#photos-display-wrapper")).$("a=close");
+    await closeLink2.waitForExist({ timeout: 5000 });
+    await closeLink2.click();
+    await browser.waitUntil(
+      async () => !(await $("#photos-display-wrapper").isExisting()),
+      { timeout: 5000, timeoutMsg: "PhotoDisplay did not close on second open" },
+    );
+
+    await browser.waitUntil(
+      async () => {
+        const allCards = await $$("[data-testid='photo-card']");
+        for (const card of allCards) {
+          if ((await card.getAttribute("class"))?.includes("cardSelected")) return false;
+        }
+        return true;
+      },
+      { timeout: 5000, timeoutMsg: "card was not deselected after second 'c'" },
     );
   });
 
