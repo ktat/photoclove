@@ -34,6 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libsoup-3.0-dev \
         libssl-dev \
         libwebkit2gtk-4.1-dev \
+        mold \
         nasm \
         patchelf \
         pkg-config \
@@ -52,6 +53,13 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
         | sh -s -- -y --default-toolchain stable --profile minimal \
             --component clippy --component rustfmt
+
+# ---- Linker ------------------------------------------------------------
+# Use mold for the final link step. Cuts link time on the photoclove
+# binary (libheif + tauri + ort etc.) by an order of magnitude. Set
+# in-image-only via env var so a local clone without mold installed
+# isn't forced into a broken build.
+ENV RUSTFLAGS="-C link-arg=-fuse-ld=mold"
 
 # ---- tauri-driver (pre-compiled) --------------------------------------
 RUN cargo install tauri-driver --locked
