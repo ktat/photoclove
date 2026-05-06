@@ -87,3 +87,12 @@ test-e2e: reset-e2e-fixture
 test: reset-e2e-fixture
 	pnpm test:run
 	pnpm test:e2e
+
+# Fast checks intended to be run from .git/hooks/pre-push. Mirrors the
+# CI gates that most often surprise locally — backend rustfmt + clippy
+# (-D warnings) and the Vitest unit suite — while deliberately leaving
+# E2E out (too slow to run on every push).
+pre-push:
+	cd src-tauri && cargo fmt --check
+	cd src-tauri && cargo clippy --all-targets -- -D warnings
+	pnpm test:run
