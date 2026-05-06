@@ -36,6 +36,28 @@ async function ensureBurstModeOn() {
   }
 }
 
+async function ensureBurstModeOff() {
+  const toggle = await $("[data-testid='burst-toggle']");
+  await toggle.waitForExist({ timeout: 5000 });
+  if ((await toggle.getAttribute("aria-pressed")) === "true") {
+    await toggle.click();
+    await browser.waitUntil(
+      async () => (await toggle.getAttribute("aria-pressed")) !== "true",
+      { timeout: 5000, timeoutMsg: "burst toggle did not turn off" },
+    );
+  }
+}
+
+async function navigateToAlbumList() {
+  const link = await $("[data-testid='nav-albums']");
+  await link.waitForExist({ timeout: 10000 });
+  await link.click();
+  await browser.waitUntil(
+    async () => (await $(".albums").isExisting()),
+    { timeout: 10000, timeoutMsg: "album list did not appear" },
+  );
+}
+
 describe("PhotoClove application", () => {
   // Reset to HOME before every spec so tests run independently of order.
   // HOME unmounts PhotosList (#photoList disappears) and the auto-close
@@ -192,5 +214,88 @@ describe("PhotoClove application", () => {
       { timeout: 10000, timeoutMsg: "burst group did not expand to 6 cards" },
     );
     expect((await $$("[data-testid='burst-badge']")).length).toBe(0);
+  });
+
+  it("shows all 7 individual photos on 2022-05-23 when burst mode is off", async () => {
+    await navigateToDate("2022-05-23");
+    await ensureBurstModeOff();
+
+    await browser.waitUntil(
+      async () => (await $$("[data-testid='photo-card']")).length === 7,
+      { timeout: 10000, timeoutMsg: "expected 7 cards when burst mode is off" },
+    );
+    expect((await $$("[data-testid='burst-badge']")).length).toBe(0);
+  });
+
+  it("navigates between consecutive dates showing the correct photo counts", async () => {
+    await navigateToDate("2022-12-01");
+    await browser.waitUntil(
+      async () => (await $$("[data-testid='photo-card']")).length === 2,
+      { timeout: 10000, timeoutMsg: "expected 2 cards on 2022-12-01" },
+    );
+
+    await navigateToDate("2022-12-02");
+    await browser.waitUntil(
+      async () => (await $$("[data-testid='photo-card']")).length === 1,
+      { timeout: 10000, timeoutMsg: "expected 1 card on 2022-12-02" },
+    );
+
+    await navigateToDate("2022-12-03");
+    await browser.waitUntil(
+      async () => (await $$("[data-testid='photo-card']")).length === 1,
+      { timeout: 10000, timeoutMsg: "expected 1 card on 2022-12-03" },
+    );
+  });
+
+  it("navigates to album list and shows the 'ts' album", async () => {
+    await navigateToAlbumList();
+
+    const tsAlbum = await $("[data-testid='generic-list-item'][data-item-name='ts']");
+    await tsAlbum.waitForExist({ timeout: 5000 });
+    expect(await tsAlbum.isExisting()).toBe(true);
+  });
+
+  it("opens album 'ts' from the album list and shows the album photo view", async () => {
+    await navigateToAlbumList();
+
+    const tsAlbum = await $("[data-testid='generic-list-item'][data-item-name='ts']");
+    await tsAlbum.waitForExist({ timeout: 5000 });
+    await tsAlbum.click();
+
+    const photoList = await $("#photoList");
+    await photoList.waitForExist({ timeout: 10000 });
+    expect(await photoList.isExisting()).toBe(true);
+  });
+
+  it("tag list shows multiple tags", async () => {
+    await (await $("[data-testid='nav-tags']")).click();
+
+    await browser.waitUntil(
+      async () => (await $$("[data-testid='generic-list-item']")).length >= 3,
+      { timeout: 10000, timeoutMsg: "expected at least 3 tags in the list" },
+    );
+  });
+
+  it("opens tag 'test' and shows its 2 associated photos", async () => {
+    await (await $("[data-testid='nav-tags']")).click();
+
+    const testTag = await $("[data-testid='generic-list-item'][data-item-name='test']");
+    await testTag.waitForExist({ timeout: 10000 });
+    await testTag.click();
+
+    await browser.waitUntil(
+      async () => (await $$("[data-testid='photo-card']")).length === 2,
+      { timeout: 10000, timeoutMsg: "expected 2 photos under tag 'test'" },
+    );
+  });
+
+  it("navigates to trash view", async () => {
+    const trashNav = await $("[data-testid='nav-trash']");
+    await trashNav.waitForExist({ timeout: 5000 });
+    await trashNav.click();
+
+    const photoList = await $("#photoList");
+    await photoList.waitForExist({ timeout: 10000 });
+    expect(await photoList.isExisting()).toBe(true);
   });
 });
