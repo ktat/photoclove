@@ -66,7 +66,7 @@ function NavigationIcons({
       onMouseEnter={(e) => handleMouseEnter(t('navigation.albums'), e)}
       onMouseLeave={handleMouseLeave}>📚</a>
 
-      <a href="#" onClick={() => {
+      <a href="#" data-testid="nav-tags" onClick={() => {
         resetPhotoState();
         openTagsList();
       }}

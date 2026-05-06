@@ -128,6 +128,53 @@ describe("PhotoClove application", () => {
     expect((await badges[0].getText()).trim()).toBe("+5");
   });
 
+  it("opens a tag from the tag list and shows its associated photos", async () => {
+    // Fixture: tag 'bird' (id=9) is associated with 2022-12-01/a.jpg and b.jpg.
+    await (await $("[data-testid='nav-tags']")).click();
+
+    const birdTag = await $("[data-testid='generic-list-item'][data-item-name='bird']");
+    await birdTag.waitForExist({ timeout: 10000 });
+    await birdTag.click();
+
+    const photoList = await $("#photoList");
+    await photoList.waitForExist({ timeout: 10000 });
+    await browser.waitUntil(
+      async () => (await $$("[data-testid='photo-card']")).length === 2,
+      { timeout: 10000, timeoutMsg: "expected 2 photos under tag 'bird'" },
+    );
+  });
+
+  it("closes PhotoDisplay when leaving a tag back to HOME", async () => {
+    // Open tag 'bird' → open one of its photos → click HOME.
+    // viewMode TAG → HOME flips currentViewKey, so the auto-close effect
+    // must drop the open PhotoDisplay (covers the original viewMode-change
+    // path of the same fix).
+    await (await $("[data-testid='nav-tags']")).click();
+    const birdTag = await $("[data-testid='generic-list-item'][data-item-name='bird']");
+    await birdTag.waitForExist({ timeout: 10000 });
+    await birdTag.click();
+
+    await browser.waitUntil(
+      async () => (await $$("[data-testid='photo-card']")).length === 2,
+      { timeout: 10000, timeoutMsg: "tag photos did not load" },
+    );
+
+    const cards = await $$("[data-testid='photo-card']");
+    const firstLink = await cards[0].$("a");
+    await firstLink.scrollIntoView();
+    await firstLink.click();
+
+    const display = await $("#photos-display-wrapper");
+    await display.waitForExist({ timeout: 10000 });
+
+    await (await $("[data-testid='nav-home']")).click();
+
+    await browser.waitUntil(
+      async () => !(await $("#photos-display-wrapper").isExisting()),
+      { timeout: 5000, timeoutMsg: "PhotoDisplay did not close on HOME" },
+    );
+  });
+
   it("expands a burst group into all member photos when its badge is clicked", async () => {
     await navigateToDate("2022/05/23");
     await ensureBurstModeOn();

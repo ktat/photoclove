@@ -288,6 +288,9 @@ function TagCloudView({
                                 return (
                                     <span
                                         key={tag.id}
+                                        data-testid="tag-cloud-item"
+                                        data-tag-id={tag.id}
+                                        data-tag-name={tag.name}
                                         onClick={() => handleTagClick(tag)}
                                         onMouseDown={() => handlePressStart(tag)}
                                         onMouseUp={handlePressEnd}

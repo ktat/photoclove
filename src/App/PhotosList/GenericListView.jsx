@@ -217,6 +217,9 @@ function GenericListView({
                         return (
                         <div
                             key={itemId}
+                            data-testid="generic-list-item"
+                            data-item-id={itemId}
+                            data-item-name={item.name}
                             className={currentConfig.tileClass}
                             style={{
                                 width: `${iconSize + 50}px`,
