@@ -1,19 +1,17 @@
-// Click a date link by its locale-independent ISO key (YYYY-MM-DD).
-// Returns once #photoList has loaded that date and at least one card rendered.
+// Click a date link by its ISO key (YYYY-MM-DD). data-date on both the
+// sidebar link and #photoList is now ISO regardless of runtime locale.
 async function navigateToDate(isoDate) {
-  const link = await $(`[data-iso-date='${isoDate}']`);
+  const link = await $(`[data-date='${isoDate}']`);
   await link.waitForExist({ timeout: 10000 });
-  const displayedDate = await link.getAttribute("data-date");
   await link.click();
   await browser.waitUntil(
-    async () => (await $("#photoList").getAttribute("data-date")) === displayedDate,
+    async () => (await $("#photoList").getAttribute("data-date")) === isoDate,
     { timeout: 10000, timeoutMsg: `did not navigate to ${isoDate}` },
   );
   await browser.waitUntil(
     async () => (await $$("[data-testid='photo-card']")).length > 0,
     { timeout: 10000, timeoutMsg: `no cards rendered for ${isoDate}` },
   );
-  return displayedDate;
 }
 
 async function clickRecentPhotos() {
@@ -101,19 +99,18 @@ describe("PhotoClove application", () => {
     const display = await $("#photos-display-wrapper");
     await display.waitForExist({ timeout: 10000 });
 
-    const dateB = await $("[data-iso-date='2022-12-01']");
-    const dateBStr = await dateB.getAttribute("data-date");
-    await dateB.click();
+    const dateB = "2022-12-01";
+    await (await $(`[data-date='${dateB}']`)).click();
 
     // Wait for the new list to fully load before asserting on display state —
     // the wrapper briefly unmounts during loading regardless of the bug.
     await browser.waitUntil(
-      async () => (await $("#photoList").getAttribute("data-date")) === dateBStr,
-      { timeout: 10000, timeoutMsg: `did not navigate to ${dateBStr}` },
+      async () => (await $("#photoList").getAttribute("data-date")) === dateB,
+      { timeout: 10000, timeoutMsg: `did not navigate to ${dateB}` },
     );
     await browser.waitUntil(
       async () => (await $$("[data-testid='photo-card']")).length === 2,
-      { timeout: 10000, timeoutMsg: `expected 2 cards on ${dateBStr}` },
+      { timeout: 10000, timeoutMsg: `expected 2 cards on ${dateB}` },
     );
     expect(await $("#photos-display-wrapper").isExisting()).toBe(false);
   });

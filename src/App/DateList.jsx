@@ -32,16 +32,18 @@ function DateList(props) {
     const showLoading = !hideLoading || derivedIsRefreshing;
 
     // Sync selectedStyle with currentDate from context (e.g., when navigating from memories)
-    // Use useMemo to derive style instead of effect to avoid cascading renders
+    // Use useMemo to derive style instead of effect to avoid cascading renders.
+    // selectedStyle keys are ISO YYYY-MM-DD so they don't depend on the runtime
+    // locale (older code routed through toLocaleString, which silently produced
+    // different keys under non-Western locales like the C/POSIX locale used in
+    // the CI Docker image, leaving the selection visual broken).
     const derivedSelectedStyle = useMemo(() => {
         if (currentDate) {
-            // Parse date string (handles both "2018-01-31" and "2018/01/31" formats)
-            const normalizedDate = currentDate.replace(/-/g, '/');
-            const dateParts = normalizedDate.split('/');
+            // Accept both "2018-01-31" and "2018/01/31" input formats.
+            const dateParts = currentDate.replace(/\//g, '-').split('-');
             if (dateParts.length === 3) {
                 const [year, month, day] = dateParts;
-                // Create the same format used by DateList for keys
-                const dateKey = new Date(year + '/' + month + '/' + day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 return { ["a-" + dateKey]: "var(--color-text-primary)", ["li-" + dateKey]: "square" };
             }
         }
@@ -142,31 +144,36 @@ function DateList(props) {
     }, [filteredDateList]);
 
 
-    // Helper function to handle date click - optimized with debounce and startTransition
+    // Helper function to handle date click - optimized with debounce and startTransition.
+    // Uses ISO YYYY-MM-DD for the value passed to context/backend so
+    // currentDate is locale-independent (previous toLocaleString-based code
+    // emitted M/D/YYYY in the C/POSIX locale used by the CI Docker image,
+    // which the Rust Date parser misinterpreted).
     const handleDateClick = useMemo(() =>
         debounce((year, month, day) => {
-            const dateKey = `${year}/${month}/${day}`;
-            const formattedDate = new Date(dateKey).toLocaleString('default', {
-                year: 'numeric', month: '2-digit', day: '2-digit'
-            });
+            const isoDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-            logger.info('DateList', 'date_click', 'Date clicked - starting navigation', { date: formattedDate });
+            logger.info('DateList', 'date_click', 'Date clicked - starting navigation', { date: isoDate });
 
             // Use startTransition to mark state updates as non-urgent for better performance
             startTransition(() => {
-                setSelectedStyle({ [`a-${formattedDate}`]: "var(--color-text-primary)", [`li-${formattedDate}`]: "square" });
+                setSelectedStyle({ [`a-${isoDate}`]: "var(--color-text-primary)", [`li-${isoDate}`]: "square" });
                 updateRecentPhotosMode(false);
-                updateCurrentDate(formattedDate);
-                showDatePhotos(formattedDate);
+                updateCurrentDate(isoDate);
+                showDatePhotos(isoDate);
             });
         }, 150), // 150ms debounce for Windows stability
         [setSelectedStyle, updateRecentPhotosMode, updateCurrentDate, showDatePhotos]
     );
 
-    // Helper function to get photo count for a date
+    // Helper function to get photo count for a date.
+    // dateNum is keyed by YYYY-MM-DD (the format `get_dates_num` accepts and
+    // returns), so build the key directly from year/month/day instead of
+    // routing through toLocaleString — that path produces a locale-dependent
+    // string (e.g. M/D/YYYY in C/POSIX), which would never match the backend
+    // keys and silently zero out every photoCount.
     const getPhotoCount = (year, month, day) => {
-        const date = new Date(year + '/' + month + '/' + day).toLocaleString('default', { year: 'numeric', month: '2-digit', day: '2-digit' });
-        const key = date.replace(/\//g, "-");
+        const key = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         return dateNum[key] || 0;
     };
 
@@ -444,19 +451,18 @@ function DateList(props) {
                                 const isoDate = `${l.year}-${String(l.month).padStart(2, '0')}-${String(l.day).padStart(2, '0')}`;
                                 const photoCount = getPhotoCount(l.year, l.month, l.day);
                                 return photoCount > 0 && (
-                                    <li key={i} style={{ listStyle: finalSelectedStyle["li-" + date] || "none" }}>
+                                    <li key={i} style={{ listStyle: finalSelectedStyle["li-" + isoDate] || "none" }}>
                                         <a href="#"
                                            style={{
-                                               color: finalSelectedStyle["a-" + date] ? getSelectedDateColor() : "var(--color-film-link, var(--color-primary))",
+                                               color: finalSelectedStyle["a-" + isoDate] ? getSelectedDateColor() : "var(--color-film-link, var(--color-primary))",
                                                fontSize: "inherit"
                                            }}
                                            onClick={(e) => {
                                                e.preventDefault();
                                                handleDateClick(l.year, l.month, l.day);
                                            }}
-                                           data-date={date}
-                                           data-iso-date={isoDate}
-                                           data-page={datePage[date]}>
+                                           data-date={isoDate}
+                                           data-page={datePage[isoDate]}>
                                             {date}
                                             {photoCount !== undefined ? " (" + photoCount + ")" : ""}
                                         </a>
