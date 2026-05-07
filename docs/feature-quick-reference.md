@@ -228,14 +228,14 @@ This document helps you quickly find the relevant documentation when working on 
 **When you need to understand**: Application logging, LogViewer, debug information, bug investigation, structured logging
 - **Architecture**: Comprehensive structured logging system with frontend LoggerService and backend log macros
 - **Implementation**: Complete replacement of eprintln! with structured logging across all Rust modules
-- **Components**: LogViewer component (`src/App/LogViewer.jsx`), configurable logging in Preferences
+- **Components**: LogViewer component (`src/App/LogViewer.jsx`), dedicated **LoggingTab** in Preferences (split out from AdvancedTab)
 - **Features**: Toggle logging on/off, configurable log levels, structured logging format, daily log files, correlation ID tracking
 - **Format**: Structured key=value pairs with correlation IDs for request tracing and debugging
-- **Access**: Ctrl+Shift+L to open LogViewer, Preferences panel for logging settings
+- **Access**: Ctrl+Shift+L to open LogViewer, Preferences → Logging tab for logging settings
 - **Storage**: Frontend logs in memory, backend logs in `~/.local/share/photoclove/logs/`
 - **Bug Investigation**: Systematic debugging approach documented in `CLAUDE.md`
 - **Improvements**: Enhanced error handling, proper context propagation, empty string validation in date processing
-- **Related Files**: `src/App/LogViewer.jsx`, `src/services/LoggerService.js`, `src-tauri/src/domain_service/logging_service.rs`, `CLAUDE.md`
+- **Related Files**: `src/App/LogViewer.jsx`, `src/App/Preferences/tabs/LoggingTab.jsx`, `src/services/LoggerService.js`, `src-tauri/src/domain_service/logging_service.rs`, `CLAUDE.md`
 
 ### 🏷️ Unified Collection System (Albums & Tags)
 **When you need to understand**: Photo organization, albums, tags, collection management, unified data architecture
@@ -335,7 +335,8 @@ This document helps you quickly find the relevant documentation when working on 
   - High accuracy mode: Use full-resolution images for better accuracy
   - Pre-computed embeddings: Faster inference with OpenCLIP/SigLIP using cached text embeddings
 - **Configuration**: Model selection, confidence threshold (0-100%), EXIF thumbnail usage, high accuracy mode, custom label definitions, auto-tag preferences
-- **Related Files**: `src/App/Preferences/tabs/AITaggingTab.jsx`, `src/App/PhotosList/PhotoOption/PhotoTags.jsx`, `src-tauri/src/domain_service/ai_tagging/`, `src-tauri/src/commands/ai_model_commands.rs`
+- **ONNX Runtime auto-installer**: When the ONNX dynamic library is missing, AITaggingTab shows a "Download" button that pulls the pinned version (1.23.0) from microsoft/onnxruntime releases into the user's data dir. Avoids the previous manual `make download-onnxruntime` step. Backend command: `download_onnx_runtime`; status check: `get_onnx_runtime_status`
+- **Related Files**: `src/App/Preferences/tabs/AITaggingTab.jsx`, `src/App/PhotosList/PhotoOption/PhotoTags.jsx`, `src-tauri/src/domain_service/ai_tagging/`, `src-tauri/src/domain_service/ai_tagging/runtime_installer.rs`, `src-tauri/src/commands/ai_model_commands.rs`
 
 ### 👤 Face Detection & Recognition
 **When you need to understand**: Face detection in photos, person management, face browsing, unknown faces management
@@ -457,10 +458,12 @@ This document helps you quickly find the relevant documentation when working on 
 - **Purpose**: Create and share photo collages with customizable layouts and watermarks
 - **UI Components**:
   - ShareTab: Main sharing interface in DirectoryMenu and PhotoOption
+  - CollageOrderEditor: Drag-and-drop tile row for reordering collage photos
   - ShareStatsDialog: Share photography statistics as images
 - **Key Features**:
   - Single photo export and multi-photo collage creation (2-9 photos)
   - Multiple collage layout templates (grid layouts: 2x1, 2x2, 3x3, etc.)
+  - **Drag-and-drop reorder**: Numbered tiles below the Mode selector; drag a tile onto another to swap positions (`@dnd-kit/sortable`). Keyboard reorder via arrow keys is supported
   - Custom watermark support (PhotoClove logo or user-defined text)
   - Export to clipboard or save as file
   - PNG copyright metadata embedding (XMP dc:rights)
@@ -468,12 +471,13 @@ This document helps you quickly find the relevant documentation when working on 
   - HEIC/RAW format support (decoded via backend for non-native formats)
   - Share photography insights/statistics
   - Layout customization (spacing, background color, corner radius, padding)
+- **Social platforms**: Twitter/X, Facebook, LinkedIn, Telegram, WhatsApp, Mastodon, Bluesky, Threads (web compose intents). Instagram opens its homepage so users can paste a copied image (no public share intent)
 - **Watermark Options**:
   - PhotoClove watermark with logo
   - Custom user watermark (configurable in Preferences → General)
   - Position and opacity controls
 - **Related Files**:
-  - Frontend: `src/App/PhotosList/DirectoryMenu/ShareTab.jsx`, `src/components/ShareStatsDialog.jsx`, `src/utils/ShareUtils.js`, `src/utils/share/CollageGenerator.js`, `src/utils/share/ImageProcessingUtils.js`, `src/utils/share/ClipboardUtils.js`
+  - Frontend: `src/App/PhotosList/DirectoryMenu/ShareTab.jsx`, `src/App/PhotosList/DirectoryMenu/CollageOrderEditor.jsx`, `src/components/ShareStatsDialog.jsx`, `src/utils/ShareUtils.js`, `src/utils/share/CollageGenerator.js`, `src/utils/share/SocialMediaShare.js`, `src/utils/share/ImageProcessingUtils.js`, `src/utils/share/ClipboardUtils.js`
   - Backend: `src-tauri/src/commands/image_commands.rs` (save_png_with_metadata command)
 
 ### 🎬 Slideshow Mode

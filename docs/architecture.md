@@ -255,7 +255,31 @@ The application uses a Domain-Driven Design approach with ViewMode value objects
 - **Query Optimization**: Reduced database calls from N to 1 for common operations
 - **Single Request Pattern**: Eliminated batching in frontend for optimized backend
 
-### 5. Performance Optimizations
+### 5. Photo State & View Cache (Phase 1 + 2)
+
+PhotoClove maintains a single source of truth for "the photos currently visible in the grid" and applies all edits in-memory so the user never sees a Loading screen on routine actions.
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                  Photo state pipeline                            │
+├──────────────────────────────────────────────────────────────────┤
+│  allPhotosForCurrentFetch ─► useFilteredPhotos ─► filteredPhotos │
+│            │                                            │        │
+│            ▼                                            ▼        │
+│      View Cache (LRU)                         photosListMiniAll  │
+│  Map<viewKey, Photo[]>                       (PhotoDisplay nav)  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+- **Single source for grid input**: All view modes (date / album / tag / search / trash / person / unknown_faces / import / recent / burst) feed the grid through `allPhotosForCurrentFetch`. `useFilteredPhotos` derives the visible list from this single state — no per-mode source branching.
+- **View Cache** (`src/hooks/usePhotosCache.js`): LRU map keyed by `viewKey` (`getViewKey()` in `src/utils/ViewKey.js`). `viewKey` includes the active sort (`|sort:<n>` suffix) so changing sort produces a cache miss and re-fetch instead of restoring stale order. Bounded by `view_cache_max_keys` (default 10) and `view_cache_max_total_photos` (default 50000).
+- **Cache hit on view switch**: Restores cached photos synchronously in a `useLayoutEffect` so the new mode renders immediately without a flash of the previous mode's photos.
+- **Stale-load guard**: When a cache hit installs photos while a previous backend load is still in flight, `useViewModeSync` calls `cancelInFlightLoad()` (a `useAsyncCancellation` counter bump) so the older response is dropped on arrival rather than overwriting the now-visible cached view.
+- **In-memory edit helpers** (`src/hooks/usePhotoListHelpers.js`, `src/hooks/usePhotoOperations.js`): `setStarWithUpdate`, `updatePhotoComment`, `updatePhotoTags`, `updatePhotoCssStyle`, `addPhotoToList` (Save as Copy), `handlePhotoRemovalNavigation` / `handlePhotoRemovalNavigationBulk` all patch three slots **atomically**: `allPhotosForCurrentFetch`, `photosListMiniAllPhotos`, and the View Cache entry for the current viewKey. Closing PhotoDisplay returns instantly with edits already visible; no refetch.
+- **PhotoDisplay freeze**: While `currentPhoto` is non-null, `useFilteredPhotosSync` skips the filter→mini sync so navigation indices stay stable during edits. The freeze lifts on close and the mini list reconciles with the latest filter result.
+- **`sortDirty` flag**: Star edits during PhotoDisplay set `sortDirty=true` only when the active sort is star-based. `closePhotoDisplay` runs a local re-sort (via `src/utils/PhotoSort.js` comparator) on close instead of refetching.
+
+### 6. Performance Optimizations
 - **Unified Collection System**: Eliminated code duplication between albums and tags
 - **Database Query Optimization**: Single queries instead of multiple for collection operations
 - **Date Summary Table**: Pre-computed photo counts using `date_summary` table (10x faster)
@@ -266,6 +290,7 @@ The application uses a Domain-Driven Design approach with ViewMode value objects
 - **Async operations**: Non-blocking file operations with job queue
 - **Frontend Request Optimization**: Removed batching logic, single requests to optimized backend
 - **Structured Logging**: Replaced eprintln! with structured logging for better performance
+- **Mold linker (Linux)**: `src-tauri/.cargo/config.toml` configures `-fuse-ld=mold` for x86_64 / aarch64 Linux targets — the final-link step drops from several seconds to under one for incremental rebuilds. CI image bakes mold in; local Linux contributors install via `apt install mold`
 
 ## Security Considerations
 

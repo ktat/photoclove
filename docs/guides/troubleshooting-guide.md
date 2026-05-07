@@ -277,3 +277,56 @@ This document provides comprehensive troubleshooting guidance for common issues 
 **Solution**:
 - Changed `getSelectionKey()` in ViewMode.js to return just `'DATE'` instead of `DATE:${date}`
 - All dates now share a unified selection state, allowing users to select photos across multiple dates
+
+### Sort Selection Has No Effect (Cache Showed Old Order)
+**Fixed 2026-05-04**: Choosing a different sort in the toolbar didn't reorder the grid. The view-cache key omitted `sortOfPhotos`, so the lookup hit the previously-cached array (with the old sort) and `useViewModeSync` returned early before the sort change could trigger a backend refetch.
+
+**Solution**:
+- `getViewKey()` (`src/utils/ViewKey.js`) now appends `|sort:<n>` to every key, partitioning the LRU cache per sort.
+- Switching sort produces a cache miss → backend fetch with the new ORDER BY. Returning to a previous sort hits the cached entry instantly within LRU limits.
+
+### PhotoDisplay Jumps to First Photo After Delete
+**Fixed 2026-05-04**: Opening a photo, navigating prev/next inside PhotoDisplay, then deleting jumped back to the photo originally opened from the grid (often photo #0) instead of staying at the next surviving photo.
+
+**Solution**:
+- `usePhotoNavigation` only updated `photosListMiniCurrentIndex`, leaving `currentPhotoIndex` (set once by `displayPhoto`) stale. The bulk + single removal helpers were using the stale `currentPhotoIndex` to compute the new target.
+- Both helpers now use `photosListMiniCurrentIndex` — the single source of truth for "the photo currently shown in PhotoDisplay" — so deletion stays at the next photo (or steps back from the end).
+
+### Save as Copy Crashes the Photo Viewer
+**Fixed 2026-05-04**: PhotoEditor's "Save as Copy" inserted the new photo with field-name mismatches (`css_style` vs `cssStyle`, `metaData` vs `meta_data`) and without a `configData` payload. `Photo.fromJSON` then threw `requires config parameter` from inside `PhotosListMini`'s map, taking down the whole component.
+
+**Solution**:
+- `addPhotoToList` augments the new photo with `configData` derived from `appConfig` before splicing into all three state slots (grid, mini, View Cache).
+- `photoExportUtils.saveStyledCopy` now writes field names that match `Photo.fromJSON`'s expectations.
+
+### Closing PhotoDisplay Shows "Loading your photos..."
+**Fixed 2026-05-04 (Phase 2)**: Closing PhotoDisplay always called `refreshPhotos()`, forcing a 500ms minimum loading screen for routine actions like star/comment/tag edits.
+
+**Solution**:
+- All in-PhotoDisplay edits now mutate `allPhotosForCurrentFetch`, `photosListMiniAllPhotos`, and the View Cache atomically via dedicated helpers (`updatePhotoTags`, `updatePhotoCssStyle`, `addPhotoToList`, `handlePhotoRemovalNavigationBulk`, etc.).
+- `closePhotoDisplay` no longer calls `refreshPhotos`. Only when star edits invalidated a star sort does it run a local re-sort via the shared comparator in `src/utils/PhotoSort.js`.
+
+### Stale Backend Load Overwrites Newly-Cached View
+**Fixed 2026-05-07**: Picking view A (slow backend load), then switching mid-load to view B (cache hit) would briefly show B's photos and then have A's late response replace them. Affected every view mode (date, album, tag, ...).
+
+**Solution**:
+- `usePhotoLoader` exposes `cancelInFlightLoad` (the cancellation hook's `cancelAll`).
+- `useViewModeSync`'s cache-hit branch and non-loadable-mode early return both call it, bumping the request-id counter so any pending load's response is dropped on arrival.
+
+### Selection Sidebar Preview Stuck Showing a Broken Image
+**Fixed 2026-05-07**: Clicking a file name in the right-sidebar selection list shows a small preview. Deselecting that photo (or any earlier photo in the list) left the preview pointing at a stale or shifted slot — a broken `<img>` plus the "Enlarge preview" link both stayed visible.
+
+**Solution**:
+- Track the previewed photo by **path**, not by index. Render the preview block only when the path is still in `photoSelection`. Both the `<img>` and the "Enlarge preview" link are hidden together when the previewed photo leaves the selection.
+
+### Right-Sidebar Selection File Names Appeared White (Dark Theme)
+**Fixed 2026-05-06**: `.rightMenu a { color: var(--color-film-link); }` and `.rightMenu { color: var(--color-film-text); }` — both variables were defined only in the `[data-theme="light"]` block. In the default dark theme the variables were undefined and the rules effectively cleared themselves, so links inherited the body color (`#e4e4e4`) and looked unreachable.
+
+**Solution**:
+- `:root` (dark default) now also defines `--color-film-link: #4a9eff`, `--color-film-text: #e4e4e4`, and `--color-bg-film-light: #1e293b`.
+
+### Date Sidebar Navigation Broke Under Non-English Locale
+**Fixed 2026-05-04**: The date sidebar emitted locale-formatted date strings as click keys (e.g., `2022年12月1日`), which the backend couldn't parse.
+
+**Solution**:
+- `data-date` on every date sidebar link and on `#photoList` is now ISO (`YYYY-MM-DD`) regardless of locale. The locale-formatted version remains as the visible label only.

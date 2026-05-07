@@ -72,8 +72,10 @@ src/
 │   │       ├── 📄 ThumbnailTab.jsx     # Thumbnail settings
 │   │       ├── 📄 GroupingTab.jsx      # Photo grouping settings
 │   │       ├── 📄 AppearanceTab.jsx    # Appearance/theme settings
-│   │       ├── 📄 AdvancedTab.jsx      # Advanced settings (includes performance & logging)
-│   │       ├── 📄 AITaggingTab.jsx     # AI auto-tagging settings
+│   │       ├── 📄 AdvancedTab.jsx      # Advanced settings (database, tutorials, Google Photos auto-reauth)
+│   │       ├── 📄 LoggingTab.jsx       # Logging configuration (split out of AdvancedTab)
+│   │       ├── 📄 PerformanceTab.jsx   # Performance settings (view cache limits, etc.)
+│   │       ├── 📄 AITaggingTab.jsx     # AI auto-tagging settings + ONNX Runtime auto-installer
 │   │       ├── 📄 AIModelSelector.jsx  # AI model selection component
 │   │       ├── 📄 AICustomLabels.jsx   # Custom AI label configuration
 │   │       ├── 📄 S3BackupTab.jsx      # S3 cloud backup settings
@@ -123,8 +125,9 @@ src/
 │       │   ├── 📄 FilterTab.jsx          # Filter options tab
 │       │   ├── 📄 SelectionTab.jsx       # Selection operations tab
 │       │   ├── 📄 ShareTab.jsx           # Photo sharing and collage creation
+│       │   ├── 📄 CollageOrderEditor.jsx # Drag-and-drop reorder of collage photos (@dnd-kit/sortable)
 │       │   ├── 📄 SelectionHeader.jsx    # Selection header component
-│       │   ├── 📄 PhotoSelectionSection.jsx  # Photo selection section
+│       │   ├── 📄 PhotoSelectionSection.jsx  # Photo selection section (✕ deselect button + path-tracked preview)
 │       │   ├── 📄 AlbumSelectionSection.jsx  # Album selection section
 │       │   ├── 📄 TagSelectionSection.jsx    # Tag selection section
 │       │   ├── 📄 PersonSelectionSection.jsx # Person selection section
@@ -189,8 +192,10 @@ src/
 │   ├── 📄 usePhotoLoader.js         # Photo loading logic
 │   ├── 📄 usePhotoMetadata.js       # Photo metadata operations
 │   ├── 📄 usePhotoOperationFlow.js  # Photo operation flow management
-│   ├── 📄 usePhotoOperations.js     # Photo operations (album, trash, list)
+│   ├── 📄 usePhotoOperations.js     # Photo operations (album, trash, list); owns handlePhotoRemovalNavigation(Bulk) and patches the View Cache
 │   ├── 📄 usePhotoSelection.js      # Photo selection logic
+│   ├── 📄 usePhotosCache.js         # LRU map of viewKey → cached photos array (Phase 1 View Cache)
+│   ├── 📄 useSearchModeSync.js      # Search-mode commit / overlay / clear management
 │   ├── 📄 useKeyboardShortcuts.js   # Global keyboard shortcuts
 │   ├── 📄 useNotifications.js       # Notification state management
 │   ├── 📄 usePhotoListFaces.js      # Photo list face operations
@@ -310,8 +315,10 @@ src/
 ├── 📁 utils/                   # Utility functions
 │   ├── 📄 orientationUtils.js  # EXIF orientation correction
 │   ├── 📄 PhotoProcessingUtils.js # Photo processing utilities
+│   ├── 📄 PhotoSort.js         # Sort comparator + binary-search insert (Phase 2; matches backend ORDER BY)
 │   ├── 📄 ShareUtils.js        # Share utility functions
 │   ├── 📄 UIStateUtils.js      # UI state utility functions
+│   ├── 📄 ViewKey.js           # viewKey computation for View Cache (includes |sort:<n>)
 │   ├── 📄 debugStorage.js      # Debug storage utilities
 │   ├── 📄 photoUtils.js        # Photo utility functions
 │   ├── 📄 tabClassUtils.js     # Tab CSS class utilities
@@ -509,10 +516,12 @@ src-tauri/
 │   │   │   ├── 📄 mod.rs       # AI tagging module
 │   │   │   ├── 📄 service.rs   # AI tagging service
 │   │   │   ├── 📄 categories.rs # Tag categories and labels
+│   │   │   ├── 📄 runtime_installer.rs # In-app ONNX Runtime download/install (Preferences → AI Tagging → Download)
 │   │   │   │
 │   │   │   └── 📁 backend/     # AI model backends
 │   │   │       ├── 📄 mod.rs   # Backend module
-│   │   │       ├── 📄 clip_common.rs # Common CLIP utilities
+│   │   │       ├── 📄 clip_common.rs # Common CLIP session/inference helpers
+│   │   │       ├── 📄 clip_labels.rs # Default CLIP label set + label→category mapping
 │   │   │       ├── 📄 model_manager.rs # Model download/management
 │   │   │       ├── 📄 onnx.rs  # ONNX runtime backend
 │   │   │       ├── 📄 openclip.rs # OpenCLIP backend
