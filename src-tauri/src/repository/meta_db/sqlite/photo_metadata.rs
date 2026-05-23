@@ -64,112 +64,206 @@ pub fn record_photo_metas(
     Ok(true)
 }
 
-/// Record photo metadata from Photos collection (with EXIF data)
+/// Pre-fetched fields from photo_metadata used to decide whether to skip a row
+/// and to preserve user-edited fields (star/comment) across re-inserts.
+struct ExistingRow {
+    star: i32,
+    comment: String,
+}
+
+/// Fetch existing star/comment for every path in `paths` in a single SQL round-trip.
+/// Returns a map keyed by path. Missing paths are simply absent from the map.
+/// Chunks the IN clause to stay well under SQLite's parameter limit.
+fn fetch_existing_meta_batch(
+    conn: &rusqlite::Connection,
+    paths: &[String],
+) -> Result<HashMap<String, ExistingRow>, rusqlite::Error> {
+    let mut map: HashMap<String, ExistingRow> = HashMap::with_capacity(paths.len());
+    if paths.is_empty() {
+        return Ok(map);
+    }
+    const CHUNK: usize = 500;
+    for chunk in paths.chunks(CHUNK) {
+        let placeholders = std::iter::repeat("?")
+            .take(chunk.len())
+            .collect::<Vec<_>>()
+            .join(",");
+        let query = format!(
+            "SELECT path, star, comment FROM photo_metadata WHERE path IN ({})",
+            placeholders
+        );
+        let mut stmt = conn.prepare(&query)?;
+        let rows = stmt.query_map(rusqlite::params_from_iter(chunk.iter()), |row| {
+            let path: String = row.get(0)?;
+            let star: i32 = row.get(1).unwrap_or(0);
+            let comment: String = row.get(2).unwrap_or_default();
+            Ok((path, ExistingRow { star, comment }))
+        })?;
+        for r in rows {
+            let (path, ex) = r?;
+            map.insert(path, ex);
+        }
+    }
+    Ok(map)
+}
+
+/// Record photo metadata from Photos collection (with EXIF data).
+///
+/// Performance notes:
+/// - Skips files whose path already exists in `photo_metadata` (rows are not
+///   re-read from disk and no INSERT is issued). To force a refresh, delete
+///   the row first.
+/// - All INSERTs are wrapped in a single transaction (one fsync per batch).
+/// - Existing star/comment are pre-fetched in a single SELECT, not per row.
 pub fn record_photos_meta_data(
     sqlite: &SQLite,
     photos: Vec<photo::Photo>,
 ) -> Result<bool, &'static str> {
-    let conn = sqlite
+    if photos.is_empty() {
+        return Ok(true);
+    }
+
+    let mut conn = sqlite
         .get_connection()
         .map_err(|_| "Failed to connect to database")?;
-    let mut stmt = conn
-        .prepare("INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment, created_at, updated_at, google_photos_url,
-                 exif_iso, exif_fnumber, exif_date_time, exif_date_time_original, exif_lens_model, exif_make, exif_lens_make, exif_model,
-                 exif_xresolution, exif_yresolution, exif_resolution_unit, exif_copyright, exif_exposure_time, exif_shutter_speed_value,
-                 exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode, exif_white_balance_mode, exif_orientation, css_style)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28)")
-        .map_err(|_| "Failed to prepare statement")?;
+
+    // Pre-fetch existing rows for all input paths in one round-trip (covers #2 skip and #3 N+1).
+    let input_paths: Vec<String> = photos.iter().map(|p| p.file.path.clone()).collect();
+    let existing_map = fetch_existing_meta_batch(&conn, &input_paths).map_err(|e| {
+        log::error!(target: "sqlite", "prefetch_existing_meta_failed; error={}", e);
+        "Failed to pre-fetch existing meta"
+    })?;
 
     let now = date::DateTime::now().to_db_string();
     let import_to = crate::entity::config::Config::new().import_to;
     let date_re =
         regex::Regex::new(r"^(\d{4})-(0?[1-9]|1[012])-(0?[1-9]|[12][0-9]|30|31)$").unwrap();
-    for mut photo in photos {
-        // Load EXIF from absolute path on disk
-        let abs_path = file::to_absolute_path(&photo.file.path, &import_to);
-        if let Some(abs_file) = file::File::new_if_exists(abs_path) {
-            let meta = crate::value::exif::ExifData::new(abs_file);
-            photo.embed_exif(meta);
-        }
-        // Extract date from relative path (first component is the date directory)
-        let date = {
-            let first_component = photo
-                .file
-                .path
-                .trim_start_matches('/')
-                .split('/')
-                .next()
-                .unwrap_or("");
-            if date_re.is_match(first_component) {
-                format!("{} 00:00:00", first_component)
-            } else {
-                // Fallback: try Dir::to_date on the dir field
-                match photo.dir.to_date() {
-                    Some(d) => {
-                        let date_str = d.to_string();
-                        if date_str.contains(' ') {
-                            date_str
-                        } else {
-                            format!("{} 00:00:00", date_str)
+
+    let tx = conn
+        .transaction()
+        .map_err(|_| "Failed to begin transaction")?;
+
+    let mut inserted = 0usize;
+    let mut skipped_existing = 0usize;
+    {
+        let mut stmt = tx
+            .prepare("INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment, created_at, updated_at, google_photos_url,
+                 exif_iso, exif_fnumber, exif_date_time, exif_date_time_original, exif_lens_model, exif_make, exif_lens_make, exif_model,
+                 exif_xresolution, exif_yresolution, exif_resolution_unit, exif_copyright, exif_exposure_time, exif_shutter_speed_value,
+                 exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode, exif_white_balance_mode, exif_orientation, css_style)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28)")
+            .map_err(|_| "Failed to prepare statement")?;
+
+        for mut photo in photos {
+            let existing = existing_map.get(&photo.file.path);
+
+            // #2: If a row already exists for this path, assume EXIF was loaded
+            // when it was first inserted and skip the re-read + INSERT entirely.
+            // This is the dominant win for full-rebuild re-runs.
+            if existing.is_some() {
+                skipped_existing += 1;
+                continue;
+            }
+
+            // Load EXIF from absolute path on disk
+            let abs_path = file::to_absolute_path(&photo.file.path, &import_to);
+            if let Some(abs_file) = file::File::new_if_exists(abs_path) {
+                let meta = crate::value::exif::ExifData::new(abs_file);
+                photo.embed_exif(meta);
+            }
+
+            // Extract date from relative path (first component is the date directory)
+            let date = {
+                let first_component = photo
+                    .file
+                    .path
+                    .trim_start_matches('/')
+                    .split('/')
+                    .next()
+                    .unwrap_or("");
+                if date_re.is_match(first_component) {
+                    format!("{} 00:00:00", first_component)
+                } else {
+                    // Fallback: try Dir::to_date on the dir field
+                    match photo.dir.to_date() {
+                        Some(d) => {
+                            let date_str = d.to_string();
+                            if date_str.contains(' ') {
+                                date_str
+                            } else {
+                                format!("{} 00:00:00", date_str)
+                            }
+                        }
+                        None => {
+                            log::warn!(target: "sqlite", "photo_skip; reason=missing_date; file={}; dir={}", photo.file.path, photo.dir.path);
+                            continue;
                         }
                     }
-                    None => {
-                        log::warn!(target: "sqlite", "photo_skip; reason=missing_date; file={}; dir={}", photo.file.path, photo.dir.path);
-                        continue;
-                    }
                 }
-            }
-        };
+            };
 
-        // Check if photo already exists
-        let existing_meta = get_photo_meta(sqlite, photo.clone());
+            // #3: use pre-fetched star/comment instead of per-row SELECT.
+            // For new paths there is no existing row, so defaults (0/"") apply.
+            let (star_val, comment_val) = match existing {
+                Some(r) => (r.star, r.comment.clone()),
+                None => (0, String::new()),
+            };
 
-        // Get EXIF data from the photo
-        let exif = &photo.meta_data;
+            let exif = &photo.meta_data;
 
-        stmt.execute(params![
-            photo.file.path,
-            date,
-            existing_meta.star.star(),
-            existing_meta.comment.comment(),
-            now,
-            now,
-            None::<String>,
-            // EXIF fields
-            if exif.iso.is_empty() { None } else { Some(exif.iso.clone()) },
-            if exif.fnumber.is_empty() { None } else { Some(exif.fnumber.clone()) },
-            if exif.date_time.is_empty() { None } else { Some(exif.date_time.clone()) },
-            if exif.date_time_original.is_empty() { None } else { Some(exif.date_time_original.clone()) },
-            if exif.lens_model.is_empty() { None } else { Some(exif.lens_model.clone()) },
-            if exif.make.is_empty() { None } else { Some(exif.make.clone()) },
-            if exif.lens_make.is_empty() { None } else { Some(exif.lens_make.clone()) },
-            if exif.model.is_empty() { None } else { Some(exif.model.clone()) },
-            if exif.xresolution.is_empty() { None } else { Some(exif.xresolution.clone()) },
-            if exif.yresolution.is_empty() { None } else { Some(exif.yresolution.clone()) },
-            if exif.resolution_unit.is_empty() { None } else { Some(exif.resolution_unit.clone()) },
-            if exif.copyright.is_empty() { None } else { Some(exif.copyright.clone()) },
-            if exif.exposure_time.is_empty() { None } else { Some(exif.exposure_time.clone()) },
-            if exif.shutter_speed_value.is_empty() { None } else { Some(exif.shutter_speed_value.clone()) },
-            if exif.focal_length.is_empty() { None } else { Some(exif.focal_length.clone()) },
-            if exif.focal_length_in35mm_film.is_empty() { None } else { Some(exif.focal_length_in35mm_film.clone()) },
-            if exif.digital_zoom_ratio.is_empty() { None } else { Some(exif.digital_zoom_ratio.clone()) },
-            if exif.exposure_mode.is_empty() { None } else { Some(exif.exposure_mode.clone()) },
-            if exif.white_balance_mode.is_empty() { None } else { Some(exif.white_balance_mode.clone()) },
-            if exif.orientation.is_empty() { None } else { Some(exif.orientation.clone()) },
-            // CSS style field - default to None for now
-            None::<String>
-        ])
-        .map_err(|e| {
-            log::error!(target: "sqlite", "db_statement_error; file={}; error={}", photo.file.path, e);
-            "Failed to execute statement"
-        })?;
+            stmt.execute(params![
+                photo.file.path,
+                date,
+                star_val,
+                comment_val,
+                now,
+                now,
+                None::<String>,
+                // EXIF fields
+                if exif.iso.is_empty() { None } else { Some(exif.iso.clone()) },
+                if exif.fnumber.is_empty() { None } else { Some(exif.fnumber.clone()) },
+                if exif.date_time.is_empty() { None } else { Some(exif.date_time.clone()) },
+                if exif.date_time_original.is_empty() { None } else { Some(exif.date_time_original.clone()) },
+                if exif.lens_model.is_empty() { None } else { Some(exif.lens_model.clone()) },
+                if exif.make.is_empty() { None } else { Some(exif.make.clone()) },
+                if exif.lens_make.is_empty() { None } else { Some(exif.lens_make.clone()) },
+                if exif.model.is_empty() { None } else { Some(exif.model.clone()) },
+                if exif.xresolution.is_empty() { None } else { Some(exif.xresolution.clone()) },
+                if exif.yresolution.is_empty() { None } else { Some(exif.yresolution.clone()) },
+                if exif.resolution_unit.is_empty() { None } else { Some(exif.resolution_unit.clone()) },
+                if exif.copyright.is_empty() { None } else { Some(exif.copyright.clone()) },
+                if exif.exposure_time.is_empty() { None } else { Some(exif.exposure_time.clone()) },
+                if exif.shutter_speed_value.is_empty() { None } else { Some(exif.shutter_speed_value.clone()) },
+                if exif.focal_length.is_empty() { None } else { Some(exif.focal_length.clone()) },
+                if exif.focal_length_in35mm_film.is_empty() { None } else { Some(exif.focal_length_in35mm_film.clone()) },
+                if exif.digital_zoom_ratio.is_empty() { None } else { Some(exif.digital_zoom_ratio.clone()) },
+                if exif.exposure_mode.is_empty() { None } else { Some(exif.exposure_mode.clone()) },
+                if exif.white_balance_mode.is_empty() { None } else { Some(exif.white_balance_mode.clone()) },
+                if exif.orientation.is_empty() { None } else { Some(exif.orientation.clone()) },
+                // CSS style field - default to None for now
+                None::<String>
+            ])
+            .map_err(|e| {
+                log::error!(target: "sqlite", "db_statement_error; file={}; error={}", photo.file.path, e);
+                "Failed to execute statement"
+            })?;
 
-        log::debug!(target: "sqlite", "photo_metadata_insert; file={}; date={}", photo.file.path, date);
+            inserted += 1;
+            log::debug!(target: "sqlite", "photo_metadata_insert; file={}; date={}", photo.file.path, date);
+        }
     }
 
-    // Update date_summary for newly inserted photos
-    log::info!(target: "date_summary", "batch_insert_completed; rebuilding_summary=true");
-    let _ = date_summary::rebuild_date_summary(sqlite);
+    tx.commit().map_err(|_| "Failed to commit transaction")?;
+
+    log::info!(target: "sqlite", "photo_metadata_batch; inputs={}; inserted={}; skipped_existing={}", input_paths.len(), inserted, skipped_existing);
+
+    // Update date_summary only when something actually changed.
+    if inserted > 0 {
+        log::info!(target: "date_summary", "batch_insert_completed; rebuilding_summary=true");
+        let _ = date_summary::rebuild_date_summary(sqlite);
+    } else {
+        log::debug!(target: "date_summary", "batch_insert_completed; rebuilding_summary=false; reason=no_inserts");
+    }
 
     Ok(true)
 }
