@@ -39,7 +39,10 @@ pub(crate) fn process_create_db_job(
         let mut photos = Vec::with_capacity(job.job.target.len());
         for abs_path in &job.job.target {
             let relative_path = file::to_relative_path(abs_path, &import_to);
-            photos.push(photo::Photo::new(file::File::from_relative(relative_path), None));
+            photos.push(photo::Photo::new(
+                file::File::from_relative(relative_path),
+                None,
+            ));
         }
         log::info!(target: "create_db_job", "database_creation; targets={}; mode=incremental", photos.len());
         meta_db
