@@ -84,8 +84,7 @@ fn fetch_existing_meta_batch(
     }
     const CHUNK: usize = 500;
     for chunk in paths.chunks(CHUNK) {
-        let placeholders = std::iter::repeat("?")
-            .take(chunk.len())
+        let placeholders = std::iter::repeat_n("?", chunk.len())
             .collect::<Vec<_>>()
             .join(",");
         let query = format!(
