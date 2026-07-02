@@ -38,6 +38,7 @@ function DirectoryMenu(props) {
         setDateNum: props.setDateNum,
         dateList: props.dateList,
         setDateList: props.setDateList,
+        reloadCurrentModeData: props.reloadCurrentModeData,
         config: props.config,
         dialog
     });

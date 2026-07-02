@@ -117,9 +117,9 @@ fn fetch_existing_meta_batch(
 pub fn record_photos_meta_data(
     sqlite: &SQLite,
     photos: Vec<photo::Photo>,
-) -> Result<bool, &'static str> {
+) -> Result<usize, &'static str> {
     if photos.is_empty() {
-        return Ok(true);
+        return Ok(0);
     }
 
     let mut conn = sqlite
@@ -264,15 +264,17 @@ pub fn record_photos_meta_data(
         log::debug!(target: "date_summary", "batch_insert_completed; rebuilding_summary=false; reason=no_inserts");
     }
 
-    Ok(true)
+    Ok(inserted)
 }
 
-/// Record all photo metadata for given dates
+/// Record all photo metadata for given dates.
+/// Returns `(per-date total photo count, total rows newly inserted)`.
 pub fn record_photos_all_meta_data(
     sqlite: &SQLite,
     dates: date::Dates,
-) -> Result<HashMap<String, usize>, &'static str> {
+) -> Result<(HashMap<String, usize>, usize), &'static str> {
     let mut date_num: HashMap<String, usize> = HashMap::new();
+    let mut total_inserted: usize = 0;
     let import_to = crate::entity::config::Config::new().import_to;
 
     for date in dates.dates {
@@ -310,14 +312,15 @@ pub fn record_photos_all_meta_data(
             }
         }
 
-        let result = record_photos_meta_data(sqlite, photos.photos);
-        if result.is_err() {
-            log::error!(target: "sqlite", "photo_recording_error; date={}; error={:?}", date, result.err()
-            );
+        match record_photos_meta_data(sqlite, photos.photos) {
+            Ok(inserted) => total_inserted += inserted,
+            Err(e) => {
+                log::error!(target: "sqlite", "photo_recording_error; date={}; error={:?}", date, e);
+            }
         }
     }
 
-    Ok(date_num)
+    Ok((date_num, total_inserted))
 }
 
 /// Get photo metadata for a specific date

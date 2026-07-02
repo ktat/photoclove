@@ -213,11 +213,15 @@ pub(crate) trait MetaInfoDB {
         info_path: path::PathBuf,
         photo_metas: photo_meta::PhotoMetas,
     ) -> Result<bool, &str>;
-    fn record_photos_meta_data(&self, photos: Vec<photo::Photo>) -> Result<bool, &str>;
+    /// Record photo metadata. Returns the number of rows newly inserted
+    /// (existing rows are skipped and not counted).
+    fn record_photos_meta_data(&self, photos: Vec<photo::Photo>) -> Result<usize, &str>;
+    /// Record metadata for all photos in the given dates.
+    /// Returns `(per-date total photo count, total rows newly inserted)`.
     fn record_photos_all_meta_data(
         &self,
         dates: date::Dates,
-    ) -> Result<HashMap<String, usize>, &str>;
+    ) -> Result<(HashMap<String, usize>, usize), &str>;
     fn get_photo_meta_data_in_date(
         &self,
         date: date::Date,

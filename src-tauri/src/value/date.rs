@@ -214,26 +214,39 @@ impl Date {
         Some(Date { year, month, day })
     }
 
-    /// Safe version that returns Result instead of panicking
+    /// Safe version that returns Result instead of panicking.
+    ///
+    /// The date separator is auto-detected from the string: both "YYYY-MM-DD" and
+    /// "YYYY/MM/DD" are accepted regardless of `delimitor`. `delimitor` is only used
+    /// as a fallback hint when the string contains neither "-" nor "/".
     pub fn try_from_string(date_str: &String, delimitor: Option<&str>) -> Result<Date, String> {
         // Basic validation
         if date_str.trim().is_empty() {
             return Err("empty date string".to_string());
         }
 
-        let del = delimitor.unwrap_or("/");
+        // Strip any trailing time component ("YYYY-MM-DD HH:MM:SS" -> "YYYY-MM-DD").
+        let re = regex::Regex::new(r" .+$").unwrap();
+        let date_part = re.replace(date_str.trim(), "").to_string();
+
+        // Accept both "-" and "/" separators; fall back to the caller's hint otherwise.
+        let del = if date_part.contains('/') {
+            "/"
+        } else if date_part.contains('-') {
+            "-"
+        } else {
+            delimitor.unwrap_or("-")
+        };
 
         // Validate basic date format before processing
-        if !Self::is_valid_date_format(date_str, delimitor) {
+        if !Self::is_valid_date_format(&date_part, Some(del)) {
             return Err(format!(
-                "invalid date format: {} (expected format with delimiter '{}')",
-                date_str, del
+                "invalid date format: {} (expected YYYY-MM-DD or YYYY/MM/DD)",
+                date_str
             ));
         }
 
-        let re = regex::Regex::new(r" .+$").unwrap();
-        let replaced = re.replace(date_str, "").to_string();
-        let mut splitted = replaced.split(del);
+        let mut splitted = date_part.split(del);
 
         let year = match splitted.next().unwrap().parse::<i32>() {
             Ok(year) => year,
@@ -483,6 +496,26 @@ mod tests {
         let d2 = date::Date::new(2022, 2, 28).unwrap();
         let dates = date::Dates::new(&[d1, d2]);
         assert_eq!(dates.dates.len(), 2);
+    }
+
+    #[test]
+    fn test_from_string_autodetects_delimiter() {
+        // Both "YYYY-MM-DD" and "YYYY/MM/DD" must parse regardless of the delimiter hint.
+        // Regression guard: previously create_db_in_date passed "/" for a hyphenated date,
+        // which failed and silently fell back to today's date.
+        for hint in [Some("-"), Some("/"), None] {
+            let d = date::Date::try_from_string(&"2026-06-27".to_string(), hint).unwrap();
+            assert_eq!((d.year, d.month, d.day), (2026, 6, 27));
+            let d = date::Date::try_from_string(&"2026/06/27".to_string(), hint).unwrap();
+            assert_eq!((d.year, d.month, d.day), (2026, 6, 27));
+        }
+    }
+
+    #[test]
+    fn test_from_string_with_time_suffix() {
+        // A trailing time component is stripped before parsing.
+        let d = date::Date::try_from_string(&"2026-06-27 00:00:00".to_string(), None).unwrap();
+        assert_eq!((d.year, d.month, d.day), (2026, 6, 27));
     }
 
     #[test]

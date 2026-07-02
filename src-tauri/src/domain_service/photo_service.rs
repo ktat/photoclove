@@ -201,6 +201,77 @@ pub fn process_raw_thumbnails(
     Ok(count)
 }
 
+/// Recursively generate thumbnails for videos under `from`, mirroring the
+/// directory layout (including UUID subdirectories) into `to`.
+///
+/// For each mp4/webm a single frame at ~1s is extracted as
+/// `{to}/{relative_dirs}/{filename}.jpg`, matching what `Photo::set_has_thumbnail`
+/// expects. Existing thumbnails are skipped so re-runs do not re-invoke ffmpeg on
+/// large video files.
+fn generate_video_thumbnails(from: &Path, to: &Path) {
+    let entries = match std::fs::read_dir(from) {
+        Ok(e) => e,
+        Err(e) => {
+            log::warn!(target: "photo_service", "video_thumbnail_readdir_failed; dir={}; error={}", from.display(), e);
+            return;
+        }
+    };
+
+    for entry in entries.filter_map(|e| e.ok()) {
+        let path = entry.path();
+        if path.is_dir() {
+            // Mirror the subdirectory (e.g. the UUID dir) into the destination.
+            generate_video_thumbnails(&path, &to.join(entry.file_name()));
+            continue;
+        }
+
+        let is_video = path
+            .extension()
+            .map(|ext| ext.to_string_lossy().to_lowercase())
+            .map(|ext| ext == "mp4" || ext == "webm")
+            .unwrap_or(false);
+        if !is_video {
+            continue;
+        }
+
+        let thumbnail_path = to.join(format!("{}.jpg", entry.file_name().to_string_lossy()));
+        if thumbnail_path.exists() {
+            log::debug!(target: "photo_service", "video_thumbnail; status=skip_exists; path={:?}", thumbnail_path);
+            continue;
+        }
+        if let Err(e) = std::fs::create_dir_all(to) {
+            log::error!(target: "photo_service", "video_thumbnail_mkdir_failed; dir={}; error={}", to.display(), e);
+            continue;
+        }
+        let Some(src) = path.to_str() else {
+            continue;
+        };
+
+        log::info!(target: "photo_service", "video_thumbnail; source={:?}; target={:?}", path, thumbnail_path);
+        // `-ss` before `-i` uses fast input seeking, essential for multi-GB videos.
+        let output = Command::new("ffmpeg")
+            .arg("-ss")
+            .arg("00:00:01.000")
+            .arg("-i")
+            .arg(src)
+            .arg("-vframes")
+            .arg("1")
+            .arg(&thumbnail_path)
+            .output();
+        match output {
+            Ok(o) if o.status.success() => {
+                log::info!(target: "photo_service", "video_thumbnail; status=success; path={:?}", thumbnail_path);
+            }
+            Ok(o) => {
+                log::error!(target: "photo_service", "video_thumbnail_error; source={:?}; target={:?}; stderr={}", path, thumbnail_path, String::from_utf8_lossy(&o.stderr));
+            }
+            Err(e) => {
+                log::error!(target: "photo_service", "ffmpeg_error; error={:?}", e);
+            }
+        }
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 pub async fn create_thumbnails(
     dates: date::Dates,
@@ -275,35 +346,13 @@ pub async fn create_thumbnails(
                             } else {
                                 log::debug!(target: "photo_service", "thumbnail_status; file={:?}; status=not_exists", new_file_path);
                             }
-                        } else if ext == "mp4" || ext == "webm" {
-                            let thumbnail_file_name =
-                                format!("{}.jpg", file_name.to_string_lossy());
-                            let thumbnail_path = to.join(thumbnail_file_name);
-                            log::info!(target: "photo_service", "video_thumbnail; source={:?}; target={:?}", file_name, thumbnail_path.clone());
-                            let output = Command::new("ffmpeg")
-                                .arg("-i")
-                                .arg(entry.path().to_str().unwrap())
-                                .arg("-ss")
-                                .arg("00:00:01.000")
-                                .arg("-vframes")
-                                .arg("1")
-                                .arg(thumbnail_path.clone())
-                                .output();
-                            match output {
-                                Ok(o) => {
-                                    if o.status.success() {
-                                        log::info!(target: "photo_service", "video_thumbnail; status=success; path={:?}", thumbnail_path);
-                                    } else {
-                                        log::error!(target: "photo_service", "video_thumbnail_error; source={:?}; target={:?}; stderr={:?}", entry.path(), thumbnail_path, o.stderr);
-                                    }
-                                }
-                                Err(e) => {
-                                    log::error!(target: "photo_service", "ffmpeg_error; error={:?}", e);
-                                }
-                            }
                         }
                     }
                 }
+
+                // Generate video thumbnails, recursing into UUID subdirectories and
+                // mirroring the layout into the thumbnail destination.
+                generate_video_thumbnails(&from, &to);
 
                 // Clean up RAW files copied by FolderCompressor (it copies them as-is)
                 // Walk through destination directory and subdirectories
