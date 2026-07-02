@@ -419,14 +419,13 @@ mod tests {
         fs::write(date_dir.join("top.jpg"), b"x").unwrap();
 
         let dir = file::Dir::new(date_dir.display().to_string());
-        let photos = photo_service::photos_from_dir_recursive(
-            &dir,
-            &base.display().to_string(),
-            None,
-        );
+        let photos =
+            photo_service::photos_from_dir_recursive(&dir, &base.display().to_string(), None);
 
         let paths: Vec<String> = photos.photos.iter().map(|p| p.file.path.clone()).collect();
-        assert!(paths.iter().any(|p| p == "2026-06-29/caa83a09-5960-46f1-90f1-6bc0769eb42f/video.mp4"));
+        assert!(paths
+            .iter()
+            .any(|p| p == "2026-06-29/caa83a09-5960-46f1-90f1-6bc0769eb42f/video.mp4"));
         assert!(paths.iter().any(|p| p == "2026-06-29/top.jpg"));
         assert!(!photos.has_next && !photos.has_prev);
     }
