@@ -19,6 +19,28 @@ pub fn photos_from_dir(files: file::Files) -> photo::Photos {
     photos
 }
 
+/// Scan `dir` (recursing into UUID subdirectories) into a `Photos` bundle.
+///
+/// This is a filesystem scan bundle for processing (thumbnails, rebuild), not a
+/// display page: photos carry no DB metadata (star/comment/EXIF) and no
+/// pagination is applied (`has_next`/`has_prev` stay `false`). File paths are
+/// stored relative to `import_to`. `config` is embedded so `Photo::absolute_path`
+/// and `Photo::get_thumbnail_path` resolve correctly.
+pub fn photos_from_dir_recursive(
+    dir: &file::Dir,
+    import_to: &str,
+    config: Option<&crate::entity::config::Config>,
+) -> photo::Photos {
+    let files = crate::domain_service::dir_service::find_files(dir);
+    let mut photos = photo::Photos::new();
+    for f in files.files {
+        let relative_path = file::to_relative_path(&f.path, import_to);
+        let p = photo::Photo::new(file::File::from_relative(relative_path), config.cloned());
+        photos.photos.push(p);
+    }
+    photos
+}
+
 pub fn save_photo_star(db: &MetaDB, photo: &photo::Photo, star: star::Star) {
     db.save_star(photo, star)
 }
@@ -396,5 +418,30 @@ mod tests {
         let files = dir_service::find_files(&dir);
         let photos = photo_service::photos_from_dir(files);
         assert_eq!(photos.photos.len(), 3)
+    }
+
+    #[test]
+    fn test_photos_from_dir_recursive_includes_uuid_subdir() {
+        use std::fs;
+        let tmp = tempfile::tempdir().unwrap();
+        let base = tmp.path();
+        let uuid = "caa83a09-5960-46f1-90f1-6bc0769eb42f";
+        let date_dir = base.join("2026-06-29");
+        let uuid_dir = date_dir.join(uuid);
+        fs::create_dir_all(&uuid_dir).unwrap();
+        fs::write(uuid_dir.join("video.mp4"), b"x").unwrap();
+        fs::write(date_dir.join("top.jpg"), b"x").unwrap();
+
+        let dir = file::Dir::new(date_dir.display().to_string());
+        let photos = photo_service::photos_from_dir_recursive(
+            &dir,
+            &base.display().to_string(),
+            None,
+        );
+
+        let paths: Vec<String> = photos.photos.iter().map(|p| p.file.path.clone()).collect();
+        assert!(paths.iter().any(|p| p == "2026-06-29/caa83a09-5960-46f1-90f1-6bc0769eb42f/video.mp4"));
+        assert!(paths.iter().any(|p| p == "2026-06-29/top.jpg"));
+        assert!(!photos.has_next && !photos.has_prev);
     }
 }
