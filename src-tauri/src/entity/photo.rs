@@ -345,6 +345,8 @@ impl Photo {
     }
 
     /// Lowercase file extension without the dot (empty string if none).
+    /// Forward-looking type predicates; not all wired to callers yet.
+    #[allow(dead_code)]
     pub fn extension(&self) -> String {
         std::path::Path::new(&self.file.path)
             .extension()
@@ -358,16 +360,22 @@ impl Photo {
     }
 
     /// True if the file is a RAW camera file.
+    /// Forward-looking type predicates; not all wired to callers yet.
+    #[allow(dead_code)]
     pub fn is_raw(&self) -> bool {
         crate::utils::raw_file::is_raw_file(&self.file.path)
     }
 
     /// True if the file is a HEIC/HEIF/AVIF file.
+    /// Forward-looking type predicates; not all wired to callers yet.
+    #[allow(dead_code)]
     pub fn is_heic_or_avif(&self) -> bool {
         crate::utils::raw_file::is_heic_or_avif(&self.file.path)
     }
 
     /// True if the file is a supported still image (standard + RAW).
+    /// Forward-looking type predicates; not all wired to callers yet.
+    #[allow(dead_code)]
     pub fn is_image(&self) -> bool {
         crate::utils::raw_file::is_supported_image(&self.file.path)
     }
