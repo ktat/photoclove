@@ -7,8 +7,13 @@ use image_compressor::{Factor, FolderCompressor};
 use regex::Regex;
 use std::error::Error;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::sync::mpsc;
+use std::time::{Duration, Instant};
+
+/// Wall-clock limit for a single ffmpeg thumbnail extraction. A stuck or corrupt
+/// video must not hang the whole thumbnail job or block later dates in the loop.
+const VIDEO_THUMBNAIL_TIMEOUT: Duration = Duration::from_secs(120);
 
 pub fn photos_from_dir(files: file::Files) -> photo::Photos {
     let mut photos = photo::Photos::new();
@@ -252,7 +257,12 @@ fn generate_video_thumbnails(date_dir: &Path, config: &crate::entity::config::Co
         let source = photo.absolute_path();
         log::info!(target: "photo_service", "video_thumbnail; source={}; target={}", source, thumbnail_path);
         // `-ss` before `-i` uses fast input seeking, essential for multi-GB videos.
-        let output = Command::new("ffmpeg")
+        // `-nostdin`/`-y` + null stdio keep ffmpeg from blocking on a prompt, and
+        // the wall-clock timeout below guards against a single stuck/corrupt file
+        // hanging the whole job (and starving later dates in the loop).
+        let spawn_result = Command::new("ffmpeg")
+            .arg("-nostdin")
+            .arg("-y")
             .arg("-ss")
             .arg("00:00:01.000")
             .arg("-i")
@@ -260,16 +270,48 @@ fn generate_video_thumbnails(date_dir: &Path, config: &crate::entity::config::Co
             .arg("-vframes")
             .arg("1")
             .arg(&thumbnail_path)
-            .output();
-        match output {
-            Ok(o) if o.status.success() => {
-                log::info!(target: "photo_service", "video_thumbnail; status=success; path={}", thumbnail_path);
-            }
-            Ok(o) => {
-                log::error!(target: "photo_service", "video_thumbnail_error; source={}; target={}; stderr={}", source, thumbnail_path, String::from_utf8_lossy(&o.stderr));
-            }
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn();
+
+        let mut child = match spawn_result {
+            Ok(c) => c,
             Err(e) => {
-                log::error!(target: "photo_service", "ffmpeg_error; error={:?}", e);
+                log::error!(target: "photo_service", "ffmpeg_error; source={}; error={:?}", source, e);
+                continue;
+            }
+        };
+
+        let deadline = Instant::now() + VIDEO_THUMBNAIL_TIMEOUT;
+        loop {
+            match child.try_wait() {
+                Ok(Some(status)) => {
+                    if status.success() {
+                        log::info!(target: "photo_service", "video_thumbnail; status=success; path={}", thumbnail_path);
+                    } else {
+                        log::error!(target: "photo_service", "video_thumbnail_error; source={}; target={}; exit={:?}", source, thumbnail_path, status.code());
+                        // Drop any partial output so a later run can retry cleanly.
+                        let _ = std::fs::remove_file(&thumbnail_path);
+                    }
+                    break;
+                }
+                Ok(None) => {
+                    if Instant::now() >= deadline {
+                        log::error!(target: "photo_service", "video_thumbnail_timeout; source={}; timeout_secs={}", source, VIDEO_THUMBNAIL_TIMEOUT.as_secs());
+                        let _ = child.kill();
+                        let _ = child.wait();
+                        let _ = std::fs::remove_file(&thumbnail_path);
+                        break;
+                    }
+                    std::thread::sleep(Duration::from_millis(200));
+                }
+                Err(e) => {
+                    log::error!(target: "photo_service", "ffmpeg_error; source={}; error={:?}", source, e);
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    break;
+                }
             }
         }
     }
