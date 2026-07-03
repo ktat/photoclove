@@ -97,16 +97,20 @@ export function useAppEventListeners({
                 }
                 // Current backend emits an object with the actual outcome so the message
                 // is honest instead of always claiming success.
+                // NOTE: addFooterMessage(key, msg, withDialog, deleteAfter) — the 3rd arg
+                // pops a modal dialog, it is NOT an error/success style. Use it to make
+                // outcomes that need attention (success with changes, or failure) prominent,
+                // and leave benign no-ops (nothing to do) as a quiet footer message.
                 if (payload && typeof payload === "object") {
                     if (payload.status === "failed") {
-                        addFooterMessage("create_db", "Database (re)creation failed", false, 10000);
+                        addFooterMessage("create_db", "Database (re)creation failed", true, 10000);
                     } else if (payload.status === "finish") {
                         const inserted = payload.inserted ?? 0;
                         const total = payload.total ?? 0;
                         if (inserted > 0) {
                             addFooterMessage("create_db", `Database updated: ${inserted} photo(s) added (${total} total)`, true, 10000);
                         } else if (total > 0) {
-                            addFooterMessage("create_db", `Database already up to date (${total} photo(s), nothing to add)`, true, 10000);
+                            addFooterMessage("create_db", `Database already up to date (${total} photo(s), nothing to add)`, false, 10000);
                         } else {
                             addFooterMessage("create_db", "No photos found for this date", false, 10000);
                         }

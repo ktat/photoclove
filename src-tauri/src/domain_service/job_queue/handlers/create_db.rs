@@ -26,13 +26,16 @@ pub(crate) fn process_create_db_job(
     // Incremental path: when the job carries specific imported file paths,
     // record metadata only for those paths instead of rescanning the entire
     // date directory (which could be thousands of files for a few imports).
-    let outcome: Result<(), String> = if job.job.target.is_empty() {
+    // Outcome carries the number of rows actually inserted so job progress can
+    // report a meaningful total even for the full-rebuild path (where
+    // job.job.target is empty and its len() would always be 0).
+    let outcome: Result<usize, String> = if job.job.target.is_empty() {
         log::info!(target: "create_db_job", "target_empty; mode=full_rebuild; fetching_all_dates_from_repo");
         let dates_obj = repo_db.get_dates();
         log::info!(target: "create_db_job", "database_creation; dates={}", dates_obj.dates.len());
         meta_db
             .record_photos_all_meta_data(dates_obj)
-            .map(|_| ())
+            .map(|(_, inserted)| inserted)
             .map_err(|e| e.to_string())
     } else {
         let import_to = config::Config::new().import_to;
@@ -47,17 +50,16 @@ pub(crate) fn process_create_db_job(
         log::info!(target: "create_db_job", "database_creation; targets={}; mode=incremental", photos.len());
         meta_db
             .record_photos_meta_data(photos)
-            .map(|_| ())
             .map_err(|e| e.to_string())
     };
 
     match outcome {
-        Ok(()) => {
-            log::info!(target: "create_db_job", "database_creation; status=success");
+        Ok(inserted) => {
+            log::info!(target: "create_db_job", "database_creation; status=success; inserted={}", inserted);
 
-            // Update progress to completion
+            // Update progress to completion using the number of rows recorded.
             let job_id = job.id.unwrap_or(0);
-            let total = job.job.target.len() as i64;
+            let total = inserted as i64;
             let _ = meta_db.update_job_progress(job_id, total);
 
             // Emit final progress
