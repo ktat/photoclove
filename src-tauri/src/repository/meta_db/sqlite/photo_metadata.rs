@@ -184,24 +184,29 @@ pub fn record_photos_meta_data(
     }
 
     // Pass 2: open the write transaction only around the tight INSERT loop.
-    let inserted = prepared.len();
+    // ON CONFLICT(path) DO NOTHING: a row may have appeared (another writer)
+    // between the prefetch above and this insert. Never REPLACE it — that would
+    // reset a concurrently-written row's star/comment/created_at. `inserted`
+    // counts rows actually written (execute() returns 0 on conflict).
+    let mut inserted = 0usize;
     let tx = conn
         .transaction()
         .map_err(|_| "Failed to begin transaction")?;
     {
         let mut stmt = tx
-            .prepare("INSERT OR REPLACE INTO photo_metadata (path, photo_date, star, comment, created_at, updated_at, google_photos_url,
+            .prepare("INSERT INTO photo_metadata (path, photo_date, star, comment, created_at, updated_at, google_photos_url,
                  exif_iso, exif_fnumber, exif_date_time, exif_date_time_original, exif_lens_model, exif_make, exif_lens_make, exif_model,
                  exif_xresolution, exif_yresolution, exif_resolution_unit, exif_copyright, exif_exposure_time, exif_shutter_speed_value,
                  exif_focal_length, exif_focal_length_in35mm_film, exif_digital_zoom_ratio, exif_exposure_mode, exif_white_balance_mode, exif_orientation, css_style)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28)")
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28)
+                 ON CONFLICT(path) DO NOTHING")
             .map_err(|_| "Failed to prepare statement")?;
 
         // New paths have no existing row, so star/comment default to 0 / "".
         for (photo, date) in prepared {
             let exif = &photo.meta_data;
 
-            stmt.execute(params![
+            let changed = stmt.execute(params![
                 photo.file.path,
                 date,
                 0i32,
@@ -238,7 +243,12 @@ pub fn record_photos_meta_data(
                 "Failed to execute statement"
             })?;
 
-            log::debug!(target: "sqlite", "photo_metadata_insert; file={}; date={}", photo.file.path, date);
+            inserted += changed;
+            if changed == 0 {
+                log::debug!(target: "sqlite", "photo_metadata_insert; file={}; status=skipped_conflict", photo.file.path);
+            } else {
+                log::debug!(target: "sqlite", "photo_metadata_insert; file={}; date={}", photo.file.path, date);
+            }
         }
     }
 
