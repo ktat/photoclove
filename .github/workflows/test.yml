@@ -41,7 +41,10 @@ jobs:
           ${{ runner.os }}-pnpm-
 
     - name: Install dependencies
-      run: pnpm install
+      # --ignore-scripts: this job only runs vitest, which needs no native
+      # dependency builds. It also avoids pnpm@10 failing the install with
+      # ERR_PNPM_IGNORED_BUILDS over unapproved dependency build scripts.
+      run: pnpm install --ignore-scripts
 
     - name: Run unit tests
       run: pnpm test:run
@@ -161,7 +164,9 @@ jobs:
           ${{ runner.os }}-pnpm-
 
     - name: Install dependencies
-      run: pnpm install
+      # --ignore-scripts: lint/format/audit need no native dependency builds,
+      # and this avoids pnpm@10 failing the install with ERR_PNPM_IGNORED_BUILDS.
+      run: pnpm install --ignore-scripts
 
     - name: Run ESLint
       run: pnpm exec eslint src --ext .js,.jsx,.ts,.tsx --max-warnings 0
