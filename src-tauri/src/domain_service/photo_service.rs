@@ -1,7 +1,7 @@
 use crate::entity::config::RawProcessingConfig;
 use crate::entity::photo;
 use crate::repository::{MetaDB, MetaInfoDB};
-use crate::utils::{exif_thumbnail, heic_decode, raw_decode, raw_file};
+use crate::utils::{exif_thumbnail, heic_decode, raw_decode};
 use crate::value::{comment, date, file, star};
 use image_compressor::{Factor, FolderCompressor};
 use regex::Regex;
@@ -62,6 +62,7 @@ pub fn process_raw_thumbnails(
     from: &PathBuf,
     to: &PathBuf,
     raw_config: &RawProcessingConfig,
+    config: &crate::entity::config::Config,
 ) -> Result<usize, Box<dyn Error>> {
     let mut count = 0;
 
@@ -69,63 +70,71 @@ pub fn process_raw_thumbnails(
         return Ok(0);
     }
 
-    // Ensure destination directory exists
-    if !to.exists() {
-        std::fs::create_dir_all(to)?;
-    }
+    let _ = to; // destination paths now come from Photo::get_thumbnail_path()
 
-    // Collect directories to process: the root directory plus any subdirectories (UUID dirs)
-    let mut dirs_to_process: Vec<(PathBuf, PathBuf)> = Vec::new();
-    dirs_to_process.push((from.clone(), to.clone()));
+    // Enumerate the source date dir (recursing UUID subdirs) as a Photos bundle.
+    let photos = photos_from_dir_recursive(
+        &file::Dir::new(from.display().to_string()),
+        &config.import_to,
+        Some(config),
+    );
 
-    let entries = std::fs::read_dir(from)?;
-    for entry in entries {
-        let entry = entry?;
-        if entry.path().is_dir() {
-            let sub_dir_name = entry.file_name();
-            let sub_from = from.join(&sub_dir_name);
-            let sub_to = to.join(&sub_dir_name);
-            dirs_to_process.push((sub_from, sub_to));
-        }
-    }
-
-    for (dir_from, dir_to) in &dirs_to_process {
-        if !dir_from.exists() {
+    for photo in photos.photos {
+        if !(photo.is_raw() || photo.is_heic_or_avif()) {
             continue;
         }
-        if !dir_to.exists() {
-            std::fs::create_dir_all(dir_to)?;
+        let is_heic_avif = photo.is_heic_or_avif();
+        let file_name_str = photo.file.name.clone();
+        let file_path = std::path::PathBuf::from(photo.absolute_path());
+
+        let Some(thumbnail_path) = photo.get_thumbnail_path().map(std::path::PathBuf::from) else {
+            continue;
+        };
+
+        if thumbnail_path.exists() {
+            log::debug!(
+                target: "photo_service",
+                "non_native_thumbnail_exists; file={}; thumbnail={}",
+                file_name_str, thumbnail_path.display()
+            );
+            continue;
         }
 
-        let dir_entries = std::fs::read_dir(dir_from)?;
-        for entry in dir_entries {
-            let entry = entry?;
-            let file_name = entry.file_name();
-            let file_name_str = file_name.to_string_lossy();
-            let file_path = entry.path();
+        // Ensure the thumbnail's parent (date/uuid) directory exists.
+        if let Some(parent) = thumbnail_path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
 
-            let is_raw = file_path.is_file() && raw_file::is_raw_file(&file_name_str);
-            let is_heic_avif = file_path.is_file() && raw_file::is_heic_or_avif(&file_name_str);
-
-            if !is_raw && !is_heic_avif {
-                continue;
-            }
-
-            // Thumbnail naming: photo.CR2 -> photo.cr2.jpg (lowercase + .jpg)
-            let thumbnail_name = format!("{}.jpg", file_name_str.to_lowercase());
-            let thumbnail_path = dir_to.join(&thumbnail_name);
-
-            if thumbnail_path.exists() {
-                log::debug!(
+        // Try EXIF thumbnail extraction (works for both RAW and HEIC/AVIF)
+        if let Some((img, width, height)) = exif_thumbnail::extract_exif_thumbnail(&file_path) {
+            if img
+                .save_with_format(&thumbnail_path, image::ImageFormat::Jpeg)
+                .is_ok()
+            {
+                count += 1;
+                log::info!(
                     target: "photo_service",
-                    "non_native_thumbnail_exists; file={}; thumbnail={}",
+                    "non_native_thumbnail_created; file={}; thumbnail={}; size={}x{}",
+                    file_name_str, thumbnail_path.display(), width, height
+                );
+            } else {
+                log::warn!(
+                    target: "photo_service",
+                    "non_native_thumbnail_save_failed; file={}; thumbnail={}",
                     file_name_str, thumbnail_path.display()
                 );
-                continue;
             }
-
-            // Try EXIF thumbnail extraction (works for both RAW and HEIC/AVIF)
-            if let Some((img, width, height)) = exif_thumbnail::extract_exif_thumbnail(&file_path) {
+        } else if is_heic_avif {
+            // HEIC/AVIF: decode with libheif as fallback
+            log::info!(
+                target: "photo_service",
+                "heic_exif_not_found; trying_heic_decode; file={}",
+                file_name_str
+            );
+            let max_size = raw_config.max_decode_size;
+            if let Some((img, width, height)) =
+                heic_decode::decode_heic_to_image(file_path.to_str().unwrap_or(""), max_size)
+            {
                 if img
                     .save_with_format(&thumbnail_path, image::ImageFormat::Jpeg)
                     .is_ok()
@@ -133,97 +142,68 @@ pub fn process_raw_thumbnails(
                     count += 1;
                     log::info!(
                         target: "photo_service",
-                        "non_native_thumbnail_created; file={}; thumbnail={}; size={}x{}",
+                        "heic_decode_thumbnail_created; file={}; thumbnail={}; size={}x{}",
                         file_name_str, thumbnail_path.display(), width, height
                     );
                 } else {
                     log::warn!(
                         target: "photo_service",
-                        "non_native_thumbnail_save_failed; file={}; thumbnail={}",
-                        file_name_str, thumbnail_path.display()
-                    );
-                }
-            } else if is_heic_avif {
-                // HEIC/AVIF: decode with libheif as fallback
-                log::info!(
-                    target: "photo_service",
-                    "heic_exif_not_found; trying_heic_decode; file={}",
-                    file_name_str
-                );
-                let max_size = raw_config.max_decode_size;
-                if let Some((img, width, height)) =
-                    heic_decode::decode_heic_to_image(file_path.to_str().unwrap_or(""), max_size)
-                {
-                    if img
-                        .save_with_format(&thumbnail_path, image::ImageFormat::Jpeg)
-                        .is_ok()
-                    {
-                        count += 1;
-                        log::info!(
-                            target: "photo_service",
-                            "heic_decode_thumbnail_created; file={}; thumbnail={}; size={}x{}",
-                            file_name_str, thumbnail_path.display(), width, height
-                        );
-                    } else {
-                        log::warn!(
-                            target: "photo_service",
-                            "heic_decode_thumbnail_save_failed; file={}",
-                            file_name_str
-                        );
-                    }
-                } else {
-                    log::warn!(
-                        target: "photo_service",
-                        "heic_decode_failed; file={}",
-                        file_name_str
-                    );
-                }
-            } else if raw_config.enable_full_decode {
-                // RAW: full decode as fallback
-                log::info!(
-                    target: "photo_service",
-                    "raw_exif_not_found; trying_raw_decode; file={}",
-                    file_name_str
-                );
-                let max_size = raw_config.max_decode_size;
-                if let Some((img, width, height)) = raw_decode::decode_raw_to_thumbnail_with_limit(
-                    file_path.to_str().unwrap_or(""),
-                    max_size,
-                    raw_config.memory_limit_mb,
-                ) {
-                    if img
-                        .save_with_format(&thumbnail_path, image::ImageFormat::Jpeg)
-                        .is_ok()
-                    {
-                        count += 1;
-                        log::info!(
-                            target: "photo_service",
-                            "raw_decode_thumbnail_created; file={}; thumbnail={}; size={}x{}",
-                            file_name_str, thumbnail_path.display(), width, height
-                        );
-                    } else {
-                        log::warn!(
-                            target: "photo_service",
-                            "raw_decode_thumbnail_save_failed; file={}",
-                            file_name_str
-                        );
-                    }
-                } else {
-                    log::warn!(
-                        target: "photo_service",
-                        "raw_decode_failed; file={}",
+                        "heic_decode_thumbnail_save_failed; file={}",
                         file_name_str
                     );
                 }
             } else {
-                log::info!(
+                log::warn!(
                     target: "photo_service",
-                    "full_decode_disabled; file={}",
+                    "heic_decode_failed; file={}",
                     file_name_str
                 );
             }
+        } else if raw_config.enable_full_decode {
+            // RAW: full decode as fallback
+            log::info!(
+                target: "photo_service",
+                "raw_exif_not_found; trying_raw_decode; file={}",
+                file_name_str
+            );
+            let max_size = raw_config.max_decode_size;
+            if let Some((img, width, height)) = raw_decode::decode_raw_to_thumbnail_with_limit(
+                file_path.to_str().unwrap_or(""),
+                max_size,
+                raw_config.memory_limit_mb,
+            ) {
+                if img
+                    .save_with_format(&thumbnail_path, image::ImageFormat::Jpeg)
+                    .is_ok()
+                {
+                    count += 1;
+                    log::info!(
+                        target: "photo_service",
+                        "raw_decode_thumbnail_created; file={}; thumbnail={}; size={}x{}",
+                        file_name_str, thumbnail_path.display(), width, height
+                    );
+                } else {
+                    log::warn!(
+                        target: "photo_service",
+                        "raw_decode_thumbnail_save_failed; file={}",
+                        file_name_str
+                    );
+                }
+            } else {
+                log::warn!(
+                    target: "photo_service",
+                    "raw_decode_failed; file={}",
+                    file_name_str
+                );
+            }
+        } else {
+            log::info!(
+                target: "photo_service",
+                "full_decode_disabled; file={}",
+                file_name_str
+            );
         }
-    } // end dirs_to_process loop
+    }
 
     Ok(count)
 }
@@ -344,7 +324,7 @@ pub async fn create_thumbnails(
         // Process RAW files first (extract EXIF thumbnails before FolderCompressor runs)
         let default_raw_config = RawProcessingConfig::default();
         let raw_cfg = raw_config.unwrap_or(&default_raw_config);
-        match process_raw_thumbnails(&from, &to, raw_cfg) {
+        match process_raw_thumbnails(&from, &to, raw_cfg, &photo_config) {
             Ok(count) => {
                 if count > 0 {
                     log::info!(target: "photo_service", "raw_thumbnails_processed; date={}; count={}", date, count);
@@ -408,9 +388,9 @@ pub async fn create_thumbnails(
                 // `to` is the thumbnail destination (not import_to), so enumerate with
                 // find_files (absolute paths, recurses UUID subdirs) and use the pure
                 // Photo::is_raw() predicate.
-                let raw_copies = crate::domain_service::dir_service::find_files(
-                    &file::Dir::new(to.display().to_string()),
-                );
+                let raw_copies = crate::domain_service::dir_service::find_files(&file::Dir::new(
+                    to.display().to_string(),
+                ));
                 for f in raw_copies.files {
                     if photo::Photo::new(f.clone(), None).is_raw() {
                         log::info!(target: "photo_service", "thumbnail_cleanup_raw; path={}", f.path);
