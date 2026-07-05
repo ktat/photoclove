@@ -475,11 +475,11 @@ export class ImportState {
     }
 
     /**
-     * Check if a path looks like a file (has an image extension)
+     * Check if a path looks like a file (has an image or video extension)
      */
     _isFilePath(path) {
         if (!path) return false;
-        return /\.(jpe?g|png|gif|webp|heic|heif|avif|cr2|cr3|nef|arw|dng|raf|orf|rw2|3fr|tiff?)$/i.test(path);
+        return /\.(jpe?g|png|gif|webp|heic|heif|avif|cr2|cr3|nef|arw|dng|raf|orf|rw2|3fr|tiff?|mp4|webm)$/i.test(path);
     }
 
     /**

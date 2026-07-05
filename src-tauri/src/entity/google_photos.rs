@@ -151,18 +151,33 @@ impl GooglePhotos {
         let upload_uri = API_END_POINT_URL.to_string() + "uploads";
         let auth = "Bearer ".to_string() + &self.access_token;
 
+        // Photo paths stored in DB are relative to import_to (== self.db_path).
+        // Resolve the absolute path for reading, but keep the relative path as the DB key.
+        let import_to = self.db_path.clone();
+
         // Create parallel upload tasks
         let upload_tasks: Vec<_> = files.iter().map(|&file_path| {
             let upload_uri = upload_uri.clone();
             let auth = auth.clone();
             let file_path = file_path.to_string();
+            let import_to = import_to.clone();
 
             tokio::spawn(async move {
                 log::info!(target: "google_photos", "uploading_file; file={}", file_path);
 
-                let mut file = File::open(&file_path).unwrap();
+                let abs_path = std::path::Path::new(&import_to).join(&file_path);
+                let mut file = match File::open(&abs_path) {
+                    Ok(file) => file,
+                    Err(err) => {
+                        log::error!(target: "google_photos", "file_open_failed; file={}; abs_path={}; error={:?}", file_path, abs_path.display(), err);
+                        return Err(format!("Failed to open file {}: {}", abs_path.display(), err));
+                    }
+                };
                 let mut buffer = Vec::new();
-                file.read_to_end(&mut buffer).unwrap();
+                if let Err(err) = file.read_to_end(&mut buffer) {
+                    log::error!(target: "google_photos", "file_read_failed; file={}; error={:?}", file_path, err);
+                    return Err(format!("Failed to read file {}: {}", abs_path.display(), err));
+                }
 
                 let client = reqwest::Client::new();
                 let response = client
@@ -177,14 +192,19 @@ impl GooglePhotos {
                     .await;
 
                 match response {
-                    Ok(response) => {
-                        let upload_token = response.text().await.unwrap();
-                        log::info!(target: "google_photos", "upload_token_received; file={}", file_path);
-                        Ok((file_path, upload_token))
-                    }
+                    Ok(response) => match response.text().await {
+                        Ok(upload_token) => {
+                            log::info!(target: "google_photos", "upload_token_received; file={}", file_path);
+                            Ok((file_path, upload_token))
+                        }
+                        Err(err) => {
+                            log::error!(target: "google_photos", "upload_token_read_failed; file={}; error={:?}", file_path, err);
+                            Err(format!("Failed to read upload token for {}: {}", file_path, err))
+                        }
+                    },
                     Err(err) => {
                         log::error!(target: "google_photos", "upload_failed; file={}; error={:?}", file_path, err);
-                        Err(err)
+                        Err(format!("Failed to upload {}: {}", file_path, err))
                     }
                 }
             })

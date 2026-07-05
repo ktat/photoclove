@@ -50,6 +50,14 @@ pub struct ExifParseResult {
 /// Parse EXIF from any supported file (JPEG, RAW, etc.)
 /// Tries rexif first (fast, JPEG-optimized), falls back to kexif (TIFF/RAW support)
 pub fn parse_exif(path: &str) -> Result<ExifParseResult, String> {
+    // Videos have no JPEG/TIFF EXIF. Skip them early: rexif::parse_file would read
+    // the entire file into memory, which hangs the app on multi-GB video files.
+    if raw_file::is_video_file(path) {
+        return Ok(ExifParseResult {
+            entries: Vec::new(),
+        });
+    }
+
     // For RAW files, go directly to kexif (rexif doesn't support TIFF-based RAW)
     if raw_file::is_raw_file(path) {
         return parse_with_kexif(path);
@@ -243,5 +251,20 @@ fn map_kexif_tag(tag: kexif::Tag) -> ExifTagKind {
         kexif::Tag::ExposureMode => ExifTagKind::ExposureMode,
         kexif::Tag::WhiteBalance => ExifTagKind::WhiteBalanceMode,
         _ => ExifTagKind::Unknown(format!("{:?}", tag)),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_exif_skips_video_without_reading_file() {
+        // A non-existent video path must still return Ok(empty) because parse_exif
+        // short-circuits video files before opening/reading them. This is what keeps
+        // multi-GB videos from hanging EXIF extraction.
+        let result = parse_exif("/nonexistent/path/DJI_0001.mp4");
+        assert!(result.is_ok());
+        assert!(result.unwrap().entries.is_empty());
     }
 }

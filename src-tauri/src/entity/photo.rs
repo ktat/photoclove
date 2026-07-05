@@ -343,6 +343,42 @@ impl Photo {
 
         Some(datetime.and_utc().timestamp_millis())
     }
+
+    /// Lowercase file extension without the dot (empty string if none).
+    /// Forward-looking type predicates; not all wired to callers yet.
+    #[allow(dead_code)]
+    pub fn extension(&self) -> String {
+        std::path::Path::new(&self.file.path)
+            .extension()
+            .map(|e| e.to_string_lossy().to_lowercase())
+            .unwrap_or_default()
+    }
+
+    /// True if the file is a supported video (mp4/webm/mov/...).
+    pub fn is_video(&self) -> bool {
+        crate::utils::raw_file::is_video_file(&self.file.path)
+    }
+
+    /// True if the file is a RAW camera file.
+    /// Forward-looking type predicates; not all wired to callers yet.
+    #[allow(dead_code)]
+    pub fn is_raw(&self) -> bool {
+        crate::utils::raw_file::is_raw_file(&self.file.path)
+    }
+
+    /// True if the file is a HEIC/HEIF/AVIF file.
+    /// Forward-looking type predicates; not all wired to callers yet.
+    #[allow(dead_code)]
+    pub fn is_heic_or_avif(&self) -> bool {
+        crate::utils::raw_file::is_heic_or_avif(&self.file.path)
+    }
+
+    /// True if the file is a supported still image (standard + RAW).
+    /// Forward-looking type predicates; not all wired to callers yet.
+    #[allow(dead_code)]
+    pub fn is_image(&self) -> bool {
+        crate::utils::raw_file::is_supported_image(&self.file.path)
+    }
 }
 
 impl Photos {
@@ -380,5 +416,18 @@ mod tests {
         photos.photos.push(p2);
 
         assert_eq!(photos.photos.len(), 2);
+    }
+
+    #[test]
+    fn test_type_predicates() {
+        let mk = |p: &str| photo::Photo::new(file::File::from_relative(p.to_string()), None);
+        assert!(mk("2026-06-29/uuid/DJI.MP4").is_video());
+        assert!(!mk("2026-06-29/uuid/DJI.MP4").is_image());
+        assert!(mk("d/x.jpg").is_image());
+        assert!(!mk("d/x.jpg").is_video());
+        assert!(mk("d/x.CR2").is_raw());
+        assert!(mk("d/x.heic").is_heic_or_avif());
+        assert_eq!(mk("d/x.MP4").extension(), "mp4");
+        assert_eq!(mk("d/noext").extension(), "");
     }
 }

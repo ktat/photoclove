@@ -28,14 +28,15 @@ pub async fn move_photos_to_exif_date(
     if date_str.trim().is_empty() {
         return Err(());
     }
-    let date = date::Date::from_string(&date_str.to_string(), Option::Some("/"));
+    // Date separator ("-" or "/") is auto-detected by Date::try_from_string.
+    let date = date::Date::from_string(&date_str.to_string(), None);
     let _ = window.emit("move_files", "start");
     log::debug!(target: "photo", "move_photos_to_exif_date; target_date={:?}", date);
     let dates = state.repo_db.move_photos_to_exif_date(date).await;
     log::debug!(target: "photo", "move_photos_completed; dates={:?}", dates);
     let _ = window.emit("move_files", "end_move");
     match state.meta_db.record_photos_all_meta_data(dates) {
-        Ok(ret) => {
+        Ok((ret, _inserted)) => {
             let _ = window.emit("move_files", "finish");
             Ok(serde_json::to_string(&ret).unwrap_or_else(|_| "{}".to_string()))
         }
@@ -102,15 +103,24 @@ pub async fn create_db_in_date(
     if date_str.trim().is_empty() {
         return Err(());
     }
-    let date = date::Date::from_string(&date_str.to_string(), Option::Some("/"));
+    // Date separator ("-" or "/") is auto-detected by Date::try_from_string.
+    let date = date::Date::from_string(&date_str.to_string(), None);
     let dates = date::Dates::new(&[date]);
     match state.meta_db.record_photos_all_meta_data(dates) {
-        Ok(ret) => {
-            let _ = window.emit("create_db", "finish");
+        Ok((ret, inserted)) => {
+            // Report the actual outcome so the UI can show an honest message instead
+            // of a blanket success: `inserted` = rows newly added, `total` = photos now
+            // indexed for this date.
+            let total: usize = ret.values().sum();
+            log::info!(target: "database_commands", "create_db_in_date; status=finish; inserted={}; total={}", inserted, total);
+            let _ = window.emit(
+                "create_db",
+                serde_json::json!({ "status": "finish", "inserted": inserted, "total": total }),
+            );
             Ok(serde_json::to_string(&ret).unwrap_or_else(|_| "{}".to_string()))
         }
         Err(_) => {
-            let _ = window.emit("create_db", "failed");
+            let _ = window.emit("create_db", serde_json::json!({ "status": "failed" }));
             Ok("false".to_string())
         }
     }
@@ -185,7 +195,8 @@ pub async fn create_thumbnails_in_date(
     if date_str.trim().is_empty() {
         return Err(());
     }
-    let date = date::Date::from_string(&date_str.to_string(), Option::Some("/"));
+    // Date separator ("-" or "/") is auto-detected by Date::try_from_string.
+    let date = date::Date::from_string(&date_str.to_string(), None);
     let dates = date::Dates::new(&[date]);
     let c = &state.config;
     let origin = PathBuf::from(c.import_to.clone());

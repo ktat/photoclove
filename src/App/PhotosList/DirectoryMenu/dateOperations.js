@@ -16,6 +16,7 @@ export function useDateOperations({
     setDateNum,
     dateList,
     setDateList,
+    reloadCurrentModeData,
     config,
     dialog
 }) {
@@ -43,12 +44,15 @@ export function useDateOperations({
                 );
                 lockRef.current = false;
                 setCurrentDateNum?.(data[currentDate.replace(/\//g, "-")]);
+                // Refresh the photo list and date-count sidebar so newly recorded
+                // photos appear without a manual reload.
+                await reloadCurrentModeData?.();
             } catch (error) {
                 lockRef.current = false;
                 throw error;
             }
         }
-    }, [currentDate, setCurrentDateNum, dialog]);
+    }, [currentDate, setCurrentDateNum, reloadCurrentModeData, dialog]);
 
     /**
      * Move photos to directories based on their EXIF dates
@@ -69,12 +73,15 @@ export function useDateOperations({
                     'dateOperations'
                 );
                 lockRef.current = false;
+                // Photos may have moved to other date directories; refresh the list
+                // and date-count sidebar.
+                await reloadCurrentModeData?.();
             } catch (error) {
                 lockRef.current = false;
                 throw error;
             }
         }
-    }, [currentDate, dialog]);
+    }, [currentDate, reloadCurrentModeData, dialog]);
 
     /**
      * Create thumbnails for photos in the current date
@@ -95,12 +102,14 @@ export function useDateOperations({
                     'dateOperations'
                 );
                 lockThumbnailRef.current = false;
+                // Refresh so newly generated thumbnails are shown.
+                await reloadCurrentModeData?.();
             } catch (error) {
                 lockThumbnailRef.current = false;
                 throw error;
             }
         }
-    }, [currentDate, dialog]);
+    }, [currentDate, reloadCurrentModeData, dialog]);
 
     /**
      * Recalculate burst groups for photos in the current date
@@ -139,13 +148,15 @@ export function useDateOperations({
                     minGroupSize,
                     newGroups
                 });
+                // Refresh so the recalculated burst grouping is reflected in the list.
+                await reloadCurrentModeData?.();
                 await dialog.message({ title: 'Groups Recalculated', message: `Created ${newGroups} burst group(s)`, kind: 'success' });
             } catch (error) {
                 lockRef.current = false;
                 throw error;
             }
         }
-    }, [currentDate, config, dialog]);
+    }, [currentDate, config, reloadCurrentModeData, dialog]);
 
     /**
      * Run face detection for photos in the current date

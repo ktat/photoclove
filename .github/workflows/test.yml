@@ -9,19 +9,19 @@ on:
 # Heavy jobs (backend-tests, e2e-tests) run inside the pre-built CI
 # image with Rust / tauri-driver / cargo-chef-cooked deps baked in.
 # Frontend-only jobs (frontend-tests, quality-checks) run inside the
-# stock node:20-slim — pulling the heavy image just to run vitest or
+# stock node:24-slim — pulling the heavy image just to run vitest or
 # eslint would dwarf the actual work.
 
 jobs:
   frontend-tests:
     runs-on: ubuntu-latest
-    container: node:20-slim
+    container: node:24-slim
 
     steps:
     - name: Install OS deps for actions/checkout + codecov
-      # node:20-slim ships without git or gpg, both of which the codecov
+      # node:24-slim ships without git or gpg, both of which the codecov
       # action shells out to. apt is fast (a few seconds) so adding them
-      # is cheaper than swapping to the full node:20 image.
+      # is cheaper than swapping to the full node:24 image.
       run: |
         apt-get update
         apt-get install -y --no-install-recommends git gnupg ca-certificates
@@ -41,7 +41,10 @@ jobs:
           ${{ runner.os }}-pnpm-
 
     - name: Install dependencies
-      run: pnpm install
+      # --ignore-scripts: this job only runs vitest, which needs no native
+      # dependency builds. It also avoids pnpm@10 failing the install with
+      # ERR_PNPM_IGNORED_BUILDS over unapproved dependency build scripts.
+      run: pnpm install --ignore-scripts
 
     - name: Run unit tests
       run: pnpm test:run
@@ -138,7 +141,7 @@ jobs:
 
   quality-checks:
     runs-on: ubuntu-latest
-    container: node:20-slim
+    container: node:24-slim
 
     steps:
     - name: Install OS deps for actions/checkout
@@ -161,7 +164,9 @@ jobs:
           ${{ runner.os }}-pnpm-
 
     - name: Install dependencies
-      run: pnpm install
+      # --ignore-scripts: lint/format/audit need no native dependency builds,
+      # and this avoids pnpm@10 failing the install with ERR_PNPM_IGNORED_BUILDS.
+      run: pnpm install --ignore-scripts
 
     - name: Run ESLint
       run: pnpm exec eslint src --ext .js,.jsx,.ts,.tsx --max-warnings 0

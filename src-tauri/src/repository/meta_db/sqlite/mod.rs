@@ -475,14 +475,14 @@ impl MetaInfoDB for SQLite {
         photo_metadata::record_photo_metas(self, info_path, photo_metas)
     }
 
-    fn record_photos_meta_data(&self, photos: Vec<photo::Photo>) -> Result<bool, &str> {
+    fn record_photos_meta_data(&self, photos: Vec<photo::Photo>) -> Result<usize, &str> {
         photo_metadata::record_photos_meta_data(self, photos)
     }
 
     fn record_photos_all_meta_data(
         &self,
         dates: date::Dates,
-    ) -> Result<HashMap<String, usize>, &str> {
+    ) -> Result<(HashMap<String, usize>, usize), &str> {
         photo_metadata::record_photos_all_meta_data(self, dates)
     }
 

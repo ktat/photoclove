@@ -7,14 +7,41 @@ use image_compressor::{Factor, FolderCompressor};
 use regex::Regex;
 use std::error::Error;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::sync::mpsc;
+use std::time::{Duration, Instant};
+
+/// Wall-clock limit for a single ffmpeg thumbnail extraction. A stuck or corrupt
+/// video must not hang the whole thumbnail job or block later dates in the loop.
+const VIDEO_THUMBNAIL_TIMEOUT: Duration = Duration::from_secs(120);
 
 pub fn photos_from_dir(files: file::Files) -> photo::Photos {
     let mut photos = photo::Photos::new();
     for file in files.files {
         let p = photo::Photo::new(file, Option::None);
         photos.photos.push(p)
+    }
+    photos
+}
+
+/// Scan `dir` (recursing into UUID subdirectories) into a `Photos` bundle.
+///
+/// This is a filesystem scan bundle for processing (thumbnails, rebuild), not a
+/// display page: photos carry no DB metadata (star/comment/EXIF) and no
+/// pagination is applied (`has_next`/`has_prev` stay `false`). File paths are
+/// stored relative to `import_to`. `config` is embedded so `Photo::absolute_path`
+/// and `Photo::get_thumbnail_path` resolve correctly.
+pub fn photos_from_dir_recursive(
+    dir: &file::Dir,
+    import_to: &str,
+    config: Option<&crate::entity::config::Config>,
+) -> photo::Photos {
+    let files = crate::domain_service::dir_service::find_files(dir);
+    let mut photos = photo::Photos::new();
+    for f in files.files {
+        let relative_path = file::to_relative_path(&f.path, import_to);
+        let p = photo::Photo::new(file::File::from_relative(relative_path), config.cloned());
+        photos.photos.push(p);
     }
     photos
 }
@@ -201,6 +228,95 @@ pub fn process_raw_thumbnails(
     Ok(count)
 }
 
+/// Generate thumbnails for videos under `date_dir`, recursing into UUID
+/// subdirectories. Reuses `Photo::get_thumbnail_path` for the output location
+/// (which already mirrors the `{date}/{uuid}/{file}.jpg` layout) and
+/// `Photo::absolute_path` for the source. Existing thumbnails are skipped so
+/// re-runs do not re-invoke ffmpeg on large video files.
+fn generate_video_thumbnails(date_dir: &Path, config: &crate::entity::config::Config) {
+    let dir = file::Dir::new(date_dir.display().to_string());
+    let photos = photos_from_dir_recursive(&dir, &config.import_to, Some(config));
+
+    for photo in photos.photos {
+        if !photo.is_video() {
+            continue;
+        }
+        let Some(thumbnail_path) = photo.get_thumbnail_path() else {
+            continue;
+        };
+        if Path::new(&thumbnail_path).exists() {
+            log::debug!(target: "photo_service", "video_thumbnail; status=skip_exists; path={}", thumbnail_path);
+            continue;
+        }
+        if let Some(parent) = Path::new(&thumbnail_path).parent() {
+            if let Err(e) = std::fs::create_dir_all(parent) {
+                log::error!(target: "photo_service", "video_thumbnail_mkdir_failed; dir={}; error={}", parent.display(), e);
+                continue;
+            }
+        }
+        let source = photo.absolute_path();
+        log::info!(target: "photo_service", "video_thumbnail; source={}; target={}", source, thumbnail_path);
+        // `-ss` before `-i` uses fast input seeking, essential for multi-GB videos.
+        // `-nostdin`/`-y` + null stdio keep ffmpeg from blocking on a prompt, and
+        // the wall-clock timeout below guards against a single stuck/corrupt file
+        // hanging the whole job (and starving later dates in the loop).
+        let spawn_result = Command::new("ffmpeg")
+            .arg("-nostdin")
+            .arg("-y")
+            .arg("-ss")
+            .arg("00:00:01.000")
+            .arg("-i")
+            .arg(&source)
+            .arg("-vframes")
+            .arg("1")
+            .arg(&thumbnail_path)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn();
+
+        let mut child = match spawn_result {
+            Ok(c) => c,
+            Err(e) => {
+                log::error!(target: "photo_service", "ffmpeg_error; source={}; error={:?}", source, e);
+                continue;
+            }
+        };
+
+        let deadline = Instant::now() + VIDEO_THUMBNAIL_TIMEOUT;
+        loop {
+            match child.try_wait() {
+                Ok(Some(status)) => {
+                    if status.success() {
+                        log::info!(target: "photo_service", "video_thumbnail; status=success; path={}", thumbnail_path);
+                    } else {
+                        log::error!(target: "photo_service", "video_thumbnail_error; source={}; target={}; exit={:?}", source, thumbnail_path, status.code());
+                        // Drop any partial output so a later run can retry cleanly.
+                        let _ = std::fs::remove_file(&thumbnail_path);
+                    }
+                    break;
+                }
+                Ok(None) => {
+                    if Instant::now() >= deadline {
+                        log::error!(target: "photo_service", "video_thumbnail_timeout; source={}; timeout_secs={}", source, VIDEO_THUMBNAIL_TIMEOUT.as_secs());
+                        let _ = child.kill();
+                        let _ = child.wait();
+                        let _ = std::fs::remove_file(&thumbnail_path);
+                        break;
+                    }
+                    std::thread::sleep(Duration::from_millis(200));
+                }
+                Err(e) => {
+                    log::error!(target: "photo_service", "ffmpeg_error; source={}; error={:?}", source, e);
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    break;
+                }
+            }
+        }
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 pub async fn create_thumbnails(
     dates: date::Dates,
@@ -214,6 +330,11 @@ pub async fn create_thumbnails(
 ) -> Result<(), Box<dyn Error>> {
     let mut last_result: Result<(), Box<dyn Error>> = Result::Ok(());
     let re = Regex::new(r"\.(?i:jpe?g)$").unwrap();
+    // Config whose import_to/thumbnail_store match the caller's origin/dest, so
+    // Photo path helpers resolve to exactly these locations.
+    let mut photo_config = crate::entity::config::Config::new();
+    photo_config.import_to = origin.display().to_string();
+    photo_config.thumbnail_store = dest.display().to_string();
     for date in dates.dates {
         log::info!(target: "photo_service", "thumbnail_creation; date={}", date);
         let (tx, _tr) = mpsc::channel(); // Sender and Receiver. for more info, check mpsc and message passing.
@@ -275,35 +396,13 @@ pub async fn create_thumbnails(
                             } else {
                                 log::debug!(target: "photo_service", "thumbnail_status; file={:?}; status=not_exists", new_file_path);
                             }
-                        } else if ext == "mp4" || ext == "webm" {
-                            let thumbnail_file_name =
-                                format!("{}.jpg", file_name.to_string_lossy());
-                            let thumbnail_path = to.join(thumbnail_file_name);
-                            log::info!(target: "photo_service", "video_thumbnail; source={:?}; target={:?}", file_name, thumbnail_path.clone());
-                            let output = Command::new("ffmpeg")
-                                .arg("-i")
-                                .arg(entry.path().to_str().unwrap())
-                                .arg("-ss")
-                                .arg("00:00:01.000")
-                                .arg("-vframes")
-                                .arg("1")
-                                .arg(thumbnail_path.clone())
-                                .output();
-                            match output {
-                                Ok(o) => {
-                                    if o.status.success() {
-                                        log::info!(target: "photo_service", "video_thumbnail; status=success; path={:?}", thumbnail_path);
-                                    } else {
-                                        log::error!(target: "photo_service", "video_thumbnail_error; source={:?}; target={:?}; stderr={:?}", entry.path(), thumbnail_path, o.stderr);
-                                    }
-                                }
-                                Err(e) => {
-                                    log::error!(target: "photo_service", "ffmpeg_error; error={:?}", e);
-                                }
-                            }
                         }
                     }
                 }
+
+                // Generate video thumbnails, recursing into UUID subdirectories and
+                // mirroring the layout into the thumbnail destination.
+                generate_video_thumbnails(&from, &photo_config);
 
                 // Clean up RAW files copied by FolderCompressor (it copies them as-is)
                 // Walk through destination directory and subdirectories
@@ -347,5 +446,29 @@ mod tests {
         let files = dir_service::find_files(&dir);
         let photos = photo_service::photos_from_dir(files);
         assert_eq!(photos.photos.len(), 3)
+    }
+
+    #[test]
+    fn test_photos_from_dir_recursive_includes_uuid_subdir() {
+        use std::fs;
+        let tmp = tempfile::tempdir().unwrap();
+        let base = tmp.path();
+        let uuid = "caa83a09-5960-46f1-90f1-6bc0769eb42f";
+        let date_dir = base.join("2026-06-29");
+        let uuid_dir = date_dir.join(uuid);
+        fs::create_dir_all(&uuid_dir).unwrap();
+        fs::write(uuid_dir.join("video.mp4"), b"x").unwrap();
+        fs::write(date_dir.join("top.jpg"), b"x").unwrap();
+
+        let dir = file::Dir::new(date_dir.display().to_string());
+        let photos =
+            photo_service::photos_from_dir_recursive(&dir, &base.display().to_string(), None);
+
+        let paths: Vec<String> = photos.photos.iter().map(|p| p.file.path.clone()).collect();
+        assert!(paths
+            .iter()
+            .any(|p| p == "2026-06-29/caa83a09-5960-46f1-90f1-6bc0769eb42f/video.mp4"));
+        assert!(paths.iter().any(|p| p == "2026-06-29/top.jpg"));
+        assert!(!photos.has_next && !photos.has_prev);
     }
 }

@@ -4,6 +4,20 @@ use chrono::{Local, TimeZone};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::sync::OnceLock;
+
+static IMPORT_FILE_RE: OnceLock<Regex> = OnceLock::new();
+
+/// Regex matching file extensions eligible for import: still images
+/// (standard + RAW) and supported video formats (mp4, webm).
+fn import_file_re() -> &'static Regex {
+    IMPORT_FILE_RE.get_or_init(|| {
+        Regex::new(
+            r"(?i)\.(?:jpe?g|gif|png|heic|heif|avif|cr2|cr3|nef|nev|arw|dng|raf|orf|rw2|3fr|mp4|webm)$",
+        )
+        .expect("invalid import file regex")
+    })
+}
 
 fn get_created_time_from_metadata(metadata: &fs::Metadata) -> String {
     #[cfg(unix)]
@@ -72,10 +86,7 @@ impl Dir {
     }
 
     pub fn find_all_files(&self, date_after: Option<date::Date>) -> file::Files {
-        let re = Regex::new(
-            r"(?i)\.(?:jpe?g|gif|png|heic|heif|avif|cr2|cr3|nef|nev|arw|dng|raf|orf|rw2|3fr)$",
-        )
-        .unwrap();
+        let re = import_file_re();
         let readdir = match fs::read_dir(&self.path) {
             Ok(rd) => rd,
             Err(e) => {
@@ -128,10 +139,7 @@ impl Dir {
         date_after: Option<date::Date>,
     ) -> DirsFiles {
         let mut df = DirsFiles::new(self.path.clone());
-        let re = Regex::new(
-            r"(?i)\.(?:jpe?g|gif|png|heic|heif|avif|cr2|cr3|nef|nev|arw|dng|raf|orf|rw2|3fr)$",
-        )
-        .unwrap();
+        let re = import_file_re();
         let readdir = match fs::read_dir(&self.path) {
             Ok(rd) => rd,
             Err(_) => return DirsFiles::new(self.path.clone()),
@@ -233,5 +241,27 @@ impl Dir {
             df.dirs.dirs.len(),
         );
         df
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_import_file_re_matches_images_and_videos() {
+        let re = import_file_re();
+        // Still images (case-insensitive)
+        assert!(re.is_match("/photos/a.jpg"));
+        assert!(re.is_match("/photos/a.JPG"));
+        assert!(re.is_match("/photos/a.heic"));
+        assert!(re.is_match("/photos/a.CR2"));
+        // Videos
+        assert!(re.is_match("/photos/IMG_0001.mp4"));
+        assert!(re.is_match("/photos/IMG_0001.MP4"));
+        assert!(re.is_match("/photos/clip.webm"));
+        // Non-media
+        assert!(!re.is_match("/photos/note.txt"));
+        assert!(!re.is_match("/photos/archive.zip"));
     }
 }

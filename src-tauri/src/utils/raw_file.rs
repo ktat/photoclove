@@ -15,6 +15,20 @@ const STANDARD_IMAGE_EXTENSIONS: &[&str] =
 /// HEIC/HEIF/AVIF extensions (non-browser-native container formats)
 pub const HEIC_AVIF_EXTENSIONS: &[&str] = &["heic", "heif", "avif"];
 
+/// Video extensions. These have no JPEG/TIFF EXIF, so EXIF parsers must not try
+/// to read them (reading a multi-GB video into memory would hang the app).
+const VIDEO_EXTENSIONS: &[&str] = &[
+    "mp4", "webm", "mov", "avi", "mkv", "m4v", "wmv", "flv", "mts", "m2ts", "3gp",
+];
+
+/// Check if a file path has a video extension.
+pub fn is_video_file(path: &str) -> bool {
+    let lower = path.to_lowercase();
+    VIDEO_EXTENSIONS
+        .iter()
+        .any(|ext| lower.ends_with(&format!(".{}", ext)))
+}
+
 /// Check if a file path has a RAW file extension
 pub fn is_raw_file(path: &str) -> bool {
     let lower = path.to_lowercase();
@@ -92,5 +106,15 @@ mod tests {
         assert!(is_supported_image("/photos/DSC001.nef"));
         assert!(!is_supported_image("/photos/DSC001.mp4"));
         assert!(!is_supported_image("/photos/DSC001.txt"));
+    }
+
+    #[test]
+    fn test_is_video_file() {
+        assert!(is_video_file("/photos/DJI_0001.mp4"));
+        assert!(is_video_file("/photos/DJI_0001.MP4"));
+        assert!(is_video_file("/photos/clip.webm"));
+        assert!(is_video_file("/photos/clip.mov"));
+        assert!(!is_video_file("/photos/DSC001.jpg"));
+        assert!(!is_video_file("/photos/DSC001.cr2"));
     }
 }

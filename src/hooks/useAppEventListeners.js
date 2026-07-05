@@ -85,10 +85,36 @@ export function useAppEventListeners({
             // DB creation events
             unlisten1 = await listen(MENU_EVENTS.CREATE_DB, (e) => {
                 logger.debug('App', 'create_db_event', 'Create DB event', { payload: e.payload });
-                if (e.payload === "start") {
+                const payload = e.payload;
+                // Backward-compat: older backend emitted plain strings ("start"/"finish").
+                if (payload === "start") {
                     addFooterMessage("create_db", "Database (re)creation is started", false, 10000);
-                } else if (e.payload === "finish") {
+                    return;
+                }
+                if (payload === "finish") {
                     addFooterMessage("create_db", "Database is created :)", true, 10000);
+                    return;
+                }
+                // Current backend emits an object with the actual outcome so the message
+                // is honest instead of always claiming success.
+                // NOTE: addFooterMessage(key, msg, withDialog, deleteAfter) — the 3rd arg
+                // pops a modal dialog, it is NOT an error/success style. Use it to make
+                // outcomes that need attention (success with changes, or failure) prominent,
+                // and leave benign no-ops (nothing to do) as a quiet footer message.
+                if (payload && typeof payload === "object") {
+                    if (payload.status === "failed") {
+                        addFooterMessage("create_db", "Database (re)creation failed", true, 10000);
+                    } else if (payload.status === "finish") {
+                        const inserted = payload.inserted ?? 0;
+                        const total = payload.total ?? 0;
+                        if (inserted > 0) {
+                            addFooterMessage("create_db", `Database updated: ${inserted} photo(s) added (${total} total)`, true, 10000);
+                        } else if (total > 0) {
+                            addFooterMessage("create_db", `Database already up to date (${total} photo(s), nothing to add)`, false, 10000);
+                        } else {
+                            addFooterMessage("create_db", "No photos found for this date", false, 10000);
+                        }
+                    }
                 }
             });
 
