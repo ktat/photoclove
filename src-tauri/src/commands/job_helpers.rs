@@ -11,16 +11,11 @@ use crate::repository::meta_db::sqlite::SQLite;
 use std::sync::Arc;
 use tauri::AppHandle;
 
-/// Check if a file path is an image file (standard + RAW formats)
-pub fn is_image_file(path: &str) -> bool {
-    crate::utils::raw_file::is_supported_image(path)
-}
-
 /// Filter photos to only include image files
 pub fn filter_image_paths(photos: &[Photo]) -> Vec<String> {
     photos
         .iter()
-        .filter(|p| is_image_file(&p.file.path))
+        .filter(|p| p.is_image())
         .map(|p| p.file.path.clone())
         .collect()
 }
@@ -116,3 +111,32 @@ pub const NO_PHOTOS_RESPONSE: &str = r#"{"result": "no_photos", "count": 0}"#;
 
 /// No images response
 pub const NO_IMAGES_RESPONSE: &str = r#"{"result": "no_images", "count": 0}"#;
+
+#[cfg(test)]
+mod tests {
+    use super::filter_image_paths;
+    use crate::entity::photo::Photo;
+    use crate::value::file;
+
+    fn photo(rel: &str) -> Photo {
+        Photo::new(file::File::from_relative(rel.to_string()), None)
+    }
+
+    #[test]
+    fn test_filter_image_paths_keeps_only_images() {
+        let photos = vec![
+            photo("2026-06-29/a/pic.jpg"),
+            photo("2026-06-29/a/raw.CR2"),
+            photo("2026-06-29/a/clip.mp4"),
+            photo("2026-06-29/a/notes.txt"),
+        ];
+        let result = filter_image_paths(&photos);
+        assert_eq!(
+            result,
+            vec![
+                "2026-06-29/a/pic.jpg".to_string(),
+                "2026-06-29/a/raw.CR2".to_string(),
+            ]
+        );
+    }
+}
