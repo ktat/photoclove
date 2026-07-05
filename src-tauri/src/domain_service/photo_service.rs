@@ -404,22 +404,19 @@ pub async fn create_thumbnails(
                 // mirroring the layout into the thumbnail destination.
                 generate_video_thumbnails(&from, &photo_config);
 
-                // Clean up RAW files copied by FolderCompressor (it copies them as-is)
-                // Walk through destination directory and subdirectories
-                fn cleanup_raw_copies(dir: &PathBuf) {
-                    if let Ok(entries) = std::fs::read_dir(dir) {
-                        for entry in entries.filter_map(|e| e.ok()) {
-                            let path = entry.path();
-                            if path.is_dir() {
-                                cleanup_raw_copies(&path);
-                            } else if raw_file::is_raw_file(&path.to_string_lossy()) {
-                                log::info!(target: "photo_service", "thumbnail_cleanup_raw; path={}", path.display());
-                                let _ = std::fs::remove_file(&path);
-                            }
-                        }
+                // Clean up RAW files copied by FolderCompressor (it copies them as-is).
+                // `to` is the thumbnail destination (not import_to), so enumerate with
+                // find_files (absolute paths, recurses UUID subdirs) and use the pure
+                // Photo::is_raw() predicate.
+                let raw_copies = crate::domain_service::dir_service::find_files(
+                    &file::Dir::new(to.display().to_string()),
+                );
+                for f in raw_copies.files {
+                    if photo::Photo::new(f.clone(), None).is_raw() {
+                        log::info!(target: "photo_service", "thumbnail_cleanup_raw; path={}", f.path);
+                        let _ = std::fs::remove_file(&f.path);
                     }
                 }
-                cleanup_raw_copies(&to);
 
                 log::info!(target: "photo_service", "thumbnail_creation; status=success");
             }
