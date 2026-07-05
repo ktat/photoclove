@@ -4,7 +4,6 @@ use crate::repository::{MetaDB, MetaInfoDB};
 use crate::utils::{exif_thumbnail, heic_decode, raw_decode};
 use crate::value::{comment, date, file, star};
 use image_compressor::{Factor, FolderCompressor};
-use regex::Regex;
 use std::error::Error;
 use std::path::Path;
 use std::process::{Command, Stdio};
@@ -309,7 +308,6 @@ pub async fn create_thumbnails(
     raw_config: Option<&RawProcessingConfig>,
 ) -> Result<(), Box<dyn Error>> {
     let mut last_result: Result<(), Box<dyn Error>> = Result::Ok(());
-    let re = Regex::new(r"\.(?i:jpe?g)$").unwrap();
     // Config whose import_to/thumbnail_store match the caller's origin/dest, so
     // Photo path helpers resolve to exactly these locations.
     let mut photo_config = crate::entity::config::Config::new();
@@ -346,36 +344,39 @@ pub async fn create_thumbnails(
                 last_result = r;
                 let ignore_file_size = ignore_file_size as u64;
                 log::info!(target: "photo_service", "thumbnail_processing; from={:?}; to={:?}", from, to);
-                let entries = std::fs::read_dir(&from)?;
-                for entry in entries {
-                    let entry = entry?;
-                    let file_name = entry.file_name();
-                    let extension = entry
-                        .path()
-                        .extension()
-                        .map(|ext| ext.to_string_lossy().to_lowercase());
-                    if let Some(ext) = extension {
-                        if ext == "jpg" || ext == "jpeg" {
-                            let file_size = entry.metadata()?.len();
-                            let file_name_str = file_name.to_string_lossy();
-                            let ext_with_dot = format!(".{}", ext);
-                            let new_file_name = re.replace(&file_name_str, &ext_with_dot);
-                            let new_file_path = to.join(new_file_name.as_ref());
-                            if new_file_path.exists() {
-                                if file_size < ignore_file_size {
-                                    log::info!(target: "photo_service", "thumbnail_cleanup; reason=mini_size; source={:?}; target={:?}; file_size={}; threshold={}", entry.path().to_string_lossy(), new_file_path.clone(), file_size, ignore_file_size);
-                                    std::fs::remove_file(new_file_path)?;
-                                } else if new_file_path.exists() {
-                                    let thumbnail_file_size =
-                                        std::path::Path::new(&new_file_path).metadata()?.len();
-                                    if thumbnail_file_size == file_size {
-                                        log::info!(target: "photo_service", "thumbnail_cleanup; reason=same_size; target={:?}", new_file_path.clone());
-                                        std::fs::remove_file(new_file_path)?;
-                                    }
-                                }
-                            } else {
-                                log::debug!(target: "photo_service", "thumbnail_status; file={:?}; status=not_exists", new_file_path);
-                            }
+                // Cleanup pass over the source date dir (recursing UUID subdirs, which
+                // the old single-level read_dir missed) removing thumbnails that are
+                // unwanted: source below the size threshold, or thumbnail not actually
+                // smaller than the source (== same size).
+                let source_photos = photos_from_dir_recursive(
+                    &file::Dir::new(from.display().to_string()),
+                    &photo_config.import_to,
+                    Some(&photo_config),
+                );
+                for photo in source_photos.photos {
+                    let ext = photo.extension();
+                    if ext != "jpg" && ext != "jpeg" {
+                        continue;
+                    }
+                    let source_path = std::path::PathBuf::from(photo.absolute_path());
+                    let Some(thumbnail_path) =
+                        photo.get_thumbnail_path().map(std::path::PathBuf::from)
+                    else {
+                        continue;
+                    };
+                    if !thumbnail_path.exists() {
+                        log::debug!(target: "photo_service", "thumbnail_status; file={:?}; status=not_exists", thumbnail_path);
+                        continue;
+                    }
+                    let file_size = source_path.metadata()?.len();
+                    if file_size < ignore_file_size {
+                        log::info!(target: "photo_service", "thumbnail_cleanup; reason=mini_size; source={:?}; target={:?}; file_size={}; threshold={}", source_path.to_string_lossy(), thumbnail_path.clone(), file_size, ignore_file_size);
+                        std::fs::remove_file(&thumbnail_path)?;
+                    } else {
+                        let thumbnail_file_size = thumbnail_path.metadata()?.len();
+                        if thumbnail_file_size == file_size {
+                            log::info!(target: "photo_service", "thumbnail_cleanup; reason=same_size; target={:?}", thumbnail_path.clone());
+                            std::fs::remove_file(&thumbnail_path)?;
                         }
                     }
                 }
