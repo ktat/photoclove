@@ -6,7 +6,7 @@ use crate::value::{comment, date, file, star};
 use image_compressor::{Factor, FolderCompressor};
 use regex::Regex;
 use std::error::Error;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::{Command, Stdio};
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
@@ -59,8 +59,8 @@ pub fn save_photo_comment(db: &MetaDB, photo: &photo::Photo, comment: comment::C
 /// This runs before FolderCompressor so RAW files have thumbnails ready.
 /// Falls back to full RAW decode if EXIF extraction fails and `enable_full_decode` is true.
 pub fn process_raw_thumbnails(
-    from: &PathBuf,
-    to: &PathBuf,
+    from: &Path,
+    to: &Path,
     raw_config: &RawProcessingConfig,
     config: &crate::entity::config::Config,
 ) -> Result<usize, Box<dyn Error>> {
