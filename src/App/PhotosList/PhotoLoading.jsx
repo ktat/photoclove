@@ -30,9 +30,27 @@ function PhotoLoading({ viewModeObj }) {
             rafId = requestAnimationFrame(tick);
         };
         rafId = requestAnimationFrame(tick);
+
+        // Timer probe: discriminates a blocked JS thread (timer AND rAF both
+        // stall) from a stalled rendering pipeline (only rAF stalls, timers
+        // keep firing).
+        let lastTimer = performance.now();
+        const timerId = setInterval(() => {
+            const now = performance.now();
+            const gap = now - lastTimer;
+            if (gap > 300) {
+                logger.warn('PhotoLoading', 'timer_stall', 'JS timers stalled', {
+                    stallMs: Math.round(gap),
+                    sinceMountMs: Math.round(now - mountedAt)
+                });
+            }
+            lastTimer = now;
+        }, 50);
+
         logger.info('PhotoLoading', 'overlay_mounted', 'Loading overlay mounted', {});
         return () => {
             cancelAnimationFrame(rafId);
+            clearInterval(timerId);
             logger.info('PhotoLoading', 'overlay_unmounted', 'Loading overlay unmounted', {
                 shownMs: Math.round(performance.now() - mountedAt),
                 stallCount
