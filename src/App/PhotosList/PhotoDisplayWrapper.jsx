@@ -10,7 +10,7 @@
  * @see src/types/PageState.js for type definitions
  */
 
-import { useCallback } from 'react';
+import { memo, useCallback } from 'react';
 import { AllPhotosContext, ImgCacheContext } from "../ImgCacheContext.jsx";
 import PhotosListMini from "./PhotosListMini.jsx";
 import { VIEW_MODES } from "../../constants/viewModes.js";
@@ -191,4 +191,4 @@ function PhotoDisplayWrapper({
     );
 }
 
-export default PhotoDisplayWrapper;
+export default memo(PhotoDisplayWrapper);
