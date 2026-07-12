@@ -3,6 +3,7 @@
 //! Commands for managing AI models used in photo tagging.
 
 use crate::domain_service::ai_tagging::backend::{ModelInfo, ModelManager, ModelStatus};
+use crate::domain_service::ai_tagging::categories::AutoTagCategory;
 use serde::Serialize;
 
 /// Response containing information about all available models
@@ -211,7 +212,7 @@ pub fn run_ai_tagging_for_photo(
                 .ai_tagging
                 .enabled_categories
                 .iter()
-                .filter_map(|s| parse_category(s))
+                .filter_map(|s| s.parse::<AutoTagCategory>().ok())
                 .collect(),
         )
     };
@@ -346,48 +347,5 @@ pub fn run_ai_tagging_for_photo(
             error
         );
         Err(error)
-    }
-}
-
-/// Parse a string to AutoTagCategory
-fn parse_category(
-    s: &str,
-) -> Option<crate::domain_service::ai_tagging::categories::AutoTagCategory> {
-    use crate::domain_service::ai_tagging::categories::AutoTagCategory;
-
-    match s.to_lowercase().as_str() {
-        "person" => Some(AutoTagCategory::Person),
-        "face" => Some(AutoTagCategory::Face),
-        "group" => Some(AutoTagCategory::Group),
-        "dog" => Some(AutoTagCategory::Dog),
-        "cat" => Some(AutoTagCategory::Cat),
-        "bird" => Some(AutoTagCategory::Bird),
-        "fish" => Some(AutoTagCategory::Fish),
-        "horse" => Some(AutoTagCategory::Horse),
-        "cow" => Some(AutoTagCategory::Cow),
-        "insect" => Some(AutoTagCategory::Insect),
-        "wildlife" => Some(AutoTagCategory::Wildlife),
-        "sea" => Some(AutoTagCategory::Sea),
-        "beach" => Some(AutoTagCategory::Beach),
-        "mountain" => Some(AutoTagCategory::Mountain),
-        "forest" => Some(AutoTagCategory::Forest),
-        "river" => Some(AutoTagCategory::River),
-        "lake" => Some(AutoTagCategory::Lake),
-        "sky" => Some(AutoTagCategory::Sky),
-        "sunset" => Some(AutoTagCategory::Sunset),
-        "flower" => Some(AutoTagCategory::Flower),
-        "tree" => Some(AutoTagCategory::Tree),
-        "plant" => Some(AutoTagCategory::Plant),
-        "garden" => Some(AutoTagCategory::Garden),
-        "food" => Some(AutoTagCategory::Food),
-        "building" => Some(AutoTagCategory::Building),
-        "street" => Some(AutoTagCategory::Street),
-        "indoor" => Some(AutoTagCategory::Indoor),
-        "outdoor" => Some(AutoTagCategory::Outdoor),
-        "night" => Some(AutoTagCategory::Night),
-        "wedding" => Some(AutoTagCategory::Wedding),
-        "birthday" => Some(AutoTagCategory::Birthday),
-        "travel" => Some(AutoTagCategory::Travel),
-        _ => None,
     }
 }

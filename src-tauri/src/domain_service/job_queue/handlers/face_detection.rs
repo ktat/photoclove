@@ -3,41 +3,15 @@
 //! Processes face detection jobs for photos.
 
 use super::utils::{cleanup_kill_file, get_resume_start_index, log_resume_info, should_stop_job};
-use crate::domain_service::face_detection::embedder::cosine_similarity;
+use crate::domain_service::face_detection::embedder::find_matching_person;
 use crate::domain_service::face_detection::service::FaceDetectionService;
 use crate::domain_service::face_detection::BoundingBox;
 use crate::domain_service::face_thumbnail_service;
 use crate::entity::job_queue;
-use crate::repository::meta_db::sqlite::face_detection::{DetectedFaceInput, NamedFaceEmbedding};
+use crate::repository::meta_db::sqlite::face_detection::DetectedFaceInput;
 use crate::repository::meta_db::sqlite::SQLite;
 use std::sync::Arc;
 use tauri::{Emitter, Manager};
-
-/// Threshold for face matching (cosine similarity)
-const FACE_MATCH_THRESHOLD: f32 = 0.5;
-
-/// Find a matching person for a face embedding
-fn find_matching_person(new_embedding: &[f32], named_faces: &[NamedFaceEmbedding]) -> Option<i64> {
-    let mut best_match: Option<(i64, f32)> = None;
-
-    for named_face in named_faces {
-        let similarity = cosine_similarity(new_embedding, &named_face.embedding);
-
-        if similarity >= FACE_MATCH_THRESHOLD {
-            match best_match {
-                Some((_, best_similarity)) if similarity > best_similarity => {
-                    best_match = Some((named_face.person_id, similarity));
-                }
-                None => {
-                    best_match = Some((named_face.person_id, similarity));
-                }
-                _ => {}
-            }
-        }
-    }
-
-    best_match.map(|(person_id, _)| person_id)
-}
 
 /// Process face detection job - detects faces in photos and stores embeddings
 pub(crate) fn process_face_detection_job(

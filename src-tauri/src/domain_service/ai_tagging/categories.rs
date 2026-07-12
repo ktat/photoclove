@@ -455,3 +455,53 @@ impl ImageNetMapping {
         }
     }
 }
+
+impl std::str::FromStr for AutoTagCategory {
+    type Err = ();
+
+    /// Parse a category from its lowercase name (case-insensitive).
+    /// Kept in sync with as_str() by iterating all(); adding a new
+    /// category automatically makes it parseable.
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let lower = s.to_lowercase();
+        AutoTagCategory::all()
+            .into_iter()
+            .find(|category| category.as_str() == lower)
+            .ok_or(())
+    }
+}
+
+#[cfg(test)]
+mod from_str_tests {
+    use super::*;
+
+    #[test]
+    fn test_from_str_round_trips_every_category() {
+        for category in AutoTagCategory::all() {
+            assert_eq!(
+                category.as_str().parse::<AutoTagCategory>(),
+                Ok(category),
+                "as_str/from_str must stay in sync for {:?}",
+                category
+            );
+        }
+    }
+
+    #[test]
+    fn test_from_str_is_case_insensitive() {
+        assert_eq!(
+            "Person".parse::<AutoTagCategory>(),
+            Ok(AutoTagCategory::Person)
+        );
+        assert_eq!(
+            "SUNSET".parse::<AutoTagCategory>(),
+            Ok(AutoTagCategory::Sunset)
+        );
+    }
+
+    #[test]
+    fn test_from_str_rejects_unknown_strings() {
+        assert!("not_a_category".parse::<AutoTagCategory>().is_err());
+        assert!("".parse::<AutoTagCategory>().is_err());
+    }
+}
