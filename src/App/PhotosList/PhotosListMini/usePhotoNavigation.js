@@ -43,6 +43,12 @@ export function usePhotoNavigation({
 }) {
     const navigateLock = useRef(false);
 
+    // Latest cache snapshot for reads inside async callbacks. Keeping the
+    // read out of setImageCache's deps keeps the callback stable, so
+    // PhotoDisplay effects depending on it don't re-fire per prefetch.
+    const imgCacheMapRef = useRef(imgCacheMap);
+    imgCacheMapRef.current = imgCacheMap;
+
     /**
      * Lock navigation to prevent rapid-fire navigation
      * @param {Function} fn - Navigation function to execute
@@ -76,41 +82,57 @@ export function usePhotoNavigation({
             }
             const f = photos[j].originalPath;
             thisTimeCacheMap[f] = true;
-            if (!imgCacheMap[f]) {
+            if (!imgCacheMapRef.current[f]) {
                 cacheCandidates.push(j);
             }
         }
 
-        const newCacheMap = { ...imgCacheMap };
-
-        for (let j = 0; j < cacheCandidates.length; j++) {
-            const photoIndex = cacheCandidates[j];
-            const photo = photos[photoIndex];
-            const f = photo.originalPath;
-            const displayPath = photo.displayPath();
-            const response = await fetch(convertFileSrc(displayPath), { cache: "force-cache" });
-            const blob = await response.blob();
-            const objectURL = URL.createObjectURL(blob);
-            newCacheMap[f] = [objectURL];
-        }
-
-        const keys = Object.keys(newCacheMap);
-        keys.forEach((v) => {
-            if (!thisTimeCacheMap[v]) {
-                // Revoke object URLs to prevent memory leaks
-                const cachedUrls = newCacheMap[v];
-                if (Array.isArray(cachedUrls)) {
-                    cachedUrls.forEach(url => {
-                        if (url && typeof url === 'string' && url.startsWith('blob:')) {
-                            URL.revokeObjectURL(url);
-                        }
-                    });
+        // Prefetch all candidates in parallel; a failed fetch skips that photo
+        const fetched = (await Promise.all(
+            cacheCandidates.map(async (photoIndex) => {
+                const photo = photos[photoIndex];
+                try {
+                    const response = await fetch(convertFileSrc(photo.displayPath()), { cache: "force-cache" });
+                    const blob = await response.blob();
+                    return [photo.originalPath, [URL.createObjectURL(blob)]];
+                } catch {
+                    return null;
                 }
-                delete newCacheMap[v];
-            }
+            })
+        )).filter(Boolean);
+
+        const revokeUrls = (urls) => {
+            if (!Array.isArray(urls)) return;
+            urls.forEach(url => {
+                if (url && typeof url === 'string' && url.startsWith('blob:')) {
+                    URL.revokeObjectURL(url);
+                }
+            });
+        };
+
+        // Functional update: rapid navigation fires overlapping prefetches, and
+        // building the next map from a stale snapshot would drop entries that a
+        // concurrent call cached, leaking their object URLs
+        setImgCacheMap(prev => {
+            const next = { ...prev };
+            fetched.forEach(([path, urls]) => {
+                if (next[path]) {
+                    // A concurrent prefetch already cached this path; keep it
+                    revokeUrls(urls);
+                    return;
+                }
+                next[path] = urls;
+            });
+            Object.keys(next).forEach((v) => {
+                if (!thisTimeCacheMap[v]) {
+                    // Revoke object URLs to prevent memory leaks
+                    revokeUrls(next[v]);
+                    delete next[v];
+                }
+            });
+            return next;
         });
-        setImgCacheMap(newCacheMap);
-    }, [photos, imgCacheMap, setImgCacheMap]);
+    }, [photos, setImgCacheMap]);
 
     /**
      * Internal function to navigate to next or previous photo

@@ -41,7 +41,14 @@ function PhotoDisplay(props) {
     const [isLoadingFullImage, setIsLoadingFullImage] = useState(false);
     const [isShowingThumbnail, setIsShowingThumbnail] = useState(false); // Track if currently showing thumbnail
     const fullImageLoadTimeoutRef = useRef(null);
+    const containerReadyTimeoutRef = useRef(null);
     const fullImageRef = useRef(null); // Hidden img element for preloading
+
+    // Latest prefetch cache for reads inside the load effect. Reading via a
+    // ref keeps the effect from re-firing (and re-loading the same photo)
+    // every time a background prefetch lands in imgCacheMap.
+    const imgCacheMapRef = useRef(props.imgCacheMap);
+    imgCacheMapRef.current = props.imgCacheMap;
 
     // Face detection context - shared with PhotoFaces
     const { detectedFaces, showFaceBboxes, setShowFaceBboxes, isFaceTabActive, hoveredFaceId } = useFaceDetection();
@@ -211,7 +218,7 @@ function PhotoDisplay(props) {
         }
 
         // Small delay to ensure container is ready when transitioning from thumbnail view
-        setTimeout(() => {
+        containerReadyTimeoutRef.current = setTimeout(() => {
             if (props.currentDisplayPath && props.currentDisplayPath.match(/(mp4|webm)$/i)) {
                 movie(props.currentDisplayPath);
                 updateVideoSize();
@@ -289,8 +296,9 @@ function PhotoDisplay(props) {
                     }, FULL_IMAGE_LOAD_DELAY_MS);
                 } else {
                 // Non-RAW files: original logic
-                // Get full image source
-                const fullImageSrc = (props.imgCacheMap[props.currentDisplayPath] && props.imgCacheMap[props.currentDisplayPath][0])
+                // Get full image source (read via ref: see imgCacheMapRef)
+                const cachedUrls = imgCacheMapRef.current[props.currentDisplayPath];
+                const fullImageSrc = (cachedUrls && cachedUrls[0])
                     || convertFileSrc(props.currentDisplayPath);
                 const thumbnailSrc = props.thumbnailSrc ? convertFileSrc(props.thumbnailSrc) : null;
 
@@ -340,12 +348,16 @@ function PhotoDisplay(props) {
 
         // Cleanup on unmount or path change
         return () => {
+            if (containerReadyTimeoutRef.current) {
+                clearTimeout(containerReadyTimeoutRef.current);
+                containerReadyTimeoutRef.current = null;
+            }
             if (fullImageLoadTimeoutRef.current) {
                 clearTimeout(fullImageLoadTimeoutRef.current);
                 fullImageLoadTimeoutRef.current = null;
             }
         };
-    }, [props.currentDisplayPath, props.thumbnailSrc, props.imgCacheMap, props.progressiveImageLoading]);
+    }, [props.currentDisplayPath, props.thumbnailSrc, props.progressiveImageLoading]);
 
     async function movie(path) {
         if (currentFile !== path) {
