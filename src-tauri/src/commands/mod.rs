@@ -56,3 +56,21 @@ pub use tag_commands::*;
 pub use trash_commands::*;
 pub use utility_commands::*;
 pub use video_commands::*;
+
+/// Run blocking work (DB queries, filesystem access, network, inference) on
+/// the blocking thread pool from an async command.
+///
+/// Synchronous Tauri commands execute on the GTK main thread, where an
+/// NFS-slow query or a SQLite busy_timeout retry loop freezes the whole
+/// window (observed: ~4.6s nanosleep on the main thread during the first
+/// date load). Every command touching the DB or filesystem must be
+/// `async fn` and route its work through this helper.
+pub(crate) async fn run_blocking<T, F>(task: F) -> Result<T, String>
+where
+    T: Send + 'static,
+    F: FnOnce() -> Result<T, String> + Send + 'static,
+{
+    tauri::async_runtime::spawn_blocking(task)
+        .await
+        .map_err(|e| format!("Blocking task failed: {}", e))?
+}
