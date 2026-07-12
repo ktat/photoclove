@@ -1,13 +1,16 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from '../Preferences.module.css';
 
 const PerformanceTab = ({ config, setConfig }) => {
+    const { t } = useTranslation(['preferences']);
+
     return (
         <div className={styles['preferences-section']}>
-            <h2 className={styles['section-title']}>Parallel Processing</h2>
+            <h2 className={styles['section-title']}>⚡ {t('preferences:performance.parallelProcessing')}</h2>
             <div className={styles['setting-group']}>
                 <div className={styles['setting-row']}>
-                    <label>Import Parallel:</label>
+                    <label>{t('preferences:performance.copyParallel')}:</label>
                     <input
                         value={config.copy_parallel || ''}
                         type="number"
@@ -16,7 +19,7 @@ const PerformanceTab = ({ config, setConfig }) => {
                     />
                 </div>
                 <div className={styles['setting-row']}>
-                    <label>Thumbnail Parallel:</label>
+                    <label>{t('preferences:performance.thumbnailParallel')}:</label>
                     <input
                         value={config.thumbnail_parallel || ''}
                         type="number"
@@ -26,10 +29,10 @@ const PerformanceTab = ({ config, setConfig }) => {
                 </div>
             </div>
 
-            <h2 className={styles['section-title']}>Display</h2>
+            <h2 className={styles['section-title']}>📊 {t('preferences:performance.display')}</h2>
             <div className={styles['setting-group']}>
                 <div className={styles['setting-row']}>
-                    <label>Max Photos Per Fetch:</label>
+                    <label>{t('preferences:performance.maxPhotosPerFetch')}:</label>
                     <input
                         value={config.max_photos_per_fetch || ''}
                         type="number"
@@ -67,7 +70,7 @@ const PerformanceTab = ({ config, setConfig }) => {
                 </p>
             </div>
 
-            <h2 className={styles['section-title']}>Photo Viewer</h2>
+            <h2 className={styles['section-title']}>🖼️ {t('preferences:performance.photoViewer')}</h2>
             <div className={styles['setting-group']}>
                 <div className={styles['setting-item']}>
                     <input
@@ -77,11 +80,11 @@ const PerformanceTab = ({ config, setConfig }) => {
                         onChange={(e) => setConfig(prev => ({ ...prev, progressive_image_loading: e.target.checked }))}
                     />
                     <label htmlFor="progressive-image-loading-check">
-                        Progressive image loading (show thumbnail first during navigation)
+                        {t('preferences:performance.progressiveLoading')}
                     </label>
                 </div>
                 <p className={styles['setting-description']}>
-                    When enabled, shows thumbnail immediately while navigating photos, then loads full image after navigation stops. Improves responsiveness during rapid navigation.
+                    {t('preferences:performance.progressiveLoadingDescription')}
                 </p>
             </div>
         </div>
