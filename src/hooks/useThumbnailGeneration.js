@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useContext } from 'react';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { getThumbnailSrc, createThumbnailLoadingStrategy } from '../utils/thumbnailUtils';
 import { ImgCacheContext } from '../App/ImgCacheContext.jsx';
+import { isVideoPath } from '../utils/videoFormats.js';
 import { logger } from '../services/LoggerService.js';
 
 export const useThumbnailGeneration = (options = {}) => {
@@ -52,7 +53,7 @@ export const useThumbnailGeneration = (options = {}) => {
     return {
       primary: convertFileSrc(strategy.primary),
       fallback: convertFileSrc(strategy.fallback),
-      isVideo: photo.file.path.toLowerCase().match(/\.(mp4|webm|mov|avi)$/i) !== null
+      isVideo: isVideoPath(photo.file.path)
     };
   }, [thumbnailStore]);
   

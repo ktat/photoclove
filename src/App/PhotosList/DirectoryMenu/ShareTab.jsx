@@ -22,13 +22,11 @@ import {
     shareToSocial
 } from '../../../utils/ShareUtils.js';
 import { Photo } from '../../../domain/Photo.js';
+import { isVideoPath } from '../../../utils/videoFormats.js';
 import { logger } from '../../../services/LoggerService.js';
 import { checkFirstActionAchievement } from '../../../services/AchievementService.js';
 import CollageOrderEditor from './CollageOrderEditor.jsx';
 import styles from './ShareTab.module.css';
-
-// Video extensions excluded from collage/share (matches Photo.isVideo()).
-const VIDEO_EXT_REGEX = /\.(mp4|webm|avi|mov)$/i;
 
 const BACKGROUND_COLORS = [
     { value: '#000000', label: 'Black' },
@@ -103,7 +101,7 @@ function ShareTab({
             return [currentPhotoPath];
         }
         return photoSelection
-            .filter(p => !VIDEO_EXT_REGEX.test(p))
+            .filter(p => !isVideoPath(p))
             .map(resolveToDisplayPath);
     }, [isPhotoViewer, photoSource, currentPhotoPath, photoSelection, resolveToDisplayPath]);
 

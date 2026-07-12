@@ -5,6 +5,7 @@ import classNames from 'classnames';
 import fileUrl from "../../PathUtil.jsx";
 import { logger } from "../../services/LoggerService.js";
 import { getCombinedTransformStyle } from "../../utils/orientationUtils.js";
+import { isVideoPath } from "../../utils/videoFormats.js";
 import styles from './PhotoCard.module.css';
 
 /**
@@ -388,7 +389,7 @@ function PhotoCard({
                                 {photo.getExtension().toUpperCase()}
                             </div>
                         </div>
-                        : !photo.hasThumbnail && photo.originalPath?.match(/\.(mp4|webm)$/i)
+                        : !photo.hasThumbnail && isVideoPath(photo.originalPath)
                         ? <div className="photo-list-movie" style={{ minWidth: (iconSize - 20) + 'px', marginTop: (iconSize / 7) + "px" }}>
                             <span style={{ fontSize: (iconSize / 3) + 'px' }}>&#127909;</span>
                         </div>
@@ -402,7 +403,7 @@ function PhotoCard({
                                 onLoad={handleImageLoad}
                                 onError={handleImageError}
                             />
-                            {photo.originalPath?.match(/\.(mp4|webm)$/i) && (
+                            {isVideoPath(photo.originalPath) && (
                                 <div className={styles.videoPlayIcon} style={{ fontSize: (iconSize / 6) + 'px' }}>
                                     &#x25b6;
                                 </div>

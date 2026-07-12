@@ -4,6 +4,7 @@
  */
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { logger } from "../../../services/LoggerService.js";
+import { isVideoPath } from "../../../utils/videoFormats.js";
 
 /**
  * Get the import directory from import state
@@ -150,9 +151,9 @@ export const handleThumbnailError = async (e, photo, importState, componentName 
 };
 
 /**
- * Check if a file path is a video
+ * Check if a file path is a video (mp4/webm/avi/mov — see videoFormats).
  */
-export const isVideoFile = (path) => path?.match(/\.(mp4|webm)$/i);
+export const isVideoFile = (path) => isVideoPath(path);
 
 /**
  * Metadata overlay style (shared between components)

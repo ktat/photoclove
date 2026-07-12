@@ -1,4 +1,5 @@
 import { logger } from '../services/LoggerService.js';
+import { VIDEO_EXTENSIONS } from '../utils/videoFormats.js';
 
 /**
  * Photo Entity - Domain object representing a photo with its various states and paths
@@ -171,8 +172,7 @@ export class Photo {
      * @returns {boolean} True if the photo is a video file
      */
     isVideo() {
-        const videoExtensions = ['mp4', 'webm', 'avi', 'mov'];
-        return videoExtensions.includes(this.getExtension());
+        return VIDEO_EXTENSIONS.includes(this.getExtension());
     }
 
     /**
