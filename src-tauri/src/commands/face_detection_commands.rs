@@ -16,6 +16,20 @@ use crate::value::file;
 use serde::Serialize;
 use tauri::{Manager, State};
 
+/// Run a DB read on the blocking pool. Sync commands execute on the GTK main
+/// thread, where an NFS-slow query - or a busy_timeout retry loop against a
+/// concurrent writer - freezes the whole window (observed: ~4.6s nanosleep on
+/// the main thread during the first date load).
+async fn run_db_read<T, F>(task: F) -> Result<T, String>
+where
+    T: Send + 'static,
+    F: FnOnce() -> Result<T, String> + Send + 'static,
+{
+    tauri::async_runtime::spawn_blocking(task)
+        .await
+        .map_err(|e| format!("DB task failed: {}", e))?
+}
+
 /// Response for face detection model status
 #[derive(Serialize)]
 struct FaceModelStatus {
@@ -181,75 +195,97 @@ pub fn detect_faces_in_photo(
 
 /// Get detected faces for a photo from database
 #[tauri::command]
-pub fn get_detected_faces_for_photo(
-    state: State<AppState>,
+pub async fn get_detected_faces_for_photo(
+    state: State<'_, AppState>,
     photo_path: String,
 ) -> Result<String, String> {
-    let faces = state.meta_db.get_detected_faces(&photo_path)?;
-    serde_json::to_string(&faces).map_err(|e| format!("Serialization error: {}", e))
+    let meta_db = state.meta_db.clone();
+    run_db_read(move || {
+        let faces = meta_db.get_detected_faces(&photo_path)?;
+        serde_json::to_string(&faces).map_err(|e| format!("Serialization error: {}", e))
+    })
+    .await
 }
 
 /// Check if a photo has been processed for face detection
 #[tauri::command]
-pub fn has_photo_faces(state: State<AppState>, photo_path: String) -> Result<bool, String> {
-    state.meta_db.has_detected_faces(&photo_path)
+pub async fn has_photo_faces(
+    state: State<'_, AppState>,
+    photo_path: String,
+) -> Result<bool, String> {
+    let meta_db = state.meta_db.clone();
+    run_db_read(move || meta_db.has_detected_faces(&photo_path)).await
 }
 
 /// Get face detection statistics
 #[tauri::command]
-pub fn get_face_detection_stats(state: State<AppState>) -> Result<String, String> {
-    let stats = state.meta_db.get_face_detection_stats()?;
-    serde_json::to_string(&stats).map_err(|e| format!("Serialization error: {}", e))
+pub async fn get_face_detection_stats(state: State<'_, AppState>) -> Result<String, String> {
+    let meta_db = state.meta_db.clone();
+    run_db_read(move || {
+        let stats = meta_db.get_face_detection_stats()?;
+        serde_json::to_string(&stats).map_err(|e| format!("Serialization error: {}", e))
+    })
+    .await
 }
 
 /// Get all persons
 #[tauri::command]
-pub fn get_all_persons(state: State<AppState>) -> Result<String, String> {
-    let persons = state.meta_db.get_all_persons()?;
-    serde_json::to_string(&persons).map_err(|e| format!("Serialization error: {}", e))
+pub async fn get_all_persons(state: State<'_, AppState>) -> Result<String, String> {
+    let meta_db = state.meta_db.clone();
+    run_db_read(move || {
+        let persons = meta_db.get_all_persons()?;
+        serde_json::to_string(&persons).map_err(|e| format!("Serialization error: {}", e))
+    })
+    .await
 }
 
 /// Get all persons with face counts and thumbnails for list display
 /// Sorted by face count (most detected first)
 #[tauri::command]
-pub fn get_all_persons_for_list(state: State<AppState>) -> Result<String, String> {
+pub async fn get_all_persons_for_list(state: State<'_, AppState>) -> Result<String, String> {
     log::info!(target: "face_detection", "get_all_persons_for_list; request");
-    let mut persons = state.meta_db.get_all_persons_for_list()?;
-    // Resolve relative photo_path to absolute for frontend display (convertFileSrc)
-    let import_to = &state.config.import_to;
-    for person in &mut persons {
-        if let Some(ref path) = person.photo_path {
-            person.photo_path = Some(file::to_absolute_path(path, import_to));
+    let meta_db = state.meta_db.clone();
+    let import_to = state.config.import_to.clone();
+    run_db_read(move || {
+        let mut persons = meta_db.get_all_persons_for_list()?;
+        // Resolve relative photo_path to absolute for frontend display (convertFileSrc)
+        for person in &mut persons {
+            if let Some(ref path) = person.photo_path {
+                person.photo_path = Some(file::to_absolute_path(path, &import_to));
+            }
         }
-    }
-    log::info!(target: "face_detection", "get_all_persons_for_list; count={}", persons.len());
-    serde_json::to_string(&persons).map_err(|e| format!("Serialization error: {}", e))
+        log::info!(target: "face_detection", "get_all_persons_for_list; count={}", persons.len());
+        serde_json::to_string(&persons).map_err(|e| format!("Serialization error: {}", e))
+    })
+    .await
 }
 
 /// Get all named persons with face thumbnails, sorted by similarity to target face
 #[tauri::command]
-pub fn get_persons_with_faces(
-    state: State<AppState>,
+pub async fn get_persons_with_faces(
+    state: State<'_, AppState>,
     face_id: Option<i64>,
 ) -> Result<String, String> {
-    let target_embedding: Option<Vec<f32>> = if let Some(id) = face_id {
-        let face = state.meta_db.get_detected_face(id)?;
-        face.embedding
-            .and_then(|json| serde_json::from_str(&json).ok())
-    } else {
-        None
-    };
+    let meta_db = state.meta_db.clone();
+    let import_to = state.config.import_to.clone();
+    run_db_read(move || {
+        let target_embedding: Option<Vec<f32>> = if let Some(id) = face_id {
+            let face = meta_db.get_detected_face(id)?;
+            face.embedding
+                .and_then(|json| serde_json::from_str(&json).ok())
+        } else {
+            None
+        };
 
-    let mut persons = state
-        .meta_db
-        .get_persons_with_faces(target_embedding.as_deref())?;
-    // Resolve relative photo_path to absolute for frontend display (convertFileSrc)
-    let import_to = &state.config.import_to;
-    for person in &mut persons {
-        person.photo_path = file::to_absolute_path(&person.photo_path, import_to);
-    }
+        let mut persons = meta_db.get_persons_with_faces(target_embedding.as_deref())?;
+        // Resolve relative photo_path to absolute for frontend display (convertFileSrc)
+        for person in &mut persons {
+            person.photo_path = file::to_absolute_path(&person.photo_path, &import_to);
+        }
 
-    serde_json::to_string(&persons).map_err(|e| format!("Serialization error: {}", e))
+        serde_json::to_string(&persons).map_err(|e| format!("Serialization error: {}", e))
+    })
+    .await
 }
 
 /// Create a new person
@@ -476,27 +512,32 @@ pub fn run_face_detection_for_date(
 
 /// Get count of unknown (unassigned) faces
 #[tauri::command]
-pub fn get_unknown_faces_count(state: State<AppState>) -> Result<i64, String> {
-    state.meta_db.get_unknown_faces_count()
+pub async fn get_unknown_faces_count(state: State<'_, AppState>) -> Result<i64, String> {
+    let meta_db = state.meta_db.clone();
+    run_db_read(move || meta_db.get_unknown_faces_count()).await
 }
 
 /// Get unknown (unassigned) faces with pagination
 /// Sorted by detection time (newest first)
 #[tauri::command]
-pub fn get_unknown_faces(
-    state: State<AppState>,
+pub async fn get_unknown_faces(
+    state: State<'_, AppState>,
     limit: Option<u32>,
     offset: Option<u32>,
 ) -> Result<String, String> {
-    let limit = limit.unwrap_or(50);
-    let offset = offset.unwrap_or(0);
-    let mut faces = state.meta_db.get_unknown_faces(limit, offset)?;
-    // Resolve relative photo_path to absolute for frontend display (convertFileSrc)
-    let import_to = &state.config.import_to;
-    for face in &mut faces {
-        face.photo_path = file::to_absolute_path(&face.photo_path, import_to);
-    }
-    serde_json::to_string(&faces).map_err(|e| format!("Serialization error: {}", e))
+    let meta_db = state.meta_db.clone();
+    let import_to = state.config.import_to.clone();
+    run_db_read(move || {
+        let limit = limit.unwrap_or(50);
+        let offset = offset.unwrap_or(0);
+        let mut faces = meta_db.get_unknown_faces(limit, offset)?;
+        // Resolve relative photo_path to absolute for frontend display (convertFileSrc)
+        for face in &mut faces {
+            face.photo_path = file::to_absolute_path(&face.photo_path, &import_to);
+        }
+        serde_json::to_string(&faces).map_err(|e| format!("Serialization error: {}", e))
+    })
+    .await
 }
 
 /// Get the path to a face thumbnail (returns error if not cached)
