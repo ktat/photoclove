@@ -128,6 +128,14 @@ video metadata. The style-edit path (`style_commands.rs`) re-records a single
 photo after an in-app edit, which never applies to videos, so no video-only
 handling is needed there.
 
+**Third call site, found during planning:**
+`repository/db/directory.rs::move_photos_to_exif_date` — the "move photos to
+EXIF date" directory-menu action — calls `Photo::new_with_exif(file)`, which
+also calls `ExifData::new()` unconditionally. Same bug, same fix: branch on
+`is_video()` and use `VideoMetadata::to_exif_data()` instead. This function
+only needs `created_date_string()` (derived from `time`/`date_time`), so no
+other part of it changes.
+
 ## Schema — no migration
 
 No new columns. Confirmed by grep across `search.rs`, `filter_options.rs`,
