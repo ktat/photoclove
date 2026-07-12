@@ -19,7 +19,7 @@ pub const HEIC_AVIF_EXTENSIONS: &[&str] = &["heic", "heif", "avif"];
 /// filter token matches any file whose extension is NOT in this list. Keep in
 /// sync with src/utils/extensionFilters.js (EXTENSION_GROUPS).
 pub const FILTER_KNOWN_EXTENSIONS: &[&str] = &[
-    "jpg", "jpeg", "png", "gif", "bmp", "tiff", // image
+    "jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", // image
     "cr2", "cr3", "nef", "arw", "dng", "raf", "orf", "rw2", "3fr", // raw
     "heic", "heif", "avif", // heic
     "mp4", "webm", "mov", "avi", // movie

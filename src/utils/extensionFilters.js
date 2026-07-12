@@ -22,6 +22,7 @@ export const EXTENSION_GROUPS = [
             { value: 'jpeg', label: 'jpeg(jpg)', extensions: ['jpg', 'jpeg'] },
             { value: 'png', label: 'png', extensions: ['png'] },
             { value: 'gif', label: 'gif', extensions: ['gif'] },
+            { value: 'webp', label: 'webp', extensions: ['webp'] },
             { value: 'bmp', label: 'bmp', extensions: ['bmp'] },
             { value: 'tiff', label: 'tiff', extensions: ['tiff'] }
         ]

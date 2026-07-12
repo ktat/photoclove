@@ -2,7 +2,7 @@
  * Custom hook for photo navigation in PhotosListMini
  * Handles next/previous photo navigation and thumbnail window shifting
  */
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { calculateSimpleThumbnailDisplay, calculateThumbnailDisplayWithViewOffset } from "./photoUtils.js";
 
@@ -46,8 +46,12 @@ export function usePhotoNavigation({
     // Latest cache snapshot for reads inside async callbacks. Keeping the
     // read out of setImageCache's deps keeps the callback stable, so
     // PhotoDisplay effects depending on it don't re-fire per prefetch.
+    // Synced in an effect (not during render) per react-hooks/refs; the ref is
+    // only read from async prefetch callbacks that run well after commit.
     const imgCacheMapRef = useRef(imgCacheMap);
-    imgCacheMapRef.current = imgCacheMap;
+    useEffect(() => {
+        imgCacheMapRef.current = imgCacheMap;
+    }, [imgCacheMap]);
 
     /**
      * Lock navigation to prevent rapid-fire navigation

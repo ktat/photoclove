@@ -78,3 +78,27 @@ describe('Photo immutable updates preserve all fields', () => {
         expect(photo.star).toBe(2);
     });
 });
+
+describe('Photo thumbnailPath video handling', () => {
+    const UUID = '12345678-1234-1234-1234-123456789abc';
+    function videoPhoto(name) {
+        return new Photo({
+            file: { path: `2024-05-13/${UUID}/${name}`, name },
+            path: `2024-05-13/${UUID}/${name}`,
+            has_thumbnail: true
+        }, config);
+    }
+
+    it.each(['clip.mp4', 'clip.webm', 'clip.mov', 'clip.avi', 'clip.MOV'])(
+        'appends .jpg to the full name for video %s',
+        (name) => {
+            const p = videoPhoto(name);
+            expect(p.thumbnailPath()).toBe(`/thumbs/2024-05-13/${UUID}/${name}.jpg`);
+        }
+    );
+
+    it('still lowercases the extension for regular images', () => {
+        const p = videoPhoto('photo.JPG');
+        expect(p.thumbnailPath()).toBe(`/thumbs/2024-05-13/${UUID}/photo.jpg`);
+    });
+});

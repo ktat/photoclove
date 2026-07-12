@@ -73,15 +73,18 @@ pub async fn move_to_trash_batch(
             }
         }
     }
-    let succeeded = succeeded_paths.len();
-
     // Soft delete all moved photos in one transaction instead of one
-    // SELECT + UPDATE + summary transaction per photo
-    let affected_dates = match meta_db.delete_photos_batch(&succeeded_paths) {
-        Ok(dates) => dates,
+    // SELECT + UPDATE + summary transaction per photo. The transaction is
+    // all-or-nothing, so on failure the files are physically in trash but no
+    // row got delete_flg=1: report the whole batch as failed rather than
+    // claiming success the DB never recorded.
+    let (succeeded, affected_dates) = match meta_db.delete_photos_batch(&succeeded_paths) {
+        Ok(dates) => (succeeded_paths.len(), dates),
         Err(e) => {
             log::error!(target: "trash", "move_to_trash_batch; batch_delete_error={}", e);
-            Vec::new()
+            failed += succeeded_paths.len();
+            failed_paths.extend(succeeded_paths.iter().cloned());
+            (0, Vec::new())
         }
     };
 

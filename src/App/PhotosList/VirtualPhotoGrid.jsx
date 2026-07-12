@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect, useState, memo, useCallback } from 'react';
+import React, { useMemo, useRef, useEffect, useLayoutEffect, useState, memo, useCallback } from 'react';
 import { Grid } from 'react-window';
 import PhotoCard from "./PhotoCard.jsx";
 import { Photo } from "../../domain/Photo.js";
@@ -118,11 +118,16 @@ function VirtualPhotoGrid({
     // force react-window to re-render every cell. Wrapping them in refs keeps
     // cellProps referentially stable while still invoking the latest logic.
     const onAddSelectionRef = useRef(onAddSelection);
-    onAddSelectionRef.current = onAddSelection;
     const onDisplayPhotoRef = useRef(onDisplayPhoto);
-    onDisplayPhotoRef.current = onDisplayPhoto;
     const onOpenBurstGroupRef = useRef(onOpenBurstGroup);
-    onOpenBurstGroupRef.current = onOpenBurstGroup;
+    // Sync in an effect (not during render) per react-hooks/refs. The refs are
+    // only read from event/store callbacks that run after commit, so a
+    // post-commit update is soon enough.
+    useLayoutEffect(() => {
+        onAddSelectionRef.current = onAddSelection;
+        onDisplayPhotoRef.current = onDisplayPhoto;
+        onOpenBurstGroupRef.current = onOpenBurstGroup;
+    }, [onAddSelection, onDisplayPhoto, onOpenBurstGroup]);
     const stableOnAddSelection = useCallback((...args) => onAddSelectionRef.current?.(...args), []);
     const stableOnDisplayPhoto = useCallback((...args) => onDisplayPhotoRef.current?.(...args), []);
     const stableOnOpenBurstGroup = useCallback((...args) => onOpenBurstGroupRef.current?.(...args), []);

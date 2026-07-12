@@ -368,15 +368,28 @@ pub async fn create_thumbnails(
                         log::debug!(target: "photo_service", "thumbnail_status; file={:?}; status=not_exists", thumbnail_path);
                         continue;
                     }
-                    let file_size = source_path.metadata()?.len();
+                    // Best-effort cleanup: a transient metadata/remove error on
+                    // one file must not abort the pass for the remaining dates.
+                    let Ok(file_meta) = source_path.metadata() else {
+                        log::warn!(target: "photo_service", "thumbnail_cleanup_skip; reason=source_metadata_failed; source={:?}", source_path.to_string_lossy());
+                        continue;
+                    };
+                    let file_size = file_meta.len();
                     if file_size < ignore_file_size {
                         log::info!(target: "photo_service", "thumbnail_cleanup; reason=mini_size; source={:?}; target={:?}; file_size={}; threshold={}", source_path.to_string_lossy(), thumbnail_path.clone(), file_size, ignore_file_size);
-                        std::fs::remove_file(&thumbnail_path)?;
+                        if let Err(e) = std::fs::remove_file(&thumbnail_path) {
+                            log::warn!(target: "photo_service", "thumbnail_remove_failed; target={:?}; error={}", thumbnail_path, e);
+                        }
                     } else {
-                        let thumbnail_file_size = thumbnail_path.metadata()?.len();
-                        if thumbnail_file_size == file_size {
+                        let Ok(thumb_meta) = thumbnail_path.metadata() else {
+                            log::warn!(target: "photo_service", "thumbnail_cleanup_skip; reason=thumbnail_metadata_failed; target={:?}", thumbnail_path);
+                            continue;
+                        };
+                        if thumb_meta.len() == file_size {
                             log::info!(target: "photo_service", "thumbnail_cleanup; reason=same_size; target={:?}", thumbnail_path.clone());
-                            std::fs::remove_file(&thumbnail_path)?;
+                            if let Err(e) = std::fs::remove_file(&thumbnail_path) {
+                                log::warn!(target: "photo_service", "thumbnail_remove_failed; target={:?}; error={}", thumbnail_path, e);
+                            }
                         }
                     }
                 }

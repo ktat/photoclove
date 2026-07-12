@@ -122,8 +122,10 @@ export class Photo {
         if (photoDate) {
             let thumbnailPath;
 
-            // Handle video files - use .jpg extension for thumbnails
-            if (this.name.match(/(mp4|webm)$/i)) {
+            // Handle video files - use .jpg extension for thumbnails.
+            // Use the shared isVideo() (mp4/webm/avi/mov) so .mov/.avi don't
+            // fall through to the image branch and get the wrong thumbnail name.
+            if (this.isVideo()) {
                 if (uuid) {
                     thumbnailPath = `${thumbnailStore}/${photoDate}/${uuid}/${this.name}.jpg`;
                 } else {

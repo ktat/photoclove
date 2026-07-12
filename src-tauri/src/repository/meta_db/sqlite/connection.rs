@@ -24,7 +24,9 @@ impl SQLite {
         // Validate date_summary currency on startup
         if date_summary::check_date_summary_currency(&sqlite).is_err() {
             log::info!(target: "date_summary", "startup_validation; status=failed; action=rebuilding");
-            let _ = date_summary::rebuild_date_summary(&sqlite);
+            if let Err(e) = date_summary::rebuild_date_summary(&sqlite) {
+                log::error!(target: "date_summary", "rebuild_failed; error={}", e);
+            }
         }
 
         sqlite
