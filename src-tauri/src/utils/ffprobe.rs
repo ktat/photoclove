@@ -43,10 +43,7 @@ pub fn probe(path: &str) -> Option<VideoMetadata> {
     // a large JSON payload can't fill the OS pipe buffer and deadlock the
     // wait loop (the ffmpeg poll loop in photo_service.rs doesn't need this
     // since it writes its output to a file, not stdout).
-    let mut stdout = match child.stdout.take() {
-        Some(s) => s,
-        None => return None,
-    };
+    let mut stdout = child.stdout.take()?;
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         use std::io::Read;
