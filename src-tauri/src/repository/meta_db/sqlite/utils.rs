@@ -164,69 +164,6 @@ pub(super) fn photo_info_from_row(
     }
 }
 
-/// Create PhotoInfo from database row data with tags
-#[allow(clippy::too_many_arguments)]
-pub(super) fn photo_info_from_row_with_tags(
-    path: String,
-    date: String,
-    star: i32,
-    comment: String,
-    css_style: Option<String>,
-    google_photo_url: Option<String>,
-    tags_str: Option<String>,
-    orientation: Option<String>,
-    storage_sync: Option<String>,
-) -> meta_db::PhotoInfo {
-    let tags = if let Some(tags_str) = tags_str {
-        if tags_str.is_empty() {
-            None
-        } else {
-            // Parse the GROUP_CONCAT result: "id:name:color,id:name:color,..."
-            let parsed_tags: Vec<photo::PhotoTag> = tags_str
-                .split(',')
-                .filter_map(|tag_str| {
-                    let parts: Vec<&str> = tag_str.split(':').collect();
-                    if parts.len() >= 3 {
-                        if let Ok(id) = parts[0].parse::<i32>() {
-                            let name = parts[1].to_string();
-                            let color = if parts[2].is_empty() {
-                                None
-                            } else {
-                                Some(parts[2].to_string())
-                            };
-                            Some(photo::PhotoTag::new(id, name, color))
-                        } else {
-                            None
-                        }
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-
-            if parsed_tags.is_empty() {
-                None
-            } else {
-                Some(parsed_tags)
-            }
-        }
-    } else {
-        None
-    };
-
-    meta_db::PhotoInfo {
-        path: path.clone(),
-        date,
-        star,
-        comment,
-        css_style,
-        google_photo_url,
-        tags: tags.clone(),
-        orientation,
-        storage_sync,
-    }
-}
-
 /// Convert a database row to a Photo entity for grouping operations.
 /// Simplified version that only reads columns needed for burst grouping.
 /// Row must have columns in order: path, exif_make, exif_model, exif_date_time_original, burst_group_id
