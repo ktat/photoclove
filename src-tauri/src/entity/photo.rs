@@ -94,6 +94,11 @@ impl Photo {
         self.time.clone()
     }
 
+    /// Borrowed time string; use in sort comparators to avoid per-comparison clones.
+    pub fn time_ref(&self) -> &str {
+        &self.time
+    }
+
     /// Get absolute path by combining import_to + relative file.path
     pub fn absolute_path(&self) -> String {
         if self.import_to.is_empty() {
