@@ -5,7 +5,6 @@
 use super::super::SQLite;
 use super::types::UnknownFaceRecord;
 use crate::entity::{config, photo};
-use crate::value::file;
 
 /// Get count of unknown (unassigned) faces
 pub fn get_unknown_faces_count(sqlite: &SQLite) -> Result<i64, String> {
@@ -112,74 +111,13 @@ pub fn get_photos_for_unknown_faces_full(
         .prepare(&query)
         .map_err(|e| format!("Failed to prepare query: {}", e))?;
 
-    #[allow(clippy::type_complexity)]
-    let photos_data: Vec<(
-        String,
-        String,
-        i32,
-        Option<String>,
-        Option<String>,
-        Option<String>,
-        Option<String>,
-    )> = stmt
-        .query_map([], |row| {
-            let path: String = row.get(0)?;
-            let photo_date: String = row.get(1)?;
-            let star: i32 = row.get::<_, i32>(2).unwrap_or(0);
-            let comment: Option<String> = row.get(3)?;
-            let css_style: Option<String> = row.get(4)?;
-            let exif_orientation: Option<String> = row.get(6)?;
-            let burst_group_id: Option<String> = row.get(7)?;
-
-            Ok((
-                path,
-                photo_date,
-                star,
-                comment,
-                css_style,
-                exif_orientation,
-                burst_group_id,
-            ))
-        })
+    let photos_data = stmt
+        .query_map([], super::super::utils::PhotoRowData::from_row)
         .map_err(|e| format!("Failed to query photos: {}", e))?
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| format!("Failed to collect photos: {}", e))?;
 
-    let photo_paths: Vec<String> = photos_data.iter().map(|(path, ..)| path.clone()).collect();
-    let tags_map =
-        super::super::tags::get_tags_for_photos_bulk(sqlite, &photo_paths).unwrap_or_default();
-
-    let mut photos = Vec::new();
-    for (path, photo_date, star, comment, css_style, exif_orientation, burst_group_id) in
-        photos_data
-    {
-        let file_entity = file::File::from_relative(path.clone());
-        let mut photo_entity = photo::Photo::new(file_entity, config.clone());
-
-        photo_entity.set_time(photo_date);
-        photo_entity.star = if star > 0 { Some(star) } else { None };
-        photo_entity.comment = comment.filter(|c| !c.is_empty());
-        photo_entity.css_style = css_style;
-        photo_entity.burst_group_id = burst_group_id;
-
-        if let Some(ref orientation) = exif_orientation {
-            if !orientation.is_empty() {
-                photo_entity.meta_data.orientation = orientation.clone();
-            }
-        }
-
-        if let Some(photo_tags) = tags_map.get(&path) {
-            if !photo_tags.is_empty() {
-                let tags: Vec<photo::PhotoTag> = photo_tags
-                    .iter()
-                    .map(|(id, name, color)| photo::PhotoTag::new(*id, name.clone(), color.clone()))
-                    .collect();
-                photo_entity.tags = Some(tags);
-            }
-        }
-
-        photos.push(photo_entity);
-    }
+    let photos = super::super::utils::photos_from_row_data(sqlite, photos_data, &config);
 
     log::info!(target: "face_detection", "get_photos_for_unknown_faces_full; sort={}; count={}",
         sort_value, photos.len());

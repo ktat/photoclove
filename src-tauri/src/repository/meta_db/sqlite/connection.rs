@@ -82,11 +82,6 @@ impl SQLite {
         conn.pragma_update(None, "synchronous", "NORMAL")?;
         Ok(conn)
     }
-
-    /// Get the database path
-    pub fn db_path(&self) -> &str {
-        &self.db_path
-    }
 }
 
 #[cfg(test)]

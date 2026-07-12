@@ -1,3 +1,4 @@
+use crate::entity::config;
 use crate::entity::photo;
 use crate::entity::recovery_queue::{OperationType, RecoveryItem, RecoveryStatus};
 use crate::repository::meta_db;
@@ -12,9 +13,87 @@ pub(super) fn with_connection<F, T>(sqlite: &SQLite, f: F) -> Result<T, String>
 where
     F: FnOnce(&Connection) -> Result<T, String>,
 {
-    let conn = Connection::open(sqlite.db_path())
+    // Go through get_connection so the WAL/busy_timeout PRAGMAs apply here too
+    let conn = sqlite
+        .get_connection()
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
     f(&conn)
+}
+
+/// Photo columns shared by the "full" photo list queries
+/// (person / unknown faces / collections).
+pub(super) struct PhotoRowData {
+    pub path: String,
+    pub photo_date: String,
+    pub star: i32,
+    pub comment: Option<String>,
+    pub css_style: Option<String>,
+    pub exif_orientation: Option<String>,
+    pub burst_group_id: Option<String>,
+}
+
+impl PhotoRowData {
+    /// Read the shared photo columns by name. The SELECT must include:
+    /// path, photo_date, star, comment, css_style, exif_orientation,
+    /// burst_group_id.
+    pub(super) fn from_row(row: &Row) -> rusqlite::Result<PhotoRowData> {
+        Ok(PhotoRowData {
+            path: row.get("path")?,
+            photo_date: row.get("photo_date")?,
+            star: row.get("star").unwrap_or(0),
+            comment: row.get("comment")?,
+            css_style: row.get("css_style")?,
+            exif_orientation: row.get("exif_orientation")?,
+            burst_group_id: row.get("burst_group_id")?,
+        })
+    }
+}
+
+/// Build Photo entities from row data, hydrating tags with one bulk query.
+/// A tags failure is logged and results in untagged photos rather than
+/// failing the whole listing.
+pub(super) fn photos_from_row_data(
+    sqlite: &SQLite,
+    rows: Vec<PhotoRowData>,
+    config: &Option<config::Config>,
+) -> Vec<photo::Photo> {
+    let photo_paths: Vec<String> = rows.iter().map(|row| row.path.clone()).collect();
+    let tags_map =
+        super::tags::get_tags_for_photos_bulk(sqlite, &photo_paths).unwrap_or_else(|e| {
+            log::error!(target: "repository::sqlite", "bulk_tags_fetch_failed; error={}", e);
+            Default::default()
+        });
+
+    rows.into_iter()
+        .map(|row| {
+            let file_entity = file::File::from_relative(row.path.clone());
+            let mut photo_entity = photo::Photo::new(file_entity, config.clone());
+
+            photo_entity.set_time(row.photo_date);
+            photo_entity.star = if row.star > 0 { Some(row.star) } else { None };
+            photo_entity.comment = row.comment.filter(|c| !c.is_empty());
+            photo_entity.css_style = row.css_style;
+            photo_entity.burst_group_id = row.burst_group_id;
+
+            if let Some(orientation) = row.exif_orientation.filter(|o| !o.is_empty()) {
+                photo_entity.meta_data.orientation = orientation;
+            }
+
+            if let Some(photo_tags) = tags_map.get(&row.path) {
+                if !photo_tags.is_empty() {
+                    let tags: Vec<photo::PhotoTag> = photo_tags
+                        .iter()
+                        .map(|(id, name, color)| {
+                            photo::PhotoTag::new(*id, name.clone(), color.clone())
+                        })
+                        .collect();
+                    photo_entity.tags = Some(tags);
+                }
+            }
+
+            photo_entity
+        })
+        .collect()
 }
 
 /// Convert a database row to a RecoveryItem entity.
@@ -194,4 +273,55 @@ pub(super) fn row_to_photo_for_grouping(row: &Row) -> photo::Photo {
     };
 
     photo::Photo::from_db_row(file_obj, exif_data, None, None, burst_group_id)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_photos_from_row_data_maps_all_fields() {
+        let dir = std::env::temp_dir().join("photoclove_utils_row_test");
+        std::fs::create_dir_all(&dir).unwrap();
+        let sqlite = SQLite::new(dir.to_str().unwrap().to_string());
+
+        let rows = vec![
+            PhotoRowData {
+                path: "2024-05-13/a.jpg".to_string(),
+                photo_date: "2024-05-13 10:00:00".to_string(),
+                star: 3,
+                comment: Some("hi".to_string()),
+                css_style: Some("transform: rotate(90deg);".to_string()),
+                exif_orientation: Some("Rotate 90 CW".to_string()),
+                burst_group_id: Some("bg1".to_string()),
+            },
+            PhotoRowData {
+                path: "2024-05-13/b.jpg".to_string(),
+                photo_date: "2024-05-13 11:00:00".to_string(),
+                star: 0,
+                comment: Some("".to_string()),
+                css_style: None,
+                exif_orientation: Some("".to_string()),
+                burst_group_id: None,
+            },
+        ];
+
+        let photos = photos_from_row_data(&sqlite, rows, &None);
+        assert_eq!(photos.len(), 2);
+
+        let a = &photos[0];
+        assert_eq!(a.file.path, "2024-05-13/a.jpg");
+        assert_eq!(a.time(), "2024-05-13 10:00:00");
+        assert_eq!(a.star, Some(3));
+        assert_eq!(a.comment.as_deref(), Some("hi"));
+        assert_eq!(a.css_style.as_deref(), Some("transform: rotate(90deg);"));
+        assert_eq!(a.meta_data.orientation, "Rotate 90 CW");
+        assert_eq!(a.burst_group_id.as_deref(), Some("bg1"));
+
+        let b = &photos[1];
+        assert_eq!(b.star, None, "star 0 maps to None");
+        assert_eq!(b.comment, None, "empty comment maps to None");
+        assert_eq!(b.meta_data.orientation, "", "empty orientation is ignored");
+        assert!(b.tags.is_none());
+    }
 }
