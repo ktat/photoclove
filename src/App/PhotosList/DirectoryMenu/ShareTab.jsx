@@ -20,7 +20,7 @@ import {
     copyImageToClipboard,
     saveImageAsFile,
     shareToSocial
-} from '../../../utils/ShareUtils.js';
+} from '../../../utils/share/index.js';
 import { Photo } from '../../../domain/Photo.js';
 import { isVideoPath } from '../../../utils/videoFormats.js';
 import { logger } from '../../../services/LoggerService.js';

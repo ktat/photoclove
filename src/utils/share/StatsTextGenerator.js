@@ -44,55 +44,15 @@ export function generateStatsShareText(insights, period = 'all') {
 
         // Best shots (5-star photos)
         if (org.starred_photos > 0) {
-            const percentage = Math.round((org.starred_photos / org.total_photos) * 100);
-            lines.push(`⭐ Best Shots: ${org.starred_photos.toLocaleString()} (${percentage}%)`);
+            lines.push(`⭐ Best Shots: ${org.starred_photos}`);
         }
 
-        // Tags and Albums
-        if (org.total_tags > 0) {
-            lines.push(`🏷️ Tags: ${org.total_tags.toLocaleString()}`);
-        }
+        // Albums and tags
         if (org.total_albums > 0) {
-            lines.push(`📂 Albums: ${org.total_albums.toLocaleString()}`);
+            lines.push(`📁 Albums: ${org.total_albums}`);
         }
-        lines.push('');
-    }
-
-    // Camera settings
-    if (insights.camera_settings) {
-        const settings = insights.camera_settings;
-        lines.push('⚙️ Camera Settings:');
-
-        // Most used ISO
-        if (settings.iso && settings.iso.length > 0) {
-            const topIso = settings.iso[0];
-            lines.push(`• Most used ISO: ${topIso.display}`);
-        }
-
-        // Most used aperture
-        if (settings.aperture && settings.aperture.length > 0) {
-            const topAperture = settings.aperture[0];
-            lines.push(`• Favorite aperture: ${topAperture.display}`);
-        }
-
-        lines.push('');
-    }
-
-    // Equipment
-    if (insights.equipment) {
-        const eq = insights.equipment;
-        lines.push('📸 Equipment:');
-
-        // Top camera
-        if (eq.cameras && eq.cameras.length > 0) {
-            const topCamera = eq.cameras[0];
-            lines.push(`• Main camera: ${topCamera.name} (${topCamera.percentage.toFixed(0)}%)`);
-        }
-
-        // Top lens
-        if (eq.lenses && eq.lenses.length > 0) {
-            const topLens = eq.lenses[0];
-            lines.push(`• Favorite lens: ${topLens.name}`);
+        if (org.total_tags > 0) {
+            lines.push(`🏷️ Tags: ${org.total_tags}`);
         }
         lines.push('');
     }
@@ -100,14 +60,83 @@ export function generateStatsShareText(insights, period = 'all') {
     // Storage stats
     if (insights.storage) {
         const storage = insights.storage;
-        lines.push(`💾 Storage: ${storage.total_size_gb.toFixed(1)}GB`);
-        if (storage.average_size_mb) {
-            lines.push(`📏 Average file size: ${storage.average_size_mb.toFixed(1)}MB`);
+        const totalGB = storage.total_size_gb || 0;
+        if (totalGB > 0) {
+            lines.push(`💾 Collection Size: ${totalGB.toFixed(1)} GB`);
+            if (storage.average_size_mb) {
+                lines.push(`📊 Avg Photo Size: ${storage.average_size_mb.toFixed(1)} MB`);
+            }
+            lines.push('');
+        }
+    }
+
+    // Equipment stats (simplified)
+    if (insights.equipment && insights.equipment.cameras && insights.equipment.cameras.length > 0) {
+        const topCamera = insights.equipment.cameras[0];
+        if (topCamera && topCamera.count > 5) {
+            lines.push(`📸 Most Used Camera: ${topCamera.name} (${topCamera.count} photos)`);
+        }
+
+        if (insights.equipment.lenses && insights.equipment.lenses.length > 0) {
+            const topLens = insights.equipment.lenses[0];
+            if (topLens && topLens.count > 5) {
+                lines.push(`🔍 Favorite Lens: ${topLens.name} (${topLens.count} photos)`);
+            }
         }
         lines.push('');
     }
 
-    lines.push('📱 Generated with PhotoClove');
+    // Shooting patterns
+    if (insights.shooting_time) {
+        const shooting = insights.shooting_time;
 
-    return lines.join('\\n');
+        // Find peak shooting hour
+        if (shooting.by_hour && shooting.by_hour.length > 0) {
+            const peakHour = shooting.by_hour.reduce((prev, current) =>
+                prev.count > current.count ? prev : current
+            );
+            if (peakHour && peakHour.count > 5) {
+                const timeOfDay = peakHour.hour < 12 ? 'morning' :
+                               peakHour.hour < 17 ? 'afternoon' : 'evening';
+                lines.push(`🕐 Peak Shooting: ${timeOfDay} (${peakHour.hour}:00)`);
+            }
+        }
+
+        // Find favorite day
+        if (shooting.by_day_of_week && shooting.by_day_of_week.length > 0) {
+            const favoriteDay = shooting.by_day_of_week.reduce((prev, current) =>
+                prev.count > current.count ? prev : current
+            );
+            if (favoriteDay && favoriteDay.count > 3) {
+                lines.push(`📅 Most Active Day: ${favoriteDay.day_name} (${favoriteDay.count} photos)`);
+            }
+        }
+    }
+
+    // Camera settings highlights
+    if (insights.camera_settings) {
+        const settings = insights.camera_settings;
+
+        // Most used ISO
+        if (settings.iso && settings.iso.length > 0) {
+            const topISO = settings.iso[0];
+            if (topISO && topISO.count > 5) {
+                lines.push(`📷 Preferred ISO: ${topISO.display}`);
+            }
+        }
+
+        // Most used aperture
+        if (settings.aperture && settings.aperture.length > 0) {
+            const topAperture = settings.aperture[0];
+            if (topAperture && topAperture.count > 5) {
+                lines.push(`🔍 Favorite Aperture: ${topAperture.display}`);
+            }
+        }
+    }
+
+    // Add footer
+    lines.push('');
+    lines.push('🎯 Captured with PhotoClove');
+
+    return lines.join('\n');
 }
