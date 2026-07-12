@@ -174,13 +174,17 @@ impl SQLite {
         // Newly achieved only if threshold is met AND no prior achieved_at exists
         let newly_achieved = !was_achieved && should_achieve && !has_existing_achieved_at;
 
+        // Final desired state, computed in Rust so it can be written verbatim.
+        // The previous SQL used COALESCE on verification_hash, which kept a
+        // non-NULL but WRONG hash forever - the repair path never took effect
+        // and every get_all_achievements logged hash_verification_failed.
         let (achieved_at, verification_hash) = if should_achieve {
             if was_achieved {
                 // Keep existing achieved_at and hash
                 let (_, achieved, hash) = existing.as_ref().unwrap();
                 (achieved.clone(), hash.clone())
             } else if has_existing_achieved_at {
-                // Legacy record: has achieved_at but missing/invalid hash - fix hash using existing timestamp
+                // Legacy/broken record: keep achieved_at, regenerate the hash
                 let existing_at = existing
                     .as_ref()
                     .unwrap()
@@ -195,18 +199,34 @@ impl SQLite {
                 let hash = generate_hash(id, &now);
                 (Some(now.clone()), Some(hash))
             }
+        } else if has_existing_achieved_at {
+            // Value fell back below the threshold: keep the recorded achievement
+            let (_, achieved, hash) = existing.as_ref().unwrap();
+            (achieved.clone(), hash.clone())
         } else {
             (None, None)
         };
+
+        // Skip the write when nothing changes. This runs once per achievement
+        // on every check (~50 rows), and unconditionally rewriting them held
+        // the NFS write lock while blocking readers.
+        if let Some((existing_value, existing_at, existing_hash)) = existing.as_ref() {
+            if *existing_value == current_value
+                && *existing_at == achieved_at
+                && *existing_hash == verification_hash
+            {
+                return Ok(newly_achieved);
+            }
+        }
 
         conn.execute(
             "INSERT INTO achievement_progress (id, current_value, achieved_at, updated_at, verification_hash)
              VALUES (?, ?, ?, ?, ?)
              ON CONFLICT(id) DO UPDATE SET
                 current_value = excluded.current_value,
-                achieved_at = COALESCE(achievement_progress.achieved_at, excluded.achieved_at),
+                achieved_at = excluded.achieved_at,
                 updated_at = excluded.updated_at,
-                verification_hash = COALESCE(achievement_progress.verification_hash, excluded.verification_hash)",
+                verification_hash = excluded.verification_hash",
             params![id, current_value, achieved_at, now, verification_hash],
         )?;
 
@@ -262,8 +282,12 @@ impl SQLite {
                     .unwrap_or(&now)
                     .to_string();
                 let verification_hash = generate_hash(id, &existing_at);
+                // Overwrite unconditionally: verification already failed, so a
+                // non-NULL wrong hash must be replaced too (the old WHERE
+                // clause only fixed NULL/empty hashes and left wrong ones
+                // failing forever).
                 conn.execute(
-                    "UPDATE achievement_progress SET verification_hash = ?, updated_at = ? WHERE id = ? AND (verification_hash IS NULL OR verification_hash = '')",
+                    "UPDATE achievement_progress SET verification_hash = ?, updated_at = ? WHERE id = ?",
                     params![verification_hash, now, id],
                 )?;
                 log::info!(
@@ -296,5 +320,103 @@ impl SQLite {
         );
 
         Ok(true)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn setup_db(name: &str) -> SQLite {
+        let dir = std::env::temp_dir()
+            .join("photoclove_achievements_tests")
+            .join(name);
+        std::fs::create_dir_all(&dir).unwrap();
+        let db_file = dir.join("photoclove.db");
+        if db_file.exists() {
+            std::fs::remove_file(&db_file).unwrap();
+        }
+        SQLite::new(dir.to_str().unwrap().to_string())
+    }
+
+    #[test]
+    fn test_upsert_newly_achieved_only_on_crossing() {
+        let db = setup_db("crossing");
+        assert!(!db.upsert_achievement("photos_100", 50, 100).unwrap());
+        assert!(db.upsert_achievement("photos_100", 100, 100).unwrap());
+        assert!(!db.upsert_achievement("photos_100", 120, 100).unwrap());
+        let a = db.get_achievement("photos_100").unwrap().unwrap();
+        assert!(a.achieved_at.is_some());
+        assert_eq!(a.current_value, 120);
+    }
+
+    #[test]
+    fn test_upsert_skips_write_when_nothing_changed() {
+        let db = setup_db("skip_write");
+        assert!(!db.upsert_achievement("photos_100", 50, 100).unwrap());
+        // Sentinel updated_at to detect any rewrite
+        let conn = db.get_connection().unwrap();
+        conn.execute(
+            "UPDATE achievement_progress SET updated_at='2000-01-01 00:00:00' WHERE id='photos_100'",
+            [],
+        )
+        .unwrap();
+
+        assert!(!db.upsert_achievement("photos_100", 50, 100).unwrap());
+
+        let updated_at: String = conn
+            .query_row(
+                "SELECT updated_at FROM achievement_progress WHERE id='photos_100'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(
+            updated_at, "2000-01-01 00:00:00",
+            "unchanged progress must not be rewritten (runs ~50x per check over NFS)"
+        );
+    }
+
+    #[test]
+    fn test_upsert_repairs_wrong_hash() {
+        let db = setup_db("upsert_repair");
+        let conn = db.get_connection().unwrap();
+        conn.execute(
+            "INSERT INTO achievement_progress (id, current_value, achieved_at, updated_at, verification_hash)
+             VALUES ('photos_100', 150, '2024-01-01 00:00:00', '2024-01-01 00:00:00', 'broken')",
+            [],
+        )
+        .unwrap();
+
+        // Threshold still met: the wrong hash must be repaired, not COALESCEd away
+        assert!(!db.upsert_achievement("photos_100", 150, 100).unwrap());
+
+        let a = db.get_achievement("photos_100").unwrap().unwrap();
+        assert_eq!(
+            a.achieved_at.as_deref(),
+            Some("2024-01-01 00:00:00"),
+            "repair must keep the original achieved_at and fix the hash"
+        );
+    }
+
+    #[test]
+    fn test_mark_achieved_repairs_wrong_hash() {
+        let db = setup_db("mark_repair");
+        let conn = db.get_connection().unwrap();
+        conn.execute(
+            "INSERT INTO achievement_progress (id, current_value, achieved_at, updated_at, verification_hash)
+             VALUES ('first_star', 1, '2024-01-01 00:00:00', '2024-01-01 00:00:00', 'broken')",
+            [],
+        )
+        .unwrap();
+
+        assert!(!db.mark_achievement_achieved("first_star").unwrap());
+
+        let a = db.get_achievement("first_star").unwrap().unwrap();
+        assert_eq!(
+            a.achieved_at.as_deref(),
+            Some("2024-01-01 00:00:00"),
+            "repair must keep the original achieved_at and fix the hash"
+        );
     }
 }
