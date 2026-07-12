@@ -32,6 +32,15 @@ impl SQLite {
 
     pub fn init_db(&self) -> Result<()> {
         let conn = self.get_connection()?;
+
+        // Keep the DB in rollback-journal mode. The photo library (and this
+        // DB with it) commonly lives on a NAS, and WAL over NFS is both
+        // unsupported by SQLite and ~3x slower per connection open (WAL-index
+        // locks become network round-trips). journal_mode is persistent, so
+        // this also converts back any DB that a previous build switched to
+        // WAL. Runs once at startup.
+        conn.pragma_update(None, "journal_mode", "DELETE")?;
+
         migrations::run_migrations(&conn)?;
 
         // Populate date_summary if it's empty
@@ -73,13 +82,10 @@ impl SQLite {
             }
         }
         let conn = Connection::open(&self.db_path)?;
-        // WAL lets background jobs (import, face detection, thumbnails) write
-        // while UI commands read on their own connections; busy_timeout makes
-        // concurrent writers wait instead of failing with SQLITE_BUSY.
-        // NORMAL sync is durable enough under WAL and avoids per-commit fsync.
-        conn.pragma_update(None, "journal_mode", "WAL")?;
+        // busy_timeout makes a connection that hits a concurrent writer wait
+        // instead of failing immediately with SQLITE_BUSY (UI reads vs
+        // background job writes). Deliberately NOT WAL: see init_db.
         conn.pragma_update(None, "busy_timeout", 5000)?;
-        conn.pragma_update(None, "synchronous", "NORMAL")?;
         Ok(conn)
     }
 }
@@ -89,7 +95,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_get_connection_sets_wal_and_busy_timeout() {
+    fn test_get_connection_sets_busy_timeout_without_wal() {
         let dir = std::env::temp_dir().join("photoclove_sqlite_pragma_test");
         std::fs::create_dir_all(&dir).unwrap();
         let sqlite = SQLite::new(dir.to_str().unwrap().to_string());
@@ -98,10 +104,14 @@ mod tests {
         let journal_mode: String = conn
             .query_row("PRAGMA journal_mode", [], |row| row.get(0))
             .unwrap();
+        // The library (and its DB) often lives on a NAS: WAL over NFS costs
+        // ~90ms of lock round-trips per connection open and is unsupported
+        // by SQLite on network filesystems, so the DB must stay in rollback
+        // journal mode.
         assert_eq!(
             journal_mode.to_lowercase(),
-            "wal",
-            "background jobs must be able to write while the UI reads"
+            "delete",
+            "WAL must not be used: the photo library DB may live on NFS"
         );
 
         let busy_timeout: i64 = conn
@@ -112,5 +122,28 @@ mod tests {
             "concurrent writers should wait instead of failing with SQLITE_BUSY (got {})",
             busy_timeout
         );
+    }
+
+    #[test]
+    fn test_init_db_converts_wal_database_back_to_delete() {
+        let dir = std::env::temp_dir().join("photoclove_sqlite_wal_revert_test");
+        std::fs::create_dir_all(&dir).unwrap();
+        let db_file = dir.join("photoclove.db");
+        if db_file.exists() {
+            std::fs::remove_file(&db_file).unwrap();
+        }
+
+        // Simulate a DB left in WAL mode by the earlier WAL experiment
+        {
+            let conn = Connection::open(&db_file).unwrap();
+            conn.pragma_update(None, "journal_mode", "WAL").unwrap();
+        }
+
+        let sqlite = SQLite::new(dir.to_str().unwrap().to_string());
+        let conn = sqlite.get_connection().unwrap();
+        let journal_mode: String = conn
+            .query_row("PRAGMA journal_mode", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(journal_mode.to_lowercase(), "delete");
     }
 }
