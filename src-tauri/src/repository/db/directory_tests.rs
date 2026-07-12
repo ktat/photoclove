@@ -123,6 +123,38 @@ fn test_get_photos_in_date_sets_thumbnail_state_for_returned_page() {
 }
 
 #[test]
+fn test_get_photos_in_date_excludes_missing_files() {
+    let (root, dir, mut metas) = setup_library("missing_files", &["a.jpg", "b.jpg"]);
+    // Metadata row whose file does not exist on disk
+    let ghost = format!("{}/ghost.jpg", TEST_DATE);
+    let p = photo::Photo::new(file::File::from_relative(ghost.clone()), None);
+    metas.insert(&ghost, photo_meta::PhotoMeta::new_from_photo(&p));
+    // Ensure it really doesn't exist
+    assert!(!root.join(TEST_DATE).join("ghost.jpg").exists());
+
+    let date = date::Date::from_string(&TEST_DATE.to_string(), Some("-"));
+    let photos = block_on(dir.get_photos_in_date(
+        &metas,
+        date,
+        Sort::NameAsc,
+        10,
+        1,
+        0,
+        0,
+        false,
+        "all",
+        None,
+    ));
+    assert_eq!(
+        paths(&photos),
+        vec![
+            format!("{}/a.jpg", TEST_DATE),
+            format!("{}/b.jpg", TEST_DATE)
+        ]
+    );
+}
+
+#[test]
 fn test_get_next_and_prev_photo_in_date() {
     let (_root, dir, metas) = setup_library("navigation", &["a.jpg", "b.jpg", "c.jpg"]);
     let date = date::Date::from_string(&TEST_DATE.to_string(), Some("-"));
