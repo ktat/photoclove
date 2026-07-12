@@ -501,57 +501,65 @@ impl RepositoryDB for Directory {
     }
 
     async fn move_photos_to_exif_date(&self, date: date::Date) -> date::Dates {
-        let dir = self.path.child(date.to_string());
-        let files = dir_service::find_files(&dir);
-        log::info!(target: "directory", "move_photos_to_exif_date; date={}; dir={}; file_count={}", date, dir.path, files.files.len());
-        let mut dates_to_be_changed: HashMap<String, bool> = HashMap::new();
-        for file in files.files {
-            // file has absolute path from filesystem scan
-            let photo = photo::Photo::new_with_exif(file.clone());
-            let created_date_str = photo.created_date_string();
-            let new_dir = self.path.child(created_date_str.clone());
-            log::debug!(target: "directory", "move_check; file={}; photo_time={}; created_date_str={}; current_dir={}; new_dir={}",
-                file.path, photo.time(), created_date_str, dir.path, new_dir.path);
-            if dir.path != new_dir.path {
-                dates_to_be_changed
-                    .entry(photo.created_date_string())
-                    .or_insert(true);
-                let filename = photo.file.filename();
-                let new_pathbuf = new_dir.as_pathbuf();
-                let new_path = new_pathbuf.as_path().join(filename);
+        let path = self.path.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            let dir = path.child(date.to_string());
+            let files = dir_service::find_files(&dir);
+            log::info!(target: "directory", "move_photos_to_exif_date; date={}; dir={}; file_count={}", date, dir.path, files.files.len());
+            let mut dates_to_be_changed: HashMap<String, bool> = HashMap::new();
+            for file in files.files {
+                // file has absolute path from filesystem scan
+                let photo = photo::Photo::new_with_exif(file.clone());
+                let created_date_str = photo.created_date_string();
+                let new_dir = path.child(created_date_str.clone());
+                log::debug!(target: "directory", "move_check; file={}; photo_time={}; created_date_str={}; current_dir={}; new_dir={}",
+                    file.path, photo.time(), created_date_str, dir.path, new_dir.path);
+                if dir.path != new_dir.path {
+                    dates_to_be_changed
+                        .entry(photo.created_date_string())
+                        .or_insert(true);
+                    let filename = photo.file.filename();
+                    let new_pathbuf = new_dir.as_pathbuf();
+                    let new_path = new_pathbuf.as_path().join(filename);
 
-                // Ensure target directory exists
-                if !new_pathbuf.exists() {
-                    if let Err(e) = fs::create_dir_all(&new_pathbuf) {
-                        log::error!(target: "directory", "create_dir_failed; dir={}; error={}", new_dir.path, e);
-                        continue;
+                    // Ensure target directory exists
+                    if !new_pathbuf.exists() {
+                        if let Err(e) = fs::create_dir_all(&new_pathbuf) {
+                            log::error!(target: "directory", "create_dir_failed; dir={}; error={}", new_dir.path, e);
+                            continue;
+                        }
+                        log::info!(target: "directory", "created_dir; dir={}", new_dir.path);
                     }
-                    log::info!(target: "directory", "created_dir; dir={}", new_dir.path);
-                }
 
-                // file.path is absolute here (from filesystem scan)
-                match fs::rename(&file.path, new_path.display().to_string()) {
-                    Ok(_) => {
-                        log::info!(target: "directory", "file_moved; from={}; to={}", file.path, new_path.display())
-                    }
-                    Err(e) => {
-                        log::error!(target: "directory", "file_move_failed; from={}; to={}; error={}", file.path, new_path.display(), e)
+                    // file.path is absolute here (from filesystem scan)
+                    match fs::rename(&file.path, new_path.display().to_string()) {
+                        Ok(_) => {
+                            log::info!(target: "directory", "file_moved; from={}; to={}", file.path, new_path.display())
+                        }
+                        Err(e) => {
+                            log::error!(target: "directory", "file_move_failed; from={}; to={}; error={}", file.path, new_path.display(), e)
+                        }
                     }
                 }
             }
-        }
-        let mut dates = date::Dates::new(&[]);
-        if dates_to_be_changed.keys().len() > 0 {
-            dates_to_be_changed.insert(date.to_string(), true);
-            for date_string in dates_to_be_changed.keys() {
-                // Skip empty date strings
-                if !date_string.trim().is_empty() {
-                    dates
-                        .dates
-                        .push(date::Date::from_string(date_string, Option::Some("-")));
+            let mut dates = date::Dates::new(&[]);
+            if dates_to_be_changed.keys().len() > 0 {
+                dates_to_be_changed.insert(date.to_string(), true);
+                for date_string in dates_to_be_changed.keys() {
+                    // Skip empty date strings
+                    if !date_string.trim().is_empty() {
+                        dates
+                            .dates
+                            .push(date::Date::from_string(date_string, Option::Some("-")));
+                    }
                 }
             }
-        }
-        return dates;
+            dates
+        })
+        .await
+        .unwrap_or_else(|e| {
+            log::error!(target: "directory", "move_photos_to_exif_date_join_error; error={:?}", e);
+            date::Dates::new(&[])
+        })
     }
 }
