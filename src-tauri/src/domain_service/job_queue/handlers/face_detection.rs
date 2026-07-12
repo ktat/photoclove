@@ -68,6 +68,17 @@ pub(crate) fn process_face_detection_job(
     let start_index = get_resume_start_index(job);
     log_resume_info("face_detection_job", start_index, total_photos);
 
+    // Load named embeddings once for the whole job: each row carries a
+    // 512-dim float JSON blob, and re-querying + re-parsing them for every
+    // photo with faces dominated the job's runtime. Names assigned while
+    // the job runs are picked up by the next run.
+    let named_faces = db.get_named_face_embeddings().unwrap_or_default();
+    log::info!(
+        target: "face_detection_job",
+        "named_faces_loaded; count={}",
+        named_faces.len()
+    );
+
     for (index, photo_path) in job.job.target.iter().enumerate().skip(start_index) {
         // Check for stop signal
         if should_stop_job(job_id) {
@@ -133,10 +144,8 @@ pub(crate) fn process_face_detection_job(
                 total_faces += faces.len();
 
                 if !faces.is_empty() {
-                    // Get named faces for matching
-                    let named_faces = db.get_named_face_embeddings().unwrap_or_default();
-
-                    // Convert to input format with matching
+                    // Convert to input format with matching (named_faces is
+                    // loaded once before the loop)
                     let face_inputs: Vec<DetectedFaceInput> = faces
                         .iter()
                         .map(|f| {
