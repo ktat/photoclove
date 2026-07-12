@@ -1,6 +1,5 @@
 /**
- * Shared utilities for thumbnail components
- * Reduces duplication between ThumbnailItem and ThumbnailRenderer
+ * Shared utilities for thumbnail components (used by ThumbnailRenderer)
  */
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { logger } from "../../../services/LoggerService.js";
