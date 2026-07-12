@@ -2,8 +2,8 @@
 //!
 //! Main service that orchestrates face detection and embedding generation.
 
+use crate::utils::orientation::{apply_exif_orientation, read_exif_orientation};
 use image::DynamicImage;
-use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
@@ -14,64 +14,6 @@ use crate::utils::exif_thumbnail;
 
 /// Default minimum thumbnail size for face detection (used if not configured)
 const DEFAULT_MIN_THUMBNAIL_SIZE: u32 = 160;
-
-/// Apply EXIF orientation to an image
-fn apply_exif_orientation(image: DynamicImage, orientation: &str) -> DynamicImage {
-    match orientation {
-        // 1 = Normal
-        "Normal" | "Horizontal (normal)" => image,
-        // 2 = Horizontal flip
-        "Mirror horizontal" | "Flip horizontal" => image.fliph(),
-        // 3 = Rotate 180
-        "Rotate 180" | "Rotate 180°" => image.rotate180(),
-        // 4 = Vertical flip
-        "Mirror vertical" | "Flip vertical" => image.flipv(),
-        // 5 = Rotate 90 CCW + horizontal flip
-        "Mirror horizontal and rotate 270 CW" | "Rotate 90 CCW and flip horizontal" => {
-            image.rotate270().fliph()
-        }
-        // 6 = Rotate 90 CW (camera rotated CCW)
-        // "Rotated to left" means the image appears rotated to the left, fix by rotating 90 CW
-        "Rotate 90 CW" | "Rotate 90°" | "Rotate 90° CW" | "Rotated to left" => image.rotate90(),
-        // 7 = Rotate 90 CW + horizontal flip
-        "Mirror horizontal and rotate 90 CW" | "Rotate 90 CW and flip horizontal" => {
-            image.rotate90().fliph()
-        }
-        // 8 = Rotate 90 CCW (or 270 CW, camera rotated CW)
-        // "Rotated to right" means the image appears rotated to the right, fix by rotating 90 CCW
-        "Rotate 270 CW" | "Rotate 90 CCW" | "Rotate 270° CW" | "Rotated to right" => {
-            image.rotate270()
-        }
-        // Unknown or empty - no rotation
-        _ => {
-            log::debug!(
-                target: "face_detection",
-                "unknown_orientation; value={}",
-                orientation
-            );
-            image
-        }
-    }
-}
-
-/// Read EXIF orientation from a file
-fn read_exif_orientation(path: &str) -> Option<String> {
-    // Read only first 64KB for EXIF data (sufficient for header)
-    let mut file = std::fs::File::open(path).ok()?;
-    let mut buffer = vec![0u8; 65536];
-    let bytes_read = file.read(&mut buffer).ok()?;
-    buffer.truncate(bytes_read);
-
-    let (exif_result, _warnings) = rexif::parse_buffer_quiet(&buffer);
-    let exif = exif_result.ok()?;
-
-    for entry in exif.entries {
-        if matches!(entry.tag, rexif::ExifTag::Orientation) {
-            return Some(entry.value_more_readable.to_string());
-        }
-    }
-    None
-}
 
 /// Face Detection Service
 pub struct FaceDetectionService {
