@@ -21,13 +21,14 @@
 use crate::entity::{config, photo, photo_meta};
 use crate::repository::{DatesNum, MetaInfoDB};
 use crate::value::{comment, date, star};
-use rusqlite::{params, Connection, Result};
+use rusqlite::Result;
 use std::collections::HashMap;
 use std::path;
 
 pub mod achievements;
 mod burst_groups;
 mod collections;
+mod connection;
 mod counts;
 mod date_summary;
 mod dates;
@@ -44,80 +45,9 @@ pub mod stats;
 mod tags;
 mod utils;
 
-#[derive(Clone)]
-pub struct SQLite {
-    db_path: String,
-}
+pub use connection::SQLite;
 
 impl SQLite {
-    pub fn new(path: String) -> SQLite {
-        let sqlite = SQLite {
-            db_path: path + "/photoclove.db",
-        };
-
-        if let Err(e) = sqlite.init_db() {
-            log::error!(target: "sqlite", "db_init_error; error={}", e);
-        }
-
-        // Validate date_summary currency on startup
-        if date_summary::check_date_summary_currency(&sqlite).is_err() {
-            log::info!(target: "date_summary", "startup_validation; status=failed; action=rebuilding");
-            let _ = date_summary::rebuild_date_summary(&sqlite);
-        }
-
-        sqlite
-    }
-
-    pub fn init_db(&self) -> Result<()> {
-        let conn = self.get_connection()?;
-        super::migrations::run_migrations(&conn)?;
-
-        // Populate date_summary if it's empty
-        let count: i64 = conn
-            .query_row("SELECT COUNT(*) FROM date_summary", [], |row| row.get(0))
-            .unwrap_or(0);
-
-        if count == 0 {
-            log::info!(target: "date_summary", "initial_population; status=populating");
-            let now = date::DateTime::now().to_db_string();
-            conn.execute(
-                "INSERT INTO date_summary (date, photo_count, created_at, updated_at)
-                 SELECT date(photo_date) as date_only, COUNT(*) as count, ? as created_at, ? as updated_at
-                 FROM photo_metadata
-                 WHERE (delete_flg = 0 OR delete_flg IS NULL)
-                 GROUP BY date(photo_date)",
-                params![now, now],
-            )?;
-            log::info!(target: "date_summary", "initial_population; status=completed");
-        }
-
-        Ok(())
-    }
-
-    pub fn get_connection(&self) -> Result<Connection> {
-        // Ensure parent directory exists
-        if let Some(parent) = std::path::Path::new(&self.db_path).parent() {
-            if !parent.exists() {
-                std::fs::create_dir_all(parent).map_err(|e| {
-                    rusqlite::Error::SqliteFailure(
-                        rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_CANTOPEN),
-                        Some(format!(
-                            "Failed to create directory '{}': {}",
-                            parent.display(),
-                            e
-                        )),
-                    )
-                })?;
-            }
-        }
-        Connection::open(&self.db_path)
-    }
-
-    /// Get the database path
-    pub fn db_path(&self) -> &str {
-        &self.db_path
-    }
-
     // ==================== Date Operations ====================
 
     pub fn get_available_dates(&self) -> Result<Vec<date::Date>, String> {
