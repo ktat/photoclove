@@ -8,9 +8,12 @@ use serde_json::json;
 
 /// Get count of pending recovery items
 #[tauri::command]
-pub fn get_recovery_pending_count(state: tauri::State<'_, AppState>) -> Result<i32, String> {
-    let meta_db = &state.meta_db;
-    meta_db.get_recovery_pending_count()
+pub async fn get_recovery_pending_count(state: tauri::State<'_, AppState>) -> Result<i32, String> {
+    // Polled every 30s by the footer; keep the NFS DB query off the main thread
+    let meta_db = state.meta_db.clone();
+    tauri::async_runtime::spawn_blocking(move || meta_db.get_recovery_pending_count())
+        .await
+        .map_err(|e| format!("Recovery count task failed: {}", e))?
 }
 
 /// Get all pending recovery items

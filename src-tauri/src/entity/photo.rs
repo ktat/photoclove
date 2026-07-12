@@ -186,9 +186,11 @@ impl Photo {
     pub fn set_has_thumbnail(&mut self) {
         match self.get_thumbnail_path() {
             Some(thumbnail_path) => {
+                // No per-photo logging here: this runs once per listed photo
+                // (thousands per view, concurrently); logging would serialize
+                // the stat threads on the global logger lock and flood the
+                // log file (~280MB/day observed at debug level).
                 self.has_thumbnail = std::path::Path::new(&thumbnail_path).exists();
-                log::debug!(target: "photo", "thumbnail_check; thumbnail_path={}; exists={}",
-                    thumbnail_path, self.has_thumbnail);
             }
             None => {
                 log::error!(target: "photo", "thumbnail_check_without_config; photo_path={:?}", self.file.path);
