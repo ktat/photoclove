@@ -20,7 +20,8 @@
     "hasComment": "コメントあり",
     "extensions": "拡張子",
     "image": "画像",
-    "movie": "動画"
+    "movie": "動画",
+    "other": "その他"
   },
   "selection": {
     "selectAllInPage": "表示されているすべての写真を選択",

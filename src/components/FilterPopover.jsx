@@ -1,5 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { logger } from '../services/LoggerService.js';
+import {
+    EXTENSION_GROUPS,
+    setExtensions,
+    setOther,
+    extensionsChecked,
+    otherChecked
+} from '../utils/extensionFilters.js';
 
 // Reusable toggle switch component
 const ToggleSwitch = ({ label, checked, onChange, filterType }) => (
@@ -52,33 +59,18 @@ const ToggleSwitch = ({ label, checked, onChange, filterType }) => (
     </div>
 );
 
-// Extension filter configuration
-const EXTENSION_OPTIONS = [
-    { value: 'jpg', label: 'JPG', extensions: ['jpg', 'jpeg'] },
-    { value: 'png', label: 'PNG', extensions: ['png'] },
-    { value: 'gif', label: 'GIF', extensions: ['gif'] },
-    { value: 'bmp', label: 'BMP', extensions: ['bmp'] },
-    { value: 'tiff', label: 'TIFF', extensions: ['tiff'] },
-    { value: 'mp4', label: 'MP4', extensions: ['mp4'] },
-    { value: 'webm', label: 'WebM', extensions: ['webm'] }
-];
-
-// Extension filter component
+// Extension filter component. Options come from the shared extensionFilters
+// config so FilterPopover, FilterTab, and applyFrontendFilters stay in sync.
 const ExtensionFilter = ({ extensionFilter, setExtensionFilter }) => {
-    // Helper to toggle extension filter
     const toggleExtension = (extensions, forceAdd = null) => {
-        const currentFilters = extensionFilter === "all" ? [] : extensionFilter.split(',').filter(f => f.trim() !== '');
-        const isChecked = forceAdd !== null ? !forceAdd : extensions.some(ext => currentFilters.includes(ext));
-
-        const newFilters = isChecked
-            ? currentFilters.filter(f => !extensions.includes(f))
-            : [...currentFilters, ...extensions];
-
-        setExtensionFilter(newFilters.length === 0 ? "all" : [...new Set(newFilters)].join(','));
+        const checked = forceAdd !== null ? forceAdd : !extensionsChecked(extensionFilter, extensions);
+        setExtensionFilter(setExtensions(extensionFilter, extensions, checked));
     };
 
-    const isExtensionChecked = (extensions) =>
-        extensionFilter !== "all" && extensions.some(ext => extensionFilter.split(',').includes(ext));
+    const toggleOther = (forceAdd = null) => {
+        const checked = forceAdd !== null ? forceAdd : !otherChecked(extensionFilter);
+        setExtensionFilter(setOther(extensionFilter, checked));
+    };
 
     return (
         <div style={{ marginBottom: 'var(--space-3)' }}>
@@ -98,21 +90,39 @@ const ExtensionFilter = ({ extensionFilter, setExtensionFilter }) => {
                         <span style={{ fontSize: 'var(--font-size-base)', cursor: 'pointer' }} onClick={() => setExtensionFilter("all")}>All</span>
                     </div>
 
-                    {/* Individual Extensions */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-2)' }}>
-                        {EXTENSION_OPTIONS.map((item) => (
-                            <div key={item.value} style={{ display: 'flex', alignItems: 'center' }}>
-                                <input
-                                    type="checkbox"
-                                    id={`extension-filter-${item.value}`}
-                                    onChange={(e) => toggleExtension(item.extensions, e.target.checked)}
-                                    checked={isExtensionChecked(item.extensions)}
-                                    style={{ display: 'none' }}
-                                />
-                                <label className="checkbox checkbox-normal" htmlFor={`extension-filter-${item.value}`} style={{ marginRight: 'var(--space-2)' }}></label>
-                                <span style={{ fontSize: 'var(--font-size-sm)', cursor: 'pointer' }} onClick={() => toggleExtension(item.extensions)}>{item.label}</span>
+                    {/* Grouped extensions */}
+                    {EXTENSION_GROUPS.map((group) => (
+                        <div key={group.key}>
+                            <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>{group.label}</span>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
+                                {group.items.map((item) => (
+                                    <div key={item.value} style={{ display: 'flex', alignItems: 'center' }}>
+                                        <input
+                                            type="checkbox"
+                                            id={`extension-filter-${item.value}`}
+                                            onChange={(e) => toggleExtension(item.extensions, e.target.checked)}
+                                            checked={extensionsChecked(extensionFilter, item.extensions)}
+                                            style={{ display: 'none' }}
+                                        />
+                                        <label className="checkbox checkbox-normal" htmlFor={`extension-filter-${item.value}`} style={{ marginRight: 'var(--space-2)' }}></label>
+                                        <span style={{ fontSize: 'var(--font-size-sm)', cursor: 'pointer' }} onClick={() => toggleExtension(item.extensions)}>{item.label}</span>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
+                        </div>
+                    ))}
+
+                    {/* Other: everything not in a known group */}
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <input
+                            type="checkbox"
+                            id="extension-filter-other"
+                            onChange={(e) => toggleOther(e.target.checked)}
+                            checked={otherChecked(extensionFilter)}
+                            style={{ display: 'none' }}
+                        />
+                        <label className="checkbox checkbox-normal" htmlFor="extension-filter-other" style={{ marginRight: 'var(--space-2)' }}></label>
+                        <span style={{ fontSize: 'var(--font-size-sm)', cursor: 'pointer' }} onClick={() => toggleOther()}>Other</span>
                     </div>
                 </div>
             </div>

@@ -20,7 +20,8 @@
     "hasComment": "有評論",
     "extensions": "副檔名",
     "image": "圖片",
-    "movie": "影片"
+    "movie": "影片",
+    "other": "其他"
   },
   "selection": {
     "selectAllInPage": "選取頁面中的所有照片",

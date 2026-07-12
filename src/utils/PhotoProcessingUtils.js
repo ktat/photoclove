@@ -1,4 +1,5 @@
 import { Photo } from '../domain/Photo.js';
+import { matchesExtensionFilter } from './extensionFilters.js';
 
 /**
  * Photo Processing Utilities
@@ -56,13 +57,9 @@ export function applyFrontendFilters(photos, filterOptions) {
             }
         }
 
-        // Apply extension filter
-        if (extensionFilter !== "all") {
-            const extension = photo.name.split('.').pop().toLowerCase();
-            const allowedExtensions = extensionFilter.split(',').map(ext => ext.trim().toLowerCase());
-            if (!allowedExtensions.includes(extension)) {
-                return false;
-            }
+        // Apply extension filter (supports groups + the "other" token)
+        if (!matchesExtensionFilter(photo.name, extensionFilter)) {
+            return false;
         }
 
         return true;

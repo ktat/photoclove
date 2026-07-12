@@ -22,13 +22,22 @@ fn parse_extension_filter(extension: &str) -> Vec<String> {
     }
 }
 
-/// Check if a file path matches the extension filter
+/// Check if a file path matches the extension filter.
+/// The special "other" token matches any extension not in FILTER_KNOWN_EXTENSIONS.
 fn matches_extension_filter(path: &str, filters: &[String]) -> bool {
     if filters.is_empty() {
         return true;
     }
     let file_ext = path.split('.').next_back().unwrap_or("").to_lowercase();
-    filters.iter().any(|ext| ext == &file_ext)
+    if filters.iter().any(|ext| ext == &file_ext) {
+        return true;
+    }
+    if filters.iter().any(|f| f == "other")
+        && !crate::utils::raw_file::FILTER_KNOWN_EXTENSIONS.contains(&file_ext.as_str())
+    {
+        return true;
+    }
+    false
 }
 
 /// Apply pagination to a photos collection

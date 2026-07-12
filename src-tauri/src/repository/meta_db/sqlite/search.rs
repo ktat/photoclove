@@ -151,11 +151,36 @@ pub fn add_advanced_filters(
         }
     }
 
-    // File extension filter
+    // File extension filter. The value is a comma-separated list of extension
+    // tokens or "all"; the special "other" token matches any extension not in
+    // FILTER_KNOWN_EXTENSIONS. (Previously this did a single LIKE on the whole
+    // string, so any multi-extension selection matched nothing.)
     if let Some(extension) = filter_params.get("extension").and_then(|v| v.as_str()) {
         if !extension.is_empty() && extension != "all" {
-            sql_query.push_str(" AND path LIKE ?");
-            params.push(Box::new(format!("%.{}", extension)));
+            let tokens: Vec<String> = extension
+                .split(',')
+                .map(|s| s.trim().to_lowercase())
+                .filter(|s| !s.is_empty())
+                .collect();
+            let mut clauses: Vec<String> = Vec::new();
+            for token in &tokens {
+                if token == "other" {
+                    let mut not_clauses: Vec<String> = Vec::new();
+                    for known in crate::utils::raw_file::FILTER_KNOWN_EXTENSIONS {
+                        not_clauses.push("LOWER(path) NOT LIKE ?".to_string());
+                        params.push(Box::new(format!("%.{}", known)));
+                    }
+                    if !not_clauses.is_empty() {
+                        clauses.push(format!("({})", not_clauses.join(" AND ")));
+                    }
+                } else {
+                    clauses.push("LOWER(path) LIKE ?".to_string());
+                    params.push(Box::new(format!("%.{}", token)));
+                }
+            }
+            if !clauses.is_empty() {
+                sql_query.push_str(&format!(" AND ({})", clauses.join(" OR ")));
+            }
         }
     }
 

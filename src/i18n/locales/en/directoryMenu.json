@@ -20,7 +20,8 @@
     "hasComment": "Has comment",
     "extensions": "Extensions",
     "image": "Image",
-    "movie": "Movie"
+    "movie": "Movie",
+    "other": "Other"
   },
   "selection": {
     "selectAllInPage": "Select all displayed photos",
