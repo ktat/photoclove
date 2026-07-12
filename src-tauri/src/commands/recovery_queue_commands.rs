@@ -3,6 +3,7 @@
 //! Tauri commands for managing the recovery queue (failed operations that can be retried).
 
 use crate::entity::recovery_queue::{OperationType, RecoveryStatus};
+use crate::commands::run_blocking;
 use crate::AppState;
 use serde_json::json;
 
@@ -18,48 +19,68 @@ pub async fn get_recovery_pending_count(state: tauri::State<'_, AppState>) -> Re
 
 /// Get all pending recovery items
 #[tauri::command]
-pub fn get_recovery_pending_items(state: tauri::State<'_, AppState>) -> Result<String, String> {
-    let meta_db = &state.meta_db;
-    let items = meta_db.get_recovery_pending_items()?;
-
-    serde_json::to_string(&items).map_err(|e| format!("Failed to serialize recovery items: {}", e))
+pub async fn get_recovery_pending_items(
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    let meta_db = state.meta_db.clone();
+    run_blocking(move || {
+        let items = meta_db.get_recovery_pending_items()?;
+        serde_json::to_string(&items)
+            .map_err(|e| format!("Failed to serialize recovery items: {}", e))
+    })
+    .await
 }
 
 /// Get all recovery items (including resolved and discarded)
 #[tauri::command]
-pub fn get_recovery_all_items(state: tauri::State<'_, AppState>) -> Result<String, String> {
-    let meta_db = &state.meta_db;
-    let items = meta_db.get_recovery_all_items()?;
-
-    serde_json::to_string(&items).map_err(|e| format!("Failed to serialize recovery items: {}", e))
+pub async fn get_recovery_all_items(state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let meta_db = state.meta_db.clone();
+    run_blocking(move || {
+        let items = meta_db.get_recovery_all_items()?;
+        serde_json::to_string(&items)
+            .map_err(|e| format!("Failed to serialize recovery items: {}", e))
+    })
+    .await
 }
 
 /// Discard a recovery item (mark as discarded)
 #[tauri::command]
-pub fn discard_recovery_item(id: i64, state: tauri::State<'_, AppState>) -> Result<(), String> {
-    let meta_db = &state.meta_db;
-
+pub async fn discard_recovery_item(
+    id: i64,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
     log::info!(target: "recovery_queue", "discard_item; id={}", id);
-
-    meta_db.update_recovery_status(id, RecoveryStatus::Discarded)
+    let meta_db = state.meta_db.clone();
+    run_blocking(move || meta_db.update_recovery_status(id, RecoveryStatus::Discarded)).await
 }
 
 /// Delete a recovery item completely
 #[tauri::command]
-pub fn delete_recovery_item(id: i64, state: tauri::State<'_, AppState>) -> Result<(), String> {
-    let meta_db = &state.meta_db;
-
+pub async fn delete_recovery_item(
+    id: i64,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
     log::info!(target: "recovery_queue", "delete_item; id={}", id);
-
-    meta_db.delete_recovery_item(id)
+    let meta_db = state.meta_db.clone();
+    run_blocking(move || meta_db.delete_recovery_item(id)).await
 }
 
 /// Retry a single recovery item
 #[tauri::command]
-pub fn retry_recovery_item(id: i64, state: tauri::State<'_, AppState>) -> Result<String, String> {
-    let meta_db = &state.meta_db;
-    let config = &state.config;
+pub async fn retry_recovery_item(
+    id: i64,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    let meta_db = state.meta_db.clone();
+    let config = state.config.clone();
+    run_blocking(move || retry_recovery_item_blocking(id, &meta_db, &config)).await
+}
 
+fn retry_recovery_item_blocking(
+    id: i64,
+    meta_db: &crate::repository::MetaDB,
+    config: &crate::entity::config::Config,
+) -> Result<String, String> {
     log::info!(target: "recovery_queue", "retry_item; id={}", id);
 
     // Get the recovery item
@@ -116,10 +137,16 @@ pub fn retry_recovery_item(id: i64, state: tauri::State<'_, AppState>) -> Result
 
 /// Retry all pending recovery items
 #[tauri::command]
-pub fn retry_all_recovery_items(state: tauri::State<'_, AppState>) -> Result<String, String> {
-    let meta_db = &state.meta_db;
-    let config = &state.config;
+pub async fn retry_all_recovery_items(state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let meta_db = state.meta_db.clone();
+    let config = state.config.clone();
+    run_blocking(move || retry_all_recovery_items_blocking(&meta_db, &config)).await
+}
 
+fn retry_all_recovery_items_blocking(
+    meta_db: &crate::repository::MetaDB,
+    config: &crate::entity::config::Config,
+) -> Result<String, String> {
     log::info!(target: "recovery_queue", "retry_all; status=starting");
 
     let items = meta_db.get_recovery_pending_items()?;
@@ -184,9 +211,9 @@ pub fn retry_all_recovery_items(state: tauri::State<'_, AppState>) -> Result<Str
 
 /// Cleanup old resolved/discarded items
 #[tauri::command]
-pub fn cleanup_recovery_items(state: tauri::State<'_, AppState>) -> Result<usize, String> {
-    let meta_db = &state.meta_db;
-    meta_db.cleanup_old_recovery_items()
+pub async fn cleanup_recovery_items(state: tauri::State<'_, AppState>) -> Result<usize, String> {
+    let meta_db = state.meta_db.clone();
+    run_blocking(move || meta_db.cleanup_old_recovery_items()).await
 }
 
 // Helper functions for retry operations

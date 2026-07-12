@@ -9,6 +9,7 @@ use tauri::State;
 use crate::domain_service::s3_service;
 use crate::domain_service::token_storage_service::TokenStorageService;
 use crate::entity::config::{S3AuthMethod, S3Config, S3StorageType};
+use crate::commands::run_blocking;
 use crate::AppState;
 
 /// Response for S3 sync statistics
@@ -183,8 +184,17 @@ pub fn get_s3_config(state: State<'_, AppState>) -> Result<String, String> {
 
 /// Get S3 sync statistics
 #[tauri::command]
-pub fn get_s3_sync_stats(state: State<'_, AppState>) -> Result<String, String> {
-    let s3_config = match &state.config.s3 {
+pub async fn get_s3_sync_stats(state: State<'_, AppState>) -> Result<String, String> {
+    let meta_db = state.meta_db.clone();
+    let config = state.config.clone();
+    run_blocking(move || get_s3_sync_stats_blocking(&meta_db, &config)).await
+}
+
+fn get_s3_sync_stats_blocking(
+    meta_db: &crate::repository::MetaDB,
+    config: &crate::entity::config::Config,
+) -> Result<String, String> {
+    let s3_config = match &config.s3 {
         Some(s3) if s3.enabled => s3,
         _ => {
             return Ok(json!({
@@ -209,8 +219,7 @@ pub fn get_s3_sync_stats(state: State<'_, AppState>) -> Result<String, String> {
     };
 
     // Query counts from database
-    let conn = state
-        .meta_db
+    let conn = meta_db
         .get_connection()
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
 
@@ -251,12 +260,21 @@ pub fn get_s3_sync_stats(state: State<'_, AppState>) -> Result<String, String> {
 
 /// Enqueue S3 incremental sync (photos since last_sync_at)
 #[tauri::command]
-pub fn enqueue_s3_incremental_sync(
+pub async fn enqueue_s3_incremental_sync(
     window: tauri::Window,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
-    let s3_config = state
-        .config
+    let meta_db = state.meta_db.clone();
+    let config = state.config.clone();
+    run_blocking(move || enqueue_s3_incremental_sync_blocking(&meta_db, &config, window)).await
+}
+
+fn enqueue_s3_incremental_sync_blocking(
+    meta_db: &crate::repository::MetaDB,
+    config: &crate::entity::config::Config,
+    window: tauri::Window,
+) -> Result<String, String> {
+    let s3_config = config
         .s3
         .clone()
         .ok_or("S3 backup is not configured")?;
@@ -272,8 +290,7 @@ pub fn enqueue_s3_incremental_sync(
         .ok_or("No previous sync found. Use Full Sync instead.")?;
 
     // Get photos imported after last_sync_at that are not synced
-    let conn = state
-        .meta_db
+    let conn = meta_db
         .get_connection()
         .map_err(|e| format!("Database error: {}", e))?;
 
@@ -297,17 +314,26 @@ pub fn enqueue_s3_incremental_sync(
         return Ok(r#"{"result": "no_photos_to_sync", "count": 0}"#.to_string());
     }
 
-    create_s3_sync_job(&window, &state, photo_paths)
+    create_s3_sync_job(&window, meta_db, config.copy_parallel, photo_paths)
 }
 
 /// Enqueue S3 full sync (all unsynced photos)
 #[tauri::command]
-pub fn enqueue_s3_full_sync(
+pub async fn enqueue_s3_full_sync(
     window: tauri::Window,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
-    let s3_config = state
-        .config
+    let meta_db = state.meta_db.clone();
+    let config = state.config.clone();
+    run_blocking(move || enqueue_s3_full_sync_blocking(&meta_db, &config, window)).await
+}
+
+fn enqueue_s3_full_sync_blocking(
+    meta_db: &crate::repository::MetaDB,
+    config: &crate::entity::config::Config,
+    window: tauri::Window,
+) -> Result<String, String> {
+    let s3_config = config
         .s3
         .clone()
         .ok_or("S3 backup is not configured")?;
@@ -319,8 +345,7 @@ pub fn enqueue_s3_full_sync(
     let provider = get_provider_name(&s3_config.storage_type);
 
     // Get all photos that are not synced to this provider
-    let conn = state
-        .meta_db
+    let conn = meta_db
         .get_connection()
         .map_err(|e| format!("Database error: {}", e))?;
 
@@ -343,20 +368,30 @@ pub fn enqueue_s3_full_sync(
         return Ok(r#"{"result": "no_photos_to_sync", "count": 0}"#.to_string());
     }
 
-    create_s3_sync_job(&window, &state, photo_paths)
+    create_s3_sync_job(&window, meta_db, config.copy_parallel, photo_paths)
 }
 
 /// Enqueue S3 sync for a specific date
 #[tauri::command]
-pub fn enqueue_s3_sync_by_date(
+pub async fn enqueue_s3_sync_by_date(
     date: String,
     window: tauri::Window,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
+    let meta_db = state.meta_db.clone();
+    let config = state.config.clone();
+    run_blocking(move || enqueue_s3_sync_by_date_blocking(&meta_db, &config, date, window)).await
+}
+
+fn enqueue_s3_sync_by_date_blocking(
+    meta_db: &crate::repository::MetaDB,
+    config: &crate::entity::config::Config,
+    date: String,
+    window: tauri::Window,
+) -> Result<String, String> {
     log::info!(target: "s3_commands", "enqueue_s3_sync_by_date; date={}", date);
 
-    let s3_config = state
-        .config
+    let s3_config = config
         .s3
         .clone()
         .ok_or("S3 backup is not configured")?;
@@ -369,8 +404,7 @@ pub fn enqueue_s3_sync_by_date(
     let provider = get_provider_name(&s3_config.storage_type);
 
     // Get photos for the specified date that are not synced
-    let conn = state
-        .meta_db
+    let conn = meta_db
         .get_connection()
         .map_err(|e| format!("Database error: {}", e))?;
 
@@ -413,7 +447,7 @@ pub fn enqueue_s3_sync_by_date(
         return Ok(r#"{"result": "no_photos_to_sync", "count": 0}"#.to_string());
     }
 
-    create_s3_sync_job(&window, &state, photo_paths)
+    create_s3_sync_job(&window, meta_db, config.copy_parallel, photo_paths)
 }
 
 /// Helper function to get provider name string from storage type
@@ -432,7 +466,8 @@ fn get_provider_name(storage_type: &S3StorageType) -> &'static str {
 /// Helper function to create an S3 sync job
 fn create_s3_sync_job(
     window: &tauri::Window,
-    state: &State<'_, AppState>,
+    meta_db: &crate::repository::MetaDB,
+    copy_parallel: usize,
     photo_paths: Vec<String>,
 ) -> Result<String, String> {
     use crate::domain_service::job_queue::executor::process_new_jobs;
@@ -449,8 +484,7 @@ fn create_s3_sync_job(
     let job_unit_id = job_unit.id.clone();
 
     // Save job unit
-    state
-        .meta_db
+    meta_db
         .create_job_unit(&job_unit)
         .map_err(|e| format!("Failed to create job unit: {}", e))?;
 
@@ -459,8 +493,7 @@ fn create_s3_sync_job(
     let queued_job = QueuedJob::new(job_unit_id.clone(), job);
 
     // Add job to queue
-    let job_id = state
-        .meta_db
+    let job_id = meta_db
         .create_job(&queued_job)
         .map_err(|e| format!("Failed to create job: {}", e))?;
 
@@ -468,9 +501,9 @@ fn create_s3_sync_job(
         job_id, job_unit_id, photo_count);
 
     // Trigger job processing
-    let db = Arc::new(state.meta_db.clone());
+    let db = Arc::new(meta_db.clone());
     let app_handle = window.app_handle().clone();
-    process_new_jobs(db, state.config.copy_parallel, app_handle);
+    process_new_jobs(db, copy_parallel, app_handle);
 
     Ok(format!(
         r#"{{"result": "started", "job_unit_id": "{}", "job_id": {}, "to_sync": {}}}"#,

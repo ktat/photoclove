@@ -16,19 +16,7 @@ use crate::value::file;
 use serde::Serialize;
 use tauri::{Manager, State};
 
-/// Run a DB read on the blocking pool. Sync commands execute on the GTK main
-/// thread, where an NFS-slow query - or a busy_timeout retry loop against a
-/// concurrent writer - freezes the whole window (observed: ~4.6s nanosleep on
-/// the main thread during the first date load).
-async fn run_db_read<T, F>(task: F) -> Result<T, String>
-where
-    T: Send + 'static,
-    F: FnOnce() -> Result<T, String> + Send + 'static,
-{
-    tauri::async_runtime::spawn_blocking(task)
-        .await
-        .map_err(|e| format!("DB task failed: {}", e))?
-}
+use super::run_blocking as run_db_read;
 
 /// Response for face detection model status
 #[derive(Serialize)]
@@ -57,8 +45,8 @@ struct ModelDownloadInfoItem {
 
 /// Check face detection model availability
 #[tauri::command]
-pub fn get_face_detection_model_status(state: State<AppState>) -> Result<String, String> {
-    let models_dir = get_models_dir(&state);
+pub fn get_face_detection_model_status() -> Result<String, String> {
+    let models_dir = get_models_dir();
     let status = FaceDetectionService::check_models_available(&models_dir);
 
     let response = FaceModelStatus {
@@ -95,23 +83,36 @@ pub fn get_face_detection_model_info() -> Result<String, String> {
 
 /// Detect faces in a photo
 #[tauri::command]
-pub fn detect_faces_in_photo(
-    state: State<AppState>,
+pub async fn detect_faces_in_photo(
     photo_path: String,
     save_to_db: bool,
     use_full_image: Option<bool>,
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    let meta_db = state.meta_db.clone();
+    let config = state.config.clone();
+    run_db_read(move || detect_faces_in_photo_blocking(photo_path, save_to_db, use_full_image, &meta_db, &config)).await
+}
+
+#[allow(clippy::too_many_arguments)]
+fn detect_faces_in_photo_blocking(
+    photo_path: String,
+    save_to_db: bool,
+    use_full_image: Option<bool>,
+    meta_db: &crate::repository::MetaDB,
+    config: &crate::entity::config::Config,
 ) -> Result<String, String> {
     let use_full = use_full_image.unwrap_or(false);
     log::info!(target: "face_detection",
         "detect_faces_request; photo_path={}; save_to_db={}; use_full_image={}", photo_path, save_to_db, use_full);
 
-    let models_dir = get_models_dir(&state);
+    let models_dir = get_models_dir();
     let status = FaceDetectionService::check_models_available(&models_dir);
     if !status.is_ready() {
         return Err("Face detection models not available. Please download them first.".to_string());
     }
 
-    let face_config = &state.config.face_detection;
+    let face_config = &config.face_detection;
     let service_config = super::super::domain_service::face_detection::FaceDetectionConfig {
         confidence_threshold: face_config.confidence_threshold,
         max_faces: face_config.max_faces as usize,
@@ -125,7 +126,7 @@ pub fn detect_faces_in_photo(
     let abs_path = if photo_path.starts_with('/') {
         photo_path.clone()
     } else {
-        crate::value::file::to_absolute_path(&photo_path, &state.config.import_to)
+        crate::value::file::to_absolute_path(&photo_path, &config.import_to)
     };
 
     let mut service = FaceDetectionService::with_config(models_dir, service_config);
@@ -137,8 +138,7 @@ pub fn detect_faces_in_photo(
     )?;
 
     if save_to_db && !faces.is_empty() {
-        let named_faces = state
-            .meta_db
+        let named_faces = meta_db
             .get_named_face_embeddings()
             .unwrap_or_default();
         log::debug!(target: "face_detection", "face_matching; named_faces_count={}", named_faces.len());
@@ -168,10 +168,9 @@ pub fn detect_faces_in_photo(
             })
             .collect();
 
-        state
-            .meta_db
+        meta_db
             .save_detected_faces(&photo_path, &face_inputs)?;
-        let saved_faces = state.meta_db.get_detected_faces(&photo_path)?;
+        let saved_faces = meta_db.get_detected_faces(&photo_path)?;
         log::info!(target: "face_detection",
             "detect_faces_complete; photo_path={}; face_count={}", photo_path, saved_faces.len());
         return serde_json::to_string(&saved_faces)
@@ -290,84 +289,110 @@ pub async fn get_persons_with_faces(
 
 /// Create a new person
 #[tauri::command]
-pub fn create_person(state: State<AppState>, name: Option<String>) -> Result<i64, String> {
-    state.meta_db.create_person(name.as_deref())
+pub async fn create_person(
+    state: State<'_, AppState>,
+    name: Option<String>,
+) -> Result<i64, String> {
+    let meta_db = state.meta_db.clone();
+    run_db_read(move || meta_db.create_person(name.as_deref())).await
 }
 
 /// Update person name
 #[tauri::command]
-pub fn update_person_name(
-    state: State<AppState>,
+pub async fn update_person_name(
+    state: State<'_, AppState>,
     person_id: i64,
     name: String,
 ) -> Result<(), String> {
-    state.meta_db.update_person_name(person_id, &name)
+    let meta_db = state.meta_db.clone();
+    run_db_read(move || meta_db.update_person_name(person_id, &name)).await
 }
 
 /// Assign a face to a person
 #[tauri::command]
-pub fn assign_face_to_person(
-    state: State<AppState>,
+pub async fn assign_face_to_person(
+    state: State<'_, AppState>,
     face_id: i64,
     person_id: i64,
 ) -> Result<(), String> {
     log::info!(target: "face_detection", "assign_face; face_id={}; person_id={}", face_id, person_id);
-    state.meta_db.assign_face_to_person(face_id, person_id)
+    let meta_db = state.meta_db.clone();
+    run_db_read(move || meta_db.assign_face_to_person(face_id, person_id)).await
 }
 
 /// Get photos containing a specific person
 #[tauri::command]
-pub fn get_photos_for_person(state: State<AppState>, person_id: i64) -> Result<String, String> {
-    let paths = state.meta_db.get_photos_for_person(person_id)?;
-    serde_json::to_string(&paths).map_err(|e| format!("Serialization error: {}", e))
+pub async fn get_photos_for_person(
+    state: State<'_, AppState>,
+    person_id: i64,
+) -> Result<String, String> {
+    let meta_db = state.meta_db.clone();
+    run_db_read(move || {
+        let paths = meta_db.get_photos_for_person(person_id)?;
+        serde_json::to_string(&paths).map_err(|e| format!("Serialization error: {}", e))
+    })
+    .await
 }
 
 /// Delete a person
 #[tauri::command]
-pub fn delete_person(state: State<AppState>, person_id: i64) -> Result<(), String> {
+pub async fn delete_person(state: State<'_, AppState>, person_id: i64) -> Result<(), String> {
     log::info!(target: "face_detection", "delete_person; person_id={}", person_id);
-    state.meta_db.delete_person(person_id)
+    let meta_db = state.meta_db.clone();
+    run_db_read(move || meta_db.delete_person(person_id)).await
 }
 
 /// Delete a detected face (for removing false positives)
 #[tauri::command]
-pub fn delete_detected_face(state: State<AppState>, face_id: i64) -> Result<(), String> {
+pub async fn delete_detected_face(
+    state: State<'_, AppState>,
+    face_id: i64,
+) -> Result<(), String> {
     log::info!(target: "face_detection", "delete_detected_face; face_id={}", face_id);
-    state.meta_db.delete_detected_face(face_id)
+    let meta_db = state.meta_db.clone();
+    run_db_read(move || meta_db.delete_detected_face(face_id)).await
 }
 
 /// Set person name for a face
 /// If the face already has a person, updates that person's name
 /// If the face doesn't have a person, creates a new person and assigns it
 #[tauri::command]
-pub fn set_face_person_name(
-    state: State<AppState>,
+pub async fn set_face_person_name(
+    state: State<'_, AppState>,
     face_id: i64,
     name: String,
 ) -> Result<i64, String> {
     log::info!(target: "face_detection", "set_face_person_name; face_id={}; name={}", face_id, name);
 
-    let face = state.meta_db.get_detected_face(face_id)?;
+    let meta_db = state.meta_db.clone();
+    run_db_read(move || {
+        let face = meta_db.get_detected_face(face_id)?;
 
-    if let Some(person_id) = face.person_id {
-        state.meta_db.update_person_name(person_id, &name)?;
-        Ok(person_id)
-    } else {
-        let person_id = state.meta_db.create_person(Some(&name))?;
-        state.meta_db.assign_face_to_person(face_id, person_id)?;
-        Ok(person_id)
-    }
+        if let Some(person_id) = face.person_id {
+            meta_db.update_person_name(person_id, &name)?;
+            Ok(person_id)
+        } else {
+            let person_id = meta_db.create_person(Some(&name))?;
+            meta_db.assign_face_to_person(face_id, person_id)?;
+            Ok(person_id)
+        }
+    })
+    .await
 }
 
 /// Download a face detection model
 #[tauri::command]
-pub fn download_face_detection_model(
-    state: State<AppState>,
+pub async fn download_face_detection_model(model_type: String) -> Result<String, String> {
+    run_db_read(move || download_face_detection_model_blocking(model_type)).await
+}
+
+#[allow(clippy::too_many_arguments)]
+fn download_face_detection_model_blocking(
     model_type: String,
 ) -> Result<String, String> {
     log::info!(target: "face_detection", "download_model_request; model_type={}", model_type);
 
-    let models_dir = get_models_dir(&state);
+    let models_dir = get_models_dir();
     std::fs::create_dir_all(&models_dir)
         .map_err(|e| format!("Failed to create models directory: {}", e))?;
 
@@ -422,13 +447,17 @@ pub fn download_face_detection_model(
 
 /// Delete a face detection model
 #[tauri::command]
-pub fn delete_face_detection_model(
-    state: State<AppState>,
+pub async fn delete_face_detection_model(model_type: String) -> Result<String, String> {
+    run_db_read(move || delete_face_detection_model_blocking(model_type)).await
+}
+
+#[allow(clippy::too_many_arguments)]
+fn delete_face_detection_model_blocking(
     model_type: String,
 ) -> Result<String, String> {
     log::info!(target: "face_detection", "delete_model_request; model_type={}", model_type);
 
-    let models_dir = get_models_dir(&state);
+    let models_dir = get_models_dir();
     let models = FaceDetectionService::get_model_download_info();
 
     let model = models
@@ -461,17 +490,29 @@ pub fn delete_face_detection_model(
 
 /// Run face detection for all photos in a date
 #[tauri::command]
-pub fn run_face_detection_for_date(
+pub async fn run_face_detection_for_date(
     date: String,
     window: tauri::Window,
-    state: State<AppState>,
+    state: State<'_, AppState>,
 ) -> Result<String, String> {
-    let logging_service = &state.logging_service;
+    let meta_db = state.meta_db.clone();
+    let logging_service = state.logging_service.clone();
+    run_db_read(move || run_face_detection_for_date_blocking(date, window, &meta_db, &logging_service)).await
+}
+
+#[allow(clippy::too_many_arguments)]
+fn run_face_detection_for_date_blocking(
+    date: String,
+    window: tauri::Window,
+    meta_db: &crate::repository::MetaDB,
+    logging_service: &crate::domain_service::logging_service::LoggingService,
+) -> Result<String, String> {
+    let logging_service = &logging_service;
     let correlation_id = logging_service.generate_correlation_id();
     log::info!(target: "face_detection",
         "date_detection_request; correlation_id={}; date={}", correlation_id, date);
 
-    let models_dir = get_models_dir(&state);
+    let models_dir = get_models_dir();
     let status = FaceDetectionService::check_models_available(&models_dir);
     if !status.is_ready() {
         return Err("Face detection models not available. Please download them first.".to_string());
@@ -479,8 +520,7 @@ pub fn run_face_detection_for_date(
 
     let normalized_date = normalize_date(&date);
 
-    let photos = state
-        .meta_db
+    let photos = meta_db
         .get_photos_for_grouping_in_date(&normalized_date)
         .map_err(|e| format!("Failed to get photos for date: {}", e))?;
 
@@ -499,7 +539,7 @@ pub fn run_face_detection_for_date(
     }
 
     let result = create_and_start_job(
-        &state.meta_db,
+        &meta_db,
         JobType::FaceDetection,
         image_paths,
         window.app_handle().clone(),
@@ -542,37 +582,58 @@ pub async fn get_unknown_faces(
 
 /// Get the path to a face thumbnail (returns error if not cached)
 #[tauri::command]
-pub fn get_face_thumbnail_path(state: State<AppState>, face_id: i64) -> Result<String, String> {
-    let thumbnail_store = &state.config.thumbnail_store;
-    let path = face_thumbnail_service::get_face_thumbnail_path(thumbnail_store, face_id);
-
-    if path.exists() {
-        return Ok(path.to_string_lossy().to_string());
-    }
-    Err(format!("Face thumbnail not cached: {}", face_id))
+pub async fn get_face_thumbnail_path(
+    state: State<'_, AppState>,
+    face_id: i64,
+) -> Result<String, String> {
+    let thumbnail_store = state.config.thumbnail_store.clone();
+    run_db_read(move || {
+        let path = face_thumbnail_service::get_face_thumbnail_path(&thumbnail_store, face_id);
+        if path.exists() {
+            return Ok(path.to_string_lossy().to_string());
+        }
+        Err(format!("Face thumbnail not cached: {}", face_id))
+    })
+    .await
 }
 
 /// Check if a face thumbnail exists
 #[tauri::command]
-pub fn has_face_thumbnail(state: State<AppState>, face_id: i64) -> bool {
-    let thumbnail_store = &state.config.thumbnail_store;
-    face_thumbnail_service::face_thumbnail_exists(thumbnail_store, face_id)
+pub async fn has_face_thumbnail(state: State<'_, AppState>, face_id: i64) -> Result<bool, String> {
+    let thumbnail_store = state.config.thumbnail_store.clone();
+    run_db_read(move || {
+        Ok(face_thumbnail_service::face_thumbnail_exists(
+            &thumbnail_store,
+            face_id,
+        ))
+    })
+    .await
 }
 
 /// Regenerate face thumbnails for all faces (runs as background job)
 #[tauri::command]
-pub fn regenerate_face_thumbnails(
+pub async fn regenerate_face_thumbnails(
     window: tauri::Window,
-    state: State<AppState>,
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    let meta_db = state.meta_db.clone();
+    let logging_service = state.logging_service.clone();
+    run_db_read(move || regenerate_face_thumbnails_blocking(window, &meta_db, &logging_service)).await
+}
+
+#[allow(clippy::too_many_arguments)]
+fn regenerate_face_thumbnails_blocking(
+    window: tauri::Window,
+    meta_db: &crate::repository::MetaDB,
+    logging_service: &crate::domain_service::logging_service::LoggingService,
 ) -> Result<String, String> {
     use crate::commands::job_helpers::create_and_start_job;
 
-    let logging_service = &state.logging_service;
+    let logging_service = &logging_service;
     let correlation_id = logging_service.generate_correlation_id();
     log::info!(target: "face_thumbnail", "regenerate_request; correlation_id={}", correlation_id);
 
-    let face_ids = state
-        .meta_db
+    let face_ids = meta_db
         .get_all_face_ids()
         .map_err(|e| format!("Failed to get face IDs: {}", e))?;
 
@@ -586,7 +647,7 @@ pub fn regenerate_face_thumbnails(
     let targets: Vec<String> = face_ids.iter().map(|id| id.to_string()).collect();
 
     let result = create_and_start_job(
-        &state.meta_db,
+        &meta_db,
         JobType::FaceThumbnailRegenerate,
         targets,
         window.app_handle().clone(),
@@ -598,7 +659,7 @@ pub fn regenerate_face_thumbnails(
 }
 
 /// Helper to get models directory
-fn get_models_dir(_state: &State<AppState>) -> std::path::PathBuf {
+fn get_models_dir() -> std::path::PathBuf {
     if let Some(data_dir) = dirs::data_local_dir() {
         data_dir.join("photoclove").join("models")
     } else {
