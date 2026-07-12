@@ -10,7 +10,6 @@ use crate::app_state::{AppState, PhotoRequest};
 use crate::domain_service::{achievements, photo_service};
 use crate::entity::photo;
 use crate::entity::photo_meta;
-use crate::repository;
 use crate::repository::{MetaInfoDB, RepositoryDB};
 use crate::value::comment;
 use crate::value::date;
@@ -56,7 +55,7 @@ pub fn get_dates(window: tauri::Window, state: tauri::State<AppState>) -> String
     log::debug!(target: "photo", "get_dates; from={}", window.label());
 
     // First try to get dates from SQLite metadata database
-    let sqlite_db = repository::meta_db::sqlite::SQLite::new(state.config.import_to.clone());
+    let sqlite_db = state.meta_db.clone();
 
     if sqlite_db.has_metadata() {
         log::debug!(target: "photo", "get_dates; using_sqlite=true");
@@ -176,7 +175,7 @@ pub async fn get_photos_unified(
             if (search_type == "search" || search_type == "all") && search_params.query.is_some() {
                 let _ = achievements::check_and_emit_achievement(
                     &app_handle,
-                    &state.config.import_to,
+                    &state.meta_db,
                     "first_search",
                 );
             }
@@ -359,11 +358,7 @@ pub fn save_star(
 
     // Check first_star achievement when user adds a star rating
     if star_num > 0 {
-        let _ = achievements::check_and_emit_achievement(
-            &app_handle,
-            &state.config.import_to,
-            "first_star",
-        );
+        let _ = achievements::check_and_emit_achievement(&app_handle, &state.meta_db, "first_star");
     }
 }
 

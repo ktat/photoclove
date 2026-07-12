@@ -14,7 +14,8 @@ use tauri::Emitter;
 ///
 /// # Arguments
 /// * `app_handle` - Tauri app handle for emitting events
-/// * `db_path` - Path to the database (typically config.import_to)
+/// * `db` - Shared database handle (typically state.meta_db; constructing a
+///   fresh SQLite here would re-run migrations on every starred photo)
 /// * `achievement_id` - ID of the achievement to check (e.g., "first_tag", "first_star")
 ///
 /// # Returns
@@ -23,11 +24,10 @@ use tauri::Emitter;
 /// * `Err(...)` - If an error occurred
 pub fn check_and_emit_achievement(
     app_handle: &tauri::AppHandle,
-    db_path: &str,
+    db: &SQLite,
     achievement_id: &str,
 ) -> Result<Option<AchievementWithProgress>, String> {
-    let db = SQLite::new(db_path.to_string());
-    let service = AchievementService::new(db);
+    let service = AchievementService::new(db.clone());
 
     let result = service.check_first_action(achievement_id)?;
 

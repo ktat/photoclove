@@ -16,7 +16,7 @@ pub async fn handle(ctx: &HandlerContext<'_>, _params: &SearchParams) -> Result<
 
     log::info!(target: "memories", "handle_memories; month={}; day={}", month, day);
 
-    let sqlite = repository::meta_db::sqlite::SQLite::new(ctx.config.import_to.clone());
+    let sqlite = ctx.meta_db.clone();
 
     match get_memories_photos_grouped(&sqlite, month, day) {
         Ok(groups) => {
@@ -41,7 +41,7 @@ pub async fn handle_startup(
 
     log::info!(target: "memories", "handle_startup_memories; month={}; day={}", month, day);
 
-    let sqlite = repository::meta_db::sqlite::SQLite::new(ctx.config.import_to.clone());
+    let sqlite = ctx.meta_db.clone();
 
     match get_memories_photos(&sqlite, month, day, 100) {
         Ok(photos) => {

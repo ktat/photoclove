@@ -4,7 +4,6 @@
 //! across different command modules (face detection, AI tagging, etc.)
 
 use crate::domain_service::job_queue::executor::process_new_jobs;
-use crate::entity::config::Config;
 use crate::entity::job_queue::{Job, JobType, JobUnit, QueuedJob};
 use crate::entity::photo::Photo;
 use crate::repository::meta_db::sqlite::SQLite;
@@ -89,9 +88,8 @@ pub fn create_and_start_job(
         photo_count
     );
 
-    // Trigger job processing with a new SQLite instance wrapped in Arc
-    let config = Config::new();
-    let db = Arc::new(SQLite::new(config.import_to.clone()));
+    // Trigger job processing with the shared DB handle
+    let db = Arc::new(meta_db.clone());
     process_new_jobs(db, 1, app_handle);
 
     Ok(JobCreationResult {

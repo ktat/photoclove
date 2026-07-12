@@ -437,7 +437,7 @@ fn create_s3_sync_job(
 ) -> Result<String, String> {
     use crate::domain_service::job_queue::executor::process_new_jobs;
     use crate::entity::job_queue::{Job, JobType, JobUnit, QueuedJob};
-    use crate::repository::meta_db::sqlite::SQLite;
+
     use std::sync::Arc;
     use tauri::Manager;
 
@@ -468,7 +468,7 @@ fn create_s3_sync_job(
         job_id, job_unit_id, photo_count);
 
     // Trigger job processing
-    let db = Arc::new(SQLite::new(state.config.import_to.clone()));
+    let db = Arc::new(state.meta_db.clone());
     let app_handle = window.app_handle().clone();
     process_new_jobs(db, state.config.copy_parallel, app_handle);
 

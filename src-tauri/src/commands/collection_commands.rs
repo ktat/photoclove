@@ -38,7 +38,7 @@ pub async fn create_collection(
             };
             let _ = achievements::check_and_emit_achievement(
                 &app_handle,
-                &state.config.import_to,
+                &state.meta_db,
                 achievement_id,
             );
 
@@ -169,7 +169,7 @@ pub async fn add_photo_to_collection(
                 };
                 let _ = achievements::check_and_emit_achievement(
                     &app_handle,
-                    &state.config.import_to,
+                    &state.meta_db,
                     achievement_id,
                 );
             }

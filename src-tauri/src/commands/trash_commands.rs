@@ -92,11 +92,8 @@ pub async fn move_to_trash_batch(
 
     // Check first_delete achievement if any photos were deleted
     if succeeded > 0 {
-        let _ = achievements::check_and_emit_achievement(
-            &app_handle,
-            &state.config.import_to,
-            "first_delete",
-        );
+        let _ =
+            achievements::check_and_emit_achievement(&app_handle, &state.meta_db, "first_delete");
     }
 
     let result = BatchOperationResult {

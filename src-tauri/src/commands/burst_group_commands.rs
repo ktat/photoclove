@@ -9,7 +9,6 @@ use crate::app_state::AppState;
 use crate::domain_service::job_queue_service::submission::submit_recalculate_grouping_job;
 use crate::entity::burst_group::BurstGroup;
 use crate::entity::photo::Photo;
-use crate::repository::meta_db::sqlite::SQLite;
 use crate::value::date::Date;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -158,7 +157,7 @@ pub async fn recalculate_grouping(
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
     let logging_service = &state.logging_service;
-    let config = &state.config;
+    let _config = &state.config;
 
     let correlation_id = logging_service.generate_correlation_id();
     log::info!(
@@ -170,7 +169,7 @@ pub async fn recalculate_grouping(
     );
 
     // Create database connection for job queue
-    let db = Arc::new(SQLite::new(config.import_to.clone()));
+    let db = Arc::new(state.meta_db.clone());
 
     // Submit job to queue
     let job_unit_id =
