@@ -77,19 +77,26 @@ function ShareTab({
     const [padding, setPadding] = useState(10);
     const [cornerRadius, setCornerRadius] = useState(8);
 
-    // Resolve relative paths to absolute via Photo entity for image loading
+    // Resolve relative paths to absolute via Photo entity for image loading.
+    // RAW/HEIC/AVIF can't be drawn from the original by the browser, so the
+    // collage would otherwise fall back to a slow full backend decode per file.
+    // Their library thumbnails are already generated (the grid shows them), so
+    // resolve non-native formats to that thumbnail — fast and correctly sized
+    // for the small collage tiles.
     const resolveToDisplayPath = useCallback((path) => {
         if (!path || path.startsWith('/')) return path;
         const photo = Photo.fromJSON({
             originalPath: path,
             name: path.replace(/^.+\//, ''),
+            hasThumbnail: true,
             configData: {
                 import_to: appConfig?.import_to,
                 thumbnail_store: appConfig?.thumbnail_store,
                 trash_path: appConfig?.trash_path
             }
         });
-        return photo?.displayPath() || path;
+        if (!photo) return path;
+        return photo.isNonNativeFormat() ? photo.thumbnailPath() : photo.displayPath();
     }, [appConfig]);
 
     // Determine active photos based on source (resolved to absolute paths for image loading).
