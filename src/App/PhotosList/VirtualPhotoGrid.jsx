@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useEffect, useState, memo, useCallback } from '
 import { Grid } from 'react-window';
 import PhotoCard from "./PhotoCard.jsx";
 import { Photo } from "../../domain/Photo.js";
+import { useIsSelected } from "../../stores/selectionStore.js";
 import { useOverlayMargin } from "../../hooks/useOverlayMargin.js";
 import styles from './PhotoGrid.module.css';
 
@@ -17,7 +18,6 @@ const PhotoCell = memo(function PhotoCell({
     photos,
     columnCount,
     iconSize,
-    photoSelectionDict,
     onAddSelection,
     onDisplayPhoto,
     onOpenBurstGroup,
@@ -48,6 +48,11 @@ const PhotoCell = memo(function PhotoCell({
         return photoData;
     }, [index, photos.length, photoData]);
 
+    // Subscribe to only this card's selected state (per-path store). This keeps
+    // cellProps stable across toggles so react-window doesn't re-render every
+    // cell — only the toggled card re-renders. Must run before early returns.
+    const isSelected = useIsSelected(photo?.originalPath);
+
     // Return empty cell if index exceeds photo count
     if (index >= photos.length) {
         return <div style={style} />;
@@ -67,7 +72,7 @@ const PhotoCell = memo(function PhotoCell({
                 photo={photo}
                 index={index}
                 iconSize={iconSize}
-                isSelected={photoSelectionDict[photo.originalPath] || false}
+                isSelected={isSelected}
                 onAddSelection={onAddSelection}
                 onDisplayPhoto={onDisplayPhoto}
                 onOpenBurstGroup={onOpenBurstGroup}
@@ -94,7 +99,6 @@ const PhotoCell = memo(function PhotoCell({
 function VirtualPhotoGrid({
     displayedPhotos,
     iconSize,
-    photoSelectionDict,
     onAddSelection,
     onDisplayPhoto,
     onOpenBurstGroup,
@@ -107,6 +111,21 @@ function VirtualPhotoGrid({
     containerRef: _containerRef
 }) {
     const gridRef = useRef(null);
+
+    // Stabilize the callbacks handed to cells. The upstream handlers (e.g.
+    // addSelection) close over selection state and get a new identity on every
+    // toggle; if passed straight into cellProps they'd change its identity and
+    // force react-window to re-render every cell. Wrapping them in refs keeps
+    // cellProps referentially stable while still invoking the latest logic.
+    const onAddSelectionRef = useRef(onAddSelection);
+    onAddSelectionRef.current = onAddSelection;
+    const onDisplayPhotoRef = useRef(onDisplayPhoto);
+    onDisplayPhotoRef.current = onDisplayPhoto;
+    const onOpenBurstGroupRef = useRef(onOpenBurstGroup);
+    onOpenBurstGroupRef.current = onOpenBurstGroup;
+    const stableOnAddSelection = useCallback((...args) => onAddSelectionRef.current?.(...args), []);
+    const stableOnDisplayPhoto = useCallback((...args) => onDisplayPhotoRef.current?.(...args), []);
+    const stableOnOpenBurstGroup = useCallback((...args) => onOpenBurstGroupRef.current?.(...args), []);
     const localContainerRef = useRef(null);
     const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
     const [shadow, setShadow] = useState({ top: false, bottom: true });
@@ -316,10 +335,9 @@ function VirtualPhotoGrid({
         photos: displayedPhotos,
         columnCount,
         iconSize,
-        photoSelectionDict,
-        onAddSelection,
-        onDisplayPhoto,
-        onOpenBurstGroup,
+        onAddSelection: stableOnAddSelection,
+        onDisplayPhoto: stableOnDisplayPhoto,
+        onOpenBurstGroup: stableOnOpenBurstGroup,
         isInBurstGroupMode,
         burstModeEnabled,
         setShowSideMenu,
@@ -329,10 +347,9 @@ function VirtualPhotoGrid({
         displayedPhotos,
         columnCount,
         iconSize,
-        photoSelectionDict,
-        onAddSelection,
-        onDisplayPhoto,
-        onOpenBurstGroup,
+        stableOnAddSelection,
+        stableOnDisplayPhoto,
+        stableOnOpenBurstGroup,
         isInBurstGroupMode,
         burstModeEnabled,
         setShowSideMenu,

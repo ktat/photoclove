@@ -17,6 +17,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { logger } from '../services/LoggerService.js';
 import { VIEW_MODES } from '../constants/viewModes.js';
+import { selectionStore } from '../stores/selectionStore.js';
 
 const STORAGE_KEY_PREFIX = 'photoSelection:';
 
@@ -104,6 +105,14 @@ export function usePhotoSelection(viewMode, viewModeObj) {
         setPhotoSelection = setLibrarySelection;
         setPhotoSelectionDict = setLibrarySelectionDict;
     }
+
+    // Mirror the active selection dict into the per-path selectionStore so the
+    // grid can subscribe per card (useIsSelected). replace() only notifies the
+    // paths whose membership changed, so a single toggle re-renders one card
+    // instead of every mounted PhotoCard.
+    useEffect(() => {
+        selectionStore.replace(photoSelectionDict);
+    }, [photoSelectionDict]);
 
     /**
      * Toggle photo selection

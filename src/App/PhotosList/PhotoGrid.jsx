@@ -11,7 +11,6 @@ function PhotoGrid({
     displayedPhotos,
     allPhotos,
     iconSize,
-    photoSelectionDict,
     onAddSelection,
     onDisplayPhoto,
     onOpenBurstGroup,
@@ -72,7 +71,6 @@ function PhotoGrid({
             <VirtualPhotoGrid
                 displayedPhotos={photos}
                 iconSize={iconSize}
-                photoSelectionDict={photoSelectionDict}
                 onAddSelection={onAddSelection}
                 onDisplayPhoto={onDisplayPhoto}
                 onOpenBurstGroup={onOpenBurstGroup}
