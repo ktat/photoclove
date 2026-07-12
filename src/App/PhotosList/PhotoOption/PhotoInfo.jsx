@@ -15,6 +15,14 @@ function formatFileSize(bytes) {
     return `${value.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
+function formatDuration(secs) {
+    if (secs == null) return '';
+    const total = Math.round(secs);
+    const minutes = Math.floor(total / 60);
+    const seconds = String(total % 60).padStart(2, '0');
+    return `${minutes}:${seconds}`;
+}
+
 function PhotoInfo(props) {
     const { t } = useTranslation('common');
     const [photoInfo, setPhotoInfo] = useState({});
@@ -256,7 +264,7 @@ function PhotoInfo(props) {
                         {isVideo && (
                             <>
                                 <tr><th>{t('photoInfo.resolution')}</th><td>{photoInfo.exif && photoInfo.exif.xresolution ? `${photoInfo.exif.xresolution} x ${photoInfo.exif.yresolution}` : ""}</td></tr>
-                                <tr><th>{t('photoInfo.duration')}</th><td>{photoInfo.video && photoInfo.video.duration_secs != null ? `${Math.floor(photoInfo.video.duration_secs / 60)}:${String(Math.round(photoInfo.video.duration_secs % 60)).padStart(2, '0')}` : ""}</td></tr>
+                                <tr><th>{t('photoInfo.duration')}</th><td>{photoInfo.video ? formatDuration(photoInfo.video.duration_secs) : ""}</td></tr>
                                 <tr><th>{t('photoInfo.codec')}</th><td>{photoInfo.video ? photoInfo.video.codec : ""}</td></tr>
                                 {photoInfo.video && photoInfo.video.gps_latitude != null && photoInfo.video.gps_longitude != null && (
                                     <tr><th>{t('photoInfo.gps')}</th><td>{photoInfo.video.gps_latitude}, {photoInfo.video.gps_longitude}</td></tr>

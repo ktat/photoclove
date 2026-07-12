@@ -76,4 +76,24 @@ describe('PhotoInfo video vs photo rows', () => {
         expect(screen.queryByText('Duration')).not.toBeInTheDocument();
         expect(screen.queryByText('Codec')).not.toBeInTheDocument();
     });
+
+    it('formats video duration correctly when seconds round up to the next minute', async () => {
+        global.mockTauriInvoke.mockResolvedValue(JSON.stringify({
+            original_path: '2024-05-13/clip.mp4',
+            current_path: '/library/2024-05-13/clip.mp4',
+            is_trashed: false,
+            file_size: 12345,
+            meta: null,
+            exif: { date_time: '2026-06-29 18:48:43', make: 'DJI', model: 'FC7303' },
+            video: { duration_secs: 59.6, codec: 'hevc' }
+        }));
+
+        renderWithI18n(<PhotoInfo {...baseProps} currentPhoto={makePhoto({ isVideo: true })} />);
+
+        await waitFor(() => {
+            expect(screen.getByText('Duration')).toBeInTheDocument();
+        });
+        const durationCell = screen.getByText('Duration').closest('tr').querySelector('td');
+        expect(durationCell.textContent).toBe('1:00');
+    });
 });
