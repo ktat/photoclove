@@ -91,7 +91,10 @@ pub async fn detect_faces_in_photo(
 ) -> Result<String, String> {
     let meta_db = state.meta_db.clone();
     let config = state.config.clone();
-    run_db_read(move || detect_faces_in_photo_blocking(photo_path, save_to_db, use_full_image, &meta_db, &config)).await
+    run_db_read(move || {
+        detect_faces_in_photo_blocking(photo_path, save_to_db, use_full_image, &meta_db, &config)
+    })
+    .await
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -138,9 +141,7 @@ fn detect_faces_in_photo_blocking(
     )?;
 
     if save_to_db && !faces.is_empty() {
-        let named_faces = meta_db
-            .get_named_face_embeddings()
-            .unwrap_or_default();
+        let named_faces = meta_db.get_named_face_embeddings().unwrap_or_default();
         log::debug!(target: "face_detection", "face_matching; named_faces_count={}", named_faces.len());
 
         let face_inputs: Vec<DetectedFaceInput> = faces
@@ -168,8 +169,7 @@ fn detect_faces_in_photo_blocking(
             })
             .collect();
 
-        meta_db
-            .save_detected_faces(&photo_path, &face_inputs)?;
+        meta_db.save_detected_faces(&photo_path, &face_inputs)?;
         let saved_faces = meta_db.get_detected_faces(&photo_path)?;
         log::info!(target: "face_detection",
             "detect_faces_complete; photo_path={}; face_count={}", photo_path, saved_faces.len());
@@ -344,10 +344,7 @@ pub async fn delete_person(state: State<'_, AppState>, person_id: i64) -> Result
 
 /// Delete a detected face (for removing false positives)
 #[tauri::command]
-pub async fn delete_detected_face(
-    state: State<'_, AppState>,
-    face_id: i64,
-) -> Result<(), String> {
+pub async fn delete_detected_face(state: State<'_, AppState>, face_id: i64) -> Result<(), String> {
     log::info!(target: "face_detection", "delete_detected_face; face_id={}", face_id);
     let meta_db = state.meta_db.clone();
     run_db_read(move || meta_db.delete_detected_face(face_id)).await
@@ -387,9 +384,7 @@ pub async fn download_face_detection_model(model_type: String) -> Result<String,
 }
 
 #[allow(clippy::too_many_arguments)]
-fn download_face_detection_model_blocking(
-    model_type: String,
-) -> Result<String, String> {
+fn download_face_detection_model_blocking(model_type: String) -> Result<String, String> {
     log::info!(target: "face_detection", "download_model_request; model_type={}", model_type);
 
     let models_dir = get_models_dir();
@@ -452,9 +447,7 @@ pub async fn delete_face_detection_model(model_type: String) -> Result<String, S
 }
 
 #[allow(clippy::too_many_arguments)]
-fn delete_face_detection_model_blocking(
-    model_type: String,
-) -> Result<String, String> {
+fn delete_face_detection_model_blocking(model_type: String) -> Result<String, String> {
     log::info!(target: "face_detection", "delete_model_request; model_type={}", model_type);
 
     let models_dir = get_models_dir();
@@ -497,7 +490,10 @@ pub async fn run_face_detection_for_date(
 ) -> Result<String, String> {
     let meta_db = state.meta_db.clone();
     let logging_service = state.logging_service.clone();
-    run_db_read(move || run_face_detection_for_date_blocking(date, window, &meta_db, &logging_service)).await
+    run_db_read(move || {
+        run_face_detection_for_date_blocking(date, window, &meta_db, &logging_service)
+    })
+    .await
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -539,7 +535,7 @@ fn run_face_detection_for_date_blocking(
     }
 
     let result = create_and_start_job(
-        &meta_db,
+        meta_db,
         JobType::FaceDetection,
         image_paths,
         window.app_handle().clone(),
@@ -618,7 +614,8 @@ pub async fn regenerate_face_thumbnails(
 ) -> Result<String, String> {
     let meta_db = state.meta_db.clone();
     let logging_service = state.logging_service.clone();
-    run_db_read(move || regenerate_face_thumbnails_blocking(window, &meta_db, &logging_service)).await
+    run_db_read(move || regenerate_face_thumbnails_blocking(window, &meta_db, &logging_service))
+        .await
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -647,7 +644,7 @@ fn regenerate_face_thumbnails_blocking(
     let targets: Vec<String> = face_ids.iter().map(|id| id.to_string()).collect();
 
     let result = create_and_start_job(
-        &meta_db,
+        meta_db,
         JobType::FaceThumbnailRegenerate,
         targets,
         window.app_handle().clone(),

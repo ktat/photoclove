@@ -6,10 +6,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tauri::State;
 
+use crate::commands::run_blocking;
 use crate::domain_service::s3_service;
 use crate::domain_service::token_storage_service::TokenStorageService;
 use crate::entity::config::{S3AuthMethod, S3Config, S3StorageType};
-use crate::commands::run_blocking;
 use crate::AppState;
 
 /// Response for S3 sync statistics
@@ -274,10 +274,7 @@ fn enqueue_s3_incremental_sync_blocking(
     config: &crate::entity::config::Config,
     window: tauri::Window,
 ) -> Result<String, String> {
-    let s3_config = config
-        .s3
-        .clone()
-        .ok_or("S3 backup is not configured")?;
+    let s3_config = config.s3.clone().ok_or("S3 backup is not configured")?;
 
     if !s3_config.enabled {
         return Err("S3 backup is not enabled".to_string());
@@ -333,10 +330,7 @@ fn enqueue_s3_full_sync_blocking(
     config: &crate::entity::config::Config,
     window: tauri::Window,
 ) -> Result<String, String> {
-    let s3_config = config
-        .s3
-        .clone()
-        .ok_or("S3 backup is not configured")?;
+    let s3_config = config.s3.clone().ok_or("S3 backup is not configured")?;
 
     if !s3_config.enabled {
         return Err("S3 backup is not enabled".to_string());
@@ -391,10 +385,7 @@ fn enqueue_s3_sync_by_date_blocking(
 ) -> Result<String, String> {
     log::info!(target: "s3_commands", "enqueue_s3_sync_by_date; date={}", date);
 
-    let s3_config = config
-        .s3
-        .clone()
-        .ok_or("S3 backup is not configured")?;
+    let s3_config = config.s3.clone().ok_or("S3 backup is not configured")?;
 
     if !s3_config.enabled {
         log::warn!(target: "s3_commands", "enqueue_s3_sync_by_date; s3_not_enabled");
