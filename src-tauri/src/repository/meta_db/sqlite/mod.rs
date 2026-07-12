@@ -111,6 +111,11 @@ impl SQLite {
         photo_crud::delete_photo_by_path(self, path)
     }
 
+    /// Soft delete many photos in one transaction; returns affected dates.
+    pub fn delete_photos_batch(&self, paths: &[String]) -> Result<Vec<String>, String> {
+        photo_crud::delete_photos_batch(self, paths)
+    }
+
     /// Restore photo from trash without updating date_summary (for batch operations)
     pub fn restore_photo_from_trash_no_summary(&self, photo: &photo::Photo) {
         photo_crud::restore_photo_from_trash_no_summary(self, photo)

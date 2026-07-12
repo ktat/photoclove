@@ -39,18 +39,14 @@ pub async fn move_to_trash_batch(
     let meta_db = &state.meta_db;
     let trash = trash::Trash::new(state.config.trash_path.to_string());
 
-    // Group photos by date for efficient date_summary update
+    // Group photos by date (first path component) for the UI's date_changes
     let mut date_counts: std::collections::HashMap<String, i32> = std::collections::HashMap::new();
-    let mut succeeded = 0;
+    let mut succeeded_paths: Vec<String> = Vec::new();
     let mut failed = 0;
     let mut failed_paths = Vec::new();
 
     for path_str in paths {
         // path_str is relative (e.g., "2024-01-15/uuid/photo.jpg")
-        let photo = photo::Photo::new(
-            file::File::from_relative(path_str.clone()),
-            Option::Some(state.config.clone()),
-        );
         // Resolve to absolute path for file system operation
         let abs_path = file::to_absolute_path(&path_str, &state.config.import_to);
         let abs_file = file::File::new(abs_path);
@@ -58,15 +54,17 @@ pub async fn move_to_trash_batch(
         // Move file to trash (use relative DB path for simple trash directory structure)
         match file_service::move_to_trash(abs_file, trash.clone(), &path_str) {
             Ok(_) => {
-                // Mark as deleted in DB (set delete_flg = 1)
-                meta_db.delete_photo(&photo);
-                // Parse date using helper function
-                // Get photo date before moving to trash
-                let photo_meta = meta_db.get_photo_meta(photo.clone());
-                let date_key = photo_meta.date_key();
+                // Date key comes straight from the directory prefix; no DB
+                // round-trip needed per photo
+                let date_key = path_str
+                    .trim_start_matches('/')
+                    .split('/')
+                    .next()
+                    .unwrap_or("")
+                    .to_string();
                 *date_counts.entry(date_key).or_insert(0) -= 1;
-                succeeded += 1;
                 log::debug!(target: "trash", "move_to_trash_batch; moved={}", path_str);
+                succeeded_paths.push(path_str);
             }
             Err(e) => {
                 failed += 1;
@@ -75,15 +73,31 @@ pub async fn move_to_trash_batch(
             }
         }
     }
+    let succeeded = succeeded_paths.len();
 
-    // Batch update date_summary
-    for (date, count) in &date_counts {
-        match meta_db.update_date_summary_for_date(date, *count) {
+    // Soft delete all moved photos in one transaction instead of one
+    // SELECT + UPDATE + summary transaction per photo
+    let affected_dates = match meta_db.delete_photos_batch(&succeeded_paths) {
+        Ok(dates) => dates,
+        Err(e) => {
+            log::error!(target: "trash", "move_to_trash_batch; batch_delete_error={}", e);
+            Vec::new()
+        }
+    };
+
+    // Recount date_summary once per affected date. Cover both the directory
+    // dates and the DATE(photo_date) values, which differ when a photo's
+    // EXIF date doesn't match its folder.
+    let mut dates_to_recount: std::collections::HashSet<String> =
+        date_counts.keys().cloned().collect();
+    dates_to_recount.extend(affected_dates);
+    for date in &dates_to_recount {
+        match meta_db.update_date_summary_for_date(date, 0) {
             Ok(_) => {
-                log::info!(target: "trash", "move_to_trash_batch; date={}; count_delta={}; status=success", date, count);
+                log::info!(target: "trash", "move_to_trash_batch; date={}; status=recounted", date);
             }
             Err(e) => {
-                log::error!(target: "trash", "move_to_trash_batch; date={}; count_delta={}; error={}; status=failed", date, count, e);
+                log::error!(target: "trash", "move_to_trash_batch; date={}; error={}; status=failed", date, e);
             }
         }
     }

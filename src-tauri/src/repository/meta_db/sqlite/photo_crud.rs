@@ -386,3 +386,131 @@ pub fn get_photo_created_at(sqlite: &SQLite, photo: &photo::Photo) -> String {
         Err(_) => "1970-01-01 00:00:00".to_string(),
     }
 }
+
+/// Soft delete many photos in a single transaction.
+/// Returns the distinct DATE(photo_date) values of the affected rows so the
+/// caller can recount date_summary once per date instead of per photo.
+pub fn delete_photos_batch(sqlite: &SQLite, paths: &[String]) -> Result<Vec<String>, String> {
+    if paths.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let conn = sqlite
+        .get_connection()
+        .map_err(|e| format!("Connection failed: {}", e))?;
+    let tx = conn
+        .unchecked_transaction()
+        .map_err(|e| format!("Transaction failed: {}", e))?;
+
+    let now = date::DateTime::now().to_db_string();
+    let mut affected_dates = std::collections::HashSet::new();
+
+    for chunk in paths.chunks(500) {
+        let placeholders = vec!["?"; chunk.len()].join(",");
+
+        let select_sql = format!(
+            "SELECT DISTINCT DATE(photo_date) FROM photo_metadata WHERE path IN ({})",
+            placeholders
+        );
+        let mut stmt = tx
+            .prepare(&select_sql)
+            .map_err(|e| format!("Failed to prepare date select: {}", e))?;
+        let dates = stmt
+            .query_map(rusqlite::params_from_iter(chunk.iter()), |row| {
+                row.get::<_, Option<String>>(0)
+            })
+            .map_err(|e| format!("Failed to query dates: {}", e))?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| format!("Failed to collect dates: {}", e))?;
+        affected_dates.extend(dates.into_iter().flatten());
+
+        let update_sql = format!(
+            "UPDATE photo_metadata SET delete_flg = 1, updated_at = ?1 WHERE path IN ({})",
+            placeholders
+        );
+        let mut params_vec: Vec<&dyn rusqlite::ToSql> = Vec::with_capacity(chunk.len() + 1);
+        params_vec.push(&now);
+        for p in chunk {
+            params_vec.push(p);
+        }
+        tx.execute(&update_sql, params_vec.as_slice())
+            .map_err(|e| format!("Batch soft delete failed: {}", e))?;
+    }
+
+    tx.commit().map_err(|e| format!("Commit failed: {}", e))?;
+    Ok(affected_dates.into_iter().collect())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn setup_db(name: &str) -> SQLite {
+        let dir = std::env::temp_dir()
+            .join("photoclove_photo_crud_tests")
+            .join(name);
+        std::fs::create_dir_all(&dir).unwrap();
+        let db_file = dir.join("photoclove.db");
+        if db_file.exists() {
+            std::fs::remove_file(&db_file).unwrap();
+        }
+        SQLite::new(dir.to_str().unwrap().to_string())
+    }
+
+    fn insert_photo(db: &SQLite, path: &str, photo_date: &str) {
+        let conn = db.get_connection().unwrap();
+        conn.execute(
+            "INSERT INTO photo_metadata (path, photo_date) VALUES (?1, ?2)",
+            params![path, photo_date],
+        )
+        .unwrap();
+    }
+
+    fn delete_flg(db: &SQLite, path: &str) -> i32 {
+        let conn = db.get_connection().unwrap();
+        conn.query_row(
+            "SELECT COALESCE(delete_flg, 0) FROM photo_metadata WHERE path = ?1",
+            params![path],
+            |row| row.get(0),
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn test_delete_photos_batch_soft_deletes_and_returns_dates() {
+        let db = setup_db("batch_delete");
+        insert_photo(&db, "2024-05-13/a.jpg", "2024-05-13 10:00:00");
+        insert_photo(&db, "2024-05-13/b.jpg", "2024-05-13 11:00:00");
+        insert_photo(&db, "2024-06-01/c.jpg", "2024-06-01 09:00:00");
+
+        let mut dates = delete_photos_batch(
+            &db,
+            &[
+                "2024-05-13/a.jpg".to_string(),
+                "2024-05-13/b.jpg".to_string(),
+            ],
+        )
+        .unwrap();
+        dates.sort();
+
+        assert_eq!(dates, vec!["2024-05-13".to_string()]);
+        assert_eq!(delete_flg(&db, "2024-05-13/a.jpg"), 1);
+        assert_eq!(delete_flg(&db, "2024-05-13/b.jpg"), 1);
+        assert_eq!(
+            delete_flg(&db, "2024-06-01/c.jpg"),
+            0,
+            "untouched photo stays"
+        );
+    }
+
+    #[test]
+    fn test_delete_photos_batch_empty_and_unknown_paths() {
+        let db = setup_db("batch_delete_edge");
+        assert_eq!(delete_photos_batch(&db, &[]).unwrap(), Vec::<String>::new());
+        // Unknown paths: no dates affected, no error
+        assert_eq!(
+            delete_photos_batch(&db, &["nope/x.jpg".to_string()]).unwrap(),
+            Vec::<String>::new()
+        );
+    }
+}
