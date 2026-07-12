@@ -225,19 +225,6 @@ impl OnnxClassifier {
         Ok(tensor)
     }
 
-    /// Softmax normalization for converting logits to probabilities
-    fn softmax(logits: &[f32]) -> Vec<f32> {
-        if logits.is_empty() {
-            return Vec::new();
-        }
-        let max_logit = logits.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
-        let exp_sum: f32 = logits.iter().map(|x| (x - max_logit).exp()).sum();
-        logits
-            .iter()
-            .map(|x| (x - max_logit).exp() / exp_sum)
-            .collect()
-    }
-
     /// Process model output and map to categories
     fn process_output(
         &self,
@@ -245,7 +232,7 @@ impl OnnxClassifier {
         config: &ClassifierConfig,
     ) -> Vec<ClassificationResult> {
         // Apply softmax to convert logits to probabilities
-        let probabilities = Self::softmax(output);
+        let probabilities = super::clip_common::softmax(output);
 
         // Get top predictions with their indices
         let mut predictions: Vec<(usize, f32)> = probabilities

@@ -171,6 +171,24 @@ fn main() {
         .plugin(tauri_plugin_cli::init())
         .plugin(tauri_plugin_oauth::init())
         .setup(move |app| {
+            // Main-thread responsiveness probe: posts a no-op to the GTK main
+            // thread every 500ms and warns when it takes >200ms to execute. A
+            // burst of these warnings pinpoints main-thread stalls (frozen
+            // window / loading animation) and their time window in the log.
+            {
+                let probe_handle = app.handle().clone();
+                std::thread::spawn(move || loop {
+                    let sent = std::time::Instant::now();
+                    let _ = probe_handle.run_on_main_thread(move || {
+                        let delay_ms = sent.elapsed().as_millis();
+                        if delay_ms > 200 {
+                            log::warn!(target: "mainthread", "stall; delay_ms={}", delay_ms);
+                        }
+                    });
+                    std::thread::sleep(std::time::Duration::from_millis(500));
+                });
+            }
+
             let search_item = MenuItemBuilder::new("🔍 Search")
                 .id("search")
                 .accelerator("CmdOrCtrl+F")

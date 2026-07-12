@@ -6,7 +6,6 @@ use crate::app_state::AppState;
 use crate::domain_service::achievements::{
     AchievementCategory, AchievementCheckResult, AchievementService, AchievementWithProgress,
 };
-use crate::repository::meta_db::sqlite::SQLite;
 use serde::Serialize;
 
 /// Summary of achievements for display
@@ -34,7 +33,7 @@ pub async fn get_achievements(
 ) -> Result<AchievementsSummary, String> {
     log::info!(target: "achievements", "get_achievements; status=fetching");
 
-    let db = SQLite::new(state.config.import_to.clone());
+    let db = state.meta_db.clone();
     let service = AchievementService::new(db);
 
     let achievements = service.get_all_achievements()?;
@@ -96,7 +95,7 @@ pub async fn check_all_achievements(
 ) -> Result<AchievementCheckResult, String> {
     log::info!(target: "achievements", "check_all_achievements; status=checking");
 
-    let db = SQLite::new(state.config.import_to.clone());
+    let db = state.meta_db.clone();
     let service = AchievementService::new(db);
 
     let result = service.check_all_achievements()?;
@@ -136,7 +135,7 @@ pub async fn check_first_action_achievement(
 
     use crate::domain_service::achievements::check_and_emit_achievement;
 
-    let result = check_and_emit_achievement(&app_handle, &state.config.import_to, &achievement_id)?;
+    let result = check_and_emit_achievement(&app_handle, &state.meta_db, &achievement_id)?;
 
     Ok(AchievementCheckResult {
         newly_achieved: result.into_iter().collect(),
@@ -150,7 +149,7 @@ pub async fn check_photo_count_achievements(
 ) -> Result<AchievementCheckResult, String> {
     log::info!(target: "achievements", "check_photo_count; status=checking");
 
-    let db = SQLite::new(state.config.import_to.clone());
+    let db = state.meta_db.clone();
     let service = AchievementService::new(db);
 
     service.check_photo_count()
@@ -163,7 +162,7 @@ pub async fn check_monthly_achievements(
 ) -> Result<AchievementCheckResult, String> {
     log::info!(target: "achievements", "check_monthly; status=checking");
 
-    let db = SQLite::new(state.config.import_to.clone());
+    let db = state.meta_db.clone();
     let service = AchievementService::new(db);
 
     service.check_monthly_achievements()
@@ -176,7 +175,7 @@ pub async fn check_star_count_achievements(
 ) -> Result<AchievementCheckResult, String> {
     log::info!(target: "achievements", "check_star_count; status=checking");
 
-    let db = SQLite::new(state.config.import_to.clone());
+    let db = state.meta_db.clone();
     let service = AchievementService::new(db);
 
     service.check_star_count()

@@ -10,7 +10,6 @@ use crate::app_state::{AppState, PhotoRequest};
 use crate::domain_service::{achievements, photo_service};
 use crate::entity::photo;
 use crate::entity::photo_meta;
-use crate::repository;
 use crate::repository::{MetaInfoDB, RepositoryDB};
 use crate::value::comment;
 use crate::value::date;
@@ -52,33 +51,42 @@ pub struct PhotoInfoResponse {
 /// First attempts to retrieve dates from SQLite metadata database for performance.
 /// Falls back to filesystem directory scanning if metadata is unavailable.
 #[tauri::command]
-pub fn get_dates(window: tauri::Window, state: tauri::State<AppState>) -> String {
+pub async fn get_dates(
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, ()> {
     log::debug!(target: "photo", "get_dates; from={}", window.label());
 
-    // First try to get dates from SQLite metadata database
-    let sqlite_db = repository::meta_db::sqlite::SQLite::new(state.config.import_to.clone());
-
-    if sqlite_db.has_metadata() {
-        log::debug!(target: "photo", "get_dates; using_sqlite=true");
-        match sqlite_db.get_available_dates() {
-            Ok(dates) => {
-                let mut date_list = date::Dates::empty();
-                date_list.dates = dates;
-                return date_list.to_json();
+    // NFS-backed DB queries can stall for seconds under write contention;
+    // as a sync command this ran on the main thread and froze the UI.
+    let sqlite_db = state.meta_db.clone();
+    let repo_db = state.repo_db.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        // First try to get dates from SQLite metadata database
+        if sqlite_db.has_metadata() {
+            log::debug!(target: "photo", "get_dates; using_sqlite=true");
+            match sqlite_db.get_available_dates() {
+                Ok(dates) => {
+                    let mut date_list = date::Dates::empty();
+                    date_list.dates = dates;
+                    return date_list.to_json();
+                }
+                Err(e) => {
+                    log::error!(target: "photo", "get_dates_error; error={}", e);
+                    // Fall through to filesystem scanning
+                }
             }
-            Err(e) => {
-                log::error!(target: "photo", "get_dates_error; error={}", e);
-                // Fall through to filesystem scanning
-            }
+        } else {
+            log::debug!(target: "photo", "get_dates; using_filesystem=true");
         }
-    } else {
-        log::debug!(target: "photo", "get_dates; using_filesystem=true");
-    }
 
-    // Fallback to filesystem directory scanning
-    let db = &state.repo_db;
-    let dates = db.get_dates();
-    dates.to_json()
+        // Fallback to filesystem directory scanning
+        repo_db.get_dates().to_json()
+    })
+    .await
+    .map_err(|e| {
+        log::error!(target: "photo", "get_dates_task_failed; error={}", e);
+    })
 }
 
 /// Get photo counts for specific dates.
@@ -176,7 +184,7 @@ pub async fn get_photos_unified(
             if (search_type == "search" || search_type == "all") && search_params.query.is_some() {
                 let _ = achievements::check_and_emit_achievement(
                     &app_handle,
-                    &state.config.import_to,
+                    &state.meta_db,
                     "first_search",
                 );
             }
@@ -225,27 +233,42 @@ pub async fn get_photos_unified(
 /// Retrieves both metadata from database and EXIF data from the photo file.
 /// Handles photos in trash by checking trash path.
 #[tauri::command]
-pub fn get_photo_info(
-    path_str: &str,
+pub async fn get_photo_info(
+    path_str: String,
     _window: tauri::Window,
-    state: tauri::State<AppState>,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, ()> {
+    // File I/O + EXIF parse + DB sync: run off the main thread
+    let meta_db = state.meta_db.clone();
+    let trash_path = state.config.trash_path.clone();
+    let import_to = state.config.import_to.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        photo_info_blocking(&path_str, &meta_db, &trash_path, &import_to)
+    })
+    .await
+    .map_err(|e| {
+        log::error!(target: "photo_info", "photo_info_task_failed; error={}", e);
+    })
+}
+
+fn photo_info_blocking(
+    path_str: &str,
+    meta_db: &crate::repository::MetaDB,
+    trash_path: &str,
+    import_to: &str,
 ) -> String {
     log::debug!(target: "photo_info", "get_photo_info; path={}", path_str);
 
     // path_str is relative (e.g., "2024-01-15/uuid/photo.jpg")
     // Check if photo is in trash
-    let trash_path_opt = state.meta_db.get_trash_path_for_photo(
-        path_str,
-        &state.config.trash_path,
-        &state.config.import_to,
-    );
+    let trash_path_opt = meta_db.get_trash_path_for_photo(path_str, trash_path, import_to);
     let is_trashed = trash_path_opt.is_some();
 
     // Determine the actual file path to read (absolute)
     let actual_path = if let Some(ref trash_path) = trash_path_opt {
         trash_path.clone()
     } else {
-        file::to_absolute_path(path_str, &state.config.import_to)
+        file::to_absolute_path(path_str, import_to)
     };
 
     log::debug!(target: "photo_info", "get_photo_info; is_trashed={}; actual_path={}", is_trashed, actual_path);
@@ -258,11 +281,11 @@ pub fn get_photo_info(
             let exif_data = exif::ExifData::new(f);
 
             // Sync EXIF data to database if there are differences
-            if let Err(e) = state.meta_db.update_exif_if_changed(path_str, &exif_data) {
+            if let Err(e) = meta_db.update_exif_if_changed(path_str, &exif_data) {
                 log::warn!(target: "photo_info", "exif_sync_failed; path={}; error={}", path_str, e);
             }
 
-            let photo_meta = photo_meta::PhotoMeta::new_with_data(p, &state.meta_db);
+            let photo_meta = photo_meta::PhotoMeta::new_with_data(p, meta_db);
             let photo_meta_with_exif = photo_meta::PhotoMetaWithExif::new(photo_meta, exif_data);
 
             // Serialize to get JSON values
@@ -288,7 +311,7 @@ pub fn get_photo_info(
             log::warn!(target: "photo_info", "get_photo_info; file_not_found={}; attempting_db_lookup", actual_path);
 
             let p = photo::Photo::new(file::File::from_relative(path_str.to_string()), None);
-            let photo_meta = photo_meta::PhotoMeta::new_with_data(p, &state.meta_db);
+            let photo_meta = photo_meta::PhotoMeta::new_with_data(p, meta_db);
             let meta_json = serde_json::to_value(&photo_meta).ok();
 
             let response = PhotoInfoResponse {
@@ -345,38 +368,48 @@ pub async fn get_prev_photo(
 
 /// Save or update a photo's star rating.
 #[tauri::command]
-pub fn save_star(
+pub async fn save_star(
     _window: tauri::Window,
     app_handle: tauri::AppHandle,
-    state: tauri::State<AppState>,
-    path_str: &str,
+    state: tauri::State<'_, AppState>,
+    path_str: String,
     star_num: i32,
-) {
-    let db = &state.meta_db;
-    let p = photo::Photo::new(file::File::from_relative(path_str.to_string()), None);
-    let s = star::Star::new(star_num);
-    photo_service::save_photo_star(db, &p, s);
+) -> Result<(), ()> {
+    // NFS DB write + achievement check must not run on the main thread
+    let db = state.meta_db.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let p = photo::Photo::new(file::File::from_relative(path_str), None);
+        let s = star::Star::new(star_num);
+        photo_service::save_photo_star(&db, &p, s);
 
-    // Check first_star achievement when user adds a star rating
-    if star_num > 0 {
-        let _ = achievements::check_and_emit_achievement(
-            &app_handle,
-            &state.config.import_to,
-            "first_star",
-        );
-    }
+        // Check first_star achievement when user adds a star rating
+        if star_num > 0 {
+            let _ = achievements::check_and_emit_achievement(&app_handle, &db, "first_star");
+        }
+    })
+    .await
+    .map_err(|e| {
+        log::error!(target: "photo", "save_star_task_failed; error={}", e);
+    })
 }
 
 /// Save or update a photo's comment.
 #[tauri::command]
-pub fn save_comment(
+pub async fn save_comment(
     _window: tauri::Window,
-    state: tauri::State<AppState>,
-    path_str: &str,
-    comment_str: &str,
-) {
-    let db = &state.meta_db;
-    let c = comment::Comment::new(comment_str);
-    let p = photo::Photo::new(file::File::from_relative(path_str.to_string()), None);
-    photo_service::save_photo_comment(db, &p, c);
+    state: tauri::State<'_, AppState>,
+    path_str: String,
+    comment_str: String,
+) -> Result<(), ()> {
+    // NFS DB write must not run on the main thread
+    let db = state.meta_db.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let c = comment::Comment::new(&comment_str);
+        let p = photo::Photo::new(file::File::from_relative(path_str), None);
+        photo_service::save_photo_comment(&db, &p, c);
+    })
+    .await
+    .map_err(|e| {
+        log::error!(target: "photo", "save_comment_task_failed; error={}", e);
+    })
 }

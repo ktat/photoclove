@@ -17,7 +17,12 @@ pub struct SetupStatus {
 /// Returns the setup status indicating whether config and DB exist.
 /// This is called on app startup to determine if Tutorial should be shown.
 #[tauri::command]
-pub fn check_setup_status() -> SetupStatus {
+pub async fn check_setup_status() -> Result<SetupStatus, String> {
+    // Reads config YAML and stats the (possibly NFS-hosted) DB file
+    crate::commands::run_blocking(move || Ok(check_setup_status_blocking())).await
+}
+
+fn check_setup_status_blocking() -> SetupStatus {
     let config_path = Config::config_path_if_exists();
     let config_exists = config_path.is_some();
 
@@ -42,9 +47,12 @@ pub fn check_setup_status() -> SetupStatus {
 /// Used when user selects a new import_to location in Preferences
 /// to detect if an existing DB is there.
 #[tauri::command]
-pub fn check_db_exists(import_to: String) -> bool {
-    let db_path = format!("{}/photoclove.db", import_to);
-    Path::new(&db_path).exists()
+pub async fn check_db_exists(import_to: String) -> Result<bool, String> {
+    crate::commands::run_blocking(move || {
+        let db_path = format!("{}/photoclove.db", import_to);
+        Ok(Path::new(&db_path).exists())
+    })
+    .await
 }
 
 /// Initialize the database at the specified import_to path
@@ -55,7 +63,15 @@ pub fn check_db_exists(import_to: String) -> bool {
 /// # Arguments
 /// * `import_to` - The path where the database should be created/initialized
 #[tauri::command]
-pub fn initialize_database(_state: State<AppState>, import_to: String) -> Result<bool, String> {
+pub async fn initialize_database(
+    _state: State<'_, AppState>,
+    import_to: String,
+) -> Result<bool, String> {
+    // Runs migrations against the (possibly NFS-hosted) DB
+    crate::commands::run_blocking(move || initialize_database_blocking(import_to)).await
+}
+
+fn initialize_database_blocking(import_to: String) -> Result<bool, String> {
     use crate::repository::meta_db::sqlite::SQLite;
 
     let db_path = format!("{}/photoclove.db", import_to);

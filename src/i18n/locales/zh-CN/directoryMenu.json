@@ -20,7 +20,8 @@
     "hasComment": "有评论",
     "extensions": "扩展名",
     "image": "图片",
-    "movie": "视频"
+    "movie": "视频",
+    "other": "其他"
   },
   "selection": {
     "selectAllInPage": "选择页面中的所有照片",

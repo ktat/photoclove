@@ -1,7 +1,22 @@
 use crate::entity::config::Config;
 use crate::value::{date, exif, file};
-use regex;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::sync::OnceLock;
+
+static RE_JPEG_EXT: OnceLock<Regex> = OnceLock::new();
+static RE_DATE_PREFIX: OnceLock<Regex> = OnceLock::new();
+static RE_EXIF_DATETIME: OnceLock<Regex> = OnceLock::new();
+
+fn jpeg_ext_regex() -> &'static Regex {
+    RE_JPEG_EXT.get_or_init(|| Regex::new(r"\.(?i)jpe?g$").unwrap())
+}
+
+fn date_prefix_regex() -> &'static Regex {
+    // Support multiple date delimiters: '/', '-', ':'
+    RE_DATE_PREFIX
+        .get_or_init(|| Regex::new(r"^([0-9]{4})[/\-:]([0-9]{1,2})[/\-:]([0-9]{1,2}).+$").unwrap())
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PhotoTag {
@@ -50,10 +65,9 @@ impl Photo {
         let mut import_to: String = "".to_string();
         let mut thumbnail_store: String = "".to_string();
         let has_config = opt_conf.is_some();
-        if has_config {
-            let conf = opt_conf.unwrap();
-            import_to = conf.clone().import_to;
-            thumbnail_store = conf.clone().thumbnail_store;
+        if let Some(conf) = opt_conf {
+            import_to = conf.import_to;
+            thumbnail_store = conf.thumbnail_store;
         }
 
         Photo {
@@ -78,6 +92,11 @@ impl Photo {
 
     pub fn time(&self) -> String {
         self.time.clone()
+    }
+
+    /// Borrowed time string; use in sort comparators to avoid per-comparison clones.
+    pub fn time_ref(&self) -> &str {
+        &self.time
     }
 
     /// Get absolute path by combining import_to + relative file.path
@@ -154,7 +173,7 @@ impl Photo {
             return Some(format!("{}.jpg", lowercase_path));
         }
 
-        let ext_regex = regex::Regex::new(r"\.(?i)jpe?g$").unwrap();
+        let ext_regex = jpeg_ext_regex();
         if ext_regex.is_match(&thumbnail_path) {
             // JPEG file: normalize extension to .jpg
             Some(ext_regex.replace(&thumbnail_path, ".jpg").to_string())
@@ -165,46 +184,17 @@ impl Photo {
     }
 
     pub fn set_has_thumbnail(&mut self) {
-        if self.has_config {
-            let thumbnail_store = self.thumbnail_store.clone();
-            // file.path is relative; construct thumbnail path: thumbnail_store + "/" + relative_path
-            let thumbnail_path = format!(
-                "{}/{}",
-                thumbnail_store.trim_end_matches('/'),
-                self.file.path.trim_start_matches('/')
-            );
-
-            // RAW and HEIC/AVIF files: thumbnail is {filename_lowercase}.jpg
-            if crate::utils::raw_file::is_raw_file(&self.file.path)
-                || crate::utils::raw_file::is_heic_or_avif(&self.file.path)
-            {
-                let raw_thumbnail_path = format!("{}.jpg", thumbnail_path.to_lowercase());
-                let p = std::path::Path::new(&raw_thumbnail_path);
-                self.has_thumbnail = p.exists();
-                log::debug!(target: "photo", "thumbnail_check_raw; thumbnail_path={}; exists={}",
-                    raw_thumbnail_path, self.has_thumbnail);
-            } else {
-                let ext_regex = regex::Regex::new(r"\.(?i)jpe?g$").unwrap();
-
-                if ext_regex.is_match(&thumbnail_path) {
-                    // JPEG file: normalize extension to .jpg
-                    let thumbnail_path_normalized =
-                        ext_regex.replace(&thumbnail_path, ".jpg").to_string();
-                    let p = std::path::Path::new(&thumbnail_path_normalized);
-                    self.has_thumbnail = p.exists();
-                    log::debug!(target: "photo", "thumbnail_check_photo; thumbnail_path={}; exists={}",
-                    thumbnail_path_normalized, self.has_thumbnail);
-                } else {
-                    // Non-JPEG file (movie, etc.): append .jpg
-                    let thumbnail_path_for_movie = format!("{}.jpg", thumbnail_path);
-                    let p = std::path::Path::new(&thumbnail_path_for_movie);
-                    self.has_thumbnail = p.exists();
-                    log::debug!(target: "photo", "thumbnail_check_movie; thumbnail_path={}; exists={}",
-                    thumbnail_path_for_movie, self.has_thumbnail);
-                }
-            } // end else (non-RAW)
-        } else {
-            log::error!(target: "photo", "thumbnail_check_without_config; photo_path={:?}", self.file.path);
+        match self.get_thumbnail_path() {
+            Some(thumbnail_path) => {
+                // No per-photo logging here: this runs once per listed photo
+                // (thousands per view, concurrently); logging would serialize
+                // the stat threads on the global logger lock and flood the
+                // log file (~280MB/day observed at debug level).
+                self.has_thumbnail = std::path::Path::new(&thumbnail_path).exists();
+            }
+            None => {
+                log::error!(target: "photo", "thumbnail_check_without_config; photo_path={:?}", self.file.path);
+            }
         }
     }
 
@@ -296,16 +286,13 @@ impl Photo {
     }
 
     pub fn created_date_string(&self) -> String {
-        // Support multiple date delimiters: '/', '-', ':'
-        let re = regex::Regex::new(r"^([0-9]{4})[/\-:]([0-9]{1,2})[/\-:]([0-9]{1,2}).+$").unwrap();
-        let replaced = re.replace(&self.time, "$1-$2-$3").to_string();
-        replaced
+        date_prefix_regex()
+            .replace(&self.time, "$1-$2-$3")
+            .to_string()
     }
 
     pub fn created_date(&self) -> date::Date {
-        // Support multiple date delimiters: '/', '-', ':'
-        let re = regex::Regex::new(r"^([0-9]{4})[/\-:]([0-9]{1,2})[/\-:]([0-9]{1,2}).+$").unwrap();
-        let replaced = re.replace(&self.time, "$1-$2-$3").to_string();
+        let replaced = self.created_date_string();
 
         // Check if the replacement resulted in a valid date string
         if replaced == self.time || replaced.trim().is_empty() {
@@ -325,8 +312,9 @@ impl Photo {
         }
 
         // Parse format: "YYYY:MM:DD HH:MM:SS" or "YYYY-MM-DD HH:MM:SS"
-        let re = regex::Regex::new(r"^(\d{4})[:\-](\d{2})[:\-](\d{2})\s+(\d{2}):(\d{2}):(\d{2})")
-            .ok()?;
+        let re = RE_EXIF_DATETIME.get_or_init(|| {
+            Regex::new(r"^(\d{4})[:\-](\d{2})[:\-](\d{2})\s+(\d{2}):(\d{2}):(\d{2})").unwrap()
+        });
         let caps = re.captures(datetime_str)?;
 
         let year: i32 = caps.get(1)?.as_str().parse().ok()?;
@@ -345,8 +333,6 @@ impl Photo {
     }
 
     /// Lowercase file extension without the dot (empty string if none).
-    /// Forward-looking type predicates; not all wired to callers yet.
-    #[allow(dead_code)]
     pub fn extension(&self) -> String {
         std::path::Path::new(&self.file.path)
             .extension()
@@ -360,22 +346,16 @@ impl Photo {
     }
 
     /// True if the file is a RAW camera file.
-    /// Forward-looking type predicates; not all wired to callers yet.
-    #[allow(dead_code)]
     pub fn is_raw(&self) -> bool {
         crate::utils::raw_file::is_raw_file(&self.file.path)
     }
 
     /// True if the file is a HEIC/HEIF/AVIF file.
-    /// Forward-looking type predicates; not all wired to callers yet.
-    #[allow(dead_code)]
     pub fn is_heic_or_avif(&self) -> bool {
         crate::utils::raw_file::is_heic_or_avif(&self.file.path)
     }
 
     /// True if the file is a supported still image (standard + RAW).
-    /// Forward-looking type predicates; not all wired to callers yet.
-    #[allow(dead_code)]
     pub fn is_image(&self) -> bool {
         crate::utils::raw_file::is_supported_image(&self.file.path)
     }
@@ -396,8 +376,105 @@ impl Photos {
 
 #[cfg(test)]
 mod tests {
+    use crate::entity::config::Config;
     use crate::entity::photo;
     use crate::value::file;
+
+    fn test_config(thumbnail_store: &str) -> Config {
+        serde_json::from_value(serde_json::json!({
+            "repository": { "store": "sqlite", "option": {} },
+            "import_to": "/library",
+            "export_from": [],
+            "trash_path": "/trash",
+            "thumbnail_store": thumbnail_store,
+            "thumbnail_ratio": 0.1,
+            "thumbnail_compression_quality": 80.0,
+            "thumbnail_ignore_file_size": 0,
+            "copy_parallel": 1,
+            "thumbnail_parallel": 1,
+            "use_count": 0
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn test_get_thumbnail_path_rules() {
+        let mk = |p: &str| {
+            photo::Photo::new(
+                file::File::from_relative(p.to_string()),
+                Some(test_config("/thumbs")),
+            )
+        };
+        // JPEG: normalize extension to .jpg
+        assert_eq!(
+            mk("2024-05-13/uuid/IMG.JPEG").get_thumbnail_path().unwrap(),
+            "/thumbs/2024-05-13/uuid/IMG.jpg"
+        );
+        assert_eq!(
+            mk("d/x.jpg").get_thumbnail_path().unwrap(),
+            "/thumbs/d/x.jpg"
+        );
+        // RAW/HEIC: whole path lowercased + .jpg appended
+        assert_eq!(
+            mk("d/X.CR2").get_thumbnail_path().unwrap(),
+            "/thumbs/d/x.cr2.jpg"
+        );
+        // Movie/other: .jpg appended
+        assert_eq!(
+            mk("d/v.mp4").get_thumbnail_path().unwrap(),
+            "/thumbs/d/v.mp4.jpg"
+        );
+        // No config: None
+        let p = photo::Photo::new(file::File::from_relative("d/x.jpg".to_string()), None);
+        assert_eq!(p.get_thumbnail_path(), None);
+    }
+
+    #[test]
+    fn test_set_has_thumbnail_checks_thumbnail_file() {
+        let store = std::env::temp_dir().join("photoclove_thumb_test");
+        let date_dir = store.join("2024-05-13");
+        std::fs::create_dir_all(&date_dir).unwrap();
+        std::fs::write(date_dir.join("exists.jpg"), b"x").unwrap();
+
+        let conf = test_config(store.to_str().unwrap());
+        let mut with_thumb = photo::Photo::new(
+            file::File::from_relative("2024-05-13/exists.JPEG".to_string()),
+            Some(conf.clone()),
+        );
+        with_thumb.set_has_thumbnail();
+        assert!(with_thumb.has_thumbnail);
+
+        let mut without_thumb = photo::Photo::new(
+            file::File::from_relative("2024-05-13/missing.jpg".to_string()),
+            Some(conf),
+        );
+        without_thumb.set_has_thumbnail();
+        assert!(!without_thumb.has_thumbnail);
+    }
+
+    #[test]
+    fn test_created_date_string_supports_multiple_delimiters() {
+        let mut p = photo::Photo::new(file::File::from_relative("d/x.jpg".to_string()), None);
+        p.set_time("2024:05:13 10:20:30".to_string());
+        assert_eq!(p.created_date_string(), "2024-05-13");
+        p.set_time("2024/5/3 10:20:30".to_string());
+        assert_eq!(p.created_date_string(), "2024-5-3");
+        p.set_time("2024-05-13 10:20:30".to_string());
+        assert_eq!(p.created_date_string(), "2024-05-13");
+    }
+
+    #[test]
+    fn test_get_datetime_ms_parses_exif_datetime() {
+        let mut p = photo::Photo::new(file::File::from_relative("d/x.jpg".to_string()), None);
+        p.meta_data.date_time_original = "2024:05:13 10:20:30".to_string();
+        let ms = p.get_datetime_ms().unwrap();
+        // 2024-05-13T10:20:30Z
+        assert_eq!(ms, 1715595630000);
+        p.meta_data.date_time_original = "".to_string();
+        assert_eq!(p.get_datetime_ms(), None);
+        p.meta_data.date_time_original = "not a date".to_string();
+        assert_eq!(p.get_datetime_ms(), None);
+    }
 
     #[test]
     fn test_constructor() {

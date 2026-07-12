@@ -2,7 +2,18 @@
 
 .photoLoadingOnParent {
   width: 100%;
-  min-height: calc(100vh - 30px)
+  min-height: calc(100vh - 30px);
+  display: flex;
+  justify-content: center;
+}
+
+/* Inside the full-page loading wrapper, center on the actual parent width.
+   The viewport-math max-width below assumes the right side menu is open and
+   pushes the overlay visibly left of center while loading. */
+.photoLoadingOnParent .photoLoadingOn {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
 }
 
 .photoLoadingOn {
@@ -50,6 +61,9 @@
   font-size: 48px;
   animation: bounce 1s ease-in-out infinite;
   padding-top: 20px;
+  /* Promote to a compositor layer: keeps the animation running even when
+     the WebProcess render loop is momentarily starved during heavy IPC */
+  will-change: transform;
 }
 
 .camera-emoji.static {
@@ -71,6 +85,7 @@
   position: absolute;
   font-size: 20px;
   animation: sparkle-float 1.5s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 
 .sparkle.search-move {

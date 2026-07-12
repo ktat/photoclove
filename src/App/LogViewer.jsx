@@ -1,7 +1,86 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { logger } from '../services/LoggerService.js';
 import './LogViewer.css';
+
+/**
+ * Check whether a log timestamp falls inside the selected relative window.
+ * Shared by the frontend and backend filter paths.
+ */
+export function isWithinSince(timestamp, since) {
+  if (since === 'all') return true;
+  const logTime = new Date(timestamp);
+  const now = new Date();
+  let cutoffTime;
+
+  switch (since) {
+    case '5m':
+      cutoffTime = new Date(now.getTime() - 5 * 60 * 1000);
+      break;
+    case '1h':
+      cutoffTime = new Date(now.getTime() - 60 * 60 * 1000);
+      break;
+    case '24h':
+      cutoffTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      break;
+    default:
+      cutoffTime = new Date(0); // Beginning of time
+  }
+
+  return logTime >= cutoffTime;
+}
+
+/**
+ * Parse raw backend log text into structured entries.
+ * Pure function so the (regex-heavy) parse runs once per load, not per render.
+ */
+export function parseBackendLogs(rawText) {
+  const backendLogLines = rawText.split('\n').filter(line => line.trim());
+
+  const parsedBackendLogs = [];
+  let currentLog = null;
+
+  for (const line of backendLogLines) {
+    // Try to parse standard log format: YYYY-MM-DD HH:MM:SS.mmm [LEVEL] target - message
+    const standardMatch = line.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d{3})\s*\[(\w+)\]\s*([^\s]+)\s*-\s*(.+)$/);
+
+    if (standardMatch) {
+      // This is a new log entry
+      if (currentLog) {
+        parsedBackendLogs.push(currentLog);
+      }
+      currentLog = {
+        timestamp: standardMatch[1].replace(' ', 'T') + 'Z',
+        level: standardMatch[2],
+        component: standardMatch[3],
+        message: standardMatch[4],
+        source: 'backend'
+      };
+    } else if (currentLog && line.trim()) {
+      // This is a continuation of the previous log (e.g., stack trace or multi-line output)
+      currentLog.message += '\n' + line;
+    } else if (line.trim()) {
+      // Unrecognized format - create a standalone log entry
+      if (currentLog) {
+        parsedBackendLogs.push(currentLog);
+        currentLog = null;
+      }
+      parsedBackendLogs.push({
+        message: line,
+        source: 'backend',
+        timestamp: new Date().toISOString(),
+        level: 'INFO'
+      });
+    }
+  }
+
+  // Don't forget the last log
+  if (currentLog) {
+    parsedBackendLogs.push(currentLog);
+  }
+
+  return parsedBackendLogs;
+}
 
 const LogViewer = ({ onClose }) => {
   const [logs, setLogs] = useState([]);
@@ -61,11 +140,20 @@ const LogViewer = ({ onClose }) => {
     }
   };
 
-  // Load logs on mount and periodically
+  // Load logs on mount and periodically (paused while the window is hidden)
   useEffect(() => {
     loadLogs();
-    const interval = setInterval(loadLogs, 5000); // Refresh every 5 seconds
-    return () => clearInterval(interval);
+    const interval = setInterval(() => {
+      if (!document.hidden) loadLogs();
+    }, 5000); // Refresh every 5 seconds
+    const refreshOnVisible = () => {
+      if (!document.hidden) loadLogs();
+    };
+    document.addEventListener('visibilitychange', refreshOnVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', refreshOnVisible);
+    };
   }, []); // Empty dependency - only run on mount
  
   // Save filter changes to localStorage
@@ -115,8 +203,7 @@ const LogViewer = ({ onClose }) => {
     try {
       setIsLoading(true);
       
-      // Get the filtered logs for export
-      const filteredLogs = combineAndFilterLogs();
+      // Use the memoized filtered logs for export
       const exportData = {
         logs: filteredLogs,
         filters,
@@ -267,7 +354,10 @@ const LogViewer = ({ onClose }) => {
     );
   };
 
-  const combineAndFilterLogs = () => {
+  // Backend parse is regex-heavy over up to 1000 lines: do it once per load
+  const parsedBackendLogs = useMemo(() => parseBackendLogs(backendLogs), [backendLogs]);
+
+  const filteredLogs = useMemo(() => {
     let combinedLogs = [];
 
     // Add frontend logs
@@ -275,7 +365,7 @@ const LogViewer = ({ onClose }) => {
       const filteredFrontendLogs = logs.filter(log => {
         if (filters.level !== 'all' && log.level.toUpperCase() !== filters.level.toUpperCase()) return false;
         if (filters.component !== 'all' && log.component !== filters.component) return false;
-        
+
         // Keyword filter
         if (filters.keyword && filters.keyword.trim()) {
           const keyword = filters.keyword.toLowerCase();
@@ -287,125 +377,33 @@ const LogViewer = ({ onClose }) => {
           ).toLowerCase();
           if (!searchText.includes(keyword)) return false;
         }
-        
-        // Handle 'since' filter
-        if (filters.since !== 'all') {
-          const logTime = new Date(log.timestamp);
-          const now = new Date();
-          let cutoffTime;
-          
-          switch(filters.since) {
-            case '5m':
-              cutoffTime = new Date(now.getTime() - 5 * 60 * 1000);
-              break;
-            case '1h':
-              cutoffTime = new Date(now.getTime() - 60 * 60 * 1000);
-              break;
-            case '24h':
-              cutoffTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-              break;
-            default:
-              cutoffTime = new Date(0); // Beginning of time
-          }
-          
-          if (logTime < cutoffTime) return false;
-        }
-        
-        return true;
+
+        return isWithinSince(log.timestamp, filters.since);
       });
-      
+
       combinedLogs = [...combinedLogs, ...filteredFrontendLogs.map(log => ({ ...log, source: 'frontend' }))];
     }
 
     // Add backend logs
     if (filters.source === 'all' || filters.source === 'backend') {
-      const backendLogLines = backendLogs.split('\n').filter(line => line.trim());
-      
-      // Parse backend logs to extract structured information
-      const parsedBackendLogs = [];
-      let currentLog = null;
-      
-      for (const line of backendLogLines) {
-        // Try to parse standard log format: YYYY-MM-DD HH:MM:SS.mmm [LEVEL] target - message
-        const standardMatch = line.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d{3})\s*\[(\w+)\]\s*([^\s]+)\s*-\s*(.+)$/);
-        
-        if (standardMatch) {
-          // This is a new log entry
-          if (currentLog) {
-            parsedBackendLogs.push(currentLog);
-          }
-          currentLog = {
-            timestamp: standardMatch[1].replace(' ', 'T') + 'Z',
-            level: standardMatch[2],
-            component: standardMatch[3],
-            message: standardMatch[4],
-            source: 'backend'
-          };
-        } else if (currentLog && line.trim()) {
-          // This is a continuation of the previous log (e.g., stack trace or multi-line output)
-          currentLog.message += '\n' + line;
-        } else if (line.trim()) {
-          // Unrecognized format - create a standalone log entry
-          if (currentLog) {
-            parsedBackendLogs.push(currentLog);
-            currentLog = null;
-          }
-          parsedBackendLogs.push({
-            message: line,
-            source: 'backend',
-            timestamp: new Date().toISOString(),
-            level: 'INFO'
-          });
-        }
-      }
-      
-      // Don't forget the last log
-      if (currentLog) {
-        parsedBackendLogs.push(currentLog);
-      }
-      
-      // Apply level filter to backend logs if we could parse them
       const filteredBackendLogs = parsedBackendLogs.filter(log => {
         if (filters.level !== 'all' && log.level && log.level.toUpperCase() !== filters.level.toUpperCase()) {
           return false;
         }
-        
+
         // Keyword filter for backend logs
         if (filters.keyword && filters.keyword.trim()) {
           const keyword = filters.keyword.toLowerCase();
           const searchText = (
-            (log.message || '') + ' ' + 
+            (log.message || '') + ' ' +
             (log.component || '')
           ).toLowerCase();
           if (!searchText.includes(keyword)) return false;
         }
-        
-        // Time filter for backend logs - same logic as frontend
-        if (filters.since !== 'all') {
-          const logTime = new Date(log.timestamp);
-          const now = new Date();
-          let cutoffTime;
-          
-          switch(filters.since) {
-            case '5m':
-              cutoffTime = new Date(now.getTime() - 5 * 60 * 1000);
-              break;
-            case '1h':
-              cutoffTime = new Date(now.getTime() - 60 * 60 * 1000);
-              break;
-            case '24h':
-              cutoffTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-              break;
-            default:
-              cutoffTime = new Date(0); // Beginning of time
-          }
-          
-          if (logTime < cutoffTime) return false;
-        }
-        
-        return true;
+
+        return isWithinSince(log.timestamp, filters.since);
       });
-      
+
       combinedLogs = [...combinedLogs, ...filteredBackendLogs];
     }
 
@@ -413,9 +411,7 @@ const LogViewer = ({ onClose }) => {
     combinedLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     return combinedLogs;
-  };
-
-  const filteredLogs = combineAndFilterLogs();
+  }, [logs, parsedBackendLogs, filters]);
   const stats = logger.getStats();
 
   return (

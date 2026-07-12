@@ -74,12 +74,38 @@ fn encode_and_cache_jpeg(
 ///
 /// Strategy: 1. Check cache 2. Try EXIF thumbnail 3. Fall back to full decode/resize.
 #[tauri::command]
-pub fn get_resized_image(
+pub async fn get_resized_image(
+    path_str: String,
+    max_size: u32,
+    import_directory: Option<String>,
+    skip_resize_fallback: Option<bool>,
+    state: tauri::State<'_, crate::AppState>,
+) -> Result<String, String> {
+    // Decode + resize can take seconds for RAW/HEIC; a sync command would run
+    // on the main thread and freeze the UI, so do the work on a blocking pool.
+    let use_exif_thumbnail = state.config.use_exif_thumbnail;
+    let thumbnail_store = state.config.thumbnail_store.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        resized_image_blocking(
+            &path_str,
+            max_size,
+            import_directory.as_deref(),
+            skip_resize_fallback,
+            use_exif_thumbnail,
+            &thumbnail_store,
+        )
+    })
+    .await
+    .map_err(|e| format!("Image resize task failed: {}", e))?
+}
+
+fn resized_image_blocking(
     path_str: &str,
     max_size: u32,
     import_directory: Option<&str>,
     skip_resize_fallback: Option<bool>,
-    state: tauri::State<crate::AppState>,
+    use_exif_thumbnail: bool,
+    thumbnail_store: &str,
 ) -> Result<String, String> {
     use base64::{engine::general_purpose, Engine as _};
     use image::imageops::FilterType;
@@ -94,7 +120,7 @@ pub fn get_resized_image(
     log::debug!(target: "image", "resize_request; path={}; max_size={}; import_directory={:?}", path_str, max_size, import_directory);
 
     let exif_start = Instant::now();
-    let should_use_exif = import_directory.is_some() || state.config.use_exif_thumbnail;
+    let should_use_exif = import_directory.is_some() || use_exif_thumbnail;
     let is_raw = raw_file::is_raw_file(path_str);
     let is_heic_avif = raw_file::is_heic_or_avif(path_str);
 
@@ -102,7 +128,7 @@ pub fn get_resized_image(
     let cache_path_str = if is_raw || is_heic_avif {
         let persistent_path = format!(
             "{}.jpg",
-            utils::generate_persistent_cache_path(path_str, &state.config.thumbnail_store)?
+            utils::generate_persistent_cache_path(path_str, thumbnail_store)?
         );
         let persistent_dir = path::Path::new(&persistent_path)
             .parent()
@@ -477,13 +503,35 @@ pub fn save_image_to_download_dir(
 /// Level 1: EXIF/embedded thumbnail (fast). Level 2: Full decode (slow).
 /// Results are cached with level suffix (`{hash}_exif`, `{hash}_full`).
 #[tauri::command]
+pub async fn get_progressive_image(
+    path_str: String,
+    max_size: u32,
+    quality_level: u32,
+    import_directory: Option<String>,
+    state: tauri::State<'_, crate::AppState>,
+) -> Result<String, String> {
+    // Level 2 is a full RAW decode; keep it off the main thread.
+    let thumbnail_store = state.config.thumbnail_store.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        progressive_image_blocking(
+            &path_str,
+            max_size,
+            quality_level,
+            import_directory.as_deref(),
+            &thumbnail_store,
+        )
+    })
+    .await
+    .map_err(|e| format!("Progressive image task failed: {}", e))?
+}
+
 #[allow(unused_variables)]
-pub fn get_progressive_image(
+fn progressive_image_blocking(
     path_str: &str,
     max_size: u32,
     quality_level: u32,
     import_directory: Option<&str>,
-    state: tauri::State<'_, crate::AppState>,
+    thumbnail_store: &str,
 ) -> Result<String, String> {
     use std::time::Instant;
     let start_time = Instant::now();
@@ -494,8 +542,7 @@ pub fn get_progressive_image(
         return Err("Not a RAW or HEIC/AVIF file".to_string());
     }
 
-    let base_cache_path =
-        utils::generate_persistent_cache_path(path_str, &state.config.thumbnail_store)?;
+    let base_cache_path = utils::generate_persistent_cache_path(path_str, thumbnail_store)?;
     // Ensure persistent cache directory exists
     let persistent_dir = path::Path::new(&base_cache_path)
         .parent()

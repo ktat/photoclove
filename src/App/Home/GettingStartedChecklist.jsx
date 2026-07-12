@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { listen } from '@tauri-apps/api/event';
 import { useUI } from '../../context/UIContext.jsx';
 import { getAchievements } from '../../services/AchievementService.js';
 import { logger } from '../../services/LoggerService.js';
+import { MENU_EVENTS } from '../constants/menuActions.js';
 import styles from './GettingStartedChecklist.module.css';
 
 const STORAGE_KEY = 'photoclove_getting_started_dismissed';
@@ -45,9 +47,32 @@ function GettingStartedChecklist({ config: _config }) {
 
     useEffect(() => {
         loadAchievements();
-        // Refresh achievements every 5 seconds to catch updates
-        const interval = setInterval(loadAchievements, 5000);
-        return () => clearInterval(interval);
+
+        // Event-driven refresh instead of polling: frontend unlocks arrive as
+        // a window CustomEvent (AchievementService), backend unlocks (star,
+        // import, view...) as a Tauri event.
+        window.addEventListener('achievementUnlocked', loadAchievements);
+        let cancelled = false;
+        let unlistenTauri = null;
+        listen(MENU_EVENTS.ACHIEVEMENT_UNLOCKED, loadAchievements)
+            .then((unlisten) => {
+                if (cancelled) {
+                    unlisten();
+                } else {
+                    unlistenTauri = unlisten;
+                }
+            })
+            .catch((error) => {
+                logger.warn('GettingStartedChecklist', 'tauri_listen_failed', 'Failed to listen for achievement events', {
+                    error: error?.message || String(error)
+                });
+            });
+
+        return () => {
+            cancelled = true;
+            window.removeEventListener('achievementUnlocked', loadAchievements);
+            if (unlistenTauri) unlistenTauri();
+        };
     }, [loadAchievements]);
 
     // Calculate step completion status

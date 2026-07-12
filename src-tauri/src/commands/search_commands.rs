@@ -3,7 +3,6 @@
 //! This module contains Tauri commands related to photo filter option retrieval.
 
 use crate::app_state::AppState;
-use crate::repository;
 use tauri::State;
 
 /// Get available filter options for a specific filter type
@@ -32,7 +31,7 @@ pub async fn get_filter_options(
     filter_type: &str,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
-    let sqlite_db = repository::meta_db::sqlite::SQLite::new(state.config.import_to.clone());
+    let sqlite_db = state.meta_db.clone();
 
     let options = match filter_type {
         "cameras" => sqlite_db

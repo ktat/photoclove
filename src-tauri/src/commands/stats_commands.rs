@@ -7,7 +7,6 @@
 use crate::app_state::AppState;
 use crate::domain_service::job_queue::handlers::insights;
 use crate::entity::job_queue::{Job, JobType, JobUnit, QueuedJob};
-use crate::repository::meta_db::sqlite::SQLite;
 use crate::value::date::TimePeriod;
 use serde::Serialize;
 use std::sync::Arc;
@@ -100,7 +99,7 @@ pub async fn queue_insights_refresh(
 
     log::info!(target: "stats", "queue_insights_refresh; status=queueing; period={}", time_period.as_str());
 
-    let sqlite = SQLite::new(state.config.import_to.clone());
+    let sqlite = state.meta_db.clone();
 
     // Create job unit
     let job_types = vec!["insights_calculation".to_string()];
@@ -147,7 +146,7 @@ pub async fn get_photography_insights(
 
     log::info!(target: "stats", "get_photography_insights; status=starting; period={}", time_period.as_str());
 
-    let sqlite = SQLite::new(state.config.import_to.clone());
+    let sqlite = state.meta_db.clone();
 
     let insights = crate::repository::meta_db::sqlite::stats::get_all_insights(
         &sqlite,
@@ -167,7 +166,7 @@ pub async fn get_photography_insights(
 pub async fn get_available_periods(state: tauri::State<'_, AppState>) -> Result<String, String> {
     log::info!(target: "stats", "get_available_periods; status=starting");
 
-    let sqlite = SQLite::new(state.config.import_to.clone());
+    let sqlite = state.meta_db.clone();
 
     let periods = crate::repository::meta_db::sqlite::stats::get_available_periods(&sqlite)?;
 
