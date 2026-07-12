@@ -570,17 +570,6 @@ function PhotoDisplay(props) {
                         onWaiting={() => {
                             logger.warn('PhotoDisplay', 'video_buffering', 'Video buffering detected - may need larger chunks', { src: videoSource });
                         }}
-                        onProgress={(e) => {
-                            if (e.target.buffered.length > 0) {
-                                const bufferedEnd = e.target.buffered.end(0);
-                                const currentTime = e.target.currentTime;
-                                const bufferAhead = bufferedEnd - currentTime;
-                                logger.debug('PhotoDisplay', 'buffer_progress', 'Buffer status', {
-                                    bufferedSeconds: bufferAhead,
-                                    currentTime: currentTime
-                                });
-                            }
-                        }}
                         onPlaying={() => logger.debug('PhotoDisplay', 'video_playing', 'Video playing smoothly', { src: videoSource })}
                         onStalled={() => logger.warn('PhotoDisplay', 'video_stalled', 'Video playback stalled', { src: videoSource })}
                         onSuspend={() => logger.debug('PhotoDisplay', 'video_suspended', 'Video loading suspended', { src: videoSource })}
