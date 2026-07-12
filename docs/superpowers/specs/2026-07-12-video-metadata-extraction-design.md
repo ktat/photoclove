@@ -27,10 +27,15 @@ not install ffmpeg/ffprobe, and no existing test depends on the real binary.
 `ffprobe` ships in the same suite as `ffmpeg`, so this adds no new runtime
 dependency.
 
-Videos are immutable once imported (the app has no video editing), unlike
-EXIF orientation which can change via in-app photo edits and is re-synced
-on view (`update_exif_if_changed`). Video metadata therefore only needs to be
-captured once, at import time.
+`get_photo_info` (the single-photo info panel) already has a live-read +
+self-heal pattern for photos: it re-parses EXIF from the file on every view
+(`ExifData::new(f)`, in `photo_commands.rs::photo_info_blocking`), diffs all
+20 `exif_*` columns against the DB row, and updates only what drifted
+(`update_exif_if_changed`, `repository/meta_db/sqlite/exif.rs`) — the
+displayed value always comes from the file, the DB is an opportunistically-
+healed cache used by bulk operations (sort/search/stats), never by this
+single-item display itself. This change reuses that exact mechanism for
+video rather than introducing a separate one.
 
 ## Goal
 
@@ -44,62 +49,77 @@ if wanted, is out of scope for this change).
 
 - Backfilling metadata for videos already in the library. The user will
   handle this with a standalone script later.
-- Re-syncing video metadata on view (no in-app video editing exists that
-  could invalidate it).
-- GPS for photos (EXIF GPS tags). Out of scope; the new `gps_latitude`/
-  `gps_longitude` columns are written by the video path only for now, but are
-  generic enough that a future photo-EXIF-GPS feature could reuse them.
+- Persisting duration/codec/GPS to the database. Verified (grep) that no
+  search/filter/stats feature reads them; `get_photo_info` can supply them
+  live from the same `ffprobe` call used for display, so there is nothing to
+  cache and no schema change is needed for them (see Schema below).
+- GPS for photos (EXIF GPS tags) — out of scope entirely, no shared column to
+  design for since video GPS isn't stored either.
 - Map-link rendering for GPS in the UI (plain text only).
 - Any change to which videos are considered "supported" (`utils/raw_file.rs`
   extension lists are unaffected).
+- Changing `get_photo_info`'s live-read-and-heal architecture for photos.
+  It's an existing, deliberate mechanism (not a bug); this change extends it
+  to video, it doesn't redesign it.
 
 ## Architecture
 
+Two call sites need video handling, and they need different things from
+`ffprobe`:
+
 ```
-Photo::is_video()
-       │
-       ├─ false → ExifData::new()              (existing, rexif)
-       │
-       └─ true  → VideoMetadata::new()          (new, ffprobe)
-                        │
-                        ▼
-              utils/ffprobe.rs (new)
-              Command::new("ffprobe") -v quiet -print_format json
-                  -show_format -show_streams <path>
-              → serde_json → VideoMetadata
+1. Import  (repository/meta_db/sqlite/photo_metadata.rs::record_photos_meta_data)
+   Bulk write path. Populates the columns bulk sort/search/stats already read.
+
+   Photo::is_video()
+          │
+          ├─ false → ExifData::new(file)                (existing, rexif)
+          │
+          └─ true  → ffprobe::probe(path)                (new)
+                            │
+                            ▼
+                     VideoMetadata::to_exif_data()        (new)
+                            │
+                            ▼
+                     photo.embed_exif(..)                 (existing, unchanged)
+
+2. Info panel  (commands/photo_commands.rs::photo_info_blocking)
+   Single-item live display path. Mirrors the existing photo branch instead
+   of reading the DB.
+
+   Photo::is_video()
+          │
+          ├─ false → ExifData::new(file) + update_exif_if_changed   (existing)
+          │
+          └─ true  → ffprobe::probe(path)                            (new)
+                            │
+                            ├─→ VideoMetadata::to_exif_data() → update_exif_if_changed   (existing fn, reused)
+                            └─→ duration/codec/GPS → PhotoInfoResponse.video (new field, not persisted)
 ```
 
-New files, mirroring the existing EXIF pair:
+New files:
 
-- `value/video_metadata.rs` — `VideoMetadata` struct + parsing from the
-  ffprobe JSON shape (analogous to `value/exif.rs`).
+- `value/video_metadata.rs` — `VideoMetadata` struct, parsed from the
+  `ffprobe` JSON shape, plus `to_exif_data(&self) -> exif::ExifData`, which
+  fills only `date_time_original`/`model`/`make`/`xresolution`/`yresolution`
+  (leaving every photo-only field — ISO, f-number, lens, etc. — empty, same
+  as `ExifData::empty()`).
 - `utils/ffprobe.rs` — spawns `ffprobe`, wall-clock timeout, JSON parsing
-  (analogous to `utils/exif_parser.rs`). ffprobe only reads headers (no frame
-  decode), so the timeout can be short — a few seconds, well under the
-  minutes-scale budget `photo_service.rs` uses for `ffmpeg` thumbnail
-  extraction.
+  into `VideoMetadata` (analogous to `utils/exif_parser.rs`). ffprobe only
+  reads headers (no frame decode), so the timeout can be short — a few
+  seconds, well under the minutes-scale budget `photo_service.rs` uses for
+  `ffmpeg` thumbnail extraction.
 
-Injection point: `repository/meta_db/sqlite/photo_metadata.rs`, in
-`record_photos_meta_data`, replacing the existing
-`ExifData::new(abs_file)` call inside the `if let Some(abs_file) = ...`
-block:
-
-```rust
-if photo.is_video() {
-    if let Some(vm) = video_metadata::VideoMetadata::new(&abs_file.path) {
-        photo.embed_video_metadata(vm);
-    }
-    // else: photo keeps ExifData::empty() defaults; date falls back to
-    // file.created_datetime() exactly as it does today.
-} else {
-    let meta = exif::ExifData::new(abs_file);
-    photo.embed_exif(meta);
-}
-```
-
-(`abs_file.path` is read before `abs_file` would otherwise be moved into
-`ExifData::new`; the video branch takes a path, not the `File` struct, since
-`ffprobe` is a subprocess call, not an EXIF-tag reader.)
+**Why two call sites instead of one.** The bug this change fixes — wrong
+date-sort/grouping — is caused by `exif_date_time_original` never being
+populated for video at import; that write only happens once, in
+`record_photos_meta_data`, and bulk operations (`get_photo_meta_data_in_date`
+and friends) read only the DB, so this path is mandatory. The info panel
+(`get_photo_info`) is a single, user-triggered, on-demand action (not a bulk
+loop), so mirroring the photo architecture exactly — live `ffprobe` call,
+self-heal via the existing `update_exif_if_changed`, no new DB columns for
+display-only fields — is both simpler and consistent with how photos already
+work, per the discussion above.
 
 `record_photos_meta_data` is reached from photo import
 (`job_queue/handlers/import.rs`) and full DB rebuild
@@ -108,33 +128,28 @@ video metadata. The style-edit path (`style_commands.rs`) re-records a single
 photo after an in-app edit, which never applies to videos, so no video-only
 handling is needed there.
 
-## Schema (hybrid — reuse overlapping EXIF columns, add video-only columns)
+## Schema — no migration
 
-New migration `015_add_video_metadata.sql`:
-
-```sql
-ALTER TABLE photo_metadata ADD COLUMN video_duration_secs REAL;
-ALTER TABLE photo_metadata ADD COLUMN video_codec TEXT;
-ALTER TABLE photo_metadata ADD COLUMN gps_latitude REAL;
-ALTER TABLE photo_metadata ADD COLUMN gps_longitude REAL;
-```
-
-Field mapping:
+No new columns. Confirmed by grep across `search.rs`, `filter_options.rs`,
+and `stats/stats_queries.rs`: `exif_model`/`exif_make` are read by the camera
+search filter, the camera-filter dropdown, and burst grouping — worth
+writing. `exif_xresolution`/`exif_yresolution` and any duration/codec/GPS
+column are read by nothing — not worth adding.
 
 | `VideoMetadata` field | Storage | Rationale |
 |---|---|---|
-| `creation_time` | existing `exif_date_time_original` | Reuses the date-sort/grouping key path unchanged; no new column needed |
-| `model` | existing `exif_model` | `PhotoInfo`'s existing "Model" row works unmodified for video |
-| `width` / `height` | existing `exif_xresolution` / `exif_yresolution` | Same type (TEXT); stringified on write |
-| `duration_secs` | new `video_duration_secs` | No existing analog |
-| `codec` | new `video_codec` | No existing analog |
-| `gps_latitude` / `gps_longitude` | new `gps_latitude` / `gps_longitude` | No existing analog anywhere in the schema (photos don't have GPS today either) |
+| `creation_time` | existing `exif_date_time_original` | The date-sort/grouping bug fix; read by bulk list/date queries |
+| `model` | existing `exif_model` | Read by search filter, camera-filter dropdown, burst grouping |
+| `make` | existing `exif_make` | Same three consumers as `model` (they're always queried together) |
+| `width` / `height` | existing `exif_xresolution` / `exif_yresolution` | Zero marginal cost — same `ffprobe` call already returns them, existing columns/INSERT slots already exist; harmless even though nothing reads them back yet |
+| `duration_secs`, `codec`, `gps_latitude`, `gps_longitude` | not persisted | No consumer; supplied live by `get_photo_info` only (see below) |
 
 `VideoMetadata` (`value/video_metadata.rs`):
 
 ```rust
 pub struct VideoMetadata {
     pub creation_time: String,       // "YYYY-MM-DD HH:MM:SS", local time
+    pub make: String,
     pub model: String,
     pub width: String,
     pub height: String,
@@ -145,15 +160,11 @@ pub struct VideoMetadata {
 }
 ```
 
-`Photo::embed_video_metadata(&mut self, meta: VideoMetadata)` (new, mirrors
-`embed_exif`) fans `creation_time`/`model`/`width`/`height` into the existing
-`ExifData` fields and stores `duration_secs`/`codec`/`gps_latitude`/
-`gps_longitude` on four new `Photo` fields, which the existing INSERT/UPDATE
-path in `photo_metadata.rs` writes to the four new columns.
-
-`entity/photo_meta.rs::PhotoMeta` (and the query behind
-`PhotoMeta::new_with_data`) gains the same four fields so `get_photo_info` can
-read them back out for display.
+No changes to `entity/photo.rs` (no new `Photo` fields, no new
+`embed_video_metadata` method) and no changes to `entity/photo_meta.rs` —
+`VideoMetadata::to_exif_data()` produces a plain `exif::ExifData` that flows
+through the `embed_exif` and `update_exif_if_changed` functions exactly as
+photo EXIF does today.
 
 ## Extraction logic details
 
@@ -200,8 +211,11 @@ Branch on `props.currentPhoto?.isVideo()`:
 - **Photo**: unchanged.
 
 Backend: `PhotoInfoResponse` (`commands/photo_commands.rs`) gains an optional
-`video: Option<serde_json::Value>` field, populated from the new `PhotoMeta`
-fields when `photo.is_video()`, alongside the existing `exif` field.
+`video: Option<serde_json::Value>` field. In `photo_info_blocking`, when
+`photo.is_video()`, it's built directly from the live `VideoMetadata`
+(`duration_secs`, `codec`, `gps_latitude`, `gps_longitude`) — no DB read.
+`exif` continues to come from `VideoMetadata::to_exif_data()` synced through
+`update_exif_if_changed`, same as the photo branch.
 
 ## Testing
 
@@ -211,6 +225,13 @@ fields when `photo.is_video()`, alongside the existing `exif` field.
   UTC→local conversion at a DST boundary.
 - **Unit tests** for the ISO 6709 GPS parser: well-formed string, missing
   trailing slash, missing altitude component, malformed input.
+- **Unit test** for `VideoMetadata::to_exif_data()`: only
+  `date_time_original`/`make`/`model`/`xresolution`/`yresolution` are set,
+  every other `ExifData` field stays empty (so `update_exif_if_changed` never
+  touches ISO/f-number/lens/etc. for a video row).
+- **Existing test coverage for `update_exif_if_changed` is reused as-is** —
+  it's driven purely by the `ExifData` it's handed, so no video-specific
+  changes to that function are needed or tested.
 - **No integration test spawns the real `ffprobe` binary** — CI has neither
   `ffmpeg` nor `ffprobe` installed, and no existing test in the codebase
   depends on the real `ffmpeg` binary either (thumbnail generation is
@@ -225,5 +246,6 @@ fields when `photo.is_video()`, alongside the existing `exif` field.
 - A standalone backfill script to re-run `ffprobe` extraction over the
   existing library (mentioned by the user as a separate, later task).
 - GPS map-link rendering.
-- Extending EXIF GPS extraction for photos to populate the same
-  `gps_latitude`/`gps_longitude` columns.
+- A `gps_latitude`/`gps_longitude` (or similar) column for photos or videos,
+  if a future feature (e.g. a map view) needs GPS to be queryable in bulk
+  rather than read live per item.
