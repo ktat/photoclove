@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useMemo, useEffect } from 'react';
+import React, { useCallback, useReducer, useRef, useMemo, useEffect } from 'react';
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { openUrl } from '@tauri-apps/plugin-opener';
 import classNames from 'classnames';
@@ -7,6 +7,45 @@ import { logger } from "../../services/LoggerService.js";
 import { getCombinedTransformStyle } from "../../utils/orientationUtils.js";
 import { isVideoPath } from "../../utils/videoFormats.js";
 import styles from './PhotoCard.module.css';
+
+// Resolved get_thumbnail_path results, keyed by namespace + photo path.
+// Module-level so rebuilt Photo entities (filter/sort changes recreate them)
+// reuse the resolved path without another IPC round-trip.
+const thumbnailPathCache = new Map();
+const thumbnailPathRequests = new Map();
+
+function thumbnailCacheKey(photoPath, namespace) {
+    return `${namespace ?? ''}|${photoPath}`;
+}
+
+function getCachedThumbnailPath(photoPath, namespace) {
+    return thumbnailPathCache.get(thumbnailCacheKey(photoPath, namespace));
+}
+
+function storeThumbnailPath(photoPath, namespace, cachePath) {
+    thumbnailPathCache.set(thumbnailCacheKey(photoPath, namespace), cachePath);
+}
+
+/** Resolve the thumbnail cache path, deduplicating concurrent requests. */
+function resolveThumbnailPath(photoPath, namespace) {
+    const key = thumbnailCacheKey(photoPath, namespace);
+    if (thumbnailPathCache.has(key)) {
+        return Promise.resolve(thumbnailPathCache.get(key));
+    }
+    let pending = thumbnailPathRequests.get(key);
+    if (!pending) {
+        pending = invoke('get_thumbnail_path', { photoPath, importDirectory: namespace })
+            .then(cachePath => {
+                thumbnailPathCache.set(key, cachePath);
+                return cachePath;
+            })
+            .finally(() => {
+                thumbnailPathRequests.delete(key);
+            });
+        thumbnailPathRequests.set(key, pending);
+    }
+    return pending;
+}
 
 /**
  * PhotoCard Component
@@ -51,9 +90,6 @@ function PhotoCard({
         return styles;
     }, []);
 
-    // Calculate initial image source
-    let imgSrc = null;
-    let imgRef = useRef(null);
     const isMountedRef = useRef(true);
 
     // Track component mount state to prevent updates on unmounted components
@@ -64,79 +100,62 @@ function PhotoCard({
         };
     }, []);
 
+    // Thumbnail cache path resolution (import mode / trash mode).
+    // The IPC runs in an effect (never in the render body) and the result
+    // lands in the module-level cache above.
+    // PNG/GIF skip thumbnail generation: the browser renders them natively.
+    const isPngOrGif = /\.(png|gif)$/i.test(photo.originalPath);
+    // Include import directory to avoid cache collisions; only pass a non-empty string
+    const importDir = (photo.import_source === true && importState?.currentImportPath && importState.currentImportPath !== '')
+        ? importState.currentImportPath
+        : null;
+    const needsImportThumbnail = photo.import_source === true && !isPngOrGif;
+    // Trash photos without library thumbnails use the EXIF thumbnail cache
+    // under the 'trash' namespace
+    const needsTrashThumbnail = photo.import_source !== true && photo.inTrashBin && !photo.hasThumbnail;
+    const thumbnailNamespace = needsImportThumbnail ? importDir : 'trash';
+    const resolvedThumbnailPath = (needsImportThumbnail || needsTrashThumbnail)
+        ? getCachedThumbnailPath(photo.originalPath, thumbnailNamespace)
+        : undefined;
+    const [, bumpThumbnailVersion] = useReducer((c) => c + 1, 0);
+
+    useEffect(() => {
+        if (!(needsImportThumbnail || needsTrashThumbnail) || resolvedThumbnailPath !== undefined) {
+            return undefined;
+        }
+        let cancelled = false;
+        resolveThumbnailPath(photo.originalPath, thumbnailNamespace)
+            .then(() => {
+                if (!cancelled) {
+                    bumpThumbnailVersion();
+                }
+            })
+            .catch(err => {
+                logger.warn('PhotoCard', 'thumbnail_path_failed', 'Failed to get thumbnail cache path', {
+                    photoPath: photo.originalPath,
+                    error: err?.message || String(err)
+                });
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [photo.originalPath, thumbnailNamespace, needsImportThumbnail, needsTrashThumbnail, resolvedThumbnailPath]);
+
+    // Calculate image source
+    let imgSrc = null;
     if (photo.import_source === true) {
-        // PNG/GIF: skip thumbnail generation, use original image directly (browser can render natively)
-        const isPngOrGif = /\.(png|gif)$/i.test(photo.originalPath);
         if (isPngOrGif) {
             imgSrc = convertFileSrc(photo.originalPath);
-        } else if (!photo._cachedThumbnailPath) {
-            // For import photos: Get thumbnail cache path and set it directly in src
-            // This will trigger onError if the file doesn't exist yet
-            // Get deterministic cache path and cache it on the photo object
-            // Include import directory for import mode to avoid cache collisions
-            // Only pass importDirectory if it's a non-empty string
-            const importDir = (photo.import_source === true && importState?.currentImportPath && importState.currentImportPath !== '')
-                ? importState.currentImportPath
-                : null;
-            logger.debug('PhotoCard', 'get_thumbnail_path_call', 'Calling get_thumbnail_path', {
-                photoPath: photo.originalPath,
-                importDirectory: importDir,
-                hasImportState: !!importState,
-                currentImportPath: importState?.currentImportPath,
-                importSource: photo.import_source
-            });
-            invoke('get_thumbnail_path', {
-                photoPath: photo.originalPath,
-                importDirectory: importDir
-            })
-                .then(cachePath => {
-                    // Check if component is still mounted before updating
-                    if (!isMountedRef.current) return;
-                    photo._cachedThumbnailPath = convertFileSrc(cachePath);
-                    // If we have an imgRef, update src immediately
-                    if (imgRef.current) {
-                        imgRef.current.src = photo._cachedThumbnailPath;
-                    }
-                })
-                .catch(err => {
-                    logger.warn('PhotoCard', 'thumbnail_path_failed', 'Failed to get thumbnail cache path', {
-                        photoPath: photo.originalPath,
-                        error: err.message
-                    });
-                });
-            // Use cached thumbnail path, or empty placeholder that will be updated async
-            imgSrc = "";
+        } else if (resolvedThumbnailPath) {
+            imgSrc = convertFileSrc(resolvedThumbnailPath);
         } else {
-            imgSrc = photo._cachedThumbnailPath;
+            // Empty placeholder until the cache path resolves; loading it will
+            // trigger onError, whose chain generates the thumbnail on demand
+            imgSrc = "";
         }
     } else if (photo.inTrashBin && !photo.hasThumbnail) {
-        // For trash photos without library thumbnails: Use EXIF thumbnail cache
-        // On error (cache miss), generate EXIF thumbnail from trash file
-        if (!photo._trashThumbnailPath) {
-            // Get cache path and store it on the photo object
-            invoke('get_thumbnail_path', {
-                photoPath: photo.originalPath,
-                importDirectory: 'trash'  // Use 'trash' as namespace to avoid collision
-            })
-                .then(cachePath => {
-                    if (!isMountedRef.current) return;
-                    photo._trashThumbnailPath = cachePath;
-                    // Update img src to try loading from cache
-                    if (imgRef.current) {
-                        imgRef.current.src = convertFileSrc(cachePath);
-                    }
-                })
-                .catch(err => {
-                    logger.warn('PhotoCard', 'trash_thumbnail_path_failed', 'Failed to get cache path', {
-                        photoPath: photo.originalPath,
-                        error: err.message
-                    });
-                });
-        }
-        // Use cached path if available, otherwise use trash file path as placeholder
-        // (will be updated once get_thumbnail_path completes)
-        if (photo._trashThumbnailPath) {
-            imgSrc = convertFileSrc(photo._trashThumbnailPath);
+        if (resolvedThumbnailPath) {
+            imgSrc = convertFileSrc(resolvedThumbnailPath);
         } else {
             // Temporary: use trash file path until cache path is resolved
             const trashFilePath = typeof photo.displayPath === 'function' ? photo.displayPath() : photo.originalPath;
@@ -288,8 +307,8 @@ function PhotoCard({
                 })
                     .then(cachePath => {
                         if (!isMountedRef.current || !imgElement || !imgElement.isConnected) return;
-                        // Update photo object for future renders
-                        photo._trashThumbnailPath = cachePath;
+                        // Store for future renders (survives entity re-creation)
+                        storeThumbnailPath(photo.originalPath, 'trash', cachePath);
                         const thumbnailUrl = convertFileSrc(cachePath) + '?t=' + Date.now();
                         logger.info('PhotoCard', 'trash_exif_thumbnail_generated', 'EXIF thumbnail generated', {
                             originalPath: photo.originalPath?.slice(-40),
@@ -395,7 +414,6 @@ function PhotoCard({
                         </div>
                         : <div className={styles.imageWrapper}>
                             <img
-                                ref={(photo.import_source === true || (photo.inTrashBin && !photo.hasThumbnail)) ? imgRef : null}
                                 alt={photo.originalPath}
                                 style={thumbnailStyle}
                                 src={imgSrc}
