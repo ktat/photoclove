@@ -398,6 +398,13 @@ impl File {
     }
 
     fn get_created_time(&self) -> chrono::DateTime<Local> {
+        // DB-loaded files (from_relative) carry relative paths that can never
+        // be stat'd from the process CWD. The stat always failed and fell back
+        // to now(); skip the pointless syscall and the per-photo WARN flood
+        // (1,500+ per date view observed) it produced.
+        if !Path::new(&self.path).is_absolute() {
+            return Local::now();
+        }
         let metadata = match std::fs::metadata(&self.path) {
             Ok(metadata) => metadata,
             Err(e) => {
