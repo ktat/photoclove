@@ -67,7 +67,7 @@ if wanted, is out of scope for this change).
 Two call sites need video handling, and they need different things from
 `ffprobe`:
 
-```
+```text
 1. Import  (repository/meta_db/sqlite/photo_metadata.rs::record_photos_meta_data)
    Bulk write path. Populates the columns bulk sort/search/stats already read.
 
@@ -180,20 +180,22 @@ photo EXIF does today.
 `2026-06-29T09:48:43.000000Z`) on the containers this app encounters (MP4/MOV
 from phones and drones), while EXIF `DateTimeOriginal` is local camera time.
 Mixing the two would put same-moment photos and videos in different date
-buckets. `VideoMetadata::new` parses the UTC timestamp and converts to
-`chrono::Local` (the timezone already used elsewhere, e.g. `value/file.rs`)
-before formatting as `"%Y-%m-%d %H:%M:%S"`.
+buckets. `VideoMetadata::from_ffprobe_json` parses the UTC timestamp and
+converts to `chrono::Local` (the timezone already used elsewhere, e.g.
+`value/file.rs`) before formatting as `"%Y-%m-%d %H:%M:%S"`.
 
 **GPS.** Embedding format is muxer-dependent (e.g. QuickTime-style containers
 often use a `com.apple.quicktime.location.ISO6709` tag like
-`+35.1234-139.1234+012.345/`); many DJI MP4s don't expose GPS through
-`ffprobe -show_format` tags at all. GPS extraction is best-effort: if an
-ISO 6709 string is present, parse it with a regex
+`+35.1234-139.1234+012.345/`; other encoders, e.g. Android-recorded MP4s, use
+a plain `location` or `location-eng` tag in the same ISO 6709 format instead —
+all three keys are tried, in that order); many DJI MP4s don't expose GPS
+through `ffprobe -show_format` tags at all. GPS extraction is best-effort: if
+an ISO 6709 string is present, parse it with a regex
 (`^([+-]\d+\.?\d*)([+-]\d+\.?\d*)`); otherwise leave both fields `None`. A
 missing GPS tag is not logged as an error.
 
 **Failure handling.** Spawn failure, timeout, and JSON-parse failure are all
-treated as "extraction failed": `VideoMetadata::new` returns `None`, the
+treated as "extraction failed": `ffprobe::probe` returns `None`, the
 `Photo` keeps `ExifData::empty()` defaults, and the date falls back to
 `file.created_datetime()` — byte-for-byte the same behavior the app has
 today. This mirrors the existing `ffmpeg` thumbnail-generation failure

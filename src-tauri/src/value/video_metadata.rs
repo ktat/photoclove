@@ -3,6 +3,7 @@
 //! duration, codec, GPS). Mirrors `value::exif::ExifData`'s role for photos.
 
 use crate::value::exif;
+use crate::value::file;
 
 #[derive(Debug, Clone, PartialEq, Default, serde::Serialize)]
 pub struct VideoMetadata {
@@ -31,7 +32,6 @@ fn iso6709_regex() -> &'static Regex {
 }
 
 impl VideoMetadata {
-    #[allow(dead_code)]
     pub fn empty() -> VideoMetadata {
         VideoMetadata::default()
     }
@@ -42,7 +42,6 @@ impl VideoMetadata {
     /// `Some(VideoMetadata::empty())`, since ffprobe ran successfully and
     /// simply found nothing usable (different encoders expose different
     /// tag subsets).
-    #[allow(dead_code)]
     pub fn from_ffprobe_json(raw_json: &str) -> Option<VideoMetadata> {
         let root: Value = serde_json::from_str(raw_json).ok()?;
 
@@ -71,7 +70,11 @@ impl VideoMetadata {
             .to_string();
 
         let (gps_latitude, gps_longitude) = tags
-            .and_then(|t| t.get("com.apple.quicktime.location.ISO6709"))
+            .and_then(|t| {
+                t.get("com.apple.quicktime.location.ISO6709")
+                    .or_else(|| t.get("location"))
+                    .or_else(|| t.get("location-eng"))
+            })
             .and_then(|v| v.as_str())
             .and_then(parse_iso6709)
             .map(|(lat, lon)| (Some(lat), Some(lon)))
@@ -138,7 +141,6 @@ impl VideoMetadata {
     /// `VideoMetadata` has no `creation_time` (ffprobe failed, or the tag
     /// was absent) — callers pass `file.created_datetime()`, mirroring the
     /// ctime fallback `ExifData::new()` already performs for photos.
-    #[allow(dead_code)]
     pub fn to_exif_data(&self, fallback_date_time: &str) -> exif::ExifData {
         let mut data = exif::ExifData::empty();
 
@@ -169,12 +171,31 @@ impl VideoMetadata {
     }
 }
 
+/// Load `ExifData` for a file, using `ffprobe` for video containers (which
+/// `rexif` cannot parse) or the existing EXIF parser for photos. Returns the
+/// raw `VideoMetadata` too, for callers that also need duration/codec/GPS
+/// (e.g. the info panel) — `None` for photos. This is the single source of
+/// truth for the is-video branch; previously it was copy-pasted at three
+/// call sites, risking drift back into the ctime-fallback bug this module
+/// fixes.
+pub fn load_exif_for_file(
+    is_video: bool,
+    file: file::File,
+) -> (exif::ExifData, Option<VideoMetadata>) {
+    if is_video {
+        let vm = crate::utils::ffprobe::probe(&file.path).unwrap_or_else(VideoMetadata::empty);
+        let exif_data = vm.to_exif_data(&file.created_datetime());
+        (exif_data, Some(vm))
+    } else {
+        (exif::ExifData::new(file), None)
+    }
+}
+
 /// Parse an RFC3339 UTC timestamp (ffprobe's `creation_time` tag format,
 /// e.g. "2026-06-29T09:48:43.000000Z") and format it in the given
 /// timezone as "YYYY-MM-DD HH:MM:SS", matching `ExifData`'s date format.
 /// Generic over the timezone so tests can supply a fixed offset instead of
 /// depending on the test machine's local timezone.
-#[allow(dead_code)]
 fn parse_utc_to_tz<Tz: chrono::TimeZone>(raw: &str, tz: &Tz) -> Option<String>
 where
     Tz::Offset: std::fmt::Display,
@@ -184,7 +205,6 @@ where
         .map(|dt| dt.with_timezone(tz).format("%Y-%m-%d %H:%M:%S").to_string())
 }
 
-#[allow(dead_code)]
 fn parse_utc_to_local(raw: &str) -> Option<String> {
     parse_utc_to_tz(raw, &chrono::Local)
 }
@@ -193,7 +213,6 @@ fn parse_utc_to_local(raw: &str) -> Option<String> {
 /// into (latitude, longitude). Returns `None` if the string doesn't start
 /// with two signed decimal numbers. The optional altitude/trailing slash
 /// are ignored.
-#[allow(dead_code)]
 fn parse_iso6709(raw: &str) -> Option<(f64, f64)> {
     let caps = iso6709_regex().captures(raw)?;
     let lat: f64 = caps.get(1)?.as_str().parse().ok()?;
@@ -292,6 +311,27 @@ mod tests {
         let vm = VideoMetadata::from_ffprobe_json(json).unwrap();
         assert_eq!(vm.gps_latitude, None);
         assert_eq!(vm.gps_longitude, None);
+    }
+
+    #[test]
+    fn test_from_ffprobe_json_falls_back_to_bare_location_tag() {
+        // Non-Apple encoders (e.g. Android-recorded MP4s) expose GPS under a
+        // plain "location" tag rather than the QuickTime-specific key.
+        let json = r#"{"streams": [], "format": {"tags": {"location": "+35.1234-139.1234/"}}}"#;
+        let vm = VideoMetadata::from_ffprobe_json(json).unwrap();
+        assert_eq!(vm.gps_latitude, Some(35.1234));
+        assert_eq!(vm.gps_longitude, Some(-139.1234));
+    }
+
+    #[test]
+    fn test_from_ffprobe_json_prefers_apple_location_tag_over_bare_one() {
+        let json = r#"{"streams": [], "format": {"tags": {
+            "com.apple.quicktime.location.ISO6709": "+10.0000+020.0000/",
+            "location": "+35.1234-139.1234/"
+        }}}"#;
+        let vm = VideoMetadata::from_ffprobe_json(json).unwrap();
+        assert_eq!(vm.gps_latitude, Some(10.0));
+        assert_eq!(vm.gps_longitude, Some(20.0));
     }
 
     #[test]

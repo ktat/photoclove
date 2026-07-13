@@ -12,13 +12,10 @@ use crate::entity::photo;
 use crate::entity::photo_meta;
 use crate::repository;
 use crate::repository::{MetaInfoDB, RepositoryDB};
-use crate::utils::ffprobe;
 use crate::value::comment;
 use crate::value::date;
-use crate::value::exif;
 use crate::value::file;
 use crate::value::star;
-use crate::value::video_metadata::VideoMetadata;
 
 use super::run_blocking;
 
@@ -273,14 +270,8 @@ fn photo_info_blocking(
             // silently fall back to ctime for a video container, same bug
             // as Tasks 3/4) — it builds the exif-shaped value from the live
             // ffprobe call instead.
-            let (exif_data, video_value) = if is_video {
-                let vm = ffprobe::probe(&f.path).unwrap_or_else(VideoMetadata::empty);
-                let exif_data = vm.to_exif_data(&f.created_datetime());
-                let video_value = serde_json::to_value(&vm).ok();
-                (exif_data, video_value)
-            } else {
-                (exif::ExifData::new(f), None)
-            };
+            let (exif_data, vm_opt) = crate::value::video_metadata::load_exif_for_file(is_video, f);
+            let video_value = vm_opt.and_then(|vm| serde_json::to_value(&vm).ok());
 
             // Sync EXIF-shaped data to database if there are differences.
             // For video this self-heals exif_date_time_original/exif_model/
@@ -311,7 +302,7 @@ fn photo_info_blocking(
                 video: video_value,
             };
 
-            serde_json::to_string(&response).unwrap()
+            serde_json::to_string(&response).unwrap_or_else(|_| "{}".to_string())
         }
         None => {
             // File doesn't exist, try to get metadata from database

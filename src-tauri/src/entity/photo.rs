@@ -91,13 +91,8 @@ impl Photo {
 
     pub fn new_with_exif(file: file::File) -> Photo {
         let mut photo = Photo::new(file.clone(), Option::None);
-        let meta = if photo.is_video() {
-            crate::utils::ffprobe::probe(&file.path)
-                .unwrap_or_else(crate::value::video_metadata::VideoMetadata::empty)
-                .to_exif_data(&file.created_datetime())
-        } else {
-            exif::ExifData::new(file)
-        };
+        let is_video = photo.is_video();
+        let (meta, _) = crate::value::video_metadata::load_exif_for_file(is_video, file);
         photo.embed_exif(meta);
         photo.is_exif_not_loaded = false;
         photo

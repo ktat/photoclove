@@ -146,13 +146,8 @@ pub fn record_photos_meta_data(
         // Load EXIF (photos) or probe metadata (videos) from absolute path on disk
         let abs_path = file::to_absolute_path(&photo.file.path, &import_to);
         if let Some(abs_file) = file::File::new_if_exists(abs_path) {
-            let meta = if photo.is_video() {
-                crate::utils::ffprobe::probe(&abs_file.path)
-                    .unwrap_or_else(crate::value::video_metadata::VideoMetadata::empty)
-                    .to_exif_data(&abs_file.created_datetime())
-            } else {
-                crate::value::exif::ExifData::new(abs_file)
-            };
+            let is_video = photo.is_video();
+            let (meta, _) = crate::value::video_metadata::load_exif_for_file(is_video, abs_file);
             photo.embed_exif(meta);
         }
 
