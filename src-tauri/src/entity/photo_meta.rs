@@ -136,24 +136,10 @@ impl PhotoMeta {
         _trash_path: &str,
         _library_path: &str,
     ) -> Option<PhotoMeta> {
-        // DB stores relative paths after #194 migration
-        // Use from_relative since metadata doesn't need the file to physically exist
-        let f = file::File::from_relative(record.path.clone());
-        let mut photo = photo::Photo::new(f, Option::None);
-        photo.set_time(record.date.clone());
-        photo.set_css_style(record.css_style.clone());
-        // Set orientation from database record
-        if let Some(ref orientation) = record.orientation {
-            photo.meta_data.orientation = orientation.clone();
-        }
-        Some(PhotoMeta {
-            photo,
-            star: star::Star::new(record.star),
-            comment: comment::Comment::new(&record.comment),
-            google_photo_url: record.google_photo_url.clone(),
-            tags: record.tags.clone(),
-            storage_sync: record.storage_sync.clone(),
-        })
+        // Metadata comes from the DB either way and from_relative doesn't
+        // require the file to exist, so this is the same construction as the
+        // library variant.
+        Self::new_from_photo_info(record)
     }
 
     pub fn clone(&self) -> PhotoMeta {

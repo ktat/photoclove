@@ -68,6 +68,11 @@ import { usePhotoOptionOperations } from "../hooks/usePhotoOptionOperations.js";
 import { convertPhotosToEntities } from "../utils/PhotoProcessingUtils.js";
 import { hasActiveFilters, getFilterSummary } from "../utils/UIStateUtils.js";
 
+// Stable fallbacks: inline `|| {}` / `|| []` would hand memo'd children a
+// fresh reference every render and defeat their React.memo
+const EMPTY_DATE_NUM = {};
+const EMPTY_DATE_LIST = [];
+
 import { logger } from "../services/LoggerService.js";
 
 import './PhotosList.css';
@@ -665,8 +670,8 @@ function PhotosList({
                     displayState={displayState} searchState={searchState} photoDataState={photoDataState}
                     listState={listState}
                     handlers={handlers} tabClass={tabClass} setTabClass={setTabClass}
-                    dateNum={dateNum || {}} updateDateNum={updateDateNum}
-                    dateList={dateList || []} updateDateList={updateDateList}
+                    dateNum={dateNum || EMPTY_DATE_NUM} updateDateNum={updateDateNum}
+                    dateList={dateList || EMPTY_DATE_LIST} updateDateList={updateDateList}
                     setShowJobQueueModal={setShowJobQueueModal} filterOptions={filterOptions}
                     loadFilterOptions={loadFilterOptions} isFilterOptionsLoading={isFilterOptionsLoading}
                     importState={importState} albumsList={albumsList} tagsList={tagsList}

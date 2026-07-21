@@ -20,7 +20,8 @@
     "hasComment": "Con comentario",
     "extensions": "Extensiones",
     "image": "Imagen",
-    "movie": "Video"
+    "movie": "Video",
+    "other": "Otro"
   },
   "selection": {
     "selectAllInPage": "Seleccionar todas las fotos de la página",

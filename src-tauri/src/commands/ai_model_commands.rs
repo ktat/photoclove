@@ -3,6 +3,7 @@
 //! Commands for managing AI models used in photo tagging.
 
 use crate::domain_service::ai_tagging::backend::{ModelInfo, ModelManager, ModelStatus};
+use crate::domain_service::ai_tagging::categories::AutoTagCategory;
 use serde::Serialize;
 
 /// Response containing information about all available models
@@ -84,20 +85,24 @@ pub fn is_ai_model_downloaded(model_id: String) -> Result<bool, String> {
 /// Download an AI model
 /// Note: This is a synchronous operation that blocks until download completes
 #[tauri::command]
-pub fn download_ai_model(model_id: String) -> Result<String, String> {
+pub async fn download_ai_model(model_id: String) -> Result<String, String> {
     log::info!(
         target: "ai_tagging",
         "download_model_request; model_id={}",
         model_id
     );
 
-    let manager = ModelManager::new();
-    manager.download_model(&model_id)?;
+    // Multi-GB network download: never on the main thread
+    crate::commands::run_blocking(move || {
+        let manager = ModelManager::new();
+        manager.download_model(&model_id)?;
 
-    Ok(format!(
-        r#"{{"result": "success", "model_id": "{}"}}"#,
-        model_id
-    ))
+        Ok(format!(
+            r#"{{"result": "success", "model_id": "{}"}}"#,
+            model_id
+        ))
+    })
+    .await
 }
 
 /// Delete a downloaded AI model
@@ -147,17 +152,21 @@ pub fn get_onnx_runtime_status() -> Result<String, String> {
 
 /// Download and install the ONNX Runtime dynamic library.
 #[tauri::command]
-pub fn download_onnx_runtime() -> Result<String, String> {
+pub async fn download_onnx_runtime() -> Result<String, String> {
     use crate::domain_service::ai_tagging::runtime_installer;
 
     log::info!(target: "ai_tagging", "onnx_runtime_install_request");
-    runtime_installer::install()?;
+    // Network download + extraction: never on the main thread
+    crate::commands::run_blocking(move || {
+        runtime_installer::install()?;
 
-    Ok(serde_json::json!({
-        "result": "success",
-        "version": runtime_installer::ONNX_VERSION,
+        Ok(serde_json::json!({
+            "result": "success",
+            "version": runtime_installer::ONNX_VERSION,
+        })
+        .to_string())
     })
-    .to_string())
+    .await
 }
 
 /// Get default CLIP labels for OpenCLIP/SigLIP
@@ -171,10 +180,24 @@ pub fn get_default_clip_labels() -> Result<String, String> {
 
 /// Run AI tagging for a single photo
 #[tauri::command]
-pub fn run_ai_tagging_for_photo(
+pub async fn run_ai_tagging_for_photo(
     photo_path: String,
     use_full_image: Option<bool>,
     state: tauri::State<'_, crate::AppState>,
+) -> Result<String, String> {
+    let config = state.config.clone();
+    let meta_db = state.meta_db.clone();
+    crate::commands::run_blocking(move || {
+        run_ai_tagging_for_photo_blocking(photo_path, use_full_image, &config, &meta_db)
+    })
+    .await
+}
+
+fn run_ai_tagging_for_photo_blocking(
+    photo_path: String,
+    use_full_image: Option<bool>,
+    config: &crate::entity::config::Config,
+    meta_db: &crate::repository::MetaDB,
 ) -> Result<String, String> {
     let use_full = use_full_image.unwrap_or(false);
     use crate::domain_service::ai_tagging::service::{get_service, AITaggingConfig};
@@ -187,8 +210,6 @@ pub fn run_ai_tagging_for_photo(
         photo_path,
         use_full
     );
-
-    let config = &state.config;
 
     // Resolve relative path to absolute for file I/O
     let abs_path = if photo_path.starts_with('/') {
@@ -211,7 +232,7 @@ pub fn run_ai_tagging_for_photo(
                 .ai_tagging
                 .enabled_categories
                 .iter()
-                .filter_map(|s| parse_category(s))
+                .filter_map(|s| s.parse::<AutoTagCategory>().ok())
                 .collect(),
         )
     };
@@ -276,7 +297,7 @@ pub fn run_ai_tagging_for_photo(
         // Store tags in database
         for tag in &result.tags {
             // Get or create the collection for this AI tag
-            let collection_id = match state.meta_db.get_or_create_collection(&tag.tag_name, "tag") {
+            let collection_id = match meta_db.get_or_create_collection(&tag.tag_name, "tag") {
                 Ok(id) => id,
                 Err(e) => {
                     log::error!(
@@ -296,7 +317,7 @@ pub fn run_ai_tagging_for_photo(
                 "auto_generated": true
             });
 
-            if let Err(e) = state.meta_db.add_photo_to_collection_with_metadata(
+            if let Err(e) = meta_db.add_photo_to_collection_with_metadata(
                 collection_id,
                 &photo_path,
                 Some(metadata.to_string()),
@@ -346,48 +367,5 @@ pub fn run_ai_tagging_for_photo(
             error
         );
         Err(error)
-    }
-}
-
-/// Parse a string to AutoTagCategory
-fn parse_category(
-    s: &str,
-) -> Option<crate::domain_service::ai_tagging::categories::AutoTagCategory> {
-    use crate::domain_service::ai_tagging::categories::AutoTagCategory;
-
-    match s.to_lowercase().as_str() {
-        "person" => Some(AutoTagCategory::Person),
-        "face" => Some(AutoTagCategory::Face),
-        "group" => Some(AutoTagCategory::Group),
-        "dog" => Some(AutoTagCategory::Dog),
-        "cat" => Some(AutoTagCategory::Cat),
-        "bird" => Some(AutoTagCategory::Bird),
-        "fish" => Some(AutoTagCategory::Fish),
-        "horse" => Some(AutoTagCategory::Horse),
-        "cow" => Some(AutoTagCategory::Cow),
-        "insect" => Some(AutoTagCategory::Insect),
-        "wildlife" => Some(AutoTagCategory::Wildlife),
-        "sea" => Some(AutoTagCategory::Sea),
-        "beach" => Some(AutoTagCategory::Beach),
-        "mountain" => Some(AutoTagCategory::Mountain),
-        "forest" => Some(AutoTagCategory::Forest),
-        "river" => Some(AutoTagCategory::River),
-        "lake" => Some(AutoTagCategory::Lake),
-        "sky" => Some(AutoTagCategory::Sky),
-        "sunset" => Some(AutoTagCategory::Sunset),
-        "flower" => Some(AutoTagCategory::Flower),
-        "tree" => Some(AutoTagCategory::Tree),
-        "plant" => Some(AutoTagCategory::Plant),
-        "garden" => Some(AutoTagCategory::Garden),
-        "food" => Some(AutoTagCategory::Food),
-        "building" => Some(AutoTagCategory::Building),
-        "street" => Some(AutoTagCategory::Street),
-        "indoor" => Some(AutoTagCategory::Indoor),
-        "outdoor" => Some(AutoTagCategory::Outdoor),
-        "night" => Some(AutoTagCategory::Night),
-        "wedding" => Some(AutoTagCategory::Wedding),
-        "birthday" => Some(AutoTagCategory::Birthday),
-        "travel" => Some(AutoTagCategory::Travel),
-        _ => None,
     }
 }

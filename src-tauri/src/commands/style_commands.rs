@@ -1,7 +1,6 @@
 use crate::app_state::AppState;
 use crate::domain_service::{achievements, photo_service};
 use crate::entity::photo;
-use crate::repository;
 use crate::repository::MetaInfoDB;
 use crate::value::{date, file};
 use base64::{engine::general_purpose, Engine as _};
@@ -27,7 +26,7 @@ pub async fn save_css_style(
     css_style: &str,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
-    let sqlite_db = repository::meta_db::sqlite::SQLite::new(state.config.import_to.clone());
+    let sqlite_db = state.meta_db.clone();
 
     match sqlite_db.save_css_style(photo_path, css_style) {
         Ok(()) => Ok("{\"result\": true}".to_string()),
@@ -49,7 +48,7 @@ pub async fn get_css_style(
     photo_path: &str,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
-    let sqlite_db = repository::meta_db::sqlite::SQLite::new(state.config.import_to.clone());
+    let sqlite_db = state.meta_db.clone();
 
     match sqlite_db.get_css_style(photo_path) {
         Some(css_style) => Ok(css_style),
@@ -207,11 +206,7 @@ pub async fn save_styled_copy_from_frontend(
     });
 
     // Check first_edit achievement
-    let _ = achievements::check_and_emit_achievement(
-        &app_handle,
-        &state.config.import_to,
-        "first_edit",
-    );
+    let _ = achievements::check_and_emit_achievement(&app_handle, &state.meta_db, "first_edit");
 
     // 10. Return JSON object with metadata
     let now_iso = Utc::now().to_rfc3339();

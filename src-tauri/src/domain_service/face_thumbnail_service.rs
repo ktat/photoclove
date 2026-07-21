@@ -4,9 +4,9 @@
 //! Thumbnails are stored in {thumbnail_store}/faces/{face_id}.jpg
 
 use crate::domain_service::face_detection::BoundingBox;
+use crate::utils::orientation::{apply_exif_orientation, read_exif_orientation};
 use image::{DynamicImage, GenericImageView};
 use std::fs;
-use std::io::Read;
 use std::path::{Path, PathBuf};
 
 /// JPEG quality for face thumbnails (0-100)
@@ -119,45 +119,6 @@ pub fn generate_face_thumbnail(
     );
 
     Ok(output_path)
-}
-
-/// Apply EXIF orientation to an image
-fn apply_exif_orientation(image: DynamicImage, orientation: &str) -> DynamicImage {
-    match orientation {
-        "Normal" | "Horizontal (normal)" => image,
-        "Mirror horizontal" | "Flip horizontal" => image.fliph(),
-        "Rotate 180" | "Rotate 180°" => image.rotate180(),
-        "Mirror vertical" | "Flip vertical" => image.flipv(),
-        "Mirror horizontal and rotate 270 CW" | "Rotate 90 CCW and flip horizontal" => {
-            image.rotate270().fliph()
-        }
-        "Rotate 90 CW" | "Rotate 90°" | "Rotate 90° CW" | "Rotated to left" => image.rotate90(),
-        "Mirror horizontal and rotate 90 CW" | "Rotate 90 CW and flip horizontal" => {
-            image.rotate90().fliph()
-        }
-        "Rotate 270 CW" | "Rotate 90 CCW" | "Rotate 270° CW" | "Rotated to right" => {
-            image.rotate270()
-        }
-        _ => image,
-    }
-}
-
-/// Read EXIF orientation from file
-fn read_exif_orientation(path: &str) -> Option<String> {
-    let mut file = std::fs::File::open(path).ok()?;
-    let mut buffer = vec![0u8; 65536];
-    let bytes_read = file.read(&mut buffer).ok()?;
-    buffer.truncate(bytes_read);
-
-    let (exif_result, _) = rexif::parse_buffer_quiet(&buffer);
-    let exif = exif_result.ok()?;
-
-    for entry in exif.entries {
-        if matches!(entry.tag, rexif::ExifTag::Orientation) {
-            return Some(entry.value_more_readable.to_string());
-        }
-    }
-    None
 }
 
 /// Generate face thumbnail from a file path (loads image with EXIF orientation)

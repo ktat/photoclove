@@ -7,6 +7,11 @@ use std::fs;
 #[cfg(unix)]
 use std::os::unix::prelude::MetadataExt;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
+
+static RE_DATE_AT_END: OnceLock<Regex> = OnceLock::new();
+static RE_DATE_ANYWHERE: OnceLock<Regex> = OnceLock::new();
+static RE_STRIP_DIRS: OnceLock<Regex> = OnceLock::new();
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct File {
@@ -134,8 +139,9 @@ impl Dir {
         }
 
         // First try the original pattern for backward compatibility (date at end)
-        let re_end =
-            Regex::new(r"([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)/?$").unwrap();
+        let re_end = RE_DATE_AT_END.get_or_init(|| {
+            Regex::new(r"([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)/?$").unwrap()
+        });
         if let Some(cap) = re_end.captures(self.path.as_str()) {
             if let Some(date) = parse_date_from_captures(&cap) {
                 return Some(date);
@@ -144,8 +150,9 @@ impl Dir {
 
         // If not found at end, search for date pattern anywhere in the path (for UUID subdirectories)
         // This handles paths like /path/to/2025-01-15/abc123-def456-789
-        let re_anywhere =
-            Regex::new(r"/([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)(/|$)").unwrap();
+        let re_anywhere = RE_DATE_ANYWHERE.get_or_init(|| {
+            Regex::new(r"/([0-9]{4})-(0?[1-9]|1[012])-(0?[1-9]|(1|2)[0-9]|30|31)(/|$)").unwrap()
+        });
         if let Some(cap) = re_anywhere.captures(self.path.as_str()) {
             if let Some(date) = parse_date_from_captures(&cap) {
                 return Some(date);
@@ -391,6 +398,13 @@ impl File {
     }
 
     fn get_created_time(&self) -> chrono::DateTime<Local> {
+        // DB-loaded files (from_relative) carry relative paths that can never
+        // be stat'd from the process CWD. The stat always failed and fell back
+        // to now(); skip the pointless syscall and the per-photo WARN flood
+        // (1,500+ per date view observed) it produced.
+        if !Path::new(&self.path).is_absolute() {
+            return Local::now();
+        }
         let metadata = match std::fs::metadata(&self.path) {
             Ok(metadata) => metadata,
             Err(e) => {
@@ -424,20 +438,8 @@ impl File {
     }
 
     pub fn filename(&self) -> String {
-        let remove_path = match regex::Regex::new("^.+/") {
-            Ok(regex) => regex,
-            Err(_) => {
-                log::warn!(target: "file", "regex_compilation_failed; path={}", self.path);
-                // Fallback: try to extract filename using Path
-                return Path::new(&self.path)
-                    .file_name()
-                    .and_then(|n| n.to_str())
-                    .unwrap_or("unknown")
-                    .to_string();
-            }
-        };
-        let filename = remove_path.replace(&self.path, "");
-        filename.to_string()
+        let remove_path = RE_STRIP_DIRS.get_or_init(|| Regex::new("^.+/").unwrap());
+        remove_path.replace(&self.path, "").to_string()
     }
 
     #[allow(dead_code)]
@@ -454,7 +456,35 @@ impl File {
 
 #[cfg(test)]
 mod tests {
+    use crate::value::date;
     use crate::value::file;
+
+    #[test]
+    fn test_filename_strips_directories() {
+        let f = file::File::from_relative("2024-05-13/uuid/photo.jpg".to_string());
+        assert_eq!(f.filename(), "photo.jpg");
+        let bare = file::File::from_relative("photo.jpg".to_string());
+        assert_eq!(bare.filename(), "photo.jpg");
+    }
+
+    #[test]
+    fn test_dir_to_date() {
+        // Date at end of path
+        assert_eq!(
+            file::Dir::new("/x/2025-01-15".to_string()).to_date(),
+            date::Date::new(2025, 1, 15)
+        );
+        // Date followed by UUID subdirectory
+        assert_eq!(
+            file::Dir::new("/x/2025-01-15/abc123-def456".to_string()).to_date(),
+            date::Date::new(2025, 1, 15)
+        );
+        // No date in path
+        assert_eq!(
+            file::Dir::new("/x/no-date-here".to_string()).to_date(),
+            None
+        );
+    }
 
     #[test]
     fn test_create_file_if_not_exists() {

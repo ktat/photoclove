@@ -22,13 +22,22 @@ fn parse_extension_filter(extension: &str) -> Vec<String> {
     }
 }
 
-/// Check if a file path matches the extension filter
+/// Check if a file path matches the extension filter.
+/// The special "other" token matches any extension not in FILTER_KNOWN_EXTENSIONS.
 fn matches_extension_filter(path: &str, filters: &[String]) -> bool {
     if filters.is_empty() {
         return true;
     }
     let file_ext = path.split('.').next_back().unwrap_or("").to_lowercase();
-    filters.iter().any(|ext| ext == &file_ext)
+    if filters.iter().any(|ext| ext == &file_ext) {
+        return true;
+    }
+    if filters.iter().any(|f| f == "other")
+        && !crate::utils::raw_file::FILTER_KNOWN_EXTENSIONS.contains(&file_ext.as_str())
+    {
+        return true;
+    }
+    false
 }
 
 /// Apply pagination to a photos collection
@@ -53,18 +62,92 @@ fn apply_pagination(photos: &mut photo::Photos, num: u32, page: u32, offset: usi
     }
 }
 
-/// Create a Photo from file and metadata
+/// Maximum threads for filesystem stat fan-out. The library often lives on
+/// NFS where every stat is a network round-trip (measured: 1000 cold stats =
+/// 1.7s serial, ~2ms warm), so concurrency cuts first-view latency ~10x.
+const STAT_THREADS: usize = 16;
+/// Below this many paths the thread setup costs more than it saves.
+const STAT_PARALLEL_MIN: usize = 64;
+
+/// Return the subset of `relative_paths` whose file exists under `base`.
+/// Stats run concurrently: see STAT_THREADS.
+fn existing_relative_paths<'a>(
+    relative_paths: &[&'a str],
+    base: &str,
+) -> std::collections::HashSet<&'a str> {
+    fn exists(rel: &str, base: &str) -> bool {
+        std::path::Path::new(&file::to_absolute_path(rel, base)).exists()
+    }
+
+    if relative_paths.len() < STAT_PARALLEL_MIN {
+        return relative_paths
+            .iter()
+            .filter(|rel| exists(rel, base))
+            .copied()
+            .collect();
+    }
+
+    let chunk_size = relative_paths.len().div_ceil(STAT_THREADS);
+    let mut existing = std::collections::HashSet::with_capacity(relative_paths.len());
+    std::thread::scope(|scope| {
+        let handles: Vec<_> = relative_paths
+            .chunks(chunk_size)
+            .map(|chunk| {
+                scope.spawn(move || {
+                    chunk
+                        .iter()
+                        .filter(|rel| exists(rel, base))
+                        .copied()
+                        .collect::<Vec<_>>()
+                })
+            })
+            .collect();
+        for handle in handles {
+            if let Ok(found) = handle.join() {
+                existing.extend(found);
+            }
+        }
+    });
+    existing
+}
+
+/// Stat thumbnail existence for the photos that survived pagination.
+/// Doing this before pagination costs one stat per photo in the whole
+/// date instead of one per photo actually returned. Stats run concurrently:
+/// see STAT_THREADS.
+fn set_thumbnail_state_for_page(photos: &mut photo::Photos, has_config: bool) {
+    if !has_config {
+        return;
+    }
+    if photos.photos.len() < STAT_PARALLEL_MIN {
+        for p in photos.photos.iter_mut() {
+            p.set_has_thumbnail();
+        }
+        return;
+    }
+
+    let chunk_size = photos.photos.len().div_ceil(STAT_THREADS);
+    std::thread::scope(|scope| {
+        for chunk in photos.photos.chunks_mut(chunk_size) {
+            scope.spawn(move || {
+                for p in chunk {
+                    p.set_has_thumbnail();
+                }
+            });
+        }
+    });
+}
+
+/// Create a Photo from file and metadata.
+/// Thumbnail existence is NOT checked here; callers stat only the
+/// returned page via set_thumbnail_state_for_page.
 fn create_photo_from_metadata(
     file: file::File,
     photo_meta: &photo_meta::PhotoMeta,
     conf: Option<&config::Config>,
 ) -> photo::Photo {
     let mut p = match conf {
-        Some(c) => {
-            let mut photo = photo::Photo::new(file, Some(c.clone()));
-            photo.set_has_thumbnail();
-            photo
-        }
+        Some(c) => photo::Photo::new(file, Some(c.clone())),
         None => photo::Photo::new(file, None),
     };
 
@@ -88,6 +171,39 @@ impl Directory {
     pub fn new(path: String) -> Directory {
         let dir = file::Dir::new(path);
         Directory { path: dir }
+    }
+
+    /// Build the sorted photo list once and return the photo `step` positions
+    /// away from `path` (+1 = next, -1 = prev). Returns None when `path` is
+    /// not in the list or the neighbor falls outside it.
+    async fn get_adjacent_photo_in_date(
+        &self,
+        meta_data: &photo_meta::PhotoMetas,
+        path: &str,
+        date: date::Date,
+        sort: Sort,
+        step: i64,
+    ) -> Option<photo::Photo> {
+        let photos = self
+            .get_photos_in_date(
+                meta_data,
+                date,
+                sort,
+                u32::MAX,
+                1,
+                0,
+                0,
+                false,
+                "all",
+                Option::None,
+            )
+            .await;
+        let index = photos.photos.iter().position(|p| p.file.path == path)?;
+        let target = index as i64 + step;
+        if target < 0 {
+            return None;
+        }
+        photos.photos.into_iter().nth(target as usize)
     }
 }
 
@@ -180,7 +296,6 @@ impl RepositoryDB for Directory {
                 let mut p: photo::Photo;
                 if has_opt {
                     p = photo::Photo::new(relative_file.clone(), Option::Some(conf.clone()));
-                    p.set_has_thumbnail();
                 } else {
                     p = photo::Photo::new(relative_file.clone(), Option::None);
                 }
@@ -205,7 +320,9 @@ impl RepositoryDB for Directory {
                 photos.photos.push(p)
             }
         } else {
-            // meta_data keys are relative paths
+            // meta_data keys are relative paths.
+            // Pass 1: cheap metadata filters (no I/O)
+            let mut candidates: Vec<&String> = Vec::new();
             for f in meta_data.keys() {
                 let md = meta_data.get(f).unwrap();
                 if star > 0 && md.star.star() < star {
@@ -219,11 +336,17 @@ impl RepositoryDB for Directory {
                 if !matches_extension_filter(f, &extension_filters) {
                     continue;
                 }
+                candidates.push(f);
+            }
 
-                // f is relative path; resolve to absolute for existence check
-                let abs_path = file::to_absolute_path(f, &self.path.path);
-                let file_result = file::File::new_if_exists(abs_path);
-                if file_result.is_none() {
+            // Pass 2: existence stats, fanned out across threads (NFS latency)
+            let candidate_strs: Vec<&str> = candidates.iter().map(|s| s.as_str()).collect();
+            let existing = existing_relative_paths(&candidate_strs, &self.path.path);
+
+            // Pass 3: build Photo entities for the survivors
+            for f in candidates {
+                if !existing.contains(f.as_str()) {
+                    log::debug!(target: "directory", "photo_file_missing; path={}", f);
                     continue;
                 }
                 // Use relative path for Photo entity
@@ -231,7 +354,6 @@ impl RepositoryDB for Directory {
                 let mut p: photo::Photo;
                 if has_opt {
                     p = photo::Photo::new(relative_file, Option::Some(conf.clone()));
-                    p.set_has_thumbnail();
                 } else {
                     p = photo::Photo::new(relative_file, Option::None);
                 }
@@ -267,10 +389,12 @@ impl RepositoryDB for Directory {
                     }
                 }
                 // Descending: newest photos first (reverse chronological)
-                photos.photos.sort_by(|a, b| match b.time().cmp(&a.time()) {
-                    Ordering::Equal => a.file.path.cmp(&b.file.path),
-                    other => other,
-                });
+                photos
+                    .photos
+                    .sort_by(|a, b| match b.time_ref().cmp(a.time_ref()) {
+                        Ordering::Equal => a.file.path.cmp(&b.file.path),
+                        other => other,
+                    });
                 // Log after sorting
                 if !photos.photos.is_empty() {
                     let sample_size = std::cmp::min(3, photos.photos.len());
@@ -282,10 +406,12 @@ impl RepositoryDB for Directory {
             }
             Sort::PhotoTimeAsc => {
                 // Ascending: oldest photos first (chronological)
-                photos.photos.sort_by(|a, b| match a.time().cmp(&b.time()) {
-                    Ordering::Equal => a.file.path.cmp(&b.file.path),
-                    other => other,
-                });
+                photos
+                    .photos
+                    .sort_by(|a, b| match a.time_ref().cmp(b.time_ref()) {
+                        Ordering::Equal => a.file.path.cmp(&b.file.path),
+                        other => other,
+                    });
             }
 
             // Added time (created_at in database) sorts
@@ -355,6 +481,7 @@ impl RepositoryDB for Directory {
 
         // Apply pagination using helper
         apply_pagination(&mut photos, num, page, offset);
+        set_thumbnail_state_for_page(&mut photos, has_opt);
         photos
     }
 
@@ -377,6 +504,8 @@ impl RepositoryDB for Directory {
         let extension_filters = parse_extension_filter(extension);
 
         // Use metadata to get all photos (recent photos are already sorted by DB query)
+        // Pass 1: cheap metadata filters (no I/O)
+        let mut candidates: Vec<&String> = Vec::new();
         for f in meta_data.keys() {
             let md = meta_data.get(f).unwrap();
             if star > 0 && md.star.star() < star {
@@ -390,11 +519,17 @@ impl RepositoryDB for Directory {
             if !matches_extension_filter(f, &extension_filters) {
                 continue;
             }
+            candidates.push(f);
+        }
 
-            // f is relative path; resolve to absolute for existence check
-            let abs_path = file::to_absolute_path(f, &self.path.path);
-            let file_result = file::File::new_if_exists(abs_path);
-            if file_result.is_none() {
+        // Pass 2: existence stats, fanned out across threads (NFS latency)
+        let candidate_strs: Vec<&str> = candidates.iter().map(|s| s.as_str()).collect();
+        let existing = existing_relative_paths(&candidate_strs, &self.path.path);
+
+        // Pass 3: build Photo entities for the survivors
+        for f in candidates {
+            if !existing.contains(f.as_str()) {
+                log::debug!(target: "directory", "photo_file_missing; path={}", f);
                 continue;
             }
             // Use relative path for Photo entity
@@ -411,6 +546,7 @@ impl RepositoryDB for Directory {
 
         // Apply pagination using helper
         apply_pagination(&mut photos, num, page, offset);
+        set_thumbnail_state_for_page(&mut photos, conf.is_some());
         photos
     }
 
@@ -422,38 +558,8 @@ impl RepositoryDB for Directory {
         sort: Sort,
         _config: Option<config::Config>,
     ) -> Option<photo::Photo> {
-        let mut page: u32 = 1;
-        let mut next_is_target = false;
-
-        'outer: loop {
-            let photos = self
-                .get_photos_in_date(
-                    meta_data,
-                    date,
-                    sort,
-                    100,
-                    page,
-                    0,
-                    0,
-                    false,
-                    "all",
-                    Option::None,
-                )
-                .await;
-            if photos.photos.is_empty() {
-                break 'outer;
-            }
-            for photo in photos.photos {
-                if next_is_target {
-                    return Option::Some(photo);
-                }
-                if photo.file.path == path {
-                    next_is_target = true;
-                }
-            }
-            page += 1
-        }
-        return Option::None;
+        self.get_adjacent_photo_in_date(meta_data, path, date, sort, 1)
+            .await
     }
 
     async fn get_prev_photo_in_date(
@@ -464,40 +570,8 @@ impl RepositoryDB for Directory {
         sort: Sort,
         _config: Option<config::Config>,
     ) -> Option<photo::Photo> {
-        let mut page: u32 = 1;
-        let mut prev_is_target = false;
-        let mut ret: Option<photo::Photo> = None;
-
-        'outer: loop {
-            let photos = self
-                .get_photos_in_date(
-                    meta_data,
-                    date,
-                    sort,
-                    100,
-                    page,
-                    0,
-                    0,
-                    false,
-                    "all",
-                    Option::None,
-                )
-                .await;
-            if photos.photos.is_empty() {
-                break 'outer;
-            }
-            for photo in photos.photos {
-                if photo.file.path == path {
-                    prev_is_target = true;
-                }
-                if prev_is_target {
-                    return ret;
-                }
-                ret = Option::Some(photo)
-            }
-            page += 1
-        }
-        return Option::None;
+        self.get_adjacent_photo_in_date(meta_data, path, date, sort, -1)
+            .await
     }
 
     async fn move_photos_to_exif_date(&self, date: date::Date) -> date::Dates {
@@ -563,3 +637,7 @@ impl RepositoryDB for Directory {
         })
     }
 }
+
+#[cfg(test)]
+#[path = "directory_tests.rs"]
+mod tests;

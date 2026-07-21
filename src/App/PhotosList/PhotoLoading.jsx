@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { logger } from '../../services/LoggerService.js';
 
 /**
  * PhotoLoading Component
@@ -7,6 +8,55 @@ import React from 'react';
  * based on the current view mode
  */
 function PhotoLoading({ viewModeObj }) {
+    // Render-loop probe: requestAnimationFrame stops firing when the webview
+    // rendering pipeline stalls (the exact condition where the loading
+    // animation appears frozen). Logs each stall >300ms with its duration so
+    // the freeze window and its length are visible in the frontend log.
+    useEffect(() => {
+        const mountedAt = performance.now();
+        let last = mountedAt;
+        let rafId;
+        let stallCount = 0;
+        const tick = (now) => {
+            const gap = now - last;
+            if (gap > 300) {
+                stallCount += 1;
+                logger.warn('PhotoLoading', 'frame_stall', 'Loading animation frames stalled', {
+                    stallMs: Math.round(gap),
+                    sinceMountMs: Math.round(now - mountedAt)
+                });
+            }
+            last = now;
+            rafId = requestAnimationFrame(tick);
+        };
+        rafId = requestAnimationFrame(tick);
+
+        // Timer probe: discriminates a blocked JS thread (timer AND rAF both
+        // stall) from a stalled rendering pipeline (only rAF stalls, timers
+        // keep firing).
+        let lastTimer = performance.now();
+        const timerId = setInterval(() => {
+            const now = performance.now();
+            const gap = now - lastTimer;
+            if (gap > 300) {
+                logger.warn('PhotoLoading', 'timer_stall', 'JS timers stalled', {
+                    stallMs: Math.round(gap),
+                    sinceMountMs: Math.round(now - mountedAt)
+                });
+            }
+            lastTimer = now;
+        }, 50);
+
+        logger.info('PhotoLoading', 'overlay_mounted', 'Loading overlay mounted', {});
+        return () => {
+            cancelAnimationFrame(rafId);
+            clearInterval(timerId);
+            logger.info('PhotoLoading', 'overlay_unmounted', 'Loading overlay unmounted', {
+                shownMs: Math.round(performance.now() - mountedAt),
+                stallCount
+            });
+        };
+    }, []);
     const getLoadingConfig = () => {
         if (viewModeObj?.isTrashMode()) {
             return {

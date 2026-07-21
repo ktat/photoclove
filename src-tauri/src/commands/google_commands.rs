@@ -74,7 +74,7 @@ pub async fn upload_to_google_photos(
     // Check first_cloud_upload achievement
     let _ = achievements::check_and_emit_achievement(
         _window.app_handle(),
-        &state.config.import_to,
+        &state.meta_db,
         "first_cloud_upload",
     );
 

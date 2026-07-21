@@ -1,4 +1,5 @@
 import { logger } from '../services/LoggerService.js';
+import { VIDEO_EXTENSIONS } from '../utils/videoFormats.js';
 
 /**
  * Photo Entity - Domain object representing a photo with its various states and paths
@@ -121,8 +122,10 @@ export class Photo {
         if (photoDate) {
             let thumbnailPath;
 
-            // Handle video files - use .jpg extension for thumbnails
-            if (this.name.match(/(mp4|webm)$/i)) {
+            // Handle video files - use .jpg extension for thumbnails.
+            // Use the shared isVideo() (mp4/webm/avi/mov) so .mov/.avi don't
+            // fall through to the image branch and get the wrong thumbnail name.
+            if (this.isVideo()) {
                 if (uuid) {
                     thumbnailPath = `${thumbnailStore}/${photoDate}/${uuid}/${this.name}.jpg`;
                 } else {
@@ -171,8 +174,7 @@ export class Photo {
      * @returns {boolean} True if the photo is a video file
      */
     isVideo() {
-        const videoExtensions = ['mp4', 'webm', 'avi', 'mov'];
-        return videoExtensions.includes(this.getExtension());
+        return VIDEO_EXTENSIONS.includes(this.getExtension());
     }
 
     /**
@@ -228,26 +230,41 @@ export class Photo {
     }
 
     /**
+     * Create a new Photo copying every constructor field, with overrides applied.
+     * Keep the field list in sync with the constructor — a missing field here
+     * silently drops data on every immutable update.
+     * @param {Object} overrides - Constructor-format fields to replace
+     * @returns {Photo} New Photo instance
+     */
+    #cloneWith(overrides) {
+        const newData = {
+            file: { path: this.originalPath, name: this.name },
+            path: this.originalPath,
+            has_thumbnail: this.hasThumbnail,
+            star: this.star,
+            comment: this.comment,
+            css_style: this.cssStyle,
+            tags: this.tags,
+            created_at: this.created_at,
+            meta_data: this.meta_data,
+            burst_group_id: this.burst_group_id,
+            burst_count: this.burst_count,
+            inTrashBin: this.inTrashBin,
+            inAlbum: this.inAlbum,
+            albumId: this.albumId,
+            import_source: this.import_source,
+            ...overrides
+        };
+        return new Photo(newData, this.config);
+    }
+
+    /**
      * Update star rating
      * @param {number} star - New star rating
      * @returns {Photo} New Photo instance with updated star
      */
     withStar(star) {
-        const newData = {
-            file: { path: this.originalPath, name: this.name },
-            path: this.originalPath,
-            has_thumbnail: this.hasThumbnail,
-            star: star,
-            comment: this.comment,
-            css_style: this.cssStyle,
-            tags: this.tags,
-            inTrashBin: this.inTrashBin,
-            inAlbum: this.inAlbum,
-            albumId: this.albumId,
-            import_source: this.import_source,
-            meta_data: this.meta_data
-        };
-        return new Photo(newData, this.config);
+        return this.#cloneWith({ star });
     }
 
     /**
@@ -256,21 +273,7 @@ export class Photo {
      * @returns {Photo} New Photo instance with updated comment
      */
     withComment(comment) {
-        const newData = {
-            file: { path: this.originalPath, name: this.name },
-            path: this.originalPath,
-            has_thumbnail: this.hasThumbnail,
-            star: this.star,
-            comment: comment,
-            css_style: this.cssStyle,
-            tags: this.tags,
-            inTrashBin: this.inTrashBin,
-            inAlbum: this.inAlbum,
-            albumId: this.albumId,
-            import_source: this.import_source,
-            meta_data: this.meta_data
-        };
-        return new Photo(newData, this.config);
+        return this.#cloneWith({ comment });
     }
 
     /**
@@ -278,21 +281,7 @@ export class Photo {
      * @returns {Photo} New Photo instance marked as in trash
      */
     moveToTrash() {
-        const newData = {
-            file: { path: this.originalPath, name: this.name },
-            path: this.originalPath,
-            has_thumbnail: this.hasThumbnail,
-            star: this.star,
-            comment: this.comment,
-            css_style: this.cssStyle,
-            tags: this.tags,
-            inTrashBin: true,
-            inAlbum: this.inAlbum,
-            albumId: this.albumId,
-            import_source: this.import_source,
-            meta_data: this.meta_data
-        };
-        return new Photo(newData, this.config);
+        return this.#cloneWith({ inTrashBin: true });
     }
 
     /**
@@ -300,21 +289,7 @@ export class Photo {
      * @returns {Photo} New Photo instance marked as not in trash
      */
     restoreFromTrash() {
-        const newData = {
-            file: { path: this.originalPath, name: this.name },
-            path: this.originalPath,
-            has_thumbnail: this.hasThumbnail,
-            star: this.star,
-            comment: this.comment,
-            css_style: this.cssStyle,
-            tags: this.tags,
-            inTrashBin: false,
-            inAlbum: this.inAlbum,
-            albumId: this.albumId,
-            import_source: this.import_source,
-            meta_data: this.meta_data
-        };
-        return new Photo(newData, this.config);
+        return this.#cloneWith({ inTrashBin: false });
     }
 
     /**

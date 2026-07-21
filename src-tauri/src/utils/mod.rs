@@ -5,6 +5,7 @@ pub mod exif_parser;
 pub mod exif_thumbnail;
 pub mod ffprobe;
 pub mod heic_decode;
+pub mod orientation;
 pub mod raw_decode;
 pub mod raw_file;
 

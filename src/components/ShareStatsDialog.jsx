@@ -11,7 +11,7 @@ import {
     copyImageToClipboard,
     saveImageAsFile,
     shareToSocial
-} from '../utils/ShareUtils.js';
+} from '../utils/share/index.js';
 import { logger } from '../services/LoggerService.js';
 import styles from './ShareStatsDialog.module.css';
 

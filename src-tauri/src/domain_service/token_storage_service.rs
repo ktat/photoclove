@@ -9,6 +9,26 @@ pub struct TokenData {
     pub expires_at: DateTime<Utc>,
 }
 
+const KEYRING_SERVICE: &str = "photoclove";
+const GOOGLE_TOKENS_KEY: &str = "google_oauth_tokens";
+
+/// Keyring entry for the Google OAuth token blob.
+fn google_tokens_entry() -> Result<Entry, String> {
+    Entry::new(KEYRING_SERVICE, GOOGLE_TOKENS_KEY)
+        .map_err(|e| format!("Failed to create token entry: {}", e))
+}
+
+/// Load and parse the stored token blob. Single implementation of the
+/// entry -> get_password -> deserialize sequence (this touches secrets, so
+/// keep the number of copies at one).
+fn load_token_data() -> Result<TokenData, String> {
+    let entry = google_tokens_entry()?;
+    let json_data = entry
+        .get_password()
+        .map_err(|e| format!("No stored tokens found: {}", e))?;
+    serde_json::from_str(&json_data).map_err(|e| format!("Failed to parse token data: {}", e))
+}
+
 pub struct TokenStorageService;
 
 impl TokenStorageService {
@@ -27,8 +47,7 @@ impl TokenStorageService {
         let json_data = serde_json::to_string(&token_data)
             .map_err(|e| format!("Failed to serialize token data: {}", e))?;
 
-        let entry = Entry::new("photoclove", "google_oauth_tokens")
-            .map_err(|e| format!("Failed to create token entry: {}", e))?;
+        let entry = google_tokens_entry()?;
         entry
             .set_password(&json_data)
             .map_err(|e| format!("Failed to store tokens: {}", e))?;
@@ -39,15 +58,7 @@ impl TokenStorageService {
 
     /// Get a valid access token, automatically refreshing if expired
     pub async fn get_valid_access_token() -> Result<String, String> {
-        let entry = Entry::new("photoclove", "google_oauth_tokens")
-            .map_err(|e| format!("Failed to create token entry: {}", e))?;
-
-        let json_data = entry
-            .get_password()
-            .map_err(|e| format!("No stored tokens found: {}", e))?;
-
-        let token_data: TokenData = serde_json::from_str(&json_data)
-            .map_err(|e| format!("Failed to parse token data: {}", e))?;
+        let token_data = load_token_data()?;
 
         // Check if token is expired or will expire soon
         if Utc::now() >= token_data.expires_at {
@@ -122,8 +133,7 @@ impl TokenStorageService {
 
     /// Delete stored Google tokens
     pub fn delete_google_tokens() -> Result<(), String> {
-        let entry = Entry::new("photoclove", "google_oauth_tokens")
-            .map_err(|e| format!("Failed to create token entry: {}", e))?;
+        let entry = google_tokens_entry()?;
         let _ = entry.delete_password(); // Ignore error if not exists
         log::info!(target: "token_storage", "google_tokens_deleted");
         Ok(())
@@ -131,7 +141,7 @@ impl TokenStorageService {
 
     /// Check if tokens are stored
     pub fn has_stored_tokens() -> bool {
-        if let Ok(entry) = Entry::new("photoclove", "google_oauth_tokens") {
+        if let Ok(entry) = google_tokens_entry() {
             entry.get_password().is_ok()
         } else {
             false
@@ -140,31 +150,13 @@ impl TokenStorageService {
 
     /// Get stored refresh token (for internal use)
     pub fn get_refresh_token() -> Result<String, String> {
-        let entry = Entry::new("photoclove", "google_oauth_tokens")
-            .map_err(|e| format!("Failed to create token entry: {}", e))?;
-
-        let json_data = entry
-            .get_password()
-            .map_err(|e| format!("No stored tokens found: {}", e))?;
-
-        let token_data: TokenData = serde_json::from_str(&json_data)
-            .map_err(|e| format!("Failed to parse token data: {}", e))?;
-
-        Ok(token_data.refresh_token)
+        Ok(load_token_data()?.refresh_token)
     }
 
     /// Debug method to get token info (for testing only - masks sensitive data)
     #[cfg(debug_assertions)]
     pub fn get_token_info() -> Result<serde_json::Value, String> {
-        let entry = Entry::new("photoclove", "google_oauth_tokens")
-            .map_err(|e| format!("Failed to create token entry: {}", e))?;
-
-        let json_data = entry
-            .get_password()
-            .map_err(|e| format!("No stored tokens found: {}", e))?;
-
-        let token_data: TokenData = serde_json::from_str(&json_data)
-            .map_err(|e| format!("Failed to parse token data: {}", e))?;
+        let token_data = load_token_data()?;
 
         // Return masked token info for security
         Ok(serde_json::json!({

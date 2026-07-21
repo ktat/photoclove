@@ -10,7 +10,6 @@ use crate::app_state::{AppState, PhotoRequest};
 use crate::domain_service::{achievements, photo_service};
 use crate::entity::photo;
 use crate::entity::photo_meta;
-use crate::repository;
 use crate::repository::{MetaInfoDB, RepositoryDB};
 use crate::value::comment;
 use crate::value::date;
@@ -59,33 +58,42 @@ pub struct PhotoInfoResponse {
 /// First attempts to retrieve dates from SQLite metadata database for performance.
 /// Falls back to filesystem directory scanning if metadata is unavailable.
 #[tauri::command]
-pub fn get_dates(window: tauri::Window, state: tauri::State<AppState>) -> String {
+pub async fn get_dates(
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, ()> {
     log::debug!(target: "photo", "get_dates; from={}", window.label());
 
-    // First try to get dates from SQLite metadata database
-    let sqlite_db = repository::meta_db::sqlite::SQLite::new(state.config.import_to.clone());
-
-    if sqlite_db.has_metadata() {
-        log::debug!(target: "photo", "get_dates; using_sqlite=true");
-        match sqlite_db.get_available_dates() {
-            Ok(dates) => {
-                let mut date_list = date::Dates::empty();
-                date_list.dates = dates;
-                return date_list.to_json();
+    // NFS-backed DB queries can stall for seconds under write contention;
+    // as a sync command this ran on the main thread and froze the UI.
+    let sqlite_db = state.meta_db.clone();
+    let repo_db = state.repo_db.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        // First try to get dates from SQLite metadata database
+        if sqlite_db.has_metadata() {
+            log::debug!(target: "photo", "get_dates; using_sqlite=true");
+            match sqlite_db.get_available_dates() {
+                Ok(dates) => {
+                    let mut date_list = date::Dates::empty();
+                    date_list.dates = dates;
+                    return date_list.to_json();
+                }
+                Err(e) => {
+                    log::error!(target: "photo", "get_dates_error; error={}", e);
+                    // Fall through to filesystem scanning
+                }
             }
-            Err(e) => {
-                log::error!(target: "photo", "get_dates_error; error={}", e);
-                // Fall through to filesystem scanning
-            }
+        } else {
+            log::debug!(target: "photo", "get_dates; using_filesystem=true");
         }
-    } else {
-        log::debug!(target: "photo", "get_dates; using_filesystem=true");
-    }
 
-    // Fallback to filesystem directory scanning
-    let db = &state.repo_db;
-    let dates = db.get_dates();
-    dates.to_json()
+        // Fallback to filesystem directory scanning
+        repo_db.get_dates().to_json()
+    })
+    .await
+    .map_err(|e| {
+        log::error!(target: "photo", "get_dates_task_failed; error={}", e);
+    })
 }
 
 /// Get photo counts for specific dates.
@@ -183,7 +191,7 @@ pub async fn get_photos_unified(
             if (search_type == "search" || search_type == "all") && search_params.query.is_some() {
                 let _ = achievements::check_and_emit_achievement(
                     &app_handle,
-                    &state.config.import_to,
+                    &state.meta_db,
                     "first_search",
                 );
             }
@@ -239,7 +247,7 @@ pub async fn get_photos_unified(
 /// codec, GPS) in a separate `video` field.
 fn photo_info_blocking(
     path_str: &str,
-    meta_db: &repository::MetaDB,
+    meta_db: &crate::repository::MetaDB,
     config: &crate::entity::config::Config,
 ) -> String {
     log::debug!(target: "photo_info", "get_photo_info; path={}", path_str);
@@ -384,38 +392,48 @@ pub async fn get_prev_photo(
 
 /// Save or update a photo's star rating.
 #[tauri::command]
-pub fn save_star(
+pub async fn save_star(
     _window: tauri::Window,
     app_handle: tauri::AppHandle,
-    state: tauri::State<AppState>,
-    path_str: &str,
+    state: tauri::State<'_, AppState>,
+    path_str: String,
     star_num: i32,
-) {
-    let db = &state.meta_db;
-    let p = photo::Photo::new(file::File::from_relative(path_str.to_string()), None);
-    let s = star::Star::new(star_num);
-    photo_service::save_photo_star(db, &p, s);
+) -> Result<(), ()> {
+    // NFS DB write + achievement check must not run on the main thread
+    let db = state.meta_db.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let p = photo::Photo::new(file::File::from_relative(path_str), None);
+        let s = star::Star::new(star_num);
+        photo_service::save_photo_star(&db, &p, s);
 
-    // Check first_star achievement when user adds a star rating
-    if star_num > 0 {
-        let _ = achievements::check_and_emit_achievement(
-            &app_handle,
-            &state.config.import_to,
-            "first_star",
-        );
-    }
+        // Check first_star achievement when user adds a star rating
+        if star_num > 0 {
+            let _ = achievements::check_and_emit_achievement(&app_handle, &db, "first_star");
+        }
+    })
+    .await
+    .map_err(|e| {
+        log::error!(target: "photo", "save_star_task_failed; error={}", e);
+    })
 }
 
 /// Save or update a photo's comment.
 #[tauri::command]
-pub fn save_comment(
+pub async fn save_comment(
     _window: tauri::Window,
-    state: tauri::State<AppState>,
-    path_str: &str,
-    comment_str: &str,
-) {
-    let db = &state.meta_db;
-    let c = comment::Comment::new(comment_str);
-    let p = photo::Photo::new(file::File::from_relative(path_str.to_string()), None);
-    photo_service::save_photo_comment(db, &p, c);
+    state: tauri::State<'_, AppState>,
+    path_str: String,
+    comment_str: String,
+) -> Result<(), ()> {
+    // NFS DB write must not run on the main thread
+    let db = state.meta_db.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let c = comment::Comment::new(&comment_str);
+        let p = photo::Photo::new(file::File::from_relative(path_str), None);
+        photo_service::save_photo_comment(&db, &p, c);
+    })
+    .await
+    .map_err(|e| {
+        log::error!(target: "photo", "save_comment_task_failed; error={}", e);
+    })
 }

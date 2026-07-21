@@ -2,6 +2,7 @@
 //!
 //! ArcFace generates 512-dimensional face embeddings for recognition.
 
+use crate::repository::meta_db::sqlite::face_detection::NamedFaceEmbedding;
 use image::{DynamicImage, GenericImageView};
 use ort::session::Session;
 use ort::value::Tensor;
@@ -200,9 +201,67 @@ pub fn is_same_person(embedding1: &[f32], embedding2: &[f32], threshold: f32) ->
     cosine_similarity(embedding1, embedding2) > threshold
 }
 
+/// Threshold for face matching (cosine similarity).
+/// ArcFace embeddings typically use 0.5-0.6 for same-person threshold.
+pub const FACE_MATCH_THRESHOLD: f32 = 0.5;
+
+/// Find the person whose named face embedding best matches `new_embedding`.
+/// Returns the person_id with the highest similarity at or above
+/// FACE_MATCH_THRESHOLD. Single source of truth for both the on-demand
+/// detection command and the background face detection job.
+pub fn find_matching_person(
+    new_embedding: &[f32],
+    named_faces: &[NamedFaceEmbedding],
+) -> Option<i64> {
+    let mut best_match: Option<(i64, f32)> = None;
+
+    for named_face in named_faces {
+        let similarity = cosine_similarity(new_embedding, &named_face.embedding);
+
+        if similarity >= FACE_MATCH_THRESHOLD {
+            match best_match {
+                Some((_, best_similarity)) if similarity > best_similarity => {
+                    best_match = Some((named_face.person_id, similarity));
+                }
+                None => {
+                    best_match = Some((named_face.person_id, similarity));
+                }
+                _ => {}
+            }
+        }
+    }
+
+    if let Some((person_id, similarity)) = best_match {
+        log::debug!(target: "face_detection",
+            "best_face_match; person_id={}; similarity={}", person_id, similarity);
+    }
+
+    best_match.map(|(person_id, _)| person_id)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_find_matching_person_picks_best_match_above_threshold() {
+        let named = vec![
+            NamedFaceEmbedding {
+                person_id: 1,
+                embedding: vec![1.0, 0.0],
+            },
+            NamedFaceEmbedding {
+                person_id: 2,
+                embedding: vec![0.9, 0.436],
+            },
+        ];
+        // Query identical to person 1: both above threshold, person 1 is closer
+        assert_eq!(find_matching_person(&[1.0, 0.0], &named), Some(1));
+        // Query orthogonal to person 1 and below threshold for person 2
+        assert_eq!(find_matching_person(&[0.0, 1.0], &named), None);
+        // No candidates
+        assert_eq!(find_matching_person(&[1.0, 0.0], &[]), None);
+    }
 
     #[test]
     fn test_cosine_similarity_identical() {

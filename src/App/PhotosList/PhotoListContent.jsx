@@ -10,7 +10,7 @@
  * @see src/types/PageState.js for type definitions
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { memo, useState, useCallback } from 'react';
 import { VIEW_MODES } from "../../constants/viewModes.js";
 import { useUI } from "../../context/UIContext.jsx";
 import ListViewHeader from "./ListViewHeader.jsx";
@@ -113,7 +113,8 @@ function PhotoListContent({
     } = filterState;
 
     const {
-        photos: photoSelectionDict,
+        // photos (photoSelectionDict) is no longer passed to the grid — each
+        // PhotoCard subscribes to its own selected state via the selectionStore.
         albums: selectedAlbums,
         tags: selectedTags,
         persons: selectedPersons,
@@ -435,7 +436,6 @@ function PhotoListContent({
                                 displayedPhotos={displayedPhotos}
                                 allPhotos={filteredPhotos}
                                 iconSize={iconSize}
-                                photoSelectionDict={photoSelectionDict}
                                 onAddSelection={addSelection}
                                 onDisplayPhoto={displayPhoto}
                                 onOpenBurstGroup={handleOpenBurstGroup}
@@ -472,4 +472,6 @@ function PhotoListContent({
     );
 }
 
-export default PhotoListContent;
+// memo: parent PhotosList re-renders on every viewer navigation; the
+// state-group props are useMemo'd upstream so memo actually holds here
+export default memo(PhotoListContent);

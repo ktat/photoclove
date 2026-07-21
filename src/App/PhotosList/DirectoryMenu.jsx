@@ -323,6 +323,7 @@ function DirectoryMenu(props) {
             {props.viewModeObj?.shouldShowPhotoSelection() && !props.viewModeObj?.isImportMode() && !props.viewModeObj?.isTrashMode() && (
                 <div id="tab-share" className={props.tabClass['share'] ? "tab-active" : "tab"}>
                     <ShareTab
+                        isActive={!!props.tabClass['share']}
                         photoSelection={props.photoSelection}
                         isPhotoViewer={false}
                         userWatermarkText={props.config?.custom_watermark || ''}

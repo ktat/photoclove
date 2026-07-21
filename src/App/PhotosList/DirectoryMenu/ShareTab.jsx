@@ -20,8 +20,9 @@ import {
     copyImageToClipboard,
     saveImageAsFile,
     shareToSocial
-} from '../../../utils/ShareUtils.js';
+} from '../../../utils/share/index.js';
 import { Photo } from '../../../domain/Photo.js';
+import { isVideoPath } from '../../../utils/videoFormats.js';
 import { logger } from '../../../services/LoggerService.js';
 import { checkFirstActionAchievement } from '../../../services/AchievementService.js';
 import CollageOrderEditor from './CollageOrderEditor.jsx';
@@ -39,7 +40,11 @@ function ShareTab({
     photoSelection = [],
     isPhotoViewer = false,
     userWatermarkText = '',
-    appConfig
+    appConfig,
+    // In DirectoryMenu the Share tab stays mounted but hidden via CSS, so pass
+    // whether it is the visible tab. undefined (e.g. PhotoOption, which mounts
+    // ShareTab only when active) is treated as active.
+    isActive
 }) {
     const { t } = useTranslation(['directoryMenu', 'common']);
 
@@ -72,27 +77,39 @@ function ShareTab({
     const [padding, setPadding] = useState(10);
     const [cornerRadius, setCornerRadius] = useState(8);
 
-    // Resolve relative paths to absolute via Photo entity for image loading
+    // Resolve relative paths to absolute via Photo entity for image loading.
+    // RAW/HEIC/AVIF can't be drawn from the original by the browser, so the
+    // collage would otherwise fall back to a slow full backend decode per file.
+    // Their library thumbnails are already generated (the grid shows them), so
+    // resolve non-native formats to that thumbnail — fast and correctly sized
+    // for the small collage tiles.
     const resolveToDisplayPath = useCallback((path) => {
         if (!path || path.startsWith('/')) return path;
         const photo = Photo.fromJSON({
             originalPath: path,
             name: path.replace(/^.+\//, ''),
+            hasThumbnail: true,
             configData: {
                 import_to: appConfig?.import_to,
                 thumbnail_store: appConfig?.thumbnail_store,
                 trash_path: appConfig?.trash_path
             }
         });
-        return photo?.displayPath() || path;
+        if (!photo) return path;
+        return photo.isNonNativeFormat() ? photo.thumbnailPath() : photo.displayPath();
     }, [appConfig]);
 
-    // Determine active photos based on source (resolved to absolute paths for image loading)
+    // Determine active photos based on source (resolved to absolute paths for image loading).
+    // Videos can't be drawn into a collage (they load as broken images), so they
+    // are excluded here even when selected — this keeps them out of the collage,
+    // the order editor, and the layout count. Extensions match Photo.isVideo().
     const activePhotos = useMemo(() => {
         if (isPhotoViewer && photoSource === 'current' && currentPhotoPath) {
             return [currentPhotoPath];
         }
-        return photoSelection.map(resolveToDisplayPath);
+        return photoSelection
+            .filter(p => !isVideoPath(p))
+            .map(resolveToDisplayPath);
     }, [isPhotoViewer, photoSource, currentPhotoPath, photoSelection, resolveToDisplayPath]);
 
     // User-controlled collage order. Mirrors activePhotos but keeps any
@@ -132,6 +149,15 @@ function ShareTab({
 
     // Generate image when options change
     useEffect(() => {
+        // Skip the expensive collage/image generation while the Share tab is
+        // hidden. In DirectoryMenu the tab stays mounted (CSS hide), so without
+        // this every selection toggle would reload images and run canvas work
+        // even when the user never opened Share. isActive === false means hidden;
+        // undefined (PhotoOption) is treated as active.
+        if (isActive === false) {
+            return;
+        }
+
         if (activePhotos.length === 0) {
             setImageBlob(null);
             setImageUrl(null);
@@ -184,7 +210,7 @@ function ShareTab({
         }, 300);
 
         return () => clearTimeout(timeoutId);
-    }, [activePhotos, orderedPaths, shareMode, addPhotoCloveWatermark, addUserWatermark, userWatermarkText, effectiveBackgroundColor, padding, cornerRadius, watermarkColor, watermarkOpacity, watermarkStyle]);
+    }, [isActive, activePhotos, orderedPaths, shareMode, addPhotoCloveWatermark, addUserWatermark, userWatermarkText, effectiveBackgroundColor, padding, cornerRadius, watermarkColor, watermarkOpacity, watermarkStyle]);
 
     // Cleanup URL on unmount
     useEffect(() => {

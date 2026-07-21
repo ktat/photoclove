@@ -15,6 +15,16 @@ const STANDARD_IMAGE_EXTENSIONS: &[&str] =
 /// HEIC/HEIF/AVIF extensions (non-browser-native container formats)
 pub const HEIC_AVIF_EXTENSIONS: &[&str] = &["heic", "heif", "avif"];
 
+/// Extensions individually selectable in the UI extension filter. The "other"
+/// filter token matches any file whose extension is NOT in this list. Keep in
+/// sync with src/utils/extensionFilters.js (EXTENSION_GROUPS).
+pub const FILTER_KNOWN_EXTENSIONS: &[&str] = &[
+    "jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", // image
+    "cr2", "cr3", "nef", "arw", "dng", "raf", "orf", "rw2", "3fr", // raw
+    "heic", "heif", "avif", // heic
+    "mp4", "webm", "mov", "avi", // movie
+];
+
 /// Video extensions. These have no JPEG/TIFF EXIF, so EXIF parsers must not try
 /// to read them (reading a multi-GB video into memory would hang the app).
 const VIDEO_EXTENSIONS: &[&str] = &[

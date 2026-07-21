@@ -342,15 +342,16 @@ pub fn get_photo_meta_data_in_date(
         .unwrap_or_else(|| "2099-12-31".to_string());
     let next_date = format!("{} 00:00:00", next_date_str);
 
-    let query_sql = "SELECT pm.path, COALESCE(pm.exif_date_time_original, pm.exif_date_time, pm.photo_date) as photo_time, pm.star, pm.comment, pm.css_style, pm.google_photos_url,
-                        GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.color, '')) as tags, pm.exif_orientation, pm.storage_sync
-                 FROM photo_metadata pm
-                 LEFT JOIN photo_collection_items pt ON pm.path = pt.photo_path
-                 LEFT JOIN photo_collections t ON pt.collection_id = t.id AND t.type = 'tag'
-                 WHERE pm.photo_date >= ?1 AND pm.photo_date < ?2 AND (pm.delete_flg = 0 OR pm.delete_flg IS NULL)
-                 GROUP BY pm.path, photo_time, pm.star, pm.comment, pm.css_style, pm.google_photos_url, pm.exif_orientation, pm.storage_sync";
+    // Simple, index-friendly range query. The previous version LEFT JOINed
+    // tags with GROUP BY pm.path, which forced SQLite to scan the whole
+    // table in primary-key order (measured on the real library: 5.0s for a
+    // 382-photo date over 66k rows on NFS, vs 0.03s for this range query).
+    // Tags are hydrated with one bulk query instead.
+    let query_sql = "SELECT path, COALESCE(exif_date_time_original, exif_date_time, photo_date) as photo_time, star, comment, css_style, google_photos_url, exif_orientation, storage_sync
+                 FROM photo_metadata
+                 WHERE photo_date >= ?1 AND photo_date < ?2 AND (delete_flg = 0 OR delete_flg IS NULL)";
 
-    log::info!(target: "database", "get_photo_meta_data_in_date_query; query={}; date={}; next_date={}", query_sql, date_str, next_date);
+    log::info!(target: "database", "get_photo_meta_data_in_date_query; date={}; next_date={}", date_str, next_date);
 
     let mut stmt = conn
         .prepare(query_sql)
@@ -359,7 +360,7 @@ pub fn get_photo_meta_data_in_date(
     let date_start = format!("{} 00:00:00", date_str);
     let rows = stmt
         .query_map(params![date_start, next_date], |row| {
-            Ok(utils::photo_info_from_row_with_tags(
+            Ok(utils::photo_info_from_row(
                 row.get(0)?,
                 row.get(1)?,
                 row.get(2)?,
@@ -368,14 +369,35 @@ pub fn get_photo_meta_data_in_date(
                 row.get(5)?,
                 row.get(6)?,
                 row.get(7)?,
-                row.get(8)?,
             ))
         })
         .map_err(|e| format!("Failed to execute query: {}", e))?;
 
-    let mut photo_metas = photo_meta::PhotoMetas::new();
+    let mut records = Vec::new();
     for row in rows {
-        let record = row.map_err(|e| format!("Failed to parse row: {}", e))?;
+        records.push(row.map_err(|e| format!("Failed to parse row: {}", e))?);
+    }
+
+    let paths: Vec<String> = records.iter().map(|r| r.path.clone()).collect();
+    let tags_map = super::tags::get_tags_for_photos_bulk(sqlite, &paths).unwrap_or_else(|e| {
+        log::error!(target: "database", "in_date_bulk_tags_failed; error={}", e);
+        Default::default()
+    });
+
+    let mut photo_metas = photo_meta::PhotoMetas::new();
+    for mut record in records {
+        if let Some(photo_tags) = tags_map.get(&record.path) {
+            if !photo_tags.is_empty() {
+                record.tags = Some(
+                    photo_tags
+                        .iter()
+                        .map(|(id, name, color)| {
+                            photo::PhotoTag::new(*id, name.clone(), color.clone())
+                        })
+                        .collect(),
+                );
+            }
+        }
         if let Some(photo_meta) = photo_meta::PhotoMeta::new_from_photo_info(&record) {
             photo_metas.insert(&record.path.clone(), photo_meta);
         }

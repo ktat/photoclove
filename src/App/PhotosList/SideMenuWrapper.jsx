@@ -9,6 +9,7 @@
  * @see src/types/PageState.js for type definitions
  */
 
+import { memo } from 'react';
 import DirectoryMenu from "./DirectoryMenu.jsx";
 import SearchTools from "../../components/SearchTools.jsx";
 
@@ -188,4 +189,4 @@ function SideMenuWrapper({
     );
 }
 
-export default SideMenuWrapper;
+export default memo(SideMenuWrapper);
