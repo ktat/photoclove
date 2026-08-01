@@ -49,7 +49,7 @@
     "createBurstGroup": "Seriengruppe erstellen",
     "removeFromBurstGroup": "Aus Seriengruppe entfernen",
     "addToStartupImages": "Zu Startbildern hinzufügen",
-    "mergeVideos": "Videos zusammenführen"
+    "mergeVideos": "Videos zuschneiden & zusammenführen"
   },
   "album": {
     "selectedAlbums": "Ausgewählte Alben",
@@ -109,8 +109,8 @@
     "socialHint": "Bild zuerst kopieren, dann nach dem Öffnen einfügen"
   },
   "videoMerge": {
-    "title": "Videos zusammenführen",
-    "hint": "Ziehen Sie einen Clip am Griff, um die Reihenfolge zu ändern. Spulen Sie jeden Clip vor und markieren Sie Anfang und Ende.",
+    "title": "Videos zuschneiden & zusammenführen",
+    "hint": "Jede Zeile ist ein beibehaltener Bereich. Fügen Sie einen Bereich hinzu, um mehrere Teile desselben Videos zu behalten, und ziehen Sie eine Zeile am Griff, um die Reihenfolge zu ändern.",
     "play": "Abspielen",
     "pause": "Pause",
     "setStartHere": "Start hier setzen",
@@ -118,12 +118,14 @@
     "keeping": "Behalten",
     "trimStart": "Startpunkt",
     "trimEnd": "Endpunkt",
-    "merge": "Zusammenführen",
+    "merge": "Exportieren",
     "cancel": "Abbrechen",
     "submitting": "Wird gestartet…",
     "loadFailed": "Dieses Video konnte nicht geladen werden.",
     "outputLength": "Länge der Ausgabe: {{length}}",
-    "needMoreClips": "Wählen Sie mindestens {{count}} Videos zum Zusammenführen aus.",
-    "started": "Zusammenführen der Videos gestartet. Den Fortschritt finden Sie in der Job-Warteschlange."
+    "needMoreClips": "Wählen Sie mindestens {{count}} Video aus.",
+    "started": "Video-Export gestartet. Den Fortschritt finden Sie in der Job-Warteschlange.",
+    "addSegment": "Bereich hinzufügen",
+    "removeSegment": "Entfernen"
   }
 }

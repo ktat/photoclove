@@ -3,7 +3,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { useTranslation } from 'react-i18next';
 import { resolveAbsolutePhotoPath } from '../../../utils/photoUtils.js';
 import { isVideoPath } from '../../../utils/videoFormats.js';
-import { MIN_MERGE_CLIPS } from '../../VideoEditor/trimUtils.js';
+import { MIN_MERGE_SEGMENTS } from '../../VideoEditor/trimUtils.js';
 import SelectionHeader from "./SelectionHeader.jsx";
 
 /**
@@ -33,8 +33,8 @@ function PhotoSelectionSection({
         [appConfig, viewModeObj]
     );
 
-    // Merging needs at least two videos, so the option only appears once the
-    // selection actually contains them.
+    // One video is enough: the editor trims it, or cuts several pieces out of
+    // it and stitches those together.
     const selectedVideoCount = photoSelection.filter(isVideoPath).length;
 
     const { doOperation, togglePhotoSelection, selectAllPhotoToSelection, clearPhotoSelection } = handlers;
@@ -111,7 +111,7 @@ function PhotoSelectionSection({
                                         {viewModeObj?.showRemoveFromBurstGroup() && (
                                             <option value="removeFromBurstGroup">📤 {t('directoryMenu:operations.removeFromBurstGroup')}</option>
                                         )}
-                                        {selectedVideoCount >= MIN_MERGE_CLIPS && (
+                                        {selectedVideoCount >= MIN_MERGE_SEGMENTS && (
                                             <option value="mergeVideos">🎬 {t('directoryMenu:operations.mergeVideos')}</option>
                                         )}
                                         <option value="addToStartupImages">🚀 {t('directoryMenu:operations.addToStartupImages')}</option>

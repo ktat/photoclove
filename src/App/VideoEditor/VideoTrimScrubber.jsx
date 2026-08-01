@@ -1,21 +1,22 @@
 /**
  * VideoTrimScrubber
  *
- * Preview + trim UI for a single clip of a merge. The player streams through
+ * Preview + trim UI for one segment of the output. The player streams through
  * the warp video server so the <video> element can actually seek, letting the
  * user park the playhead anywhere and mark it as the in or out point.
+ *
+ * Several segments can point at the same file, each with its own player and its
+ * own range.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getVideoStreamUrl } from '../../services/VideoService.js';
 import { logger } from '../../services/LoggerService.js';
-import { formatClipTime } from './trimUtils.js';
+import { formatClipTime, MIN_SEGMENT_LENGTH_SEC } from './trimUtils.js';
 
 /** Arrow keys nudge the playhead by this much, Shift+arrow by the coarse step. */
 const FINE_STEP_SEC = 0.1;
 const COARSE_STEP_SEC = 1;
-/** Smallest keepable clip, so a handle can never cross (or meet) the other. */
-const MIN_CLIP_LENGTH_SEC = 0.1;
 
 function VideoTrimScrubber({ clip, onChange }) {
     const { t } = useTranslation(['directoryMenu']);
@@ -30,7 +31,7 @@ function VideoTrimScrubber({ clip, onChange }) {
 
     const duration = clip.duration_sec || 0;
 
-    // The component is keyed on clip.path, so a different clip arrives as a
+    // The component is keyed on clip.id, so a different segment arrives as a
     // fresh mount and there is no previous URL to clear here.
     useEffect(() => {
         let cancelled = false;
@@ -50,7 +51,7 @@ function VideoTrimScrubber({ clip, onChange }) {
     }, [clip.path]);
 
     // The duration only becomes known once the browser has the metadata, and
-    // an untrimmed clip's out point has to follow it to cover the whole file.
+    // an untrimmed segment's out point has to follow it to cover the whole file.
     const handleLoadedMetadata = useCallback(() => {
         const video = videoRef.current;
         if (!video || !Number.isFinite(video.duration)) return;
@@ -59,6 +60,12 @@ function VideoTrimScrubber({ clip, onChange }) {
             duration_sec: video.duration,
             end_sec: clip.end_sec > 0 ? Math.min(clip.end_sec, video.duration) : video.duration
         });
+        // A segment added over an earlier one starts partway into the file, so
+        // park the playhead on its own first frame rather than the file's.
+        if (clip.start_sec > 0) {
+            video.currentTime = clip.start_sec;
+            setCurrentTime(clip.start_sec);
+        }
     }, [clip, onChange]);
 
     const seekTo = useCallback((seconds) => {
@@ -100,9 +107,9 @@ function VideoTrimScrubber({ clip, onChange }) {
 
     const setTrimPoint = useCallback((which) => {
         if (which === 'start') {
-            onChange({ ...clip, start_sec: Math.min(currentTime, clip.end_sec - MIN_CLIP_LENGTH_SEC) });
+            onChange({ ...clip, start_sec: Math.min(currentTime, clip.end_sec - MIN_SEGMENT_LENGTH_SEC) });
         } else {
-            onChange({ ...clip, end_sec: Math.max(currentTime, clip.start_sec + MIN_CLIP_LENGTH_SEC) });
+            onChange({ ...clip, end_sec: Math.max(currentTime, clip.start_sec + MIN_SEGMENT_LENGTH_SEC) });
         }
     }, [clip, currentTime, onChange]);
 
@@ -122,11 +129,11 @@ function VideoTrimScrubber({ clip, onChange }) {
         // Seek to where the handle actually landed, not where the pointer was,
         // so the preview frame matches the cut once the clamp kicks in.
         if (target === 'start') {
-            const start = Math.min(time, clip.end_sec - MIN_CLIP_LENGTH_SEC);
+            const start = Math.min(time, clip.end_sec - MIN_SEGMENT_LENGTH_SEC);
             onChange({ ...clip, start_sec: start });
             seekTo(start);
         } else if (target === 'end') {
-            const end = Math.max(time, clip.start_sec + MIN_CLIP_LENGTH_SEC);
+            const end = Math.max(time, clip.start_sec + MIN_SEGMENT_LENGTH_SEC);
             onChange({ ...clip, end_sec: end });
             seekTo(end);
         } else {
@@ -170,12 +177,12 @@ function VideoTrimScrubber({ clip, onChange }) {
             * (event.key === 'ArrowRight' ? 1 : -1);
         if (which === 'start') {
             const start = Math.max(
-                Math.min(clip.start_sec + delta, clip.end_sec - MIN_CLIP_LENGTH_SEC), 0);
+                Math.min(clip.start_sec + delta, clip.end_sec - MIN_SEGMENT_LENGTH_SEC), 0);
             onChange({ ...clip, start_sec: start });
             seekTo(start);
         } else {
             const end = Math.min(
-                Math.max(clip.end_sec + delta, clip.start_sec + MIN_CLIP_LENGTH_SEC), duration);
+                Math.max(clip.end_sec + delta, clip.start_sec + MIN_SEGMENT_LENGTH_SEC), duration);
             onChange({ ...clip, end_sec: end });
             seekTo(end);
         }

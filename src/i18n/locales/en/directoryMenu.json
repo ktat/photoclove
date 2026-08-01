@@ -51,7 +51,7 @@
     "createBurstGroup": "Create Burst Group",
     "removeFromBurstGroup": "Remove from Burst Group",
     "addToStartupImages": "Add to Startup Images",
-    "mergeVideos": "Merge Videos"
+    "mergeVideos": "Trim & Merge Videos"
   },
   "album": {
     "selectedAlbums": "Selected Albums",
@@ -117,8 +117,8 @@
     "socialHint": "Copy image first, then paste after opening"
   },
   "videoMerge": {
-    "title": "Merge Videos",
-    "hint": "Drag a clip by its handle to reorder. Scrub each clip and mark where it should start and end.",
+    "title": "Trim & Merge Videos",
+    "hint": "Each row is one kept range. Add a range to keep several parts of the same video, and drag a row by its grip to reorder.",
     "play": "Play",
     "pause": "Pause",
     "setStartHere": "Set start here",
@@ -126,12 +126,14 @@
     "keeping": "Keeping",
     "trimStart": "Trim start",
     "trimEnd": "Trim end",
-    "merge": "Merge",
+    "merge": "Export",
     "cancel": "Cancel",
     "submitting": "Starting…",
     "loadFailed": "Could not load this video.",
     "outputLength": "Output length: {{length}}",
-    "needMoreClips": "Select at least {{count}} videos to merge.",
-    "started": "Video merge started. Check Job Queue for progress."
+    "needMoreClips": "Select at least {{count}} video.",
+    "started": "Video export started. Check Job Queue for progress.",
+    "addSegment": "Add range",
+    "removeSegment": "Remove"
   }
 }

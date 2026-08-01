@@ -49,7 +49,7 @@
     "createBurstGroup": "创建连拍组",
     "removeFromBurstGroup": "从连拍组中移除",
     "addToStartupImages": "添加到启动图片",
-    "mergeVideos": "合并视频"
+    "mergeVideos": "裁剪并合并视频"
   },
   "album": {
     "selectedAlbums": "选中的相册",
@@ -109,8 +109,8 @@
     "socialHint": "先复制图片，然后打开后粘贴"
   },
   "videoMerge": {
-    "title": "合并视频",
-    "hint": "拖动手柄可调整顺序。逐个预览片段并标记开始和结束位置。",
+    "title": "裁剪并合并视频",
+    "hint": "每一行是一个保留区间。若要保留同一视频的多个部分，请添加区间；拖动行首的控制点可调整顺序。",
     "play": "播放",
     "pause": "暂停",
     "setStartHere": "设为开始位置",
@@ -118,12 +118,14 @@
     "keeping": "保留范围",
     "trimStart": "裁剪开始",
     "trimEnd": "裁剪结束",
-    "merge": "合并",
+    "merge": "导出",
     "cancel": "取消",
     "submitting": "正在开始…",
     "loadFailed": "无法加载此视频。",
     "outputLength": "输出时长：{{length}}",
-    "needMoreClips": "请至少选择 {{count}} 个视频进行合并。",
-    "started": "已开始合并视频。可在作业队列中查看进度。"
+    "needMoreClips": "请至少选择 {{count}} 个视频。",
+    "started": "已开始导出视频。可在作业队列中查看进度。",
+    "addSegment": "添加区间",
+    "removeSegment": "删除"
   }
 }

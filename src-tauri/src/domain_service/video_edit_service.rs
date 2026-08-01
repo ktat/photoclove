@@ -11,8 +11,10 @@ use std::process::{Command, Stdio};
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
-/// Merging needs at least two clips; a single clip would just be a trim.
-pub const MIN_MERGE_CLIPS: usize = 2;
+/// A job needs at least one segment. One segment is a plain trim, several from
+/// the same file cut a video down to its good parts, and several across files
+/// merge them - all one code path.
+pub const MIN_MERGE_SEGMENTS: usize = 1;
 /// ffmpeg is killed if it reports no progress for this long. Encoding a long
 /// video is legitimately slow, so this is a stall watchdog rather than a budget
 /// for the whole run.
@@ -204,16 +206,30 @@ fn build_merge_args(
         .map(|s| s.to_string())
         .collect();
 
-    // Real inputs come first so that input index N always maps to clips[N].
+    // Several segments can come from the same file, so give ffmpeg one input
+    // per distinct path rather than one per segment - otherwise a long source
+    // is opened and decoded once for every piece taken out of it.
+    let mut input_paths: Vec<&str> = Vec::new();
+    let mut input_index_for_clip = Vec::with_capacity(clips.len());
     for clip in clips {
+        let index = match input_paths.iter().position(|p| *p == clip.path.as_str()) {
+            Some(existing) => existing,
+            None => {
+                input_paths.push(clip.path.as_str());
+                input_paths.len() - 1
+            }
+        };
+        input_index_for_clip.push(index);
+    }
+    for path in &input_paths {
         args.push("-i".to_string());
-        args.push(clip.path.clone());
+        args.push(path.to_string());
     }
 
     // Clips with no audio track get a generated silent one appended after the
     // real inputs, since `concat` requires every segment to expose both streams.
     let mut silent_index_for_clip = vec![None; clips.len()];
-    let mut next_input_index = clips.len();
+    let mut next_input_index = input_paths.len();
     for (i, probe) in probes.iter().enumerate() {
         if probe.has_audio {
             continue;
@@ -237,9 +253,10 @@ fn build_merge_args(
         // `trim` cuts the decoded stream, so the cut lands on the exact frame
         // the user scrubbed to instead of the nearest keyframe.
         filters.push(format!(
-            "[{i}:v]trim=start={start:.3}:end={end:.3},setpts=PTS-STARTPTS,\
+            "[{input}:v]trim=start={start:.3}:end={end:.3},setpts=PTS-STARTPTS,\
              scale={w}:{h}:force_original_aspect_ratio=decrease,\
              pad={w}:{h}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps={fps:.5}[v{i}]",
+            input = input_index_for_clip[i],
             i = i,
             start = clip.start_sec,
             end = clip.end_sec,
@@ -259,8 +276,9 @@ fn build_merge_args(
                 rate = OUTPUT_AUDIO_SAMPLE_RATE,
             ),
             None => format!(
-                "[{i}:a]atrim=start={start:.3}:end={end:.3},asetpts=PTS-STARTPTS,\
+                "[{input}:a]atrim=start={start:.3}:end={end:.3},asetpts=PTS-STARTPTS,\
                  aformat=sample_rates={rate}:channel_layouts=stereo[a{i}]",
+                input = input_index_for_clip[i],
                 i = i,
                 start = clip.start_sec,
                 end = clip.end_sec,
@@ -283,6 +301,11 @@ fn build_merge_args(
         "[outv]",
         "-map",
         "[outa]",
+        // Carry the first source's container metadata - creation time, camera
+        // make/model, GPS - into the result. filter_complex output otherwise
+        // starts with no metadata at all.
+        "-map_metadata",
+        "0",
         "-c:v",
         "libx264",
         "-crf",
@@ -304,6 +327,33 @@ fn build_merge_args(
     }
     args.push(output_path.display().to_string());
     args
+}
+
+/// Give the merged file the modification time of its first source.
+///
+/// Video containers carry no EXIF, so the import pipeline dates a video from
+/// its file modification time. Without this the result would be filed under the
+/// day it was produced instead of the day the footage was shot.
+fn inherit_source_timestamp(source_path: &str, output_path: &Path) {
+    let modified = match std::fs::metadata(source_path).and_then(|m| m.modified()) {
+        Ok(modified) => modified,
+        Err(e) => {
+            log::warn!(
+                target: "video_edit_service",
+                "source_mtime_unavailable; source={}; error={}",
+                source_path, e
+            );
+            return;
+        }
+    };
+    let timestamp = filetime::FileTime::from_system_time(modified);
+    if let Err(e) = filetime::set_file_mtime(output_path, timestamp) {
+        log::warn!(
+            target: "video_edit_service",
+            "set_output_mtime_failed; output={}; error={}",
+            output_path.display(), e
+        );
+    }
 }
 
 /// Rejects trim ranges the editor should never have produced, so ffmpeg fails
@@ -365,10 +415,10 @@ where
     P: FnMut(f64),
     S: Fn() -> bool,
 {
-    if clips.len() < MIN_MERGE_CLIPS {
+    if clips.len() < MIN_MERGE_SEGMENTS {
         return Err(format!(
-            "At least {} clips are required to merge",
-            MIN_MERGE_CLIPS
+            "At least {} segment is required",
+            MIN_MERGE_SEGMENTS
         ));
     }
 
@@ -505,6 +555,8 @@ where
         ));
     }
 
+    inherit_source_timestamp(&clips[0].path, output_path);
+
     on_progress(1.0);
     log::info!(target: "video_edit_service", "merge_complete; output={}", output_path.display());
     Ok(())
@@ -624,9 +676,67 @@ mod tests {
     }
 
     #[test]
-    fn merge_requires_at_least_two_clips() {
-        let single = vec![clip("/a.mp4", 0.0, 1.0)];
-        let result = merge_videos(&single, Path::new("/out.mp4"), |_| {}, || false);
+    fn merge_requires_at_least_one_segment() {
+        let result = merge_videos(&[], Path::new("/out.mp4"), |_| {}, || false);
         assert!(result.unwrap_err().contains("At least"));
+    }
+
+    #[test]
+    fn several_segments_of_one_file_share_a_single_input() {
+        // Two cuts taken out of the same source, plus a second file.
+        let clips = vec![
+            clip("/a.mp4", 0.0, 2.0),
+            clip("/b.mp4", 0.0, 1.0),
+            clip("/a.mp4", 10.0, 12.0),
+        ];
+        let probes = vec![
+            probe(1920, 1080, true),
+            probe(1920, 1080, true),
+            probe(1920, 1080, true),
+        ];
+        let args = build_merge_args(&clips, &probes, Path::new("/out.mp4"));
+
+        // /a.mp4 is opened once even though it supplies two segments.
+        assert_eq!(args.iter().filter(|a| *a == "/a.mp4").count(), 1);
+        assert_eq!(args.iter().filter(|a| *a == "-i").count(), 2);
+
+        let filter = args
+            .iter()
+            .position(|a| a == "-filter_complex")
+            .map(|i| args[i + 1].clone())
+            .unwrap();
+        // Segments 0 and 2 both read input 0; segment 1 reads input 1.
+        assert!(filter.contains("[0:v]trim=start=0.000:end=2.000"));
+        assert!(filter.contains("[1:v]trim=start=0.000:end=1.000"));
+        assert!(filter.contains("[0:v]trim=start=10.000:end=12.000"));
+        assert!(filter.contains("[v0][a0][v1][a1][v2][a2]concat=n=3:v=1:a=1[outv][outa]"));
+    }
+
+    #[test]
+    fn a_single_segment_is_a_plain_trim() {
+        let clips = vec![clip("/a.mp4", 3.0, 9.0)];
+        let probes = vec![probe(1920, 1080, true)];
+        let args = build_merge_args(&clips, &probes, Path::new("/out.mp4"));
+
+        let filter = args
+            .iter()
+            .position(|a| a == "-filter_complex")
+            .map(|i| args[i + 1].clone())
+            .unwrap();
+        assert!(filter.contains("[0:v]trim=start=3.000:end=9.000"));
+        assert!(filter.contains("[v0][a0]concat=n=1:v=1:a=1[outv][outa]"));
+    }
+
+    #[test]
+    fn output_inherits_the_first_source_metadata() {
+        let clips = vec![clip("/a.mp4", 0.0, 2.0), clip("/b.mp4", 0.0, 1.0)];
+        let probes = vec![probe(1920, 1080, true), probe(1920, 1080, true)];
+        let args = build_merge_args(&clips, &probes, Path::new("/out.mp4"));
+
+        let index = args
+            .iter()
+            .position(|a| a == "-map_metadata")
+            .expect("metadata is mapped");
+        assert_eq!(args[index + 1], "0");
     }
 }

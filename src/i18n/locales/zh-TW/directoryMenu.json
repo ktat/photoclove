@@ -49,7 +49,7 @@
     "createBurstGroup": "建立連拍群組",
     "removeFromBurstGroup": "從連拍群組中移除",
     "addToStartupImages": "新增到啟動圖片",
-    "mergeVideos": "合併影片"
+    "mergeVideos": "裁剪並合併影片"
   },
   "album": {
     "selectedAlbums": "選取的相簿",
@@ -109,8 +109,8 @@
     "socialHint": "先複製圖片，然後開啟後貼上"
   },
   "videoMerge": {
-    "title": "合併影片",
-    "hint": "拖曳控制點可調整順序。逐一預覽片段並標記開始與結束位置。",
+    "title": "裁剪並合併影片",
+    "hint": "每一列是一個保留區間。若要保留同一影片的多個部分，請新增區間；拖曳列首的控制點可調整順序。",
     "play": "播放",
     "pause": "暫停",
     "setStartHere": "設為開始位置",
@@ -118,12 +118,14 @@
     "keeping": "保留範圍",
     "trimStart": "裁剪開始",
     "trimEnd": "裁剪結束",
-    "merge": "合併",
+    "merge": "匯出",
     "cancel": "取消",
     "submitting": "正在開始…",
     "loadFailed": "無法載入此影片。",
     "outputLength": "輸出長度：{{length}}",
-    "needMoreClips": "請至少選擇 {{count}} 個影片進行合併。",
-    "started": "已開始合併影片。可在工作佇列中查看進度。"
+    "needMoreClips": "請至少選擇 {{count}} 個影片。",
+    "started": "已開始匯出影片。可在工作佇列中查看進度。",
+    "addSegment": "新增區間",
+    "removeSegment": "移除"
   }
 }

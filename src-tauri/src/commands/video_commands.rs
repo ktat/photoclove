@@ -1,5 +1,5 @@
 use crate::domain_service::job_queue_service::submission::submit_video_merge_job;
-use crate::domain_service::video_edit_service::MIN_MERGE_CLIPS;
+use crate::domain_service::video_edit_service::MIN_MERGE_SEGMENTS;
 use crate::entity::job_queue::VideoMergeClip;
 use crate::value::date::DateTime;
 use crate::AppState;
@@ -115,22 +115,24 @@ pub async fn shutdown_video_server() -> Result<String, String> {
     }
 }
 
-/// Queue a merge of the given trimmed clips into a single video.
+/// Queue a merge of the given trimmed segments into a single video.
 ///
-/// Each clip carries its own `start_sec`/`end_sec` trim range and the clips are
-/// concatenated in the order given. Returns the job unit ID so the caller can
-/// follow the merge in the job queue; the merged file is imported into the
-/// library once the encode finishes.
+/// Each segment carries its own `start_sec`/`end_sec` trim range and they are
+/// concatenated in the order given. Several segments may name the same file, so
+/// this covers trimming one video, stitching the good parts of one video
+/// together, and merging across videos. Returns the job unit ID so the caller
+/// can follow the encode in the job queue; the result is imported into the
+/// library once it finishes.
 #[tauri::command]
 pub async fn merge_videos(
     clips: Vec<VideoMergeClip>,
     app_handle: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
-    if clips.len() < MIN_MERGE_CLIPS {
+    if clips.len() < MIN_MERGE_SEGMENTS {
         return Err(format!(
-            "Select at least {} videos to merge",
-            MIN_MERGE_CLIPS
+            "Select at least {} segment",
+            MIN_MERGE_SEGMENTS
         ));
     }
 

@@ -49,7 +49,7 @@
     "createBurstGroup": "Créer un groupe rafale",
     "removeFromBurstGroup": "Retirer du groupe rafale",
     "addToStartupImages": "Ajouter aux images de démarrage",
-    "mergeVideos": "Fusionner les vidéos"
+    "mergeVideos": "Rogner et fusionner les vidéos"
   },
   "album": {
     "selectedAlbums": "Albums sélectionnés",
@@ -109,8 +109,8 @@
     "socialHint": "Copiez d'abord l'image, puis collez après ouverture"
   },
   "videoMerge": {
-    "title": "Fusionner les vidéos",
-    "hint": "Faites glisser un clip par sa poignée pour le réordonner. Parcourez chaque clip et marquez son début et sa fin.",
+    "title": "Rogner et fusionner les vidéos",
+    "hint": "Chaque ligne est une plage conservée. Ajoutez une plage pour conserver plusieurs parties de la même vidéo, et faites glisser une ligne par sa poignée pour la réordonner.",
     "play": "Lecture",
     "pause": "Pause",
     "setStartHere": "Définir le début ici",
@@ -118,12 +118,14 @@
     "keeping": "Conservé",
     "trimStart": "Début du rognage",
     "trimEnd": "Fin du rognage",
-    "merge": "Fusionner",
+    "merge": "Exporter",
     "cancel": "Annuler",
     "submitting": "Démarrage…",
     "loadFailed": "Impossible de charger cette vidéo.",
     "outputLength": "Durée de sortie : {{length}}",
-    "needMoreClips": "Sélectionnez au moins {{count}} vidéos à fusionner.",
-    "started": "La fusion des vidéos a démarré. Consultez la file d'attente des tâches pour suivre la progression."
+    "needMoreClips": "Sélectionnez au moins {{count}} vidéo.",
+    "started": "L'export de la vidéo a démarré. Consultez la file d'attente des tâches pour suivre la progression.",
+    "addSegment": "Ajouter une plage",
+    "removeSegment": "Retirer"
   }
 }

@@ -51,7 +51,7 @@
     "createBurstGroup": "連写グループを作成",
     "removeFromBurstGroup": "連写グループから削除",
     "addToStartupImages": "起動時の画像に追加",
-    "mergeVideos": "動画を結合"
+    "mergeVideos": "動画をトリミング・結合"
   },
   "album": {
     "selectedAlbums": "選択したアルバム",
@@ -117,8 +117,8 @@
     "socialHint": "先に画像をコピーしてから、開いた後に貼り付けてください"
   },
   "videoMerge": {
-    "title": "動画を結合",
-    "hint": "ハンドルをドラッグして順番を変更できます。各クリップを再生しながら開始位置と終了位置を指定してください。",
+    "title": "動画をトリミング・結合",
+    "hint": "1行が1つの使用範囲です。同じ動画から複数箇所を残したい場合は範囲を追加してください。行はつまんでドラッグすると並べ替えられます。",
     "play": "再生",
     "pause": "一時停止",
     "setStartHere": "ここを開始位置に",
@@ -126,12 +126,14 @@
     "keeping": "使用範囲",
     "trimStart": "開始位置",
     "trimEnd": "終了位置",
-    "merge": "結合",
+    "merge": "書き出し",
     "cancel": "キャンセル",
     "submitting": "開始中…",
     "loadFailed": "この動画を読み込めませんでした。",
     "outputLength": "出力の長さ: {{length}}",
-    "needMoreClips": "結合するには動画を{{count}}本以上選択してください。",
-    "started": "動画の結合を開始しました。進捗はジョブキューで確認できます。"
+    "needMoreClips": "動画を{{count}}本以上選択してください。",
+    "started": "動画の書き出しを開始しました。進捗はジョブキューで確認できます。",
+    "addSegment": "範囲を追加",
+    "removeSegment": "削除"
   }
 }

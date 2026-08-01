@@ -10,7 +10,7 @@ import { logger } from "../../../services/LoggerService.js";
 import { invokeWithErrorHandling } from "../../../services/TauriService.js";
 import { mergeVideos } from "../../../services/VideoService.js";
 import { isVideoPath } from "../../../utils/videoFormats.js";
-import { toMergePayload, MIN_MERGE_CLIPS } from "../../VideoEditor/trimUtils.js";
+import { toMergePayload, MIN_MERGE_SEGMENTS } from "../../VideoEditor/trimUtils.js";
 
 /**
  * Hook for photo import operations
@@ -132,10 +132,12 @@ export function useGooglePhotosUpload({ photoSelection, clearPhotoSelection, add
 }
 
 /**
- * Hook for merging the selected videos into a single file.
+ * Hook for trimming and merging the selected videos into a single file.
  *
- * Opens the trim editor first: the merge itself is a queued job, so everything
- * the user has to decide (order, in/out points) is settled before submitting.
+ * One selected video is enough - the editor can trim it, or cut several pieces
+ * out of it and stitch those back together. Opening the editor first means
+ * everything the user has to decide (order, in/out points) is settled before
+ * the queued encode job is submitted.
  */
 export function useVideoMerge({
     photoSelection,
@@ -156,10 +158,10 @@ export function useVideoMerge({
     );
 
     const showVideoMergeEditor = useCallback(async () => {
-        if (selectedVideoPaths.length < MIN_MERGE_CLIPS) {
+        if (selectedVideoPaths.length < MIN_MERGE_SEGMENTS) {
             await dialog.message({
                 title: t('directoryMenu:videoMerge.title'),
-                message: t('directoryMenu:videoMerge.needMoreClips', { count: MIN_MERGE_CLIPS }),
+                message: t('directoryMenu:videoMerge.needMoreClips', { count: MIN_MERGE_SEGMENTS }),
                 kind: 'warning'
             });
             return;
