@@ -122,6 +122,8 @@
     "cancel": "Annuler",
     "submitting": "Démarrage…",
     "loadFailed": "Impossible de charger cette vidéo.",
-    "outputLength": "Durée de sortie : {{length}}"
+    "outputLength": "Durée de sortie : {{length}}",
+    "needMoreClips": "Sélectionnez au moins {{count}} vidéos à fusionner.",
+    "started": "La fusion des vidéos a démarré. Consultez la file d'attente des tâches pour suivre la progression."
   }
 }

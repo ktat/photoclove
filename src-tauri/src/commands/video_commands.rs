@@ -5,7 +5,11 @@ use crate::value::date::DateTime;
 use crate::AppState;
 use std::sync::Arc;
 use tokio::sync::OnceCell;
+use uuid::Uuid;
 use video_server::VideoServer;
+
+/// Length of the UUID fragment that disambiguates merge output file names.
+const OUTPUT_NAME_UUID_LEN: usize = 8;
 
 static VIDEO_SERVER: OnceCell<Arc<VideoServer>> = OnceCell::const_new();
 
@@ -136,10 +140,19 @@ pub async fn merge_videos(
         }
     }
 
+    // The timestamp only has second resolution, so two merges submitted in the
+    // same second would target the same staging file and ffmpeg's `-y` would
+    // let the second one overwrite the first before it is imported.
     let now = DateTime::now();
     let output_name = format!(
-        "merged_{:04}{:02}{:02}_{:02}{:02}{:02}.mp4",
-        now.year, now.month, now.day, now.hour, now.minute, now.second
+        "merged_{:04}{:02}{:02}_{:02}{:02}{:02}_{}.mp4",
+        now.year,
+        now.month,
+        now.day,
+        now.hour,
+        now.minute,
+        now.second,
+        &Uuid::new_v4().to_string()[..OUTPUT_NAME_UUID_LEN]
     );
 
     log::info!(

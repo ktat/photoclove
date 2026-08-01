@@ -4,7 +4,6 @@
  * Wraps the Tauri video commands so components do not have to know about the
  * warp streaming server handshake or the merge job payload shape.
  */
-import { invoke } from '@tauri-apps/api/core';
 import { invokeWithErrorHandling } from './TauriService.js';
 import { logger } from './LoggerService.js';
 
@@ -19,8 +18,15 @@ import { logger } from './LoggerService.js';
  * @returns {Promise<string>} URL usable as a <video> src
  */
 export async function getVideoStreamUrl(path) {
-    await invoke('start_video_server');
-    return invoke('register_video_path', { videoPath: path });
+    // Silent: this runs once per clip in the merge editor, so the per-call
+    // success logging would drown out everything else.
+    await invokeWithErrorHandling('start_video_server', {}, 'VideoService', { silent: true });
+    return invokeWithErrorHandling(
+        'register_video_path',
+        { videoPath: path },
+        'VideoService',
+        { silent: true }
+    );
 }
 
 /**

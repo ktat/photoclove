@@ -3,16 +3,14 @@
  * Handles import, upload, delete, and restore operations
  */
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { invoke } from "@tauri-apps/api/core";
 import { localForage } from "../../../storage/forage";
 import { logger } from "../../../services/LoggerService.js";
 import { invokeWithErrorHandling } from "../../../services/TauriService.js";
 import { mergeVideos } from "../../../services/VideoService.js";
 import { isVideoPath } from "../../../utils/videoFormats.js";
-import { toMergePayload } from "../../VideoEditor/trimUtils.js";
-
-/** Mirrors MIN_MERGE_CLIPS in the video edit service. */
-const MIN_MERGE_CLIPS = 2;
+import { toMergePayload, MIN_MERGE_CLIPS } from "../../VideoEditor/trimUtils.js";
 
 /**
  * Hook for photo import operations
@@ -147,6 +145,7 @@ export function useVideoMerge({
     setShowJobQueue,
     dialog
 }) {
+    const { t } = useTranslation(['directoryMenu']);
     const [showVideoMergeModal, setShowVideoMergeModal] = useState(false);
 
     // Non-videos in the selection are simply not candidates, so they are
@@ -159,8 +158,8 @@ export function useVideoMerge({
     const showVideoMergeEditor = useCallback(async () => {
         if (selectedVideoPaths.length < MIN_MERGE_CLIPS) {
             await dialog.message({
-                title: 'Merge Videos',
-                message: `Select at least ${MIN_MERGE_CLIPS} videos to merge.`,
+                title: t('directoryMenu:videoMerge.title'),
+                message: t('directoryMenu:videoMerge.needMoreClips', { count: MIN_MERGE_CLIPS }),
                 kind: 'warning'
             });
             return;
@@ -169,21 +168,21 @@ export function useVideoMerge({
             videoCount: selectedVideoPaths.length
         });
         setShowVideoMergeModal(true);
-    }, [selectedVideoPaths, dialog]);
+    }, [selectedVideoPaths, dialog, t]);
 
     const submitVideoMerge = useCallback(async (clips) => {
         const jobUnitId = await mergeVideos(toMergePayload(clips));
 
         setShowVideoMergeModal(false);
         clearPhotoSelection();
-        addFooterMessage('video_merge', 'Video merge started. Check Job Queue for progress.');
+        addFooterMessage('video_merge', t('directoryMenu:videoMerge.started'));
         setShowJobQueue?.(true);
 
         logger.info('photoOperations', 'video_merge_submitted', 'Video merge job created', {
             jobUnitId,
             clipCount: clips.length
         });
-    }, [clearPhotoSelection, addFooterMessage, setShowJobQueue]);
+    }, [clearPhotoSelection, addFooterMessage, setShowJobQueue, t]);
 
     return {
         showVideoMergeModal,

@@ -110,7 +110,7 @@
   },
   "videoMerge": {
     "title": "Videos zusammenführen",
-    "hint": "Ziehe einen Clip am Griff, um die Reihenfolge zu ändern. Spule jeden Clip vor und markiere Anfang und Ende.",
+    "hint": "Ziehen Sie einen Clip am Griff, um die Reihenfolge zu ändern. Spulen Sie jeden Clip vor und markieren Sie Anfang und Ende.",
     "play": "Abspielen",
     "pause": "Pause",
     "setStartHere": "Start hier setzen",
@@ -122,6 +122,8 @@
     "cancel": "Abbrechen",
     "submitting": "Wird gestartet…",
     "loadFailed": "Dieses Video konnte nicht geladen werden.",
-    "outputLength": "Länge der Ausgabe: {{length}}"
+    "outputLength": "Länge der Ausgabe: {{length}}",
+    "needMoreClips": "Wählen Sie mindestens {{count}} Videos zum Zusammenführen aus.",
+    "started": "Zusammenführen der Videos gestartet. Den Fortschritt finden Sie in der Job-Warteschlange."
   }
 }

@@ -307,8 +307,20 @@ fn build_merge_args(
 }
 
 /// Rejects trim ranges the editor should never have produced, so ffmpeg fails
-/// fast with a readable message instead of writing a broken file.
-fn validate_clips(clips: &[VideoMergeClip], probes: &[VideoProbe]) -> Result<(), String> {
+/// fast with a readable message instead of writing a broken file, and clamps
+/// the ones that are merely optimistic.
+///
+/// The editor derives `end_sec` from the HTML video element's duration, which
+/// can read slightly longer than the container duration ffprobe reports. Left
+/// alone that overshoot desyncs the output: `trim` stops the video at end of
+/// stream while the `anullsrc` filler for a silent clip is sized from the
+/// requested range, so the audio runs long and `concat` carries the drift into
+/// every following segment.
+fn normalize_clips(
+    clips: &[VideoMergeClip],
+    probes: &[VideoProbe],
+) -> Result<Vec<VideoMergeClip>, String> {
+    let mut normalized = Vec::with_capacity(clips.len());
     for (clip, probe) in clips.iter().zip(probes.iter()) {
         if clip.start_sec < 0.0 || clip.end_sec <= clip.start_sec {
             return Err(format!(
@@ -324,8 +336,19 @@ fn validate_clips(clips: &[VideoMergeClip], probes: &[VideoProbe]) -> Result<(),
                 clip.start_sec, clip.path, probe.duration_sec
             ));
         }
+
+        let mut clip = clip.clone();
+        if probe.duration_sec > 0.0 && clip.end_sec > probe.duration_sec {
+            log::debug!(
+                target: "video_edit_service",
+                "clamped_trim_end; path={}; requested={:.3}; duration={:.3}",
+                clip.path, clip.end_sec, probe.duration_sec
+            );
+            clip.end_sec = probe.duration_sec;
+        }
+        normalized.push(clip);
     }
-    Ok(())
+    Ok(normalized)
 }
 
 /// Merges `clips` into `output_path`, re-encoding so cuts are frame accurate.
@@ -353,7 +376,10 @@ where
         .iter()
         .map(|c| probe_video(&c.path))
         .collect::<Result<Vec<_>, String>>()?;
-    validate_clips(clips, &probes)?;
+    // Everything below works off the clamped ranges, so the ffmpeg arguments,
+    // the silent-audio lengths and the progress total all agree.
+    let clips = normalize_clips(clips, &probes)?;
+    let clips = clips.as_slice();
 
     let total_sec: f64 = clips.iter().map(|c| c.duration_sec()).sum();
 
@@ -555,13 +581,46 @@ mod tests {
     fn rejects_inverted_and_out_of_range_trims() {
         let probes = vec![probe(1920, 1080, true), probe(1920, 1080, true)];
         let inverted = vec![clip("/a.mp4", 5.0, 5.0), clip("/b.mp4", 0.0, 2.0)];
-        assert!(validate_clips(&inverted, &probes).is_err());
+        assert!(normalize_clips(&inverted, &probes).is_err());
 
         let past_end = vec![clip("/a.mp4", 90.0, 95.0), clip("/b.mp4", 0.0, 2.0)];
-        assert!(validate_clips(&past_end, &probes).is_err());
+        assert!(normalize_clips(&past_end, &probes).is_err());
 
         let valid = vec![clip("/a.mp4", 0.0, 2.0), clip("/b.mp4", 1.0, 2.0)];
-        assert!(validate_clips(&valid, &probes).is_ok());
+        assert!(normalize_clips(&valid, &probes).is_ok());
+    }
+
+    #[test]
+    fn clamps_trim_end_to_the_probed_duration() {
+        // probe() reports 60s; the editor asks for 65s off the player's
+        // slightly longer idea of the duration.
+        let probes = vec![probe(1920, 1080, true), probe(1920, 1080, false)];
+        let clips = vec![clip("/a.mp4", 0.0, 65.0), clip("/b.mp4", 10.0, 20.0)];
+
+        let normalized = normalize_clips(&clips, &probes).expect("ranges are valid");
+        assert!((normalized[0].end_sec - 60.0).abs() < f64::EPSILON);
+        // A range inside the media is left exactly as the user set it.
+        assert!((normalized[1].end_sec - 20.0).abs() < f64::EPSILON);
+
+        // The silent filler for the audio-less clip must match its video length.
+        let args = build_merge_args(&normalized, &probes, Path::new("/out.mp4"));
+        let silent_len = args
+            .iter()
+            .position(|a| a.starts_with("anullsrc="))
+            .map(|i| args[i - 2].clone())
+            .expect("silent input is sized with -t");
+        assert_eq!(silent_len, "10.000");
+    }
+
+    #[test]
+    fn keeps_trim_end_when_the_probe_reports_no_duration() {
+        let mut unknown = probe(1920, 1080, true);
+        unknown.duration_sec = 0.0;
+        let probes = vec![unknown.clone(), unknown];
+        let clips = vec![clip("/a.mp4", 0.0, 65.0), clip("/b.mp4", 0.0, 2.0)];
+
+        let normalized = normalize_clips(&clips, &probes).expect("ranges are valid");
+        assert!((normalized[0].end_sec - 65.0).abs() < f64::EPSILON);
     }
 
     #[test]

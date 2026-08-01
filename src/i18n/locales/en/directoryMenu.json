@@ -130,6 +130,8 @@
     "cancel": "Cancel",
     "submitting": "Starting…",
     "loadFailed": "Could not load this video.",
-    "outputLength": "Output length: {{length}}"
+    "outputLength": "Output length: {{length}}",
+    "needMoreClips": "Select at least {{count}} videos to merge.",
+    "started": "Video merge started. Check Job Queue for progress."
   }
 }

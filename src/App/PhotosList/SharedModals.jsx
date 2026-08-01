@@ -49,13 +49,16 @@ function SharedModals({ modalState, photoSelectionCount }) {
                 allowCreate={true}
             />
 
-            {/* Video Merge Editor */}
-            <VideoMergeEditor
-                isOpen={modalState.showVideoMergeModal}
-                videoPaths={modalState.selectedVideoPaths || []}
-                onClose={() => modalState.setShowVideoMergeModal(false)}
-                onConfirm={modalState.submitVideoMerge}
-            />
+            {/* Video Merge Editor - mounted only while open, and keyed on the
+                selection, so the editor always starts from untrimmed clips. */}
+            {modalState.showVideoMergeModal && (
+                <VideoMergeEditor
+                    key={(modalState.selectedVideoPaths || []).join('|')}
+                    videoPaths={modalState.selectedVideoPaths || []}
+                    onClose={() => modalState.setShowVideoMergeModal(false)}
+                    onConfirm={modalState.submitVideoMerge}
+                />
+            )}
 
             {/* Contextual Delete Modal */}
             <ContextualDeleteModal

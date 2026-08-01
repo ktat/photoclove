@@ -122,6 +122,8 @@
     "cancel": "取消",
     "submitting": "正在開始…",
     "loadFailed": "無法載入此影片。",
-    "outputLength": "輸出長度：{{length}}"
+    "outputLength": "輸出長度：{{length}}",
+    "needMoreClips": "請至少選擇 {{count}} 個影片進行合併。",
+    "started": "已開始合併影片。可在工作佇列中查看進度。"
   }
 }

@@ -30,10 +30,10 @@ function VideoTrimScrubber({ clip, onChange }) {
 
     const duration = clip.duration_sec || 0;
 
+    // The component is keyed on clip.path, so a different clip arrives as a
+    // fresh mount and there is no previous URL to clear here.
     useEffect(() => {
         let cancelled = false;
-        setStreamUrl(null);
-        setLoadError(null);
 
         getVideoStreamUrl(clip.path)
             .then((url) => {
@@ -161,6 +161,26 @@ function VideoTrimScrubber({ clip, onChange }) {
         seekTo(currentTime + (event.key === 'ArrowRight' ? step : -step));
     }, [currentTime, seekTo]);
 
+    // The handles are the only way to set a trim point with a pointer, so they
+    // need an equivalent for keyboard and screen reader users.
+    const handleTrimKeyDown = useCallback((which) => (event) => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        const delta = (event.shiftKey ? COARSE_STEP_SEC : FINE_STEP_SEC)
+            * (event.key === 'ArrowRight' ? 1 : -1);
+        if (which === 'start') {
+            const start = Math.max(
+                Math.min(clip.start_sec + delta, clip.end_sec - MIN_CLIP_LENGTH_SEC), 0);
+            onChange({ ...clip, start_sec: start });
+            seekTo(start);
+        } else {
+            const end = Math.min(
+                Math.max(clip.end_sec + delta, clip.start_sec + MIN_CLIP_LENGTH_SEC), duration);
+            onChange({ ...clip, end_sec: end });
+            seekTo(end);
+        }
+    }, [clip, duration, onChange, seekTo]);
+
     const percent = (seconds) => (duration > 0 ? (seconds / duration) * 100 : 0);
     const fileName = clip.path.replace(/^.+\//, '');
 
@@ -194,7 +214,9 @@ function VideoTrimScrubber({ clip, onChange }) {
                     tabIndex={0}
                     style={{
                         width: '100%',
-                        maxHeight: '240px',
+                        // Relative to the viewport so several clips still fit in
+                        // the modal on a short screen.
+                        maxHeight: '40vh',
                         backgroundColor: 'var(--color-bg-base)',
                         borderRadius: 'var(--radius-sm)'
                     }}
@@ -232,7 +254,7 @@ function VideoTrimScrubber({ clip, onChange }) {
                     top: 0,
                     bottom: 0,
                     left: `${percent(currentTime)}%`,
-                    width: '2px',
+                    width: 'var(--space-1)',
                     backgroundColor: 'var(--color-text-primary)'
                 }} />
 
@@ -244,6 +266,8 @@ function VideoTrimScrubber({ clip, onChange }) {
                         aria-valuenow={which === 'start' ? clip.start_sec : clip.end_sec}
                         aria-valuemin={0}
                         aria-valuemax={duration}
+                        tabIndex={0}
+                        onKeyDown={handleTrimKeyDown(which)}
                         onPointerDown={startDrag(which)}
                         onPointerMove={handlePointerMove}
                         onPointerUp={endDrag}

@@ -3,10 +3,8 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { useTranslation } from 'react-i18next';
 import { resolveAbsolutePhotoPath } from '../../../utils/photoUtils.js';
 import { isVideoPath } from '../../../utils/videoFormats.js';
+import { MIN_MERGE_CLIPS } from '../../VideoEditor/trimUtils.js';
 import SelectionHeader from "./SelectionHeader.jsx";
-
-/** Mirrors MIN_MERGE_CLIPS in the video edit service. */
-const MIN_MERGE_CLIPS = 2;
 
 /**
  * PhotoSelectionSection - Photo selection UI

@@ -122,6 +122,8 @@
     "cancel": "Cancelar",
     "submitting": "Iniciando…",
     "loadFailed": "No se pudo cargar este video.",
-    "outputLength": "Duración de salida: {{length}}"
+    "outputLength": "Duración de salida: {{length}}",
+    "needMoreClips": "Seleccione al menos {{count}} videos para combinar.",
+    "started": "Se inició la combinación de videos. Consulte la cola de trabajos para ver el progreso."
   }
 }

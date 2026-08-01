@@ -5,6 +5,18 @@
 import { Photo } from '../domain/Photo.js';
 
 /**
+ * Whether a path is already absolute on the host platform.
+ *
+ * Covers POSIX roots and Windows drive letters (`C:\...`, `C:/...`) - the app
+ * ships on Windows too, and a drive-letter path run through the library-root
+ * resolution below would come out mangled.
+ *
+ * @param {string} path
+ * @returns {boolean}
+ */
+const isAbsolutePath = (path) => path.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(path);
+
+/**
  * Resolve a photo path from the list (which is relative to the library root,
  * or to the trash when browsing it) to an absolute path on disk.
  *
@@ -17,7 +29,7 @@ import { Photo } from '../domain/Photo.js';
  * @returns {string} Absolute path
  */
 export const resolveAbsolutePhotoPath = (path, appConfig, inTrashBin = false) => {
-  if (!path || path.startsWith('/')) return path;
+  if (!path || isAbsolutePath(path)) return path;
   const photo = Photo.fromJSON({
     originalPath: path,
     name: path.replace(/^.+\//, ''),

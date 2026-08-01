@@ -8,6 +8,13 @@
  * payload sent to Tauri is a deliberate subset - see toMergePayload.
  */
 
+/**
+ * Fewer than this is not a merge. Menu visibility, the operation guard and the
+ * editor's submit button all read this, and it mirrors MIN_MERGE_CLIPS in
+ * src-tauri/src/domain_service/video_edit_service.rs.
+ */
+export const MIN_MERGE_CLIPS = 2;
+
 const SECONDS_PER_MINUTE = 60;
 /** Cuts are frame accurate, so the readout needs sub-second precision. */
 const TIME_DECIMALS = 1;

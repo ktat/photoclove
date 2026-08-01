@@ -130,6 +130,8 @@
     "cancel": "キャンセル",
     "submitting": "開始中…",
     "loadFailed": "この動画を読み込めませんでした。",
-    "outputLength": "出力の長さ: {{length}}"
+    "outputLength": "出力の長さ: {{length}}",
+    "needMoreClips": "結合するには動画を{{count}}本以上選択してください。",
+    "started": "動画の結合を開始しました。進捗はジョブキューで確認できます。"
   }
 }

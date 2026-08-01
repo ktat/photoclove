@@ -68,12 +68,27 @@ pub(crate) fn process_video_merge_job(
     // Reuse the import pipeline: it copies the file into the dated library
     // directory and schedules the dependent thumbnail/database jobs.
     let output = output_path.display().to_string();
-    let import_job_unit_id = submit_import_jobs(
+    let import_job_unit_id = match submit_import_jobs(
         db.clone(),
         config.copy_parallel,
         vec![output.clone()],
         app_handle.clone(),
-    )?;
+    ) {
+        Ok(id) => id,
+        Err(e) => {
+            // The encode itself succeeded, so say where the file is: the staging
+            // copy survives until it ages out and can still be imported by hand.
+            log::error!(
+                target: "video_merge_job",
+                "import_submit_failed_after_merge; job_id={}; output={}; error={}",
+                job_id, output, e
+            );
+            return Err(format!(
+                "Merge succeeded but the import step failed ({}). Output left at {}",
+                e, output
+            ));
+        }
+    };
 
     let _ = state.meta_db.update_job_progress(job_id, 1);
     emit_progress(app_handle, &job.job_unit_id, "Merge completed", 100);

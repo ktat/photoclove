@@ -5,7 +5,7 @@
  * preview + trim scrubber, and the clips are concatenated top to bottom in the
  * order shown - drag a clip by its handle to change that order.
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     DndContext,
@@ -25,11 +25,9 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import BaseModal from '../../components/BaseModal.jsx';
 import VideoTrimScrubber from './VideoTrimScrubber.jsx';
-import { createClip, formatClipTime, totalKeptSeconds } from './trimUtils.js';
+import { createClip, formatClipTime, totalKeptSeconds, MIN_MERGE_CLIPS } from './trimUtils.js';
 import { logger } from '../../services/LoggerService.js';
 
-/** Merging fewer than this is not a merge; mirrors MIN_MERGE_CLIPS in Rust. */
-const MIN_MERGE_CLIPS = 2;
 /** Drag only starts past this many pixels, so a click on the player still works. */
 const DRAG_ACTIVATION_DISTANCE_PX = 5;
 
@@ -66,23 +64,21 @@ function SortableClip({ clip, index, onChange }) {
                 <span>⠿</span>
                 <span>{index + 1}</span>
             </div>
-            <VideoTrimScrubber clip={clip} onChange={onChange} />
+            {/* Keyed so a different clip remounts with its own player state. */}
+            <VideoTrimScrubber key={clip.path} clip={clip} onChange={onChange} />
         </div>
     );
 }
 
-function VideoMergeEditor({ isOpen, videoPaths, onClose, onConfirm }) {
+/**
+ * Mounted only while the editor is open, and keyed on the selection, so both
+ * closing it and changing the selection give a fresh set of clips - no effect
+ * has to reset state on the way in.
+ */
+function VideoMergeEditor({ videoPaths, onClose, onConfirm }) {
     const { t } = useTranslation(['directoryMenu']);
-    const [clips, setClips] = useState([]);
+    const [clips, setClips] = useState(() => videoPaths.map(createClip));
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    // Re-seed whenever the modal opens on a different selection; editing state
-    // from a previous merge must not leak into the next one.
-    useEffect(() => {
-        if (!isOpen) return;
-        setClips(videoPaths.map(createClip));
-        setIsSubmitting(false);
-    }, [isOpen, videoPaths]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: DRAG_ACTIVATION_DISTANCE_PX } }),
@@ -122,8 +118,6 @@ function VideoMergeEditor({ isOpen, videoPaths, onClose, onConfirm }) {
             setIsSubmitting(false);
         }
     }, [clips, onConfirm]);
-
-    if (!isOpen) return null;
 
     return (
         <BaseModal
