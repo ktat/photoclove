@@ -161,6 +161,52 @@ pub fn submit_create_db_job(
     Ok(job_unit_id)
 }
 
+/// Submit a video merge job - concatenates the trimmed clips into one file.
+/// Merging is CPU bound and re-encodes the whole timeline, so it runs alone.
+pub fn submit_video_merge_job(
+    db: Arc<SQLite>,
+    clips: Vec<job_queue::VideoMergeClip>,
+    output_name: String,
+    app_handle: tauri::AppHandle,
+) -> Result<String, String> {
+    log::info!(
+        target: "video_merge",
+        "submit_video_merge; clips={}; output_name={}",
+        clips.len(),
+        output_name
+    );
+
+    let job_types = vec!["video_merge".to_string()];
+    let job_unit = job_queue::JobUnit::new(job_types);
+    let job_unit_id = job_unit.id.clone();
+
+    db.create_job_unit(&job_unit)?;
+
+    let job_data = job_queue::VideoMergeJob { clips, output_name };
+    let job_data_json = serde_json::to_string(&job_data)
+        .map_err(|e| format!("Failed to serialize job data: {}", e))?;
+
+    let merge_job = job_queue::Job::new(
+        job_unit_id.clone(),
+        job_queue::JobType::VideoMerge,
+        vec![job_data_json],
+    );
+
+    let queued = job_queue::QueuedJob::new(job_unit_id.clone(), merge_job);
+    let job_id = db.create_job(&queued)?;
+
+    log::info!(
+        target: "video_merge",
+        "video_merge_job_created; job_unit_id={}; job_id={}",
+        job_unit_id,
+        job_id
+    );
+
+    process_new_jobs(db, 1, app_handle);
+
+    Ok(job_unit_id)
+}
+
 /// Submit recalculate grouping job
 pub fn submit_recalculate_grouping_job(
     db: Arc<SQLite>,

@@ -5,8 +5,9 @@
  * These operations and modal state are lifted to PhotosList.jsx to avoid duplication.
  */
 
-import { useState, useMemo } from "react";
-import { useGooglePhotosUpload, useTrashOperations as useSelectionTrashOperations, useStartupImageOperations } from "../App/PhotosList/DirectoryMenu/photoOperations.js";
+import { useState, useMemo, useCallback } from "react";
+import { useGooglePhotosUpload, useTrashOperations as useSelectionTrashOperations, useStartupImageOperations, useVideoMerge } from "../App/PhotosList/DirectoryMenu/photoOperations.js";
+import { resolveAbsolutePhotoPath } from "../utils/photoUtils.js";
 import { useAlbumOperations, useTagOperations } from "../App/PhotosList/DirectoryMenu/collectionOperations.js";
 import { useGroupOperations } from "../App/PhotosList/DirectoryMenu/groupOperations.js";
 
@@ -86,6 +87,23 @@ export function usePhotoOptionOperations({
         config: appConfig, saveConfigWithStartupImages
     });
 
+    // Video merge operations - ffmpeg reads the file itself, so the selection's
+    // library-relative paths have to be resolved to real ones first.
+    const resolveAbsolutePath = useCallback(
+        (path) => resolveAbsolutePhotoPath(path, appConfig, viewModeObj?.isTrashMode() || false),
+        [appConfig, viewModeObj]
+    );
+    const {
+        showVideoMergeModal,
+        setShowVideoMergeModal,
+        selectedVideoPaths,
+        showVideoMergeEditor,
+        submitVideoMerge
+    } = useVideoMerge({
+        photoSelection, clearPhotoSelection, addFooterMessage, resolveAbsolutePath,
+        setShowJobQueue: setShowJobQueueModal, dialog
+    });
+
     // Burst group operations
     const { createBurstGroup, removeFromBurstGroup } = useGroupOperations({
         photoSelection, clearPhotoSelection, addFooterMessage, handleTauriError,
@@ -102,6 +120,7 @@ export function usePhotoOptionOperations({
         addToStartupImages,
         createBurstGroup,
         removeFromBurstGroup,
+        showVideoMergeEditor,
         // DirectoryMenu-specific operations
         restoreSelectedFromTrash,
         permanentDeleteSelected,
@@ -109,7 +128,8 @@ export function usePhotoOptionOperations({
         removeFromCurrentTag
     }), [deleteFiles, showCreateAlbumModal, showAddToAlbumModal, showAddTagsModal,
         uploadToGooglePhotos, addToStartupImages, createBurstGroup, removeFromBurstGroup,
-        restoreSelectedFromTrash, permanentDeleteSelected, removeFromCurrentAlbum, removeFromCurrentTag]);
+        showVideoMergeEditor, restoreSelectedFromTrash, permanentDeleteSelected,
+        removeFromCurrentAlbum, removeFromCurrentTag]);
 
     // Modal state for parent component
     const modalState = {
@@ -124,7 +144,11 @@ export function usePhotoOptionOperations({
         setShowBulkTagModal,
         createAlbumFromSelection,
         addPhotosToAlbum,
-        addTagsToPhotos
+        addTagsToPhotos,
+        showVideoMergeModal,
+        setShowVideoMergeModal,
+        selectedVideoPaths,
+        submitVideoMerge
     };
 
     return {

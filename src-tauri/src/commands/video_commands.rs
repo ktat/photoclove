@@ -1,3 +1,8 @@
+use crate::domain_service::job_queue_service::submission::submit_video_merge_job;
+use crate::domain_service::video_edit_service::MIN_MERGE_CLIPS;
+use crate::entity::job_queue::VideoMergeClip;
+use crate::value::date::DateTime;
+use crate::AppState;
 use std::sync::Arc;
 use tokio::sync::OnceCell;
 use video_server::VideoServer;
@@ -104,6 +109,51 @@ pub async fn shutdown_video_server() -> Result<String, String> {
     } else {
         Err("Video server not initialized".to_string())
     }
+}
+
+/// Queue a merge of the given trimmed clips into a single video.
+///
+/// Each clip carries its own `start_sec`/`end_sec` trim range and the clips are
+/// concatenated in the order given. Returns the job unit ID so the caller can
+/// follow the merge in the job queue; the merged file is imported into the
+/// library once the encode finishes.
+#[tauri::command]
+pub async fn merge_videos(
+    clips: Vec<VideoMergeClip>,
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    if clips.len() < MIN_MERGE_CLIPS {
+        return Err(format!(
+            "Select at least {} videos to merge",
+            MIN_MERGE_CLIPS
+        ));
+    }
+
+    for clip in &clips {
+        if !std::path::Path::new(&clip.path).exists() {
+            return Err(format!("Video not found: {}", clip.path));
+        }
+    }
+
+    let now = DateTime::now();
+    let output_name = format!(
+        "merged_{:04}{:02}{:02}_{:02}{:02}{:02}.mp4",
+        now.year, now.month, now.day, now.hour, now.minute, now.second
+    );
+
+    log::info!(
+        target: "video_commands",
+        "merge_videos_submit; clips={}; output_name={}",
+        clips.len(),
+        output_name
+    );
+
+    let db = Arc::new(state.meta_db.clone());
+    let job_unit_id = submit_video_merge_job(db, clips, output_name, app_handle)?;
+
+    log::info!(target: "video_commands", "merge_videos_submitted; job_unit_id={}", job_unit_id);
+    Ok(job_unit_id)
 }
 
 /// Get detailed server statistics for debugging

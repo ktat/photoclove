@@ -50,7 +50,8 @@
     "addTags": "Add Tags",
     "createBurstGroup": "Create Burst Group",
     "removeFromBurstGroup": "Remove from Burst Group",
-    "addToStartupImages": "Add to Startup Images"
+    "addToStartupImages": "Add to Startup Images",
+    "mergeVideos": "Merge Videos"
   },
   "album": {
     "selectedAlbums": "Selected Albums",
@@ -114,5 +115,21 @@
     "selectPhotosFirst": "Select photos to share",
     "shareTo": "Share to",
     "socialHint": "Copy image first, then paste after opening"
+  },
+  "videoMerge": {
+    "title": "Merge Videos",
+    "hint": "Drag a clip by its handle to reorder. Scrub each clip and mark where it should start and end.",
+    "play": "Play",
+    "pause": "Pause",
+    "setStartHere": "Set start here",
+    "setEndHere": "Set end here",
+    "keeping": "Keeping",
+    "trimStart": "Trim start",
+    "trimEnd": "Trim end",
+    "merge": "Merge",
+    "cancel": "Cancel",
+    "submitting": "Starting…",
+    "loadFailed": "Could not load this video.",
+    "outputLength": "Output length: {{length}}"
   }
 }

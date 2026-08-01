@@ -148,6 +148,8 @@ function DirectoryMenu(props) {
             ops.createBurstGroup?.();
         } else if (selected == "removeFromBurstGroup") {
             ops.removeFromBurstGroup?.();
+        } else if (selected == "mergeVideos") {
+            ops.showVideoMergeEditor?.();
         }
         e.target.value = "";
     }

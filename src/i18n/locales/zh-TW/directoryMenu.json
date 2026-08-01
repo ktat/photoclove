@@ -48,7 +48,8 @@
     "addTags": "新增標籤",
     "createBurstGroup": "建立連拍群組",
     "removeFromBurstGroup": "從連拍群組中移除",
-    "addToStartupImages": "新增到啟動圖片"
+    "addToStartupImages": "新增到啟動圖片",
+    "mergeVideos": "合併影片"
   },
   "album": {
     "selectedAlbums": "選取的相簿",
@@ -106,5 +107,21 @@
     "selectPhotosFirst": "選取要分享的照片",
     "shareTo": "分享到",
     "socialHint": "先複製圖片，然後開啟後貼上"
+  },
+  "videoMerge": {
+    "title": "合併影片",
+    "hint": "拖曳控制點可調整順序。逐一預覽片段並標記開始與結束位置。",
+    "play": "播放",
+    "pause": "暫停",
+    "setStartHere": "設為開始位置",
+    "setEndHere": "設為結束位置",
+    "keeping": "保留範圍",
+    "trimStart": "裁剪開始",
+    "trimEnd": "裁剪結束",
+    "merge": "合併",
+    "cancel": "取消",
+    "submitting": "正在開始…",
+    "loadFailed": "無法載入此影片。",
+    "outputLength": "輸出長度：{{length}}"
   }
 }

@@ -48,7 +48,8 @@
     "addTags": "Ajouter des tags",
     "createBurstGroup": "Créer un groupe rafale",
     "removeFromBurstGroup": "Retirer du groupe rafale",
-    "addToStartupImages": "Ajouter aux images de démarrage"
+    "addToStartupImages": "Ajouter aux images de démarrage",
+    "mergeVideos": "Fusionner les vidéos"
   },
   "album": {
     "selectedAlbums": "Albums sélectionnés",
@@ -106,5 +107,21 @@
     "selectPhotosFirst": "Sélectionnez des photos à partager",
     "shareTo": "Partager sur",
     "socialHint": "Copiez d'abord l'image, puis collez après ouverture"
+  },
+  "videoMerge": {
+    "title": "Fusionner les vidéos",
+    "hint": "Faites glisser un clip par sa poignée pour le réordonner. Parcourez chaque clip et marquez son début et sa fin.",
+    "play": "Lecture",
+    "pause": "Pause",
+    "setStartHere": "Définir le début ici",
+    "setEndHere": "Définir la fin ici",
+    "keeping": "Conservé",
+    "trimStart": "Début du rognage",
+    "trimEnd": "Fin du rognage",
+    "merge": "Fusionner",
+    "cancel": "Annuler",
+    "submitting": "Démarrage…",
+    "loadFailed": "Impossible de charger cette vidéo.",
+    "outputLength": "Durée de sortie : {{length}}"
   }
 }

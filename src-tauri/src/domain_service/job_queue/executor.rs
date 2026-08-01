@@ -350,6 +350,10 @@ fn process_job(db: Arc<SQLite>, job: job_queue::QueuedJob, app_handle: tauri::Ap
             log::info!(target: "job_queue", "insights_calculation_job; job_id={}; status=calling_process", job_id);
             handlers::process_insights_job(&job, &app_handle, &db)
         }
+        job_queue::JobType::VideoMerge => {
+            log::info!(target: "job_queue", "video_merge_job; job_id={}; status=calling_process", job_id);
+            handlers::process_video_merge_job(&job, &app_handle, &db)
+        }
     };
 
     log::info!(target: "job_queue", "job_execution; job_id={}; status=completed; success={}", job_id, result.is_ok());

@@ -48,7 +48,8 @@
     "addTags": "Agregar etiquetas",
     "createBurstGroup": "Crear grupo de ráfaga",
     "removeFromBurstGroup": "Quitar del grupo de ráfaga",
-    "addToStartupImages": "Agregar a imágenes de inicio"
+    "addToStartupImages": "Agregar a imágenes de inicio",
+    "mergeVideos": "Combinar videos"
   },
   "album": {
     "selectedAlbums": "Álbumes seleccionados",
@@ -106,5 +107,21 @@
     "selectPhotosFirst": "Seleccione fotos para compartir",
     "shareTo": "Compartir en",
     "socialHint": "Copie la imagen primero, luego pegue después de abrir"
+  },
+  "videoMerge": {
+    "title": "Combinar videos",
+    "hint": "Arrastra un clip por su asa para reordenar. Desplaza cada clip y marca dónde debe empezar y terminar.",
+    "play": "Reproducir",
+    "pause": "Pausa",
+    "setStartHere": "Marcar inicio aquí",
+    "setEndHere": "Marcar fin aquí",
+    "keeping": "Se conserva",
+    "trimStart": "Inicio del recorte",
+    "trimEnd": "Fin del recorte",
+    "merge": "Combinar",
+    "cancel": "Cancelar",
+    "submitting": "Iniciando…",
+    "loadFailed": "No se pudo cargar este video.",
+    "outputLength": "Duración de salida: {{length}}"
   }
 }
