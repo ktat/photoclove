@@ -110,14 +110,8 @@
   },
   "videoMerge": {
     "title": "Rogner et fusionner les vidéos",
-    "hint": "Chaque ligne est une plage conservée. Ajoutez une plage pour conserver plusieurs parties de la même vidéo, et faites glisser une ligne par sa poignée pour la réordonner.",
-    "play": "Lecture",
+    "hint": "Appuyez sur début là où un extrait doit commencer, puis sur fin là où il doit s'arrêter. Répétez ailleurs pour conserver plusieurs parties de la même vidéo. Faites glisser une ligne par sa poignée pour réordonner les fichiers.",
     "pause": "Pause",
-    "setStartHere": "Définir le début ici",
-    "setEndHere": "Définir la fin ici",
-    "keeping": "Conservé",
-    "trimStart": "Début du rognage",
-    "trimEnd": "Fin du rognage",
     "merge": "Exporter",
     "cancel": "Annuler",
     "submitting": "Démarrage…",
@@ -125,7 +119,14 @@
     "outputLength": "Durée de sortie : {{length}}",
     "needMoreClips": "Sélectionnez au moins {{count}} vidéo.",
     "started": "L'export de la vidéo a démarré. Consultez la file d'attente des tâches pour suivre la progression.",
-    "addSegment": "Ajouter une plage",
-    "removeSegment": "Retirer"
+    "playAll": "Tout lire",
+    "playRanges": "Lire les plages",
+    "markStart": "[ Début ici",
+    "markEnd": "Fin ici ]",
+    "marking": "Marquage depuis {{start}}",
+    "cancelMark": "Annuler",
+    "startInsideRange": "Déjà à l'intérieur d'une plage conservée.",
+    "removeRange": "Retirer la plage",
+    "wholeFile": "(fichier entier)"
   }
 }

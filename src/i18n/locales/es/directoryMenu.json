@@ -110,14 +110,8 @@
   },
   "videoMerge": {
     "title": "Recortar y combinar videos",
-    "hint": "Cada fila es un rango que se conserva. Agregue un rango para conservar varias partes del mismo video y arrastre una fila por su asa para reordenarla.",
-    "play": "Reproducir",
+    "hint": "Pulse inicio donde deba empezar un fragmento y fin donde deba terminar. Repítalo en otro punto para conservar varias partes del mismo video. Arrastre una fila por su asa para reordenar los archivos.",
     "pause": "Pausa",
-    "setStartHere": "Marcar inicio aquí",
-    "setEndHere": "Marcar fin aquí",
-    "keeping": "Se conserva",
-    "trimStart": "Inicio del recorte",
-    "trimEnd": "Fin del recorte",
     "merge": "Exportar",
     "cancel": "Cancelar",
     "submitting": "Iniciando…",
@@ -125,7 +119,14 @@
     "outputLength": "Duración de salida: {{length}}",
     "needMoreClips": "Seleccione al menos {{count}} video.",
     "started": "Se inició la exportación del video. Consulte la cola de trabajos para ver el progreso.",
-    "addSegment": "Agregar rango",
-    "removeSegment": "Quitar"
+    "playAll": "Reproducir todo",
+    "playRanges": "Reproducir rangos",
+    "markStart": "[ Inicio aquí",
+    "markEnd": "Fin aquí ]",
+    "marking": "Marcando desde {{start}}",
+    "cancelMark": "Cancelar",
+    "startInsideRange": "Ya está dentro de un rango conservado.",
+    "removeRange": "Quitar rango",
+    "wholeFile": "(archivo completo)"
   }
 }

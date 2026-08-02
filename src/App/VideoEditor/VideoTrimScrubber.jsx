@@ -1,72 +1,79 @@
 /**
  * VideoTrimScrubber
  *
- * Preview + trim UI for one segment of the output. The player streams through
- * the warp video server so the <video> element can actually seek, letting the
- * user park the playhead anywhere and mark it as the in or out point.
+ * One source file: a seekable preview, a timeline showing every kept range, and
+ * the controls that mark them.
  *
- * Several segments can point at the same file, each with its own player and its
- * own range.
+ * Marking is a two-step: park the playhead and press start, move on and press
+ * end. Repeat anywhere else in the file to keep another piece. A start may not
+ * land inside a range that is already kept, and an end that runs into one folds
+ * the two together - see addRange in trimUtils.
+ *
+ * The player streams through the warp video server, which answers Range
+ * requests; the asset protocol does not, and without them none of this can
+ * seek.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getVideoStreamUrl } from '../../services/VideoService.js';
 import { logger } from '../../services/LoggerService.js';
-import { formatClipTime, MIN_SEGMENT_LENGTH_SEC } from './trimUtils.js';
+import VideoRangeList from './VideoRangeList.jsx';
+import {
+    addRange,
+    effectiveRanges,
+    formatClipTime,
+    isInsideAnyRange,
+    nextRangeStart,
+    rangeContaining,
+    MIN_SEGMENT_LENGTH_SEC
+} from './trimUtils.js';
 
 /** Arrow keys nudge the playhead by this much, Shift+arrow by the coarse step. */
 const FINE_STEP_SEC = 0.1;
 const COARSE_STEP_SEC = 1;
 
-function VideoTrimScrubber({ clip, onChange }) {
+function VideoTrimScrubber({ source, onChange }) {
     const { t } = useTranslation(['directoryMenu']);
     const videoRef = useRef(null);
     const trackRef = useRef(null);
-    // Which handle a pointer drag is currently moving ('start' | 'end' | 'playhead').
-    const draggingRef = useRef(null);
+    const isSeekingRef = useRef(false);
     const [streamUrl, setStreamUrl] = useState(null);
     const [loadError, setLoadError] = useState(null);
     const [currentTime, setCurrentTime] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
+    // True while playback is skipping the gaps between kept ranges.
+    const [isRangePlayback, setIsRangePlayback] = useState(false);
+    // Where the current mark started, once the user has pressed start.
+    const [pendingStart, setPendingStart] = useState(null);
 
-    const duration = clip.duration_sec || 0;
+    const duration = source.duration_sec || 0;
+    const ranges = effectiveRanges(source);
+    const isWholeFile = source.ranges.length === 0;
 
-    // The component is keyed on clip.id, so a different segment arrives as a
+    // The component is keyed on source.id, so a different file arrives as a
     // fresh mount and there is no previous URL to clear here.
     useEffect(() => {
         let cancelled = false;
 
-        getVideoStreamUrl(clip.path)
+        getVideoStreamUrl(source.path)
             .then((url) => {
                 if (!cancelled) setStreamUrl(url);
             })
             .catch((error) => {
                 if (cancelled) return;
                 logger.error('VideoTrimScrubber', 'stream_url_failed',
-                    'Failed to resolve video stream URL', { path: clip.path, error: String(error) });
+                    'Failed to resolve video stream URL', { path: source.path, error: String(error) });
                 setLoadError(String(error));
             });
 
         return () => { cancelled = true; };
-    }, [clip.path]);
+    }, [source.path]);
 
-    // The duration only becomes known once the browser has the metadata, and
-    // an untrimmed segment's out point has to follow it to cover the whole file.
     const handleLoadedMetadata = useCallback(() => {
         const video = videoRef.current;
         if (!video || !Number.isFinite(video.duration)) return;
-        onChange({
-            ...clip,
-            duration_sec: video.duration,
-            end_sec: clip.end_sec > 0 ? Math.min(clip.end_sec, video.duration) : video.duration
-        });
-        // A segment added over an earlier one starts partway into the file, so
-        // park the playhead on its own first frame rather than the file's.
-        if (clip.start_sec > 0) {
-            video.currentTime = clip.start_sec;
-            setCurrentTime(clip.start_sec);
-        }
-    }, [clip, onChange]);
+        onChange({ ...source, duration_sec: video.duration });
+    }, [source, onChange]);
 
     const seekTo = useCallback((seconds) => {
         const video = videoRef.current;
@@ -76,42 +83,65 @@ function VideoTrimScrubber({ clip, onChange }) {
         setCurrentTime(clamped);
     }, [duration]);
 
-    // Playback is confined to the kept range so the preview shows what the
-    // merged output will actually contain.
+    // In range playback the gaps are skipped: whenever the playhead leaves a
+    // kept range it jumps to the next one, and stops after the last.
     const handleTimeUpdate = useCallback(() => {
         const video = videoRef.current;
         if (!video) return;
-        if (video.currentTime > clip.end_sec) {
-            video.pause();
-            video.currentTime = clip.end_sec;
-        }
         setCurrentTime(video.currentTime);
-    }, [clip.end_sec]);
 
-    const togglePlay = useCallback(() => {
+        if (!isRangePlayback || isSeekingRef.current) return;
+        if (rangeContaining(ranges, video.currentTime)) return;
+
+        const next = nextRangeStart(ranges, video.currentTime);
+        if (next == null) {
+            video.pause();
+            setIsRangePlayback(false);
+            return;
+        }
+        // Guard the jump: seeking fires more timeupdates, and acting on those
+        // before the seek lands would chain jumps through every later range.
+        isSeekingRef.current = true;
+        video.currentTime = next;
+    }, [isRangePlayback, ranges]);
+
+    const handleSeeked = useCallback(() => {
+        isSeekingRef.current = false;
+    }, []);
+
+    const play = useCallback((rangesOnly) => {
         const video = videoRef.current;
         if (!video) return;
-        if (video.paused) {
-            // Restarting from outside the range would immediately re-pause.
-            if (video.currentTime < clip.start_sec || video.currentTime >= clip.end_sec) {
-                video.currentTime = clip.start_sec;
-            }
-            video.play().catch((error) => {
-                logger.warn('VideoTrimScrubber', 'play_failed', 'Video playback was rejected',
-                    { path: clip.path, error: String(error) });
-            });
-        } else {
-            video.pause();
+        setIsRangePlayback(rangesOnly);
+        // Starting outside a kept range would immediately skip forward, so land
+        // on the right piece first.
+        if (rangesOnly && !rangeContaining(ranges, video.currentTime)) {
+            const next = nextRangeStart(ranges, video.currentTime) ?? ranges[0]?.start_sec ?? 0;
+            video.currentTime = next;
         }
-    }, [clip.start_sec, clip.end_sec, clip.path]);
+        video.play().catch((error) => {
+            logger.warn('VideoTrimScrubber', 'play_failed', 'Video playback was rejected',
+                { path: source.path, error: String(error) });
+        });
+    }, [ranges, source.path]);
 
-    const setTrimPoint = useCallback((which) => {
-        if (which === 'start') {
-            onChange({ ...clip, start_sec: Math.min(currentTime, clip.end_sec - MIN_SEGMENT_LENGTH_SEC) });
-        } else {
-            onChange({ ...clip, end_sec: Math.max(currentTime, clip.start_sec + MIN_SEGMENT_LENGTH_SEC) });
-        }
-    }, [clip, currentTime, onChange]);
+    const pause = useCallback(() => {
+        videoRef.current?.pause();
+    }, []);
+
+    const markStart = useCallback(() => {
+        setPendingStart(currentTime);
+    }, [currentTime]);
+
+    const markEnd = useCallback(() => {
+        if (pendingStart == null) return;
+        onChange({ ...source, ranges: addRange(source.ranges, pendingStart, currentTime) });
+        setPendingStart(null);
+    }, [pendingStart, currentTime, source, onChange]);
+
+    const removeRange = useCallback((target) => {
+        onChange({ ...source, ranges: source.ranges.filter((range) => range.id !== target.id) });
+    }, [source, onChange]);
 
     /** Convert a pointer position on the track into a time offset. */
     const timeFromPointer = useCallback((event) => {
@@ -122,44 +152,16 @@ function VideoTrimScrubber({ clip, onChange }) {
         return ratio * duration;
     }, [duration]);
 
-    const applyDrag = useCallback((event) => {
-        const target = draggingRef.current;
-        if (!target) return;
-        const time = timeFromPointer(event);
-        // Seek to where the handle actually landed, not where the pointer was,
-        // so the preview frame matches the cut once the clamp kicks in.
-        if (target === 'start') {
-            const start = Math.min(time, clip.end_sec - MIN_SEGMENT_LENGTH_SEC);
-            onChange({ ...clip, start_sec: start });
-            seekTo(start);
-        } else if (target === 'end') {
-            const end = Math.max(time, clip.start_sec + MIN_SEGMENT_LENGTH_SEC);
-            onChange({ ...clip, end_sec: end });
-            seekTo(end);
-        } else {
-            seekTo(time);
-        }
-    }, [clip, onChange, seekTo, timeFromPointer]);
-
-    const startDrag = useCallback((target) => (event) => {
+    const handleTrackPointerDown = useCallback((event) => {
         event.preventDefault();
-        // The handles sit inside the track, so without this the track's own
-        // pointerdown would fire second and turn a handle drag into a seek.
-        event.stopPropagation();
-        draggingRef.current = target;
         event.currentTarget.setPointerCapture?.(event.pointerId);
-        applyDrag(event);
-    }, [applyDrag]);
+        seekTo(timeFromPointer(event));
+    }, [seekTo, timeFromPointer]);
 
-    const handlePointerMove = useCallback((event) => {
-        if (draggingRef.current) applyDrag(event);
-    }, [applyDrag]);
-
-    const endDrag = useCallback((event) => {
-        if (!draggingRef.current) return;
-        draggingRef.current = null;
-        event.currentTarget.releasePointerCapture?.(event.pointerId);
-    }, []);
+    const handleTrackPointerMove = useCallback((event) => {
+        // buttons is a bitmask; 1 means the primary button is still held.
+        if (event.buttons & 1) seekTo(timeFromPointer(event));
+    }, [seekTo, timeFromPointer]);
 
     const handleKeyDown = useCallback((event) => {
         if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
@@ -168,28 +170,12 @@ function VideoTrimScrubber({ clip, onChange }) {
         seekTo(currentTime + (event.key === 'ArrowRight' ? step : -step));
     }, [currentTime, seekTo]);
 
-    // The handles are the only way to set a trim point with a pointer, so they
-    // need an equivalent for keyboard and screen reader users.
-    const handleTrimKeyDown = useCallback((which) => (event) => {
-        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-        event.preventDefault();
-        const delta = (event.shiftKey ? COARSE_STEP_SEC : FINE_STEP_SEC)
-            * (event.key === 'ArrowRight' ? 1 : -1);
-        if (which === 'start') {
-            const start = Math.max(
-                Math.min(clip.start_sec + delta, clip.end_sec - MIN_SEGMENT_LENGTH_SEC), 0);
-            onChange({ ...clip, start_sec: start });
-            seekTo(start);
-        } else {
-            const end = Math.min(
-                Math.max(clip.end_sec + delta, clip.start_sec + MIN_SEGMENT_LENGTH_SEC), duration);
-            onChange({ ...clip, end_sec: end });
-            seekTo(end);
-        }
-    }, [clip, duration, onChange, seekTo]);
-
     const percent = (seconds) => (duration > 0 ? (seconds / duration) * 100 : 0);
-    const fileName = clip.path.replace(/^.+\//, '');
+    const fileName = source.path.replace(/^.+\//, '');
+    // A start inside an existing range could only extend what is already kept.
+    const canMarkStart = duration > 0 && !isInsideAnyRange(source.ranges, currentTime);
+    const canMarkEnd = pendingStart != null
+        && currentTime >= pendingStart + MIN_SEGMENT_LENGTH_SEC;
 
     return (
         <div style={{
@@ -215,14 +201,15 @@ function VideoTrimScrubber({ clip, onChange }) {
                     src={streamUrl || undefined}
                     onLoadedMetadata={handleLoadedMetadata}
                     onTimeUpdate={handleTimeUpdate}
+                    onSeeked={handleSeeked}
                     onPlay={() => setIsPlaying(true)}
                     onPause={() => setIsPlaying(false)}
                     onKeyDown={handleKeyDown}
                     tabIndex={0}
                     style={{
                         width: '100%',
-                        // Relative to the viewport so several clips still fit in
-                        // the modal on a short screen.
+                        // Relative to the viewport so several sources still fit
+                        // in the modal on a short screen.
                         maxHeight: '40vh',
                         backgroundColor: 'var(--color-bg-base)',
                         borderRadius: 'var(--radius-sm)'
@@ -230,13 +217,11 @@ function VideoTrimScrubber({ clip, onChange }) {
                 />
             )}
 
-            {/* Timeline: full clip as the track, the kept range highlighted. */}
+            {/* Timeline: the whole file as the track, every kept range banded. */}
             <div
                 ref={trackRef}
-                onPointerDown={startDrag('playhead')}
-                onPointerMove={handlePointerMove}
-                onPointerUp={endDrag}
-                onPointerCancel={endDrag}
+                onPointerDown={handleTrackPointerDown}
+                onPointerMove={handleTrackPointerMove}
                 style={{
                     position: 'relative',
                     height: 'var(--space-6)',
@@ -247,14 +232,30 @@ function VideoTrimScrubber({ clip, onChange }) {
                     touchAction: 'none'
                 }}
             >
-                <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    bottom: 0,
-                    left: `${percent(clip.start_sec)}%`,
-                    width: `${Math.max(percent(clip.end_sec - clip.start_sec), 0)}%`,
-                    backgroundColor: 'var(--color-primary-selected)'
-                }} />
+                {ranges.map((range) => (
+                    <div
+                        key={range.id}
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            bottom: 0,
+                            left: `${percent(range.start_sec)}%`,
+                            width: `${Math.max(percent(range.end_sec - range.start_sec), 0)}%`,
+                            backgroundColor: 'var(--color-primary-selected)'
+                        }}
+                    />
+                ))}
+
+                {pendingStart != null && (
+                    <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        bottom: 0,
+                        left: `${percent(pendingStart)}%`,
+                        width: 'var(--space-1)',
+                        backgroundColor: 'var(--color-warning)'
+                    }} />
+                )}
 
                 <div style={{
                     position: 'absolute',
@@ -264,35 +265,6 @@ function VideoTrimScrubber({ clip, onChange }) {
                     width: 'var(--space-1)',
                     backgroundColor: 'var(--color-text-primary)'
                 }} />
-
-                {['start', 'end'].map((which) => (
-                    <div
-                        key={which}
-                        role="slider"
-                        aria-label={t(`directoryMenu:videoMerge.${which === 'start' ? 'trimStart' : 'trimEnd'}`)}
-                        aria-valuenow={which === 'start' ? clip.start_sec : clip.end_sec}
-                        aria-valuemin={0}
-                        aria-valuemax={duration}
-                        tabIndex={0}
-                        onKeyDown={handleTrimKeyDown(which)}
-                        onPointerDown={startDrag(which)}
-                        onPointerMove={handlePointerMove}
-                        onPointerUp={endDrag}
-                        onPointerCancel={endDrag}
-                        style={{
-                            position: 'absolute',
-                            top: 0,
-                            bottom: 0,
-                            left: `${percent(which === 'start' ? clip.start_sec : clip.end_sec)}%`,
-                            width: 'var(--space-2)',
-                            marginLeft: 'calc(var(--space-2) / -2)',
-                            backgroundColor: 'var(--color-primary)',
-                            borderRadius: 'var(--radius-sm)',
-                            cursor: 'ew-resize',
-                            touchAction: 'none'
-                        }}
-                    />
-                ))}
             </div>
 
             <div style={{
@@ -303,22 +275,62 @@ function VideoTrimScrubber({ clip, onChange }) {
                 marginTop: 'var(--space-2)',
                 fontSize: 'var(--font-size-sm)'
             }}>
-                <button onClick={togglePlay} disabled={!streamUrl}>
-                    {isPlaying ? `⏸ ${t('directoryMenu:videoMerge.pause')}` : `▶ ${t('directoryMenu:videoMerge.play')}`}
-                </button>
-                <button onClick={() => setTrimPoint('start')} disabled={!streamUrl}>
-                    {t('directoryMenu:videoMerge.setStartHere')}
-                </button>
-                <button onClick={() => setTrimPoint('end')} disabled={!streamUrl}>
-                    {t('directoryMenu:videoMerge.setEndHere')}
-                </button>
-                <span style={{ color: 'var(--color-text-secondary)' }}>
+                {isPlaying ? (
+                    <button onClick={pause}>⏸ {t('directoryMenu:videoMerge.pause')}</button>
+                ) : (
+                    <>
+                        <button onClick={() => play(false)} disabled={!streamUrl}>
+                            ▶ {t('directoryMenu:videoMerge.playAll')}
+                        </button>
+                        <button onClick={() => play(true)} disabled={!streamUrl || ranges.length === 0}>
+                            ▶ {t('directoryMenu:videoMerge.playRanges')}
+                        </button>
+                    </>
+                )}
+                <span style={{ fontFamily: 'monospace', color: 'var(--color-text-secondary)' }}>
                     {formatClipTime(currentTime)} / {formatClipTime(duration)}
                 </span>
-                <span style={{ color: 'var(--color-text-secondary)' }}>
-                    {t('directoryMenu:videoMerge.keeping')}: {formatClipTime(clip.start_sec)} – {formatClipTime(clip.end_sec)}
-                </span>
             </div>
+
+            <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                gap: 'var(--space-2)',
+                marginTop: 'var(--space-2)',
+                fontSize: 'var(--font-size-sm)'
+            }}>
+                <button onClick={markStart} disabled={!canMarkStart}>
+                    {t('directoryMenu:videoMerge.markStart')}
+                </button>
+                <button onClick={markEnd} disabled={!canMarkEnd}>
+                    {t('directoryMenu:videoMerge.markEnd')}
+                </button>
+                {pendingStart != null && (
+                    <>
+                        <span style={{ fontFamily: 'monospace', color: 'var(--color-warning)' }}>
+                            {t('directoryMenu:videoMerge.marking', {
+                                start: formatClipTime(pendingStart)
+                            })}
+                        </span>
+                        <button onClick={() => setPendingStart(null)}>
+                            {t('directoryMenu:videoMerge.cancelMark')}
+                        </button>
+                    </>
+                )}
+                {pendingStart == null && !canMarkStart && duration > 0 && (
+                    <span style={{ color: 'var(--color-text-muted)' }}>
+                        {t('directoryMenu:videoMerge.startInsideRange')}
+                    </span>
+                )}
+            </div>
+
+            <VideoRangeList
+                ranges={ranges}
+                isWholeFile={isWholeFile}
+                onSeek={seekTo}
+                onRemove={removeRange}
+            />
         </div>
     );
 }

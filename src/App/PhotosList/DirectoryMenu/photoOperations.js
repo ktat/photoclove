@@ -172,8 +172,8 @@ export function useVideoMerge({
         setShowVideoMergeModal(true);
     }, [selectedVideoPaths, dialog, t]);
 
-    const submitVideoMerge = useCallback(async (clips) => {
-        const jobUnitId = await mergeVideos(toMergePayload(clips));
+    const submitVideoMerge = useCallback(async (sources) => {
+        const jobUnitId = await mergeVideos(toMergePayload(sources));
 
         setShowVideoMergeModal(false);
         clearPhotoSelection();
@@ -182,7 +182,7 @@ export function useVideoMerge({
 
         logger.info('photoOperations', 'video_merge_submitted', 'Video merge job created', {
             jobUnitId,
-            clipCount: clips.length
+            sourceCount: sources.length
         });
     }, [clearPhotoSelection, addFooterMessage, setShowJobQueue, t]);
 

@@ -110,14 +110,8 @@
   },
   "videoMerge": {
     "title": "Videos zuschneiden & zusammenführen",
-    "hint": "Jede Zeile ist ein beibehaltener Bereich. Fügen Sie einen Bereich hinzu, um mehrere Teile desselben Videos zu behalten, und ziehen Sie eine Zeile am Griff, um die Reihenfolge zu ändern.",
-    "play": "Abspielen",
+    "hint": "Drücken Sie am Anfang eines Ausschnitts auf Start und am Ende auf Ende. Wiederholen Sie das an anderer Stelle, um mehrere Teile desselben Videos zu behalten. Ziehen Sie eine Zeile am Griff, um die Reihenfolge der Dateien zu ändern.",
     "pause": "Pause",
-    "setStartHere": "Start hier setzen",
-    "setEndHere": "Ende hier setzen",
-    "keeping": "Behalten",
-    "trimStart": "Startpunkt",
-    "trimEnd": "Endpunkt",
     "merge": "Exportieren",
     "cancel": "Abbrechen",
     "submitting": "Wird gestartet…",
@@ -125,7 +119,14 @@
     "outputLength": "Länge der Ausgabe: {{length}}",
     "needMoreClips": "Wählen Sie mindestens {{count}} Video aus.",
     "started": "Video-Export gestartet. Den Fortschritt finden Sie in der Job-Warteschlange.",
-    "addSegment": "Bereich hinzufügen",
-    "removeSegment": "Entfernen"
+    "playAll": "Alles abspielen",
+    "playRanges": "Bereiche abspielen",
+    "markStart": "[ Start hier",
+    "markEnd": "Ende hier ]",
+    "marking": "Markierung ab {{start}}",
+    "cancelMark": "Abbrechen",
+    "startInsideRange": "Liegt bereits in einem behaltenen Bereich.",
+    "removeRange": "Bereich entfernen",
+    "wholeFile": "(ganze Datei)"
   }
 }

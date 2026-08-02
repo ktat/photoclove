@@ -118,14 +118,8 @@
   },
   "videoMerge": {
     "title": "Trim & Merge Videos",
-    "hint": "Each row is one kept range. Add a range to keep several parts of the same video, and drag a row by its grip to reorder.",
-    "play": "Play",
+    "hint": "Press start where a piece should begin, then end where it should stop. Repeat elsewhere to keep several pieces of the same video. Drag a row by its grip to reorder the files.",
     "pause": "Pause",
-    "setStartHere": "Set start here",
-    "setEndHere": "Set end here",
-    "keeping": "Keeping",
-    "trimStart": "Trim start",
-    "trimEnd": "Trim end",
     "merge": "Export",
     "cancel": "Cancel",
     "submitting": "Starting…",
@@ -133,7 +127,14 @@
     "outputLength": "Output length: {{length}}",
     "needMoreClips": "Select at least {{count}} video.",
     "started": "Video export started. Check Job Queue for progress.",
-    "addSegment": "Add range",
-    "removeSegment": "Remove"
+    "playAll": "Play all",
+    "playRanges": "Play kept ranges",
+    "markStart": "[ Start here",
+    "markEnd": "End here ]",
+    "marking": "Marking from {{start}}",
+    "cancelMark": "Cancel",
+    "startInsideRange": "Already inside a kept range.",
+    "removeRange": "Remove range",
+    "wholeFile": "(whole file)"
   }
 }
