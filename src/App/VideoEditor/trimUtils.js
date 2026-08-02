@@ -41,9 +41,14 @@ const pad = (value) => String(value).padStart(2, '0');
  */
 export function formatClipTime(seconds) {
     if (!Number.isFinite(seconds) || seconds < 0) return '00:00:00.0';
-    const hours = Math.floor(seconds / SECONDS_PER_HOUR);
-    const minutes = Math.floor((seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
-    const rest = seconds % SECONDS_PER_MINUTE;
+    // Round first, then split. Rounding the seconds component on its own would
+    // turn 59.96 into "60.0" with nothing carrying into the minutes, which the
+    // playhead readout hits every time it passes a minute boundary.
+    const scale = 10 ** TIME_DECIMALS;
+    const rounded = Math.round(seconds * scale) / scale;
+    const hours = Math.floor(rounded / SECONDS_PER_HOUR);
+    const minutes = Math.floor((rounded % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
+    const rest = rounded % SECONDS_PER_MINUTE;
     return `${pad(hours)}:${pad(minutes)}:${rest.toFixed(TIME_DECIMALS).padStart(4, '0')}`;
 }
 

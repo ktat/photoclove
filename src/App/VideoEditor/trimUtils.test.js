@@ -119,6 +119,12 @@ describe('formatClipTime', () => {
         expect(formatClipTime(3661.25)).toBe('01:01:01.3');
     });
 
+    it('carries the rounding into minutes and hours', () => {
+        expect(formatClipTime(59.96)).toBe('00:01:00.0');
+        expect(formatClipTime(3599.96)).toBe('01:00:00.0');
+        expect(formatClipTime(3659.96)).toBe('01:01:00.0');
+    });
+
     it('falls back for values a player has not reported yet', () => {
         expect(formatClipTime(NaN)).toBe('00:00:00.0');
         expect(formatClipTime(-1)).toBe('00:00:00.0');
