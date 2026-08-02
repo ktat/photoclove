@@ -46,6 +46,8 @@ pub struct VideoProbe {
     pub fps: f64,
     pub has_audio: bool,
     pub duration_sec: f64,
+    /// The container's `creation_time` tag, when the camera wrote one.
+    pub creation_time: Option<String>,
 }
 
 /// Directory merged videos are written to before the follow-up import job
@@ -101,6 +103,10 @@ pub fn probe_video(path: &str) -> Result<VideoProbe, String> {
             "stream=codec_type,width,height,r_frame_rate",
             "-show_entries",
             "format=duration",
+            // Separate calls accumulate per section, so this adds the tag
+            // without dropping the stream and format entries above.
+            "-show_entries",
+            "format_tags=creation_time",
             "-of",
             "json",
         ])
@@ -174,7 +180,34 @@ pub fn probe_video(path: &str) -> Result<VideoProbe, String> {
             .as_str()
             .and_then(|d| d.parse::<f64>().ok())
             .unwrap_or(0.0),
+        creation_time: parsed["format"]["tags"]["creation_time"]
+            .as_str()
+            .map(str::to_string),
     })
+}
+
+/// When a video was recorded, as an RFC 3339 timestamp.
+///
+/// Prefers the container's `creation_time` tag, which is what a camera writes,
+/// and falls back to the file's modification time - the same thing the import
+/// pipeline dates videos by, since video containers carry no EXIF.
+pub fn recorded_at(path: &str) -> Result<String, String> {
+    match probe_video(path) {
+        Ok(probe) => {
+            if let Some(created) = probe.creation_time {
+                return Ok(created);
+            }
+            log::debug!(target: "video_edit_service", "no_creation_time; path={}", path);
+        }
+        Err(e) => {
+            log::warn!(target: "video_edit_service", "recorded_at_probe_failed; path={}; error={}", path, e);
+        }
+    }
+
+    let modified = std::fs::metadata(path)
+        .and_then(|meta| meta.modified())
+        .map_err(|e| format!("Cannot read the modification time of {}: {}", path, e))?;
+    Ok(chrono::DateTime::<chrono::Utc>::from(modified).to_rfc3339())
 }
 
 /// ffprobe reports frame rates as a rational string such as `"30000/1001"`.
@@ -573,6 +606,7 @@ mod tests {
             fps: 30.0,
             has_audio,
             duration_sec: 60.0,
+            creation_time: None,
         }
     }
 

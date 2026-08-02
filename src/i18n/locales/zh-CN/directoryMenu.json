@@ -127,6 +127,9 @@
     "cancelMark": "取消",
     "startInsideRange": "已位于已选区间内。",
     "removeRange": "删除区间",
-    "wholeFile": "（整个文件）"
+    "wholeFile": "（整个文件）",
+    "sortBy": "排序：",
+    "sortBySelection": "选择顺序",
+    "sortByRecordedAt": "拍摄日期"
   }
 }

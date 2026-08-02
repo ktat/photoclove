@@ -189,7 +189,14 @@ function VideoTrimScrubber({ source, onChange }) {
                 fontSize: 'var(--font-size-sm)',
                 color: 'var(--color-text-secondary)',
                 overflowWrap: 'anywhere'
-            }}>{fileName}</div>
+            }}>
+                {fileName}
+                {source.recorded_at && (
+                    <span style={{ marginLeft: 'var(--space-2)', color: 'var(--color-text-muted)' }}>
+                        {new Date(source.recorded_at).toLocaleString()}
+                    </span>
+                )}
+            </div>
 
             {loadError ? (
                 <div style={{ color: 'var(--color-danger)', fontSize: 'var(--font-size-sm)' }}>

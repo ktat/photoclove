@@ -1,4 +1,5 @@
 use crate::domain_service::job_queue_service::submission::submit_video_merge_job;
+use crate::domain_service::video_edit_service;
 use crate::domain_service::video_edit_service::MIN_MERGE_SEGMENTS;
 use crate::entity::job_queue::VideoMergeClip;
 use crate::value::date::DateTime;
@@ -113,6 +114,21 @@ pub async fn shutdown_video_server() -> Result<String, String> {
     } else {
         Err("Video server not initialized".to_string())
     }
+}
+
+/// When a video was recorded, as an RFC 3339 timestamp.
+///
+/// The merge editor uses this to offer "order by recording date" alongside the
+/// order the videos were selected in.
+#[tauri::command]
+pub async fn get_video_recorded_at(video_path: String) -> Result<String, String> {
+    let recorded_at = video_edit_service::recorded_at(&video_path)?;
+    log::debug!(
+        target: "video_commands",
+        "video_recorded_at; path={}; recorded_at={}",
+        video_path, recorded_at
+    );
+    Ok(recorded_at)
 }
 
 /// Queue a merge of the given trimmed segments into a single video.

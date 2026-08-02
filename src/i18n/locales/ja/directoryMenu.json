@@ -135,6 +135,9 @@
     "cancelMark": "やめる",
     "startInsideRange": "すでに選択済みの区間内です。",
     "removeRange": "区間を削除",
-    "wholeFile": "（全体）"
+    "wholeFile": "（全体）",
+    "sortBy": "並び順:",
+    "sortBySelection": "選択順",
+    "sortByRecordedAt": "撮影日順"
   }
 }

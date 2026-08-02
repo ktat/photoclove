@@ -10,7 +10,7 @@
  * takes no marking at all, and one source with several marked ranges cuts a
  * single video down to its good parts.
  */
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     DndContext,
@@ -34,9 +34,12 @@ import {
     createSource,
     effectiveRanges,
     formatClipTime,
+    sortSourcesByRecordedAt,
+    sortSourcesBySelection,
     totalKeptSeconds,
     MIN_MERGE_SEGMENTS
 } from './trimUtils.js';
+import { getVideoRecordedAt } from '../../services/VideoService.js';
 import { logger } from '../../services/LoggerService.js';
 
 /** Drag only starts past this many pixels, so a click on the player still works. */
@@ -91,6 +94,31 @@ function VideoMergeEditor({ videoPaths, onClose, onConfirm }) {
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
     );
 
+    // Recording dates are read from the files themselves, so ordering by them
+    // has to wait for the probes. They are folded into the existing rows rather
+    // than kept aside, so a reorder cannot lose them.
+    useEffect(() => {
+        let cancelled = false;
+
+        Promise.all(videoPaths.map((path) => getVideoRecordedAt(path)
+            .then((recordedAt) => [path, recordedAt])
+            .catch((error) => {
+                logger.warn('VideoMergeEditor', 'recorded_at_failed',
+                    'Could not read the recording date', { path, error: String(error) });
+                return [path, null];
+            })))
+            .then((entries) => {
+                if (cancelled) return;
+                const byPath = new Map(entries);
+                setSources((prev) => prev.map((source) => ({
+                    ...source,
+                    recorded_at: byPath.get(source.path) ?? null
+                })));
+            });
+
+        return () => { cancelled = true; };
+    }, [videoPaths]);
+
     const updateSource = useCallback((next) => {
         setSources((prev) => prev.map((source) => (source.id === next.id ? next : source)));
     }, []);
@@ -106,7 +134,16 @@ function VideoMergeEditor({ videoPaths, onClose, onConfirm }) {
         });
     }, []);
 
+    const sortBySelection = useCallback(() => {
+        setSources((prev) => sortSourcesBySelection(prev, videoPaths));
+    }, [videoPaths]);
+
+    const sortByRecordedAt = useCallback(() => {
+        setSources((prev) => sortSourcesByRecordedAt(prev));
+    }, []);
+
     const totalSeconds = useMemo(() => totalKeptSeconds(sources), [sources]);
+    const hasRecordingDates = sources.some((source) => source.recorded_at);
     // Durations arrive asynchronously from each player, and a source with no
     // duration yet cannot contribute a range, so the button waits for them.
     const isReady = sources.length >= MIN_MERGE_SEGMENTS
@@ -152,6 +189,28 @@ function VideoMergeEditor({ videoPaths, onClose, onConfirm }) {
             }}>
                 {t('directoryMenu:videoMerge.hint')}
             </div>
+
+            {/* Ordering only matters once there is more than one file. */}
+            {sources.length > 1 && (
+                <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: 'var(--space-2)',
+                    marginBottom: 'var(--space-3)',
+                    fontSize: 'var(--font-size-sm)'
+                }}>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>
+                        {t('directoryMenu:videoMerge.sortBy')}
+                    </span>
+                    <button onClick={sortBySelection}>
+                        {t('directoryMenu:videoMerge.sortBySelection')}
+                    </button>
+                    <button onClick={sortByRecordedAt} disabled={!hasRecordingDates}>
+                        {t('directoryMenu:videoMerge.sortByRecordedAt')}
+                    </button>
+                </div>
+            )}
 
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext

@@ -127,6 +127,9 @@
     "cancelMark": "Annuler",
     "startInsideRange": "Déjà à l'intérieur d'une plage conservée.",
     "removeRange": "Retirer la plage",
-    "wholeFile": "(fichier entier)"
+    "wholeFile": "(fichier entier)",
+    "sortBy": "Ordre :",
+    "sortBySelection": "Ordre de sélection",
+    "sortByRecordedAt": "Date de prise de vue"
   }
 }

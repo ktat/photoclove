@@ -59,7 +59,51 @@ export function formatClipTime(seconds) {
  * @returns {{id: string, path: string, duration_sec: number, ranges: Array}}
  */
 export function createSource(path) {
-    return { id: crypto.randomUUID(), path, duration_sec: 0, ranges: [] };
+    return { id: crypto.randomUUID(), path, duration_sec: 0, recorded_at: null, ranges: [] };
+}
+
+/**
+ * Order the sources by when they were recorded, oldest first.
+ *
+ * Timestamps come from two places (the container tag and the file's mtime) and
+ * spell their offsets differently, so they are parsed rather than compared as
+ * strings. Sources whose timestamp is missing or unparseable keep their
+ * relative order at the end, where they are easy to spot and drag into place.
+ *
+ * @param {Array<{recorded_at?: string}>} sources
+ * @returns {Array} A new array; the input is left alone
+ */
+export function sortSourcesByRecordedAt(sources) {
+    const parsed = sources.map((source, index) => ({
+        source,
+        index,
+        time: Date.parse(source.recorded_at ?? '')
+    }));
+
+    parsed.sort((a, b) => {
+        const aKnown = !Number.isNaN(a.time);
+        const bKnown = !Number.isNaN(b.time);
+        if (aKnown && bKnown && a.time !== b.time) return a.time - b.time;
+        if (aKnown !== bKnown) return aKnown ? -1 : 1;
+        return a.index - b.index;
+    });
+
+    return parsed.map((entry) => entry.source);
+}
+
+/**
+ * Restore the order the videos were selected in - PhotosList appends to the
+ * selection, so the paths it hands over are already in that order.
+ *
+ * @param {Array<{path: string}>} sources
+ * @param {Array<string>} selectionOrder - Paths as the editor first received them
+ * @returns {Array} A new array; the input is left alone
+ */
+export function sortSourcesBySelection(sources, selectionOrder) {
+    const rank = new Map(selectionOrder.map((path, index) => [path, index]));
+    return [...sources].sort(
+        (a, b) => (rank.get(a.path) ?? 0) - (rank.get(b.path) ?? 0)
+    );
 }
 
 /**

@@ -6,6 +6,8 @@ import {
     isInsideAnyRange,
     nextRangeStart,
     rangeContaining,
+    sortSourcesByRecordedAt,
+    sortSourcesBySelection,
     toMergePayload,
     totalKeptSeconds,
 } from './trimUtils.js';
@@ -85,6 +87,61 @@ describe('range playback helpers', () => {
     it('points at the next range to jump to, and past the last returns null', () => {
         expect(nextRangeStart(ranges, 25)).toBe(40);
         expect(nextRangeStart(ranges, 55)).toBeNull();
+    });
+});
+
+describe('sortSourcesByRecordedAt', () => {
+    const source = (path, recorded_at) => ({ id: path, path, duration_sec: 10, recorded_at, ranges: [] });
+
+    it('orders oldest first', () => {
+        const sources = [
+            source('/b.mp4', '2024-05-02T10:00:00Z'),
+            source('/a.mp4', '2024-05-01T10:00:00Z'),
+            source('/c.mp4', '2024-05-03T10:00:00Z'),
+        ];
+        expect(sortSourcesByRecordedAt(sources).map((s) => s.path))
+            .toEqual(['/a.mp4', '/b.mp4', '/c.mp4']);
+    });
+
+    it('compares across the two timestamp spellings the backend can return', () => {
+        // The container tag ends in Z; the mtime fallback writes +00:00.
+        const sources = [
+            source('/b.mp4', '2024-05-01T12:00:00+00:00'),
+            source('/a.mp4', '2024-05-01T02:00:00.000000Z'),
+        ];
+        expect(sortSourcesByRecordedAt(sources).map((s) => s.path))
+            .toEqual(['/a.mp4', '/b.mp4']);
+    });
+
+    it('parks sources with no usable date at the end, in their existing order', () => {
+        const sources = [
+            source('/x.mp4', null),
+            source('/b.mp4', '2024-05-02T10:00:00Z'),
+            source('/y.mp4', 'not a date'),
+            source('/a.mp4', '2024-05-01T10:00:00Z'),
+        ];
+        expect(sortSourcesByRecordedAt(sources).map((s) => s.path))
+            .toEqual(['/a.mp4', '/b.mp4', '/x.mp4', '/y.mp4']);
+    });
+
+    it('leaves the input array alone', () => {
+        const sources = [
+            source('/b.mp4', '2024-05-02T10:00:00Z'),
+            source('/a.mp4', '2024-05-01T10:00:00Z'),
+        ];
+        sortSourcesByRecordedAt(sources);
+        expect(sources.map((s) => s.path)).toEqual(['/b.mp4', '/a.mp4']);
+    });
+});
+
+describe('sortSourcesBySelection', () => {
+    const source = (path) => ({ id: path, path, duration_sec: 10, recorded_at: null, ranges: [] });
+
+    it('restores the order the videos were selected in', () => {
+        const selectionOrder = ['/a.mp4', '/b.mp4', '/c.mp4'];
+        const reordered = [source('/c.mp4'), source('/a.mp4'), source('/b.mp4')];
+        expect(sortSourcesBySelection(reordered, selectionOrder).map((s) => s.path))
+            .toEqual(selectionOrder);
     });
 });
 

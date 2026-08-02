@@ -127,6 +127,9 @@
     "cancelMark": "Abbrechen",
     "startInsideRange": "Liegt bereits in einem behaltenen Bereich.",
     "removeRange": "Bereich entfernen",
-    "wholeFile": "(ganze Datei)"
+    "wholeFile": "(ganze Datei)",
+    "sortBy": "Reihenfolge:",
+    "sortBySelection": "Auswahlreihenfolge",
+    "sortByRecordedAt": "Aufnahmedatum"
   }
 }

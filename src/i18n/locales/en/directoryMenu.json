@@ -135,6 +135,9 @@
     "cancelMark": "Cancel",
     "startInsideRange": "Already inside a kept range.",
     "removeRange": "Remove range",
-    "wholeFile": "(whole file)"
+    "wholeFile": "(whole file)",
+    "sortBy": "Order:",
+    "sortBySelection": "Selection order",
+    "sortByRecordedAt": "Recording date"
   }
 }

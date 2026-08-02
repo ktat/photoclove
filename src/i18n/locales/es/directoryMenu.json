@@ -127,6 +127,9 @@
     "cancelMark": "Cancelar",
     "startInsideRange": "Ya está dentro de un rango conservado.",
     "removeRange": "Quitar rango",
-    "wholeFile": "(archivo completo)"
+    "wholeFile": "(archivo completo)",
+    "sortBy": "Orden:",
+    "sortBySelection": "Orden de selección",
+    "sortByRecordedAt": "Fecha de grabación"
   }
 }

@@ -30,6 +30,25 @@ export async function getVideoStreamUrl(path) {
 }
 
 /**
+ * When a video was recorded, as an RFC 3339 timestamp.
+ *
+ * Comes from the container's creation_time tag, falling back to the file's
+ * modification time. The two sources spell the offset differently, so compare
+ * these by parsing them rather than as strings.
+ *
+ * @param {string} path - Absolute path to the video file
+ * @returns {Promise<string>} RFC 3339 timestamp
+ */
+export async function getVideoRecordedAt(path) {
+    return invokeWithErrorHandling(
+        'get_video_recorded_at',
+        { videoPath: path },
+        'VideoService',
+        { silent: true }
+    );
+}
+
+/**
  * Queue a merge of the given trimmed clips into a single video.
  *
  * The merged file is imported into the library once the encode finishes, so

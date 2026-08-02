@@ -499,6 +499,7 @@ fn main() {
             shutdown_video_server,
             get_video_server_stats,
             merge_videos,
+            get_video_recorded_at,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
