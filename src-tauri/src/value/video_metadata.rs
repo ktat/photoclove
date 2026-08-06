@@ -174,18 +174,32 @@ impl VideoMetadata {
 /// Load `ExifData` for a file, using `ffprobe` for video containers (which
 /// `rexif` cannot parse) or the existing EXIF parser for photos. Returns the
 /// raw `VideoMetadata` too, for callers that also need duration/codec/GPS
-/// (e.g. the info panel) — `None` for photos. This is the single source of
-/// truth for the is-video branch; previously it was copy-pasted at three
-/// call sites, risking drift back into the ctime-fallback bug this module
-/// fixes.
+/// (e.g. the info panel) — `None` for photos, and `None` for a video whose
+/// probe failed. This is the single source of truth for the is-video branch;
+/// previously it was copy-pasted at three call sites, risking drift back into
+/// the ctime-fallback bug this module fixes.
 pub fn load_exif_for_file(
     is_video: bool,
     file: file::File,
 ) -> (exif::ExifData, Option<VideoMetadata>) {
     if is_video {
-        let vm = crate::utils::ffprobe::probe(&file.path).unwrap_or_else(VideoMetadata::empty);
-        let exif_data = vm.to_exif_data(&file.created_datetime());
-        (exif_data, Some(vm))
+        let fallback_date_time = file.created_datetime();
+        // A failed probe still needs exif-shaped data, so the empty metadata
+        // supplies the created-datetime fallback. It must not be handed back as
+        // the video payload though: `Some(empty())` serializes to a video object
+        // of blank strings and nulls, which the frontend cannot tell apart from
+        // a container that genuinely carries no tags. `None` makes "we know
+        // nothing about this video" explicit.
+        match crate::utils::ffprobe::probe(&file.path) {
+            Some(vm) => {
+                let exif_data = vm.to_exif_data(&fallback_date_time);
+                (exif_data, Some(vm))
+            }
+            None => (
+                VideoMetadata::empty().to_exif_data(&fallback_date_time),
+                None,
+            ),
+        }
     } else {
         (exif::ExifData::new(file), None)
     }
@@ -429,5 +443,31 @@ mod tests {
         assert_eq!(exif.date_time_original, "");
         assert_eq!(exif.make, "");
         assert_eq!(exif.model, "");
+    }
+
+    #[test]
+    fn test_load_exif_for_file_reports_no_video_metadata_when_the_probe_fails() {
+        // ffprobe cannot read this file, so probe() returns None whether or not
+        // ffprobe is installed on the machine running the tests.
+        let dir = tempfile::tempdir().expect("temp dir");
+        let path = dir.path().join("not-a-video.mp4");
+        std::fs::write(&path, b"not a container").expect("write file");
+        let f = file::File {
+            path: path.display().to_string(),
+            name: "not-a-video.mp4".to_string(),
+            dir: dir.path().display().to_string(),
+            created_at: String::new(),
+            is_link: false,
+        };
+        let fallback_date_time = f.created_datetime();
+
+        let (exif, vm) = load_exif_for_file(true, f);
+
+        // No metadata at all, rather than an object of blank fields the
+        // frontend cannot tell apart from a tagless container.
+        assert!(vm.is_none());
+        // The exif-shaped created-datetime fallback is still preserved.
+        assert_eq!(exif.date_time, fallback_date_time);
+        assert_eq!(exif.date_time_original, "");
     }
 }
