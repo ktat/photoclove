@@ -35,6 +35,9 @@ pub fn get_job_type_config(job_type: &JobType) -> JobTypeConfig {
         JobType::FaceDetection => JobTypeConfig::new(true, true),
         JobType::FaceThumbnailRegenerate => JobTypeConfig::new(true, true),
         JobType::InsightsCalculation => JobTypeConfig::new(false, true),
+        // A merge is one indivisible ffmpeg pass, so there is no midpoint to
+        // resume from - a stopped merge can only be run again from the start.
+        JobType::VideoMerge => JobTypeConfig::new(false, true),
     }
 }
 
@@ -55,6 +58,7 @@ mod tests {
             JobType::FaceDetection,
             JobType::FaceThumbnailRegenerate,
             JobType::InsightsCalculation,
+            JobType::VideoMerge,
         ];
 
         for job_type in job_types {

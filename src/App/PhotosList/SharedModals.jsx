@@ -8,6 +8,7 @@
 import AlbumCreationModal from "../../components/AlbumCreationModal.jsx";
 import CollectionSelectorModal from "../../components/CollectionSelectorModal.jsx";
 import ContextualDeleteModal from "../../components/ContextualDeleteModal.jsx";
+import VideoMergeEditor from "../VideoEditor/VideoMergeEditor.jsx";
 
 /**
  * @param {Object} props
@@ -47,6 +48,17 @@ function SharedModals({ modalState, photoSelectionCount }) {
                 selectionMode="multiple"
                 allowCreate={true}
             />
+
+            {/* Video Merge Editor - mounted only while open, and keyed on the
+                selection, so the editor always starts from untrimmed clips. */}
+            {modalState.showVideoMergeModal && (
+                <VideoMergeEditor
+                    key={(modalState.selectedVideoPaths || []).join('|')}
+                    videoPaths={modalState.selectedVideoPaths || []}
+                    onClose={() => modalState.setShowVideoMergeModal(false)}
+                    onConfirm={modalState.submitVideoMerge}
+                />
+            )}
 
             {/* Contextual Delete Modal */}
             <ContextualDeleteModal

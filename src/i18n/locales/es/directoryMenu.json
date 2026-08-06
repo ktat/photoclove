@@ -48,7 +48,8 @@
     "addTags": "Agregar etiquetas",
     "createBurstGroup": "Crear grupo de ráfaga",
     "removeFromBurstGroup": "Quitar del grupo de ráfaga",
-    "addToStartupImages": "Agregar a imágenes de inicio"
+    "addToStartupImages": "Agregar a imágenes de inicio",
+    "mergeVideos": "Recortar y combinar videos"
   },
   "album": {
     "selectedAlbums": "Álbumes seleccionados",
@@ -106,5 +107,29 @@
     "selectPhotosFirst": "Seleccione fotos para compartir",
     "shareTo": "Compartir en",
     "socialHint": "Copie la imagen primero, luego pegue después de abrir"
+  },
+  "videoMerge": {
+    "title": "Recortar y combinar videos",
+    "hint": "Pulse inicio donde deba empezar un fragmento y fin donde deba terminar. Repítalo en otro punto para conservar varias partes del mismo video. Arrastre una fila por su asa para reordenar los archivos.",
+    "pause": "Pausa",
+    "merge": "Exportar",
+    "cancel": "Cancelar",
+    "submitting": "Iniciando…",
+    "loadFailed": "No se pudo cargar este video.",
+    "outputLength": "Duración de salida: {{length}}",
+    "needMoreClips": "Seleccione al menos {{count}} video.",
+    "started": "Se inició la exportación del video. Consulte la cola de trabajos para ver el progreso.",
+    "playAll": "Reproducir todo",
+    "playRanges": "Reproducir rangos",
+    "markStart": "[ Inicio aquí",
+    "markEnd": "Fin aquí ]",
+    "marking": "Marcando desde {{start}}",
+    "cancelMark": "Cancelar",
+    "startInsideRange": "Ya está dentro de un rango conservado.",
+    "removeRange": "Quitar rango",
+    "wholeFile": "(archivo completo)",
+    "sortBy": "Orden:",
+    "sortBySelection": "Orden de selección",
+    "sortByRecordedAt": "Fecha de grabación"
   }
 }

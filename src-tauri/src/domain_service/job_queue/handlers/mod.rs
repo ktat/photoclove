@@ -16,6 +16,7 @@ pub(crate) mod insights;
 pub(crate) mod recalculate_grouping;
 pub(crate) mod s3_sync;
 pub(crate) mod thumbnail;
+pub(crate) mod video_merge;
 
 pub(crate) use ai_tagging::process_ai_tagging_job;
 pub(crate) use create_db::process_create_db_job;
@@ -28,3 +29,4 @@ pub(crate) use recalculate_grouping::process_recalculate_grouping_job;
 pub(crate) use s3_sync::process_s3_sync_job;
 pub(crate) use thumbnail::process_thumbnail_job;
 pub(crate) use utils::cleanup_all_kill_files;
+pub(crate) use video_merge::process_video_merge_job;

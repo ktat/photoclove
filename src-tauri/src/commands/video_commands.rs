@@ -1,6 +1,16 @@
+use crate::domain_service::job_queue_service::submission::submit_video_merge_job;
+use crate::domain_service::video_edit_service;
+use crate::domain_service::video_edit_service::MIN_MERGE_SEGMENTS;
+use crate::entity::job_queue::VideoMergeClip;
+use crate::value::date::DateTime;
+use crate::AppState;
 use std::sync::Arc;
 use tokio::sync::OnceCell;
+use uuid::Uuid;
 use video_server::VideoServer;
+
+/// Length of the UUID fragment that disambiguates merge output file names.
+const OUTPUT_NAME_UUID_LEN: usize = 8;
 
 static VIDEO_SERVER: OnceCell<Arc<VideoServer>> = OnceCell::const_new();
 
@@ -104,6 +114,74 @@ pub async fn shutdown_video_server() -> Result<String, String> {
     } else {
         Err("Video server not initialized".to_string())
     }
+}
+
+/// When a video was recorded, as an RFC 3339 timestamp.
+///
+/// The merge editor uses this to offer "order by recording date" alongside the
+/// order the videos were selected in.
+#[tauri::command]
+pub async fn get_video_recorded_at(video_path: String) -> Result<String, String> {
+    let recorded_at = video_edit_service::recorded_at(&video_path)?;
+    log::debug!(
+        target: "video_commands",
+        "video_recorded_at; path={}; recorded_at={}",
+        video_path, recorded_at
+    );
+    Ok(recorded_at)
+}
+
+/// Queue a merge of the given trimmed segments into a single video.
+///
+/// Each segment carries its own `start_sec`/`end_sec` trim range and they are
+/// concatenated in the order given. Several segments may name the same file, so
+/// this covers trimming one video, stitching the good parts of one video
+/// together, and merging across videos. Returns the job unit ID so the caller
+/// can follow the encode in the job queue; the result is imported into the
+/// library once it finishes.
+#[tauri::command]
+pub async fn merge_videos(
+    clips: Vec<VideoMergeClip>,
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    if clips.len() < MIN_MERGE_SEGMENTS {
+        return Err(format!("Select at least {} segment", MIN_MERGE_SEGMENTS));
+    }
+
+    for clip in &clips {
+        if !std::path::Path::new(&clip.path).exists() {
+            return Err(format!("Video not found: {}", clip.path));
+        }
+    }
+
+    // The timestamp only has second resolution, so two merges submitted in the
+    // same second would target the same staging file and ffmpeg's `-y` would
+    // let the second one overwrite the first before it is imported.
+    let now = DateTime::now();
+    let output_name = format!(
+        "merged_{:04}{:02}{:02}_{:02}{:02}{:02}_{}.mp4",
+        now.year,
+        now.month,
+        now.day,
+        now.hour,
+        now.minute,
+        now.second,
+        &Uuid::new_v4().to_string()[..OUTPUT_NAME_UUID_LEN]
+    );
+
+    log::info!(
+        target: "video_commands",
+        "merge_videos_submit; clips={}; output_name={}",
+        clips.len(),
+        output_name
+    );
+
+    let db = Arc::new(state.meta_db.clone());
+    let job_unit_id = submit_video_merge_job(db, clips, output_name, app_handle)?;
+
+    log::info!(target: "video_commands", "merge_videos_submitted; job_unit_id={}", job_unit_id);
+    Ok(job_unit_id)
 }
 
 /// Get detailed server statistics for debugging

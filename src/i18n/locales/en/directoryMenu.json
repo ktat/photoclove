@@ -50,7 +50,8 @@
     "addTags": "Add Tags",
     "createBurstGroup": "Create Burst Group",
     "removeFromBurstGroup": "Remove from Burst Group",
-    "addToStartupImages": "Add to Startup Images"
+    "addToStartupImages": "Add to Startup Images",
+    "mergeVideos": "Trim & Merge Videos"
   },
   "album": {
     "selectedAlbums": "Selected Albums",
@@ -114,5 +115,29 @@
     "selectPhotosFirst": "Select photos to share",
     "shareTo": "Share to",
     "socialHint": "Copy image first, then paste after opening"
+  },
+  "videoMerge": {
+    "title": "Trim & Merge Videos",
+    "hint": "Press start where a piece should begin, then end where it should stop. Repeat elsewhere to keep several pieces of the same video. Drag a row by its grip to reorder the files.",
+    "pause": "Pause",
+    "merge": "Export",
+    "cancel": "Cancel",
+    "submitting": "Starting…",
+    "loadFailed": "Could not load this video.",
+    "outputLength": "Output length: {{length}}",
+    "needMoreClips": "Select at least {{count}} video.",
+    "started": "Video export started. Check Job Queue for progress.",
+    "playAll": "Play all",
+    "playRanges": "Play kept ranges",
+    "markStart": "[ Start here",
+    "markEnd": "End here ]",
+    "marking": "Marking from {{start}}",
+    "cancelMark": "Cancel",
+    "startInsideRange": "Already inside a kept range.",
+    "removeRange": "Remove range",
+    "wholeFile": "(whole file)",
+    "sortBy": "Order:",
+    "sortBySelection": "Selection order",
+    "sortByRecordedAt": "Recording date"
   }
 }

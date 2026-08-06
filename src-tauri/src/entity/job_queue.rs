@@ -75,6 +75,8 @@ pub enum JobType {
     FaceThumbnailRegenerate,
     #[serde(rename = "insights_calculation")]
     InsightsCalculation,
+    #[serde(rename = "video_merge")]
+    VideoMerge,
 }
 
 impl std::fmt::Display for JobType {
@@ -90,6 +92,7 @@ impl std::fmt::Display for JobType {
             JobType::FaceDetection => write!(f, "face_detection"),
             JobType::FaceThumbnailRegenerate => write!(f, "face_thumbnail_regenerate"),
             JobType::InsightsCalculation => write!(f, "insights_calculation"),
+            JobType::VideoMerge => write!(f, "video_merge"),
         }
     }
 }
@@ -236,6 +239,32 @@ pub struct GooglePhotosUploadJob {
 pub struct RecalculateGroupingJob {
     pub threshold_seconds: u32,
     pub min_group_size: u32,
+}
+
+/// One source clip of a video merge job, together with the range the user
+/// picked in the trim editor. `start_sec`/`end_sec` are offsets from the
+/// clip's own beginning, so an untrimmed clip is `0.0`..`duration`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VideoMergeClip {
+    pub path: String,
+    pub start_sec: f64,
+    pub end_sec: f64,
+}
+
+impl VideoMergeClip {
+    /// Length of the kept range in seconds.
+    pub fn duration_sec(&self) -> f64 {
+        (self.end_sec - self.start_sec).max(0.0)
+    }
+}
+
+/// Job parameters for merging several trimmed videos into a single file.
+/// The clips are concatenated in the order they appear in `clips`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VideoMergeJob {
+    pub clips: Vec<VideoMergeClip>,
+    /// Output file name without a directory, e.g. `merged_20260801_120000.mp4`.
+    pub output_name: String,
 }
 
 /// Job parameters for AI auto-tagging

@@ -1,7 +1,9 @@
 import React, { useState, useCallback } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { useTranslation } from 'react-i18next';
-import { Photo } from '../../../domain/Photo.js';
+import { resolveAbsolutePhotoPath } from '../../../utils/photoUtils.js';
+import { isVideoPath } from '../../../utils/videoFormats.js';
+import { MIN_MERGE_SEGMENTS } from '../../VideoEditor/trimUtils.js';
 import SelectionHeader from "./SelectionHeader.jsx";
 
 /**
@@ -26,20 +28,14 @@ function PhotoSelectionSection({
     const previewActive = previewPath != null && photoSelection.includes(previewPath);
 
     // Resolve relative paths to absolute via Photo entity for image display
-    const resolveDisplayPath = useCallback((path) => {
-        if (!path || path.startsWith('/')) return path;
-        const photo = Photo.fromJSON({
-            originalPath: path,
-            name: path.replace(/^.+\//, ''),
-            inTrashBin: viewModeObj?.isTrashMode() || false,
-            configData: {
-                import_to: appConfig?.import_to,
-                thumbnail_store: appConfig?.thumbnail_store,
-                trash_path: appConfig?.trash_path
-            }
-        });
-        return photo?.displayPath() || path;
-    }, [appConfig, viewModeObj]);
+    const resolveDisplayPath = useCallback(
+        (path) => resolveAbsolutePhotoPath(path, appConfig, viewModeObj?.isTrashMode() || false),
+        [appConfig, viewModeObj]
+    );
+
+    // One video is enough: the editor trims it, or cuts several pieces out of
+    // it and stitches those together.
+    const selectedVideoCount = photoSelection.filter(isVideoPath).length;
 
     const { doOperation, togglePhotoSelection, selectAllPhotoToSelection, clearPhotoSelection } = handlers;
 
@@ -114,6 +110,9 @@ function PhotoSelectionSection({
                                         )}
                                         {viewModeObj?.showRemoveFromBurstGroup() && (
                                             <option value="removeFromBurstGroup">📤 {t('directoryMenu:operations.removeFromBurstGroup')}</option>
+                                        )}
+                                        {selectedVideoCount >= MIN_MERGE_SEGMENTS && (
+                                            <option value="mergeVideos">🎬 {t('directoryMenu:operations.mergeVideos')}</option>
                                         )}
                                         <option value="addToStartupImages">🚀 {t('directoryMenu:operations.addToStartupImages')}</option>
                                     </>

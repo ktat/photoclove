@@ -2,11 +2,15 @@
  * Photo operations for DirectoryMenu
  * Handles import, upload, delete, and restore operations
  */
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { invoke } from "@tauri-apps/api/core";
 import { localForage } from "../../../storage/forage";
 import { logger } from "../../../services/LoggerService.js";
 import { invokeWithErrorHandling } from "../../../services/TauriService.js";
+import { mergeVideos } from "../../../services/VideoService.js";
+import { isVideoPath } from "../../../utils/videoFormats.js";
+import { toMergePayload, MIN_MERGE_SEGMENTS } from "../../VideoEditor/trimUtils.js";
 
 /**
  * Hook for photo import operations
@@ -125,6 +129,70 @@ export function useGooglePhotosUpload({ photoSelection, clearPhotoSelection, add
     }, [photoSelection, clearPhotoSelection, addFooterMessage, setShowJobQueue, dialog]);
 
     return { uploadToGooglePhotos };
+}
+
+/**
+ * Hook for trimming and merging the selected videos into a single file.
+ *
+ * One selected video is enough - the editor can trim it, or cut several pieces
+ * out of it and stitch those back together. Opening the editor first means
+ * everything the user has to decide (order, in/out points) is settled before
+ * the queued encode job is submitted.
+ */
+export function useVideoMerge({
+    photoSelection,
+    clearPhotoSelection,
+    addFooterMessage,
+    resolveAbsolutePath,
+    setShowJobQueue,
+    dialog
+}) {
+    const { t } = useTranslation(['directoryMenu']);
+    const [showVideoMergeModal, setShowVideoMergeModal] = useState(false);
+
+    // Non-videos in the selection are simply not candidates, so they are
+    // dropped rather than treated as an error the user has to undo.
+    const selectedVideoPaths = useMemo(
+        () => (photoSelection || []).filter(isVideoPath).map(resolveAbsolutePath),
+        [photoSelection, resolveAbsolutePath]
+    );
+
+    const showVideoMergeEditor = useCallback(async () => {
+        if (selectedVideoPaths.length < MIN_MERGE_SEGMENTS) {
+            await dialog.message({
+                title: t('directoryMenu:videoMerge.title'),
+                message: t('directoryMenu:videoMerge.needMoreClips', { count: MIN_MERGE_SEGMENTS }),
+                kind: 'warning'
+            });
+            return;
+        }
+        logger.info('photoOperations', 'video_merge_editor_open', 'Opening video merge editor', {
+            videoCount: selectedVideoPaths.length
+        });
+        setShowVideoMergeModal(true);
+    }, [selectedVideoPaths, dialog, t]);
+
+    const submitVideoMerge = useCallback(async (sources) => {
+        const jobUnitId = await mergeVideos(toMergePayload(sources));
+
+        setShowVideoMergeModal(false);
+        clearPhotoSelection();
+        addFooterMessage('video_merge', t('directoryMenu:videoMerge.started'));
+        setShowJobQueue?.(true);
+
+        logger.info('photoOperations', 'video_merge_submitted', 'Video merge job created', {
+            jobUnitId,
+            sourceCount: sources.length
+        });
+    }, [clearPhotoSelection, addFooterMessage, setShowJobQueue, t]);
+
+    return {
+        showVideoMergeModal,
+        setShowVideoMergeModal,
+        selectedVideoPaths,
+        showVideoMergeEditor,
+        submitVideoMerge
+    };
 }
 
 /**

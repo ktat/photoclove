@@ -50,7 +50,8 @@
     "addTags": "タグを追加",
     "createBurstGroup": "連写グループを作成",
     "removeFromBurstGroup": "連写グループから削除",
-    "addToStartupImages": "起動時の画像に追加"
+    "addToStartupImages": "起動時の画像に追加",
+    "mergeVideos": "動画をトリミング・結合"
   },
   "album": {
     "selectedAlbums": "選択したアルバム",
@@ -114,5 +115,29 @@
     "selectPhotosFirst": "シェアする写真を選択してください",
     "shareTo": "シェア先",
     "socialHint": "先に画像をコピーしてから、開いた後に貼り付けてください"
+  },
+  "videoMerge": {
+    "title": "動画をトリミング・結合",
+    "hint": "残したい部分の先頭で「開始」、末尾で「終了」を押してください。別の場所で繰り返せば、同じ動画から複数箇所を残せます。行はつまんでドラッグするとファイルの順番を変えられます。",
+    "pause": "一時停止",
+    "merge": "書き出し",
+    "cancel": "キャンセル",
+    "submitting": "開始中…",
+    "loadFailed": "この動画を読み込めませんでした。",
+    "outputLength": "出力の長さ: {{length}}",
+    "needMoreClips": "動画を{{count}}本以上選択してください。",
+    "started": "動画の書き出しを開始しました。進捗はジョブキューで確認できます。",
+    "playAll": "全体を再生",
+    "playRanges": "選択区間を再生",
+    "markStart": "[ ここから",
+    "markEnd": "ここまで ]",
+    "marking": "{{start}} から選択中",
+    "cancelMark": "やめる",
+    "startInsideRange": "すでに選択済みの区間内です。",
+    "removeRange": "区間を削除",
+    "wholeFile": "（全体）",
+    "sortBy": "並び順:",
+    "sortBySelection": "選択順",
+    "sortByRecordedAt": "撮影日順"
   }
 }

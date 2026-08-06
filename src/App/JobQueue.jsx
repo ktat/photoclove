@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { logger } from "../services/LoggerService.js";
 import './JobQueue.css';
 
@@ -7,6 +8,8 @@ const JobQueue = ({ onClose, ...props }) => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Live encode percentage per job unit, keyed by job_unit_id.
+  const [mergeProgress, setMergeProgress] = useState({});
 
   const formatDateTime = (dateString) => {
     if (!dateString) return "N/A";
@@ -291,6 +294,16 @@ const JobQueue = ({ onClose, ...props }) => {
     loadJobs();
   }, []);
 
+  // A merge is a single ffmpeg pass, so its processed_count only ever goes
+  // 0 -> 1. The backend streams the real position as a percentage instead.
+  useEffect(() => {
+    const unlisten = listen("video_merge_progress", (event) => {
+      const [jobUnitId, , percent] = event.payload;
+      setMergeProgress((prev) => ({ ...prev, [jobUnitId]: percent }));
+    });
+    return () => { unlisten.then((off) => off()); };
+  }, []);
+
   return (
     <div className="job-queue-overlay">
       <div className="job-queue">
@@ -353,9 +366,11 @@ const JobQueue = ({ onClose, ...props }) => {
                         </td>
                         <td>{getJobTypeName(job.job.job_type)}</td>
                         <td>
-                          {job.status === "running" || job.status === "completed"
-                            ? `${job.processed_count}/${job.job.target.length}`
-                            : job.job.target.length}
+                          {job.status === "running" && mergeProgress[job.job_unit_id] != null
+                            ? `${mergeProgress[job.job_unit_id]}%`
+                            : job.status === "running" || job.status === "completed"
+                              ? `${job.processed_count}/${job.job.target.length}`
+                              : job.job.target.length}
                         </td>
                         <td>
                           <span

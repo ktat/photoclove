@@ -48,7 +48,8 @@
     "addTags": "添加标签",
     "createBurstGroup": "创建连拍组",
     "removeFromBurstGroup": "从连拍组中移除",
-    "addToStartupImages": "添加到启动图片"
+    "addToStartupImages": "添加到启动图片",
+    "mergeVideos": "裁剪并合并视频"
   },
   "album": {
     "selectedAlbums": "选中的相册",
@@ -106,5 +107,29 @@
     "selectPhotosFirst": "选择要分享的照片",
     "shareTo": "分享到",
     "socialHint": "先复制图片，然后打开后粘贴"
+  },
+  "videoMerge": {
+    "title": "裁剪并合并视频",
+    "hint": "在要保留部分的开头按“开始”，在结尾按“结束”。在其他位置重复操作即可保留同一视频的多个片段。拖动行首的控制点可调整文件顺序。",
+    "pause": "暂停",
+    "merge": "导出",
+    "cancel": "取消",
+    "submitting": "正在开始…",
+    "loadFailed": "无法加载此视频。",
+    "outputLength": "输出时长：{{length}}",
+    "needMoreClips": "请至少选择 {{count}} 个视频。",
+    "started": "已开始导出视频。可在作业队列中查看进度。",
+    "playAll": "播放全部",
+    "playRanges": "播放选定区间",
+    "markStart": "[ 从这里开始",
+    "markEnd": "到这里结束 ]",
+    "marking": "正从 {{start}} 选择",
+    "cancelMark": "取消",
+    "startInsideRange": "已位于已选区间内。",
+    "removeRange": "删除区间",
+    "wholeFile": "（整个文件）",
+    "sortBy": "排序：",
+    "sortBySelection": "选择顺序",
+    "sortByRecordedAt": "拍摄日期"
   }
 }
