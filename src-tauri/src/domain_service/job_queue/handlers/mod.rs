@@ -28,5 +28,5 @@ pub(crate) use insights::process_insights_job;
 pub(crate) use recalculate_grouping::process_recalculate_grouping_job;
 pub(crate) use s3_sync::process_s3_sync_job;
 pub(crate) use thumbnail::process_thumbnail_job;
-pub(crate) use video_merge::process_video_merge_job;
 pub(crate) use utils::cleanup_all_kill_files;
+pub(crate) use video_merge::process_video_merge_job;

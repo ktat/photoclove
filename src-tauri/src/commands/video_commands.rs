@@ -146,10 +146,7 @@ pub async fn merge_videos(
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
     if clips.len() < MIN_MERGE_SEGMENTS {
-        return Err(format!(
-            "Select at least {} segment",
-            MIN_MERGE_SEGMENTS
-        ));
+        return Err(format!("Select at least {} segment", MIN_MERGE_SEGMENTS));
     }
 
     for clip in &clips {
