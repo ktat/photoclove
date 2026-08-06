@@ -13,9 +13,10 @@ use crate::entity::photo_meta;
 use crate::repository::{MetaInfoDB, RepositoryDB};
 use crate::value::comment;
 use crate::value::date;
-use crate::value::exif;
 use crate::value::file;
 use crate::value::star;
+
+use super::run_blocking;
 
 // Import handlers module from parent
 use super::photo_handlers;
@@ -42,8 +43,14 @@ pub struct PhotoInfoResponse {
     /// Photo metadata from database
     pub meta: Option<serde_json::Value>,
 
-    /// EXIF data from photo file
+    /// EXIF data from photo file (also used, partially filled, for video —
+    /// see VideoMetadata::to_exif_data)
     pub exif: Option<serde_json::Value>,
+
+    /// Video-only metadata (duration/codec/GPS) for the currently-viewed
+    /// file, live from `ffprobe`. `None` for photos and for videos whose
+    /// probe failed.
+    pub video: Option<serde_json::Value>,
 }
 
 /// Get list of available dates that have photos.
@@ -228,47 +235,34 @@ pub async fn get_photos_unified(
     }
 }
 
-/// Get detailed information about a specific photo.
+/// Blocking implementation of `get_photo_info`. Runs on the blocking thread
+/// pool via `run_blocking` — never call this directly from an async
+/// command body without that wrapper.
 ///
 /// Retrieves both metadata from database and EXIF data from the photo file.
-/// Handles photos in trash by checking trash path.
-#[tauri::command]
-pub async fn get_photo_info(
-    path_str: String,
-    _window: tauri::Window,
-    state: tauri::State<'_, AppState>,
-) -> Result<String, ()> {
-    // File I/O + EXIF parse + DB sync: run off the main thread
-    let meta_db = state.meta_db.clone();
-    let trash_path = state.config.trash_path.clone();
-    let import_to = state.config.import_to.clone();
-    tauri::async_runtime::spawn_blocking(move || {
-        photo_info_blocking(&path_str, &meta_db, &trash_path, &import_to)
-    })
-    .await
-    .map_err(|e| {
-        log::error!(target: "photo_info", "photo_info_task_failed; error={}", e);
-    })
-}
-
+/// Handles photos in trash by checking trash path. For video files, reads
+/// metadata via `ffprobe` (rexif cannot parse video containers) and returns
+/// it partially mapped into the `exif` field (see
+/// `VideoMetadata::to_exif_data`) plus the video-only fields (duration,
+/// codec, GPS) in a separate `video` field.
 fn photo_info_blocking(
     path_str: &str,
     meta_db: &crate::repository::MetaDB,
-    trash_path: &str,
-    import_to: &str,
+    config: &crate::entity::config::Config,
 ) -> String {
     log::debug!(target: "photo_info", "get_photo_info; path={}", path_str);
 
     // path_str is relative (e.g., "2024-01-15/uuid/photo.jpg")
     // Check if photo is in trash
-    let trash_path_opt = meta_db.get_trash_path_for_photo(path_str, trash_path, import_to);
+    let trash_path_opt =
+        meta_db.get_trash_path_for_photo(path_str, &config.trash_path, &config.import_to);
     let is_trashed = trash_path_opt.is_some();
 
     // Determine the actual file path to read (absolute)
     let actual_path = if let Some(ref trash_path) = trash_path_opt {
         trash_path.clone()
     } else {
-        file::to_absolute_path(path_str, import_to)
+        file::to_absolute_path(path_str, &config.import_to)
     };
 
     log::debug!(target: "photo_info", "get_photo_info; is_trashed={}; actual_path={}", is_trashed, actual_path);
@@ -276,11 +270,22 @@ fn photo_info_blocking(
     // Try to read the file from the actual path
     match file::File::new_if_exists(actual_path.clone()) {
         Some(f) => {
-            // File exists, read EXIF from file
             let p = photo::Photo::new(file::File::from_relative(path_str.to_string()), None);
-            let exif_data = exif::ExifData::new(f);
+            let is_video = p.is_video();
 
-            // Sync EXIF data to database if there are differences
+            // File exists: read EXIF (photos) or probe metadata (videos).
+            // The video branch never calls ExifData::new (which would
+            // silently fall back to ctime for a video container, same bug
+            // as Tasks 3/4) — it builds the exif-shaped value from the live
+            // ffprobe call instead.
+            let (exif_data, vm_opt) = crate::value::video_metadata::load_exif_for_file(is_video, f);
+            let video_value = vm_opt.and_then(|vm| serde_json::to_value(&vm).ok());
+
+            // Sync EXIF-shaped data to database if there are differences.
+            // For video this self-heals exif_date_time_original/exif_model/
+            // exif_make exactly like it already does for photo EXIF —
+            // duration/codec/GPS are never written here since nothing reads
+            // them back from the DB.
             if let Err(e) = meta_db.update_exif_if_changed(path_str, &exif_data) {
                 log::warn!(target: "photo_info", "exif_sync_failed; path={}; error={}", path_str, e);
             }
@@ -302,9 +307,10 @@ fn photo_info_blocking(
                 file_size,
                 meta: meta_value,
                 exif: exif_value,
+                video: video_value,
             };
 
-            serde_json::to_string(&response).unwrap()
+            serde_json::to_string(&response).unwrap_or_else(|_| "{}".to_string())
         }
         None => {
             // File doesn't exist, try to get metadata from database
@@ -321,11 +327,29 @@ fn photo_info_blocking(
                 file_size: None,
                 meta: meta_json,
                 exif: None,
+                video: None,
             };
 
             serde_json::to_string(&response).unwrap_or_else(|_| "{}".to_string())
         }
     }
+}
+
+/// Get detailed information about a specific photo.
+///
+/// Retrieves both metadata from database and EXIF data from the photo file.
+/// Handles photos in trash by checking trash path.
+#[tauri::command]
+pub async fn get_photo_info(
+    path_str: &str,
+    _window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, ()> {
+    let path_str = path_str.to_string();
+    let meta_db = state.meta_db.clone();
+    let config = state.config.clone();
+    let result = run_blocking(move || Ok(photo_info_blocking(&path_str, &meta_db, &config))).await;
+    Ok(result.unwrap_or_else(|_| "{}".to_string()))
 }
 
 /// Get the next photo in a date's photo list.

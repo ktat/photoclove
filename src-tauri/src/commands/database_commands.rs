@@ -1,3 +1,4 @@
+use super::run_blocking;
 use crate::app_state::AppState;
 use crate::domain_service::photo_service;
 use crate::repository::{MetaInfoDB, RepositoryDB};
@@ -35,7 +36,14 @@ pub async fn move_photos_to_exif_date(
     let dates = state.repo_db.move_photos_to_exif_date(date).await;
     log::debug!(target: "photo", "move_photos_completed; dates={:?}", dates);
     let _ = window.emit("move_files", "end_move");
-    match state.meta_db.record_photos_all_meta_data(dates) {
+    let meta_db = state.meta_db.clone();
+    let result = run_blocking(move || {
+        meta_db
+            .record_photos_all_meta_data(dates)
+            .map_err(|e| e.to_string())
+    })
+    .await;
+    match result {
         Ok((ret, _inserted)) => {
             let _ = window.emit("move_files", "finish");
             Ok(serde_json::to_string(&ret).unwrap_or_else(|_| "{}".to_string()))
@@ -106,7 +114,14 @@ pub async fn create_db_in_date(
     // Date separator ("-" or "/") is auto-detected by Date::try_from_string.
     let date = date::Date::from_string(&date_str.to_string(), None);
     let dates = date::Dates::new(&[date]);
-    match state.meta_db.record_photos_all_meta_data(dates) {
+    let meta_db = state.meta_db.clone();
+    let result = run_blocking(move || {
+        meta_db
+            .record_photos_all_meta_data(dates)
+            .map_err(|e| e.to_string())
+    })
+    .await;
+    match result {
         Ok((ret, inserted)) => {
             // Report the actual outcome so the UI can show an honest message instead
             // of a blanket success: `inserted` = rows newly added, `total` = photos now

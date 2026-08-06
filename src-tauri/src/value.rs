@@ -8,3 +8,4 @@ pub mod date;
 pub mod exif;
 pub mod file;
 pub mod star;
+pub mod video_metadata;

@@ -143,10 +143,11 @@ pub fn record_photos_meta_data(
             continue;
         }
 
-        // Load EXIF from absolute path on disk
+        // Load EXIF (photos) or probe metadata (videos) from absolute path on disk
         let abs_path = file::to_absolute_path(&photo.file.path, &import_to);
         if let Some(abs_file) = file::File::new_if_exists(abs_path) {
-            let meta = crate::value::exif::ExifData::new(abs_file);
+            let is_video = photo.is_video();
+            let (meta, _) = crate::value::video_metadata::load_exif_for_file(is_video, abs_file);
             photo.embed_exif(meta);
         }
 
@@ -599,5 +600,37 @@ mod tests {
 
         assert!(metas.get("2024-05-14/c.jpg").is_none());
         assert!(metas.get("2024-05-13/deleted.jpg").is_none());
+    }
+
+    #[test]
+    fn test_record_photos_meta_data_video_without_ffprobe_falls_back_to_ctime() {
+        // No real video file on disk (ffprobe will fail to find it, or
+        // isn't installed in this test environment either way) — this test
+        // only asserts the row gets written at all with a non-empty date,
+        // covering the fallback path without depending on ffprobe being
+        // installed.
+        let db = setup_db("video_no_ffprobe");
+        let dir = std::env::temp_dir()
+            .join("photoclove_photo_metadata_video_tests")
+            .join("video_no_ffprobe_files")
+            .join("2024-05-13");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("clip.mp4"), b"not a real video").unwrap();
+
+        let f = file::File::from_relative("2024-05-13/clip.mp4".to_string());
+        let photo = photo::Photo::new(f, None);
+
+        let inserted = record_photos_meta_data(&db, vec![photo]).unwrap();
+        assert_eq!(inserted, 1);
+
+        let conn = db.get_connection().unwrap();
+        let date: String = conn
+            .query_row(
+                "SELECT photo_date FROM photo_metadata WHERE path = ?1",
+                params!["2024-05-13/clip.mp4"],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(date, "2024-05-13 00:00:00");
     }
 }
