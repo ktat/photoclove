@@ -1,7 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { once } from "@tauri-apps/api/event";
-import { auth } from '../services/firebase';
-const { openGoogleSignIn, googleSignIn, signOut } = auth;
+import { openGoogleSignIn, googleSignIn } from '../services/GoogleAuthService.js';
 import { localForage as _localForage } from "../storage/forage";
 import { logger } from "../services/LoggerService.js";
 

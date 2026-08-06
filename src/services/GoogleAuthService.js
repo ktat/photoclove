@@ -1,9 +1,8 @@
 import { open } from '@tauri-apps/plugin-shell';
-import { getAuth, GoogleAuthProvider, getRedirectResult as _getRedirectResult, signInWithRedirect as _signInWithRedirect, signInWithCredential } from 'firebase/auth';
 import { invoke } from "@tauri-apps/api/core";
-import { GoogleAuthConfig } from "../../.google-auth-config";
-import { localForage } from "../../storage/forage";
-import { logger } from "../LoggerService.js";
+import { GoogleAuthConfig } from "../.google-auth-config";
+import { localForage } from "../storage/forage";
+import { logger } from "./LoggerService.js";
 import axios from "axios";
 
 const openBrowserToConsent = (port) => {
@@ -66,9 +65,6 @@ export const googleSignIn = async (payload) => {
 
     logger.info('GoogleAuth', 'tokens_received', 'OAuth tokens received successfully');
 
-    const auth = getAuth();
-    const credential = GoogleAuthProvider.credential(null, accessToken);
-
     // Store tokens securely using our TokenStorageService
     try {
       await invoke('store_google_tokens', {
@@ -81,7 +77,7 @@ export const googleSignIn = async (payload) => {
       logger.error('GoogleAuth', 'token_storage_error', 'Failed to store tokens securely', {
         error: tokenError.toString()
       });
-      // Continue with Firebase auth even if secure storage fails
+      // Fall through to the legacy storage below even if secure storage fails
     }
 
     // Also keep the old localForage storage for backward compatibility (for now)
@@ -100,9 +96,7 @@ export const googleSignIn = async (payload) => {
       });
     }
 
-    // Proceed with Firebase authentication
-    await signInWithCredential(auth, credential);
-    logger.info('GoogleAuth', 'firebase_signin_success', 'Firebase authentication successful');
+    logger.info('GoogleAuth', 'signin_success', 'Google Sign In completed');
 
   } catch (error) {
     const errorCode = error.code || 'unknown';
@@ -113,8 +107,3 @@ export const googleSignIn = async (payload) => {
     });
   }
 };
-
-export const signOut = () => {
-  const auth = getAuth();
-  return auth.signOut();
-}

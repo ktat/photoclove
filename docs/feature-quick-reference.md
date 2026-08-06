@@ -213,7 +213,7 @@ This document helps you quickly find the relevant documentation when working on 
 - **Token Lifecycle**: Automatic refresh 5 minutes before expiration, graceful error handling
 - **Testing Tools**: Built-in debug commands, Python keyring scripts, comprehensive test utilities
 - **Integration**: Seamless Google Photos API authentication with transparent token management
-- **Related Files**: `src-tauri/src/domain_service/token_storage_service.rs`, `src/services/firebase/auth.js`, `src-tauri/src/bin/test_keyring.rs`
+- **Related Files**: `src-tauri/src/domain_service/token_storage_service.rs`, `src/services/GoogleAuthService.js`, `src-tauri/src/bin/test_keyring.rs`
 
 ### 🗄️ Database Operations
 **When you need to understand**: SQLite operations, metadata storage, database creation, performance optimizations
@@ -294,7 +294,7 @@ This document helps you quickly find the relevant documentation when working on 
 - **Upload Process**: Integrated with job queue system for background uploads with progress tracking
 - **Error Handling**: Proper API error detection and job failure handling, structured logging
 - **Token Management**: Automatic refresh using external service, secure keyring storage
-- **Related Files**: `src-tauri/src/entity/google_photos.rs`, `src-tauri/src/domain_service/token_storage_service.rs`, `src/services/firebase/auth.js`
+- **Related Files**: `src-tauri/src/entity/google_photos.rs`, `src-tauri/src/domain_service/token_storage_service.rs`, `src/services/GoogleAuthService.js`
 
 ### ☁️ S3 Backup
 **When you need to understand**: Cloud backup to S3-compatible storage, sync status, multi-provider support

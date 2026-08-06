@@ -61,11 +61,6 @@ export default defineConfig({
             return 'react-vendor';
           }
           
-          // Firebase related packages
-          if (id.includes('firebase')) {
-            return 'firebase';
-          }
-          
           // Charts library
           if (id.includes('recharts')) {
             return 'charts';

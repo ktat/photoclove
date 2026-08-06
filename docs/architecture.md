@@ -19,7 +19,6 @@ PhotoClove is a photo management application built with a desktop-native archite
 - **tokio** - Async runtime for concurrent operations
 
 ### External Libraries
-- **Firebase** - Authentication services
 - **rexif** - EXIF data extraction
 - **image_compressor** - Thumbnail generation
 - **reqwest** - HTTP client for API calls
@@ -297,7 +296,7 @@ PhotoClove maintains a single source of truth for "the photos currently visible 
 1. **File Access**: Sandboxed file access through Tauri APIs
 2. **Path Validation**: Input sanitization for file paths
 3. **Database**: Parameterized SQLite queries
-4. **Authentication**: Firebase for cloud features (optional)
+4. **Authentication**: Google OAuth for Google Photos (optional); tokens stored in the OS keyring
 5. **Local Storage**: All data remains on user's machine
 
 ## Extension Points
