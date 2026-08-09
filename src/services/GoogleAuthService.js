@@ -65,51 +65,33 @@ export const googleSignIn = async (payload) => {
 
     logger.info('GoogleAuth', 'tokens_received', 'OAuth tokens received successfully');
 
-    // Store tokens securely using our TokenStorageService
-    let keyringStored = false;
+    // Tokens live only in the OS keyring. Consumers read them through the Rust
+    // side (is_google_authenticated / get_google_access_token), never from JS.
     try {
       await invoke('store_google_tokens', {
         accessToken: accessToken,
         refreshToken: refreshToken,
         expiresIn: expiresIn
       });
-      keyringStored = true;
       logger.info('GoogleAuth', 'tokens_stored', 'Tokens stored securely in keyring');
     } catch (tokenError) {
-      logger.error('GoogleAuth', 'token_storage_error', 'Failed to store tokens securely', {
+      logger.error('GoogleAuth', 'signin_error', 'Sign In failed: could not store tokens in keyring', {
         error: tokenError.toString()
       });
-      // Fall through to the localForage store below even if secure storage fails
-    }
-
-    // The Google Photos upload path (photoOperations.js) still reads tokens from
-    // here, so this write is required even when the keyring store succeeded.
-    let localForageStored = false;
-    try {
-      await localForage.setItem(
-        "GoogleOAuthTokens",
-        {
-          accessToken: accessToken,
-          refreshToken: refreshToken,
-        }
-      );
-      localForageStored = true;
-      logger.debug('GoogleAuth', 'legacy_storage', 'Tokens also stored in legacy localForage');
-    } catch (legacyError) {
-      logger.warn('GoogleAuth', 'legacy_storage_error', 'Failed to store in localForage', {
-        error: legacyError.toString()
-      });
-    }
-
-    if (!keyringStored && !localForageStored) {
-      logger.error('GoogleAuth', 'signin_error', 'Sign In failed: tokens could not be stored anywhere');
       return;
     }
 
-    logger.info('GoogleAuth', 'signin_success', 'Google Sign In completed', {
-      keyringStored,
-      localForageStored
-    });
+    // Older versions mirrored the tokens into localForage in plaintext.
+    // Drop that entry so the refresh token stops lingering in IndexedDB.
+    try {
+      await localForage.removeItem("GoogleOAuthTokens");
+    } catch (cleanupError) {
+      logger.warn('GoogleAuth', 'legacy_cleanup_error', 'Failed to remove legacy localForage tokens', {
+        error: cleanupError.toString()
+      });
+    }
+
+    logger.info('GoogleAuth', 'signin_success', 'Google Sign In completed');
 
   } catch (error) {
     const errorCode = error.code || 'unknown';

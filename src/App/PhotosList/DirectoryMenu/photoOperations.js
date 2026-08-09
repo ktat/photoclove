@@ -5,7 +5,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from "@tauri-apps/api/core";
-import { localForage } from "../../../storage/forage";
 import { logger } from "../../../services/LoggerService.js";
 import { invokeWithErrorHandling } from "../../../services/TauriService.js";
 import { mergeVideos } from "../../../services/VideoService.js";
@@ -82,8 +81,8 @@ export function useGooglePhotosUpload({ photoSelection, clearPhotoSelection, add
 
         if (answer) {
             try {
-                const tokens = await localForage.getItem("GoogleOAuthTokens");
-                if (!tokens) {
+                const authenticated = await invoke("is_google_authenticated");
+                if (!authenticated) {
                     await dialog.message({ title: 'Authentication Required', message: 'Please sign in to Google Photos first', kind: 'warning' });
                     return;
                 }
@@ -96,9 +95,7 @@ export function useGooglePhotosUpload({ photoSelection, clearPhotoSelection, add
                 });
 
                 const jobUnitIds = await invoke("upload_to_google_photos", {
-                    selectedFiles: files,
-                    accessToken: tokens.accessToken,
-                    refreshToken: tokens.refreshToken
+                    selectedFiles: files
                 });
 
                 clearPhotoSelection();
