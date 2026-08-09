@@ -15,6 +15,14 @@ function formatFileSize(bytes) {
     return `${value.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
+function formatDuration(secs) {
+    if (secs == null) return '';
+    const total = Math.round(secs);
+    const minutes = Math.floor(total / 60);
+    const seconds = String(total % 60).padStart(2, '0');
+    return `${minutes}:${seconds}`;
+}
+
 function PhotoInfo(props) {
     const { t } = useTranslation('common');
     const [photoInfo, setPhotoInfo] = useState({});
@@ -24,6 +32,7 @@ function PhotoInfo(props) {
     const currentPhotoPath = props.currentPhoto?.originalPath;
     const currentDisplayPath = props.currentPhoto?.displayPath();
     const currentPhotoName = props.currentPhoto?.name;
+    const isVideo = props.currentPhoto?.isVideo?.() ?? false;
 
     useEffect((e) => {
         if (currentPhotoPath && props.showSideMenu) {
@@ -240,23 +249,41 @@ function PhotoInfo(props) {
                         {photoInfo.file_size != null && (
                             <tr><th>{t('photoInfo.fileSize')}</th><td>{formatFileSize(photoInfo.file_size)}</td></tr>
                         )}
-                        <tr><th>{t('photoInfo.iso')}</th><td>{photoInfo.exif ? photoInfo.exif.iso : ""}</td></tr>
-                        <tr><th>{t('photoInfo.fNumber')}</th><td>{photoInfo.exif ? photoInfo.exif.fnumber : ""}</td></tr>
-                        <tr><th>{t('photoInfo.shutterSpeed')}</th><td>{photoInfo.exif ? photoInfo.exif.exposure_time : ""}</td></tr>
-                        <tr><th>{t('photoInfo.lensModel')}</th><td>{photoInfo.exif ? photoInfo.exif.lens_model : ""}</td></tr>
-                        <tr><th>{t('photoInfo.lensMake')}</th><td>{photoInfo.exif ? photoInfo.exif.lens_make : ""}</td></tr>
+                        {!isVideo && (
+                            <>
+                                <tr><th>{t('photoInfo.iso')}</th><td>{photoInfo.exif ? photoInfo.exif.iso : ""}</td></tr>
+                                <tr><th>{t('photoInfo.fNumber')}</th><td>{photoInfo.exif ? photoInfo.exif.fnumber : ""}</td></tr>
+                                <tr><th>{t('photoInfo.shutterSpeed')}</th><td>{photoInfo.exif ? photoInfo.exif.exposure_time : ""}</td></tr>
+                                <tr><th>{t('photoInfo.lensModel')}</th><td>{photoInfo.exif ? photoInfo.exif.lens_model : ""}</td></tr>
+                                <tr><th>{t('photoInfo.lensMake')}</th><td>{photoInfo.exif ? photoInfo.exif.lens_make : ""}</td></tr>
+                            </>
+                        )}
                         <tr><th>{t('photoInfo.make')}</th><td>{photoInfo.exif ? photoInfo.exif.make : ""}</td></tr>
                         <tr><th>{t('photoInfo.model')}</th><td>{photoInfo.exif ? photoInfo.exif.model : ""}</td></tr>
                         <tr><th>{t('photoInfo.dateTime')}</th><td>{photoInfo.exif ? photoInfo.exif.date_time : ""}</td></tr>
-                        <tr><th>{t('photoInfo.focalLength')}</th><td>{photoInfo.exif ?
-                            photoInfo.exif.focal_length == photoInfo.exif.focal_length_in35mm_film
-                                ? photoInfo.exif.focal_length
-                                : photoInfo.exif.focal_length + "(" + photoInfo.exif.focal_length_in35mm_film + ")" : ""}
-                        </td></tr>
-                        <tr><th>{t('photoInfo.digitalZoomRatio')}</th><td>{photoInfo.exif ? photoInfo.exif.digital_zoom_ratio : ""}</td></tr>
-                        <tr><th>{t('photoInfo.exposureMode')}</th><td>{photoInfo.exif ? photoInfo.exif.exposure_mode : ""}</td></tr>
-                        <tr><th>{t('photoInfo.whiteBalanceMode')}</th><td>{photoInfo.exif ? photoInfo.exif.white_balance_mode : ""}</td></tr>
-                        <tr><th>{t('photoInfo.orientation')}</th><td>{photoInfo.exif ? photoInfo.exif.orientation : ""}</td></tr>
+                        {isVideo && (
+                            <>
+                                <tr><th>{t('photoInfo.resolution')}</th><td>{photoInfo.exif && photoInfo.exif.xresolution ? `${photoInfo.exif.xresolution} x ${photoInfo.exif.yresolution}` : ""}</td></tr>
+                                <tr><th>{t('photoInfo.duration')}</th><td>{photoInfo.video ? formatDuration(photoInfo.video.duration_secs) : ""}</td></tr>
+                                <tr><th>{t('photoInfo.codec')}</th><td>{photoInfo.video ? photoInfo.video.codec : ""}</td></tr>
+                                {photoInfo.video && photoInfo.video.gps_latitude != null && photoInfo.video.gps_longitude != null && (
+                                    <tr><th>{t('photoInfo.gps')}</th><td>{photoInfo.video.gps_latitude}, {photoInfo.video.gps_longitude}</td></tr>
+                                )}
+                            </>
+                        )}
+                        {!isVideo && (
+                            <>
+                                <tr><th>{t('photoInfo.focalLength')}</th><td>{photoInfo.exif ?
+                                    photoInfo.exif.focal_length == photoInfo.exif.focal_length_in35mm_film
+                                        ? photoInfo.exif.focal_length
+                                        : photoInfo.exif.focal_length + "(" + photoInfo.exif.focal_length_in35mm_film + ")" : ""}
+                                </td></tr>
+                                <tr><th>{t('photoInfo.digitalZoomRatio')}</th><td>{photoInfo.exif ? photoInfo.exif.digital_zoom_ratio : ""}</td></tr>
+                                <tr><th>{t('photoInfo.exposureMode')}</th><td>{photoInfo.exif ? photoInfo.exif.exposure_mode : ""}</td></tr>
+                                <tr><th>{t('photoInfo.whiteBalanceMode')}</th><td>{photoInfo.exif ? photoInfo.exif.white_balance_mode : ""}</td></tr>
+                                <tr><th>{t('photoInfo.orientation')}</th><td>{photoInfo.exif ? photoInfo.exif.orientation : ""}</td></tr>
+                            </>
+                        )}
                         <tr><th>{t('photoInfo.googlePhotosUrl')}</th><td>{photoInfo.meta && photoInfo.meta.google_photo_url ? <a href={photoInfo.meta.google_photo_url} target="_blank" rel="noopener noreferrer">{t('photoInfo.link')}</a> : ""}</td></tr>
                     </tbody>
                 </table>

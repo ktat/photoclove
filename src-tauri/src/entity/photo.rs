@@ -110,7 +110,8 @@ impl Photo {
 
     pub fn new_with_exif(file: file::File) -> Photo {
         let mut photo = Photo::new(file.clone(), Option::None);
-        let meta = exif::ExifData::new(file);
+        let is_video = photo.is_video();
+        let (meta, _) = crate::value::video_metadata::load_exif_for_file(is_video, file);
         photo.embed_exif(meta);
         photo.is_exif_not_loaded = false;
         photo
@@ -506,5 +507,21 @@ mod tests {
         assert!(mk("d/x.heic").is_heic_or_avif());
         assert_eq!(mk("d/x.MP4").extension(), "mp4");
         assert_eq!(mk("d/noext").extension(), "");
+    }
+
+    #[test]
+    fn test_new_with_exif_video_falls_back_to_ctime_without_ffprobe() {
+        let dir = std::env::temp_dir().join("photoclove_new_with_exif_video_test");
+        std::fs::create_dir_all(&dir).unwrap();
+        let video_path = dir.join("clip.mp4");
+        std::fs::write(&video_path, b"not a real video").unwrap();
+
+        let f = file::File::new(video_path.to_str().unwrap().to_string());
+        let p = photo::Photo::new_with_exif(f);
+
+        // No real video metadata available (garbage file), so this must not
+        // panic and must produce a non-empty ctime-derived time, exactly
+        // like a photo whose EXIF parse fails.
+        assert!(!p.time().is_empty());
     }
 }
