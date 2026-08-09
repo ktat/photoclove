@@ -167,7 +167,7 @@ info タブを開くと ffprobe が 2 回起動する（`ExifData::new` 内で 1
 - 長さ: 1 時間未満は `M:SS`、以上は `H:MM:SS`
 - フレームレート: 小数第 2 位まで、末尾ゼロは落とす（`29.97 fps` / `30 fps`）
 
-新規 i18n キー `photoInfo.resolution` / `duration` / `frameRate` / `videoCodec` を 7 言語（ja / en / de / es / fr / zh-CN / zh-TW）の `common.json` に追加する。
+新規 i18n キー `photoInfo.resolution` / `duration` / `frameRate` / `videoCodec` を追加する。`photoInfo` セクションを持つのは `ja` と `en` の `common.json` だけで、他の 5 言語（de / es / fr / zh-CN / zh-TW）は `src/i18n/index.js:150` の `fallbackLng: 'en'` で英語にフォールバックしている。既存の慣習に合わせて ja と en の 2 ファイルのみ更新する。
 
 スタイルは既存の `styles['photo-info-table']` をそのまま使い、CSS は追加しない。
 
