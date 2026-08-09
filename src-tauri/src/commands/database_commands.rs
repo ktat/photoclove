@@ -33,7 +33,20 @@ pub async fn move_photos_to_exif_date(
     let date = date::Date::from_string(&date_str.to_string(), None);
     let _ = window.emit("move_files", "start");
     log::debug!(target: "photo", "move_photos_to_exif_date; target_date={:?}", date);
-    let dates = state.repo_db.move_photos_to_exif_date(date).await;
+    // Videos are dated from the database, not re-probed: a container's
+    // creation_time does not say which clock it came from, so trusting it
+    // would move some clips a timezone offset into the wrong day.
+    let stored_capture_times = state
+        .meta_db
+        .get_stored_capture_times(date)
+        .unwrap_or_else(|e| {
+            log::warn!(target: "photo", "stored_capture_times_failed; date={}; error={}", date, e);
+            std::collections::HashMap::new()
+        });
+    let dates = state
+        .repo_db
+        .move_photos_to_exif_date(date, stored_capture_times)
+        .await;
     log::debug!(target: "photo", "move_photos_completed; dates={:?}", dates);
     let _ = window.emit("move_files", "end_move");
     let meta_db = state.meta_db.clone();

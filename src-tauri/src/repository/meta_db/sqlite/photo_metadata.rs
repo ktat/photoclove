@@ -324,6 +324,56 @@ pub fn record_photos_all_meta_data(
     Ok((date_num, total_inserted))
 }
 
+/// The capture times the database already holds for one date directory, keyed
+/// by file name.
+///
+/// Exists for the move-by-EXIF-date job, which must not re-derive a video's
+/// date from its container. A container's `creation_time` does not say which
+/// clock it was read from - a Panasonic DMC-GX8 writes local time labelled
+/// UTC while a DC-G9M2 and a DJI Osmo Action write true UTC, and no tag tells
+/// them apart - so trusting the probe would physically move a GX8-era clip
+/// into the next day's directory.
+///
+/// A row with no EXIF date falls back to its `photo_date`, which is the
+/// directory the file already sits in, so such a file simply stays put rather
+/// than moving on a guess.
+pub fn get_stored_capture_times(
+    sqlite: &SQLite,
+    date: date::Date,
+) -> Result<HashMap<String, String>, String> {
+    let conn = sqlite
+        .get_connection()
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    let prefix = format!("{}/", date);
+    let mut stmt = conn
+        .prepare(
+            "SELECT path, COALESCE(exif_date_time_original, exif_date_time, photo_date)
+               FROM photo_metadata
+              WHERE path LIKE ?1",
+        )
+        .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+    let rows = stmt
+        .query_map(params![format!("{}%", prefix)], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })
+        .map_err(|e| format!("Failed to query capture times: {}", e))?;
+
+    let mut times = HashMap::new();
+    for row in rows {
+        let (path, time) = row.map_err(|e| format!("Failed to read capture time: {}", e))?;
+        // The move job scans one date directory without recursing, so a file
+        // name identifies a row there unambiguously. Rows further down (an
+        // import's UUID subdirectory) are not files that job will see.
+        let name = path.trim_start_matches(&prefix);
+        if !name.contains('/') && !time.is_empty() {
+            times.insert(name.to_string(), time);
+        }
+    }
+    Ok(times)
+}
+
 /// Get photo metadata for a specific date
 pub fn get_photo_meta_data_in_date(
     sqlite: &SQLite,

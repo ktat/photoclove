@@ -204,3 +204,68 @@ fn test_get_next_and_prev_photo_in_date() {
     ));
     assert!(next_of_unknown.is_none());
 }
+
+/// A photo whose EXIF date says `date_time`, at `<TEST_DATE>/<name>`.
+fn photo_dated(name: &str, date_time: &str) -> photo::Photo {
+    let mut p = photo::Photo::new(
+        file::File::new(format!("/library/{}/{}", TEST_DATE, name)),
+        None,
+    );
+    let mut exif = exif::ExifData::empty();
+    exif.date_time = date_time.to_string();
+    p.embed_exif(exif);
+    p
+}
+
+#[test]
+fn a_photo_is_dated_from_its_own_exif() {
+    // Stills carry a real EXIF timestamp, so the file is authoritative and the
+    // database is not consulted even when it holds something else.
+    let stored = HashMap::from([(
+        "P1012715.JPG".to_string(),
+        "2024-05-20 00:00:00".to_string(),
+    )]);
+    let photo = photo_dated("P1012715.JPG", "2024-05-13 05:43:43");
+
+    assert_eq!(target_date_string(&photo, &stored, TEST_DATE), "2024-05-13");
+}
+
+#[test]
+fn a_video_is_dated_from_the_database_not_its_container() {
+    // The probe would say 2016-02-29 for this clip: a Panasonic DMC-GX8 writes
+    // local time labelled UTC, so converting it adds nine hours and crosses
+    // midnight. The database holds the date verified against the photos shot
+    // alongside it, and that is what decides where the file goes.
+    let stored = HashMap::from([(
+        "P1120741.MP4".to_string(),
+        "2016-02-28 16:09:10".to_string(),
+    )]);
+    let video = photo_dated("P1120741.MP4", "2016-02-29 01:09:10");
+
+    assert_eq!(target_date_string(&video, &stored, TEST_DATE), "2016-02-28");
+}
+
+#[test]
+fn a_video_the_database_does_not_know_stays_where_it_is() {
+    // Returning the directory it already sits in means the caller's
+    // `dir.path != new_dir.path` check fails and the file is left alone.
+    // Moving on a value known to be unreliable is worse than not moving.
+    let video = photo_dated("P1120741.MP4", "2016-02-29 01:09:10");
+
+    assert_eq!(
+        target_date_string(&video, &HashMap::new(), TEST_DATE),
+        TEST_DATE
+    );
+}
+
+#[test]
+fn a_stored_video_date_is_truncated_to_the_day() {
+    // The database stores "YYYY-MM-DD HH:MM:SS"; a directory name is the date.
+    let stored = HashMap::from([(
+        "DJI_0001.MP4".to_string(),
+        "2026-06-29 13:30:05".to_string(),
+    )]);
+    let video = photo_dated("DJI_0001.MP4", "2026-06-29 13:30:05");
+
+    assert_eq!(target_date_string(&video, &stored, TEST_DATE), "2026-06-29");
+}

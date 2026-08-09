@@ -195,7 +195,18 @@ pub(crate) trait RepositoryDB {
         extension: &str,
         opt_conf: Option<config::Config>,
     ) -> photo::Photos;
-    async fn move_photos_to_exif_date(&self, date: date::Date) -> date::Dates;
+    /// Move the files of `date` into the directory their capture date names.
+    ///
+    /// `stored_capture_times` maps a file name in that directory to the date
+    /// the database already holds for it. It exists for videos: a container's
+    /// `creation_time` does not say which clock it came from, so re-deriving a
+    /// video's date from the file would move some clips a timezone offset into
+    /// the wrong day. See `MetaInfoDB::get_stored_capture_times`.
+    async fn move_photos_to_exif_date(
+        &self,
+        date: date::Date,
+        stored_capture_times: HashMap<String, String>,
+    ) -> date::Dates;
     fn get_photo_count_per_dates(&self, dates: date::Dates, meta_data: DatesNum) -> DatesNum;
     fn get_photo_count_in_date(&self, date: date::Date) -> i32;
 }
@@ -226,6 +237,8 @@ pub(crate) trait MetaInfoDB {
         &self,
         date: date::Date,
     ) -> Result<photo_meta::PhotoMetas, String>;
+    fn get_stored_capture_times(&self, date: date::Date)
+        -> Result<HashMap<String, String>, String>;
     fn get_photo_meta(&self, photo: photo::Photo) -> photo_meta::PhotoMeta;
     fn get_photo_meta_from_trash(
         &self,

@@ -162,6 +162,39 @@ fn create_photo_from_metadata(
     p
 }
 
+/// The date directory a file belongs in, as `YYYY-MM-DD`.
+///
+/// A photo's EXIF date is authoritative, so it is read from the file. A
+/// video's is not: the container's `creation_time` does not say which clock it
+/// was read from - a Panasonic DMC-GX8 writes local time labelled UTC while a
+/// DC-G9M2 and a DJI Osmo Action write true UTC, and no tag tells them apart.
+/// Trusting the probe would physically move a GX8-era clip into the next day's
+/// directory, so a video uses the date the database holds instead.
+///
+/// A video the database has no date for is returned `current_date` unchanged,
+/// which leaves it where it is. Moving a file on a value known to be
+/// unreliable is worse than not moving it.
+fn target_date_string(
+    photo: &photo::Photo,
+    stored_capture_times: &HashMap<String, String>,
+    current_date: &str,
+) -> String {
+    if !photo.is_video() {
+        return photo.created_date_string();
+    }
+    match stored_capture_times.get(&photo.file.filename()) {
+        Some(stored) => stored.chars().take("YYYY-MM-DD".len()).collect(),
+        None => {
+            log::info!(
+                target: "directory",
+                "move_skip_video; reason=no_stored_capture_time; file={}",
+                photo.file.path
+            );
+            current_date.to_string()
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct Directory {
     path: file::Dir,
@@ -574,7 +607,11 @@ impl RepositoryDB for Directory {
             .await
     }
 
-    async fn move_photos_to_exif_date(&self, date: date::Date) -> date::Dates {
+    async fn move_photos_to_exif_date(
+        &self,
+        date: date::Date,
+        stored_capture_times: HashMap<String, String>,
+    ) -> date::Dates {
         let path = self.path.clone();
         tauri::async_runtime::spawn_blocking(move || {
             let dir = path.child(date.to_string());
@@ -584,13 +621,14 @@ impl RepositoryDB for Directory {
             for file in files.files {
                 // file has absolute path from filesystem scan
                 let photo = photo::Photo::new_with_exif(file.clone());
-                let created_date_str = photo.created_date_string();
+                let created_date_str =
+                    target_date_string(&photo, &stored_capture_times, &date.to_string());
                 let new_dir = path.child(created_date_str.clone());
                 log::debug!(target: "directory", "move_check; file={}; photo_time={}; created_date_str={}; current_dir={}; new_dir={}",
                     file.path, photo.time(), created_date_str, dir.path, new_dir.path);
                 if dir.path != new_dir.path {
                     dates_to_be_changed
-                        .entry(photo.created_date_string())
+                        .entry(created_date_str.clone())
                         .or_insert(true);
                     let filename = photo.file.filename();
                     let new_pathbuf = new_dir.as_pathbuf();

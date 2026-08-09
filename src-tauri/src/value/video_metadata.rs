@@ -65,7 +65,10 @@ impl VideoMetadata {
         // on a file some tool rewrote it holds a muxer name ("Lavf60.16.100"),
         // which a real model box should outrank.
         let model = tags
-            .and_then(|t| t.get("model").or_else(|| t.get("com.apple.quicktime.model")))
+            .and_then(|t| {
+                t.get("model")
+                    .or_else(|| t.get("com.apple.quicktime.model"))
+            })
             .and_then(|v| v.as_str())
             .map(str::to_string)
             .or_else(|| {
@@ -206,7 +209,15 @@ pub fn exif_for_db_sync(is_video: bool, data: &exif::ExifData) -> exif::ExifData
 /// touched, carries the tool's signature there instead. Showing "Lavf62.3.100"
 /// as the camera model is worse than showing nothing.
 fn is_muxer_signature(encoder: &str) -> bool {
-    const MUXERS: &[&str] = &["lavf", "libav", "handbrake", "gpac", "mp4v2", "x264", "x265"];
+    const MUXERS: &[&str] = &[
+        "lavf",
+        "libav",
+        "handbrake",
+        "gpac",
+        "mp4v2",
+        "x264",
+        "x265",
+    ];
     let lower = encoder.trim().to_lowercase();
     MUXERS.iter().any(|m| lower.starts_with(m))
 }
