@@ -178,6 +178,27 @@ impl VideoMetadata {
     }
 }
 
+/// The exif-shaped data that is safe to write back to the database.
+///
+/// For a photo this is the input unchanged. For a video it drops the two date
+/// fields, because a container's `creation_time` does not say which clock it
+/// was read from: a Panasonic DMC-GX8 writes local time labelled UTC, while a
+/// DJI Osmo Action and a Panasonic DC-G9M2 write true UTC, and no tag
+/// distinguishes them. Converting is therefore a guess, and a guess must not
+/// overwrite what the database already holds - opening the info tab would
+/// silently move every GX8-era clip nine hours forward, onto the wrong day.
+///
+/// The date the probe found is still shown in the info tab; this only governs
+/// what is persisted.
+pub fn exif_for_db_sync(is_video: bool, data: &exif::ExifData) -> exif::ExifData {
+    let mut synced = data.clone();
+    if is_video {
+        synced.date_time.clear();
+        synced.date_time_original.clear();
+    }
+    synced
+}
+
 /// Muxing tools that stamp their own name into the container's `encoder` tag.
 ///
 /// The tag is the only place a DJI-style action camera records its model, so it
@@ -431,6 +452,45 @@ mod tests {
             let vm = VideoMetadata::from_ffprobe_json(&json).unwrap();
             assert_eq!(vm.model, camera);
         }
+    }
+
+    #[test]
+    fn test_exif_for_db_sync_drops_the_dates_for_a_video() {
+        // ffprobe reports `creation_time` verbatim, and cameras disagree about
+        // what it means: a Panasonic DMC-GX8 writes local time labelled UTC
+        // while a DJI Osmo Action and a Panasonic DC-G9M2 write true UTC, with
+        // no tag telling them apart. Persisting a converted guess would move a
+        // 2016 GX8 clip nine hours forward - onto the wrong day - every time
+        // its info tab is opened.
+        let vm = VideoMetadata {
+            creation_time: "2016-02-29 01:09:10".to_string(),
+            model: "DJI OsmoAction6".to_string(),
+            width: "1920".to_string(),
+            height: "1080".to_string(),
+            ..VideoMetadata::empty()
+        };
+        let synced = exif_for_db_sync(true, &vm.to_exif_data("2022-12-21 02:09:57"));
+
+        assert_eq!(synced.date_time, "");
+        assert_eq!(synced.date_time_original, "");
+        // Everything the container states unambiguously still syncs.
+        assert_eq!(synced.model, "DJI OsmoAction6");
+        assert_eq!(synced.xresolution, "1920");
+        assert_eq!(synced.yresolution, "1080");
+    }
+
+    #[test]
+    fn test_exif_for_db_sync_leaves_a_photo_untouched() {
+        let mut data = exif::ExifData::empty();
+        data.date_time = "2024-05-13 05:43:43".to_string();
+        data.date_time_original = "2024-05-13 05:43:43".to_string();
+        data.model = "DC-G9M2".to_string();
+
+        let synced = exif_for_db_sync(false, &data);
+
+        assert_eq!(synced.date_time, "2024-05-13 05:43:43");
+        assert_eq!(synced.date_time_original, "2024-05-13 05:43:43");
+        assert_eq!(synced.model, "DC-G9M2");
     }
 
     #[test]
