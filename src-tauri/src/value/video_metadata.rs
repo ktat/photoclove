@@ -65,14 +65,16 @@ impl VideoMetadata {
         // on a file some tool rewrote it holds a muxer name ("Lavf60.16.100"),
         // which a real model box should outrank.
         let model = tags
-            .and_then(|t| {
-                t.get("model")
-                    .or_else(|| t.get("com.apple.quicktime.model"))
-                    .or_else(|| t.get("encoder"))
-            })
+            .and_then(|t| t.get("model").or_else(|| t.get("com.apple.quicktime.model")))
             .and_then(|v| v.as_str())
-            .unwrap_or_default()
-            .to_string();
+            .map(str::to_string)
+            .or_else(|| {
+                tags.and_then(|t| t.get("encoder"))
+                    .and_then(|v| v.as_str())
+                    .filter(|e| !is_muxer_signature(e))
+                    .map(str::to_string)
+            })
+            .unwrap_or_default();
 
         let (gps_latitude, gps_longitude) = tags
             .and_then(|t| {
@@ -174,6 +176,18 @@ impl VideoMetadata {
 
         data
     }
+}
+
+/// Muxing tools that stamp their own name into the container's `encoder` tag.
+///
+/// The tag is the only place a DJI-style action camera records its model, so it
+/// is worth reading - but a file this app merged itself, or that any transcoder
+/// touched, carries the tool's signature there instead. Showing "Lavf62.3.100"
+/// as the camera model is worse than showing nothing.
+fn is_muxer_signature(encoder: &str) -> bool {
+    const MUXERS: &[&str] = &["lavf", "libav", "handbrake", "gpac", "mp4v2", "x264", "x265"];
+    let lower = encoder.trim().to_lowercase();
+    MUXERS.iter().any(|m| lower.starts_with(m))
 }
 
 /// Load `ExifData` for a file, using `ffprobe` for video containers (which
@@ -384,6 +398,39 @@ mod tests {
         }}}"#;
         let vm = VideoMetadata::from_ffprobe_json(json).unwrap();
         assert_eq!(vm.model, "EOS R5");
+    }
+
+    #[test]
+    fn test_from_ffprobe_json_ignores_muxer_names_in_encoder() {
+        // Files this app merged itself carry ffmpeg's muxer signature. Showing
+        // "Lavf62.3.100" as the camera model is worse than showing nothing.
+        for muxer in [
+            "Lavf62.3.100",
+            "lavf58.76.100",
+            "libavformat 58.76.100",
+            "HandBrake 1.7.3 2024022300",
+            "GPAC/vlc 1.0.0",
+            "Mp4v2 2.0.0",
+        ] {
+            let json = format!(
+                r#"{{"streams": [], "format": {{"tags": {{"encoder": "{}"}}}}}}"#,
+                muxer
+            );
+            let vm = VideoMetadata::from_ffprobe_json(&json).unwrap();
+            assert_eq!(vm.model, "", "muxer={}", muxer);
+        }
+    }
+
+    #[test]
+    fn test_from_ffprobe_json_keeps_camera_names_that_are_not_muxers() {
+        for camera in ["DJI OsmoAction6", "GoPro HERO12 Black", "Insta360 X4"] {
+            let json = format!(
+                r#"{{"streams": [], "format": {{"tags": {{"encoder": "{}"}}}}}}"#,
+                camera
+            );
+            let vm = VideoMetadata::from_ffprobe_json(&json).unwrap();
+            assert_eq!(vm.model, camera);
+        }
     }
 
     #[test]
