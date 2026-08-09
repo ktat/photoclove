@@ -66,21 +66,25 @@ export const googleSignIn = async (payload) => {
     logger.info('GoogleAuth', 'tokens_received', 'OAuth tokens received successfully');
 
     // Store tokens securely using our TokenStorageService
+    let keyringStored = false;
     try {
       await invoke('store_google_tokens', {
         accessToken: accessToken,
         refreshToken: refreshToken,
         expiresIn: expiresIn
       });
+      keyringStored = true;
       logger.info('GoogleAuth', 'tokens_stored', 'Tokens stored securely in keyring');
     } catch (tokenError) {
       logger.error('GoogleAuth', 'token_storage_error', 'Failed to store tokens securely', {
         error: tokenError.toString()
       });
-      // Fall through to the legacy storage below even if secure storage fails
+      // Fall through to the localForage store below even if secure storage fails
     }
 
-    // Also keep the old localForage storage for backward compatibility (for now)
+    // The Google Photos upload path (photoOperations.js) still reads tokens from
+    // here, so this write is required even when the keyring store succeeded.
+    let localForageStored = false;
     try {
       await localForage.setItem(
         "GoogleOAuthTokens",
@@ -89,6 +93,7 @@ export const googleSignIn = async (payload) => {
           refreshToken: refreshToken,
         }
       );
+      localForageStored = true;
       logger.debug('GoogleAuth', 'legacy_storage', 'Tokens also stored in legacy localForage');
     } catch (legacyError) {
       logger.warn('GoogleAuth', 'legacy_storage_error', 'Failed to store in localForage', {
@@ -96,7 +101,15 @@ export const googleSignIn = async (payload) => {
       });
     }
 
-    logger.info('GoogleAuth', 'signin_success', 'Google Sign In completed');
+    if (!keyringStored && !localForageStored) {
+      logger.error('GoogleAuth', 'signin_error', 'Sign In failed: tokens could not be stored anywhere');
+      return;
+    }
+
+    logger.info('GoogleAuth', 'signin_success', 'Google Sign In completed', {
+      keyringStored,
+      localForageStored
+    });
 
   } catch (error) {
     const errorCode = error.code || 'unknown';
