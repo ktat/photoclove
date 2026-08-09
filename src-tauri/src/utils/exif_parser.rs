@@ -50,11 +50,12 @@ pub struct ExifParseResult {
 /// Parse EXIF from any supported file (JPEG, RAW, etc.)
 /// Tries rexif first (fast, JPEG-optimized), falls back to kexif (TIFF/RAW support)
 pub fn parse_exif(path: &str) -> Result<ExifParseResult, String> {
-    // Videos have no JPEG/TIFF EXIF. Skip them early: rexif::parse_file would read
-    // the entire file into memory, which hangs the app on multi-GB video files.
+    // Videos have no JPEG/TIFF EXIF, and rexif::parse_file would read the
+    // entire file into memory looking for one - which hangs the app on
+    // multi-GB video files. ffprobe reads only the container headers.
     if raw_file::is_video_file(path) {
         return Ok(ExifParseResult {
-            entries: Vec::new(),
+            entries: video_entries(path),
         });
     }
 
@@ -88,6 +89,75 @@ pub fn parse_exif(path: &str) -> Result<ExifParseResult, String> {
             parse_with_kexif(path)
         }
     }
+}
+
+/// The EXIF-equivalent fields a video container carries.
+///
+/// Returns an empty list when ffprobe is missing or fails, which leaves
+/// `ExifData::new` on its file-creation-time fallback - the behaviour videos
+/// had before this path existed.
+fn video_entries(path: &str) -> Vec<ExifEntry> {
+    match crate::utils::video_probe::probe_video(path) {
+        Ok(probe) => entries_from_probe(&probe),
+        Err(e) => {
+            log::warn!(target: "exif_parser", "video_probe_failed; path={}; error={}", path, e);
+            Vec::new()
+        }
+    }
+}
+
+/// Maps a probe onto EXIF tags.
+///
+/// Split from [`video_entries`] so the mapping is testable without ffprobe.
+fn entries_from_probe(probe: &crate::utils::video_probe::VideoProbe) -> Vec<ExifEntry> {
+    let mut entries = Vec::new();
+
+    let entry = |tag: ExifTagKind, value: String| ExifEntry {
+        tag,
+        value: value.clone(),
+        value_readable: value,
+        ext_data: Vec::new(),
+    };
+
+    // The tag is UTC; the library dates photos in local time.
+    let recorded = probe
+        .creation_time
+        .as_deref()
+        .and_then(local_datetime_from_utc);
+    if let Some(recorded) = recorded {
+        // Both fields, because the photo list sorts by
+        // COALESCE(exif_date_time_original, exif_date_time, photo_date) and
+        // only writing one of them would leave the other NULL in the DB.
+        entries.push(entry(ExifTagKind::DateTime, recorded.clone()));
+        entries.push(entry(ExifTagKind::DateTimeOriginal, recorded));
+    }
+
+    // An action camera writes its model name into the container's `encoder`
+    // tag; there is no separate make/model box in MP4.
+    if let Some(encoder) = probe.encoder.as_deref() {
+        if !encoder.trim().is_empty() {
+            entries.push(entry(ExifTagKind::Model, encoder.trim().to_string()));
+        }
+    }
+
+    entries
+}
+
+/// Turns a container `creation_time` tag into the local `YYYY-MM-DD HH:MM:SS`
+/// form the rest of the app dates photos with.
+///
+/// Returns `None` for anything that is not RFC 3339 - ffprobe passes the tag
+/// through verbatim, so a container written by something other than a camera
+/// can carry any string at all.
+fn local_datetime_from_utc(raw: &str) -> Option<String> {
+    chrono::DateTime::parse_from_rfc3339(raw.trim())
+        .ok()
+        .map(|parsed| {
+            parsed
+                .with_timezone(&chrono::Local)
+                .format("%Y-%m-%d %H:%M:%S")
+                .to_string()
+        })
 }
 
 /// Parse EXIF using kamadak-exif (supports TIFF-based RAW files)
@@ -257,6 +327,7 @@ fn map_kexif_tag(tag: kexif::Tag) -> ExifTagKind {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::video_probe::VideoProbe;
 
     #[test]
     fn test_parse_exif_skips_video_without_reading_file() {
@@ -266,5 +337,108 @@ mod tests {
         let result = parse_exif("/nonexistent/path/DJI_0001.mp4");
         assert!(result.is_ok());
         assert!(result.unwrap().entries.is_empty());
+    }
+
+    fn probe(creation_time: Option<&str>, encoder: Option<&str>) -> VideoProbe {
+        VideoProbe {
+            width: 1920,
+            height: 1080,
+            fps: 29.97,
+            has_audio: true,
+            duration_sec: 11.968,
+            creation_time: creation_time.map(str::to_string),
+            video_codec: Some("hevc".to_string()),
+            encoder: encoder.map(str::to_string),
+        }
+    }
+
+    fn value_of(entries: &[ExifEntry], tag: ExifTagKind) -> Option<String> {
+        entries
+            .iter()
+            .find(|e| e.tag == tag)
+            .map(|e| e.value_readable.clone())
+    }
+
+    /// The local time a UTC timestamp lands on depends on the machine's zone,
+    /// so the tests assert against the same conversion rather than a literal.
+    fn expected_local(utc: &str) -> String {
+        chrono::DateTime::parse_from_rfc3339(utc)
+            .expect("rfc 3339")
+            .with_timezone(&chrono::Local)
+            .format("%Y-%m-%d %H:%M:%S")
+            .to_string()
+    }
+
+    #[test]
+    fn a_camera_clip_yields_both_date_fields_and_the_model() {
+        let entries = entries_from_probe(&probe(
+            Some("2026-06-29T04:30:05.000000Z"),
+            Some("DJI OsmoAction6"),
+        ));
+
+        let want = expected_local("2026-06-29T04:30:05Z");
+        assert_eq!(
+            value_of(&entries, ExifTagKind::DateTime).as_ref(),
+            Some(&want)
+        );
+        // DateTimeOriginal matters as much as DateTime: the photo list sorts by
+        // COALESCE(exif_date_time_original, exif_date_time, photo_date), so
+        // leaving it NULL would keep the list order wrong.
+        assert_eq!(
+            value_of(&entries, ExifTagKind::DateTimeOriginal).as_ref(),
+            Some(&want)
+        );
+        assert_eq!(
+            value_of(&entries, ExifTagKind::Model).as_deref(),
+            Some("DJI OsmoAction6")
+        );
+    }
+
+    #[test]
+    fn converts_utc_to_local_across_a_date_boundary() {
+        // 20:00 UTC is the next day in JST. Formatting the UTC value verbatim
+        // would file the clip under the wrong date.
+        let entries = entries_from_probe(&probe(Some("2026-06-29T20:00:00.000000Z"), None));
+        assert_eq!(
+            value_of(&entries, ExifTagKind::DateTime),
+            Some(expected_local("2026-06-29T20:00:00Z"))
+        );
+    }
+
+    #[test]
+    fn omits_the_date_when_the_container_has_no_usable_creation_time() {
+        // No entry means ExifData::new falls back to the file creation time,
+        // which is the behaviour videos had before ffprobe was wired in.
+        for raw in [None, Some("not a date"), Some("2026-06-29 13:30:05")] {
+            let entries = entries_from_probe(&probe(raw, Some("DJI OsmoAction6")));
+            assert_eq!(
+                value_of(&entries, ExifTagKind::DateTime),
+                None,
+                "raw={:?}",
+                raw
+            );
+            assert_eq!(
+                value_of(&entries, ExifTagKind::DateTimeOriginal),
+                None,
+                "raw={:?}",
+                raw
+            );
+            // The model is independent of the timestamp and still comes through.
+            assert_eq!(
+                value_of(&entries, ExifTagKind::Model).as_deref(),
+                Some("DJI OsmoAction6")
+            );
+        }
+    }
+
+    #[test]
+    fn omits_the_model_when_the_container_has_no_encoder_tag() {
+        let entries = entries_from_probe(&probe(Some("2026-06-29T04:30:05Z"), None));
+        assert_eq!(value_of(&entries, ExifTagKind::Model), None);
+    }
+
+    #[test]
+    fn a_container_with_nothing_useful_yields_nothing() {
+        assert!(entries_from_probe(&probe(None, None)).is_empty());
     }
 }

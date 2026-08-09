@@ -29,7 +29,6 @@ pub struct VideoProbe {
     pub video_codec: Option<String>,
     /// The container's `encoder` tag, which is where an action camera writes
     /// its model name, e.g. `"DJI OsmoAction6"`.
-    #[allow(dead_code)] // Read by the info-tab work that follows this task.
     pub encoder: Option<String>,
 }
 
