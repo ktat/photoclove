@@ -60,10 +60,15 @@ impl VideoMetadata {
             .unwrap_or_default()
             .to_string();
 
+        // `encoder` is the last resort: DJI action cameras write no make/model
+        // box and put the model name there instead. It is checked last because
+        // on a file some tool rewrote it holds a muxer name ("Lavf60.16.100"),
+        // which a real model box should outrank.
         let model = tags
             .and_then(|t| {
                 t.get("model")
                     .or_else(|| t.get("com.apple.quicktime.model"))
+                    .or_else(|| t.get("encoder"))
             })
             .and_then(|v| v.as_str())
             .unwrap_or_default()
@@ -353,6 +358,31 @@ mod tests {
         let json = r#"{"streams": [], "format": {"tags": {"make": "Canon", "model": "EOS R5"}}}"#;
         let vm = VideoMetadata::from_ffprobe_json(json).unwrap();
         assert_eq!(vm.make, "Canon");
+        assert_eq!(vm.model, "EOS R5");
+    }
+
+    #[test]
+    fn test_from_ffprobe_json_falls_back_to_encoder_tag_for_model() {
+        // DJI action cameras write no make/model box at all; the model name
+        // only appears in the container's `encoder` tag. Without this
+        // fallback the info tab shows an empty 機種 for every DJI clip.
+        let json = r#"{"streams": [], "format": {"tags": {
+            "creation_time": "2026-06-29T04:30:05.000000Z",
+            "encoder": "DJI OsmoAction6"
+        }}}"#;
+        let vm = VideoMetadata::from_ffprobe_json(json).unwrap();
+        assert_eq!(vm.model, "DJI OsmoAction6");
+    }
+
+    #[test]
+    fn test_from_ffprobe_json_prefers_model_tag_over_encoder() {
+        // `encoder` also carries muxer names ("Lavf60.16.100") on files a
+        // tool rewrote, so a real model box must win when both are present.
+        let json = r#"{"streams": [], "format": {"tags": {
+            "model": "EOS R5",
+            "encoder": "Lavf60.16.100"
+        }}}"#;
+        let vm = VideoMetadata::from_ffprobe_json(json).unwrap();
         assert_eq!(vm.model, "EOS R5");
     }
 
