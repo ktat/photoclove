@@ -209,8 +209,6 @@ mod tests {
             has_audio,
             duration_sec: 60.0,
             creation_time: None,
-            video_codec: None,
-            encoder: None,
         }
     }
 
