@@ -18,6 +18,37 @@ fn date_prefix_regex() -> &'static Regex {
         .get_or_init(|| Regex::new(r"^([0-9]{4})[/\-:]([0-9]{1,2})[/\-:]([0-9]{1,2}).+$").unwrap())
 }
 
+/// Where the thumbnail for `relative_path` lives inside `thumbnail_store`.
+///
+/// `relative_path` is a library-relative path such as
+/// `"2024-01-15/uuid/photo.jpg"`. Shared by [`Photo::get_thumbnail_path`] and
+/// by the move-by-date job, which has to carry a thumbnail along with the file
+/// it renames - two copies of this naming rule would drift and orphan
+/// thumbnails.
+pub fn thumbnail_path_in_store(thumbnail_store: &str, relative_path: &str) -> String {
+    let thumbnail_path = format!(
+        "{}/{}",
+        thumbnail_store.trim_end_matches('/'),
+        relative_path.trim_start_matches('/')
+    );
+
+    // RAW and HEIC/AVIF files: thumbnail is {filename_lowercase}.jpg
+    if crate::utils::raw_file::is_raw_file(relative_path)
+        || crate::utils::raw_file::is_heic_or_avif(relative_path)
+    {
+        return format!("{}.jpg", thumbnail_path.to_lowercase());
+    }
+
+    let ext_regex = jpeg_ext_regex();
+    if ext_regex.is_match(&thumbnail_path) {
+        // JPEG file: normalize extension to .jpg
+        ext_regex.replace(&thumbnail_path, ".jpg").to_string()
+    } else {
+        // Non-JPEG file (movie, etc.): append .jpg
+        format!("{}.jpg", thumbnail_path)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PhotoTag {
     pub id: i32,
@@ -156,32 +187,10 @@ impl Photo {
         if !self.has_config {
             return None;
         }
-
-        let thumbnail_store = &self.thumbnail_store;
-        // file.path is relative (e.g., "2024-01-15/uuid/photo.jpg")
-        // Construct thumbnail path: thumbnail_store + "/" + relative_path
-        let thumbnail_path = format!(
-            "{}/{}",
-            thumbnail_store.trim_end_matches('/'),
-            self.file.path.trim_start_matches('/')
-        );
-
-        // RAW and HEIC/AVIF files: thumbnail is {filename_lowercase}.jpg
-        if crate::utils::raw_file::is_raw_file(&self.file.path)
-            || crate::utils::raw_file::is_heic_or_avif(&self.file.path)
-        {
-            let lowercase_path = thumbnail_path.to_lowercase();
-            return Some(format!("{}.jpg", lowercase_path));
-        }
-
-        let ext_regex = jpeg_ext_regex();
-        if ext_regex.is_match(&thumbnail_path) {
-            // JPEG file: normalize extension to .jpg
-            Some(ext_regex.replace(&thumbnail_path, ".jpg").to_string())
-        } else {
-            // Non-JPEG file (movie, etc.): append .jpg
-            Some(format!("{}.jpg", thumbnail_path))
-        }
+        Some(thumbnail_path_in_store(
+            &self.thumbnail_store,
+            &self.file.path,
+        ))
     }
 
     pub fn set_has_thumbnail(&mut self) {
@@ -523,5 +532,35 @@ mod tests {
         // panic and must produce a non-empty ctime-derived time, exactly
         // like a photo whose EXIF parse fails.
         assert!(!p.time().is_empty());
+    }
+
+    #[test]
+    fn thumbnail_paths_follow_the_source_extension() {
+        use photo::thumbnail_path_in_store;
+
+        // A JPEG's extension is normalized, not appended to: a photo and its
+        // thumbnail must resolve to one name whatever case the camera wrote.
+        assert_eq!(
+            thumbnail_path_in_store("/thumbs", "2024-05-13/P1012715.JPG"),
+            "/thumbs/2024-05-13/P1012715.jpg"
+        );
+        // A video keeps its own extension and gains .jpg, so the move job has
+        // to carry "NAME.MP4.jpg" - appending .jpg to the moved name again
+        // would look for a file that never existed.
+        assert_eq!(
+            thumbnail_path_in_store("/thumbs", "2016-02-28/P1120741.MP4"),
+            "/thumbs/2016-02-28/P1120741.MP4.jpg"
+        );
+        // RAW thumbnails are written lowercase.
+        assert_eq!(
+            thumbnail_path_in_store("/thumbs", "2024-05-13/P1012715.RW2"),
+            "/thumbs/2024-05-13/p1012715.rw2.jpg"
+        );
+        // A trailing slash on the store and a leading one on the path must not
+        // produce a doubled separator.
+        assert_eq!(
+            thumbnail_path_in_store("/thumbs/", "/2024-05-13/a.png"),
+            "/thumbs/2024-05-13/a.png.jpg"
+        );
     }
 }

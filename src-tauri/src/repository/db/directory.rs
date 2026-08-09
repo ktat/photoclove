@@ -2,7 +2,7 @@
 
 use crate::domain_service::dir_service;
 use crate::entity::{config, photo, photo_meta};
-use crate::repository::{self, RepoDB, RepositoryDB, Sort};
+use crate::repository::{self, MovedFile, RepoDB, RepositoryDB, Sort};
 use crate::value::{date, exif, file};
 use async_trait::async_trait;
 use std::cmp::Ordering;
@@ -611,13 +611,14 @@ impl RepositoryDB for Directory {
         &self,
         date: date::Date,
         stored_capture_times: HashMap<String, String>,
-    ) -> date::Dates {
+    ) -> (date::Dates, Vec<MovedFile>) {
         let path = self.path.clone();
         tauri::async_runtime::spawn_blocking(move || {
             let dir = path.child(date.to_string());
             let files = dir_service::find_files(&dir);
             log::info!(target: "directory", "move_photos_to_exif_date; date={}; dir={}; file_count={}", date, dir.path, files.files.len());
             let mut dates_to_be_changed: HashMap<String, bool> = HashMap::new();
+            let mut moved: Vec<MovedFile> = Vec::new();
             for file in files.files {
                 // file has absolute path from filesystem scan
                 let photo = photo::Photo::new_with_exif(file.clone());
@@ -646,7 +647,16 @@ impl RepositoryDB for Directory {
                     // file.path is absolute here (from filesystem scan)
                     match fs::rename(&file.path, new_path.display().to_string()) {
                         Ok(_) => {
-                            log::info!(target: "directory", "file_moved; from={}; to={}", file.path, new_path.display())
+                            log::info!(target: "directory", "file_moved; from={}; to={}", file.path, new_path.display());
+                            // Report it so the caller can bring the database
+                            // row and the thumbnail along; only a move that
+                            // actually happened is reported.
+                            let name = photo.file.filename();
+                            moved.push(MovedFile {
+                                from: format!("{}/{}", date, name),
+                                to: format!("{}/{}", created_date_str, name),
+                                to_date: created_date_str.clone(),
+                            });
                         }
                         Err(e) => {
                             log::error!(target: "directory", "file_move_failed; from={}; to={}; error={}", file.path, new_path.display(), e)
@@ -666,12 +676,12 @@ impl RepositoryDB for Directory {
                     }
                 }
             }
-            dates
+            (dates, moved)
         })
         .await
         .unwrap_or_else(|e| {
             log::error!(target: "directory", "move_photos_to_exif_date_join_error; error={:?}", e);
-            date::Dates::new(&[])
+            (date::Dates::new(&[]), Vec::new())
         })
     }
 }

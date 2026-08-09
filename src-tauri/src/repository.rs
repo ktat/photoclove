@@ -35,6 +35,19 @@ pub enum Sort {
     #[allow(dead_code)]
     Name, // Fallback to NameAsc
 }
+/// One file the move-by-date job relocated, as library-relative paths.
+///
+/// The caller uses these to move the row and the thumbnail after it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MovedFile {
+    /// e.g. `"2016-02-28/P1120741.MP4"`
+    pub from: String,
+    /// e.g. `"2016-02-29/P1120741.MP4"`
+    pub to: String,
+    /// The destination directory name, `YYYY-MM-DD`.
+    pub to_date: String,
+}
+
 pub struct DatesNum {
     data: HashMap<String, i32>,
 }
@@ -202,11 +215,16 @@ pub(crate) trait RepositoryDB {
     /// `creation_time` does not say which clock it came from, so re-deriving a
     /// video's date from the file would move some clips a timezone offset into
     /// the wrong day. See `MetaInfoDB::get_stored_capture_times`.
+    ///
+    /// Returns the dates that gained or lost files, and every move that
+    /// happened. Renaming the file is only half the job - the database row and
+    /// the thumbnail have to follow it - and this layer owns neither, so it
+    /// reports the moves for the caller to finish.
     async fn move_photos_to_exif_date(
         &self,
         date: date::Date,
         stored_capture_times: HashMap<String, String>,
-    ) -> date::Dates;
+    ) -> (date::Dates, Vec<MovedFile>);
     fn get_photo_count_per_dates(&self, dates: date::Dates, meta_data: DatesNum) -> DatesNum;
     fn get_photo_count_in_date(&self, date: date::Date) -> i32;
 }
@@ -252,6 +270,12 @@ pub(crate) trait MetaInfoDB {
     fn delete_photo_permanently(&self, photo: &photo::Photo);
     fn restore_photo_from_trash(&self, photo: &photo::Photo);
     fn update_photo_path(&self, old_path: &str, new_path: &str) -> Result<bool, &str>;
+    fn relocate_photo(
+        &self,
+        old_path: &str,
+        new_path: &str,
+        new_date: &str,
+    ) -> Result<bool, &'static str>;
     fn get_photo_count_per_dates(&self, dates: date::Dates) -> DatesNum;
     fn get_recent_photos_metadata(&self, limit: u32) -> Result<photo_meta::PhotoMetas, String>;
 

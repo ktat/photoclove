@@ -437,6 +437,15 @@ impl MetaInfoDB for SQLite {
         photo_metadata::get_stored_capture_times(self, date)
     }
 
+    fn relocate_photo(
+        &self,
+        old_path: &str,
+        new_path: &str,
+        new_date: &str,
+    ) -> Result<bool, &'static str> {
+        photo_crud::relocate_photo(self, old_path, new_path, new_date)
+    }
+
     fn get_photo_meta(&self, photo: photo::Photo) -> photo_meta::PhotoMeta {
         photo_metadata::get_photo_meta(self, photo)
     }

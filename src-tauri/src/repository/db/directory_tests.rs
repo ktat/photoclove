@@ -269,3 +269,49 @@ fn a_stored_video_date_is_truncated_to_the_day() {
 
     assert_eq!(target_date_string(&video, &stored, TEST_DATE), "2026-06-29");
 }
+
+#[test]
+fn moving_a_video_reports_it_so_its_row_and_thumbnail_can_follow() {
+    // Renaming the file is only half a move. The caller needs to know what
+    // went where to bring the database row (star, comment, tags) and the
+    // thumbnail along, so the job reports every rename it performed.
+    let (root, dir, _metas) = setup_library("move_reports", &["clip.MP4"]);
+    let elsewhere = "2016-02-28";
+    let stored = HashMap::from([("clip.MP4".to_string(), format!("{} 16:09:10", elsewhere))]);
+
+    let (dates, moved) = block_on(dir.move_photos_to_exif_date(
+        date::Date::from_string(&TEST_DATE.to_string(), Some("-")),
+        stored,
+    ));
+
+    assert!(
+        root.join(elsewhere).join("clip.MP4").exists(),
+        "the file itself should have moved"
+    );
+    assert!(!root.join(TEST_DATE).join("clip.MP4").exists());
+    assert_eq!(
+        moved,
+        vec![repository::MovedFile {
+            from: format!("{}/clip.MP4", TEST_DATE),
+            to: format!("{}/clip.MP4", elsewhere),
+            to_date: elsewhere.to_string(),
+        }]
+    );
+    // Both the source and the destination need re-indexing afterwards.
+    let changed: Vec<String> = dates.dates.iter().map(|d| d.to_string()).collect();
+    assert!(changed.contains(&TEST_DATE.to_string()));
+    assert!(changed.contains(&elsewhere.to_string()));
+}
+
+#[test]
+fn a_video_with_no_stored_date_is_left_alone_and_not_reported() {
+    let (root, dir, _metas) = setup_library("move_skips_unknown", &["clip.MP4"]);
+
+    let (_dates, moved) = block_on(dir.move_photos_to_exif_date(
+        date::Date::from_string(&TEST_DATE.to_string(), Some("-")),
+        HashMap::new(),
+    ));
+
+    assert!(root.join(TEST_DATE).join("clip.MP4").exists());
+    assert!(moved.is_empty());
+}

@@ -6,6 +6,45 @@ use crate::value::date;
 use std::path::PathBuf;
 use tauri::Emitter;
 
+/// Bring each moved file's database row and thumbnail to its new location.
+///
+/// A failure here is logged and skipped rather than aborting: the files are
+/// already moved, so stopping would leave the rest of them worse off than
+/// finishing does.
+fn follow_moved_files(state: &tauri::State<'_, AppState>, moved: &[crate::repository::MovedFile]) {
+    for m in moved {
+        match state.meta_db.relocate_photo(&m.from, &m.to, &m.to_date) {
+            Ok(true) => {}
+            Ok(false) => {
+                log::warn!(target: "photo", "relocate_photo_no_row; from={}; to={}", m.from, m.to)
+            }
+            Err(e) => {
+                log::error!(target: "photo", "relocate_photo_failed; from={}; to={}; error={}", m.from, m.to, e)
+            }
+        }
+
+        let store = &state.config.thumbnail_store;
+        let from = crate::entity::photo::thumbnail_path_in_store(store, &m.from);
+        let to = crate::entity::photo::thumbnail_path_in_store(store, &m.to);
+        // A photo with no thumbnail yet is normal, not an error.
+        if !std::path::Path::new(&from).exists() {
+            continue;
+        }
+        if let Some(parent) = std::path::Path::new(&to).parent() {
+            if let Err(e) = std::fs::create_dir_all(parent) {
+                log::error!(target: "photo", "thumbnail_dir_failed; dir={}; error={}", parent.display(), e);
+                continue;
+            }
+        }
+        match std::fs::rename(&from, &to) {
+            Ok(_) => log::info!(target: "photo", "thumbnail_moved; from={}; to={}", from, to),
+            Err(e) => {
+                log::error!(target: "photo", "thumbnail_move_failed; from={}; to={}; error={}", from, to, e)
+            }
+        }
+    }
+}
+
 /// Move photos to directories organized by their EXIF date
 ///
 /// This command extracts EXIF date information from photos and moves them
@@ -43,11 +82,16 @@ pub async fn move_photos_to_exif_date(
             log::warn!(target: "photo", "stored_capture_times_failed; date={}; error={}", date, e);
             std::collections::HashMap::new()
         });
-    let dates = state
+    let (dates, moved) = state
         .repo_db
         .move_photos_to_exif_date(date, stored_capture_times)
         .await;
-    log::debug!(target: "photo", "move_photos_completed; dates={:?}", dates);
+    // Renaming the file is only half a move: the database row carries the
+    // star, comment, tags and cloud-sync state, and the thumbnail is stored
+    // under the same relative path. Left behind, the row points at a file that
+    // is gone and the thumbnail is orphaned while the photo shows none.
+    follow_moved_files(&state, &moved);
+    log::debug!(target: "photo", "move_photos_completed; dates={:?}; moved={}", dates, moved.len());
     let _ = window.emit("move_files", "end_move");
     let meta_db = state.meta_db.clone();
     let result = run_blocking(move || {
