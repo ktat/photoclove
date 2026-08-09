@@ -1,5 +1,16 @@
 # 動画のメタ情報を info タブに表示する
 
+> **【破棄】この設計は実装されなかった。** 調査の途中で、同じ機能が既に PR #12
+> `feat/video-metadata-extraction`（main に 2026-08-06 マージ、`a4963323`）で
+> 実装済みであることが判明したため。上流は `src-tauri/src/utils/ffprobe.rs` と
+> `src-tauri/src/value/video_metadata.rs` を使い、`PhotoInfo.jsx` と i18n も対応
+> 済み（GPS 付き）。上流の設計は
+> `docs/superpowers/specs/2026-07-12-video-metadata-extraction-design.md` を参照。
+>
+> この文書から実際に反映されたのは 1 点だけ: 上流が `model` /
+> `com.apple.quicktime.model` しか見ておらず、DJI が機種名を書く `encoder` タグを
+> 読まないという穴。`fe9a7eb4` で修正した。以下は調査の記録として残す。
+
 ## 背景
 
 info タブを動画で開くと、ISO・機種・撮影日時などがすべて空欄になる。
