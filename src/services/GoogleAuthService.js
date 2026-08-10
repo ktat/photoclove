@@ -101,8 +101,14 @@ export const googleSignIn = async (payload) => {
       });
     }
 
-    if (!keyringStored && !localForageStored) {
-      logger.error('GoogleAuth', 'signin_error', 'Sign In failed: tokens could not be stored anywhere');
+    // Gated on localForage alone because that is the only store the upload path
+    // reads. A keyring-only success would leave uploads with no token, or worse,
+    // with the stale one a previous sign-in left behind.
+    if (!localForageStored) {
+      logger.error('GoogleAuth', 'signin_error', 'Sign In failed: tokens could not be stored for upload use', {
+        keyringStored,
+        localForageStored
+      });
       return;
     }
 

@@ -354,9 +354,16 @@ pub fn get_stored_capture_times(
         )
         .map_err(|e| format!("Failed to prepare statement: {}", e))?;
 
+    // `photo_date` is NOT NULL, so the COALESCE resolves today. Reading it as
+    // `Option` anyway keeps one dateless row from failing the whole query and,
+    // through the caller's empty-map fallback, freezing every file in the
+    // directory - a cheap guard against that constraint being relaxed.
     let rows = stmt
         .query_map(params![format!("{}%", prefix)], |row| {
-            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, Option<String>>(1)?.unwrap_or_default(),
+            ))
         })
         .map_err(|e| format!("Failed to query capture times: {}", e))?;
 
@@ -681,5 +688,40 @@ mod tests {
             )
             .unwrap();
         assert_eq!(date, "2024-05-13 00:00:00");
+    }
+
+    #[test]
+    fn test_get_stored_capture_times_drops_only_the_dateless_row() {
+        // A row with no usable date must drop itself and nothing else: the
+        // caller falls back to an empty map on `Err`, which would freeze every
+        // file in the directory rather than just the one bad row.
+        let db = setup_db("stored_capture_times");
+        let conn = db.get_connection().unwrap();
+        conn.execute(
+            "INSERT INTO photo_metadata (path, photo_date, exif_date_time, exif_date_time_original)
+             VALUES ('2024-05-13/dated.mp4', '2024-05-13 00:00:00', '2024-05-14 09:00:00', NULL),
+                    ('2024-05-13/undated.mp4', '', NULL, NULL),
+                    ('2024-05-13/sub/nested.mp4', '2024-05-13 00:00:00', NULL, NULL)",
+            [],
+        )
+        .unwrap();
+
+        let times =
+            get_stored_capture_times(&db, date::Date::new(2024, 5, 13).unwrap()).expect("query");
+
+        assert_eq!(
+            times.get("2024-05-13/dated.mp4").map(String::as_str),
+            Some("2024-05-14 09:00:00"),
+            "exif_date_time outranks photo_date"
+        );
+        assert!(
+            times.get("2024-05-13/undated.mp4").is_none(),
+            "no date means no entry"
+        );
+        assert_eq!(
+            times.get("2024-05-13/sub/nested.mp4").map(String::as_str),
+            Some("2024-05-13 00:00:00"),
+            "rows in an import subdirectory are keyed by their whole path"
+        );
     }
 }

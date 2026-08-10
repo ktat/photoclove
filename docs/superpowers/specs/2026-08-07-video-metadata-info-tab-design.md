@@ -40,7 +40,7 @@ EXIF が空になると `src-tauri/src/value/exif.rs:147-150` のフォールバ
 
 ### ffprobe で取得できるもの（実測）
 
-```
+```text
 format.tags.encoder        "DJI OsmoAction6"
 format.tags.creation_time  "2026-06-29T04:30:05.000000Z"
 format.duration            "11.968000"

@@ -11,9 +11,17 @@ use tauri::Emitter;
 /// A failure here is logged and skipped rather than aborting: the files are
 /// already moved, so stopping would leave the rest of them worse off than
 /// finishing does.
-fn follow_moved_files(state: &tauri::State<'_, AppState>, moved: &[crate::repository::MovedFile]) {
+///
+/// Takes owned handles rather than `tauri::State` so the caller can run it on
+/// the blocking pool: every entry costs a SQLite write, an `exists` check, a
+/// `create_dir_all` and a `rename`, and a date-wide move can carry hundreds.
+fn follow_moved_files(
+    meta_db: &crate::repository::MetaDB,
+    thumbnail_store: &str,
+    moved: &[crate::repository::MovedFile],
+) {
     for m in moved {
-        match state.meta_db.relocate_photo(&m.from, &m.to, &m.to_date) {
+        match meta_db.relocate_photo(&m.from, &m.to, &m.to_date) {
             Ok(true) => {}
             Ok(false) => {
                 log::warn!(target: "photo", "relocate_photo_no_row; from={}; to={}", m.from, m.to)
@@ -23,9 +31,8 @@ fn follow_moved_files(state: &tauri::State<'_, AppState>, moved: &[crate::reposi
             }
         }
 
-        let store = &state.config.thumbnail_store;
-        let from = crate::entity::photo::thumbnail_path_in_store(store, &m.from);
-        let to = crate::entity::photo::thumbnail_path_in_store(store, &m.to);
+        let from = crate::entity::photo::thumbnail_path_in_store(thumbnail_store, &m.from);
+        let to = crate::entity::photo::thumbnail_path_in_store(thumbnail_store, &m.to);
         // A photo with no thumbnail yet is normal, not an error.
         if !std::path::Path::new(&from).exists() {
             continue;
@@ -90,8 +97,15 @@ pub async fn move_photos_to_exif_date(
     // star, comment, tags and cloud-sync state, and the thumbnail is stored
     // under the same relative path. Left behind, the row points at a file that
     // is gone and the thumbnail is orphaned while the photo shows none.
-    follow_moved_files(&state, &moved);
-    log::debug!(target: "photo", "move_photos_completed; dates={:?}; moved={}", dates, moved.len());
+    let moved_count = moved.len();
+    let meta_db_for_moves = state.meta_db.clone();
+    let thumbnail_store = state.config.thumbnail_store.clone();
+    let _ = run_blocking(move || {
+        follow_moved_files(&meta_db_for_moves, &thumbnail_store, &moved);
+        Ok(())
+    })
+    .await;
+    log::debug!(target: "photo", "move_photos_completed; dates={:?}; moved={}", dates, moved_count);
     let _ = window.emit("move_files", "end_move");
     let meta_db = state.meta_db.clone();
     let result = run_blocking(move || {
