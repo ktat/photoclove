@@ -177,7 +177,12 @@ export function useAppEventListeners({
             unlistenImport = await listen(MENU_EVENTS.IMPORT, async (e) => {
                 if (e.payload === "finish") {
                     logger.info('App', 'import_finish', 'Import finished, refreshing dates and checking achievements');
+                    // The job queue is done copying. Announcing it at submit
+                    // time called the import finished while the files were
+                    // still being written.
+                    addFooterMessage("import", "Import finished", true, 10000);
                     getDates();
+                    requestPhotoRefresh();
                     try {
                         const result = await checkAllAchievements();
                         if (result.newly_achieved?.length > 0) {

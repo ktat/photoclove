@@ -40,7 +40,11 @@ export function usePhotoImport({ importState, photoSelection, clearPhotoSelectio
                 await importState.importPhotos(photoSelection);
 
                 clearPhotoSelection();
-                addFooterMessage('import', `${count} photo${count > 1 ? 's' : ''} imported successfully`);
+                // importPhotos returns once the jobs are queued, not once they
+                // have run - the files are still being copied at this point.
+                // Completion is announced from the import "finish" event the
+                // job queue emits (see useAppEventListeners).
+                addFooterMessage('import', `${count} photo${count > 1 ? 's' : ''} queued for import`);
 
                 logger.info('photoOperations', 'photos_imported', 'Photos imported successfully', {
                     photoCount: count
