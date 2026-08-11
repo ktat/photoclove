@@ -99,6 +99,16 @@ export const googleSignIn = async (payload) => {
       logger.warn('GoogleAuth', 'legacy_storage_error', 'Failed to store in localForage', {
         error: legacyError.toString()
       });
+      // Whatever is still under this key belongs to the previous sign-in, and
+      // the upload path accepts any record it finds. Left in place, a failed
+      // write means the next upload silently goes to the old account.
+      try {
+        await localForage.removeItem("GoogleOAuthTokens");
+      } catch (removeError) {
+        logger.error('GoogleAuth', 'legacy_storage_stale', 'Could not clear the previous tokens after a failed write', {
+          error: removeError.toString()
+        });
+      }
     }
 
     // Gated on localForage alone because that is the only store the upload path

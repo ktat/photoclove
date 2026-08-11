@@ -72,12 +72,12 @@ fn test_get_photo_meta_data_in_date_filters_by_date_and_hydrates_tags() {
 }
 
 #[test]
-fn test_record_photos_meta_data_video_without_ffprobe_falls_back_to_ctime() {
-    // No real video file on disk (ffprobe will fail to find it, or
-    // isn't installed in this test environment either way) — this test
-    // only asserts the row gets written at all with a non-empty date,
-    // covering the fallback path without depending on ffprobe being
-    // installed.
+fn test_record_photos_meta_data_video_without_ffprobe_uses_the_path_date() {
+    // The fixture is not a real video, so probing yields nothing whichever way
+    // it fails (missing file, or no ffprobe in this environment). What is
+    // asserted is the last resort that still writes a usable row: the date
+    // directory at the head of the relative path. The ctime fallback in
+    // `value/exif.rs` is a separate path and is not what this covers.
     let db = setup_db("video_no_ffprobe");
     let dir = std::env::temp_dir()
         .join("photoclove_photo_metadata_video_tests")

@@ -46,7 +46,7 @@ export function usePhotoImport({ importState, photoSelection, clearPhotoSelectio
                 // job queue emits (see useAppEventListeners).
                 addFooterMessage('import', `${count} photo${count > 1 ? 's' : ''} queued for import`);
 
-                logger.info('photoOperations', 'photos_imported', 'Photos imported successfully', {
+                logger.info('photoOperations', 'photos_queued', 'Photos queued for import', {
                     photoCount: count
                 });
             } catch (error) {
