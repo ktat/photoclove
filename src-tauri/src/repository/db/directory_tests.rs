@@ -31,7 +31,17 @@ fn setup_library(
     // Start from an empty tree: the move tests relocate files, and residue
     // from an earlier run would make a later one pass or fail on its own
     // leftovers rather than on what the test did.
-    let _ = std::fs::remove_dir_all(&root);
+    // A missing root is the normal first-run case; anything else means the
+    // residue is still there, which is the situation this call exists to avoid.
+    if let Err(e) = std::fs::remove_dir_all(&root) {
+        assert_eq!(
+            e.kind(),
+            std::io::ErrorKind::NotFound,
+            "failed to clear fixture root {}: {}",
+            root.display(),
+            e
+        );
+    }
     let date_dir = root.join(TEST_DATE);
     std::fs::create_dir_all(&date_dir).unwrap();
 

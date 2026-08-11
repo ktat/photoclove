@@ -69,9 +69,12 @@ pub(crate) fn process_create_db_job(
             log::info!(target: "create_db_job", "database_creation; status=success; inserted={}; total={}", inserted, total);
 
             // Update progress to completion using the number of rows recorded.
+            // Kept under its own name: shadowing `total` here would send the
+            // insert count as the scope count in the finish event below, so a
+            // rebuild that found existing rows would report the two as equal.
             let job_id = job.id.unwrap_or(0);
-            let total = inserted as i64;
-            let _ = meta_db.update_job_progress(job_id, total);
+            let progress_total = inserted as i64;
+            let _ = meta_db.update_job_progress(job_id, progress_total);
 
             // Emit final progress
             if let Err(e) = app_handle.emit(

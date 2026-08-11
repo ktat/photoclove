@@ -65,7 +65,13 @@ export function useDataSynchronization({
         if (photoRefreshToken === seenRefreshToken.current) return;
         seenRefreshToken.current = photoRefreshToken;
         logger.info('useDataSynchronization', 'refresh_requested', 'Reloading: a background job changed the files');
-        reloadCurrentModeData();
+        // Nothing awaits this reload, so a rejecting loader would otherwise
+        // surface only as an unhandled rejection with no trace in the LogViewer.
+        reloadCurrentModeData().catch((error) => {
+            logger.error('useDataSynchronization', 'refresh_failed', 'Failed to reload after a background job', {
+                error: error?.message || String(error)
+            });
+        });
     }, [photoRefreshToken, reloadCurrentModeData]);
 
     /**
