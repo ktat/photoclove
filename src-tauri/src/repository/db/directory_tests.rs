@@ -28,6 +28,10 @@ fn setup_library(
     let root = std::env::temp_dir()
         .join("photoclove_directory_tests")
         .join(test_name);
+    // Start from an empty tree: the move tests relocate files, and residue
+    // from an earlier run would make a later one pass or fail on its own
+    // leftovers rather than on what the test did.
+    let _ = std::fs::remove_dir_all(&root);
     let date_dir = root.join(TEST_DATE);
     std::fs::create_dir_all(&date_dir).unwrap();
 
@@ -221,13 +225,14 @@ fn photo_dated(name: &str, date_time: &str) -> photo::Photo {
 fn a_photo_is_dated_from_its_own_exif() {
     // Stills carry a real EXIF timestamp, so the file is authoritative and the
     // database is not consulted even when it holds something else.
-    let stored = HashMap::from([(
-        "P1012715.JPG".to_string(),
-        "2024-05-20 00:00:00".to_string(),
-    )]);
+    let rel = format!("{}/P1012715.JPG", TEST_DATE);
+    let stored = HashMap::from([(rel.clone(), "2024-05-20 00:00:00".to_string())]);
     let photo = photo_dated("P1012715.JPG", "2024-05-13 05:43:43");
 
-    assert_eq!(target_date_string(&photo, &stored, TEST_DATE), "2024-05-13");
+    assert_eq!(
+        target_date_string(&photo, &rel, &stored, TEST_DATE),
+        "2024-05-13"
+    );
 }
 
 #[test]
@@ -236,13 +241,14 @@ fn a_video_is_dated_from_the_database_not_its_container() {
     // local time labelled UTC, so converting it adds nine hours and crosses
     // midnight. The database holds the date verified against the photos shot
     // alongside it, and that is what decides where the file goes.
-    let stored = HashMap::from([(
-        "P1120741.MP4".to_string(),
-        "2016-02-28 16:09:10".to_string(),
-    )]);
+    let rel = format!("{}/P1120741.MP4", TEST_DATE);
+    let stored = HashMap::from([(rel.clone(), "2016-02-28 16:09:10".to_string())]);
     let video = photo_dated("P1120741.MP4", "2016-02-29 01:09:10");
 
-    assert_eq!(target_date_string(&video, &stored, TEST_DATE), "2016-02-28");
+    assert_eq!(
+        target_date_string(&video, &rel, &stored, TEST_DATE),
+        "2016-02-28"
+    );
 }
 
 #[test]
@@ -253,7 +259,12 @@ fn a_video_the_database_does_not_know_stays_where_it_is() {
     let video = photo_dated("P1120741.MP4", "2016-02-29 01:09:10");
 
     assert_eq!(
-        target_date_string(&video, &HashMap::new(), TEST_DATE),
+        target_date_string(
+            &video,
+            &format!("{}/P1120741.MP4", TEST_DATE),
+            &HashMap::new(),
+            TEST_DATE
+        ),
         TEST_DATE
     );
 }
@@ -261,13 +272,14 @@ fn a_video_the_database_does_not_know_stays_where_it_is() {
 #[test]
 fn a_stored_video_date_is_truncated_to_the_day() {
     // The database stores "YYYY-MM-DD HH:MM:SS"; a directory name is the date.
-    let stored = HashMap::from([(
-        "DJI_0001.MP4".to_string(),
-        "2026-06-29 13:30:05".to_string(),
-    )]);
+    let rel = format!("{}/DJI_0001.MP4", TEST_DATE);
+    let stored = HashMap::from([(rel.clone(), "2026-06-29 13:30:05".to_string())]);
     let video = photo_dated("DJI_0001.MP4", "2026-06-29 13:30:05");
 
-    assert_eq!(target_date_string(&video, &stored, TEST_DATE), "2026-06-29");
+    assert_eq!(
+        target_date_string(&video, &rel, &stored, TEST_DATE),
+        "2026-06-29"
+    );
 }
 
 #[test]
@@ -277,7 +289,10 @@ fn moving_a_video_reports_it_so_its_row_and_thumbnail_can_follow() {
     // thumbnail along, so the job reports every rename it performed.
     let (root, dir, _metas) = setup_library("move_reports", &["clip.MP4"]);
     let elsewhere = "2016-02-28";
-    let stored = HashMap::from([("clip.MP4".to_string(), format!("{} 16:09:10", elsewhere))]);
+    let stored = HashMap::from([(
+        format!("{}/clip.MP4", TEST_DATE),
+        format!("{} 16:09:10", elsewhere),
+    )]);
 
     let (dates, moved) = block_on(dir.move_photos_to_exif_date(
         date::Date::from_string(&TEST_DATE.to_string(), Some("-")),
@@ -314,4 +329,42 @@ fn a_video_with_no_stored_date_is_left_alone_and_not_reported() {
 
     assert!(root.join(TEST_DATE).join("clip.MP4").exists());
     assert!(moved.is_empty());
+}
+
+#[test]
+fn moving_a_file_out_of_an_import_directory_keeps_that_directory() {
+    // The scan descends into an import's UUID subdirectory. Rebuilding the
+    // destination from the date and the file name flattened that directory
+    // away, which is how a clip ended up separated from its thumbnail and its
+    // database row - both keyed by the whole relative path.
+    let uuid = "e67cf3e1-0795-49fb-8914-0b640948ff78";
+    let (root, dir, _metas) = setup_library("move_keeps_uuid", &[]);
+    let import_dir = root.join(TEST_DATE).join(uuid);
+    std::fs::create_dir_all(&import_dir).unwrap();
+    std::fs::write(import_dir.join("clip.MP4"), b"x").unwrap();
+
+    let elsewhere = "2016-02-28";
+    let stored = HashMap::from([(
+        format!("{}/{}/clip.MP4", TEST_DATE, uuid),
+        format!("{} 16:09:10", elsewhere),
+    )]);
+
+    let (_dates, moved) = block_on(dir.move_photos_to_exif_date(
+        date::Date::from_string(&TEST_DATE.to_string(), Some("-")),
+        stored,
+    ));
+
+    assert!(
+        root.join(elsewhere).join(uuid).join("clip.MP4").exists(),
+        "the import directory should exist under the new date"
+    );
+    assert!(!root.join(elsewhere).join("clip.MP4").exists());
+    assert_eq!(
+        moved,
+        vec![repository::MovedFile {
+            from: format!("{}/{}/clip.MP4", TEST_DATE, uuid),
+            to: format!("{}/{}/clip.MP4", elsewhere, uuid),
+            to_date: elsewhere.to_string(),
+        }]
+    );
 }

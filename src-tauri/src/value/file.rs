@@ -437,6 +437,11 @@ impl File {
             })
     }
 
+    // Currently only exercised by its own test: the move-by-date job used to
+    // rebuild a destination from the date and this name, which flattened an
+    // import's UUID directory away, and now swaps only the path's date
+    // component instead. Kept as a general helper on the value type.
+    #[allow(dead_code)]
     pub fn filename(&self) -> String {
         let remove_path = RE_STRIP_DIRS.get_or_init(|| Regex::new("^.+/").unwrap());
         remove_path.replace(&self.path, "").to_string()

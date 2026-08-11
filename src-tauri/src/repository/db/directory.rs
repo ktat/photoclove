@@ -174,15 +174,20 @@ fn create_photo_from_metadata(
 /// A video the database has no date for is returned `current_date` unchanged,
 /// which leaves it where it is. Moving a file on a value known to be
 /// unreliable is worse than not moving it.
+///
+/// `relative_path` keys `stored_capture_times`. A file name would not: the
+/// scan descends into an import's UUID subdirectory, where two imports of the
+/// same card carry the same name.
 fn target_date_string(
     photo: &photo::Photo,
+    relative_path: &str,
     stored_capture_times: &HashMap<String, String>,
     current_date: &str,
 ) -> String {
     if !photo.is_video() {
         return photo.created_date_string();
     }
-    match stored_capture_times.get(&photo.file.filename()) {
+    match stored_capture_times.get(relative_path) {
         Some(stored) => stored.chars().take("YYYY-MM-DD".len()).collect(),
         None => {
             log::info!(
@@ -620,28 +625,40 @@ impl RepositoryDB for Directory {
             let mut dates_to_be_changed: HashMap<String, bool> = HashMap::new();
             let mut moved: Vec<MovedFile> = Vec::new();
             for file in files.files {
-                // file has absolute path from filesystem scan
+                // file has absolute path from filesystem scan. The scan
+                // descends into an import's UUID subdirectory, so the path
+                // below the date is not always just a file name.
+                let relative_path = file::to_relative_path(&file.path, &path.path);
                 let photo = photo::Photo::new_with_exif(file.clone());
-                let created_date_str =
-                    target_date_string(&photo, &stored_capture_times, &date.to_string());
-                let new_dir = path.child(created_date_str.clone());
-                log::debug!(target: "directory", "move_check; file={}; photo_time={}; created_date_str={}; current_dir={}; new_dir={}",
-                    file.path, photo.time(), created_date_str, dir.path, new_dir.path);
-                if dir.path != new_dir.path {
+                let created_date_str = target_date_string(
+                    &photo,
+                    &relative_path,
+                    &stored_capture_times,
+                    &date.to_string(),
+                );
+                // Swapping only the date component keeps the UUID directory,
+                // which names the import. Rebuilding from the date and the
+                // file name would flatten it away and strand the thumbnail
+                // and the database row, which are keyed by the whole path.
+                let new_relative_path =
+                    photo::relative_path_with_date(&relative_path, &created_date_str);
+                let new_path = path.as_pathbuf().join(&new_relative_path);
+                log::debug!(target: "directory", "move_check; file={}; photo_time={}; created_date_str={}; new_relative={}",
+                    file.path, photo.time(), created_date_str, new_relative_path);
+                if relative_path != new_relative_path {
                     dates_to_be_changed
                         .entry(created_date_str.clone())
                         .or_insert(true);
-                    let filename = photo.file.filename();
-                    let new_pathbuf = new_dir.as_pathbuf();
-                    let new_path = new_pathbuf.as_path().join(filename);
 
                     // Ensure target directory exists
-                    if !new_pathbuf.exists() {
-                        if let Err(e) = fs::create_dir_all(&new_pathbuf) {
-                            log::error!(target: "directory", "create_dir_failed; dir={}; error={}", new_dir.path, e);
-                            continue;
+                    if let Some(parent) = new_path.parent() {
+                        if !parent.exists() {
+                            if let Err(e) = fs::create_dir_all(parent) {
+                                log::error!(target: "directory", "create_dir_failed; dir={}; error={}", parent.display(), e);
+                                continue;
+                            }
+                            log::info!(target: "directory", "created_dir; dir={}", parent.display());
                         }
-                        log::info!(target: "directory", "created_dir; dir={}", new_dir.path);
                     }
 
                     // file.path is absolute here (from filesystem scan)
@@ -651,10 +668,9 @@ impl RepositoryDB for Directory {
                             // Report it so the caller can bring the database
                             // row and the thumbnail along; only a move that
                             // actually happened is reported.
-                            let name = photo.file.filename();
                             moved.push(MovedFile {
-                                from: format!("{}/{}", date, name),
-                                to: format!("{}/{}", created_date_str, name),
+                                from: relative_path,
+                                to: new_relative_path,
                                 to_date: created_date_str.clone(),
                             });
                         }

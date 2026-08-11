@@ -18,6 +18,25 @@ fn date_prefix_regex() -> &'static Regex {
         .get_or_init(|| Regex::new(r"^([0-9]{4})[/\-:]([0-9]{1,2})[/\-:]([0-9]{1,2}).+$").unwrap())
 }
 
+/// `relative_path` with its leading date directory replaced by `new_date`.
+///
+/// A library-relative path is `<date>/<file>` or `<date>/<import uuid>/<file>`.
+/// Only the first component names the date; everything below it says which
+/// import the file arrived in and must survive a move. Rebuilding the path
+/// from the date and the file name alone would flatten a UUID directory away,
+/// which is how the move-by-date job used to separate a file from its
+/// thumbnail and its database row - both are keyed by the whole relative path.
+///
+/// A path with no directory component is returned unchanged, so a caller
+/// cannot invent a location for a file that has none.
+pub fn relative_path_with_date(relative_path: &str, new_date: &str) -> String {
+    let trimmed = relative_path.trim_start_matches('/');
+    match trimmed.split_once('/') {
+        Some((_date, rest)) => format!("{}/{}", new_date, rest),
+        None => trimmed.to_string(),
+    }
+}
+
 /// Where the thumbnail for `relative_path` lives inside `thumbnail_store`.
 ///
 /// `relative_path` is a library-relative path such as
@@ -562,5 +581,37 @@ mod tests {
             thumbnail_path_in_store("/thumbs/", "/2024-05-13/a.png"),
             "/thumbs/2024-05-13/a.png.jpg"
         );
+    }
+
+    #[test]
+    fn swapping_the_date_keeps_everything_below_it() {
+        use photo::relative_path_with_date;
+
+        // The UUID directory names the import a file arrived in, which is
+        // independent of the date it was shot. Dropping it on a move would
+        // separate the file from its thumbnail and its database row, both of
+        // which are keyed by the whole relative path.
+        assert_eq!(
+            relative_path_with_date("2026-06-29/e67cf3e1/DJI_0025.MP4", "2026-06-28"),
+            "2026-06-28/e67cf3e1/DJI_0025.MP4"
+        );
+        // A file directly under the date directory has nothing else to keep.
+        assert_eq!(
+            relative_path_with_date("2026-06-29/DJI_0025.MP4", "2026-06-28"),
+            "2026-06-28/DJI_0025.MP4"
+        );
+        // A leading slash is not part of the date component.
+        assert_eq!(
+            relative_path_with_date("/2026-06-29/a.jpg", "2026-06-28"),
+            "2026-06-28/a.jpg"
+        );
+        // Nesting deeper than one level is preserved just the same.
+        assert_eq!(
+            relative_path_with_date("2026-06-29/e67cf3e1/sub/a.jpg", "2026-06-28"),
+            "2026-06-28/e67cf3e1/sub/a.jpg"
+        );
+        // A path with no date component to replace is returned unchanged
+        // rather than gaining one, so a caller cannot invent a location.
+        assert_eq!(relative_path_with_date("a.jpg", "2026-06-28"), "a.jpg");
     }
 }

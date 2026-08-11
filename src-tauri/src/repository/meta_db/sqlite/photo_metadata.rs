@@ -325,7 +325,7 @@ pub fn record_photos_all_meta_data(
 }
 
 /// The capture times the database already holds for one date directory, keyed
-/// by file name.
+/// by library-relative path.
 ///
 /// Exists for the move-by-EXIF-date job, which must not re-derive a video's
 /// date from its container. A container's `creation_time` does not say which
@@ -363,12 +363,11 @@ pub fn get_stored_capture_times(
     let mut times = HashMap::new();
     for row in rows {
         let (path, time) = row.map_err(|e| format!("Failed to read capture time: {}", e))?;
-        // The move job scans one date directory without recursing, so a file
-        // name identifies a row there unambiguously. Rows further down (an
-        // import's UUID subdirectory) are not files that job will see.
-        let name = path.trim_start_matches(&prefix);
-        if !name.contains('/') && !time.is_empty() {
-            times.insert(name.to_string(), time);
+        // Keyed by the whole relative path, not by file name: the move job
+        // descends into an import's UUID subdirectory, where two imports of
+        // the same card carry the same name.
+        if !time.is_empty() {
+            times.insert(path, time);
         }
     }
     Ok(times)
