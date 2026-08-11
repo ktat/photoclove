@@ -29,13 +29,22 @@ pub(crate) fn process_create_db_job(
     // Outcome carries the number of rows actually inserted so job progress can
     // report a meaningful total even for the full-rebuild path (where
     // job.job.target is empty and its len() would always be 0).
-    let outcome: Result<usize, String> = if job.job.target.is_empty() {
+    // Only the full rebuild is a user-initiated "recreate db". The incremental
+    // path runs as a step of every import, which announces its own completion -
+    // reporting this one too would pop a second dialog for the same action.
+    let is_full_rebuild = job.job.target.is_empty();
+    if is_full_rebuild {
+        let _ = app_handle.emit("create_db", "start");
+    }
+
+    // (rows inserted, rows the database now holds for the processed scope)
+    let outcome: Result<(usize, usize), String> = if is_full_rebuild {
         log::info!(target: "create_db_job", "target_empty; mode=full_rebuild; fetching_all_dates_from_repo");
         let dates_obj = repo_db.get_dates();
         log::info!(target: "create_db_job", "database_creation; dates={}", dates_obj.dates.len());
         meta_db
             .record_photos_all_meta_data(dates_obj)
-            .map(|(_, inserted)| inserted)
+            .map(|(per_date, inserted)| (inserted, per_date.values().sum()))
             .map_err(|e| e.to_string())
     } else {
         let import_to = config::Config::new().import_to;
@@ -48,14 +57,16 @@ pub(crate) fn process_create_db_job(
             ));
         }
         log::info!(target: "create_db_job", "database_creation; targets={}; mode=incremental", photos.len());
+        let target_count = photos.len();
         meta_db
             .record_photos_meta_data(photos)
+            .map(|inserted| (inserted, target_count))
             .map_err(|e| e.to_string())
     };
 
     match outcome {
-        Ok(inserted) => {
-            log::info!(target: "create_db_job", "database_creation; status=success; inserted={}", inserted);
+        Ok((inserted, total)) => {
+            log::info!(target: "create_db_job", "database_creation; status=success; inserted={}; total={}", inserted, total);
 
             // Update progress to completion using the number of rows recorded.
             let job_id = job.id.unwrap_or(0);
@@ -70,11 +81,29 @@ pub(crate) fn process_create_db_job(
                 log::error!(target: "create_db_job", "progress_event_error; error={}", e);
             }
 
+            // The same shape `create_db_in_date` emits, so the frontend reports
+            // a full rebuild exactly as it already reports a single date.
+            // Without this the job finished with no footer, no notification and
+            // no dialog - the user could not tell it had run at all.
+            if is_full_rebuild {
+                let _ = app_handle.emit(
+                    "create_db",
+                    serde_json::json!({
+                        "status": "finish",
+                        "inserted": inserted,
+                        "total": total,
+                    }),
+                );
+            }
+
             Ok(())
         }
         Err(e) => {
             let error_msg = format!("Failed to create database entries: {}", e);
             log::error!(target: "create_db_job", "database_creation_error; error={}", error_msg);
+            if is_full_rebuild {
+                let _ = app_handle.emit("create_db", serde_json::json!({ "status": "failed" }));
+            }
             Err(error_msg)
         }
     }

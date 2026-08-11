@@ -110,6 +110,10 @@ export function useAppEventListeners({
                         const total = payload.total ?? 0;
                         if (inserted > 0) {
                             addFooterMessage("create_db", `Database updated: ${inserted} photo(s) added (${total} total)`, true, 10000);
+                            // Rows were added or removed, so what the list is
+                            // showing no longer matches the database.
+                            getDates();
+                            requestPhotoRefresh();
                         } else if (total > 0) {
                             addFooterMessage("create_db", `Database already up to date (${total} photo(s), nothing to add)`, false, 10000);
                         } else {
