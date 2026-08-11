@@ -70,7 +70,8 @@ function App() {
         currentDate,
         updateCurrentDate,
         resetPhotoState,
-        recentPhotosMode
+        recentPhotosMode,
+        requestPhotoRefresh
     } = usePhoto();
 
     const { getDates } = useDateNavigation();
@@ -129,6 +130,7 @@ function App() {
         setAchievementQueue,
         addFooterMessage,
         getDates,
+        requestPhotoRefresh,
         updateCurrentDate,
         resetPhotoState,
         toggleHome,

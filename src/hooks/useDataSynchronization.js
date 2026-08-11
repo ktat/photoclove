@@ -1,5 +1,6 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { logger } from '../services/LoggerService.js';
+import { usePhoto } from '../context/PhotoContext.jsx';
 
 /**
  * Custom hook for data synchronization operations
@@ -46,6 +47,26 @@ export function useDataSynchronization({
             viewMode
         });
     }, [modeLoaders, viewMode, getDatesNum]);
+
+    /**
+     * Reload when a background job changed the files behind the list.
+     *
+     * Moving photos to their EXIF date and building thumbnails both happen
+     * outside this view, so nothing here would otherwise notice: the list
+     * keeps showing photos under the date they just left, and new thumbnails
+     * never appear until the view is navigated away from and back.
+     *
+     * The token's initial value is recorded rather than compared against zero,
+     * so a list mounted after a job already ran does not reload redundantly.
+     */
+    const { photoRefreshToken } = usePhoto();
+    const seenRefreshToken = useRef(photoRefreshToken);
+    useEffect(() => {
+        if (photoRefreshToken === seenRefreshToken.current) return;
+        seenRefreshToken.current = photoRefreshToken;
+        logger.info('useDataSynchronization', 'refresh_requested', 'Reloading: a background job changed the files');
+        reloadCurrentModeData();
+    }, [photoRefreshToken, reloadCurrentModeData]);
 
     /**
      * Update photos after trash operations (restore/permanently delete)
