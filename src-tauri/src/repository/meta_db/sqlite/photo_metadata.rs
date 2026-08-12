@@ -143,10 +143,11 @@ pub fn record_photos_meta_data(
             continue;
         }
 
-        // Load EXIF from absolute path on disk
+        // Load EXIF (photos) or probe metadata (videos) from absolute path on disk
         let abs_path = file::to_absolute_path(&photo.file.path, &import_to);
         if let Some(abs_file) = file::File::new_if_exists(abs_path) {
-            let meta = crate::value::exif::ExifData::new(abs_file);
+            let is_video = photo.is_video();
+            let (meta, _) = crate::value::video_metadata::load_exif_for_file(is_video, abs_file);
             photo.embed_exif(meta);
         }
 
@@ -321,6 +322,62 @@ pub fn record_photos_all_meta_data(
     }
 
     Ok((date_num, total_inserted))
+}
+
+/// The capture times the database already holds for one date directory, keyed
+/// by library-relative path.
+///
+/// Exists for the move-by-EXIF-date job, which must not re-derive a video's
+/// date from its container. A container's `creation_time` does not say which
+/// clock it was read from - a Panasonic DMC-GX8 writes local time labelled
+/// UTC while a DC-G9M2 and a DJI Osmo Action write true UTC, and no tag tells
+/// them apart - so trusting the probe would physically move a GX8-era clip
+/// into the next day's directory.
+///
+/// A row with no EXIF date falls back to its `photo_date`, which is the
+/// directory the file already sits in, so such a file simply stays put rather
+/// than moving on a guess.
+pub fn get_stored_capture_times(
+    sqlite: &SQLite,
+    date: date::Date,
+) -> Result<HashMap<String, String>, String> {
+    let conn = sqlite
+        .get_connection()
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    let prefix = format!("{}/", date);
+    let mut stmt = conn
+        .prepare(
+            "SELECT path, COALESCE(exif_date_time_original, exif_date_time, photo_date)
+               FROM photo_metadata
+              WHERE path LIKE ?1",
+        )
+        .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+    // `photo_date` is NOT NULL, so the COALESCE resolves today. Reading it as
+    // `Option` anyway keeps one dateless row from failing the whole query and,
+    // through the caller's empty-map fallback, freezing every file in the
+    // directory - a cheap guard against that constraint being relaxed.
+    let rows = stmt
+        .query_map(params![format!("{}%", prefix)], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, Option<String>>(1)?.unwrap_or_default(),
+            ))
+        })
+        .map_err(|e| format!("Failed to query capture times: {}", e))?;
+
+    let mut times = HashMap::new();
+    for row in rows {
+        let (path, time) = row.map_err(|e| format!("Failed to read capture time: {}", e))?;
+        // Keyed by the whole relative path, not by file name: the move job
+        // descends into an import's UUID subdirectory, where two imports of
+        // the same card carry the same name.
+        if !time.is_empty() {
+            times.insert(path, time);
+        }
+    }
+    Ok(times)
 }
 
 /// Get photo metadata for a specific date
@@ -533,71 +590,5 @@ pub fn get_recent_photos_metadata(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn setup_db(name: &str) -> SQLite {
-        let dir = std::env::temp_dir()
-            .join("photoclove_photo_metadata_tests")
-            .join(name);
-        std::fs::create_dir_all(&dir).unwrap();
-        let db_file = dir.join("photoclove.db");
-        if db_file.exists() {
-            std::fs::remove_file(&db_file).unwrap();
-        }
-        SQLite::new(dir.to_str().unwrap().to_string())
-    }
-
-    #[test]
-    fn test_get_photo_meta_data_in_date_filters_by_date_and_hydrates_tags() {
-        let db = setup_db("in_date");
-        let conn = db.get_connection().unwrap();
-        conn.execute(
-            "INSERT INTO photo_metadata (path, photo_date, star, comment) VALUES
-             ('2024-05-13/a.jpg', '2024-05-13 10:00:00', 3, 'hi'),
-             ('2024-05-13/b.jpg', '2024-05-13 11:00:00', 0, ''),
-             ('2024-05-14/c.jpg', '2024-05-14 09:00:00', 0, '')",
-            [],
-        )
-        .unwrap();
-        conn.execute(
-            "INSERT INTO photo_collections (type, name, color) VALUES ('tag', 'trip', '#fff')",
-            [],
-        )
-        .unwrap();
-        conn.execute(
-            "INSERT INTO photo_collection_items (collection_id, photo_path)
-             VALUES ((SELECT id FROM photo_collections WHERE name='trip'), '2024-05-13/a.jpg')",
-            [],
-        )
-        .unwrap();
-        // Deleted photo on the same date must be excluded
-        conn.execute(
-            "INSERT INTO photo_metadata (path, photo_date, delete_flg) VALUES
-             ('2024-05-13/deleted.jpg', '2024-05-13 12:00:00', 1)",
-            [],
-        )
-        .unwrap();
-
-        let date = date::Date::new(2024, 5, 13).unwrap();
-        let metas = get_photo_meta_data_in_date(&db, date).unwrap();
-
-        assert_eq!(
-            metas.keys().len(),
-            2,
-            "same-date photos only, minus deleted"
-        );
-        let a = metas.get("2024-05-13/a.jpg").unwrap();
-        assert_eq!(a.star.star(), 3);
-        assert_eq!(a.comment.comment(), "hi");
-        assert_eq!(a.photo_time(), "2024-05-13 10:00:00");
-        let tags = a.tags_string().expect("a.jpg has a tag");
-        assert!(tags.contains("trip"), "tags_string={}", tags);
-
-        let b = metas.get("2024-05-13/b.jpg").unwrap();
-        assert!(b.tags_string().is_none(), "b.jpg has no tags");
-
-        assert!(metas.get("2024-05-14/c.jpg").is_none());
-        assert!(metas.get("2024-05-13/deleted.jpg").is_none());
-    }
-}
+#[path = "photo_metadata_tests.rs"]
+mod tests;

@@ -134,6 +134,42 @@ pub fn restore_photo_from_trash_no_summary(sqlite: &SQLite, photo: &photo::Photo
 
 /// Update photo path in database
 #[allow(dead_code)]
+/// Repoint a row at a file that moved to another date directory.
+///
+/// Unlike [`update_photo_path`] this also rewrites `photo_date`, because the
+/// date directory is what that column records; leaving it behind would list
+/// the photo under a date its file no longer sits in. Everything else on the
+/// row - star, comment, tags, cloud sync - rides along, which is the point:
+/// without this the move-by-date job stranded them on a path with no file.
+///
+/// `new_date` is the destination directory name, `YYYY-MM-DD`. It is stored as
+/// `"YYYY-MM-DD 00:00:00"`, the form the import path writes, so the date-range
+/// queries that read this column keep matching.
+pub fn relocate_photo(
+    sqlite: &SQLite,
+    old_path: &str,
+    new_path: &str,
+    new_date: &str,
+) -> Result<bool, &'static str> {
+    let conn = sqlite
+        .get_connection()
+        .map_err(|_| "Failed to connect to database")?;
+
+    let rows_affected = conn
+        .execute(
+            "UPDATE photo_metadata SET path = ?1, photo_date = ?2, updated_at = ?3 WHERE path = ?4",
+            params![
+                new_path,
+                format!("{} 00:00:00", new_date),
+                crate::value::date::DateTime::now().to_db_string(),
+                old_path
+            ],
+        )
+        .map_err(|_| "Failed to relocate photo")?;
+
+    Ok(rows_affected > 0)
+}
+
 pub fn update_photo_path(
     sqlite: &SQLite,
     old_path: &str,

@@ -18,6 +18,56 @@ fn date_prefix_regex() -> &'static Regex {
         .get_or_init(|| Regex::new(r"^([0-9]{4})[/\-:]([0-9]{1,2})[/\-:]([0-9]{1,2}).+$").unwrap())
 }
 
+/// `relative_path` with its leading date directory replaced by `new_date`.
+///
+/// A library-relative path is `<date>/<file>` or `<date>/<import uuid>/<file>`.
+/// Only the first component names the date; everything below it says which
+/// import the file arrived in and must survive a move. Rebuilding the path
+/// from the date and the file name alone would flatten a UUID directory away,
+/// which is how the move-by-date job used to separate a file from its
+/// thumbnail and its database row - both are keyed by the whole relative path.
+///
+/// A path with no directory component is returned unchanged, so a caller
+/// cannot invent a location for a file that has none.
+pub fn relative_path_with_date(relative_path: &str, new_date: &str) -> String {
+    let trimmed = relative_path.trim_start_matches('/');
+    match trimmed.split_once('/') {
+        Some((_date, rest)) => format!("{}/{}", new_date, rest),
+        None => trimmed.to_string(),
+    }
+}
+
+/// Where the thumbnail for `relative_path` lives inside `thumbnail_store`.
+///
+/// `relative_path` is a library-relative path such as
+/// `"2024-01-15/uuid/photo.jpg"`. Shared by [`Photo::get_thumbnail_path`] and
+/// by the move-by-date job, which has to carry a thumbnail along with the file
+/// it renames - two copies of this naming rule would drift and orphan
+/// thumbnails.
+pub fn thumbnail_path_in_store(thumbnail_store: &str, relative_path: &str) -> String {
+    let thumbnail_path = format!(
+        "{}/{}",
+        thumbnail_store.trim_end_matches('/'),
+        relative_path.trim_start_matches('/')
+    );
+
+    // RAW and HEIC/AVIF files: thumbnail is {filename_lowercase}.jpg
+    if crate::utils::raw_file::is_raw_file(relative_path)
+        || crate::utils::raw_file::is_heic_or_avif(relative_path)
+    {
+        return format!("{}.jpg", thumbnail_path.to_lowercase());
+    }
+
+    let ext_regex = jpeg_ext_regex();
+    if ext_regex.is_match(&thumbnail_path) {
+        // JPEG file: normalize extension to .jpg
+        ext_regex.replace(&thumbnail_path, ".jpg").to_string()
+    } else {
+        // Non-JPEG file (movie, etc.): append .jpg
+        format!("{}.jpg", thumbnail_path)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PhotoTag {
     pub id: i32,
@@ -110,7 +160,8 @@ impl Photo {
 
     pub fn new_with_exif(file: file::File) -> Photo {
         let mut photo = Photo::new(file.clone(), Option::None);
-        let meta = exif::ExifData::new(file);
+        let is_video = photo.is_video();
+        let (meta, _) = crate::value::video_metadata::load_exif_for_file(is_video, file);
         photo.embed_exif(meta);
         photo.is_exif_not_loaded = false;
         photo
@@ -155,32 +206,10 @@ impl Photo {
         if !self.has_config {
             return None;
         }
-
-        let thumbnail_store = &self.thumbnail_store;
-        // file.path is relative (e.g., "2024-01-15/uuid/photo.jpg")
-        // Construct thumbnail path: thumbnail_store + "/" + relative_path
-        let thumbnail_path = format!(
-            "{}/{}",
-            thumbnail_store.trim_end_matches('/'),
-            self.file.path.trim_start_matches('/')
-        );
-
-        // RAW and HEIC/AVIF files: thumbnail is {filename_lowercase}.jpg
-        if crate::utils::raw_file::is_raw_file(&self.file.path)
-            || crate::utils::raw_file::is_heic_or_avif(&self.file.path)
-        {
-            let lowercase_path = thumbnail_path.to_lowercase();
-            return Some(format!("{}.jpg", lowercase_path));
-        }
-
-        let ext_regex = jpeg_ext_regex();
-        if ext_regex.is_match(&thumbnail_path) {
-            // JPEG file: normalize extension to .jpg
-            Some(ext_regex.replace(&thumbnail_path, ".jpg").to_string())
-        } else {
-            // Non-JPEG file (movie, etc.): append .jpg
-            Some(format!("{}.jpg", thumbnail_path))
-        }
+        Some(thumbnail_path_in_store(
+            &self.thumbnail_store,
+            &self.file.path,
+        ))
     }
 
     pub fn set_has_thumbnail(&mut self) {
@@ -506,5 +535,83 @@ mod tests {
         assert!(mk("d/x.heic").is_heic_or_avif());
         assert_eq!(mk("d/x.MP4").extension(), "mp4");
         assert_eq!(mk("d/noext").extension(), "");
+    }
+
+    #[test]
+    fn test_new_with_exif_video_falls_back_to_ctime_without_ffprobe() {
+        let dir = std::env::temp_dir().join("photoclove_new_with_exif_video_test");
+        std::fs::create_dir_all(&dir).unwrap();
+        let video_path = dir.join("clip.mp4");
+        std::fs::write(&video_path, b"not a real video").unwrap();
+
+        let f = file::File::new(video_path.to_str().unwrap().to_string());
+        let p = photo::Photo::new_with_exif(f);
+
+        // No real video metadata available (garbage file), so this must not
+        // panic and must produce a non-empty ctime-derived time, exactly
+        // like a photo whose EXIF parse fails.
+        assert!(!p.time().is_empty());
+    }
+
+    #[test]
+    fn thumbnail_paths_follow_the_source_extension() {
+        use photo::thumbnail_path_in_store;
+
+        // A JPEG's extension is normalized, not appended to: a photo and its
+        // thumbnail must resolve to one name whatever case the camera wrote.
+        assert_eq!(
+            thumbnail_path_in_store("/thumbs", "2024-05-13/P1012715.JPG"),
+            "/thumbs/2024-05-13/P1012715.jpg"
+        );
+        // A video keeps its own extension and gains .jpg, so the move job has
+        // to carry "NAME.MP4.jpg" - appending .jpg to the moved name again
+        // would look for a file that never existed.
+        assert_eq!(
+            thumbnail_path_in_store("/thumbs", "2016-02-28/P1120741.MP4"),
+            "/thumbs/2016-02-28/P1120741.MP4.jpg"
+        );
+        // RAW thumbnails are written lowercase.
+        assert_eq!(
+            thumbnail_path_in_store("/thumbs", "2024-05-13/P1012715.RW2"),
+            "/thumbs/2024-05-13/p1012715.rw2.jpg"
+        );
+        // A trailing slash on the store and a leading one on the path must not
+        // produce a doubled separator.
+        assert_eq!(
+            thumbnail_path_in_store("/thumbs/", "/2024-05-13/a.png"),
+            "/thumbs/2024-05-13/a.png.jpg"
+        );
+    }
+
+    #[test]
+    fn swapping_the_date_keeps_everything_below_it() {
+        use photo::relative_path_with_date;
+
+        // The UUID directory names the import a file arrived in, which is
+        // independent of the date it was shot. Dropping it on a move would
+        // separate the file from its thumbnail and its database row, both of
+        // which are keyed by the whole relative path.
+        assert_eq!(
+            relative_path_with_date("2026-06-29/e67cf3e1/DJI_0025.MP4", "2026-06-28"),
+            "2026-06-28/e67cf3e1/DJI_0025.MP4"
+        );
+        // A file directly under the date directory has nothing else to keep.
+        assert_eq!(
+            relative_path_with_date("2026-06-29/DJI_0025.MP4", "2026-06-28"),
+            "2026-06-28/DJI_0025.MP4"
+        );
+        // A leading slash is not part of the date component.
+        assert_eq!(
+            relative_path_with_date("/2026-06-29/a.jpg", "2026-06-28"),
+            "2026-06-28/a.jpg"
+        );
+        // Nesting deeper than one level is preserved just the same.
+        assert_eq!(
+            relative_path_with_date("2026-06-29/e67cf3e1/sub/a.jpg", "2026-06-28"),
+            "2026-06-28/e67cf3e1/sub/a.jpg"
+        );
+        // A path with no date component to replace is returned unchanged
+        // rather than gaining one, so a caller cannot invent a location.
+        assert_eq!(relative_path_with_date("a.jpg", "2026-06-28"), "a.jpg");
     }
 }

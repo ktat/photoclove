@@ -1,5 +1,16 @@
 # 動画のメタ情報を info タブに表示する
 
+> **【破棄】この設計は実装されなかった。** 調査の途中で、同じ機能が既に PR #12
+> `feat/video-metadata-extraction`（main に 2026-08-06 マージ、`a4963323`）で
+> 実装済みであることが判明したため。上流は `src-tauri/src/utils/ffprobe.rs` と
+> `src-tauri/src/value/video_metadata.rs` を使い、`PhotoInfo.jsx` と i18n も対応
+> 済み（GPS 付き）。上流の設計は
+> `docs/superpowers/specs/2026-07-12-video-metadata-extraction-design.md` を参照。
+>
+> この文書から実際に反映されたのは 1 点だけ: 上流が `model` /
+> `com.apple.quicktime.model` しか見ておらず、DJI が機種名を書く `encoder` タグを
+> 読まないという穴。`fe9a7eb4` で修正した。以下は調査の記録として残す。
+
 ## 背景
 
 info タブを動画で開くと、ISO・機種・撮影日時などがすべて空欄になる。
@@ -29,7 +40,7 @@ EXIF が空になると `src-tauri/src/value/exif.rs:147-150` のフォールバ
 
 ### ffprobe で取得できるもの（実測）
 
-```
+```text
 format.tags.encoder        "DJI OsmoAction6"
 format.tags.creation_time  "2026-06-29T04:30:05.000000Z"
 format.duration            "11.968000"
@@ -167,7 +178,7 @@ info タブを開くと ffprobe が 2 回起動する（`ExifData::new` 内で 1
 - 長さ: 1 時間未満は `M:SS`、以上は `H:MM:SS`
 - フレームレート: 小数第 2 位まで、末尾ゼロは落とす（`29.97 fps` / `30 fps`）
 
-新規 i18n キー `photoInfo.resolution` / `duration` / `frameRate` / `videoCodec` を 7 言語（ja / en / de / es / fr / zh-CN / zh-TW）の `common.json` に追加する。
+新規 i18n キー `photoInfo.resolution` / `duration` / `frameRate` / `videoCodec` を追加する。`photoInfo` セクションを持つのは `ja` と `en` の `common.json` だけで、他の 5 言語（de / es / fr / zh-CN / zh-TW）は `src/i18n/index.js:150` の `fallbackLng: 'en'` で英語にフォールバックしている。既存の慣習に合わせて ja と en の 2 ファイルのみ更新する。
 
 スタイルは既存の `styles['photo-info-table']` をそのまま使い、CSS は追加しない。
 

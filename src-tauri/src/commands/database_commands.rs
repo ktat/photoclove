@@ -1,9 +1,56 @@
+use super::run_blocking;
 use crate::app_state::AppState;
 use crate::domain_service::photo_service;
 use crate::repository::{MetaInfoDB, RepositoryDB};
 use crate::value::date;
 use std::path::PathBuf;
 use tauri::Emitter;
+
+/// Bring each moved file's database row and thumbnail to its new location.
+///
+/// A failure here is logged and skipped rather than aborting: the files are
+/// already moved, so stopping would leave the rest of them worse off than
+/// finishing does.
+///
+/// Takes owned handles rather than `tauri::State` so the caller can run it on
+/// the blocking pool: every entry costs a SQLite write, an `exists` check, a
+/// `create_dir_all` and a `rename`, and a date-wide move can carry hundreds.
+fn follow_moved_files(
+    meta_db: &crate::repository::MetaDB,
+    thumbnail_store: &str,
+    moved: &[crate::repository::MovedFile],
+) {
+    for m in moved {
+        match meta_db.relocate_photo(&m.from, &m.to, &m.to_date) {
+            Ok(true) => {}
+            Ok(false) => {
+                log::warn!(target: "photo", "relocate_photo_no_row; from={}; to={}", m.from, m.to)
+            }
+            Err(e) => {
+                log::error!(target: "photo", "relocate_photo_failed; from={}; to={}; error={}", m.from, m.to, e)
+            }
+        }
+
+        let from = crate::entity::photo::thumbnail_path_in_store(thumbnail_store, &m.from);
+        let to = crate::entity::photo::thumbnail_path_in_store(thumbnail_store, &m.to);
+        // A photo with no thumbnail yet is normal, not an error.
+        if !std::path::Path::new(&from).exists() {
+            continue;
+        }
+        if let Some(parent) = std::path::Path::new(&to).parent() {
+            if let Err(e) = std::fs::create_dir_all(parent) {
+                log::error!(target: "photo", "thumbnail_dir_failed; dir={}; error={}", parent.display(), e);
+                continue;
+            }
+        }
+        match std::fs::rename(&from, &to) {
+            Ok(_) => log::info!(target: "photo", "thumbnail_moved; from={}; to={}", from, to),
+            Err(e) => {
+                log::error!(target: "photo", "thumbnail_move_failed; from={}; to={}; error={}", from, to, e)
+            }
+        }
+    }
+}
 
 /// Move photos to directories organized by their EXIF date
 ///
@@ -32,10 +79,42 @@ pub async fn move_photos_to_exif_date(
     let date = date::Date::from_string(&date_str.to_string(), None);
     let _ = window.emit("move_files", "start");
     log::debug!(target: "photo", "move_photos_to_exif_date; target_date={:?}", date);
-    let dates = state.repo_db.move_photos_to_exif_date(date).await;
-    log::debug!(target: "photo", "move_photos_completed; dates={:?}", dates);
+    // Videos are dated from the database, not re-probed: a container's
+    // creation_time does not say which clock it came from, so trusting it
+    // would move some clips a timezone offset into the wrong day.
+    let stored_capture_times = state
+        .meta_db
+        .get_stored_capture_times(date)
+        .unwrap_or_else(|e| {
+            log::warn!(target: "photo", "stored_capture_times_failed; date={}; error={}", date, e);
+            std::collections::HashMap::new()
+        });
+    let (dates, moved) = state
+        .repo_db
+        .move_photos_to_exif_date(date, stored_capture_times)
+        .await;
+    // Renaming the file is only half a move: the database row carries the
+    // star, comment, tags and cloud-sync state, and the thumbnail is stored
+    // under the same relative path. Left behind, the row points at a file that
+    // is gone and the thumbnail is orphaned while the photo shows none.
+    let moved_count = moved.len();
+    let meta_db_for_moves = state.meta_db.clone();
+    let thumbnail_store = state.config.thumbnail_store.clone();
+    let _ = run_blocking(move || {
+        follow_moved_files(&meta_db_for_moves, &thumbnail_store, &moved);
+        Ok(())
+    })
+    .await;
+    log::debug!(target: "photo", "move_photos_completed; dates={:?}; moved={}", dates, moved_count);
     let _ = window.emit("move_files", "end_move");
-    match state.meta_db.record_photos_all_meta_data(dates) {
+    let meta_db = state.meta_db.clone();
+    let result = run_blocking(move || {
+        meta_db
+            .record_photos_all_meta_data(dates)
+            .map_err(|e| e.to_string())
+    })
+    .await;
+    match result {
         Ok((ret, _inserted)) => {
             let _ = window.emit("move_files", "finish");
             Ok(serde_json::to_string(&ret).unwrap_or_else(|_| "{}".to_string()))
@@ -106,7 +185,14 @@ pub async fn create_db_in_date(
     // Date separator ("-" or "/") is auto-detected by Date::try_from_string.
     let date = date::Date::from_string(&date_str.to_string(), None);
     let dates = date::Dates::new(&[date]);
-    match state.meta_db.record_photos_all_meta_data(dates) {
+    let meta_db = state.meta_db.clone();
+    let result = run_blocking(move || {
+        meta_db
+            .record_photos_all_meta_data(dates)
+            .map_err(|e| e.to_string())
+    })
+    .await;
+    match result {
         Ok((ret, inserted)) => {
             // Report the actual outcome so the UI can show an honest message instead
             // of a blanket success: `inserted` = rows newly added, `total` = photos now

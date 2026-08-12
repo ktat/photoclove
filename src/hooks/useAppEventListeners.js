@@ -28,6 +28,7 @@ export function useAppEventListeners({
     setAchievementQueue,
     addFooterMessage,
     getDates,
+    requestPhotoRefresh,
     updateCurrentDate,
     resetPhotoState,
     toggleHome,
@@ -109,6 +110,10 @@ export function useAppEventListeners({
                         const total = payload.total ?? 0;
                         if (inserted > 0) {
                             addFooterMessage("create_db", `Database updated: ${inserted} photo(s) added (${total} total)`, true, 10000);
+                            // Rows were added or removed, so what the list is
+                            // showing no longer matches the database.
+                            getDates();
+                            requestPhotoRefresh();
                         } else if (total > 0) {
                             addFooterMessage("create_db", `Database already up to date (${total} photo(s), nothing to add)`, false, 10000);
                         } else {
@@ -125,17 +130,30 @@ export function useAppEventListeners({
                     addFooterMessage("create_thumbnail", "Thumbnail creation is started", false, 10000);
                 } else if (e.payload === "finish") {
                     addFooterMessage("create_thumbnail", "Thumbnail is created :)", true, 10000);
+                    // The list rendered before these existed and would keep
+                    // showing the placeholders until navigated away from.
+                    requestPhotoRefresh();
+                } else if (e.payload === "failed") {
+                    addFooterMessage("create_thumbnail", "Thumbnail creation failed", true, 10000);
                 }
             });
 
-            // Move files events
+            // Move files events. The backend emits start / end_move / finish /
+            // failed (commands/database_commands.rs).
             unlisten3 = await listen(MENU_EVENTS.MOVE_FILES, (e) => {
+                logger.debug('App', 'move_files_event', 'Move files event', { payload: e.payload });
                 if (e.payload === "start") {
                     addFooterMessage("move_files", "Start moving files");
-                } else if (e.payload === "ned_move") {
+                } else if (e.payload === "end_move") {
                     addFooterMessage("move_files", "Finish moving files");
-                } else {
+                } else if (e.payload === "finish") {
                     addFooterMessage("move_files", "Finish (re)creating DB", true, 10000);
+                    // Photos left the date the list is showing; without this
+                    // they stay on screen under a date they are no longer in.
+                    getDates();
+                    requestPhotoRefresh();
+                } else if (e.payload === "failed") {
+                    addFooterMessage("move_files", "Moving files failed", true, 10000);
                 }
             });
 
@@ -159,7 +177,12 @@ export function useAppEventListeners({
             unlistenImport = await listen(MENU_EVENTS.IMPORT, async (e) => {
                 if (e.payload === "finish") {
                     logger.info('App', 'import_finish', 'Import finished, refreshing dates and checking achievements');
+                    // The job queue is done copying. Announcing it at submit
+                    // time called the import finished while the files were
+                    // still being written.
+                    addFooterMessage("import", "Import finished", true, 10000);
                     getDates();
+                    requestPhotoRefresh();
                     try {
                         const result = await checkAllAchievements();
                         if (result.newly_achieved?.length > 0) {
