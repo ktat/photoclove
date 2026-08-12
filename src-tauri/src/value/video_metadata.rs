@@ -60,14 +60,24 @@ impl VideoMetadata {
             .unwrap_or_default()
             .to_string();
 
+        // `encoder` is the last resort: DJI action cameras write no make/model
+        // box and put the model name there instead. It is checked last because
+        // on a file some tool rewrote it holds a muxer name ("Lavf60.16.100"),
+        // which a real model box should outrank.
         let model = tags
             .and_then(|t| {
                 t.get("model")
                     .or_else(|| t.get("com.apple.quicktime.model"))
             })
             .and_then(|v| v.as_str())
-            .unwrap_or_default()
-            .to_string();
+            .map(str::to_string)
+            .or_else(|| {
+                tags.and_then(|t| t.get("encoder"))
+                    .and_then(|v| v.as_str())
+                    .filter(|e| !is_muxer_signature(e))
+                    .map(str::to_string)
+            })
+            .unwrap_or_default();
 
         let (gps_latitude, gps_longitude) = tags
             .and_then(|t| {
@@ -169,6 +179,47 @@ impl VideoMetadata {
 
         data
     }
+}
+
+/// The exif-shaped data that is safe to write back to the database.
+///
+/// For a photo this is the input unchanged. For a video it drops the two date
+/// fields, because a container's `creation_time` does not say which clock it
+/// was read from: a Panasonic DMC-GX8 writes local time labelled UTC, while a
+/// DJI Osmo Action and a Panasonic DC-G9M2 write true UTC, and no tag
+/// distinguishes them. Converting is therefore a guess, and a guess must not
+/// overwrite what the database already holds - opening the info tab would
+/// silently move every GX8-era clip nine hours forward, onto the wrong day.
+///
+/// The date the probe found is still shown in the info tab; this only governs
+/// what is persisted.
+pub fn exif_for_db_sync(is_video: bool, data: &exif::ExifData) -> exif::ExifData {
+    let mut synced = data.clone();
+    if is_video {
+        synced.date_time.clear();
+        synced.date_time_original.clear();
+    }
+    synced
+}
+
+/// Muxing tools that stamp their own name into the container's `encoder` tag.
+///
+/// The tag is the only place a DJI-style action camera records its model, so it
+/// is worth reading - but a file this app merged itself, or that any transcoder
+/// touched, carries the tool's signature there instead. Showing "Lavf62.3.100"
+/// as the camera model is worse than showing nothing.
+fn is_muxer_signature(encoder: &str) -> bool {
+    const MUXERS: &[&str] = &[
+        "lavf",
+        "libav",
+        "handbrake",
+        "gpac",
+        "mp4v2",
+        "x264",
+        "x265",
+    ];
+    let lower = encoder.trim().to_lowercase();
+    MUXERS.iter().any(|m| lower.starts_with(m))
 }
 
 /// Load `ExifData` for a file, using `ffprobe` for video containers (which
@@ -354,6 +405,103 @@ mod tests {
         let vm = VideoMetadata::from_ffprobe_json(json).unwrap();
         assert_eq!(vm.make, "Canon");
         assert_eq!(vm.model, "EOS R5");
+    }
+
+    #[test]
+    fn test_from_ffprobe_json_falls_back_to_encoder_tag_for_model() {
+        // DJI action cameras write no make/model box at all; the model name
+        // only appears in the container's `encoder` tag. Without this
+        // fallback the info tab shows an empty 機種 for every DJI clip.
+        let json = r#"{"streams": [], "format": {"tags": {
+            "creation_time": "2026-06-29T04:30:05.000000Z",
+            "encoder": "DJI OsmoAction6"
+        }}}"#;
+        let vm = VideoMetadata::from_ffprobe_json(json).unwrap();
+        assert_eq!(vm.model, "DJI OsmoAction6");
+    }
+
+    #[test]
+    fn test_from_ffprobe_json_prefers_model_tag_over_encoder() {
+        // `encoder` also carries muxer names ("Lavf60.16.100") on files a
+        // tool rewrote, so a real model box must win when both are present.
+        let json = r#"{"streams": [], "format": {"tags": {
+            "model": "EOS R5",
+            "encoder": "Lavf60.16.100"
+        }}}"#;
+        let vm = VideoMetadata::from_ffprobe_json(json).unwrap();
+        assert_eq!(vm.model, "EOS R5");
+    }
+
+    #[test]
+    fn test_from_ffprobe_json_ignores_muxer_names_in_encoder() {
+        // Files this app merged itself carry ffmpeg's muxer signature. Showing
+        // "Lavf62.3.100" as the camera model is worse than showing nothing.
+        for muxer in [
+            "Lavf62.3.100",
+            "lavf58.76.100",
+            "libavformat 58.76.100",
+            "HandBrake 1.7.3 2024022300",
+            "GPAC/vlc 1.0.0",
+            "Mp4v2 2.0.0",
+        ] {
+            let json = format!(
+                r#"{{"streams": [], "format": {{"tags": {{"encoder": "{}"}}}}}}"#,
+                muxer
+            );
+            let vm = VideoMetadata::from_ffprobe_json(&json).unwrap();
+            assert_eq!(vm.model, "", "muxer={}", muxer);
+        }
+    }
+
+    #[test]
+    fn test_from_ffprobe_json_keeps_camera_names_that_are_not_muxers() {
+        for camera in ["DJI OsmoAction6", "GoPro HERO12 Black", "Insta360 X4"] {
+            let json = format!(
+                r#"{{"streams": [], "format": {{"tags": {{"encoder": "{}"}}}}}}"#,
+                camera
+            );
+            let vm = VideoMetadata::from_ffprobe_json(&json).unwrap();
+            assert_eq!(vm.model, camera);
+        }
+    }
+
+    #[test]
+    fn test_exif_for_db_sync_drops_the_dates_for_a_video() {
+        // ffprobe reports `creation_time` verbatim, and cameras disagree about
+        // what it means: a Panasonic DMC-GX8 writes local time labelled UTC
+        // while a DJI Osmo Action and a Panasonic DC-G9M2 write true UTC, with
+        // no tag telling them apart. Persisting a converted guess would move a
+        // 2016 GX8 clip nine hours forward - onto the wrong day - every time
+        // its info tab is opened.
+        let vm = VideoMetadata {
+            creation_time: "2016-02-29 01:09:10".to_string(),
+            model: "DJI OsmoAction6".to_string(),
+            width: "1920".to_string(),
+            height: "1080".to_string(),
+            ..VideoMetadata::empty()
+        };
+        let synced = exif_for_db_sync(true, &vm.to_exif_data("2022-12-21 02:09:57"));
+
+        assert_eq!(synced.date_time, "");
+        assert_eq!(synced.date_time_original, "");
+        // Everything the container states unambiguously still syncs.
+        assert_eq!(synced.model, "DJI OsmoAction6");
+        assert_eq!(synced.xresolution, "1920");
+        assert_eq!(synced.yresolution, "1080");
+    }
+
+    #[test]
+    fn test_exif_for_db_sync_leaves_a_photo_untouched() {
+        let mut data = exif::ExifData::empty();
+        data.date_time = "2024-05-13 05:43:43".to_string();
+        data.date_time_original = "2024-05-13 05:43:43".to_string();
+        data.model = "DC-G9M2".to_string();
+
+        let synced = exif_for_db_sync(false, &data);
+
+        assert_eq!(synced.date_time, "2024-05-13 05:43:43");
+        assert_eq!(synced.date_time_original, "2024-05-13 05:43:43");
+        assert_eq!(synced.model, "DC-G9M2");
     }
 
     #[test]

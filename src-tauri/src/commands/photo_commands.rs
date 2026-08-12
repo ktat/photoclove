@@ -282,11 +282,14 @@ fn photo_info_blocking(
             let video_value = vm_opt.and_then(|vm| serde_json::to_value(&vm).ok());
 
             // Sync EXIF-shaped data to database if there are differences.
-            // For video this self-heals exif_date_time_original/exif_model/
-            // exif_make exactly like it already does for photo EXIF —
-            // duration/codec/GPS are never written here since nothing reads
-            // them back from the DB.
-            if let Err(e) = meta_db.update_exif_if_changed(path_str, &exif_data) {
+            // For video this self-heals exif_model/exif_make/resolution
+            // exactly like it already does for photo EXIF — duration/codec/GPS
+            // are never written here since nothing reads them back from the
+            // DB, and the dates are held back because the container does not
+            // say which clock its creation_time came from (see
+            // video_metadata::exif_for_db_sync).
+            let sync_data = crate::value::video_metadata::exif_for_db_sync(is_video, &exif_data);
+            if let Err(e) = meta_db.update_exif_if_changed(path_str, &sync_data) {
                 log::warn!(target: "photo_info", "exif_sync_failed; path={}; error={}", path_str, e);
             }
 

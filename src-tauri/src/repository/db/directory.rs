@@ -2,7 +2,7 @@
 
 use crate::domain_service::dir_service;
 use crate::entity::{config, photo, photo_meta};
-use crate::repository::{self, RepoDB, RepositoryDB, Sort};
+use crate::repository::{self, MovedFile, RepoDB, RepositoryDB, Sort};
 use crate::value::{date, exif, file};
 use async_trait::async_trait;
 use std::cmp::Ordering;
@@ -160,6 +160,44 @@ fn create_photo_from_metadata(
     p.set_comment(photo_meta.comment.comment());
     p.set_tags_from_string(photo_meta.tags_string());
     p
+}
+
+/// The date directory a file belongs in, as `YYYY-MM-DD`.
+///
+/// A photo's EXIF date is authoritative, so it is read from the file. A
+/// video's is not: the container's `creation_time` does not say which clock it
+/// was read from - a Panasonic DMC-GX8 writes local time labelled UTC while a
+/// DC-G9M2 and a DJI Osmo Action write true UTC, and no tag tells them apart.
+/// Trusting the probe would physically move a GX8-era clip into the next day's
+/// directory, so a video uses the date the database holds instead.
+///
+/// A video the database has no date for is returned `current_date` unchanged,
+/// which leaves it where it is. Moving a file on a value known to be
+/// unreliable is worse than not moving it.
+///
+/// `relative_path` keys `stored_capture_times`. A file name would not: the
+/// scan descends into an import's UUID subdirectory, where two imports of the
+/// same card carry the same name.
+fn target_date_string(
+    photo: &photo::Photo,
+    relative_path: &str,
+    stored_capture_times: &HashMap<String, String>,
+    current_date: &str,
+) -> String {
+    if !photo.is_video() {
+        return photo.created_date_string();
+    }
+    match stored_capture_times.get(relative_path) {
+        Some(stored) => stored.chars().take("YYYY-MM-DD".len()).collect(),
+        None => {
+            log::info!(
+                target: "directory",
+                "move_skip_video; reason=no_stored_capture_time; file={}",
+                photo.file.path
+            );
+            current_date.to_string()
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -574,41 +612,67 @@ impl RepositoryDB for Directory {
             .await
     }
 
-    async fn move_photos_to_exif_date(&self, date: date::Date) -> date::Dates {
+    async fn move_photos_to_exif_date(
+        &self,
+        date: date::Date,
+        stored_capture_times: HashMap<String, String>,
+    ) -> (date::Dates, Vec<MovedFile>) {
         let path = self.path.clone();
         tauri::async_runtime::spawn_blocking(move || {
             let dir = path.child(date.to_string());
             let files = dir_service::find_files(&dir);
             log::info!(target: "directory", "move_photos_to_exif_date; date={}; dir={}; file_count={}", date, dir.path, files.files.len());
             let mut dates_to_be_changed: HashMap<String, bool> = HashMap::new();
+            let mut moved: Vec<MovedFile> = Vec::new();
             for file in files.files {
-                // file has absolute path from filesystem scan
+                // file has absolute path from filesystem scan. The scan
+                // descends into an import's UUID subdirectory, so the path
+                // below the date is not always just a file name.
+                let relative_path = file::to_relative_path(&file.path, &path.path);
                 let photo = photo::Photo::new_with_exif(file.clone());
-                let created_date_str = photo.created_date_string();
-                let new_dir = path.child(created_date_str.clone());
-                log::debug!(target: "directory", "move_check; file={}; photo_time={}; created_date_str={}; current_dir={}; new_dir={}",
-                    file.path, photo.time(), created_date_str, dir.path, new_dir.path);
-                if dir.path != new_dir.path {
+                let created_date_str = target_date_string(
+                    &photo,
+                    &relative_path,
+                    &stored_capture_times,
+                    &date.to_string(),
+                );
+                // Swapping only the date component keeps the UUID directory,
+                // which names the import. Rebuilding from the date and the
+                // file name would flatten it away and strand the thumbnail
+                // and the database row, which are keyed by the whole path.
+                let new_relative_path =
+                    photo::relative_path_with_date(&relative_path, &created_date_str);
+                let new_path = path.as_pathbuf().join(&new_relative_path);
+                log::debug!(target: "directory", "move_check; file={}; photo_time={}; created_date_str={}; new_relative={}",
+                    file.path, photo.time(), created_date_str, new_relative_path);
+                if relative_path != new_relative_path {
                     dates_to_be_changed
-                        .entry(photo.created_date_string())
+                        .entry(created_date_str.clone())
                         .or_insert(true);
-                    let filename = photo.file.filename();
-                    let new_pathbuf = new_dir.as_pathbuf();
-                    let new_path = new_pathbuf.as_path().join(filename);
 
                     // Ensure target directory exists
-                    if !new_pathbuf.exists() {
-                        if let Err(e) = fs::create_dir_all(&new_pathbuf) {
-                            log::error!(target: "directory", "create_dir_failed; dir={}; error={}", new_dir.path, e);
-                            continue;
+                    if let Some(parent) = new_path.parent() {
+                        if !parent.exists() {
+                            if let Err(e) = fs::create_dir_all(parent) {
+                                log::error!(target: "directory", "create_dir_failed; dir={}; error={}", parent.display(), e);
+                                continue;
+                            }
+                            log::info!(target: "directory", "created_dir; dir={}", parent.display());
                         }
-                        log::info!(target: "directory", "created_dir; dir={}", new_dir.path);
                     }
 
                     // file.path is absolute here (from filesystem scan)
                     match fs::rename(&file.path, new_path.display().to_string()) {
                         Ok(_) => {
-                            log::info!(target: "directory", "file_moved; from={}; to={}", file.path, new_path.display())
+                            log::info!(target: "directory", "file_moved; from={}; to={}", file.path, new_path.display());
+                            // Report it so the caller can bring the database
+                            // row and the thumbnail along; only a move that
+                            // actually happened is reported.
+                            moved.push(MovedFile {
+                                from: relative_path,
+                                to: new_relative_path,
+                                to_date: created_date_str.clone(),
+                            });
                         }
                         Err(e) => {
                             log::error!(target: "directory", "file_move_failed; from={}; to={}; error={}", file.path, new_path.display(), e)
@@ -628,12 +692,12 @@ impl RepositoryDB for Directory {
                     }
                 }
             }
-            dates
+            (dates, moved)
         })
         .await
         .unwrap_or_else(|e| {
             log::error!(target: "directory", "move_photos_to_exif_date_join_error; error={:?}", e);
-            date::Dates::new(&[])
+            (date::Dates::new(&[]), Vec::new())
         })
     }
 }

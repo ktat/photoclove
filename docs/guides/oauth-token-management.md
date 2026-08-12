@@ -96,7 +96,7 @@ python3 -c "import keyring; keyring.delete_password('photoclove', 'google_oauth_
 ### Integration Points
 
 #### Frontend (JavaScript)
-- **File**: `src/services/firebase/auth.js`
+- **File**: `src/services/GoogleAuthService.js`
 - **Command**: `store_google_tokens` - Stores tokens after OAuth flow
 - **Logging**: Structured logging for OAuth events
 
@@ -387,7 +387,7 @@ Run with: `cargo run --bin test_keyring`
 ### Core Implementation
 - `src-tauri/src/domain_service/token_storage_service.rs` - Main service
 - `src-tauri/src/lib.rs` - Tauri commands
-- `src/services/firebase/auth.js` - Frontend OAuth integration
+- `src/services/GoogleAuthService.js` - Frontend OAuth integration
 
 ### Testing Tools
 - `src-tauri/src/bin/test_keyring.rs` - Token inspection tool
@@ -395,6 +395,6 @@ Run with: `cargo run --bin test_keyring`
 
 ### Configuration
 - `src-tauri/Cargo.toml` - Keyring dependency
-- `src/.google-auth-config.js` - OAuth client configuration
+- `src/.google-auth-config.js` - OAuth client ID (public identifier; no secrets)
 
 This secure token management system enables PhotoClove to provide seamless Google Photos integration while maintaining high security standards and excellent user experience.

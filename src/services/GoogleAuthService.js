@@ -1,9 +1,8 @@
 import { open } from '@tauri-apps/plugin-shell';
-import { getAuth, GoogleAuthProvider, getRedirectResult as _getRedirectResult, signInWithRedirect as _signInWithRedirect, signInWithCredential } from 'firebase/auth';
 import { invoke } from "@tauri-apps/api/core";
-import { GoogleAuthConfig } from "../../.google-auth-config";
-import { localForage } from "../../storage/forage";
-import { logger } from "../LoggerService.js";
+import { GoogleAuthConfig } from "../.google-auth-config";
+import { localForage } from "../storage/forage";
+import { logger } from "./LoggerService.js";
 import axios from "axios";
 
 const openBrowserToConsent = (port) => {
@@ -66,25 +65,26 @@ export const googleSignIn = async (payload) => {
 
     logger.info('GoogleAuth', 'tokens_received', 'OAuth tokens received successfully');
 
-    const auth = getAuth();
-    const credential = GoogleAuthProvider.credential(null, accessToken);
-
     // Store tokens securely using our TokenStorageService
+    let keyringStored = false;
     try {
       await invoke('store_google_tokens', {
         accessToken: accessToken,
         refreshToken: refreshToken,
         expiresIn: expiresIn
       });
+      keyringStored = true;
       logger.info('GoogleAuth', 'tokens_stored', 'Tokens stored securely in keyring');
     } catch (tokenError) {
       logger.error('GoogleAuth', 'token_storage_error', 'Failed to store tokens securely', {
         error: tokenError.toString()
       });
-      // Continue with Firebase auth even if secure storage fails
+      // Fall through to the localForage store below even if secure storage fails
     }
 
-    // Also keep the old localForage storage for backward compatibility (for now)
+    // The Google Photos upload path (photoOperations.js) still reads tokens from
+    // here, so this write is required even when the keyring store succeeded.
+    let localForageStored = false;
     try {
       await localForage.setItem(
         "GoogleOAuthTokens",
@@ -93,16 +93,39 @@ export const googleSignIn = async (payload) => {
           refreshToken: refreshToken,
         }
       );
+      localForageStored = true;
       logger.debug('GoogleAuth', 'legacy_storage', 'Tokens also stored in legacy localForage');
     } catch (legacyError) {
       logger.warn('GoogleAuth', 'legacy_storage_error', 'Failed to store in localForage', {
         error: legacyError.toString()
       });
+      // Whatever is still under this key belongs to the previous sign-in, and
+      // the upload path accepts any record it finds. Left in place, a failed
+      // write means the next upload silently goes to the old account.
+      try {
+        await localForage.removeItem("GoogleOAuthTokens");
+      } catch (removeError) {
+        logger.error('GoogleAuth', 'legacy_storage_stale', 'Could not clear the previous tokens after a failed write', {
+          error: removeError.toString()
+        });
+      }
     }
 
-    // Proceed with Firebase authentication
-    await signInWithCredential(auth, credential);
-    logger.info('GoogleAuth', 'firebase_signin_success', 'Firebase authentication successful');
+    // Gated on localForage alone because that is the only store the upload path
+    // reads. A keyring-only success would leave uploads with no token, or worse,
+    // with the stale one a previous sign-in left behind.
+    if (!localForageStored) {
+      logger.error('GoogleAuth', 'signin_error', 'Sign In failed: tokens could not be stored for upload use', {
+        keyringStored,
+        localForageStored
+      });
+      return;
+    }
+
+    logger.info('GoogleAuth', 'signin_success', 'Google Sign In completed', {
+      keyringStored,
+      localForageStored
+    });
 
   } catch (error) {
     const errorCode = error.code || 'unknown';
@@ -113,8 +136,3 @@ export const googleSignIn = async (payload) => {
     });
   }
 };
-
-export const signOut = () => {
-  const auth = getAuth();
-  return auth.signOut();
-}

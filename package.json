@@ -36,7 +36,6 @@
     "build": "^0.1.4",
     "classnames": "^2.5.1",
     "clipboard-manager": "^1.0.1",
-    "firebase": "^9.23.0",
     "i18next": "^25.10.10",
     "i18next-browser-languagedetector": "^8.2.1",
     "react": "^18.3.1",

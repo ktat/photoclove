@@ -287,10 +287,7 @@ src/
 │   ├── 📄 SlideshowMusicService.js # Slideshow music management
 │   ├── 📄 FaceDetectionService.js # Face detection API service
 │   ├── 📄 UnifiedCollectionService.js # Unified collection CRUD service
-│   └── 📁 firebase/            # Firebase authentication
-│       ├── 📄 app.js           # Firebase app configuration
-│       ├── 📄 auth.js          # Authentication methods
-│       └── 📄 index.js         # Firebase service exports
+│   └── 📄 GoogleAuthService.js # Google OAuth consent flow + token handoff to keyring
 │
 ├── 📁 storage/                 # Client-side storage
 │   └── 📄 forage.js            # LocalForage configuration

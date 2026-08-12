@@ -301,9 +301,9 @@ This document provides a mapping between PhotoClove features, concepts, and thei
 - **Implementation**: `src/services/LoggerService.js`
 - **Description**: Frontend structured logging
 
-- **Term**: FirebaseAuth
-- **Implementation**: `src/services/firebase/auth.js`
-- **Description**: OAuth authentication flow
+- **Term**: GoogleAuth
+- **Implementation**: `src/services/GoogleAuthService.js`
+- **Description**: Google OAuth consent flow for Google Photos
 
 ### React Hooks
 - **Term**: useSearch
