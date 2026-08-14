@@ -296,7 +296,7 @@ PhotoClove maintains a single source of truth for "the photos currently visible 
 1. **File Access**: Sandboxed file access through Tauri APIs
 2. **Path Validation**: Input sanitization for file paths
 3. **Database**: Parameterized SQLite queries
-4. **Authentication**: Google OAuth for Google Photos (optional). Tokens are stored only in the OS keyring; the frontend never holds them, and reads status via `is_google_authenticated`. Sign-in fails if the keyring store fails.
+4. **Authentication**: Google OAuth for Google Photos (optional). Tokens are stored only in the OS keyring; the frontend never holds them, and reads status via `is_google_authenticated`. Sign-in fails if the keyring store fails. Sign-in also purges `GoogleOAuthTokens`, the plaintext entry older versions mirrored into IndexedDB; that purge is best effort, and a failure is logged rather than failing the sign-in, since aborting would leave the same entry in place.
 5. **Local Storage**: All data remains on user's machine
 
 ## Extension Points

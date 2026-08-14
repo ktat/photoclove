@@ -73,7 +73,11 @@ export const googleSignIn = async (payload) => {
     try {
       await localForage.removeItem("GoogleOAuthTokens");
     } catch (cleanupError) {
-      logger.warn('GoogleAuth', 'legacy_cleanup_error', 'Failed to remove legacy localForage tokens', {
+      // Logged at error level because a plaintext refresh token surviving in
+      // IndexedDB is worth seeing in the log viewer. The sign-in still goes
+      // ahead: aborting would not delete the entry either, so it would cost
+      // the feature without buying any privacy back.
+      logger.error('GoogleAuth', 'legacy_cleanup_error', 'Could not remove the plaintext tokens an older version left in IndexedDB', {
         error: cleanupError.toString()
       });
     }

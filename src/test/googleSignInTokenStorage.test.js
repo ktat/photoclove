@@ -70,10 +70,36 @@ describe('google sign-in token storage', () => {
 
         await googleSignIn(redirectUrl({ access_token: 'a', refresh_token: 'r' }));
 
+        // Assert the whole contract, not just the purge: without these the test
+        // would also pass if the run never reached the keyring at all, or if it
+        // fell back to writing the tokens somewhere JS can read.
+        expect(invoke).toHaveBeenCalledWith('store_google_tokens', {
+            accessToken: 'a',
+            refreshToken: 'r',
+            expiresIn: 3600,
+        });
+        expect(setItem).not.toHaveBeenCalled();
         // A keyring that cannot be written to is exactly the case where the old
         // plaintext entry would otherwise sit in IndexedDB forever - which is
         // the thing this change exists to remove.
         expect(removeItem).toHaveBeenCalledWith('GoogleOAuthTokens');
+    });
+
+    it('still signs in when the legacy purge fails', async () => {
+        removeItem.mockRejectedValue(new Error('IndexedDB unavailable'));
+
+        await googleSignIn(redirectUrl({ access_token: 'a', refresh_token: 'r' }));
+
+        // Aborting here would not delete the stale entry - it survives either
+        // way - so refusing to sign in buys no privacy and costs the feature.
+        // The new tokens still belong in the keyring, and nothing reads the old
+        // entry any more (photoOperations asks is_google_authenticated).
+        expect(invoke).toHaveBeenCalledWith('store_google_tokens', {
+            accessToken: 'a',
+            refreshToken: 'r',
+            expiresIn: 3600,
+        });
+        expect(setItem).not.toHaveBeenCalled();
     });
 
     it('does not store anything when no access token comes back', async () => {
