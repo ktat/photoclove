@@ -63,7 +63,17 @@ describe('google sign-in token storage', () => {
         // Nothing usable was stored, so the run must stop rather than report a
         // success the upload path cannot honour.
         expect(setItem).not.toHaveBeenCalled();
-        expect(removeItem).not.toHaveBeenCalled();
+    });
+
+    it('purges the plaintext tokens even when the keyring store fails', async () => {
+        invoke.mockRejectedValue(new Error('keyring unavailable'));
+
+        await googleSignIn(redirectUrl({ access_token: 'a', refresh_token: 'r' }));
+
+        // A keyring that cannot be written to is exactly the case where the old
+        // plaintext entry would otherwise sit in IndexedDB forever - which is
+        // the thing this change exists to remove.
+        expect(removeItem).toHaveBeenCalledWith('GoogleOAuthTokens');
     });
 
     it('does not store anything when no access token comes back', async () => {

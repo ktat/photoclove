@@ -65,8 +65,21 @@ export const googleSignIn = async (payload) => {
 
     logger.info('GoogleAuth', 'tokens_received', 'OAuth tokens received successfully');
 
+    // Older versions mirrored the tokens into localForage in plaintext. Drop
+    // that entry first: nothing reads it any more, and doing it after the
+    // keyring write would skip it on the one path that matters - a machine
+    // whose keyring is unavailable, where the plaintext refresh token would
+    // otherwise sit in IndexedDB forever.
+    try {
+      await localForage.removeItem("GoogleOAuthTokens");
+    } catch (cleanupError) {
+      logger.warn('GoogleAuth', 'legacy_cleanup_error', 'Failed to remove legacy localForage tokens', {
+        error: cleanupError.toString()
+      });
+    }
+
     // Tokens live only in the OS keyring. Consumers read them through the Rust
-    // side (is_google_authenticated / get_google_access_token), never from JS.
+    // side (is_google_authenticated), never from JS.
     try {
       await invoke('store_google_tokens', {
         accessToken: accessToken,
@@ -79,16 +92,6 @@ export const googleSignIn = async (payload) => {
         error: tokenError.toString()
       });
       return;
-    }
-
-    // Older versions mirrored the tokens into localForage in plaintext.
-    // Drop that entry so the refresh token stops lingering in IndexedDB.
-    try {
-      await localForage.removeItem("GoogleOAuthTokens");
-    } catch (cleanupError) {
-      logger.warn('GoogleAuth', 'legacy_cleanup_error', 'Failed to remove legacy localForage tokens', {
-        error: cleanupError.toString()
-      });
     }
 
     logger.info('GoogleAuth', 'signin_success', 'Google Sign In completed');
