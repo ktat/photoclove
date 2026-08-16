@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 /**
- * The Google Photos upload path reads its token from localForage and treats any
- * record it finds as valid. So what happens to that record when a sign-in fails
- * to write it decides which account the next upload goes to.
+ * Tokens live only in the OS keyring; the frontend hands them straight to Rust
+ * and keeps nothing. What this covers is the boundary: that no token is written
+ * back into JS-visible storage, that the plaintext entry older versions left in
+ * IndexedDB gets purged, and that a keyring failure is a failed sign-in rather
+ * than a silent one.
  */
 
 const invoke = vi.fn();
@@ -34,30 +36,76 @@ describe('google sign-in token storage', () => {
         removeItem.mockReset().mockResolvedValue(undefined);
     });
 
-    it('stores the tokens where the upload path reads them', async () => {
+    it('hands the tokens to the keyring and keeps none in JS storage', async () => {
         await googleSignIn(redirectUrl({ access_token: 'a', refresh_token: 'r' }));
 
-        expect(setItem).toHaveBeenCalledWith('GoogleOAuthTokens', {
+        expect(invoke).toHaveBeenCalledWith('store_google_tokens', {
             accessToken: 'a',
             refreshToken: 'r',
+            expiresIn: 3600,
         });
-        expect(removeItem).not.toHaveBeenCalled();
+        // Writing a token anywhere the frontend can read it is the thing this
+        // design removed - a refresh token in IndexedDB sits there in plaintext.
+        expect(setItem).not.toHaveBeenCalled();
     });
 
-    it('clears the previous account\'s tokens when the write fails', async () => {
-        setItem.mockRejectedValue(new Error('storage unavailable'));
+    it('purges the plaintext tokens an older version left behind', async () => {
+        await googleSignIn(redirectUrl({ access_token: 'a', refresh_token: 'r' }));
+
+        expect(removeItem).toHaveBeenCalledWith('GoogleOAuthTokens');
+    });
+
+    it('fails the sign-in when the keyring store fails', async () => {
+        invoke.mockRejectedValue(new Error('keyring unavailable'));
 
         await googleSignIn(redirectUrl({ access_token: 'a', refresh_token: 'r' }));
 
-        // Without this the record from an earlier sign-in survives, and the
-        // next upload goes to that account instead of failing.
+        // Nothing usable was stored, so the run must stop rather than report a
+        // success the upload path cannot honour.
+        expect(setItem).not.toHaveBeenCalled();
+    });
+
+    it('purges the plaintext tokens even when the keyring store fails', async () => {
+        invoke.mockRejectedValue(new Error('keyring unavailable'));
+
+        await googleSignIn(redirectUrl({ access_token: 'a', refresh_token: 'r' }));
+
+        // Assert the whole contract, not just the purge: without these the test
+        // would also pass if the run never reached the keyring at all, or if it
+        // fell back to writing the tokens somewhere JS can read.
+        expect(invoke).toHaveBeenCalledWith('store_google_tokens', {
+            accessToken: 'a',
+            refreshToken: 'r',
+            expiresIn: 3600,
+        });
+        expect(setItem).not.toHaveBeenCalled();
+        // A keyring that cannot be written to is exactly the case where the old
+        // plaintext entry would otherwise sit in IndexedDB forever - which is
+        // the thing this change exists to remove.
         expect(removeItem).toHaveBeenCalledWith('GoogleOAuthTokens');
+    });
+
+    it('still signs in when the legacy purge fails', async () => {
+        removeItem.mockRejectedValue(new Error('IndexedDB unavailable'));
+
+        await googleSignIn(redirectUrl({ access_token: 'a', refresh_token: 'r' }));
+
+        // Aborting here would not delete the stale entry - it survives either
+        // way - so refusing to sign in buys no privacy and costs the feature.
+        // The new tokens still belong in the keyring, and nothing reads the old
+        // entry any more (photoOperations asks is_google_authenticated).
+        expect(invoke).toHaveBeenCalledWith('store_google_tokens', {
+            accessToken: 'a',
+            refreshToken: 'r',
+            expiresIn: 3600,
+        });
+        expect(setItem).not.toHaveBeenCalled();
     });
 
     it('does not store anything when no access token comes back', async () => {
         await googleSignIn(redirectUrl({ refresh_token: 'r' }));
 
-        expect(setItem).not.toHaveBeenCalled();
         expect(invoke).not.toHaveBeenCalled();
+        expect(setItem).not.toHaveBeenCalled();
     });
 });

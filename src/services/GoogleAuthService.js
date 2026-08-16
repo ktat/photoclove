@@ -65,67 +65,40 @@ export const googleSignIn = async (payload) => {
 
     logger.info('GoogleAuth', 'tokens_received', 'OAuth tokens received successfully');
 
-    // Store tokens securely using our TokenStorageService
-    let keyringStored = false;
+    // Older versions mirrored the tokens into localForage in plaintext. Drop
+    // that entry first: nothing reads it any more, and doing it after the
+    // keyring write would skip it on the one path that matters - a machine
+    // whose keyring is unavailable, where the plaintext refresh token would
+    // otherwise sit in IndexedDB forever.
+    try {
+      await localForage.removeItem("GoogleOAuthTokens");
+    } catch (cleanupError) {
+      // Logged at error level because a plaintext refresh token surviving in
+      // IndexedDB is worth seeing in the log viewer. The sign-in still goes
+      // ahead: aborting would not delete the entry either, so it would cost
+      // the feature without buying any privacy back.
+      logger.error('GoogleAuth', 'legacy_cleanup_error', 'Could not remove the plaintext tokens an older version left in IndexedDB', {
+        error: cleanupError.toString()
+      });
+    }
+
+    // Tokens live only in the OS keyring. Consumers read them through the Rust
+    // side (is_google_authenticated), never from JS.
     try {
       await invoke('store_google_tokens', {
         accessToken: accessToken,
         refreshToken: refreshToken,
         expiresIn: expiresIn
       });
-      keyringStored = true;
       logger.info('GoogleAuth', 'tokens_stored', 'Tokens stored securely in keyring');
     } catch (tokenError) {
-      logger.error('GoogleAuth', 'token_storage_error', 'Failed to store tokens securely', {
+      logger.error('GoogleAuth', 'signin_error', 'Sign In failed: could not store tokens in keyring', {
         error: tokenError.toString()
-      });
-      // Fall through to the localForage store below even if secure storage fails
-    }
-
-    // The Google Photos upload path (photoOperations.js) still reads tokens from
-    // here, so this write is required even when the keyring store succeeded.
-    let localForageStored = false;
-    try {
-      await localForage.setItem(
-        "GoogleOAuthTokens",
-        {
-          accessToken: accessToken,
-          refreshToken: refreshToken,
-        }
-      );
-      localForageStored = true;
-      logger.debug('GoogleAuth', 'legacy_storage', 'Tokens also stored in legacy localForage');
-    } catch (legacyError) {
-      logger.warn('GoogleAuth', 'legacy_storage_error', 'Failed to store in localForage', {
-        error: legacyError.toString()
-      });
-      // Whatever is still under this key belongs to the previous sign-in, and
-      // the upload path accepts any record it finds. Left in place, a failed
-      // write means the next upload silently goes to the old account.
-      try {
-        await localForage.removeItem("GoogleOAuthTokens");
-      } catch (removeError) {
-        logger.error('GoogleAuth', 'legacy_storage_stale', 'Could not clear the previous tokens after a failed write', {
-          error: removeError.toString()
-        });
-      }
-    }
-
-    // Gated on localForage alone because that is the only store the upload path
-    // reads. A keyring-only success would leave uploads with no token, or worse,
-    // with the stale one a previous sign-in left behind.
-    if (!localForageStored) {
-      logger.error('GoogleAuth', 'signin_error', 'Sign In failed: tokens could not be stored for upload use', {
-        keyringStored,
-        localForageStored
       });
       return;
     }
 
-    logger.info('GoogleAuth', 'signin_success', 'Google Sign In completed', {
-      keyringStored,
-      localForageStored
-    });
+    logger.info('GoogleAuth', 'signin_success', 'Google Sign In completed');
 
   } catch (error) {
     const errorCode = error.code || 'unknown';
